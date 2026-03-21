@@ -1,0 +1,23 @@
+{% extends "!layout.html" %}
+
+{# Overriden to include a link to scrapy.org, not just to the docs root #}
+{%- block sidebartitle %}
+
+{# the logo helper function was removed in Sphinx 6 and deprecated since Sphinx 4 #}
+{# the master_doc variable was renamed to root_doc in Sphinx 4 (master_doc still exists in later Sphinx versions) #}
+{%- set _logo_url = logo_url|default(pathto('_static/' + (logo or ""), 1)) %}
+{%- set _root_doc = root_doc|default(master_doc) %}
+<a href="https://scrapy.org">scrapy.org</a> / <a href="{{ pathto(_root_doc) }}">docs</a>
+
+{%- if READTHEDOCS or DEBUG %}
+  {%- if theme_version_selector or theme_language_selector %}
+    <div class="switch-menus">
+      <div class="version-switch"></div>
+      <div class="language-switch"></div>
+    </div>
+  {%- endif %}
+{%- endif %}
+
+{%- include "searchbox.html" %}
+
+{%- endblock %}

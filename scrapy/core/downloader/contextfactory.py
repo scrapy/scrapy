@@ -24,6 +24,7 @@ from scrapy.core.downloader.tls import (
     openssl_methods,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
@@ -55,7 +56,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def __init__(
         self,
-        method: int | None = SSL.SSLv23_METHOD,
+        method: int | None = SSL.SSLv23_METHOD,  # noqa: S503
         tls_verbose_logging: bool = False,
         tls_ciphers: str | None = None,
         *args: Any,
@@ -90,48 +91,30 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
         else:
             self.tls_ciphers = DEFAULT_CIPHERS
-
-    @classmethod
-    def from_settings(
-        cls,
-        settings: BaseSettings,
-        method: int | None = SSL.SSLv23_METHOD,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        warnings.warn(
-            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return cls._from_settings(settings, method, *args, **kwargs)
+        if method_is_overridden(type(self), ScrapyClientContextFactory, "getContext"):
+            warnings.warn(
+                "Overriding ScrapyClientContextFactory.getContext() is deprecated and that method"
+                " will be removed in a future Scrapy version. Override creatorForNetloc() instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     @classmethod
     def from_crawler(
         cls,
         crawler: Crawler,
-        method: int | None = SSL.SSLv23_METHOD,
+        method: int | None = SSL.SSLv23_METHOD,  # noqa: S503
         *args: Any,
         **kwargs: Any,
     ) -> Self:
-        return cls._from_settings(crawler.settings, method, *args, **kwargs)
-
-    @classmethod
-    def _from_settings(
-        cls,
-        settings: BaseSettings,
-        method: int | None = SSL.SSLv23_METHOD,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        tls_verbose_logging: bool = settings.getbool(
+        tls_verbose_logging: bool = crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
-        tls_ciphers: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+        tls_ciphers: str | None = crawler.settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
 
         tls_min_ver: TLSVersion | None = None
         tls_max_ver: TLSVersion | None = None
-        tls_min_ver_setting: str | None = settings.get(
+        tls_min_ver_setting: str | None = crawler.settings.get(
             "DOWNLOADER_CLIENT_TLS_MIN_VERSION"
         )
         if tls_min_ver_setting:
@@ -141,7 +124,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 logger.error(
                     f"Unknown DOWNLOADER_CLIENT_TLS_MIN_VERSION value: {tls_min_ver_setting}"
                 )
-        tls_max_ver_setting: str | None = settings.get(
+        tls_max_ver_setting: str | None = crawler.settings.get(
             "DOWNLOADER_CLIENT_TLS_MAX_VERSION"
         )
         if tls_max_ver_setting:
@@ -153,12 +136,12 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 )
 
         return cls(  # type: ignore[misc]
+            *args,
             method=method,
             tls_verbose_logging=tls_verbose_logging,
             tls_ciphers=tls_ciphers,
             tls_min_version=tls_min_ver,
             tls_max_version=tls_max_ver,
-            *args,
             **kwargs,
         )
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pickle  # nosec
+import pickle
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -41,7 +41,7 @@ class SpiderState:
     def spider_opened(self, spider: Spider) -> None:
         if self.jobdir and Path(self.statefn).exists():
             with Path(self.statefn).open("rb") as f:
-                spider.state = pickle.load(f)  # type: ignore[attr-defined]  # nosec
+                spider.state = pickle.load(f)  # type: ignore[attr-defined]  # noqa: S301
         else:
             spider.state = {}  # type: ignore[attr-defined]
 

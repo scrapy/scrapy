@@ -11,7 +11,7 @@ SEP-004: Library API
 ====================
 .. note:: the library API has been implemented, but slightly different from
           proposed in this SEP. You can run a Scrapy crawler inside a Twisted
-          reactor, but not outside it. 
+          reactor, but not outside it.
 
 Introduction
 ============

@@ -1,22 +1,19 @@
 """
 This module provides some useful functions for working with
-scrapy.http.Request objects
+scrapy.Request objects
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-import warnings
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
-from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
 from scrapy import Request, Spider
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
@@ -94,7 +91,9 @@ def fingerprint(
             "headers": headers,
         }
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
-        cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()  # nosec
+        cache[cache_key] = hashlib.sha1(  # noqa: S324
+            fingerprint_json.encode()
+        ).digest()
     return cache[cache_key]
 
 
@@ -107,12 +106,10 @@ class RequestFingerprinter:
 
     It takes into account a canonical version
     (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url
-    <scrapy.http.Request.url>` and the values of :attr:`request.method
-    <scrapy.http.Request.method>` and :attr:`request.body
-    <scrapy.http.Request.body>`. It then generates an `SHA1
+    <scrapy.Request.url>` and the values of :attr:`request.method
+    <scrapy.Request.method>` and :attr:`request.body
+    <scrapy.Request.body>`. It then generates an `SHA1
     <https://en.wikipedia.org/wiki/SHA-1>`_ hash.
-
-    .. seealso:: :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION`.
     """
 
     @classmethod
@@ -120,39 +117,10 @@ class RequestFingerprinter:
         return cls(crawler)
 
     def __init__(self, crawler: Crawler | None = None):
-        if crawler:
-            implementation = crawler.settings.get(
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION"
-            )
-        else:
-            implementation = "SENTINEL"
-
-        if implementation != "SENTINEL":
-            message = (
-                "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
-                "It will be removed in a future version of Scrapy."
-            )
-            warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
         self._fingerprint = fingerprint
 
     def fingerprint(self, request: Request) -> bytes:
         return self._fingerprint(request)
-
-
-def request_authenticate(
-    request: Request,
-    username: str,
-    password: str,
-) -> None:
-    """Authenticate the given request (in place) using the HTTP basic access
-    authentication mechanism (RFC 2617) and the given username and password
-    """
-    warnings.warn(
-        "The request_authenticate function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    request.headers["Authorization"] = basic_auth_header(username, password)
 
 
 def request_httprepr(request: Request) -> bytes:
@@ -227,7 +195,8 @@ def request_to_curl(request: Request) -> str:
             cookies = f"--cookie '{cookie}'"
         elif isinstance(request.cookies, list):
             cookie = "; ".join(
-                f"{list(c.keys())[0]}={list(c.values())[0]}" for c in request.cookies
+                f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                for c in request.cookies
             )
             cookies = f"--cookie '{cookie}'"
 

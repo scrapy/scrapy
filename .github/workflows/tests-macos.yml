@@ -1,5 +1,10 @@
 name: macOS
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
+  pull_request:
 
 concurrency:
   group: ${{github.workflow}}-${{ github.ref }}
@@ -8,16 +13,18 @@ concurrency:
 jobs:
   tests:
     runs-on: macos-latest
+    env:
+      PYTEST_ADDOPTS: -n auto
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -27,4 +34,10 @@ jobs:
         tox -e py
 
     - name: Upload coverage report
-      run: bash <(curl -s https://codecov.io/bash)
+      uses: codecov/codecov-action@v5
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/codecov-action@v5
+      with:
+        report_type: test_results

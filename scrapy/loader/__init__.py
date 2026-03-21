@@ -32,7 +32,7 @@ class ItemLoader(itemloaders.ItemLoader):
     :param selector: The selector to extract data from, when using the
         :meth:`add_xpath`, :meth:`add_css`, :meth:`replace_xpath`, or
         :meth:`replace_css` method.
-    :type selector: :class:`~scrapy.selector.Selector` object
+    :type selector: :class:`~scrapy.Selector` object
 
     :param response: The response used to construct the selector using the
         :attr:`default_selector_class`, unless the selector argument is given,
@@ -79,7 +79,7 @@ class ItemLoader(itemloaders.ItemLoader):
 
     .. attribute:: selector
 
-        The :class:`~scrapy.selector.Selector` object to extract data from.
+        The :class:`~scrapy.Selector` object to extract data from.
         It's either the selector given in the ``__init__`` method or one created from
         the response given in the ``__init__`` method using the
         :attr:`default_selector_class`. This attribute is meant to be

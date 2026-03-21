@@ -2,16 +2,23 @@ from __future__ import annotations
 
 import copy
 import json
+import warnings
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
+from logging import getLogger
 from pprint import pformat
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
+from scrapy.utils.misc import load_object
+from scrapy.utils.python import global_object_name
+
+logger = getLogger(__name__)
 
 # The key types are restricted in BaseSettings._get_key() to ones supported by JSON,
 # see https://github.com/scrapy/scrapy/issues/5383.
-_SettingsKeyT = Union[bool, float, int, str, None]
+_SettingsKey: TypeAlias = bool | float | int | str | None
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -22,7 +29,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    _SettingsInputT = Union[SupportsItems[_SettingsKeyT, Any], str, None]
+    _SettingsInput: TypeAlias = SupportsItems[_SettingsKey, Any] | str | None
 
 
 SETTINGS_PRIORITIES: dict[str, int] = {
@@ -73,7 +80,7 @@ class SettingsAttribute:
         return f"<SettingsAttribute value={self.value!r} priority={self.priority}>"
 
 
-class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
+class BaseSettings(MutableMapping[_SettingsKey, Any]):
     """
     Instances of this class behave like dictionaries, but store priorities
     along with their ``(key, value)`` pairs, and can be frozen (i.e. marked
@@ -97,13 +104,13 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
 
     __default = object()
 
-    def __init__(self, values: _SettingsInputT = None, priority: int | str = "project"):
+    def __init__(self, values: _SettingsInput = None, priority: int | str = "project"):
         self.frozen: bool = False
-        self.attributes: dict[_SettingsKeyT, SettingsAttribute] = {}
+        self.attributes: dict[_SettingsKey, SettingsAttribute] = {}
         if values:
             self.update(values, priority)
 
-    def __getitem__(self, opt_name: _SettingsKeyT) -> Any:
+    def __getitem__(self, opt_name: _SettingsKey) -> Any:
         if opt_name not in self:
             return None
         return self.attributes[opt_name].value
@@ -111,7 +118,32 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def __contains__(self, name: Any) -> bool:
         return name in self.attributes
 
-    def get(self, name: _SettingsKeyT, default: Any = None) -> Any:
+    def add_to_list(self, name: _SettingsKey, item: Any) -> None:
+        """Append *item* to the :class:`list` setting with the specified *name*
+        if *item* is not already in that list.
+
+        This change is applied regardless of the priority of the *name*
+        setting. The setting priority is not affected by this change either.
+        """
+        value: list[str] = self.getlist(name)
+        if item not in value:
+            self.set(name, [*value, item], self.getpriority(name) or 0)
+
+    def remove_from_list(self, name: _SettingsKey, item: Any) -> None:
+        """Remove *item* from the :class:`list` setting with the specified
+        *name*.
+
+        If *item* is missing, raise :exc:`ValueError`.
+
+        This change is applied regardless of the priority of the *name*
+        setting. The setting priority is not affected by this change either.
+        """
+        value: list[str] = self.getlist(name)
+        if item not in value:
+            raise ValueError(f"{item!r} not found in the {name} setting ({value!r}).")
+        self.set(name, [v for v in value if v != item], self.getpriority(name) or 0)
+
+    def get(self, name: _SettingsKey, default: Any = None) -> Any:
         """
         Get a setting value without affecting its original type.
 
@@ -121,9 +153,18 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         :param default: the value to return if no setting is found
         :type default: object
         """
+        if name == "CONCURRENT_REQUESTS_PER_IP" and (
+            isinstance(self[name], int) and self[name] != 0
+        ):
+            warnings.warn(
+                "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         return self[name] if self[name] is not None else default
 
-    def getbool(self, name: _SettingsKeyT, default: bool = False) -> bool:
+    def getbool(self, name: _SettingsKey, default: bool = False) -> bool:
         """
         Get a setting value as a boolean.
 
@@ -153,7 +194,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 "'True'/'False' and 'true'/'false'"
             )
 
-    def getint(self, name: _SettingsKeyT, default: int = 0) -> int:
+    def getint(self, name: _SettingsKey, default: int = 0) -> int:
         """
         Get a setting value as an int.
 
@@ -165,7 +206,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         return int(self.get(name, default))
 
-    def getfloat(self, name: _SettingsKeyT, default: float = 0.0) -> float:
+    def getfloat(self, name: _SettingsKey, default: float = 0.0) -> float:
         """
         Get a setting value as a float.
 
@@ -178,11 +219,12 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         return float(self.get(name, default))
 
     def getlist(
-        self, name: _SettingsKeyT, default: list[Any] | None = None
+        self, name: _SettingsKey, default: list[Any] | None = None
     ) -> list[Any]:
         """
-        Get a setting value as a list. If the setting original type is a list, a
-        copy of it will be returned. If it's a string it will be split by ",".
+        Get a setting value as a list. If the setting original type is a list,
+        a copy of it will be returned. If it's a string it will be split by
+        ",". If it is an empty string, an empty list will be returned.
 
         For example, settings populated through environment variables set to
         ``'one,two'`` will return a list ['one', 'two'] when using this method.
@@ -194,12 +236,14 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         :type default: object
         """
         value = self.get(name, default or [])
+        if not value:
+            return []
         if isinstance(value, str):
             value = value.split(",")
         return list(value)
 
     def getdict(
-        self, name: _SettingsKeyT, default: dict[Any, Any] | None = None
+        self, name: _SettingsKey, default: dict[Any, Any] | None = None
     ) -> dict[Any, Any]:
         """
         Get a setting value as a dictionary. If the setting original type is a
@@ -223,7 +267,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
 
     def getdictorlist(
         self,
-        name: _SettingsKeyT,
+        name: _SettingsKey,
         default: dict[Any, Any] | list[Any] | tuple[Any] | None = None,
     ) -> dict[Any, Any] | list[Any]:
         """Get a setting value as either a :class:`dict` or a :class:`list`.
@@ -253,16 +297,24 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         if isinstance(value, str):
             try:
                 value_loaded = json.loads(value)
-                assert isinstance(value_loaded, (dict, list))
+                if not isinstance(value_loaded, (dict, list)):
+                    raise ValueError(
+                        f"JSON string for setting '{name}' must evaluate to a dict or list, "
+                        f"got {type(value_loaded).__name__}: {value_loaded!r}"
+                    )
                 return value_loaded
             except ValueError:
                 return value.split(",")
         if isinstance(value, tuple):
             return list(value)
-        assert isinstance(value, (dict, list))
+        if not isinstance(value, (dict, list)):
+            raise ValueError(
+                f"Setting '{name}' must be a dict, list, tuple, or string, "
+                f"got {type(value).__name__}: {value!r}"
+            )
         return copy.deepcopy(value)
 
-    def getwithbase(self, name: _SettingsKeyT) -> BaseSettings:
+    def getwithbase(self, name: _SettingsKey) -> BaseSettings:
         """Get a composition of a dictionary-like setting and its `_BASE`
         counterpart.
 
@@ -271,12 +323,43 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
-        compbs = BaseSettings()
-        compbs.update(self[name + "_BASE"])
-        compbs.update(self[name])
-        return compbs
 
-    def getpriority(self, name: _SettingsKeyT) -> int | None:
+        normalized_keys = {}
+        obj_keys = set()
+
+        def track_loaded_key(k: Any) -> None:
+            if k not in obj_keys:
+                obj_keys.add(k)
+                return
+            logger.warning(
+                f"Setting {name} contains multiple keys that refer to the "
+                f"same object: {global_object_name(k)}. Only the last one will "
+                f"be kept."
+            )
+
+        def normalize_key(key: Any) -> str:
+            try:
+                loaded_key = load_object(key)
+            except (AttributeError, TypeError, ValueError):
+                loaded_key = key
+            else:
+                import_path = global_object_name(loaded_key)
+                normalized_keys[import_path] = key
+                key = import_path
+            track_loaded_key(loaded_key)
+            return key
+
+        def restore_key(k: str) -> Any:
+            return normalized_keys.get(k, k)
+
+        result = dict(self[name + "_BASE"] or {})
+        override = {normalize_key(k): v for k, v in (self[name] or {}).items()}
+        result.update(override)
+        return BaseSettings(
+            {restore_key(k): v for k, v in result.items() if v is not None}
+        )
+
+    def getpriority(self, name: _SettingsKey) -> int | None:
         """
         Return the current numerical priority value of a setting, or ``None`` if
         the given ``name`` does not exist.
@@ -296,14 +379,55 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         stored.
         """
         if len(self) > 0:
-            return max(cast(int, self.getpriority(name)) for name in self)
+            return max(cast("int", self.getpriority(name)) for name in self)
         return get_settings_priority("default")
 
-    def __setitem__(self, name: _SettingsKeyT, value: Any) -> None:
+    def replace_in_component_priority_dict(
+        self,
+        name: _SettingsKey,
+        old_cls: type,
+        new_cls: type,
+        priority: int | None = None,
+    ) -> None:
+        """Replace *old_cls* with *new_cls* in the *name* :ref:`component
+        priority dictionary <component-priority-dictionaries>`.
+
+        If *old_cls* is missing, or has :data:`None` as value, :exc:`KeyError`
+        is raised.
+
+        If *old_cls* was present as an import string, even more than once,
+        those keys are dropped and replaced by *new_cls*.
+
+        If *priority* is specified, that is the value assigned to *new_cls* in
+        the component priority dictionary. Otherwise, the value of *old_cls* is
+        used. If *old_cls* was present multiple times (possible with import
+        strings) with different values, the value assigned to *new_cls* is one
+        of them, with no guarantee about which one it is.
+
+        This change is applied regardless of the priority of the *name*
+        setting. The setting priority is not affected by this change either.
+        """
+        component_priority_dict = self.getdict(name)
+        old_priority = None
+        for cls_or_path in tuple(component_priority_dict):
+            if load_object(cls_or_path) != old_cls:
+                continue
+            if (old_priority := component_priority_dict.pop(cls_or_path)) is None:
+                break
+        if old_priority is None:
+            raise KeyError(
+                f"{old_cls} not found in the {name} setting ({component_priority_dict!r})."
+            )
+        component_priority_dict[new_cls] = (
+            old_priority if priority is None else priority
+        )
+        self.set(name, component_priority_dict, priority=self.getpriority(name) or 0)
+
+    def __setitem__(self, name: _SettingsKey, value: Any) -> None:
         self.set(name, value)
 
     def set(
-        self, name: _SettingsKeyT, value: Any, priority: int | str = "project"
+        self, name: _SettingsKey, value: Any, priority: int | str = "project"
     ) -> None:
         """
         Store a key/value attribute with a given priority.
@@ -332,9 +456,33 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         else:
             self.attributes[name].set(value, priority)
 
+    def set_in_component_priority_dict(
+        self, name: _SettingsKey, cls: type, priority: int | None
+    ) -> None:
+        """Set the *cls* component in the *name* :ref:`component priority
+        dictionary <component-priority-dictionaries>` setting with *priority*.
+
+        If *cls* already exists, its value is updated.
+
+        If *cls* was present as an import string, even more than once, those
+        keys are dropped and replaced by *cls*.
+
+        This change is applied regardless of the priority of the *name*
+        setting. The setting priority is not affected by this change either.
+        """
+        component_priority_dict = self.getdict(name)
+        for cls_or_path in tuple(component_priority_dict):
+            if not isinstance(cls_or_path, str):
+                continue
+            _cls = load_object(cls_or_path)
+            if _cls == cls:
+                del component_priority_dict[cls_or_path]
+        component_priority_dict[cls] = priority
+        self.set(name, component_priority_dict, self.getpriority(name) or 0)
+
     def setdefault(
         self,
-        name: _SettingsKeyT,
+        name: _SettingsKey,
         default: Any = None,
         priority: int | str = "project",
     ) -> Any:
@@ -344,7 +492,25 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
 
         return self.attributes[name].value
 
-    def setdict(self, values: _SettingsInputT, priority: int | str = "project") -> None:
+    def setdefault_in_component_priority_dict(
+        self, name: _SettingsKey, cls: type, priority: int | None
+    ) -> None:
+        """Set the *cls* component in the *name* :ref:`component priority
+        dictionary <component-priority-dictionaries>` setting with *priority*
+        if not already defined (even as an import string).
+
+        If *cls* is not already defined, it is set regardless of the priority
+        of the *name* setting. The setting priority is not affected by this
+        change either.
+        """
+        component_priority_dict = self.getdict(name)
+        for cls_or_path in tuple(component_priority_dict):
+            if load_object(cls_or_path) == cls:
+                return
+        component_priority_dict[cls] = priority
+        self.set(name, component_priority_dict, self.getpriority(name) or 0)
+
+    def setdict(self, values: _SettingsInput, priority: int | str = "project") -> None:
         self.update(values, priority)
 
     def setmodule(
@@ -372,7 +538,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 self.set(key, getattr(module, key), priority)
 
     # BaseSettings.update() doesn't support all inputs that MutableMapping.update() supports
-    def update(self, values: _SettingsInputT, priority: int | str = "project") -> None:  # type: ignore[override]
+    def update(self, values: _SettingsInput, priority: int | str = "project") -> None:  # type: ignore[override]
         """
         Store key/value pairs with a given priority.
 
@@ -396,24 +562,24 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         self._assert_mutability()
         if isinstance(values, str):
-            values = cast(dict[_SettingsKeyT, Any], json.loads(values))
+            values = cast("dict[_SettingsKey, Any]", json.loads(values))
         if values is not None:
             if isinstance(values, BaseSettings):
                 for name, value in values.items():
-                    self.set(name, value, cast(int, values.getpriority(name)))
+                    self.set(name, value, cast("int", values.getpriority(name)))
             else:
                 for name, value in values.items():
                     self.set(name, value, priority)
 
-    def delete(self, name: _SettingsKeyT, priority: int | str = "project") -> None:
+    def delete(self, name: _SettingsKey, priority: int | str = "project") -> None:
         if name not in self:
             raise KeyError(name)
         self._assert_mutability()
         priority = get_settings_priority(priority)
-        if priority >= cast(int, self.getpriority(name)):
+        if priority >= cast("int", self.getpriority(name)):
             del self.attributes[name]
 
-    def __delitem__(self, name: _SettingsKeyT) -> None:
+    def __delitem__(self, name: _SettingsKey) -> None:
         self._assert_mutability()
         del self.attributes[name]
 
@@ -453,26 +619,26 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         copy.freeze()
         return copy
 
-    def __iter__(self) -> Iterator[_SettingsKeyT]:
+    def __iter__(self) -> Iterator[_SettingsKey]:
         return iter(self.attributes)
 
     def __len__(self) -> int:
         return len(self.attributes)
 
-    def _to_dict(self) -> dict[_SettingsKeyT, Any]:
+    def _to_dict(self) -> dict[_SettingsKey, Any]:
         return {
             self._get_key(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
             for k, v in self.items()
         }
 
-    def _get_key(self, key_value: Any) -> _SettingsKeyT:
+    def _get_key(self, key_value: Any) -> _SettingsKey:
         return (
             key_value
             if isinstance(key_value, (bool, float, int, str, type(None)))
             else str(key_value)
         )
 
-    def copy_to_dict(self) -> dict[_SettingsKeyT, Any]:
+    def copy_to_dict(self) -> dict[_SettingsKey, Any]:
         """
         Make a copy of current settings and convert to a dict.
 
@@ -495,7 +661,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         else:
             p.text(pformat(self.copy_to_dict()))
 
-    def pop(self, name: _SettingsKeyT, default: Any = __default) -> Any:
+    def pop(self, name: _SettingsKey, default: Any = __default) -> Any:
         try:
             value = self.attributes[name].value
         except KeyError:
@@ -517,7 +683,7 @@ class Settings(BaseSettings):
     described on :ref:`topics-settings-ref` already populated.
     """
 
-    def __init__(self, values: _SettingsInputT = None, priority: int | str = "project"):
+    def __init__(self, values: _SettingsInput = None, priority: int | str = "project"):
         # Do not pass kwarg values here. We don't want to promote user-defined
         # dicts, and we want to update, not replace, default dicts with the
         # values given by the user
@@ -539,7 +705,7 @@ def iter_default_settings() -> Iterable[tuple[str, Any]]:
 
 
 def overridden_settings(
-    settings: Mapping[_SettingsKeyT, Any]
+    settings: Mapping[_SettingsKey, Any],
 ) -> Iterable[tuple[str, Any]]:
     """Return an iterable of the settings that have been overridden"""
     for name, defvalue in iter_default_settings():

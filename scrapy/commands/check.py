@@ -1,9 +1,12 @@
 import argparse
 import time
 from collections import defaultdict
+from collections.abc import AsyncIterator
+from typing import Any
 from unittest import TextTestResult as _TextTestResult
 from unittest import TextTestRunner
 
+from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
 from scrapy.utils.conf import build_component_list
@@ -69,6 +72,7 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts
+        assert self.settings is not None
         contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
         conman = ContractsManager(load_object(c) for c in contracts)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
@@ -80,10 +84,14 @@ class Command(ScrapyCommand):
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
+        async def start(self: Spider) -> AsyncIterator[Any]:
+            for request in conman.from_spider(self, result):
+                yield request
+
         with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
-                spidercls.start_requests = lambda s: conman.from_spider(s, result)  # type: ignore[assignment,method-assign,return-value]
+                spidercls.start = start  # type: ignore[method-assign]
 
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
                 if opts.list:
@@ -101,10 +109,10 @@ class Command(ScrapyCommand):
                     for method in sorted(methods):
                         print(f"  * {method}")
             else:
-                start = time.time()
+                start_time = time.time()
                 self.crawler_process.start()
                 stop = time.time()
 
                 result.printErrors()
-                result.printSummary(start, stop)
+                result.printSummary(start_time, stop)
                 self.exitcode = int(not result.wasSuccessful())

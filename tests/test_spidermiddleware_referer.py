@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import warnings
 from typing import Any
-from unittest import TestCase
 from urllib.parse import urlparse
 
-from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
+import pytest
+
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spidermiddlewares.referer import (
@@ -30,10 +30,12 @@ from scrapy.spidermiddlewares.referer import (
     StrictOriginWhenCrossOriginPolicy,
     UnsafeUrlPolicy,
 )
-from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
 
 
-class TestRefererMiddleware(TestCase):
+class TestRefererMiddleware:
     req_meta: dict[str, Any] = {}
     resp_headers: dict[str, str] = {}
     settings: dict[str, Any] = {}
@@ -41,23 +43,23 @@ class TestRefererMiddleware(TestCase):
         ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
     ]
 
-    def setUp(self):
-        self.spider = Spider("foo")
+    @pytest.fixture
+    def mw(self) -> RefererMiddleware:
         settings = Settings(self.settings)
-        self.mw = RefererMiddleware(settings)
+        return RefererMiddleware(settings)
 
-    def get_request(self, target):
+    def get_request(self, target: str) -> Request:
         return Request(target, meta=self.req_meta)
 
-    def get_response(self, origin):
+    def get_response(self, origin: str) -> Response:
         return Response(origin, headers=self.resp_headers)
 
-    def test(self):
+    def test(self, mw: RefererMiddleware) -> None:
         for origin, target, referrer in self.scenarii:
             response = self.get_response(origin)
             request = self.get_request(target)
-            out = list(self.mw.process_spider_output(response, [request], self.spider))
-            self.assertEqual(out[0].headers.get("Referer"), referrer)
+            out = list(mw.process_spider_output(response, [request]))
+            assert out[0].headers.get("Referer") == referrer
 
 
 class MixinDefault:
@@ -771,7 +773,7 @@ class TestRequestMetaPrecedence003(MixinUnsafeUrl, TestRefererMiddleware):
     req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
 
 
-class TestRequestMetaSettingFallback(TestCase):
+class TestRequestMetaSettingFallback:
     params = [
         (
             # When an unknown policy is referenced in Request.meta
@@ -842,14 +844,14 @@ class TestRequestMetaSettingFallback(TestCase):
 
             with warnings.catch_warnings(record=True) as w:
                 policy = mw.policy(response, request)
-                self.assertIsInstance(policy, policy_class)
+                assert isinstance(policy, policy_class)
 
                 if check_warning:
-                    self.assertEqual(len(w), 1)
-                    self.assertEqual(w[0].category, RuntimeWarning, w[0].message)
+                    assert len(w) == 1
+                    assert w[0].category is RuntimeWarning, w[0].message
 
 
-class TestSettingsPolicyByName(TestCase):
+class TestSettingsPolicyByName:
     def test_valid_name(self):
         for s, p in [
             (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
@@ -864,7 +866,7 @@ class TestSettingsPolicyByName(TestCase):
         ]:
             settings = Settings({"REFERRER_POLICY": s})
             mw = RefererMiddleware(settings)
-            self.assertEqual(mw.default_policy, p)
+            assert mw.default_policy == p
 
     def test_valid_name_casevariants(self):
         for s, p in [
@@ -880,58 +882,52 @@ class TestSettingsPolicyByName(TestCase):
         ]:
             settings = Settings({"REFERRER_POLICY": s.upper()})
             mw = RefererMiddleware(settings)
-            self.assertEqual(mw.default_policy, p)
+            assert mw.default_policy == p
 
     def test_invalid_name(self):
         settings = Settings({"REFERRER_POLICY": "some-custom-unknown-policy"})
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             RefererMiddleware(settings)
 
     def test_multiple_policy_tokens(self):
         # test parsing without space(s) after the comma
         settings1 = Settings(
             {
-                "REFERRER_POLICY": ",".join(
-                    [
-                        "some-custom-unknown-policy",
-                        POLICY_SAME_ORIGIN,
-                        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
-                        "another-custom-unknown-policy",
-                    ]
+                "REFERRER_POLICY": (
+                    f"some-custom-unknown-policy,"
+                    f"{POLICY_SAME_ORIGIN},"
+                    f"{POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN},"
+                    f"another-custom-unknown-policy"
                 )
             }
         )
         mw1 = RefererMiddleware(settings1)
-        self.assertEqual(mw1.default_policy, StrictOriginWhenCrossOriginPolicy)
+        assert mw1.default_policy == StrictOriginWhenCrossOriginPolicy
 
         # test parsing with space(s) after the comma
         settings2 = Settings(
             {
-                "REFERRER_POLICY": ",    ".join(
-                    [
-                        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
-                        "another-custom-unknown-policy",
-                        POLICY_UNSAFE_URL,
-                    ]
+                "REFERRER_POLICY": (
+                    f"{POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN},"
+                    f"    another-custom-unknown-policy,"
+                    f"    {POLICY_UNSAFE_URL}"
                 )
             }
         )
         mw2 = RefererMiddleware(settings2)
-        self.assertEqual(mw2.default_policy, UnsafeUrlPolicy)
+        assert mw2.default_policy == UnsafeUrlPolicy
 
     def test_multiple_policy_tokens_all_invalid(self):
         settings = Settings(
             {
-                "REFERRER_POLICY": ",".join(
-                    [
-                        "some-custom-unknown-policy",
-                        "another-custom-unknown-policy",
-                        "yet-another-custom-unknown-policy",
-                    ]
+                "REFERRER_POLICY": (
+                    "some-custom-unknown-policy,"
+                    "another-custom-unknown-policy,"
+                    "yet-another-custom-unknown-policy"
                 )
             }
         )
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             RefererMiddleware(settings)
 
 
@@ -969,379 +965,161 @@ class TestPolicyHeaderPrecedence004(
     resp_headers = {"Referrer-Policy": ""}
 
 
-class TestReferrerOnRedirect(TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
-    scenarii: list[
-        tuple[str, str, tuple[tuple[int, str], ...], bytes | None, bytes | None]
-    ] = [  # type: ignore[assignment]
-        (
-            "http://scrapytest.org/1",  # parent
-            "http://scrapytest.org/2",  # target
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/3"),
-                (301, "http://scrapytest.org/4"),
-            ),
-            b"http://scrapytest.org/1",  # expected initial referer
-            b"http://scrapytest.org/1",  # expected referer for the redirection request
-        ),
-        (
-            "https://scrapytest.org/1",
-            "https://scrapytest.org/2",
-            (
-                # redirecting to non-secure URL
-                (301, "http://scrapytest.org/3"),
-            ),
-            b"https://scrapytest.org/1",
-            b"https://scrapytest.org/1",
-        ),
-        (
-            "https://scrapytest.org/1",
-            "https://scrapytest.com/2",
-            (
-                # redirecting to non-secure URL: different origin
-                (301, "http://scrapytest.com/3"),
-            ),
-            b"https://scrapytest.org/1",
-            b"https://scrapytest.org/1",
-        ),
-    ]
+class TestPolicyMethodResponseParamRename:
+    def setup_method(self):
+        self.crawler = get_crawler()
+        self.mw = build_from_crawler(RefererMiddleware, self.crawler)
+        self.request = Request("http://www.example.com")
+        self.response = Response("http://www.example.com")
 
-    def setUp(self):
-        self.spider = Spider("foo")
-        settings = Settings(self.settings)
-        self.referrermw = RefererMiddleware(settings)
-        self.redirectmw = RedirectMiddleware(settings)
+    def test_pos_string(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.mw.policy("http://old.com", self.request)
+            found = False
+            for warning in w:
+                if "Passing a response URL" in str(warning.message):
+                    found = True
+                    break
+            assert found
 
-    def test(self):
-        for (
-            parent,
-            target,
-            redirections,
-            init_referrer,
-            final_referrer,
-        ) in self.scenarii:
-            response = self.get_response(parent)
-            request = self.get_request(target)
+    def test_pos_response(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.mw.policy(self.response, self.request)
+            for warning in w:
+                assert "resp_or_url" not in str(warning.message)
 
-            out = list(
-                self.referrermw.process_spider_output(response, [request], self.spider)
+    def test_key_resp_or_url(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.mw.policy(resp_or_url=self.response, request=self.request)
+            found = False
+            for warning in w:
+                if "Passing 'resp_or_url' is deprecated, use 'response' instead" in str(
+                    warning.message
+                ):
+                    found = True
+                    break
+            assert found
+
+    def test_key_response(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.mw.policy(response=self.response, request=self.request)
+            for warning in w:
+                assert "resp_or_url" not in str(warning.message)
+
+    def test_key_response_string(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.mw.policy(response="http://old.com", request=self.request)
+            found = False
+            for warning in w:
+                if "Passing a response URL" in str(warning.message):
+                    found = True
+                    break
+            assert found
+
+    def test_both_resp_or_url_and_response(self):
+        with pytest.raises(
+            TypeError, match="Cannot pass both 'response' and 'resp_or_url'"
+        ):
+            self.mw.policy(
+                response=self.response, resp_or_url=self.response, request=self.request
             )
-            self.assertEqual(out[0].headers.get("Referer"), init_referrer)
-
-            for status, url in redirections:
-                response = Response(
-                    request.url, headers={"Location": url}, status=status
-                )
-                request = self.redirectmw.process_response(
-                    request, response, self.spider
-                )
-                self.referrermw.request_scheduled(request, self.spider)
-
-            assert isinstance(request, Request)
-            self.assertEqual(request.headers.get("Referer"), final_referrer)
 
 
-class TestReferrerOnRedirectNoReferrer(TestReferrerOnRedirect):
-    """
-    No Referrer policy never sets the "Referer" header.
-    HTTP redirections should not change that.
-    """
+@coroutine_test
+async def test_response_policy_only_supports_policy_names():
+    crawler = get_crawler(settings_dict={"REFERRER_POLICY": "no-referrer"})
+    mw = build_from_crawler(RefererMiddleware, crawler)
 
-    settings = {"REFERRER_POLICY": "no-referrer"}
-    scenarii = [
-        (
-            "http://scrapytest.org/1",  # parent
-            "http://scrapytest.org/2",  # target
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/3"),
-                (301, "http://scrapytest.org/4"),
-            ),
-            None,  # expected initial "Referer"
-            None,  # expected "Referer" for the redirection request
-        ),
-        (
-            "https://scrapytest.org/1",
-            "https://scrapytest.org/2",
-            ((301, "http://scrapytest.org/3"),),
-            None,
-            None,
-        ),
-        (
-            "https://scrapytest.org/1",
-            "https://example.com/2",  # different origin
-            ((301, "http://scrapytest.com/3"),),
-            None,
-            None,
-        ),
+    async def input_result():
+        yield Request("https://example.com/")
+
+    response = Response(
+        "https://example.com/",
+        headers={
+            "Referrer-Policy": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
+        },
+    )
+    with pytest.warns(
+        RuntimeWarning,
+        match=r"Could not load referrer policy 'scrapy\.spidermiddlewares\.referer\.NoReferrerWhenDowngradePolicy' \(import paths from the response Referrer-Policy header are not allowed\)",
+    ):
+        output = [
+            request
+            async for request in mw.process_spider_output_async(
+                response, input_result()
+            )
+        ]
+    assert len(output) == 1
+    assert b"Referer" not in output[0].headers
+
+    response = Response(
+        "https://example.com/",
+        headers={"Referrer-Policy": "no-referrer-when-downgrade"},
+    )
+    output = [
+        request
+        async for request in mw.process_spider_output_async(response, input_result())
     ]
+    assert len(output) == 1
+    assert output[0].headers == {b"Referer": [b"https://example.com/"]}
 
 
-class TestReferrerOnRedirectSameOrigin(TestReferrerOnRedirect):
-    """
-    Same Origin policy sends the full URL as "Referer" if the target origin
-    is the same as the parent response (same protocol, same domain, same port).
+@coroutine_test
+async def test_referer_policies_setting():
+    crawler = get_crawler(
+        settings_dict={
+            "REFERRER_POLICY": "no-referrer",
+            "REFERRER_POLICIES": {
+                "no-referrer-when-downgrade": None,
+                "custom-policy": CustomPythonOrgPolicy,
+                "": CustomPythonOrgPolicy,
+            },
+        }
+    )
+    mw = build_from_crawler(RefererMiddleware, crawler)
 
-    HTTP redirections to a different domain or a lower secure level
-    should have the "Referer" removed.
-    """
+    async def input_result():
+        yield Request("https://example.com/")
 
-    settings = {"REFERRER_POLICY": "same-origin"}
-    scenarii = [
-        (
-            "http://scrapytest.org/101",  # origin
-            "http://scrapytest.org/102",  # target
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/103"),
-                (301, "http://scrapytest.org/104"),
-            ),
-            b"http://scrapytest.org/101",  # expected initial "Referer"
-            b"http://scrapytest.org/101",  # expected referer for the redirection request
-        ),
-        (
-            "https://scrapytest.org/201",
-            "https://scrapytest.org/202",
-            (
-                # redirecting from secure to non-secure URL == different origin
-                (301, "http://scrapytest.org/203"),
-            ),
-            b"https://scrapytest.org/201",
-            None,
-        ),
-        (
-            "https://scrapytest.org/301",
-            "https://scrapytest.org/302",
-            (
-                # different domain == different origin
-                (301, "http://example.com/303"),
-            ),
-            b"https://scrapytest.org/301",
-            None,
-        ),
+    # "no-referrer-when-downgrade": None,
+    response = Response(
+        "https://example.com/",
+        headers={"Referrer-Policy": "no-referrer-when-downgrade"},
+    )
+    with pytest.warns(
+        RuntimeWarning,
+        match=r"Could not load referrer policy 'no-referrer-when-downgrade'",
+    ):
+        output = [
+            request
+            async for request in mw.process_spider_output_async(
+                response, input_result()
+            )
+        ]
+    assert len(output) == 1
+    assert b"Referer" not in output[0].headers
+
+    # "custom-policy": CustomPythonOrgPolicy,
+    response = Response(
+        "https://example.com/",
+        headers={"Referrer-Policy": "custom-policy"},
+    )
+    output = [
+        request
+        async for request in mw.process_spider_output_async(response, input_result())
     ]
+    assert len(output) == 1
+    assert output[0].headers == {b"Referer": [b"https://python.org/"]}
 
-
-class TestReferrerOnRedirectStrictOrigin(TestReferrerOnRedirect):
-    """
-    Strict Origin policy will always send the "origin" as referrer
-    (think of it as the parent URL without the path part),
-    unless the security level is lower and no "Referer" is sent.
-
-    Redirections from secure to non-secure URLs should have the
-    "Referrer" header removed if necessary.
-    """
-
-    settings = {"REFERRER_POLICY": POLICY_STRICT_ORIGIN}
-    scenarii = [
-        (
-            "http://scrapytest.org/101",
-            "http://scrapytest.org/102",
-            (
-                (301, "http://scrapytest.org/103"),
-                (301, "http://scrapytest.org/104"),
-            ),
-            b"http://scrapytest.org/",  # send origin
-            b"http://scrapytest.org/",  # redirects to same origin: send origin
-        ),
-        (
-            "https://scrapytest.org/201",
-            "https://scrapytest.org/202",
-            (
-                # redirecting to non-secure URL: no referrer
-                (301, "http://scrapytest.org/203"),
-            ),
-            b"https://scrapytest.org/",
-            None,
-        ),
-        (
-            "https://scrapytest.org/301",
-            "https://scrapytest.org/302",
-            (
-                # redirecting to non-secure URL (different domain): no referrer
-                (301, "http://example.com/303"),
-            ),
-            b"https://scrapytest.org/",
-            None,
-        ),
-        (
-            "http://scrapy.org/401",
-            "http://example.com/402",
-            ((301, "http://scrapytest.org/403"),),
-            b"http://scrapy.org/",
-            b"http://scrapy.org/",
-        ),
-        (
-            "https://scrapy.org/501",
-            "https://example.com/502",
-            (
-                # HTTPS all along, so origin referrer is kept as-is
-                (301, "https://google.com/503"),
-                (301, "https://facebook.com/504"),
-            ),
-            b"https://scrapy.org/",
-            b"https://scrapy.org/",
-        ),
-        (
-            "https://scrapytest.org/601",
-            "http://scrapytest.org/602",  # TLS to non-TLS: no referrer
-            (
-                (
-                    301,
-                    "https://scrapytest.org/603",
-                ),  # TLS URL again: (still) no referrer
-            ),
-            None,
-            None,
-        ),
+    # "": CustomPythonOrgPolicy,
+    response = Response(
+        "https://example.com/",
+        headers={"Referrer-Policy": ""},
+    )
+    output = [
+        request
+        async for request in mw.process_spider_output_async(response, input_result())
     ]
-
-
-class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
-    """
-    Origin When Cross-Origin policy sends the full URL as "Referer",
-    unless the target's origin is different (different domain, different protocol)
-    in which case only the origin is sent.
-
-    Redirections to a different origin should strip the "Referer"
-    to the parent origin.
-    """
-
-    settings = {"REFERRER_POLICY": POLICY_ORIGIN_WHEN_CROSS_ORIGIN}
-    scenarii = [
-        (
-            "http://scrapytest.org/101",  # origin
-            "http://scrapytest.org/102",  # target + redirection
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/103"),
-                (301, "http://scrapytest.org/104"),
-            ),
-            b"http://scrapytest.org/101",  # expected initial referer
-            b"http://scrapytest.org/101",  # expected referer for the redirection request
-        ),
-        (
-            "https://scrapytest.org/201",
-            "https://scrapytest.org/202",
-            (
-                # redirecting to non-secure URL: send origin
-                (301, "http://scrapytest.org/203"),
-            ),
-            b"https://scrapytest.org/201",
-            b"https://scrapytest.org/",
-        ),
-        (
-            "https://scrapytest.org/301",
-            "https://scrapytest.org/302",
-            (
-                # redirecting to non-secure URL (different domain): send origin
-                (301, "http://example.com/303"),
-            ),
-            b"https://scrapytest.org/301",
-            b"https://scrapytest.org/",
-        ),
-        (
-            "http://scrapy.org/401",
-            "http://example.com/402",
-            ((301, "http://scrapytest.org/403"),),
-            b"http://scrapy.org/",
-            b"http://scrapy.org/",
-        ),
-        (
-            "https://scrapy.org/501",
-            "https://example.com/502",
-            (
-                # all different domains: send origin
-                (301, "https://google.com/503"),
-                (301, "https://facebook.com/504"),
-            ),
-            b"https://scrapy.org/",
-            b"https://scrapy.org/",
-        ),
-        (
-            "https://scrapytest.org/301",
-            "http://scrapytest.org/302",  # TLS to non-TLS: send origin
-            ((301, "https://scrapytest.org/303"),),  # TLS URL again: send origin (also)
-            b"https://scrapytest.org/",
-            b"https://scrapytest.org/",
-        ),
-    ]
-
-
-class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
-    """
-    Strict Origin When Cross-Origin policy sends the full URL as "Referer",
-    unless the target's origin is different (different domain, different protocol)
-    in which case only the origin is sent...
-    Unless there's also a downgrade in security and then the "Referer" header
-    is not sent.
-
-    Redirections to a different origin should strip the "Referer" to the parent origin,
-    and from https:// to http:// will remove the "Referer" header.
-    """
-
-    settings = {"REFERRER_POLICY": POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN}
-    scenarii = [
-        (
-            "http://scrapytest.org/101",  # origin
-            "http://scrapytest.org/102",  # target + redirection
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/103"),
-                (301, "http://scrapytest.org/104"),
-            ),
-            b"http://scrapytest.org/101",  # expected initial referer
-            b"http://scrapytest.org/101",  # expected referer for the redirection request
-        ),
-        (
-            "https://scrapytest.org/201",
-            "https://scrapytest.org/202",
-            (
-                # redirecting to non-secure URL: do not send the "Referer" header
-                (301, "http://scrapytest.org/203"),
-            ),
-            b"https://scrapytest.org/201",
-            None,
-        ),
-        (
-            "https://scrapytest.org/301",
-            "https://scrapytest.org/302",
-            (
-                # redirecting to non-secure URL (different domain): send origin
-                (301, "http://example.com/303"),
-            ),
-            b"https://scrapytest.org/301",
-            None,
-        ),
-        (
-            "http://scrapy.org/401",
-            "http://example.com/402",
-            ((301, "http://scrapytest.org/403"),),
-            b"http://scrapy.org/",
-            b"http://scrapy.org/",
-        ),
-        (
-            "https://scrapy.org/501",
-            "https://example.com/502",
-            (
-                # all different domains: send origin
-                (301, "https://google.com/503"),
-                (301, "https://facebook.com/504"),
-            ),
-            b"https://scrapy.org/",
-            b"https://scrapy.org/",
-        ),
-        (
-            "https://scrapytest.org/601",
-            "http://scrapytest.org/602",  # TLS to non-TLS: do not send "Referer"
-            (
-                (
-                    301,
-                    "https://scrapytest.org/603",
-                ),  # TLS URL again: (still) send nothing
-            ),
-            None,
-            None,
-        ),
-    ]
+    assert len(output) == 1
+    assert output[0].headers == {b"Referer": [b"https://python.org/"]}

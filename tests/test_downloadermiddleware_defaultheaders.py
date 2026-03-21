@@ -1,5 +1,3 @@
-from unittest import TestCase
-
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.http import Request
 from scrapy.spiders import Spider
@@ -7,29 +5,28 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 
 
-class TestDefaultHeadersMiddleware(TestCase):
-    def get_defaults_spider_mw(self):
+class TestDefaultHeadersMiddleware:
+    def get_defaults_mw(self):
         crawler = get_crawler(Spider)
-        spider = crawler._create_spider("foo")
         defaults = {
             to_bytes(k): [to_bytes(v)]
             for k, v in crawler.settings.get("DEFAULT_REQUEST_HEADERS").items()
         }
-        return defaults, spider, DefaultHeadersMiddleware.from_crawler(crawler)
+        return defaults, DefaultHeadersMiddleware.from_crawler(crawler)
 
     def test_process_request(self):
-        defaults, spider, mw = self.get_defaults_spider_mw()
+        defaults, mw = self.get_defaults_mw()
         req = Request("http://www.scrapytest.org")
-        mw.process_request(req, spider)
-        self.assertEqual(req.headers, defaults)
+        mw.process_request(req)
+        assert req.headers == defaults
 
     def test_update_headers(self):
-        defaults, spider, mw = self.get_defaults_spider_mw()
+        defaults, mw = self.get_defaults_mw()
         headers = {"Accept-Language": ["es"], "Test-Header": ["test"]}
         bytes_headers = {b"Accept-Language": [b"es"], b"Test-Header": [b"test"]}
         req = Request("http://www.scrapytest.org", headers=headers)
-        self.assertEqual(req.headers, bytes_headers)
+        assert req.headers == bytes_headers
 
-        mw.process_request(req, spider)
+        mw.process_request(req)
         defaults.update(bytes_headers)
-        self.assertEqual(req.headers, defaults)
+        assert req.headers == defaults

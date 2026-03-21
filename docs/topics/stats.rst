@@ -42,6 +42,8 @@ attribute. Here is an example of an extension that access stats:
         def from_crawler(cls, crawler):
             return cls(crawler.stats)
 
+.. skip: start
+
 Set stat value:
 
 .. code-block:: python
@@ -80,13 +82,15 @@ Get all stats:
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
+.. skip: end
+
 Available Stats Collectors
 ==========================
 
 Besides the basic :class:`StatsCollector` there are other Stats Collectors
 available in Scrapy which extend the basic Stats Collector. You can select
 which Stats Collector to use through the :setting:`STATS_CLASS` setting. The
-default Stats Collector used is the :class:`MemoryStatsCollector`. 
+default Stats Collector used is the :class:`MemoryStatsCollector`.
 
 .. currentmodule:: scrapy.statscollectors
 
@@ -117,4 +121,3 @@ DummyStatsCollector
     setting, to disable stats collect in order to improve performance. However,
     the performance penalty of stats collection is usually marginal compared to
     other Scrapy workload like parsing pages.
-

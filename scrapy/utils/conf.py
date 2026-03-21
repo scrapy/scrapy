@@ -3,11 +3,10 @@ from __future__ import annotations
 import numbers
 import os
 import sys
-from collections.abc import Iterable
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings
@@ -15,7 +14,7 @@ from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Mapping, MutableMapping
+    from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
 
 
 def build_component_list(
@@ -23,7 +22,8 @@ def build_component_list(
     *,
     convert: Callable[[Any], Any] = update_classpath,
 ) -> list[Any]:
-    """Compose a component list from a { class: order } dictionary."""
+    """Compose a component list from a :ref:`component priority dictionary
+    <component-priority-dictionaries>`."""
 
     def _check_components(complist: Collection[Any]) -> None:
         if len({convert(c) for c in complist}) != len(complist):
@@ -153,7 +153,7 @@ def feed_process_params_from_cli(
     suitable to be used as the FEEDS setting.
     """
     valid_output_formats: Iterable[str] = without_none_values(
-        cast(dict[str, str], settings.getwithbase("FEED_EXPORTERS"))
+        cast("dict[str, str]", settings.getwithbase("FEED_EXPORTERS"))
     ).keys()
 
     def check_valid_format(output_format: str) -> None:

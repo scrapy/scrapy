@@ -48,6 +48,7 @@ Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
 chapter <topics-items>`:
 
+.. skip: next
 .. code-block:: python
 
     from scrapy.loader import ItemLoader
@@ -130,6 +131,7 @@ assigned to the item.
 Let's see an example to illustrate how the input and output processors are
 called for a particular field (the same applies for any other field):
 
+.. skip: next
 .. code-block:: python
 
     l = ItemLoader(Product(), some_selector)
@@ -171,9 +173,6 @@ It's worth noticing that processors are just callable objects, which are called
 with the data to be parsed, and return a parsed value. So you can use any
 function as input or output processor. The only requirement is that they must
 accept one (and only one) positional argument, which will be an iterable.
-
-.. versionchanged:: 2.0
-   Processors no longer need to be methods.
 
 .. note:: Both input and output processors must receive an iterable as their
    first argument. The output of those functions can be anything. The result of
@@ -250,6 +249,7 @@ metadata. Here is an example:
         )
 
 
+.. skip: start
 .. code-block:: pycon
 
     >>> from scrapy.loader import ItemLoader
@@ -258,6 +258,8 @@ metadata. Here is an example:
     >>> il.add_value("price", ["&euro;", "<span>1000</span>"])
     >>> il.load_item()
     {'name': 'Welcome to my website', 'price': '1000'}
+
+.. skip: end
 
 The precedence order, for both input and output processors, is as follows:
 
@@ -294,6 +296,8 @@ the Item Loader that it's able to receive an Item Loader context, so the Item
 Loader passes the currently active context when calling it, and the processor
 function (``parse_length`` in this case) can thus use them.
 
+.. skip: start
+
 There are several ways to modify Item Loader context values:
 
 1. By modifying the currently active Item Loader context
@@ -319,6 +323,8 @@ There are several ways to modify Item Loader context values:
 
        class ProductLoader(ItemLoader):
            length_out = MapCompose(parse_length, unit="cm")
+
+.. skip: end
 
 
 ItemLoader objects
@@ -350,6 +356,7 @@ that you wish to extract.
 
 Example:
 
+.. skip: next
 .. code-block:: python
 
     loader = ItemLoader(item=Item())
@@ -364,6 +371,7 @@ the footer selector.
 
 Example:
 
+.. skip: next
 .. code-block:: python
 
     loader = ItemLoader(item=Item())
@@ -401,6 +409,7 @@ those dashes in the final product names.
 Here's how you can remove those dashes by reusing and extending the default
 Product Item Loader (``ProductLoader``):
 
+.. skip: next
 .. code-block:: python
 
     from itemloaders.processors import MapCompose
@@ -418,6 +427,7 @@ Another case where extending Item Loaders can be very helpful is when you have
 multiple source formats, for example XML and HTML. In the XML version you may
 want to remove ``CDATA`` occurrences. Here's an example of how to do it:
 
+.. skip: next
 .. code-block:: python
 
     from itemloaders.processors import MapCompose

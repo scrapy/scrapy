@@ -22,8 +22,7 @@ class DataAction(argparse.Action):
         option_string: str | None = None,
     ) -> None:
         value = str(values)
-        if value.startswith("$"):
-            value = value[1:]
+        value = value.removeprefix("$")
         setattr(namespace, self.dest, value)
 
 
@@ -37,6 +36,7 @@ curl_parser = CurlParser()
 curl_parser.add_argument("url")
 curl_parser.add_argument("-H", "--header", dest="headers", action="append")
 curl_parser.add_argument("-X", "--request", dest="method")
+curl_parser.add_argument("-b", "--cookie", dest="cookies", action="append")
 curl_parser.add_argument("-d", "--data", "--data-raw", dest="data", action=DataAction)
 curl_parser.add_argument("-u", "--user", dest="auth")
 
@@ -69,6 +69,14 @@ def _parse_headers_and_cookies(
         else:
             headers.append((name, val))
 
+    for cookie_param in parsed_args.cookies or ():
+        # curl can treat this parameter as either "key=value; key2=value2" pairs, or a filename.
+        # Scrapy will only support key-value pairs.
+        if "=" not in cookie_param:
+            continue
+        for name, morsel in SimpleCookie(cookie_param).items():
+            cookies[name] = morsel.value
+
     if parsed_args.auth:
         user, password = parsed_args.auth.split(":", 1)
         headers.append(("Authorization", basic_auth_header(user, password)))
@@ -96,7 +104,7 @@ def curl_to_request_kwargs(
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])
 
     if argv:
-        msg = f'Unrecognized options: {", ".join(argv)}'
+        msg = f"Unrecognized options: {', '.join(argv)}"
         if ignore_unknown_options:
             warnings.warn(msg)
         else:

@@ -1,11 +1,18 @@
-import datetime
-import typing
-import unittest
+from __future__ import annotations
 
-from scrapy.crawler import Crawler
+import datetime
+from typing import TYPE_CHECKING, Any
+
+import pytest
+
 from scrapy.extensions.periodic_log import PeriodicLog
+from scrapy.utils.test import get_crawler
 
 from .spiders import MetaSpider
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 stats_dump_1 = {
     "log_count/INFO": 10,
@@ -51,7 +58,7 @@ stats_dump_2 = {
 }
 
 
-class TestExtPeriodicLog(PeriodicLog):
+class CustomPeriodicLog(PeriodicLog):
     def set_a(self):
         self.stats._stats = stats_dump_1
 
@@ -59,13 +66,12 @@ class TestExtPeriodicLog(PeriodicLog):
         self.stats._stats = stats_dump_2
 
 
-def extension(settings=None):
-    crawler = Crawler(MetaSpider, settings=settings)
-    crawler._apply_settings()
-    return TestExtPeriodicLog.from_crawler(crawler)
+def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
+    crawler = get_crawler(MetaSpider, settings)
+    return CustomPeriodicLog.from_crawler(crawler)
 
 
-class TestPeriodicLog(unittest.TestCase):
+class TestPeriodicLog:
     def test_extension_enabled(self):
         # Expected that settings for this extension loaded successfully
         # And on certain conditions - extension raising NotConfigured
@@ -82,6 +88,7 @@ class TestPeriodicLog(unittest.TestCase):
         assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
         assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
+    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
     def test_log_delta(self):
         def emulate(settings=None):
             spider = MetaSpider()
@@ -94,7 +101,7 @@ class TestPeriodicLog(unittest.TestCase):
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict, condition: typing.Callable):
+        def check(settings: dict[str, Any], condition: Callable) -> None:
             ext, a, b = emulate(settings)
             assert list(a["delta"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
@@ -115,8 +122,10 @@ class TestPeriodicLog(unittest.TestCase):
         # include multiple
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k or "scheduler/" in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" in k or "scheduler/" in k)
+            ),
         )
 
         # exclude
@@ -128,17 +137,22 @@ class TestPeriodicLog(unittest.TestCase):
         # exclude multiple
         check(
             {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/", "scheduler/"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" not in k and "scheduler/" not in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" not in k and "scheduler/" not in k)
+            ),
         )
 
         # include exclude combined
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/"], "exclude": ["bytes"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k and "bytes" not in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" in k and "bytes" not in k)
+            ),
         )
 
+    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
     def test_log_stats(self):
         def emulate(settings=None):
             spider = MetaSpider()
@@ -151,7 +165,7 @@ class TestPeriodicLog(unittest.TestCase):
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict, condition: typing.Callable):
+        def check(settings: dict[str, Any], condition: Callable) -> None:
             ext, a, b = emulate(settings)
             assert list(a["stats"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
@@ -192,4 +206,3 @@ class TestPeriodicLog(unittest.TestCase):
             {"PERIODIC_LOG_STATS": {"include": ["downloader/"], "exclude": ["bytes"]}},
             lambda k, v: "downloader/" in k and "bytes" not in k,
         )
-        #

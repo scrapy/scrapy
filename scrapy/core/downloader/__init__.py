@@ -1,31 +1,43 @@
 from __future__ import annotations
 
 import random
-import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any
 
-from twisted.internet import task
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
-from scrapy.signalmanager import SignalManager
-from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.asyncio import (
+    AsyncioLoopingCall,
+    CallLaterResult,
+    call_later,
+    create_looping_call,
+)
+from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.defer import (
+    _defer_sleep_async,
+    _schedule_coro,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from twisted.internet.task import LoopingCall
+
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
-
-
-_T = TypeVar("_T")
+    from scrapy.signalmanager import SignalManager
 
 
 class Slot:
@@ -45,19 +57,20 @@ class Slot:
         self.queue: deque[tuple[Request, Deferred[Response]]] = deque()
         self.transferring: set[Request] = set()
         self.lastseen: float = 0
-        self.latercall = None
+        self.latercall: CallLaterResult | None = None
 
     def free_transfer_slots(self) -> int:
         return self.concurrency - len(self.transferring)
 
     def download_delay(self) -> float:
         if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # nosec
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # noqa: S311
         return self.delay
 
     def close(self) -> None:
-        if self.latercall and self.latercall.active():
+        if self.latercall:
             self.latercall.cancel()
+            self.latercall = None
 
     def __repr__(self) -> str:
         cls_name = self.__class__.__name__
@@ -84,7 +97,10 @@ def _get_concurrency_delay(
     if hasattr(spider, "download_delay"):
         delay = spider.download_delay
 
-    if hasattr(spider, "max_concurrent_requests"):
+    if hasattr(spider, "max_concurrent_requests"):  # pragma: no cover
+        warn_on_deprecated_spider_attribute(
+            "max_concurrent_requests", "CONCURRENT_REQUESTS"
+        )
         concurrency = spider.max_concurrent_requests
 
     return concurrency, delay
@@ -92,8 +108,10 @@ def _get_concurrency_delay(
 
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
+    _SLOT_GC_INTERVAL: float = 60.0  # seconds
 
     def __init__(self, crawler: Crawler):
+        self.crawler: Crawler = crawler
         self.settings: BaseSettings = crawler.settings
         self.signals: SignalManager = crawler.signals
         self.slots: dict[str, Slot] = {}
@@ -108,34 +126,41 @@ class Downloader:
         self.middleware: DownloaderMiddlewareManager = (
             DownloaderMiddlewareManager.from_crawler(crawler)
         )
-        self._slot_gc_loop: task.LoopingCall = task.LoopingCall(self._slot_gc)
-        self._slot_gc_loop.start(60)
+        self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
-            "DOWNLOAD_SLOTS", {}
+            "DOWNLOAD_SLOTS"
         )
 
-    def fetch(self, request: Request, spider: Spider) -> Deferred[Response | Request]:
-        def _deactivate(response: _T) -> _T:
-            self.active.remove(request)
-            return response
-
+    @inlineCallbacks
+    @_warn_spider_arg
+    def fetch(
+        self, request: Request, spider: Spider | None = None
+    ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
-        dfd: Deferred[Response | Request] = self.middleware.download(
-            self._enqueue_request, request, spider
-        )
-        return dfd.addBoth(_deactivate)
+        try:
+            return (
+                yield deferred_from_coro(
+                    self.middleware.download_async(self._enqueue_request, request)
+                )
+            )
+        finally:
+            self.active.remove(request)
 
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request: Request, spider: Spider) -> tuple[str, Slot]:
+    @_warn_spider_arg
+    def _get_slot(
+        self, request: Request, spider: Spider | None = None
+    ) -> tuple[str, Slot]:
         key = self.get_slot_key(request)
         if key not in self.slots:
+            assert self.crawler.spider
             slot_settings = self.per_slot_settings.get(key, {})
-            conc = (
-                self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
+            conc = self.ip_concurrency or self.domain_concurrency
+            conc, delay = _get_concurrency_delay(
+                conc, self.crawler.spider, self.settings
             )
-            conc, delay = _get_concurrency_delay(conc, spider, self.settings)
             conc, delay = (
                 slot_settings.get("concurrency", conc),
                 slot_settings.get("delay", delay),
@@ -143,12 +168,13 @@ class Downloader:
             randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
             new_slot = Slot(conc, delay, randomize_delay)
             self.slots[key] = new_slot
+            self._start_slot_gc()
 
         return key, self.slots[key]
 
     def get_slot_key(self, request: Request) -> str:
-        if self.DOWNLOAD_SLOT in request.meta:
-            return cast(str, request.meta[self.DOWNLOAD_SLOT])
+        if (meta_slot := request.meta.get(self.DOWNLOAD_SLOT)) is not None:
+            return meta_slot
 
         key = urlparse_cached(request).hostname or ""
         if self.ip_concurrency:
@@ -156,35 +182,27 @@ class Downloader:
 
         return key
 
-    def _get_slot_key(self, request: Request, spider: Spider | None) -> str:
-        warnings.warn(
-            "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.get_slot_key(request)
-
-    def _enqueue_request(self, request: Request, spider: Spider) -> Deferred[Response]:
-        key, slot = self._get_slot(request, spider)
+    # passed as download_func into self.middleware.download() in self.fetch()
+    async def _enqueue_request(self, request: Request) -> Response:
+        key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
-
-        def _deactivate(response: Response) -> Response:
-            slot.active.remove(request)
-            return response
-
         slot.active.add(request)
         self.signals.send_catch_log(
-            signal=signals.request_reached_downloader, request=request, spider=spider
+            signal=signals.request_reached_downloader,
+            request=request,
+            spider=self.crawler.spider,
         )
-        deferred: Deferred[Response] = Deferred().addBoth(_deactivate)
-        slot.queue.append((request, deferred))
-        self._process_queue(spider, slot)
-        return deferred
+        d: Deferred[Response] = Deferred()
+        slot.queue.append((request, d))
+        self._process_queue(slot)
+        try:
+            return await maybe_deferred_to_future(d)  # fired in _wait_for_download()
+        finally:
+            slot.active.remove(request)
 
-    def _process_queue(self, spider: Spider, slot: Slot) -> None:
-        from twisted.internet import reactor
-
-        if slot.latercall and slot.latercall.active():
+    def _process_queue(self, slot: Slot) -> None:
+        if slot.latercall:
+            # block processing until slot.latercall is called
             return
 
         # Delay queue processing if a download_delay is configured
@@ -193,63 +211,66 @@ class Downloader:
         if delay:
             penalty = delay - now + slot.lastseen
             if penalty > 0:
-                slot.latercall = reactor.callLater(
-                    penalty, self._process_queue, spider, slot
-                )
+                slot.latercall = call_later(penalty, self._latercall, slot)
                 return
 
         # Process enqueued requests if there are free slots to transfer for this slot
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
-            request, deferred = slot.queue.popleft()
-            dfd = self._download(slot, request, spider)
-            dfd.chainDeferred(deferred)
+            request, queue_dfd = slot.queue.popleft()
+            _schedule_coro(self._wait_for_download(slot, request, queue_dfd))
             # prevent burst if inter-request delays were configured
             if delay:
-                self._process_queue(spider, slot)
+                self._process_queue(slot)
                 break
 
-    def _download(
-        self, slot: Slot, request: Request, spider: Spider
-    ) -> Deferred[Response]:
-        # The order is very important for the following deferreds. Do not change!
+    def _latercall(self, slot: Slot) -> None:
+        slot.latercall = None
+        self._process_queue(slot)
 
-        # 1. Create the download deferred
-        dfd: Deferred[Response] = mustbe_deferred(
-            self.handlers.download_request, request, spider
-        )
-
-        # 2. Notify response_downloaded listeners about the recent download
-        # before querying queue for next request
-        def _downloaded(response: Response) -> Response:
+    async def _download(self, slot: Slot, request: Request) -> Response:
+        # The order is very important for the following logic. Do not change!
+        slot.transferring.add(request)
+        try:
+            # 1. Download the response
+            response: Response = await self.handlers.download_request_async(request)
+            # 2. Notify response_downloaded listeners about the recent download
+            # before querying queue for next request
             self.signals.send_catch_log(
                 signal=signals.response_downloaded,
                 response=response,
                 request=request,
-                spider=spider,
+                spider=self.crawler.spider,
             )
             return response
-
-        dfd.addCallback(_downloaded)
-
-        # 3. After response arrives, remove the request from transferring
-        # state to free up the transferring slot so it can be used by the
-        # following requests (perhaps those which came from the downloader
-        # middleware itself)
-        slot.transferring.add(request)
-
-        def finish_transferring(_: _T) -> _T:
+        except Exception:
+            await _defer_sleep_async()
+            raise
+        finally:
+            # 3. After response arrives, remove the request from transferring
+            # state to free up the transferring slot so it can be used by the
+            # following requests (perhaps those which came from the downloader
+            # middleware itself)
             slot.transferring.remove(request)
-            self._process_queue(spider, slot)
+            self._process_queue(slot)
             self.signals.send_catch_log(
-                signal=signals.request_left_downloader, request=request, spider=spider
+                signal=signals.request_left_downloader,
+                request=request,
+                spider=self.crawler.spider,
             )
-            return _
 
-        return dfd.addBoth(finish_transferring)
+    async def _wait_for_download(
+        self, slot: Slot, request: Request, queue_dfd: Deferred[Response]
+    ) -> None:
+        try:
+            response = await self._download(slot, request)
+        except Exception:
+            queue_dfd.errback(Failure())
+        else:
+            queue_dfd.callback(response)  # awaited in _enqueue_request()
 
     def close(self) -> None:
-        self._slot_gc_loop.stop()
+        self._stop_slot_gc()
         for slot in self.slots.values():
             slot.close()
 
@@ -258,3 +279,14 @@ class Downloader:
         for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:
                 self.slots.pop(key).close()
+
+    def _start_slot_gc(self) -> None:
+        if self._slot_gc_loop:
+            return
+        self._slot_gc_loop = create_looping_call(self._slot_gc)
+        self._slot_gc_loop.start(self._SLOT_GC_INTERVAL, now=False)
+
+    def _stop_slot_gc(self) -> None:
+        if self._slot_gc_loop:
+            self._slot_gc_loop.stop()
+            self._slot_gc_loop = None

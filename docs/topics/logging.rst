@@ -266,9 +266,9 @@ e.g. in the spider's ``__init__`` method:
 If you run this spider again then INFO messages from
 ``scrapy.spidermiddlewares.httperror`` logger will be gone.
 
-You can also filter log records by :class:`~logging.LogRecord` data. For 
+You can also filter log records by :class:`~logging.LogRecord` data. For
 example, you can filter log records by message content using a substring or
-a regular expression. Create a :class:`logging.Filter` subclass 
+a regular expression. Create a :class:`logging.Filter` subclass
 and equip it with a regular expression pattern to
 filter out unwanted messages:
 
@@ -284,8 +284,8 @@ filter out unwanted messages:
             if match:
                 return False
 
-A project-level filter may be attached to the root 
-handler created by Scrapy, this is a wieldy way to 
+A project-level filter may be attached to the root
+handler created by Scrapy, this is a wieldy way to
 filter all loggers in different parts of the project
 (middlewares, spider, etc.):
 
@@ -301,7 +301,7 @@ filter all loggers in different parts of the project
          for handler in logging.root.handlers:
              handler.addFilter(ContentFilter())
 
-Alternatively, you may choose a specific logger 
+Alternatively, you may choose a specific logger
 and hide it without affecting other loggers:
 
 .. code-block:: python

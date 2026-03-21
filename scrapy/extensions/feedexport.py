@@ -6,18 +6,21 @@ See documentation in docs/topics/feed-exports.rst
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 import re
 import sys
 import warnings
-from collections.abc import Callable
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Coroutine
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, TYPE_CHECKING, Any, Optional, Protocol, TypeVar, cast
+from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
 
-from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.threads import deferToThread
 from w3lib.url import file_uri_to_path
 from zope.interface import Interface, implementer
@@ -25,50 +28,29 @@ from zope.interface import Interface, implementer
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
-from scrapy.settings import Settings
+from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
-from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from _typeshed import OpenBinaryMode
-    from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.exporters import BaseItemExporter
-    from scrapy.settings import BaseSettings
+    from scrapy.settings import BaseSettings, Settings
 
 
 logger = logging.getLogger(__name__)
 
-UriParamsCallableT = Callable[[dict[str, Any], Spider], Optional[dict[str, Any]]]
-
-_StorageT = TypeVar("_StorageT", bound="FeedStorageProtocol")
-
-
-def build_storage(
-    builder: Callable[..., _StorageT],
-    uri: str,
-    *args: Any,
-    feed_options: dict[str, Any] | None = None,
-    preargs: Iterable[Any] = (),
-    **kwargs: Any,
-) -> _StorageT:
-    warnings.warn(
-        "scrapy.extensions.feedexport.build_storage() is deprecated, call the builder directly.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    kwargs["feed_options"] = feed_options
-    return builder(*preargs, uri, *args, **kwargs)
+UriParamsCallableT: TypeAlias = Callable[
+    [dict[str, Any], Spider], dict[str, Any] | None
+]
 
 
 class ItemFilter:
@@ -107,18 +89,20 @@ class ItemFilter:
         return True  # accept all items by default
 
 
-class IFeedStorage(Interface):
+class IFeedStorage(Interface):  # type: ignore[misc]
     """Interface that all Feed Storages must implement"""
 
-    def __init__(uri, *, feed_options=None):  # pylint: disable=super-init-not-called
+    # pylint: disable=no-self-argument
+
+    def __init__(uri, *, feed_options=None):  # type: ignore[no-untyped-def]  # pylint: disable=super-init-not-called
         """Initialize the storage with the parameters given in the URI and the
         feed-specific options (see :setting:`FEEDS`)"""
 
-    def open(spider):
+    def open(spider):  # type: ignore[no-untyped-def]
         """Open the storage for the given spider. It must return a file-like
         object that will be used for the exporters"""
 
-    def store(file):
+    def store(file):  # type: ignore[no-untyped-def]
         """Store the given file stream"""
 
 
@@ -138,7 +122,7 @@ class FeedStorageProtocol(Protocol):
 
 
 @implementer(IFeedStorage)
-class BlockingFeedStorage:
+class BlockingFeedStorage(ABC):
     def open(self, spider: Spider) -> IO[bytes]:
         path = spider.crawler.settings["FEED_TEMPDIR"]
         if path and not Path(path).is_dir():
@@ -149,6 +133,7 @@ class BlockingFeedStorage:
     def store(self, file: IO[bytes]) -> Deferred[None] | None:
         return deferToThread(self._store_in_thread, file)
 
+    @abstractmethod
     def _store_in_thread(self, file: IO[bytes]) -> None:
         raise NotImplementedError
 
@@ -183,7 +168,7 @@ class StdoutFeedStorage:
 @implementer(IFeedStorage)
 class FileFeedStorage:
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
-        self.path: str = file_uri_to_path(uri)
+        self.path: str = file_uri_to_path(uri) if uri.startswith("file://") else uri
         feed_options = feed_options or {}
         self.write_mode: OpenBinaryMode = (
             "wb" if feed_options.get("overwrite", False) else "ab"
@@ -214,7 +199,7 @@ class S3FeedStorage(BlockingFeedStorage):
         region_name: str | None = None,
     ):
         try:
-            import boto3.session
+            import boto3.session  # noqa: PLC0415
         except ImportError:
             raise NotConfigured("missing boto3 library")
         u = urlparse(uri)
@@ -274,7 +259,14 @@ class S3FeedStorage(BlockingFeedStorage):
 
 
 class GCSFeedStorage(BlockingFeedStorage):
-    def __init__(self, uri: str, project_id: str | None, acl: str | None):
+    def __init__(
+        self,
+        uri: str,
+        project_id: str | None,
+        acl: str | None,
+        *,
+        feed_options: dict[str, Any] | None = None,
+    ):
         self.project_id: str | None = project_id
         self.acl: str | None = acl
         u = urlparse(uri)
@@ -282,17 +274,31 @@ class GCSFeedStorage(BlockingFeedStorage):
         self.bucket_name: str = u.hostname
         self.blob_name: str = u.path[1:]  # remove first "/"
 
+        if feed_options and feed_options.get("overwrite", True) is False:
+            logger.warning(
+                "GCS does not support appending to files. To "
+                "suppress this warning, remove the overwrite "
+                "option from your FEEDS setting or set it to True."
+            )
+
     @classmethod
-    def from_crawler(cls, crawler: Crawler, uri: str) -> Self:
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        uri: str,
+        *,
+        feed_options: dict[str, Any] | None = None,
+    ) -> Self:
         return cls(
             uri,
             crawler.settings["GCS_PROJECT_ID"],
             crawler.settings["FEED_STORAGE_GCS_ACL"] or None,
+            feed_options=feed_options,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        from google.cloud.storage import Client
+        from google.cloud.storage import Client  # noqa: PLC0415
 
         client = Client(project=self.project_id)
         bucket = client.get_bucket(self.bucket_name)
@@ -351,11 +357,11 @@ class FeedSlot:
         self,
         storage: FeedStorageProtocol,
         uri: str,
-        format: str,
+        format: str,  # noqa: A002
         store_empty: bool,
         batch_id: int,
         uri_template: str,
-        filter: ItemFilter,
+        filter: ItemFilter,  # noqa: A002
         feed_options: dict[str, Any],
         spider: Spider,
         exporters: dict[str, type[BaseItemExporter]],
@@ -388,7 +394,7 @@ class FeedSlot:
             self.file = self.storage.open(self.spider)
             if "postprocessing" in self.feed_options:
                 self.file = cast(
-                    IO[bytes],
+                    "IO[bytes]",
                     PostProcessingManager(
                         self.feed_options["postprocessing"],
                         self.file,
@@ -397,7 +403,7 @@ class FeedSlot:
                 )
             self.exporter = self._get_exporter(
                 file=self.file,
-                format=self.feed_options["format"],
+                format_=self.feed_options["format"],
                 fields_to_export=self.feed_options["fields"],
                 encoding=self.feed_options["encoding"],
                 indent=self.feed_options["indent"],
@@ -411,10 +417,10 @@ class FeedSlot:
             self._exporting = True
 
     def _get_exporter(
-        self, file: IO[bytes], format: str, *args: Any, **kwargs: Any
+        self, file: IO[bytes], format_: str, *args: Any, **kwargs: Any
     ) -> BaseItemExporter:
         return build_from_crawler(
-            self.exporters[format], self.crawler, file, *args, **kwargs
+            self.exporters[format_], self.crawler, file, *args, **kwargs
         )
 
     def finish_exporting(self) -> None:
@@ -425,8 +431,6 @@ class FeedSlot:
 
 
 class FeedExporter:
-    _pending_deferreds: list[Deferred[None]] = []
-
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         exporter = cls(crawler)
@@ -441,6 +445,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
+        self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -456,7 +461,7 @@ class FeedExporter:
             uri = self.settings["FEED_URI"]
             # handle pathlib.Path objects
             uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
-            feed_options = {"format": self.settings.get("FEED_FORMAT", "jsonlines")}
+            feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )
@@ -500,19 +505,24 @@ class FeedExporter:
             )
 
     async def close_spider(self, spider: Spider) -> None:
-        for slot in self.slots:
-            self._close_slot(slot, spider)
-
-        # Await all deferreds
-        if self._pending_deferreds:
-            await maybe_deferred_to_future(DeferredList(self._pending_deferreds))
-
-        # Send FEED_EXPORTER_CLOSED signal
-        await maybe_deferred_to_future(
-            self.crawler.signals.send_catch_log_deferred(signals.feed_exporter_closed)
+        self._pending_close_coros.extend(
+            self._close_slot(slot, spider) for slot in self.slots
         )
 
-    def _close_slot(self, slot: FeedSlot, spider: Spider) -> Deferred[None] | None:
+        if self._pending_close_coros:
+            if is_asyncio_available():
+                await asyncio.wait(
+                    [asyncio.create_task(coro) for coro in self._pending_close_coros]
+                )
+            else:
+                await DeferredList(
+                    deferred_from_coro(coro) for coro in self._pending_close_coros
+                )
+
+        # Send FEED_EXPORTER_CLOSED signal
+        await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
+
+    async def _close_slot(self, slot: FeedSlot, spider: Spider) -> None:
         def get_file(slot_: FeedSlot) -> IO[bytes]:
             assert slot_.file
             if isinstance(slot_.file, PostProcessingManager):
@@ -529,45 +539,28 @@ class FeedExporter:
             slot.finish_exporting()
         else:
             # In this case, the file is not stored, so no processing is required.
-            return None
+            return
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[call-overload]
-
-        d.addCallback(
-            self._handle_store_success, logmsg, spider, type(slot.storage).__name__
-        )
-        d.addErrback(
-            self._handle_store_error, logmsg, spider, type(slot.storage).__name__
-        )
-        self._pending_deferreds.append(d)
-        d.addCallback(
-            lambda _: self.crawler.signals.send_catch_log_deferred(
-                signals.feed_slot_closed, slot=slot
+        slot_type = type(slot.storage).__name__
+        assert self.crawler.stats
+        try:
+            await ensure_awaitable(slot.storage.store(get_file(slot)))
+        except Exception:
+            logger.error(
+                "Error storing %s",
+                logmsg,
+                exc_info=True,
+                extra={"spider": spider},
             )
+            self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
+        else:
+            logger.info("Stored %s", logmsg, extra={"spider": spider})
+            self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
+
+        await self.crawler.signals.send_catch_log_async(
+            signals.feed_slot_closed, slot=slot
         )
-        d.addBoth(lambda _: self._pending_deferreds.remove(d))
-
-        return d
-
-    def _handle_store_error(
-        self, f: Failure, logmsg: str, spider: Spider, slot_type: str
-    ) -> None:
-        logger.error(
-            "Error storing %s",
-            logmsg,
-            exc_info=failure_to_exc_info(f),
-            extra={"spider": spider},
-        )
-        assert self.crawler.stats
-        self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
-
-    def _handle_store_success(
-        self, result: Any, logmsg: str, spider: Spider, slot_type: str
-    ) -> None:
-        logger.info("Stored %s", logmsg, extra={"spider": spider})
-        assert self.crawler.stats
-        self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
 
     def _start_new_batch(
         self,
@@ -587,7 +580,7 @@ class FeedExporter:
         :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)d to create new uri
         """
         storage = self._get_storage(uri, feed_options)
-        slot = FeedSlot(
+        return FeedSlot(
             storage=storage,
             uri=uri,
             format=feed_options["format"],
@@ -601,7 +594,6 @@ class FeedExporter:
             settings=self.settings,
             crawler=self.crawler,
         )
-        return slot
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
         slots = []
@@ -624,7 +616,7 @@ class FeedExporter:
                 uri_params = self._get_uri_params(
                     spider, self.feeds[slot.uri_template]["uri_params"], slot
                 )
-                self._close_slot(slot, spider)
+                self._pending_close_coros.append(self._close_slot(slot, spider))
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,
@@ -640,20 +632,18 @@ class FeedExporter:
 
     def _load_components(self, setting_prefix: str) -> dict[str, Any]:
         conf = without_none_values(
-            cast(dict[str, str], self.settings.getwithbase(setting_prefix))
+            cast("dict[str, str]", self.settings.getwithbase(setting_prefix))
         )
         d = {}
         for k, v in conf.items():
-            try:
+            with contextlib.suppress(NotConfigured):
                 d[k] = load_object(v)
-            except NotConfigured:
-                pass
         return d
 
-    def _exporter_supported(self, format: str) -> bool:
-        if format in self.exporters:
+    def _exporter_supported(self, format_: str) -> bool:
+        if format_ in self.exporters:
             return True
-        logger.error("Unknown feed format: %(format)s", {"format": format})
+        logger.error("Unknown feed format: %(format)s", {"format": format_})
         return False
 
     def _settings_are_valid(self) -> bool:
@@ -682,7 +672,7 @@ class FeedExporter:
                 return True
             except NotConfigured as e:
                 logger.error(
-                    "Disabled feed storage scheme: %(scheme)s. " "Reason: %(reason)s",
+                    "Disabled feed storage scheme: %(scheme)s. Reason: %(reason)s",
                     {"scheme": scheme, "reason": str(e)},
                 )
         else:

@@ -163,8 +163,8 @@ information on which commands must be run from inside projects, and which not.
 
 Also keep in mind that some commands may have slightly different behaviours
 when running them from inside projects. For example, the fetch command will use
-spider-overridden behaviours (such as the ``user_agent`` attribute to override
-the user-agent) if the url being fetched is associated with some specific
+spider-overridden behaviours (such as the ``custom_settings`` attribute to
+override settings) if the url being fetched is associated with some specific
 spider. This is intentional, as the ``fetch`` command is meant to be used to
 check how spiders are downloading pages.
 
@@ -232,9 +232,6 @@ genspider
 
 * Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
-
-.. versionadded:: 2.6.0
-   The ability to pass a URL instead of a domain.
 
 Creates a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
@@ -509,8 +506,6 @@ Supported options:
 
 * ``--output`` or ``-o``: dump scraped items to a file
 
-  .. versionadded:: 2.3
-
 .. skip: start
 
 Usage example::
@@ -586,6 +581,44 @@ bench
 * Requires project: *no*
 
 Run a quick benchmark test. :ref:`benchmarking`.
+
+.. _topics-commands-crawlerprocess:
+
+Commands that run a crawl
+=========================
+
+Many commands need to run a crawl of some kind, running either a user-provided
+spider or a special internal one:
+
+* :command:`bench`
+* :command:`check`
+* :command:`crawl`
+* :command:`fetch`
+* :command:`parse`
+* :command:`runspider`
+* :command:`shell`
+* :command:`view`
+
+They use an internal instance of :class:`scrapy.crawler.AsyncCrawlerProcess` or
+:class:`scrapy.crawler.CrawlerProcess` for this. In most cases this detail
+shouldn't matter to the user running the command, but when the user :ref:`needs
+a non-default Twisted reactor <disable-asyncio>`, it may be important.
+
+Scrapy decides which of these two classes to use based on the value of the
+:setting:`TWISTED_REACTOR` setting. If the setting value is the default one
+(``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``),
+:class:`~scrapy.crawler.AsyncCrawlerProcess` will be used, otherwise
+:class:`~scrapy.crawler.CrawlerProcess` will be used. The :ref:`spider settings
+<spider-settings>` are not taken into account when doing this, as they are
+loaded after this decision is made. This may cause an error if the
+project-level setting is set to :ref:`the asyncio reactor <install-asyncio>`
+(:ref:`explicitly <project-settings>` or :ref:`by using the Scrapy default
+<default-settings>`) and :ref:`the setting of the spider being run
+<spider-settings>` is set to :ref:`a different one <disable-asyncio>`, because
+:class:`~scrapy.crawler.AsyncCrawlerProcess` only supports the asyncio reactor.
+In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
+``True`` (at the project level or via the command line) so that Scrapy uses
+:class:`~scrapy.crawler.CrawlerProcess` which supports all reactors.
 
 Custom project commands
 =======================

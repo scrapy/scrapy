@@ -8,19 +8,15 @@ import os
 import socket
 from pathlib import Path
 
+from twisted import version as TWISTED_VERSION
+from twisted.python.versions import Version
+
 # ignore system-wide proxies for tests
 # which would send requests to a totally unsuspecting server
 # (e.g. because urllib does not fully understand the proxy spec)
 os.environ["http_proxy"] = ""
 os.environ["https_proxy"] = ""
 os.environ["ftp_proxy"] = ""
-
-# Absolutize paths to coverage config and output file because tests that
-# spawn subprocesses also changes current working directory.
-_sourceroot = Path(__file__).resolve().parent.parent
-if "COV_CORE_CONFIG" in os.environ:
-    os.environ["COVERAGE_FILE"] = str(_sourceroot / ".coverage")
-    os.environ["COV_CORE_CONFIG"] = str(_sourceroot / os.environ["COV_CORE_CONFIG"])
 
 tests_datadir = str(Path(__file__).parent.resolve() / "sample_data")
 
@@ -37,3 +33,6 @@ except socket.gaierror:
 def get_testdata(*paths: str) -> bytes:
     """Return test data"""
     return Path(tests_datadir, *paths).read_bytes()
+
+
+TWISTED_KEEPS_TRACEBACKS = TWISTED_VERSION >= Version("twisted", 24, 10, 0)

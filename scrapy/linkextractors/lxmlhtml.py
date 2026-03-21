@@ -9,10 +9,10 @@ import operator
 import re
 from collections.abc import Callable, Iterable
 from functools import partial
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from urllib.parse import urljoin, urlparse
 
-from lxml import etree  # nosec
+from lxml import etree
 from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
@@ -25,8 +25,7 @@ from scrapy.utils.response import get_base_url
 from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
 
 if TYPE_CHECKING:
-
-    from lxml.html import HtmlElement  # nosec
+    from lxml.html import HtmlElement
 
     from scrapy import Selector
     from scrapy.http import TextResponse
@@ -41,9 +40,12 @@ _collect_string_content = etree.XPath("string()")
 
 
 def _nons(tag: Any) -> Any:
-    if isinstance(tag, str):
-        if tag[0] == "{" and tag[1 : len(XHTML_NAMESPACE) + 1] == XHTML_NAMESPACE:
-            return tag.split("}")[-1]
+    if (
+        isinstance(tag, str)
+        and tag[0] == "{"
+        and tag[1 : len(XHTML_NAMESPACE) + 1] == XHTML_NAMESPACE
+    ):
+        return tag.split("}")[-1]
     return tag
 
 
@@ -69,12 +71,12 @@ class LxmlParserLinkExtractor:
         self.scan_tag: Callable[[str], bool] = (
             tag
             if callable(tag)
-            else cast(Callable[[str], bool], partial(operator.eq, tag))
+            else cast("Callable[[str], bool]", partial(operator.eq, tag))
         )
         self.scan_attr: Callable[[str], bool] = (
             attr
             if callable(attr)
-            else cast(Callable[[str], bool], partial(operator.eq, attr))
+            else cast("Callable[[str], bool]", partial(operator.eq, attr))
         )
         self.process_attr: Callable[[Any], Any] = (
             process if callable(process) else _identity
@@ -82,7 +84,7 @@ class LxmlParserLinkExtractor:
         self.unique: bool = unique
         self.strip: bool = strip
         self.link_key: Callable[[Link], str] = (
-            cast(Callable[[Link], str], operator.attrgetter("url"))
+            cast("Callable[[Link], str]", operator.attrgetter("url"))
             if canonicalized
             else _canonicalize_link_url
         )
@@ -108,7 +110,7 @@ class LxmlParserLinkExtractor:
     ) -> list[Link]:
         links: list[Link] = []
         # hacky way to get the underlying lxml parsed document
-        for el, attr, attr_val in self._iter_links(selector.root):
+        for el, _, attr_val in self._iter_links(selector.root):
             # pseudo lxml.html.HtmlElement.make_links_absolute(base_url)
             try:
                 if self.strip:
@@ -155,8 +157,8 @@ class LxmlParserLinkExtractor:
         return links
 
 
-_RegexT = Union[str, re.Pattern[str]]
-_RegexOrSeveralT = Union[_RegexT, Iterable[_RegexT]]
+_Regex: TypeAlias = str | re.Pattern[str]
+_RegexOrSeveral: TypeAlias = _Regex | Iterable[_Regex]
 
 
 class LxmlLinkExtractor:
@@ -164,8 +166,8 @@ class LxmlLinkExtractor:
 
     def __init__(
         self,
-        allow: _RegexOrSeveralT = (),
-        deny: _RegexOrSeveralT = (),
+        allow: _RegexOrSeveral = (),
+        deny: _RegexOrSeveral = (),
         allow_domains: str | Iterable[str] = (),
         deny_domains: str | Iterable[str] = (),
         restrict_xpaths: str | Iterable[str] = (),
@@ -177,7 +179,7 @@ class LxmlLinkExtractor:
         deny_extensions: str | Iterable[str] | None = None,
         restrict_css: str | Iterable[str] = (),
         strip: bool = True,
-        restrict_text: _RegexOrSeveralT | None = None,
+        restrict_text: _RegexOrSeveral | None = None,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         self.link_extractor = LxmlParserLinkExtractor(
@@ -206,7 +208,7 @@ class LxmlLinkExtractor:
         self.restrict_text: list[re.Pattern[str]] = self._compile_regexes(restrict_text)
 
     @staticmethod
-    def _compile_regexes(value: _RegexOrSeveralT | None) -> list[re.Pattern[str]]:
+    def _compile_regexes(value: _RegexOrSeveral | None) -> list[re.Pattern[str]]:
         return [
             x if isinstance(x, re.Pattern) else re.compile(x)
             for x in arg_to_iter(value)
@@ -230,9 +232,7 @@ class LxmlLinkExtractor:
             parsed_url, self.deny_extensions
         ):
             return False
-        if self.restrict_text and not _matches(link.text, self.restrict_text):
-            return False
-        return True
+        return not self.restrict_text or _matches(link.text, self.restrict_text)
 
     def matches(self, url: str) -> bool:
         if self.allow_domains and not url_is_from_any_domain(url, self.allow_domains):
@@ -253,8 +253,7 @@ class LxmlLinkExtractor:
         if self.canonicalize:
             for link in links:
                 link.url = canonicalize_url(link.url)
-        links = self.link_extractor._process_links(links)
-        return links
+        return self.link_extractor._process_links(links)
 
     def _extract_links(self, *args: Any, **kwargs: Any) -> list[Link]:
         return self.link_extractor._extract_links(*args, **kwargs)
