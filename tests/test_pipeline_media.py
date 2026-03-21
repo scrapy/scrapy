@@ -379,6 +379,12 @@ class TestMediaPipeline(TestBaseMediaPipeline):
 class TestAsyncMediaDownloaded(TestMediaPipeline):
     pipeline_class = AsyncMediaDownloadedPipeline
 
+    def test_key_for_pipe(self):
+        assert (
+            self.pipe._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
+            == "ASYNCMEDIADOWNLOADEDPIPELINE_IMAGES"
+        )
+
 
 class TestMediaPipelineAllowRedirectSettings:
     def _assert_request_no3xx(self, pipeline_class, settings):
