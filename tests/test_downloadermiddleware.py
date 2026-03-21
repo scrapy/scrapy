@@ -13,9 +13,10 @@ from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -59,7 +60,7 @@ class TestManagerBase:
 class TestDefaults(TestManagerBase):
     """Tests default behavior with default settings"""
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_request_response(self):
         req = Request("http://example.com/index.html")
         resp = Response(req.url, status=200)
@@ -67,7 +68,7 @@ class TestDefaults(TestManagerBase):
             ret = await self._download(mwman, req, resp)
         assert isinstance(ret, Response), "Non-response returned"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_3xx_and_invalid_gzipped_body_must_redirect(self):
         """Regression test for a failure when redirecting a compressed
         request.
@@ -100,7 +101,7 @@ class TestDefaults(TestManagerBase):
             "Not redirected to location header"
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_200_and_invalid_gzipped_body_must_fail(self):
         req = Request("http://example.com")
         body = b"<p>You are being redirected</p>"
@@ -123,7 +124,7 @@ class TestDefaults(TestManagerBase):
 class TestResponseFromProcessRequest(TestManagerBase):
     """Tests middleware returning a response from process_request."""
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_download_func_not_called(self):
         req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
@@ -143,7 +144,7 @@ class TestResponseFromProcessRequest(TestManagerBase):
 class TestResponseFromProcessException(TestManagerBase):
     """Tests middleware returning a response from process_exception."""
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_process_response_called(self):
         req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
@@ -172,7 +173,7 @@ class TestResponseFromProcessException(TestManagerBase):
 
 
 class TestInvalidOutput(TestManagerBase):
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_invalid_process_request(self):
         """Invalid return value for process_request method should raise an exception"""
         req = Request("http://example.com/index.html")
@@ -186,7 +187,7 @@ class TestInvalidOutput(TestManagerBase):
             with pytest.raises(_InvalidOutput):
                 await self._download(mwman, req)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_invalid_process_response(self):
         """Invalid return value for process_response method should raise an exception"""
         req = Request("http://example.com/index.html")
@@ -200,7 +201,7 @@ class TestInvalidOutput(TestManagerBase):
             with pytest.raises(_InvalidOutput):
                 await self._download(mwman, req)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_invalid_process_exception(self):
         """Invalid return value for process_exception method should raise an exception"""
         req = Request("http://example.com/index.html")
@@ -221,7 +222,7 @@ class TestInvalidOutput(TestManagerBase):
 class TestMiddlewareUsingDeferreds(TestManagerBase):
     """Middlewares using Deferreds (deprecated) should work"""
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deferred(self):
         req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
@@ -251,7 +252,7 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
 class TestMiddlewareUsingCoro(TestManagerBase):
     """Middlewares using asyncio coroutines should work"""
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_asyncdef(self):
         req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
@@ -269,7 +270,7 @@ class TestMiddlewareUsingCoro(TestManagerBase):
         assert not download_func.called
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_asyncdef_asyncio(self):
         req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
@@ -288,7 +289,7 @@ class TestMiddlewareUsingCoro(TestManagerBase):
 
 
 class TestDownloadDeprecated(TestManagerBase):
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_mwman_download(self):
         req = Request("http://example.com/index.html")
         resp = Response(req.url, status=200)
@@ -308,7 +309,7 @@ class TestDownloadDeprecated(TestManagerBase):
 
 
 class TestDeprecatedSpiderArg(TestManagerBase):
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg(self):
         req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")

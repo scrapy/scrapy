@@ -56,6 +56,18 @@ class HostHeaderResource(resource.Resource):
         return request.requestHeaders.getRawHeaders(b"host")[0]
 
 
+class ClientIPResource(resource.Resource):
+    """
+    A testing resource which renders itself as the request client IP address.
+    """
+
+    def render(self, request):
+        client_address = request.getClientAddress()
+        if client_address is None or client_address.host is None:
+            return b""
+        return to_bytes(client_address.host)
+
+
 class PayloadResource(resource.Resource):
     """
     A testing resource which renders itself as the contents of the request body
@@ -282,7 +294,7 @@ class LargeChunkedFileResource(resource.Resource):
         from twisted.internet import reactor
 
         def response():
-            for i in range(1024):
+            for _ in range(1024):
                 request.write(b"x" * 1024)
             request.finish()
 
@@ -308,7 +320,8 @@ class UriResource(resource.Resource):
         # ToDo: implement proper HTTPS proxy tests, not faking them.
         if request.method != b"CONNECT":
             return request.uri
-        return b""
+        request.transport.write(b"HTTP/1.1 200 Connection established\r\n\r\n")
+        return NOT_DONE_YET
 
 
 class ResponseHeadersResource(resource.Resource):

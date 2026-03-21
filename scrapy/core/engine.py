@@ -159,7 +159,9 @@ class ExecutionEngine:
             )
         return scheduler_cls
 
-    def start(self, _start_request_processing=True) -> Deferred[None]:
+    def start(
+        self, _start_request_processing: bool = True
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.start() is deprecated, use start_async() instead",
             ScrapyDeprecationWarning,
@@ -197,7 +199,7 @@ class ExecutionEngine:
                 self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
         await maybe_deferred_to_future(self._closewait)
 
-    def stop(self) -> Deferred[None]:
+    def stop(self) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.stop() is deprecated, use stop_async() instead",
             ScrapyDeprecationWarning,
@@ -233,7 +235,7 @@ class ExecutionEngine:
         if self._closewait:
             self._closewait.callback(None)
 
-    def close(self) -> Deferred[None]:
+    def close(self) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.close() is deprecated, use close_async() instead",
             ScrapyDeprecationWarning,
@@ -261,12 +263,13 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    async def _process_start_next(self):
+    async def _process_start_next(self) -> None:
         """Processes the next item or request from Spider.start().
 
         If a request, it is scheduled. If an item, it is sent to item
         pipelines.
         """
+        assert self._start is not None
         try:
             item_or_request = await self._start.__anext__()
         except StopAsyncIteration:
@@ -284,6 +287,7 @@ class ExecutionEngine:
             if isinstance(item_or_request, Request):
                 self.crawl(item_or_request)
             else:
+                assert self._slot is not None
                 _schedule_coro(
                     self.scraper.start_itemproc_async(item_or_request, response=None)
                 )
@@ -437,7 +441,7 @@ class ExecutionEngine:
             spider=self.spider,
             dont_log=IgnoreRequest,
         )
-        for handler, result in request_scheduled_result:
+        for _, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
         if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
@@ -510,7 +514,9 @@ class ExecutionEngine:
         finally:
             self._slot.nextcall.schedule()
 
-    def open_spider(self, spider: Spider, close_if_idle: bool = True) -> Deferred[None]:
+    def open_spider(
+        self, spider: Spider, close_if_idle: bool = True
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.open_spider() is deprecated, use open_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -573,7 +579,9 @@ class ExecutionEngine:
             assert isinstance(ex, CloseSpider)  # typing
             _schedule_coro(self.close_spider_async(reason=ex.reason))
 
-    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
+    def close_spider(
+        self, spider: Spider, reason: str = "cancelled"
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.close_spider() is deprecated, use close_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -581,7 +589,7 @@ class ExecutionEngine:
         )
         return deferred_from_coro(self.close_spider_async(reason=reason))
 
-    async def close_spider_async(self, *, reason: str = "cancelled") -> None:
+    async def close_spider_async(self, *, reason: str = "cancelled") -> None:  # noqa: PLR0912
         """Close (cancel) spider and clear all its outstanding requests.
 
         .. versionadded:: 2.14

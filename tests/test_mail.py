@@ -1,12 +1,14 @@
 from email.charset import Charset
 from io import BytesIO
 
+import pytest
 from twisted.internet import defer
 from twisted.internet._sslverify import ClientTLSOptions
 
 from scrapy.mail import MailSender
 
 
+@pytest.mark.requires_reactor
 class TestMailSender:
     def test_send(self):
         mailsender = MailSender(debug=True)

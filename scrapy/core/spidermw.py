@@ -259,7 +259,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     # being available immediately which doesn't work when it's a wrapped coroutine.
     # It also needs @inlineCallbacks only because of downgrading so it can be removed when downgrading is removed.
     @inlineCallbacks
-    def _process_spider_output(
+    def _process_spider_output(  # noqa: PLR0912
         self,
         response: Response,
         result: Iterable[_T] | AsyncIterator[_T],
@@ -383,7 +383,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
+    ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:  # pragma: no cover
         warn(
             "SpiderMiddlewareManager.scrape_response() is deprecated, use scrape_response_async() instead",
             ScrapyDeprecationWarning,
@@ -460,7 +460,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             start = await self._process_chain("process_start", start)
         return start
 
-    def _check_deprecated_start_requests_use(self):
+    def _check_deprecated_start_requests_use(self) -> None:
         start_requests_cls = None
         start_cls = None
         spidercls = self._spider.__class__

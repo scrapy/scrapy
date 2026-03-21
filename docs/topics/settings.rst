@@ -897,6 +897,39 @@ It is also possible to change this setting per domain, although it requires
 non-trivial code. See the implementation of the :ref:`AutoThrottle
 <topics-autothrottle>` extension for an example.
 
+.. setting:: DOWNLOAD_BIND_ADDRESS
+
+DOWNLOAD_BIND_ADDRESS
+---------------------
+
+Default: ``None``
+
+The default local outgoing address for download-handler connections.
+
+This setting can be either:
+
+- a host address as a string (e.g. ``"127.0.0.2"``), in which case the local
+  port is chosen automatically, or
+
+- a ``(host, port)`` tuple (e.g. ``("127.0.0.2", 50000)``) to bind to both a
+  specific local interface and a specific local port.
+
+For example:
+
+.. code-block:: python
+
+    # Bind to this local address
+    DOWNLOAD_BIND_ADDRESS = "127.0.0.2"
+
+.. code-block:: python
+
+    # Bind to this local address and local port
+    DOWNLOAD_BIND_ADDRESS = ("127.0.0.2", 5000)
+
+If set, built-in HTTP download handlers use this value by default.
+Set the :reqmeta:`bindaddress` request meta key to override it for a specific
+request.
+
 .. setting:: DOWNLOAD_HANDLERS
 
 DOWNLOAD_HANDLERS
@@ -1702,10 +1735,10 @@ the user agent to use in the robots.txt file.
 SCHEDULER
 ---------
 
-Default: ``'scrapy.core.scheduler.Scheduler'``
+Default: :class:`~scrapy.core.scheduler.Scheduler`
 
-The scheduler class to be used for crawling.
-See the :ref:`topics-scheduler` topic for details.
+The scheduler class to be used for crawling. See :ref:`topics-scheduler` for
+details.
 
 .. setting:: SCHEDULER_DEBUG
 
@@ -1755,12 +1788,14 @@ Type of in-memory queue used by the scheduler. Other available type is:
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
 
-Default: ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``
+Default: :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue`
 
-Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.ScrapyPriorityQueue``.
-``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
-``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
+Type of priority queue used by the scheduler.
+
+Another available type is :class:`~scrapy.pqueues.ScrapyPriorityQueue`.
+
+:class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` works better than
+:class:`~scrapy.pqueues.ScrapyPriorityQueue` when you crawl many different
 domains in parallel.
 
 

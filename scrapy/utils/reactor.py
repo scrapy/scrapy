@@ -26,7 +26,7 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
-def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # pylint: disable=inconsistent-return-statements  # noqa: RET503
+def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # noqa: RET503
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
 
@@ -80,11 +80,11 @@ class CallLaterOnce(Generic[_T]):
 
         return result
 
-    async def wait(self):
+    async def wait(self) -> None:
         # circular import
         from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
-        d = Deferred()
+        d: Deferred[None] = Deferred()
         self._deferreds.append(d)
         await maybe_deferred_to_future(d)
 

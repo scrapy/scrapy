@@ -151,7 +151,9 @@ class Scraper:
         else:
             self._itemproc_has_async[method] = True
 
-    def open_spider(self, spider: Spider | None = None) -> Deferred[None]:
+    def open_spider(
+        self, spider: Spider | None = None
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "Scraper.open_spider() is deprecated, use open_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -176,7 +178,9 @@ class Scraper:
                 self.itemproc.open_spider(self.crawler.spider)
             )
 
-    def close_spider(self, spider: Spider | None = None) -> Deferred[None]:
+    def close_spider(
+        self, spider: Spider | None = None
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "Scraper.close_spider() is deprecated, use close_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -294,7 +298,7 @@ class Scraper:
 
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
-    ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:
+    ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:  # pragma: no cover
         warnings.warn(
             "Scraper.call_spider() is deprecated, use call_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -388,7 +392,7 @@ class Scraper:
         request: Request,
         response: Response | Failure,
         spider: Spider | None = None,
-    ) -> Deferred[None]:
+    ) -> Deferred[None]:  # pragma: no cover
         """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
         warnings.warn(
             "Scraper.handle_spider_output() is deprecated, use handle_spider_output_async() instead",
@@ -467,7 +471,7 @@ class Scraper:
 
     def start_itemproc(
         self, item: Any, *, response: Response | Failure | None
-    ) -> Deferred[None]:
+    ) -> Deferred[None]:  # pragma: no cover
         """Send *item* to the item pipelines for processing.
 
         *response* is the source of the item data. If the item does not come

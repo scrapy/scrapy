@@ -3,6 +3,8 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
 from scrapy.extensions.periodic_log import PeriodicLog
 from scrapy.utils.test import get_crawler
 
@@ -86,6 +88,7 @@ class TestPeriodicLog:
         assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
         assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
+    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
     def test_log_delta(self):
         def emulate(settings=None):
             spider = MetaSpider()
@@ -119,8 +122,10 @@ class TestPeriodicLog:
         # include multiple
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k or "scheduler/" in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" in k or "scheduler/" in k)
+            ),
         )
 
         # exclude
@@ -132,17 +137,22 @@ class TestPeriodicLog:
         # exclude multiple
         check(
             {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/", "scheduler/"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" not in k and "scheduler/" not in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" not in k and "scheduler/" not in k)
+            ),
         )
 
         # include exclude combined
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/"], "exclude": ["bytes"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k and "bytes" not in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" in k and "bytes" not in k)
+            ),
         )
 
+    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
     def test_log_stats(self):
         def emulate(settings=None):
             spider = MetaSpider()

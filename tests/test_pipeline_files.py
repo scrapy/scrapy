@@ -19,7 +19,6 @@ from urllib.parse import urlparse
 import attr
 import pytest
 from itemadapter import ItemAdapter
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
@@ -32,10 +31,10 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 from .test_pipeline_media import _mocked_download_func
 
@@ -62,20 +61,20 @@ def get_ftp_content_and_delete(
     password: str,
     use_active_mode: bool = False,
 ) -> bytes:
-    ftp = FTP()
-    ftp.connect(host, port)
-    ftp.login(username, password)
-    if use_active_mode:
-        ftp.set_pasv(False)
-    ftp_data: list[bytes] = []
+    with FTP() as ftp:
+        ftp.connect(host, port)
+        ftp.login(username, password)
+        if use_active_mode:
+            ftp.set_pasv(False)
+        ftp_data: list[bytes] = []
 
-    def buffer_data(data: bytes) -> None:
-        ftp_data.append(data)
+        def buffer_data(data: bytes) -> None:
+            ftp_data.append(data)
 
-    ftp.retrbinary(f"RETR {path}", buffer_data)
-    dirname, filename = split(path)
-    ftp.cwd(dirname)
-    ftp.delete(filename)
+        ftp.retrbinary(f"RETR {path}", buffer_data)
+        dirname, filename = split(path)
+        ftp.cwd(dirname)
+        ftp.delete(filename)
     return b"".join(ftp_data)
 
 
@@ -162,7 +161,7 @@ class TestFilesPipeline:
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
@@ -189,7 +188,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.stop()
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_file_expired(self):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
@@ -220,7 +219,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.stop()
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
@@ -439,7 +438,7 @@ class TestFilesPipelineCustomSettings:
         """
         pipe_cls = self._generate_fake_pipeline()
         pipe = pipe_cls.from_crawler(get_crawler(None, {"FILES_STORE": tmp_path}))
-        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             custom_value = getattr(pipe, pipe_ins_attr)
             assert custom_value != self.default_cls_settings[pipe_attr]
             assert getattr(pipe, pipe_ins_attr) == getattr(pipe, pipe_attr)
@@ -470,7 +469,7 @@ class TestFilesPipelineCustomSettings:
         user_pipeline = UserDefinedFilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_cls_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_ins_attr) == custom_value
@@ -542,7 +541,7 @@ class TestFilesPipelineCustomSettings:
 
         pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
 
-        for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
+        for _, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_inst_attr) == expected_value
 
@@ -564,7 +563,7 @@ class TestFilesPipelineCustomSettings:
 
 @pytest.mark.requires_botocore
 class TestS3FilesStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -604,7 +603,7 @@ class TestS3FilesStore:
             # The call to read does not happen with Stubber
             assert buffer.method_calls == [mock.call.seek(0)]
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_stat(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -641,7 +640,7 @@ class TestS3FilesStore:
     "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
 )
 class TestGCSFilesStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         uri = os.environ.get("GCS_TEST_FILE_URI")
         if not uri:
@@ -666,7 +665,7 @@ class TestGCSFilesStore:
         assert blob.content_type == "application/octet-stream"
         assert expected_policy in acl
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_blob_path_consistency(self):
         """Test to make sure that paths used to store files is the same as the one used to get
         already uploaded files.
@@ -692,14 +691,19 @@ class TestGCSFilesStore:
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
+@pytest.mark.requires_reactor  # needs a reactor for FTPFilesStore
 class TestFTPFileStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         data = b"TestFTPFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)
         meta = {"foo": "bar"}
         path = "full/filename"
         with MockFTPServer() as ftp_server:
+            # normally set via FilesPipeline.from_crawler()
+            FTPFilesStore.FTP_USERNAME = "anonymous"
+            FTPFilesStore.FTP_PASSWORD = "guest"
+
             store = FTPFilesStore(ftp_server.url("/"))
             empty_dict = yield store.stat_file(path, info=None)
             assert empty_dict == {}

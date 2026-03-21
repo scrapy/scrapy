@@ -27,8 +27,10 @@ class Root(Resource):
         return b""
 
 
-def _getarg(request, name: bytes, default: Any = None, type_=str):
-    return type_(request.args[name][0]) if name in request.args else default
+def _getarg(
+    request: Request, name: bytes, default: Any = None, type_: type = str
+) -> Any:
+    return type_(request.args[name][0]) if name in request.args else default  # type: ignore[index,operator]
 
 
 if __name__ == "__main__":

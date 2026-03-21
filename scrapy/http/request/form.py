@@ -37,6 +37,8 @@ FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
 
 
 class FormRequest(Request):
+    __slots__ = ()
+
     valid_form_methods = ["GET", "POST"]
 
     def __init__(
@@ -106,7 +108,7 @@ def _urlencode(seq: Iterable[FormdataKVType], enc: str) -> str:
     values = [
         (to_bytes(k, enc), to_bytes(v, enc))
         for k, vs in seq
-        for v in (cast("Iterable[str]", vs) if is_listlike(vs) else [cast("str", vs)])
+        for v in (vs if is_listlike(vs) else [cast("str", vs)])
     ]
     return urlencode(values, doseq=True)
 

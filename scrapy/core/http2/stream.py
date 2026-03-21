@@ -14,7 +14,11 @@ from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import DownloadCancelledError
 from scrapy.http.headers import Headers
-from scrapy.responsetypes import responsetypes
+from scrapy.utils._download_handlers import (
+    get_maxsize_msg,
+    get_warnsize_msg,
+    make_response,
+)
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -74,6 +78,9 @@ class StreamCloseReason(Enum):
     # The hostname of the request is not same as of connected peer hostname
     # As a result sending this request will the end the connection
     INVALID_HOSTNAME = 7
+
+    # Actual response body size is more than allowed limit
+    MAXSIZE_EXCEEDED_ACTUAL = 8
 
 
 class Stream:
@@ -334,14 +341,16 @@ class Stream:
             self._download_maxsize
             and self._response["flow_controlled_size"] > self._download_maxsize
         ):
-            self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED)
+            self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED_ACTUAL)
             return
 
         if self._log_warnsize:
             self.metadata["reached_warnsize"] = True
-            warning_msg = (
-                f"Received more ({self._response['flow_controlled_size']}) bytes than download "
-                f"warn size ({self._download_warnsize}) in request {self._request}"
+            warning_msg = get_warnsize_msg(
+                self._response["flow_controlled_size"],
+                self._download_warnsize,
+                self._request,
+                expected=False,
             )
             logger.warning(warning_msg)
 
@@ -362,9 +371,8 @@ class Stream:
 
         if self._log_warnsize:
             self.metadata["reached_warnsize"] = True
-            warning_msg = (
-                f"Expected response size ({expected_size}) larger than "
-                f"download warn size ({self._download_warnsize}) in request {self._request}"
+            warning_msg = get_warnsize_msg(
+                expected_size, self._download_warnsize, self._request, expected=True
             )
             logger.warning(warning_msg)
 
@@ -412,15 +420,20 @@ class Stream:
         # As we immediately cancel the request when maxsize is exceeded while
         # receiving DATA_FRAME's when we have received the headers (not
         # having Content-Length)
-        if reason is StreamCloseReason.MAXSIZE_EXCEEDED:
+        if reason in {
+            StreamCloseReason.MAXSIZE_EXCEEDED,
+            StreamCloseReason.MAXSIZE_EXCEEDED_ACTUAL,
+        }:
             expected_size = int(
                 self._response["headers"].get(
                     b"Content-Length", self._response["flow_controlled_size"]
                 )
             )
-            error_msg = (
-                f"Cancelling download of {self._request.url}: received response "
-                f"size ({expected_size}) larger than download max size ({self._download_maxsize})"
+            error_msg = get_maxsize_msg(
+                expected_size,
+                self._download_maxsize,
+                self._request,
+                expected=reason == StreamCloseReason.MAXSIZE_EXCEEDED,
             )
             logger.error(error_msg)
             self._deferred_response.errback(DownloadCancelledError(error_msg))
@@ -475,22 +488,13 @@ class Stream:
         and fires the response deferred callback with the
         generated response instance"""
 
-        body = self._response["body"].getvalue()
-        response_cls = responsetypes.from_args(
-            headers=self._response["headers"],
-            url=self._request.url,
-            body=body,
-        )
-
-        response = response_cls(
+        response = make_response(
             url=self._request.url,
             status=int(self._response["headers"][":status"]),
             headers=self._response["headers"],
-            body=body,
-            request=self._request,
+            body=self._response["body"].getvalue(),
             certificate=self._protocol.metadata["certificate"],
             ip_address=self._protocol.metadata["ip_address"],
             protocol="h2",
         )
-
         self._deferred_response.callback(response)

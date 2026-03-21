@@ -2,17 +2,16 @@ import time
 from typing import Any
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
@@ -68,7 +67,7 @@ class TestCrawl:
     def setup_method(self):
         self.runner = CrawlerRunner()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_delay(self):
         crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -85,6 +84,7 @@ class TestCrawl:
         assert max(list(error_delta.values())) < tolerance
 
 
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
 def test_params():
     params = {
         "concurrency": 1,
@@ -109,6 +109,7 @@ def test_params():
         )
 
 
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
 def test_get_slot_deprecated_spider_arg():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
@@ -134,7 +135,7 @@ def test_get_slot_deprecated_spider_arg():
         "scrapy.pqueues.DownloaderAwarePriorityQueue",
     ],
 )
-@deferred_f_from_coro_f
+@coroutine_test
 async def test_none_slot_with_priority_queue(
     mockserver: MockServer, priority_queue_class: str
 ) -> None:

@@ -83,7 +83,7 @@ class CaselessDict(dict):
         return dict.get(self, self.normkey(key), self.normvalue(def_val))
 
     def setdefault(self, key: AnyStr, def_val: Any = None) -> Any:
-        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))  # type: ignore[arg-type]
+        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
 
     # doesn't fully implement MutableMapping.update()
     def update(self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]) -> None:  # type: ignore[override]
@@ -179,7 +179,7 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
         with contextlib.suppress(TypeError):
             super().__setitem__(key, value)
 
-    def __getitem__(self, key: _KT) -> _VT | None:  # type: ignore[override]
+    def __getitem__(self, key: _KT) -> _VT | None:
         try:
             return super().__getitem__(key)
         except (TypeError, KeyError):

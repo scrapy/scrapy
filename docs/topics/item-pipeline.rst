@@ -190,7 +190,7 @@ item.
 
         SPLASH_URL = "http://localhost:8050/render.png?url={}"
 
-        def __init__(crawler):
+        def __init__(self, crawler):
             self.crawler = crawler
 
         @classmethod

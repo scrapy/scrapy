@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import ssl
 from typing import TYPE_CHECKING, Any
 
 import OpenSSL._util as pyOpenSSLutil
@@ -10,6 +12,54 @@ from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from OpenSSL.crypto import X509Name
+
+    from scrapy.settings import BaseSettings
+
+logger = logging.getLogger(__name__)
+
+
+# stdlib ssl module utils
+
+# possible documented values for DOWNLOADER_CLIENT_TLS_METHOD
+_STDLIB_PROTOCOL_MAP = {
+    "TLS": ssl.PROTOCOL_TLS_CLIENT,
+    "TLSv1.0": ssl.PROTOCOL_TLSv1,
+    "TLSv1.1": ssl.PROTOCOL_TLSv1_1,
+    "TLSv1.2": ssl.PROTOCOL_TLSv1_2,
+}
+
+
+def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
+    """Create an :class:`ssl.SSLContext` instance according to the settings.
+
+    It's intended to be used in an HTTPS download handler.
+    """
+
+    method_setting: str = settings["DOWNLOADER_CLIENT_TLS_METHOD"]
+    if method_setting not in _STDLIB_PROTOCOL_MAP:
+        raise ValueError(f"Unsupported TLS method: {method_setting}")
+    ciphers_setting: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+
+    ctx = ssl.SSLContext(_STDLIB_PROTOCOL_MAP[method_setting])
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    if ciphers_setting:
+        ctx.set_ciphers(ciphers_setting)
+    return ctx
+
+
+def _log_sslobj_debug_info(sslobj: ssl.SSLObject) -> None:
+    cipher = sslobj.cipher()
+    logger.debug(
+        f"SSL connection to {sslobj.server_hostname}"
+        f" using protocol {sslobj.version()},"
+        f" cipher {cipher[0] if cipher else None}"
+    )
+    # The peer certificate is unavailable on SSLObject unless peer
+    # certificate verification is enabled, which we don't want.
+
+
+# pyOpenSSL utils
 
 
 def ffi_buf_to_string(buf: Any) -> str:
@@ -22,7 +72,6 @@ def x509name_to_string(x509name: X509Name) -> str:
     pyOpenSSLutil.lib.X509_NAME_oneline(
         x509name._name, result_buffer, len(result_buffer)
     )
-
     return ffi_buf_to_string(result_buffer)
 
 
