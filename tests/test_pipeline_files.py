@@ -85,9 +85,11 @@ class DeferredFSFilesStore(FSFilesStore):
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
         deferred = Deferred()
+        # short-hand super() doesn't work in nested functions
+        parent_persist_file = super().persist_file
 
         def cb():
-            super().persist_file(path, buf, info, meta=meta, headers=headers)
+            parent_persist_file(path, buf, info, meta=meta, headers=headers)
             deferred.callback(None)
 
         call_later(0.5, cb)
