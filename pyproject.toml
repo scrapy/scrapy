@@ -27,6 +27,7 @@ dependencies = [
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    "tomli>=1.1.0; python_version < '3.11'",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

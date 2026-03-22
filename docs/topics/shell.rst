@@ -34,10 +34,17 @@ is unavailable.
 Through Scrapy's settings you can configure it to use any one of
 ``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
 are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
-variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
+variable; or by defining it in your :ref:`pyproject.toml <topics-config-settings>`:
+
+.. code-block:: toml
+
+    [tool.scrapy.settings]
+    shell = "bpython"
+
+or in ``scrapy.cfg``::
 
     [settings]
-    shell = bpython
+    shell = "bpython"
 
 .. _IPython: https://ipython.org/
 .. _IPython installation guide: https://ipython.org/install.html

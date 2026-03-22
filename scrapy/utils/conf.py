@@ -20,10 +20,7 @@ if TYPE_CHECKING:
 if sys.version_info >= (3, 11):
     import tomllib
 else:
-    try:
-        import tomli as tomllib
-    except ImportError:
-        tomllib = None  # type: ignore[assignment]
+    import tomli as tomllib
 
 
 def build_component_list(
@@ -79,6 +76,40 @@ def arglist_to_dict(arglist: list[str]) -> dict[str, str]:
     return dict(x.split("=", 1) for x in arglist)
 
 
+def closest_config(
+    path: str | os.PathLike = ".", _resolved: Path | None = None
+) -> tuple[str, str]:
+    """
+    Returns the closest config file (pyproject.toml or scrapy.cfg) by
+    traversing the current directory and its parents
+    """
+    current = Path(path).resolve() if _resolved is None else _resolved
+
+    toml = current / "pyproject.toml"
+    if toml.exists():
+        try:
+            with toml.open("rb") as f:
+                data = tomllib.load(f)
+            if data.get("tool", {}).get("scrapy"):
+                return "toml", str(toml)
+        except tomllib.TOMLDecodeError:
+            warnings.warn(
+                f"Scrapy could not parse {toml}: invalid TOML. "
+                "This file will be ignored.",
+                stacklevel=2,
+            )
+
+    cfgfile = current / "scrapy.cfg"
+    if cfgfile.exists():
+        return "cfg", str(cfgfile)
+
+    parent = current.parent
+    if parent == current:
+        return "", ""
+
+    return closest_config(_resolved=parent)
+
+
 def closest_scrapy_cfg(
     path: str | os.PathLike = ".",
     prevpath: str | os.PathLike | None = None,
@@ -95,31 +126,6 @@ def closest_scrapy_cfg(
     return closest_scrapy_cfg(path.parent, path)
 
 
-def closest_pyproject_toml(
-    path: str | os.PathLike = ".",
-    prevpath: str | os.PathLike | None = None,
-) -> str:
-    if tomllib is None:
-        return ""
-    if prevpath is not None and str(path) == str(prevpath):
-        return ""
-    path = Path(path).resolve()
-    toml_path = path / "pyproject.toml"
-    if toml_path.exists():
-        try:
-            with toml_path.open("rb") as f:
-                data = tomllib.load(f)
-            if "scrapy" in data.get("tool", {}):
-                return str(toml_path)
-        except tomllib.TOMLDecodeError:
-            warnings.warn(
-                f"Scrapy could not parse {toml_path}: invalid TOML. "
-                "This file will be ignored.",
-                stacklevel=2,
-            )
-    return closest_pyproject_toml(path.parent, path)
-
-
 def init_env(project: str = "default", set_syspath: bool = True) -> None:
     """Initialize environment to use command-line tool from inside a project
     dir. This sets the Scrapy settings module and modifies the Python path to
@@ -128,49 +134,46 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
     cfg = get_config()
     if cfg.has_option("settings", project):
         os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
-    closest = closest_pyproject_toml() or closest_scrapy_cfg()
+
+    _, closest = closest_config()
     if closest:
         projdir = str(Path(closest).parent)
         if set_syspath and projdir not in sys.path:
             sys.path.append(projdir)
 
 
-def _load_toml_config(toml_path: str) -> ConfigParser:
-    """Load Scrapy config from a TOML file."""
-    with Path(toml_path).open("rb") as f:
-        data = tomllib.load(f)
-    scrapy_data = data.get("tool", {}).get("scrapy", {})
-    cfg = ConfigParser()
-    cfg.read_dict(scrapy_data)
-    return cfg
-
-
 def get_config(use_closest: bool = True) -> ConfigParser:
     """Get Scrapy config file as a ConfigParser"""
-    if use_closest and tomllib is not None:
-        toml_path = closest_pyproject_toml()
-        if toml_path:
-            return _load_toml_config(toml_path)
+    if use_closest:
+        config_type, config_path = closest_config()
+        if config_type == "toml":
+            with Path(config_path).open("rb") as f:
+                data = tomllib.load(f)
+            scrapy_data = data.get("tool", {}).get("scrapy", {})
+            cfg = ConfigParser()
+            cfg.read_dict(scrapy_data)
+            return cfg
+        if config_type == "cfg":
+            cfg = ConfigParser()
+            cfg.read(config_path)
+            return cfg
 
-    sources = get_sources(use_closest)
+    sources = get_sources()
     cfg = ConfigParser()
     cfg.read(sources)
     return cfg
 
 
-def get_sources(use_closest: bool = True) -> list[str]:
+def get_sources() -> list[str]:
     xdg_config_home = (
         os.environ.get("XDG_CONFIG_HOME") or Path("~/.config").expanduser()
     )
-    sources = [
+    return [
         "/etc/scrapy.cfg",
         r"c:\scrapy\scrapy.cfg",
         str(Path(xdg_config_home) / "scrapy.cfg"),
         str(Path("~/.scrapy.cfg").expanduser()),
     ]
-    if use_closest:
-        sources.append(closest_scrapy_cfg())
-    return sources
 
 
 def feed_complete_default_values_from_settings(

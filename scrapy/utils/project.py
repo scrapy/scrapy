@@ -7,12 +7,7 @@ from pathlib import Path
 
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
-from scrapy.utils.conf import (
-    closest_pyproject_toml,
-    closest_scrapy_cfg,
-    get_config,
-    init_env,
-)
+from scrapy.utils.conf import closest_config, get_config, init_env
 
 ENVVAR = "SCRAPY_SETTINGS_MODULE"
 DATADIR_CFG_SECTION = "datadir"
@@ -29,23 +24,24 @@ def inside_project() -> bool:
             )
         else:
             return True
-    return bool(closest_scrapy_cfg() or closest_pyproject_toml())
+    _, closest = closest_config()
+    return bool(closest)
 
 
 def project_data_dir(project: str = "default") -> str:
     """Return the current project data dir, creating it if it doesn't exist"""
     if not inside_project():
         raise NotConfigured("Not inside a project")
+    _, project_cfg = closest_config()
     cfg = get_config()
     if cfg.has_option(DATADIR_CFG_SECTION, project):
         d = Path(cfg.get(DATADIR_CFG_SECTION, project))
     else:
-        scrapy_cfg = closest_scrapy_cfg() or closest_pyproject_toml()
-        if not scrapy_cfg:
+        if not project_cfg:
             raise NotConfigured(
                 "Unable to find scrapy.cfg or pyproject.toml to infer project data dir"
             )
-        d = (Path(scrapy_cfg).parent / ".scrapy").resolve()
+        d = (Path(project_cfg).parent / ".scrapy").resolve()
     if not d.exists():
         d.mkdir(parents=True)
     return str(d)
