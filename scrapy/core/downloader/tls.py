@@ -9,6 +9,7 @@ from service_identity.pyopenssl import verify_hostname, verify_ip_address
 from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers
 
+from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ssl import get_temp_key_info, x509name_to_string
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ def _log_tls(hostname: str, connection: Connection) -> None:
         logger.debug("SSL temp key: %s", key_info)
 
 
-class ScrapyClientTLSOptions(ClientTLSOptions):
+class _ScrapyClientTLSOptions(ClientTLSOptions):
     """
     SSL Client connection creator ignoring certificate verification errors
     (for genuinely invalid certificates or bugs in verification code).
@@ -90,6 +91,14 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
                     self._hostnameASCII,
                     e,
                 )
+
+
+ScrapyClientTLSOptions = create_deprecated_class(
+    "ScrapyClientTLSOptions",
+    _ScrapyClientTLSOptions,
+    subclass_warn_message="{old} is deprecated.",
+    instance_warn_message="{cls} is deprecated.",
+)
 
 
 DEFAULT_CIPHERS: AcceptableCiphers = AcceptableCiphers.fromOpenSSLCipherString(

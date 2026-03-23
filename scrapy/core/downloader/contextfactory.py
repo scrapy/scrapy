@@ -18,7 +18,7 @@ from zope.interface.verify import verifyObject
 
 from scrapy.core.downloader.tls import (
     DEFAULT_CIPHERS,
-    ScrapyClientTLSOptions,
+    _ScrapyClientTLSOptions,
     openssl_methods,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -118,7 +118,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         return ctx
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
-        return ScrapyClientTLSOptions(
+        return _ScrapyClientTLSOptions(
             hostname.decode("ascii"),
             self.getContext(),
             verbose_logging=self.tls_verbose_logging,
