@@ -70,6 +70,15 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
+        if method_is_overridden(
+            type(self), ScrapyClientContextFactory, "getCertificateOptions"
+        ):
+            warnings.warn(
+                "Overriding ScrapyClientContextFactory.getCertificateOptions() is deprecated and that method"
+                " will be removed in a future Scrapy version. Override creatorForNetloc() instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     @classmethod
     def from_crawler(
