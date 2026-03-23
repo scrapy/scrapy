@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from OpenSSL import SSL
+from OpenSSL.SSL import Connection
 from service_identity import VerificationError
 from service_identity.exceptions import CertificateError
 from service_identity.pyopenssl import verify_hostname
@@ -27,6 +28,25 @@ openssl_methods: dict[str, int] = {
 }
 
 
+def _log_tls(hostname: str, connection: Connection) -> None:
+    logger.debug(
+        "SSL connection to %s using protocol %s, cipher %s",
+        hostname,
+        connection.get_protocol_version_name(),
+        connection.get_cipher_name(),
+    )
+    server_cert = connection.get_peer_certificate()
+    if server_cert:
+        logger.debug(
+            'SSL connection certificate: issuer "%s", subject "%s"',
+            x509name_to_string(server_cert.get_issuer()),
+            x509name_to_string(server_cert.get_subject()),
+        )
+    key_info = get_temp_key_info(connection._ssl)
+    if key_info:
+        logger.debug("SSL temp key: %s", key_info)
+
+
 class ScrapyClientTLSOptions(ClientTLSOptions):
     """
     SSL Client connection creator ignoring certificate verification errors
@@ -49,22 +69,7 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
             connection.set_tlsext_host_name(self._hostnameBytes)
         elif where & SSL.SSL_CB_HANDSHAKE_DONE:
             if self.verbose_logging:
-                logger.debug(
-                    "SSL connection to %s using protocol %s, cipher %s",
-                    self._hostnameASCII,
-                    connection.get_protocol_version_name(),
-                    connection.get_cipher_name(),
-                )
-                server_cert = connection.get_peer_certificate()
-                if server_cert:
-                    logger.debug(
-                        'SSL connection certificate: issuer "%s", subject "%s"',
-                        x509name_to_string(server_cert.get_issuer()),
-                        x509name_to_string(server_cert.get_subject()),
-                    )
-                key_info = get_temp_key_info(connection._ssl)
-                if key_info:
-                    logger.debug("SSL temp key: %s", key_info)
+                _log_tls(self._hostnameASCII, connection)
 
             try:
                 verify_hostname(connection, self._hostnameASCII)
