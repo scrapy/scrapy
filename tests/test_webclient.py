@@ -368,6 +368,9 @@ class TestWebClientSSL(TestContextFactoryBase):
         assert body == to_bytes(s)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*does not explicitly provide any OpenSSL connection-creator.*"
+)
 class TestWebClientCustomCiphersSSL(TestWebClientSSL):
     # we try to use a cipher that is not enabled by default in OpenSSL
     custom_ciphers = "CAMELLIA256-SHA"
