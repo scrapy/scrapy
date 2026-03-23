@@ -2,12 +2,10 @@ import logging
 from typing import Any
 
 from OpenSSL import SSL
+from service_identity import VerificationError
 from service_identity.exceptions import CertificateError
-from twisted.internet._sslverify import (
-    ClientTLSOptions,
-    VerificationError,
-    verifyHostname,
-)
+from service_identity.pyopenssl import verify_hostname
+from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers
 
 from scrapy.utils.ssl import get_temp_key_info, x509name_to_string
@@ -69,7 +67,7 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
                     logger.debug("SSL temp key: %s", key_info)
 
             try:
-                verifyHostname(connection, self._hostnameASCII)
+                verify_hostname(connection, self._hostnameASCII)
             except (CertificateError, VerificationError) as e:
                 logger.warning(
                     'Remote certificate is not valid for hostname "%s"; %s',
