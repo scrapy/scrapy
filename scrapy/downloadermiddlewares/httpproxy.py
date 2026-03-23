@@ -49,6 +49,8 @@ class HttpProxyMiddleware:
         return base64.b64encode(user_pass)
 
     def _get_proxy(self, url: str, orig_type: str) -> tuple[bytes | None, str]:
+        if not url.startswith(("http://", "https://")):
+            raise ValueError(f"Proxy URL must include a scheme (e.g. http://). Got: {url}")
         proxy_type, user, password, hostport = _parse_proxy(url)
         proxy_url = urlunparse((proxy_type or orig_type, hostport, "", "", "", ""))
 
