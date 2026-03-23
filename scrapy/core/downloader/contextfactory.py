@@ -9,7 +9,6 @@ from twisted.internet.ssl import (
     AcceptableCiphers,
     CertificateOptions,
     optionsForClientTLS,
-    platformTrust,
 )
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
@@ -101,10 +100,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         )
 
     def getCertificateOptions(self) -> CertificateOptions:
-        # setting verify=True will require you to provide CAs
-        # to verify against; in other words: it's not that simple
         return CertificateOptions(
-            verify=False,
             method=self._ssl_method,
             fixBrokenPeers=True,
             acceptableCiphers=self.tls_ciphers,
@@ -145,13 +141,8 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
     """
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
-        # trustRoot set to platformTrust() will use the platform's root CAs.
-        #
-        # This means that a website like https://www.cacert.org will be rejected
-        # by default, since CAcert.org CA certificate is seldom shipped.
         return optionsForClientTLS(
             hostname=hostname.decode("ascii"),
-            trustRoot=platformTrust(),
             extraCertificateOptions={"method": self._ssl_method},
         )
 
