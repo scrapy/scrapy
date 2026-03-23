@@ -5,7 +5,7 @@ from OpenSSL import SSL
 from OpenSSL.SSL import Connection
 from service_identity import VerificationError
 from service_identity.exceptions import CertificateError
-from service_identity.pyopenssl import verify_hostname
+from service_identity.pyopenssl import verify_hostname, verify_ip_address
 from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers
 
@@ -65,14 +65,17 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
     def _identityVerifyingInfoCallback(
         self, connection: SSL.Connection, where: int, ret: Any
     ) -> None:
-        if where & SSL.SSL_CB_HANDSHAKE_START:
+        if where & SSL.SSL_CB_HANDSHAKE_START and self._hostnameIsDnsName:
             connection.set_tlsext_host_name(self._hostnameBytes)
         elif where & SSL.SSL_CB_HANDSHAKE_DONE:
             if self.verbose_logging:
                 _log_tls(self._hostnameASCII, connection)
 
             try:
-                verify_hostname(connection, self._hostnameASCII)
+                if self._hostnameIsDnsName:
+                    verify_hostname(connection, self._hostnameASCII)
+                else:
+                    verify_ip_address(connection, self._hostnameASCII)
             except (CertificateError, VerificationError) as e:
                 logger.warning(
                     'Remote certificate is not valid for hostname "%s"; %s',
