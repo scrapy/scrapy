@@ -4,7 +4,6 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 from OpenSSL import SSL
-from twisted.internet._sslverify import _setAcceptableProtocols
 from twisted.internet.ssl import (
     AcceptableCiphers,
     CertificateOptions,
@@ -183,6 +182,9 @@ class _AcceptableProtocolsContextFactory:
         self._acceptable_protocols: list[bytes] = acceptable_protocols
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
+        # make it easier to test non-HTTP/2 code with new Twisted
+        from twisted.internet._sslverify import _setAcceptableProtocols  # noqa: PLC0415
+
         options: ClientTLSOptions = self._wrapped_context_factory.creatorForNetloc(
             hostname, port
         )
