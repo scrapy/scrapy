@@ -77,6 +77,11 @@ jobs:
           env:
             TOXENV: mitmproxy
 
+        # temporary
+        - python-version: "3.13"
+          env:
+            TOXENV: twisted-trunk
+
     steps:
     - uses: actions/checkout@v6
 
