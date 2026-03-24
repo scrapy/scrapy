@@ -21,7 +21,7 @@ from scrapy.core.downloader.tls import (
     openssl_methods,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.deprecate import method_is_overridden
+from scrapy.utils.deprecate import create_deprecated_class, method_is_overridden
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
@@ -151,10 +151,10 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
 
 
 @implementer(IPolicyForHTTPS)
-class AcceptableProtocolsContextFactory:
+class _AcceptableProtocolsContextFactory:
     """Context factory to used to override the acceptable protocols
-    to set up the :class:`OpenSSL.SSL.Context` for doing ALPN negotiation
-    (needed for the HTTP/2 support).
+    to set up the :class:`OpenSSL.SSL.Context` for doing ALPN negotiation.
+    It's a private class for :class:`~.H2DownloadHandler`.
 
     This class wraps ``creatorForNetloc()`` of another factory class, setting
     the acceptable protocols on the :class:`.ClientTLSOptions` instance
@@ -173,6 +173,14 @@ class AcceptableProtocolsContextFactory:
         )
         _setAcceptableProtocols(options._ctx, self._acceptable_protocols)
         return options
+
+
+AcceptableProtocolsContextFactory = create_deprecated_class(
+    "AcceptableProtocolsContextFactory",
+    _AcceptableProtocolsContextFactory,
+    subclass_warn_message="{old} is deprecated.",
+    instance_warn_message="{cls} is deprecated.",
+)
 
 
 def load_context_factory_from_settings(
