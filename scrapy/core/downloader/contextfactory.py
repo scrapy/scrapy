@@ -62,6 +62,12 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
         else:
             self.tls_ciphers = DEFAULT_CIPHERS
+        self._certificate_options = CertificateOptions(
+            method=self._ssl_method,
+            fixBrokenPeers=True,
+            acceptableCiphers=self.tls_ciphers,
+        )
+        self._ctx = self._get_context()
         if method_is_overridden(type(self), ScrapyClientContextFactory, "getContext"):
             warnings.warn(
                 "Overriding ScrapyClientContextFactory.getContext() is deprecated and that method"
@@ -100,23 +106,32 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         )
 
     def getCertificateOptions(self) -> CertificateOptions:
-        return CertificateOptions(
-            method=self._ssl_method,
-            fixBrokenPeers=True,
-            acceptableCiphers=self.tls_ciphers,
+        warnings.warn(
+            "ScrapyClientContextFactory.getCertificateOptions() is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
         )
+        return self._certificate_options
 
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
     def getContext(self, hostname: Any = None, port: Any = None) -> SSL.Context:
-        ctx: SSL.Context = self.getCertificateOptions().getContext()
+        warnings.warn(
+            "ScrapyClientContextFactory.getContext() is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._ctx
+
+    def _get_context(self) -> SSL.Context:
+        ctx = self._certificate_options.getContext()
         ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
         return ctx
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         return _ScrapyClientTLSOptions(
             hostname.decode("ascii"),
-            self.getContext(),
+            self._ctx,
             verbose_logging=self.tls_verbose_logging,
         )
 

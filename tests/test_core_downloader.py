@@ -115,13 +115,11 @@ class TestContextFactory(TestContextFactoryBase):
                 ctx: OpenSSL.SSL.Context = super().getContext(hostname, port)
                 return ctx
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"ScrapyClientContextFactory\.getContext\(\) is deprecated",
+        ):
             MyFactory()
-            assert len(w) == 1
-            assert (
-                "Overriding ScrapyClientContextFactory.getContext() is deprecated"
-                in str(w[0].message)
-            )
 
 
 class TestContextFactoryTLSMethod(TestContextFactoryBase):
