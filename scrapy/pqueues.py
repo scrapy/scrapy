@@ -350,8 +350,22 @@ class DownloaderAwarePriorityQueue:
         self.crawler: Crawler = crawler
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
+        self._last_selected_slot: str | None = None
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(slot, startprios)
+
+    def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
+        min_active = min(active for active, _slot in stats)
+        candidates = sorted(slot for active, slot in stats if active == min_active)
+        slot = candidates[0]
+        if self._last_selected_slot is not None:
+            for candidate in candidates:
+                if candidate > self._last_selected_slot:
+                    slot = candidate
+                    break
+        if update_state:
+            self._last_selected_slot = slot
+        return slot
 
     def pqfactory(
         self, slot: str, startprios: Iterable[int] = ()
@@ -370,7 +384,7 @@ class DownloaderAwarePriorityQueue:
         if not stats:
             return None
 
-        slot = min(stats)[1]
+        slot = self._next_slot(stats, update_state=True)
         queue = self.pqueues[slot]
         request = queue.pop()
         if len(queue) == 0:
@@ -394,7 +408,7 @@ class DownloaderAwarePriorityQueue:
         stats = self._downloader_interface.stats(self.pqueues)
         if not stats:
             return None
-        slot = min(stats)[1]
+        slot = self._next_slot(stats, update_state=False)
         queue = self.pqueues[slot]
         return queue.peek()
 
