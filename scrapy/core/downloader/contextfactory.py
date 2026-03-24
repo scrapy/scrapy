@@ -183,7 +183,7 @@ AcceptableProtocolsContextFactory = create_deprecated_class(
 )
 
 
-def load_context_factory_from_settings(
+def _load_context_factory_from_settings(
     settings: BaseSettings, crawler: Crawler
 ) -> IPolicyForHTTPS:
     """Create an instance of :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
@@ -215,3 +215,14 @@ def load_context_factory_from_settings(
         warnings.warn(msg)
 
     return context_factory
+
+
+def load_context_factory_from_settings(
+    settings: BaseSettings, crawler: Crawler
+) -> IPolicyForHTTPS:
+    warnings.warn(
+        "load_context_factory_from_settings() is deprecated.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _load_context_factory_from_settings(settings, crawler)

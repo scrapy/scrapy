@@ -30,7 +30,7 @@ from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IRe
 from zope.interface import implementer
 
 from scrapy import Request, signals
-from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.exceptions import (
     DownloadCancelledError,
     DownloadTimeoutError,
@@ -91,7 +91,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         )
         self._pool._factory.noisy = False
 
-        self._contextFactory: IPolicyForHTTPS = load_context_factory_from_settings(
+        self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
             crawler.settings, crawler
         )
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")

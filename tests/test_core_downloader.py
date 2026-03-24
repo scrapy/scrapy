@@ -13,7 +13,7 @@ from twisted.web.client import Response as TxResponse
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.core.downloader.contextfactory import (
     ScrapyClientContextFactory,
-    load_context_factory_from_settings,
+    _load_context_factory_from_settings,
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -103,7 +103,7 @@ class TestContextFactory(TestContextFactoryBase):
         s = "0123456789" * 10
         crawler = get_crawler()
         settings = Settings()
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        client_context_factory = _load_context_factory_from_settings(settings, crawler)
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
@@ -140,7 +140,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
     async def test_setting_default(self, server_url: str) -> None:
         crawler = get_crawler()
         settings = Settings()
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        client_context_factory = _load_context_factory_from_settings(settings, crawler)
         assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
@@ -148,19 +148,19 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         crawler = get_crawler()
         settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": None})
         with pytest.raises(KeyError):
-            load_context_factory_from_settings(settings, crawler)
+            _load_context_factory_from_settings(settings, crawler)
 
     def test_setting_bad(self):
         crawler = get_crawler()
         settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
         with pytest.raises(KeyError):
-            load_context_factory_from_settings(settings, crawler)
+            _load_context_factory_from_settings(settings, crawler)
 
     @coroutine_test
     async def test_setting_explicit(self, server_url: str) -> None:
         crawler = get_crawler()
         settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        client_context_factory = _load_context_factory_from_settings(settings, crawler)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
