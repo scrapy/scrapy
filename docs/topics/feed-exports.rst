@@ -130,6 +130,10 @@ Any other named parameter gets replaced by the spider attribute of the same
 name. For example, ``%(site_id)s`` would get replaced by the ``spider.site_id``
 attribute the moment the feed is being created.
 
+Storage URI parameters are only supported for string URIs. If you use a
+:class:`pathlib.Path` object as a feed URI, it is used as-is, without parameter
+substitution. Convert it to ``str`` if you need parameters.
+
 Here are some examples to illustrate:
 
 -   Store in FTP using one directory per spider:
