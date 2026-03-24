@@ -115,6 +115,7 @@ Sitemap: /sitemap-relative-url.xml
     def test_parse_sitemap_peak_memory_stays_below_limit(
         self, scenario: str, max_peak: int
     ):
+        r: Response
         if scenario == "urlset":
             r = XmlResponse(
                 url="http://www.example.com/sitemap.xml",
@@ -286,7 +287,7 @@ Sitemap: /sitemap-relative-url.xml
     </urlset>"""
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
 
-        class _RuleSpider(self.spider_class):  # type: ignore[name-defined]
+        class _RuleSpider(self.spider_class):  # type: ignore[name-defined,misc]
             sitemap_rules = [(rule, "parse")]
 
         spider = _RuleSpider("example.com")
