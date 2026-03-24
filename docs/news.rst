@@ -6,6 +6,24 @@ Release notes
 Scrapy VERSION (unreleased)
 ---------------------------
 
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   In order to fix a long-standing bug with handling of asynchronous storages
+    the following changes were made to media pipeline classes, which can impact
+    some of the user code that subclasses them or calls their methods directly:
+
+    - overrides of :meth:`scrapy.pipelines.media.MediaPipeline.media_downloaded`
+      and :meth:`~scrapy.pipelines.files.FilesPipeline.file_downloaded` can now
+      return coroutines
+
+    - :meth:`~scrapy.pipelines.files.FilesPipeline.media_downloaded`,
+      :meth:`~scrapy.pipelines.files.FilesPipeline.file_downloaded` and
+      :meth:`~scrapy.pipelines.images.ImagesPipeline.image_downloaded` now
+      return coroutines
+
+    (:issue:`2183`, :issue:`6369`, :issue:`7182`)
+
 New features
 ~~~~~~~~~~~~
 
@@ -13,6 +31,79 @@ New features
     :meth:`Headers.to_tuple_list() <scrapy.http.headers.Headers.to_tuple_list>`
     that returns headers as a list of ``(key, value)`` tuples.
     (:issue:`7239`)
+
+.. _release-2.14.2:
+
+Scrapy 2.14.2 (2026-03-12)
+--------------------------
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   Values from the ``Referrer-Policy`` header of HTTP responses are no longer
+    executed as Python callables. See the `cwxj-rr6w-m6w7`_ security advisory
+    for details.
+
+    .. _cwxj-rr6w-m6w7: https://github.com/scrapy/scrapy/security/advisories/GHSA-cwxj-rr6w-m6w7
+
+-   In line with the `standard
+    <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__, 301 redirects of
+    ``POST`` requests are converted into ``GET`` requests.
+
+    Converting to a ``GET`` request implies not only a method change, but also
+    omitting the body and ``Content-*`` headers in the redirect request. On
+    cross-origin redirects (for example, cross-domain redirects), this is
+    effectively a security bug fix for scenarios where the body contains
+    secrets.
+
+Deprecations
+~~~~~~~~~~~~
+
+-   Passing a response URL string as the first positional argument to
+    :meth:`scrapy.spidermiddlewares.referer.RefererMiddleware.policy` is
+    deprecated. Pass a :class:`~scrapy.http.Response` instead.
+
+    The parameter has also been renamed to ``response`` to reflect this change.
+    The old parameter name (``resp_or_url``) is deprecated.
+
+New features
+~~~~~~~~~~~~
+
+-   Added a new setting, :setting:`REFERER_POLICIES`, to allow customizing
+    supported referrer policies.
+
+Bug fixes
+~~~~~~~~~
+
+-   Made additional redirect scenarios convert to ``GET`` in line with the
+    `standard <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__:
+
+    -   Only ``POST`` 302 redirects are converted into ``GET`` requests; other
+        methods are preserved.
+
+    -   ``HEAD`` 303 redirects are not converted into ``GET`` requests.
+
+    -   ``GET`` 303 redirects do not have their body or standard ``Content-*``
+        headers removed.
+
+-   Redirects where the original request body is dropped now also have their
+    ``Content-Encoding``, ``Content-Language`` and ``Content-Location`` headers
+    removed, in addition to the ``Content-Type`` and ``Content-Length`` headers
+    that were already being removed.
+
+-   Redirects now preserve the source URL fragment if the redirect URL does not
+    include one. This is useful when using browser-based download handlers,
+    such as `scrapy-playwright`_ or `scrapy-zyte-api`_, while letting Scrapy
+    handle redirects.
+
+    .. _scrapy-playwright: https://github.com/scrapy-plugins/scrapy-playwright
+    .. _scrapy-zyte-api: https://scrapy-zyte-api.readthedocs.io/en/latest/
+
+-   The ``Referer`` header is now removed on redirect if
+    :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` is disabled.
+
+-   The handling of the ``Referer`` header on redirects now takes into account
+    the ``Referer-Policy`` header of the response that triggers the redirect.
 
 .. _release-2.14.1:
 

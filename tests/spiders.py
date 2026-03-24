@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 from twisted.internet import defer
@@ -20,9 +21,18 @@ from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.test import get_from_asyncio_queue
 
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
+
 
 class MockServerSpider(Spider):
-    def __init__(self, *args, mockserver=None, is_secure=False, **kwargs):
+    def __init__(
+        self,
+        *args,
+        mockserver: MockServer | None = None,
+        is_secure: bool = False,
+        **kwargs: Any,
+    ):
         super().__init__(*args, **kwargs)
         self.mockserver = mockserver
         self.is_secure = is_secure
@@ -31,9 +41,9 @@ class MockServerSpider(Spider):
 class MetaSpider(MockServerSpider):
     name = "meta"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.meta = {}
+        self.meta: dict[str, Any] = {}
 
     def closed(self, reason):
         self.meta["close_reason"] = reason
@@ -389,7 +399,7 @@ class DuplicateStartSpider(MockServerSpider):
 
     async def start(self):
         for i in range(self.distinct_urls):
-            for j in range(self.dupe_factor):
+            for _ in range(self.dupe_factor):
                 url = self.mockserver.url(f"/echo?headers=1&body=test{i}")
                 yield Request(url, dont_filter=self.dont_filter)
 

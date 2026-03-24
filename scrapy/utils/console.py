@@ -20,16 +20,16 @@ def _embed_ipython_shell(
         from IPython.terminal.embed import InteractiveShellEmbed  # noqa: T100,PLC0415
         from IPython.terminal.ipapp import load_default_config  # noqa: PLC0415
     except ImportError:
-        from IPython.frontend.terminal.embed import (  # type: ignore[no-redef]  # noqa: T100,PLC0415
+        from IPython.frontend.terminal.embed import (  # type: ignore[import-not-found,no-redef]  # noqa: T100,PLC0415
             InteractiveShellEmbed,
         )
-        from IPython.frontend.terminal.ipapp import (  # type: ignore[no-redef]  # noqa: PLC0415
+        from IPython.frontend.terminal.ipapp import (  # type: ignore[import-not-found,no-redef]  # noqa: PLC0415
             load_default_config,
         )
 
     @wraps(_embed_ipython_shell)
     def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:
-        config = load_default_config()
+        config = load_default_config()  # type: ignore[no-untyped-call]
         # Always use .instance() to ensure _instance propagation to all parents
         # this is needed for <TAB> completion works well for new imports
         # and clear the instance to always have the fresh env
@@ -81,7 +81,7 @@ def _embed_standard_shell(
     else:
         import rlcompleter  # noqa: F401,PLC0415
 
-        readline.parse_and_bind("tab:complete")  # type: ignore[attr-defined]
+        readline.parse_and_bind("tab:complete")  # type: ignore[attr-defined,unused-ignore]
 
     @wraps(_embed_standard_shell)
     def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:

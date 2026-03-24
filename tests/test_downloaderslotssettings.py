@@ -33,6 +33,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
+        assert self.mockserver
         self.default_slot = self.mockserver.host
         self.times: dict[str, list[float]] = {}
 
@@ -84,8 +85,8 @@ class TestCrawl:
         assert max(list(error_delta.values())) < tolerance
 
 
-@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
-def test_params():
+@coroutine_test
+async def test_params():
     params = {
         "concurrency": 1,
         "delay": 2,
@@ -109,8 +110,8 @@ def test_params():
         )
 
 
-@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
-def test_get_slot_deprecated_spider_arg():
+@coroutine_test
+async def test_get_slot_deprecated_spider_arg():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)

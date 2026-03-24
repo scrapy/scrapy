@@ -110,7 +110,7 @@ class LxmlParserLinkExtractor:
     ) -> list[Link]:
         links: list[Link] = []
         # hacky way to get the underlying lxml parsed document
-        for el, attr, attr_val in self._iter_links(selector.root):
+        for el, _, attr_val in self._iter_links(selector.root):
             # pseudo lxml.html.HtmlElement.make_links_absolute(base_url)
             try:
                 if self.strip:

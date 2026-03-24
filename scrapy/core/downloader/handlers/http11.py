@@ -45,6 +45,7 @@ from scrapy.utils._download_handlers import (
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
+    normalize_bind_address,
     wrap_twisted_exceptions,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -93,6 +94,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         self._contextFactory: IPolicyForHTTPS = load_context_factory_from_settings(
             crawler.settings, crawler
         )
+        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         self._disconnect_timeout: int = 1
 
     async def download_request(self, request: Request) -> Response:
@@ -106,6 +108,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
 
         agent = ScrapyAgent(
             contextFactory=self._contextFactory,
+            bindAddress=self._bind_address,
             pool=self._pool,
             maxsize=getattr(
                 self._crawler.spider, "download_maxsize", self._default_maxsize
@@ -286,10 +289,10 @@ class TunnelingAgent(Agent):
         proxyConf: tuple[str, int, bytes | None],
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
-        bindAddress: bytes | None = None,
+        bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
+        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
@@ -335,10 +338,10 @@ class ScrapyProxyAgent(Agent):
         reactor: ReactorBase,
         proxyURI: bytes,
         connectTimeout: float | None = None,
-        bindAddress: bytes | None = None,
+        bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(
+        super().__init__(  # type: ignore[no-untyped-call]
             reactor=reactor,
             connectTimeout=connectTimeout,
             bindAddress=bindAddress,
@@ -360,7 +363,7 @@ class ScrapyProxyAgent(Agent):
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
             key=(b"http-proxy", self._proxyURI.host, self._proxyURI.port),
-            endpoint=self._getEndpoint(self._proxyURI),
+            endpoint=self._getEndpoint(self._proxyURI),  # type: ignore[no-untyped-call]
             method=method,
             parsedURI=URI.fromBytes(uri),
             headers=headers,
@@ -379,7 +382,7 @@ class ScrapyAgent:
         *,
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float = 10,
-        bindAddress: bytes | None = None,
+        bindAddress: str | tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
         maxsize: int = 0,
         warnsize: int = 0,
@@ -388,7 +391,7 @@ class ScrapyAgent:
     ):
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectTimeout: float = connectTimeout
-        self._bindAddress: bytes | None = bindAddress
+        self._bindAddress: str | tuple[str, int] | None = bindAddress
         self._pool: HTTPConnectionPool | None = pool
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
@@ -400,6 +403,7 @@ class ScrapyAgent:
         from twisted.internet import reactor
 
         bindaddress = request.meta.get("bindaddress") or self._bindAddress
+        bindaddress = normalize_bind_address(bindaddress)
         proxy = request.meta.get("proxy")
         if proxy:
             proxy = add_http_if_no_scheme(proxy)
@@ -428,7 +432,7 @@ class ScrapyAgent:
                 pool=self._pool,
             )
 
-        return self._Agent(
+        return self._Agent(  # type: ignore[no-untyped-call]
             reactor=reactor,
             contextFactory=self._contextFactory,
             connectTimeout=timeout,
@@ -507,7 +511,7 @@ class ScrapyAgent:
             }
 
         # deliverBody hangs for responses without body
-        if txresponse.length == 0:
+        if cast("int", txresponse.length) == 0:
             return {
                 "txresponse": txresponse,
             }
@@ -697,7 +701,8 @@ class _ResponseReader(Protocol):
             return
 
         if reason.check(ResponseFailed) and any(
-            r.check(_DataLoss) for r in reason.value.reasons
+            r.check(_DataLoss)
+            for r in reason.value.reasons  # type: ignore[union-attr]
         ):
             if not self._fail_on_dataloss:
                 self._finish_response(flags=["dataloss"])
