@@ -51,6 +51,13 @@ def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
     return to_bytes(text)
 
 
+warnings.warn(
+    "The scrapy.mail module is deprecated and will be removed in a future release. "
+    "Please use a dedicated Python mail library instead.",
+    category=ScrapyDeprecationWarning,
+)
+
+
 class MailSender:
     def __init__(
         self,
@@ -63,12 +70,6 @@ class MailSender:
         smtpssl: bool = False,
         debug: bool = False,
     ):
-        warnings.warn(
-            "scrapy.mail.MailSender is deprecated and will be removed in a future release. "
-            "Please use a dedicated Python mail library instead.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         self.smtphost: str = smtphost
         self.smtpport: int = smtpport
         self.smtpuser: bytes | None = _to_bytes_or_none(smtpuser)

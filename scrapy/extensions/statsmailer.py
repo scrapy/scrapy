@@ -22,15 +22,15 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector
 
+warnings.warn(
+    "The scrapy.extensions.statsmailer module is deprecated and will be "
+    "removed in a future release.",
+    category=ScrapyDeprecationWarning,
+)
+
 
 class StatsMailer:
     def __init__(self, stats: StatsCollector, recipients: list[str], mail: MailSender):
-        warnings.warn(
-            "scrapy.extensions.statsmailer.StatsMailer is deprecated and will be "
-            "removed in a future release.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         self.stats: StatsCollector = stats
         self.recipients: list[str] = recipients
         self.mail: MailSender = mail

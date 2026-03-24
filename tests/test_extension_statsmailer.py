@@ -3,12 +3,18 @@ from unittest.mock import MagicMock
 import pytest
 
 from scrapy import signals
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.extensions import statsmailer
-from scrapy.mail import MailSender
+from scrapy.exceptions import NotConfigured
 from scrapy.signalmanager import SignalManager
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.spider import DefaultSpider
+
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:The scrapy.extensions.statsmailer module is deprecated:scrapy.exceptions.ScrapyDeprecationWarning",
+    "ignore:The scrapy.mail module is deprecated:scrapy.exceptions.ScrapyDeprecationWarning",
+)
+
+from scrapy.extensions import statsmailer  # noqa: E402
+from scrapy.mail import MailSender  # noqa: E402
 
 
 @pytest.fixture
@@ -42,8 +48,7 @@ def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeyp
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    with pytest.warns(ScrapyDeprecationWarning, match="StatsMailer is deprecated"):
-        ext = statsmailer.StatsMailer.from_crawler(crawler)
+    ext = statsmailer.StatsMailer.from_crawler(crawler)
 
     assert isinstance(ext, statsmailer.StatsMailer)
     assert ext.recipients == ["test@example.com"]
@@ -59,8 +64,7 @@ def test_from_crawler_connects_spider_closed_signal(dummy_stats, monkeypatch):
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    with pytest.warns(ScrapyDeprecationWarning, match="StatsMailer is deprecated"):
-        statsmailer.StatsMailer.from_crawler(crawler)
+    statsmailer.StatsMailer.from_crawler(crawler)
 
     connected = crawler.signals.send_catch_log(
         signals.spider_closed, spider=DefaultSpider(name="dummy")
@@ -71,8 +75,7 @@ def test_from_crawler_connects_spider_closed_signal(dummy_stats, monkeypatch):
 def test_spider_closed_sends_email(dummy_stats):
     recipients = ["test@example.com"]
     mail = MagicMock(spec=MailSender)
-    with pytest.warns(ScrapyDeprecationWarning, match="StatsMailer is deprecated"):
-        ext = statsmailer.StatsMailer(dummy_stats, recipients, mail)
+    ext = statsmailer.StatsMailer(dummy_stats, recipients, mail)
 
     spider = DefaultSpider(name="dummy")
     ext.spider_closed(spider)
