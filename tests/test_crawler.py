@@ -666,7 +666,7 @@ class NoRequestsSpider(scrapy.Spider):
         yield
 
 
-@pytest.mark.requires_reactor
+@pytest.mark.requires_reactor  # CrawlerRunner requires a reactor
 class TestCrawlerRunnerHasSpider:
     @staticmethod
     def _runner() -> CrawlerRunnerBase:

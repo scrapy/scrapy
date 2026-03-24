@@ -19,13 +19,13 @@ from scrapy.utils.defer import (
     mustbe_deferred,
     parallel_async,
 )
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 
 
-@pytest.mark.requires_reactor
+@pytest.mark.requires_reactor  # mustbe_deferred() requires a reactor
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestMustbeDeferred:
     @inline_callbacks_test
@@ -89,9 +89,8 @@ class TestIterErrback:
         assert isinstance(errors[0].value, ZeroDivisionError)
 
 
-@pytest.mark.requires_reactor
 class TestAiterErrback:
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_aiter_errback_good(self):
         async def itergood() -> AsyncGenerator[int, None]:
             for x in range(10):
@@ -102,7 +101,7 @@ class TestAiterErrback:
         assert out == list(range(10))
         assert not errors
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_iter_errback_bad(self):
         async def iterbad() -> AsyncGenerator[int, None]:
             for x in range(10):
@@ -117,23 +116,18 @@ class TestAiterErrback:
         assert isinstance(errors[0].value, ZeroDivisionError)
 
 
-@pytest.mark.requires_reactor
 class TestAsyncDefTestsuite:
-    @deferred_f_from_coro_f
-    async def test_deferred_f_from_coro_f(self):
+    @coroutine_test
+    async def test_coroutine_test(self):
         pass
 
-    @deferred_f_from_coro_f
-    async def test_deferred_f_from_coro_f_generator(self):
-        yield
-
     @pytest.mark.xfail(reason="Checks that the test is actually executed", strict=True)
-    @deferred_f_from_coro_f
-    async def test_deferred_f_from_coro_f_xfail(self):
+    @coroutine_test
+    async def test_coroutine_test_xfail(self):
         raise RuntimeError("This is expected to be raised")
 
 
-@pytest.mark.requires_reactor
+@pytest.mark.requires_reactor  # parallel_async() requires a reactor
 class TestParallelAsync:
     """This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
 
@@ -327,9 +321,8 @@ class TestDeferredFFromCoroF:
 
 
 @pytest.mark.only_asyncio
-@pytest.mark.requires_reactor
 class TestDeferredToFuture:
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deferred(self):
         d = Deferred()
         result = deferred_to_future(d)
@@ -338,7 +331,7 @@ class TestDeferredToFuture:
         future_result = await result
         assert future_result == 42
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_wrapped_coroutine(self):
         async def c_f() -> int:
             return 42
@@ -349,7 +342,7 @@ class TestDeferredToFuture:
         future_result = await result
         assert future_result == 42
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_wrapped_coroutine_asyncio(self):
         async def c_f() -> int:
             await asyncio.sleep(0.01)
@@ -363,11 +356,8 @@ class TestDeferredToFuture:
 
 
 @pytest.mark.only_asyncio
-# needs a reactor or an event loop for is_asyncio_available()
-# (for maybe_deferred_to_future())
-@pytest.mark.requires_reactor
 class TestMaybeDeferredToFutureAsyncio:
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deferred(self):
         d = Deferred()
         result = maybe_deferred_to_future(d)
@@ -376,7 +366,7 @@ class TestMaybeDeferredToFutureAsyncio:
         future_result = await result
         assert future_result == 42
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_wrapped_coroutine(self):
         async def c_f() -> int:
             return 42
@@ -387,7 +377,7 @@ class TestMaybeDeferredToFutureAsyncio:
         future_result = await result
         assert future_result == 42
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_wrapped_coroutine_asyncio(self):
         async def c_f() -> int:
             await asyncio.sleep(0.01)
@@ -401,11 +391,9 @@ class TestMaybeDeferredToFutureAsyncio:
 
 
 @pytest.mark.only_not_asyncio
-# needs a reactor or an event loop for is_asyncio_available()
-# (for maybe_deferred_to_future())
-@pytest.mark.requires_reactor
 class TestMaybeDeferredToFutureNotAsyncio:
-    def test_deferred(self):
+    @coroutine_test
+    async def test_deferred(self):
         d = Deferred()
         result = maybe_deferred_to_future(d)
         assert isinstance(result, Deferred)

@@ -584,6 +584,7 @@ class TestFilesPipelineCustomSettings:
         assert fs_store.basedir == str(tmp_path)
 
 
+@pytest.mark.requires_reactor  # TODO: needs a reactor for S3FilesStore
 @pytest.mark.requires_botocore
 class TestS3FilesStore:
     @inline_callbacks_test
@@ -714,7 +715,7 @@ class TestGCSFilesStore:
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
-@pytest.mark.requires_reactor  # needs a reactor for FTPFilesStore
+@pytest.mark.requires_reactor  # TODO: needs a reactor for FTPFilesStore
 class TestFTPFileStore:
     @inline_callbacks_test
     def test_persist(self):
@@ -752,13 +753,13 @@ class ItemWithFiles(Item):
     files = Field()
 
 
-def _create_item_with_files(*files):
+def _create_item_with_files(*files: str) -> ItemWithFiles:
     item = ItemWithFiles()
     item["file_urls"] = files
     return item
 
 
-def _prepare_request_object(item_url, flags=None):
+def _prepare_request_object(item_url: str, flags: list[str] | None = None) -> Request:
     return Request(
         item_url,
         meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},

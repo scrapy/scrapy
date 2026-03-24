@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from twisted.protocols.ftp import FTPFactory
 
 
-pytestmark = pytest.mark.requires_reactor
+pytestmark = pytest.mark.requires_reactor  # FTPDownloadHandler requires a reactor
 
 
 class TestFTPBase(ABC):

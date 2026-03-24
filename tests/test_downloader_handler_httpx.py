@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
 
+pytestmark = pytest.mark.only_asyncio
+
 pytest.importorskip("httpx")
 
 

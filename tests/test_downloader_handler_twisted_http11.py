@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 
-pytestmark = pytest.mark.requires_reactor
+pytestmark = pytest.mark.requires_reactor  # HTTP11DownloadHandler requires a reactor
 
 
 class HTTP11DownloadHandlerMixin:

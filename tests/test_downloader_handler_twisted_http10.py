@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
 
-pytestmark = pytest.mark.requires_reactor
+pytestmark = pytest.mark.requires_reactor  # HTTP10DownloadHandler requires a reactor
 
 
 class HTTP10DownloadHandlerMixin:
