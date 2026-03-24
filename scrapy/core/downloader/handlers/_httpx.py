@@ -30,6 +30,7 @@ from scrapy.utils._download_handlers import (
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
+    normalize_bind_address,
 )
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.ssl import _log_sslobj_debug_info, _make_ssl_context
@@ -87,8 +88,30 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         self._tls_verbose_logging: bool = self.crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
+        bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
+        bind_address = normalize_bind_address(bind_address)
+
+        self._bind_address: str | None = None
+
+        if bind_address is not None:
+            host, port = bind_address
+            if port != 0:
+                logger.warning(
+                    "DOWNLOAD_BIND_ADDRESS specifies a port (%s), but %s does not "
+                    "support binding to a specific local port. Ignoring the port "
+                    "and binding only to %r.",
+                    port,
+                    type(self).__name__,
+                    host,
+                )
+            self._bind_address = host
+
         self._client = httpx.AsyncClient(
-            verify=_make_ssl_context(crawler.settings), cookies=_NullCookieJar()
+            cookies=_NullCookieJar(),
+            transport=httpx.AsyncHTTPTransport(
+                verify=_make_ssl_context(crawler.settings),
+                local_address=self._bind_address,
+            ),
         )
 
     async def download_request(self, request: Request) -> Response:
@@ -111,7 +134,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             if (
                 "Name or service not known" in str(e)
                 or "getaddrinfo failed" in str(e)
-                or "nodename nor servname provided, or not known" in str(e)
+                or "nodename nor servname" in str(e)
             ):
                 raise CannotResolveHostError(str(e)) from e
             raise DownloadConnectionRefusedError(str(e)) from e
