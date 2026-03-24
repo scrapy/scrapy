@@ -41,11 +41,6 @@ variable; or by defining it in your :ref:`pyproject.toml <topics-config-settings
     [tool.scrapy.settings]
     shell = "bpython"
 
-or in ``scrapy.cfg``::
-
-    [settings]
-    shell = "bpython"
-
 .. _IPython: https://ipython.org/
 .. _IPython installation guide: https://ipython.org/install.html
 .. _bpython: https://bpython-interpreter.org/
