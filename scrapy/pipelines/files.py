@@ -23,15 +23,15 @@ from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
-from twisted.internet.threads import deferToThread
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
+from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
-from scrapy.utils.defer import ensure_awaitable
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
@@ -198,13 +198,12 @@ class S3FilesStore:
 
     def _get_boto_key(self, path: str) -> Deferred[dict[str, Any]]:
         key_name = f"{self.prefix}{path}"
-        return cast(
-            "Deferred[dict[str, Any]]",
-            deferToThread(
+        return deferred_from_coro(
+            run_in_thread(
                 self.s3_client.head_object,  # type: ignore[attr-defined]
                 Bucket=self.bucket,
                 Key=key_name,
-            ),
+            )
         )
 
     def persist_file(
@@ -221,14 +220,16 @@ class S3FilesStore:
         extra = self._headers_to_botocore_kwargs(self.HEADERS)
         if headers:
             extra.update(self._headers_to_botocore_kwargs(headers))
-        return deferToThread(
-            self.s3_client.put_object,  # type: ignore[attr-defined]
-            Bucket=self.bucket,
-            Key=key_name,
-            Body=buf,
-            Metadata={k: str(v) for k, v in (meta or {}).items()},
-            ACL=self.POLICY,
-            **extra,
+        return deferred_from_coro(
+            run_in_thread(
+                self.s3_client.put_object,  # type: ignore[attr-defined]
+                Bucket=self.bucket,
+                Key=key_name,
+                Body=buf,
+                Metadata={k: str(v) for k, v in (meta or {}).items()},
+                ACL=self.POLICY,
+                **extra,
+            )
         )
 
     def _headers_to_botocore_kwargs(self, headers: dict[str, Any]) -> dict[str, Any]:
@@ -315,10 +316,9 @@ class GCSFilesStore:
             return {}
 
         blob_path = self._get_blob_path(path)
-        return cast(
-            "Deferred[StatInfo]",
-            deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess),
-        )
+        return deferred_from_coro(
+            run_in_thread(self.bucket.get_blob, blob_path)
+        ).addCallback(_onsuccess)
 
     def _get_content_type(self, headers: dict[str, str] | None) -> str:
         if headers and "Content-Type" in headers:
@@ -340,11 +340,13 @@ class GCSFilesStore:
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
-        return deferToThread(
-            blob.upload_from_string,
-            data=buf.getvalue(),
-            content_type=self._get_content_type(headers),
-            predefined_acl=self.POLICY,
+        return deferred_from_coro(
+            run_in_thread(
+                blob.upload_from_string,
+                data=buf.getvalue(),
+                content_type=self._get_content_type(headers),
+                predefined_acl=self.POLICY,
+            )
         )
 
 
@@ -377,15 +379,17 @@ class FTPFilesStore:
         headers: dict[str, str] | None = None,
     ) -> Deferred[Any]:
         path = f"{self.basedir}/{path}"
-        return deferToThread(
-            ftp_store_file,
-            path=path,
-            file=buf,
-            host=self.host,
-            port=self.port,
-            username=self.username,
-            password=self.password,
-            use_active_mode=self.USE_ACTIVE_MODE,
+        return deferred_from_coro(
+            run_in_thread(
+                ftp_store_file,
+                path=path,
+                file=buf,
+                host=self.host,
+                port=self.port,
+                username=self.username,
+                password=self.password,
+                use_active_mode=bool(self.USE_ACTIVE_MODE),
+            )
         )
 
     def stat_file(
@@ -407,7 +411,7 @@ class FTPFilesStore:
             except Exception:
                 return {}
 
-        return cast("Deferred[StatInfo]", deferToThread(_stat_file, path))
+        return deferred_from_coro(run_in_thread(_stat_file, path))
 
 
 class FilesPipeline(MediaPipeline):
