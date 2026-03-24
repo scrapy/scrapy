@@ -46,10 +46,17 @@ class CheckSpider(scrapy.Spider):
         )
 
     def _test_contract(
-        self, proj_path: Path, contracts: str = "", parse_def: str = "pass"
+        self,
+        proj_path: Path,
+        contracts: str = "",
+        parse_def: str = "pass",
+        use_reactor: bool = True,
     ) -> None:
         self._write_contract(proj_path, contracts, parse_def)
-        ret, out, err = proc("check", cwd=proj_path)
+        args = ["check"]
+        if not use_reactor:
+            args += ["-s", "TWISTED_ENABLED=False"]
+        ret, out, err = proc(*args, cwd=proj_path)
         assert "F" not in out
         assert "OK" in err
         assert ret == 0
@@ -62,6 +69,15 @@ class CheckSpider(scrapy.Spider):
         yield scrapy.Request(url='http://next-url.com')
         """
         self._test_contract(proj_path, contracts, parse_def)
+
+    def test_check_no_reactor(self, proj_path: Path) -> None:
+        contracts = """
+        @returns requests 1
+        """
+        parse_def = """
+        yield scrapy.Request(url='http://next-url.com')
+        """
+        self._test_contract(proj_path, contracts, parse_def, use_reactor=False)
 
     def test_check_returns_items_contract(self, proj_path: Path) -> None:
         contracts = """

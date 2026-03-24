@@ -14,6 +14,7 @@ from .http_resources import (
     BrokenChunkedResource,
     BrokenDownloadResource,
     ChunkedResource,
+    ClientIPResource,
     Compress,
     ContentLengthHeaderResource,
     Delay,
@@ -72,6 +73,7 @@ class Root(resource.Resource):
         self.putChild(b"wait", ForeverTakingResource())
         self.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
         self.putChild(b"host", HostHeaderResource())
+        self.putChild(b"client-ip", ClientIPResource())
         self.putChild(b"broken", BrokenDownloadResource())
         self.putChild(b"chunked", ChunkedResource())
         self.putChild(b"broken-chunked", BrokenChunkedResource())

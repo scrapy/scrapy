@@ -204,6 +204,11 @@ class MockedMediaPipeline(UserDefinedPipeline):
         return item
 
 
+class AsyncMediaDownloadedPipeline(MockedMediaPipeline):
+    async def media_downloaded(self, response, request, info, *, item=None):
+        return super().media_downloaded(response, request, info)
+
+
 class TestMediaPipeline(TestBaseMediaPipeline):
     pipeline_class = MockedMediaPipeline
 
@@ -368,6 +373,16 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         assert (
             self.pipe._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
             == "MOCKEDMEDIAPIPELINE_IMAGES"
+        )
+
+
+class TestAsyncMediaDownloaded(TestMediaPipeline):
+    pipeline_class = AsyncMediaDownloadedPipeline
+
+    def test_key_for_pipe(self):
+        assert (
+            self.pipe._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
+            == "ASYNCMEDIADOWNLOADEDPIPELINE_IMAGES"
         )
 
 

@@ -30,3 +30,9 @@ class TestFetchCommand:
         out = out.replace("\r", "")  # required on win32
         assert "Server: TwistedWeb" in out
         assert "Content-Type: text/plain" in out
+
+    def test_no_reactor(self, mockserver: MockServer) -> None:
+        _, out, _ = proc(
+            "fetch", "-s", "TWISTED_ENABLED=False", mockserver.url("/text")
+        )
+        assert out.strip() == "Works"

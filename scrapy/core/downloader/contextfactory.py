@@ -49,13 +49,13 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def __init__(
         self,
-        method: int = SSL.SSLv23_METHOD,
+        method: int = SSL.SSLv23_METHOD,  # noqa: S503
         tls_verbose_logging: bool = False,
         tls_ciphers: str | None = None,
         *args: Any,
         **kwargs: Any,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)  # type: ignore[no-untyped-call]
         self._ssl_method: int = method
         self.tls_verbose_logging: bool = tls_verbose_logging
         self.tls_ciphers: AcceptableCiphers
@@ -75,7 +75,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def from_crawler(
         cls,
         crawler: Crawler,
-        method: int = SSL.SSLv23_METHOD,
+        method: int = SSL.SSLv23_METHOD,  # noqa: S503
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -84,10 +84,10 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         )
         tls_ciphers: str | None = crawler.settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
         return cls(  # type: ignore[misc]
+            *args,
             method=method,
             tls_verbose_logging=tls_verbose_logging,
             tls_ciphers=tls_ciphers,
-            *args,
             **kwargs,
         )
 

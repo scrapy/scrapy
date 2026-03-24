@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 pytestmark = [
-    pytest.mark.requires_reactor,
+    pytest.mark.requires_reactor,  # H2ClientProtocol requires a reactor
     pytest.mark.skipif(
         not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
     ),
@@ -213,7 +213,7 @@ class TestHttps2ClientProtocol:
         r.putChild(b"request-headers", RequestHeaders())
         return Site(r, timeout=None)
 
-    @async_yield_fixture
+    @async_yield_fixture  # type: ignore[untyped-decorator]
     async def server_port(self, site: Site) -> AsyncGenerator[int]:
         from twisted.internet import reactor
 
@@ -236,7 +236,7 @@ class TestHttps2ClientProtocol:
         ) + self.certificate_file.read_text(encoding="utf-8")
         return PrivateCertificate.loadPEM(pem)
 
-    @async_yield_fixture
+    @async_yield_fixture  # type: ignore[untyped-decorator]
     async def client(
         self, server_port: int, client_certificate: PrivateCertificate
     ) -> AsyncGenerator[H2ClientProtocol]:
@@ -411,9 +411,22 @@ class TestHttps2ClientProtocol:
             client, request, Data.JSON_LARGE, Data.EXTRA_LARGE, 200
         )
 
-    async def _check_POST_json_x10(self, *args, **kwargs):
+    async def _check_POST_json_x10(
+        self,
+        client: H2ClientProtocol,
+        request: Request,
+        expected_request_body: dict[str, str],
+        expected_extra_data: str,
+        expected_status: int,
+    ) -> None:
         async def get_coro() -> None:
-            await self._check_POST_json(*args, **kwargs)
+            await self._check_POST_json(
+                client,
+                request,
+                expected_request_body,
+                expected_extra_data,
+                expected_status,
+            )
 
         await self._check_repeat(get_coro, 10)
 
@@ -717,7 +730,7 @@ class TestHttps2ClientProtocol:
         request = Request(self.get_url(server_port, "/timeout"))
 
         # Update the timer to 1s to test connection timeout
-        client.setTimeout(1)
+        client.setTimeout(1)  # type: ignore[no-untyped-call]
 
         with pytest.raises(ResponseFailed) as exc_info:
             yield make_request_dfd(client, request)

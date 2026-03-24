@@ -30,6 +30,7 @@ from tests.mockserver.http_resources import (
 from tests.mockserver.utils import ssl_context_factory
 from tests.test_core_downloader import TestContextFactoryBase
 
+# these tests are related to the Twisted HTTP code
 pytestmark = pytest.mark.requires_reactor
 
 
@@ -48,8 +49,8 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
     return _makeGetterFactory(
         to_bytes(url),
         _clientfactory,
-        contextFactory=contextFactory,
         *args,
+        contextFactory=contextFactory,
         **kwargs,
     ).deferred
 

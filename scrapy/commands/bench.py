@@ -43,7 +43,7 @@ class _BenchServer:
         assert self.proc.stdout
         self.proc.stdout.readline()
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore[no-untyped-def]
         self.proc.kill()
         self.proc.wait()
         time.sleep(0.2)

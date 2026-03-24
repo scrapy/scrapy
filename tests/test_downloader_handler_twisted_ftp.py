@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from twisted.protocols.ftp import FTPFactory
 
 
-pytestmark = pytest.mark.requires_reactor
+pytestmark = pytest.mark.requires_reactor  # FTPDownloadHandler requires a reactor
 
 
 class TestFTPBase(ABC):
@@ -47,7 +47,7 @@ class TestFTPBase(ABC):
     def _get_factory(self, tmp_path: Path) -> FTPFactory:
         raise NotImplementedError
 
-    @async_yield_fixture
+    @async_yield_fixture  # type: ignore[untyped-decorator]
     async def server_url(self, tmp_path: Path) -> AsyncGenerator[str]:
         from twisted.internet import reactor
 

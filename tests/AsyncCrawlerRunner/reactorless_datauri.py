@@ -15,7 +15,7 @@ class DataSpider(Spider):
         return {"data": response.text}
 
 
-async def main():
+async def main() -> None:
     configure_logging()
     runner = AsyncCrawlerRunner(
         settings={

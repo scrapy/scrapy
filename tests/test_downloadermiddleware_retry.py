@@ -250,7 +250,7 @@ class TestMaxRetryTimes:
     ):
         middleware = middleware or self.mw
 
-        for i in range(max_retry_times):
+        for _ in range(max_retry_times):
             req = middleware.process_exception(req, exception)
             assert isinstance(req, Request)
 

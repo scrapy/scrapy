@@ -9,7 +9,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.mail import MailSender
 
 
-@pytest.mark.requires_reactor
+@pytest.mark.requires_reactor  # MailSender requires a reactor
 class TestMailSender:
     def test_send(self):
         with pytest.warns(ScrapyDeprecationWarning, match="MailSender is deprecated"):

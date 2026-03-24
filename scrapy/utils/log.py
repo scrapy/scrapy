@@ -138,7 +138,7 @@ _scrapy_root_handler: logging.Handler | None = None
 
 
 def install_scrapy_root_handler(settings: Settings) -> None:
-    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
+    global _scrapy_root_handler  # noqa: PLW0603
 
     _uninstall_scrapy_root_handler()
     logging.root.setLevel(logging.NOTSET)
@@ -147,7 +147,7 @@ def install_scrapy_root_handler(settings: Settings) -> None:
 
 
 def _uninstall_scrapy_root_handler() -> None:
-    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
+    global _scrapy_root_handler  # noqa: PLW0603
 
     if (
         _scrapy_root_handler is not None
@@ -189,7 +189,7 @@ def log_scrapy_info(settings: Settings) -> None:
         "Scrapy %(version)s started (bot: %(bot)s)",
         {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
     )
-    software = settings.getlist("LOG_VERSIONS")
+    software: list[str] = settings.getlist("LOG_VERSIONS")
     if not software:
         return
     versions = pprint.pformat(dict(get_versions(software)), sort_dicts=False)
