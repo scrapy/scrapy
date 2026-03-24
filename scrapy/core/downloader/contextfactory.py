@@ -192,29 +192,11 @@ def _load_context_factory_from_settings(
     """
     ssl_method = openssl_methods[settings.get("DOWNLOADER_CLIENT_TLS_METHOD")]
     context_factory_cls = load_object(settings["DOWNLOADER_CLIENTCONTEXTFACTORY"])
-    # try method-aware context factory
-    try:
-        context_factory = build_from_crawler(
-            context_factory_cls,
-            crawler,
-            method=ssl_method,
-        )
-    except TypeError:
-        # use context factory defaults
-        context_factory = build_from_crawler(
-            context_factory_cls,
-            crawler,
-        )
-        msg = (
-            f"{settings['DOWNLOADER_CLIENTCONTEXTFACTORY']} does not accept "
-            "a `method` argument (type OpenSSL.SSL method, e.g. "
-            "OpenSSL.SSL.SSLv23_METHOD) and/or a `tls_verbose_logging` "
-            "argument and/or a `tls_ciphers` argument. Please, upgrade your "
-            "context factory class to handle them or ignore them."
-        )
-        warnings.warn(msg)
-
-    return context_factory
+    return build_from_crawler(
+        context_factory_cls,
+        crawler,
+        method=ssl_method,
+    )
 
 
 def load_context_factory_from_settings(
