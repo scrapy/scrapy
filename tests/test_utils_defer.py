@@ -6,7 +6,7 @@ from asyncio import Future
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import (
@@ -63,26 +63,6 @@ class TestMustbeDeferred:
         dfd.addCallback(_assert)
         steps.append(2)  # add another value, that should be caught by assertEqual
         yield dfd
-
-
-def cb1(value, arg1, arg2):
-    return f"(cb1 {value} {arg1} {arg2})"
-
-
-def cb2(value, arg1, arg2):
-    return succeed(f"(cb2 {value} {arg1} {arg2})")
-
-
-def cb3(value, arg1, arg2):
-    return f"(cb3 {value} {arg1} {arg2})"
-
-
-def cb_fail(value, arg1, arg2):
-    raise TypeError
-
-
-def eb1(failure, arg1, arg2):
-    return f"(eb1 {failure.value.__class__.__name__} {arg1} {arg2})"
 
 
 class TestIterErrback:
