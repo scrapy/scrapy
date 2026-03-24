@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.mail import MailSender
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.engine import get_engine_status
@@ -47,6 +46,8 @@ class MemoryUsage:
         self.warned: bool = False
         self.notify_mails: list[str] = crawler.settings.getlist("MEMUSAGE_NOTIFY_MAIL")
         if self.notify_mails:  # pragma: no cover
+            from scrapy.mail import MailSender  # noqa: PLC0415
+
             warnings.warn(
                 "The 'MEMUSAGE_NOTIFY_MAIL' setting is deprecated and will be removed "
                 "in a future release. Please use the 'memusage_warning_reached' and 'spider_closed' "
