@@ -51,12 +51,16 @@ def _log_tls(hostname: str, connection: Connection) -> None:
 class _ScrapyClientTLSOptions(ClientTLSOptions):
     """
     SSL Client connection creator ignoring certificate verification errors
-    (for genuinely invalid certificates or bugs in verification code).
+    (for genuinely invalid certificates or bugs in verification code) and
+    optionally logging TLS details of the connection.
 
     Same as Twisted's private _sslverify.ClientTLSOptions,
     except that VerificationError, CertificateError and ValueError
     exceptions are caught, so that the connection is not closed, only
     logging warnings. Also, HTTPS connection parameters logging is added.
+
+    Instances of this class are returned from
+    :class:`.ScrapyClientContextFactory`.
     """
 
     def __init__(self, hostname: str, ctx: SSL.Context, verbose_logging: bool = False):
@@ -83,7 +87,6 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
                     self._hostnameASCII,
                     e,
                 )
-
             except ValueError as e:
                 logger.warning(
                     "Ignoring error while verifying certificate "

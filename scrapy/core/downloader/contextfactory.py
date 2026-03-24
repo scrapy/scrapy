@@ -36,14 +36,14 @@ if TYPE_CHECKING:
 
 @implementer(IPolicyForHTTPS)
 class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
-    """
-    Non-peer-certificate verifying HTTPS context factory
+    """Non-peer-certificate verifying HTTPS context factory.
 
-    Default OpenSSL method is TLS_METHOD (also called SSLv23_METHOD)
-    which allows TLS protocol negotiation
+    Default OpenSSL method is ``TLS_METHOD`` (also called ``SSLv23_METHOD``)
+    which allows TLS protocol negotiation.
 
-    'A TLS/SSL connection established with [this method] may
-     understand the TLSv1, TLSv1.1 and TLSv1.2 protocols.'
+    The purpose of this custom class is to provide a ``creatorForNetloc()``
+    method that returns a ``_ScrapyClientTLSOptions`` instance configured based
+    on TLS settings provided to the factory.
     """
 
     def __init__(
@@ -138,6 +138,9 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
 
     The default OpenSSL method is ``TLS_METHOD`` (also called
     ``SSLv23_METHOD``) which allows TLS protocol negotiation.
+
+    As this overrides the parent ``creatorForNetloc()`` method, only
+    ``self._ssl_method`` is used from the parent class.
     """
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
@@ -150,8 +153,13 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
 @implementer(IPolicyForHTTPS)
 class AcceptableProtocolsContextFactory:
     """Context factory to used to override the acceptable protocols
-    to set up the [OpenSSL.SSL.Context] for doing NPN and/or ALPN
-    negotiation.
+    to set up the :class:`OpenSSL.SSL.Context` for doing ALPN negotiation
+    (needed for the HTTP/2 support).
+
+    This class wraps ``creatorForNetloc()`` of another factory class, setting
+    the acceptable protocols on the :class:`.ClientTLSOptions` instance
+    returned by it. It's only needed because we support custom factories via
+    :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
     """
 
     def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
@@ -170,6 +178,10 @@ class AcceptableProtocolsContextFactory:
 def load_context_factory_from_settings(
     settings: BaseSettings, crawler: Crawler
 ) -> IPolicyForHTTPS:
+    """Create an instance of :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
+
+    Also passes values of other relevant settings to the factory class.
+    """
     ssl_method = openssl_methods[settings.get("DOWNLOADER_CLIENT_TLS_METHOD")]
     context_factory_cls = load_object(settings["DOWNLOADER_CLIENTCONTEXTFACTORY"])
     # try method-aware context factory
