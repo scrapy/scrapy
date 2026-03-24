@@ -59,10 +59,10 @@ stats_dump_2 = {
 
 
 class CustomPeriodicLog(PeriodicLog):
-    def set_a(self):
+    def set_a(self) -> None:
         self.stats._stats = stats_dump_1
 
-    def set_b(self):
+    def set_b(self) -> None:
         self.stats._stats = stats_dump_2
 
 
@@ -90,7 +90,9 @@ class TestPeriodicLog:
 
     @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
     def test_log_delta(self):
-        def emulate(settings=None):
+        def emulate(
+            settings: dict[str, Any] | None = None,
+        ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
             spider = MetaSpider()
             ext = extension(settings)
             ext.spider_opened(spider)
@@ -154,7 +156,9 @@ class TestPeriodicLog:
 
     @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
     def test_log_stats(self):
-        def emulate(settings=None):
+        def emulate(
+            settings: dict[str, Any] | None = None,
+        ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
             spider = MetaSpider()
             ext = extension(settings)
             ext.spider_opened(spider)

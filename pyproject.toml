@@ -87,7 +87,6 @@ pattern = "^(?P<version>.+)$"
 [tool.mypy]
 strict = true
 allow_any_generics = true # 67 errors
-allow_untyped_calls = true  # 58 errors
 extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",

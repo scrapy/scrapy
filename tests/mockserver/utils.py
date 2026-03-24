@@ -1,16 +1,22 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from OpenSSL import SSL
 from twisted.internet import ssl
 
 from scrapy.utils.python import to_bytes
 
+if TYPE_CHECKING:
+    from twisted.internet.ssl import ContextFactory
+
 
 def ssl_context_factory(
-    keyfile="keys/localhost.key", certfile="keys/localhost.crt", cipher_string=None
-):
+    keyfile: str = "keys/localhost.key",
+    certfile: str = "keys/localhost.crt",
+    cipher_string: str | None = None,
+) -> ContextFactory:
     factory = ssl.DefaultOpenSSLContextFactory(
         str(Path(__file__).parent.parent / keyfile),
         str(Path(__file__).parent.parent / certfile),

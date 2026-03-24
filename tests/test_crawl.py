@@ -304,7 +304,8 @@ with multiples lines
             )
         self._assert_retried(log)
 
-    def _assert_retried(self, log):
+    @staticmethod
+    def _assert_retried(log: LogCapture | str) -> None:
         assert str(log).count("Retrying") == 2
         assert str(log).count("Gave up retrying") == 1
 

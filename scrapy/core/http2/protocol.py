@@ -220,7 +220,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         """
         assert self.transport is not None  # typing
         # Reset the idle timeout as connection is still actively sending data
-        self.resetTimeout()
+        self.resetTimeout()  # type: ignore[no-untyped-call]
 
         data = self.conn.data_to_send()
         self.transport.write(data)
@@ -247,7 +247,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         sending some data now: we should open with the connection preamble.
         """
         # Initialize the timeout
-        self.setTimeout(self.IDLE_TIMEOUT)
+        self.setTimeout(self.IDLE_TIMEOUT)  # type: ignore[no-untyped-call]
 
         assert self.transport is not None  # typing
         destination = self.transport.getPeer()
@@ -290,7 +290,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def dataReceived(self, data: bytes) -> None:
         # Reset the idle timeout as connection is still actively receiving data
-        self.resetTimeout()
+        self.resetTimeout()  # type: ignore[no-untyped-call]
 
         try:
             self._check_received_data(data)
@@ -343,7 +343,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         No need to write anything to transport here.
         """
         # Cancel the timeout if not done yet
-        self.setTimeout(None)
+        self.setTimeout(None)  # type: ignore[no-untyped-call]
 
         # Notify the connection pool instance such that no new requests are
         # sent over current connection

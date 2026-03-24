@@ -29,6 +29,7 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
+    from twisted.internet.ssl import ContextFactory
     from twisted.web.iweb import IBodyProducer
 
 
@@ -40,7 +41,7 @@ class TestSlot:
 
 @pytest.mark.requires_reactor
 class TestContextFactoryBase:
-    context_factory = None
+    context_factory: ContextFactory | None = None
 
     @async_yield_fixture
     async def server_url(self, tmp_path):

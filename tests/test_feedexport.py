@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
-from typing import TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any
 from unittest import mock
 from urllib.parse import urljoin
 from urllib.request import pathname2url
@@ -44,12 +44,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
 
-def path_to_url(path):
+def path_to_url(path: Path) -> str:
     return urljoin("file:", pathname2url(str(path)))
 
 
-def printf_escape(string):
-    return string.replace("%", "%%")
+def printf_escape(s: str) -> str:
+    return s.replace("%", "%%")
 
 
 class FromCrawlerMixin:
@@ -239,8 +239,10 @@ class TestFeedExportBase(ABC):
     ) -> dict[str, Any]:
         pass
 
-    def _load_until_eof(self, data, load_func):
-        result = []
+    def _load_until_eof(
+        self, data: bytes, load_func: Callable[[IO[bytes]], Any]
+    ) -> list[Any]:
+        result: list[Any] = []
         with tempfile.TemporaryFile() as temp:
             temp.write(data)
             temp.seek(0)

@@ -29,7 +29,7 @@ def _embed_ipython_shell(
 
     @wraps(_embed_ipython_shell)
     def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:
-        config = load_default_config()
+        config = load_default_config()  # type: ignore[no-untyped-call]
         # Always use .instance() to ensure _instance propagation to all parents
         # this is needed for <TAB> completion works well for new imports
         # and clear the instance to always have the fresh env
