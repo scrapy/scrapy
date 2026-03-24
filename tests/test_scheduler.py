@@ -63,24 +63,24 @@ class MockSlot(NamedTuple):
 
 
 class MockDownloader:
-    def __init__(self):
-        self.slots = {}
+    def __init__(self) -> None:
+        self.slots: dict[str, MockSlot] = {}
 
-    def get_slot_key(self, request):
+    def get_slot_key(self, request: Request) -> str:
         if Downloader.DOWNLOAD_SLOT in request.meta:
             return request.meta[Downloader.DOWNLOAD_SLOT]
 
         return urlparse_cached(request).hostname or ""
 
-    def increment(self, slot_key):
+    def increment(self, slot_key: str) -> None:
         slot = self.slots.setdefault(slot_key, MockSlot(active=[]))
         slot.active.append(1)
 
-    def decrement(self, slot_key):
-        slot = self.slots.get(slot_key)
+    def decrement(self, slot_key: str) -> None:
+        slot = self.slots[slot_key]
         slot.active.pop()
 
-    def close(self):
+    def close(self) -> None:
         pass
 
 
@@ -271,7 +271,7 @@ class TestMigration:
                 pass
 
 
-def _is_scheduling_fair(enqueued_slots, dequeued_slots):
+def _is_scheduling_fair(enqueued_slots: list[str], dequeued_slots: list[str]) -> bool:
     """
     We enqueued same number of requests for every slot.
     Assert correct order, e.g.
@@ -309,8 +309,8 @@ class DownloaderAwareSchedulerTestMixin(TestSchedulerBase):
                 scheduler.enqueue_request(request)
 
         def _assert(scheduler: Scheduler) -> None:
-            dequeued_slots = []
-            requests = []
+            dequeued_slots: list[str] = []
+            requests: list[Request] = []
             assert scheduler.crawler
             assert scheduler.crawler.engine
             downloader = scheduler.crawler.engine.downloader
