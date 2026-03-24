@@ -251,7 +251,7 @@ class TestCustomPipelineManager:
     @coroutine_test
     async def test_deprecated_process_item_spider_arg(self) -> None:
         class CustomPipelineManager(ItemPipelineManager):
-            def process_item(self, item, spider):  # pylint: disable=useless-parent-delegation
+            def process_item(self, item: Any, spider: Spider) -> Deferred[Any]:  # pylint: disable=useless-parent-delegation
                 return super().process_item(item, spider)
 
         crawler = get_crawler(DefaultSpider)

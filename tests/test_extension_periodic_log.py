@@ -58,10 +58,10 @@ stats_dump_2 = {
 
 
 class CustomPeriodicLog(PeriodicLog):
-    def set_a(self):
+    def set_a(self) -> None:
         self.stats._stats = stats_dump_1
 
-    def set_b(self):
+    def set_b(self) -> None:
         self.stats._stats = stats_dump_2
 
 
@@ -87,9 +87,12 @@ class TestPeriodicLog:
         assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
         assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
+
     @coroutine_test
     async def test_log_delta(self):
-        def emulate(settings=None):
+        def emulate(
+            settings: dict[str, Any] | None = None,
+        ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
             spider = MetaSpider()
             ext = extension(settings)
             ext.spider_opened(spider)
@@ -153,7 +156,9 @@ class TestPeriodicLog:
 
     @coroutine_test
     async def test_log_stats(self):
-        def emulate(settings=None):
+        def emulate(
+            settings: dict[str, Any] | None = None,
+        ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
             spider = MetaSpider()
             ext = extension(settings)
             ext.spider_opened(spider)

@@ -33,6 +33,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
+        assert self.mockserver
         self.default_slot = self.mockserver.host
         self.times: dict[str, list[float]] = {}
 

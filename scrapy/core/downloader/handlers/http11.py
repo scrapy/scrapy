@@ -292,7 +292,7 @@ class TunnelingAgent(Agent):
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
+        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
@@ -341,7 +341,7 @@ class ScrapyProxyAgent(Agent):
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(
+        super().__init__(  # type: ignore[no-untyped-call]
             reactor=reactor,
             connectTimeout=connectTimeout,
             bindAddress=bindAddress,
@@ -363,7 +363,7 @@ class ScrapyProxyAgent(Agent):
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
             key=(b"http-proxy", self._proxyURI.host, self._proxyURI.port),
-            endpoint=self._getEndpoint(self._proxyURI),
+            endpoint=self._getEndpoint(self._proxyURI),  # type: ignore[no-untyped-call]
             method=method,
             parsedURI=URI.fromBytes(uri),
             headers=headers,
@@ -432,7 +432,7 @@ class ScrapyAgent:
                 pool=self._pool,
             )
 
-        return self._Agent(
+        return self._Agent(  # type: ignore[no-untyped-call]
             reactor=reactor,
             contextFactory=self._contextFactory,
             connectTimeout=timeout,

@@ -4,7 +4,7 @@ import re
 import warnings
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from twisted.internet.defer import Deferred
@@ -18,6 +18,7 @@ from scrapy.crawler import (
     Crawler,
     CrawlerProcess,
     CrawlerRunner,
+    CrawlerRunnerBase,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
@@ -45,7 +46,7 @@ def get_raw_crawler(spidercls=None, settings_dict=None):
 
 
 class TestBaseCrawler:
-    def assertOptionIsDefault(self, settings, key):
+    def assertOptionIsDefault(self, settings: Settings, key: str) -> None:
         assert isinstance(settings, Settings)
         assert settings[key] == getattr(default_settings, key)
 
@@ -668,12 +669,12 @@ class NoRequestsSpider(scrapy.Spider):
 @pytest.mark.requires_reactor  # CrawlerRunner requires a reactor
 class TestCrawlerRunnerHasSpider:
     @staticmethod
-    def _runner():
+    def _runner() -> CrawlerRunnerBase:
         return CrawlerRunner(get_reactor_settings())
 
     @staticmethod
-    def _crawl(runner, spider):
-        return runner.crawl(spider)
+    def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> Deferred[None]:
+        return cast("Deferred[None]", runner.crawl(spider))
 
     @inline_callbacks_test
     def test_crawler_runner_bootstrap_successful(self):
@@ -742,11 +743,11 @@ class TestCrawlerRunnerHasSpider:
 @pytest.mark.only_asyncio
 class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
     @staticmethod
-    def _runner():
+    def _runner() -> CrawlerRunnerBase:
         return AsyncCrawlerRunner(get_reactor_settings())
 
     @staticmethod
-    def _crawl(runner, spider):
+    def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> Deferred[None]:
         return deferred_from_coro(runner.crawl(spider))
 
     def test_crawler_runner_asyncio_enabled_true(self):
