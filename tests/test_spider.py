@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import re
+import tracemalloc
 import warnings
 from datetime import datetime
 from io import BytesIO
@@ -585,6 +586,57 @@ Sitemap: /sitemap-relative-url.xml
             "http://www.example.com/sitemap-relative-url.xml",
         ]
 
+    def test_get_sitemap_urls_from_robotstxt_skips_invalid_utf8_urls(self):
+        robots = (
+            b"User-agent: *\n"
+            b"Sitemap: http://example.com/\xff.xml\n"
+            b"Sitemap: http://example.com/ok.xml\n"
+        )
+
+        r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
+        spider = self.spider_class("example.com")
+
+        assert [req.url for req in spider._parse_sitemap(r)] == [
+            "http://example.com/ok.xml",
+        ]
+
+    @pytest.mark.parametrize(
+        ("scenario", "max_peak"),
+        [
+            ("urlset", 700_000),
+            ("sitemapindex", 500_000),
+            ("robots", 300_000),
+        ],
+    )
+    def test_parse_sitemap_peak_memory_stays_below_limit(
+        self, scenario: str, max_peak: int
+    ):
+        if scenario == "urlset":
+            r = XmlResponse(
+                url="http://www.example.com/sitemap.xml",
+                body=self._generate_sitemap(8_000),
+            )
+        elif scenario == "sitemapindex":
+            r = XmlResponse(
+                url="http://www.example.com/sitemap-index.xml",
+                body=self._generate_sitemapindex(8_000),
+            )
+        else:
+            r = TextResponse(
+                url="http://www.example.com/robots.txt",
+                body=self._generate_robots_with_sitemap_urls(8_000),
+            )
+
+        spider = self.spider_class("example.com")
+
+        tracemalloc.start()
+        for _ in spider._parse_sitemap(r):
+            pass
+        _, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        assert peak < max_peak
+
     def test_alternate_url_locs(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -945,6 +997,26 @@ Sitemap: /sitemap-relative-url.xml
                 + b"</loc><lastmod>2026-01-01</lastmod></url>"
             )
         b += b"</urlset>\n"
+        return bytes(b)
+
+    def _generate_sitemapindex(self, urls_n: int) -> bytes:
+        b = bytearray(
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        )
+        for i in range(urls_n):
+            b += (
+                b"<sitemap><loc>https://example.com/sitemap-"
+                + str(i).encode()
+                + b".xml</loc></sitemap>"
+            )
+        b += b"</sitemapindex>\n"
+        return bytes(b)
+
+    def _generate_robots_with_sitemap_urls(self, urls_n: int) -> bytes:
+        b = bytearray(b"User-agent: *\n")
+        for i in range(urls_n):
+            b += b"Sitemap: https://example.com/sitemap-" + str(i).encode() + b".xml\n"
         return bytes(b)
 
 

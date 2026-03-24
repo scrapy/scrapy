@@ -110,7 +110,10 @@ def sitemap_urls_from_robots(
     if isinstance(robots_text, bytes):
         for line in BytesIO(robots_text):
             if line.lstrip()[:8].lower() == b"sitemap:":
-                url = line.partition(b":")[2].strip().decode()
+                try:
+                    url = line.partition(b":")[2].strip().decode()
+                except UnicodeDecodeError:
+                    continue
                 yield urljoin(base_url or "", url)
 
     else:
