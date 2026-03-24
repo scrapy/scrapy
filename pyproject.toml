@@ -28,7 +28,6 @@ dependencies = [
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
-    "sphinx-autobuild>=2024.10.3",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
