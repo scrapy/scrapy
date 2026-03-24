@@ -22,12 +22,13 @@ dependencies = [
     "queuelib>=1.4.2",
     "service_identity>=18.1.0",
     "tldextract",
+    "tomli>=1.1.0; python_version < '3.11'",
     "w3lib>=1.17.0",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
-    "tomli>=1.1.0; python_version < '3.11'",
+    "sphinx-autobuild>=2024.10.3",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

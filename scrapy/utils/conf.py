@@ -154,6 +154,11 @@ def get_config(use_closest: bool = True) -> ConfigParser:
             cfg.read_dict(scrapy_data)
             return cfg
         if config_type == "cfg":
+            warnings.warn(
+                "scrapy.cfg is deprecated. Please use pyproject.toml instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             cfg = ConfigParser()
             cfg.read(config_path)
             return cfg

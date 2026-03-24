@@ -21,23 +21,13 @@ standalone ``scrapyd-deploy``. See `Deploying your project`_.)
 Configuration settings
 ======================
 
-Scrapy will look for configuration parameters in ini-style ``scrapy.cfg`` files
-in standard locations:
+Scrapy will look for configuration parameters in toml-style ``pyproject.toml``
+files in standard locations:
 
-1. ``/etc/scrapy.cfg`` or ``c:\scrapy\scrapy.cfg`` (system-wide),
-2. ``~/.config/scrapy.cfg`` (``$XDG_CONFIG_HOME``) and ``~/.scrapy.cfg`` (``$HOME``)
+1. ``/etc/pyproject.toml`` or ``c:\scrapy\pyproject.toml`` (system-wide),
+2. ``~/.config/pyproject.toml`` (``$XDG_CONFIG_HOME``) and ``~/.pyproject.toml`` (``$HOME``)
    for global (user-wide) settings, and
-3. ``pyproject.toml`` (recommended) or ``scrapy.cfg`` inside a Scrapy project's root (see next section).
-
-For ``pyproject.toml``, the settings are read from the ``[tool.scrapy]`` section:
-
-.. code-block:: toml
-
-    [tool.scrapy.settings]
-    default = "myproject.settings"
-
-Scrapy searches for the closest ``pyproject.toml`` or ``scrapy.cfg``, and if both
-files exist, ``pyproject.toml`` takes precedence.
+3. ``pyproject.toml`` inside a Scrapy project's root (see next section).
 
 Settings from these files are merged in the listed order of preference:
 user-defined values have higher priority than system-wide defaults
