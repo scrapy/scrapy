@@ -268,6 +268,12 @@ class Scraper:
         try:
             # call the request errback with the downloader error
             output = await self.call_spider_async(result, request)
+            result_response = getattr(result.value, "response", None)
+            if result_response is None:
+                result_response = Response(request.url, request=request)
+            output = await self.spidermw._process_callback_output(
+                result_response, output
+            )
         except Exception as spider_exc:
             # the errback didn't silence the exception
             assert self.crawler.spider

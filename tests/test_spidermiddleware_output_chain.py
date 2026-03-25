@@ -101,6 +101,42 @@ class ProcessSpiderInputSpiderWithErrback(ProcessSpiderInputSpiderWithoutErrback
         return {"from": "errback"}
 
 
+class FailDownloaderMiddleware:
+    def process_request(self, request):
+        raise IndexError
+
+
+class MarkSpiderOutputMiddleware(_BaseSpiderMiddleware):
+    def process_spider_output(self, response, result):
+        for r in result:
+            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
+            yield r
+
+
+class ProcessDownloaderErrorSpiderWithErrback(Spider):
+    name = "ProcessDownloaderErrorSpiderWithErrback"
+    custom_settings = {
+        "DOWNLOADER_MIDDLEWARES": {
+            FailDownloaderMiddleware: 100,
+        },
+        "SPIDER_MIDDLEWARES": {
+            MarkSpiderOutputMiddleware: 10,
+        },
+    }
+
+    async def start(self):
+        yield Request(
+            self.mockserver.url("/status?n=200"), self.parse, errback=self.errback
+        )
+
+    def parse(self, response):
+        return {"processed": ["callback"]}
+
+    def errback(self, failure):
+        self.logger.info("Got a Failure on the Request errback")
+        return {"processed": ["errback"]}
+
+
 # ================================================================================
 # (2) exceptions from a spider callback (generator)
 class GeneratorCallbackSpider(Spider):
@@ -381,6 +417,18 @@ class TestSpiderMiddleware:
         assert "Got a Failure on the Request errback" in str(log1)
         assert "{'from': 'errback'}" in str(log1)
         assert "{'from': 'callback'}" not in str(log1)
+        assert "'item_scraped_count': 1" in str(log1)
+
+    @coroutine_test
+    async def test_process_downloader_error_with_errback(self):
+        """
+        (1.3) Output returned by a request errback after a downloader error should go
+        through the process_spider_output chain.
+        """
+        log1 = await self.crawl_log(ProcessDownloaderErrorSpiderWithErrback)
+        assert "Got a Failure on the Request errback" in str(log1)
+        assert "{'processed': ['errback', 'MarkSpiderOutputMiddleware.process_spider_output']}" in str(log1)
+        assert "{'processed': ['callback']}" not in str(log1)
         assert "'item_scraped_count': 1" in str(log1)
 
     @coroutine_test
