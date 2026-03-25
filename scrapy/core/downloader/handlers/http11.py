@@ -92,7 +92,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         self._pool._factory.noisy = False
 
         self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
-            crawler.settings, crawler
+            crawler
         )
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         self._disconnect_timeout: int = 1

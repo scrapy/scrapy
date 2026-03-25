@@ -38,9 +38,7 @@ class H2DownloadHandler(BaseDownloadHandler):
         from twisted.internet import reactor
 
         self._pool = H2ConnectionPool(reactor, crawler.settings)
-        self._context_factory = _load_context_factory_from_settings(
-            crawler.settings, crawler
-        )
+        self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:
