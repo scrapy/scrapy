@@ -6,7 +6,7 @@ from urllib.parse import urldefrag
 
 from twisted.web.client import URI
 
-from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
 from scrapy.exceptions import DownloadTimeoutError, NotConfigured
@@ -40,9 +40,7 @@ class H2DownloadHandler(BaseDownloadHandler):
         from twisted.internet import reactor
 
         self._pool = H2ConnectionPool(reactor, crawler.settings)
-        self._context_factory = load_context_factory_from_settings(
-            crawler.settings, crawler
-        )
+        self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:
