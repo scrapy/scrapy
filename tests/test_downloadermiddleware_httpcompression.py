@@ -522,9 +522,19 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")  # 11_511_612 B
-        with pytest.raises(IgnoreRequest) as exc_info:
+        with (
+            LogCapture(
+                "scrapy.downloadermiddlewares.httpcompression",
+                propagate=False,
+                level=WARNING,
+            ) as log,
+            pytest.raises(IgnoreRequest) as exc_info,
+        ):
             mw.process_response(response.request, response)
         assert exc_info.value.__cause__.decompressed_size < 1_100_000
+        assert len(log.records) == 1
+        assert log.records[0].levelname == "WARNING"
+        assert "DOWNLOAD_MAXSIZE" in log.records[0].getMessage()
 
     def test_compression_bomb_setting_br(self):
         _skip_if_no_br()
@@ -552,9 +562,19 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        with pytest.raises(IgnoreRequest) as exc_info:
+        with (
+            LogCapture(
+                "scrapy.downloadermiddlewares.httpcompression",
+                propagate=False,
+                level=WARNING,
+            ) as log,
+            pytest.raises(IgnoreRequest) as exc_info,
+        ):
             mw.process_response(response.request, response)
         assert exc_info.value.__cause__.decompressed_size < 1_100_000
+        assert len(log.records) == 1
+        assert log.records[0].levelname == "WARNING"
+        assert "DOWNLOAD_MAXSIZE" in log.records[0].getMessage()
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_br(self):
@@ -584,9 +604,19 @@ class TestHttpCompression:
 
         response = self._getresponse(f"bomb-{compression_id}")
         response.meta["download_maxsize"] = 1_000_000
-        with pytest.raises(IgnoreRequest) as exc_info:
+        with (
+            LogCapture(
+                "scrapy.downloadermiddlewares.httpcompression",
+                propagate=False,
+                level=WARNING,
+            ) as log,
+            pytest.raises(IgnoreRequest) as exc_info,
+        ):
             mw.process_response(response.request, response)
         assert exc_info.value.__cause__.decompressed_size < 1_100_000
+        assert len(log.records) == 1
+        assert log.records[0].levelname == "WARNING"
+        assert "DOWNLOAD_MAXSIZE" in log.records[0].getMessage()
 
     def test_compression_bomb_request_meta_br(self):
         _skip_if_no_br()
