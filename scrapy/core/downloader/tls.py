@@ -1,16 +1,35 @@
+from __future__ import annotations
+
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from OpenSSL import SSL
-from OpenSSL.SSL import Connection
 from service_identity import VerificationError
 from service_identity.exceptions import CertificateError
-from service_identity.pyopenssl import verify_hostname, verify_ip_address
+from service_identity.hazmat import (
+    DNS_ID,
+    IPAddress_ID,
+    ServiceID,
+    verify_service_identity,
+)
+from service_identity.pyopenssl import (
+    extract_patterns,
+    verify_hostname,
+    verify_ip_address,
+)
 from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers
 
+from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ssl import get_temp_key_info, x509name_to_string
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from OpenSSL.crypto import X509
+    from twisted.protocols.tls import TLSMemoryBIOProtocol
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +48,17 @@ openssl_methods: dict[str, int] = {
 }
 
 
-def _log_tls(hostname: str, connection: Connection) -> None:
+def _log_tls(
+    hostname: str, connection: SSL.Connection, server_cert: X509 | None = None
+) -> None:
     logger.debug(
         "SSL connection to %s using protocol %s, cipher %s",
         hostname,
         connection.get_protocol_version_name(),
         connection.get_cipher_name(),
     )
-    server_cert = connection.get_peer_certificate()
+    if not server_cert:
+        server_cert = connection.get_peer_certificate()
     if server_cert:
         logger.debug(
             'SSL connection certificate: issuer "%s", subject "%s"',
@@ -64,12 +86,67 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
     """
 
     def __init__(self, hostname: str, ctx: SSL.Context, verbose_logging: bool = False):
-        super().__init__(hostname, ctx)  # type: ignore[no-untyped-call]
+        if TWISTED_TLS_NEW_IMPL:
+            super().__init__(hostname, ctx, lambda: ctx)  # type: ignore[call-arg,no-untyped-call]
+        else:
+            super().__init__(hostname, ctx)  # type: ignore[no-untyped-call]
         self.verbose_logging: bool = verbose_logging
+
+    def clientConnectionForTLS(
+        self, tlsProtocol: TLSMemoryBIOProtocol
+    ) -> SSL.Connection:
+        """This method is needed to override the verify callback on Twisted > 25.5.0."""
+        conn = super().clientConnectionForTLS(tlsProtocol)  # type: ignore[no-untyped-call]
+        if TWISTED_TLS_NEW_IMPL:
+            callback = self._verifyCB(
+                self._hostnameIsDnsName, self._hostnameASCII, self.verbose_logging
+            )
+            conn.set_verify(SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT, callback)
+        return conn
+
+    @staticmethod
+    def _verifyCB(
+        hostIsDNS: bool, hostnameASCII: str, verbose_logging: bool
+    ) -> Callable[[SSL.Connection, X509, int, int, int], bool]:
+        """Implementation for Twisted > 25.5.0."""
+        svcid: ServiceID = (
+            DNS_ID(hostnameASCII) if hostIsDNS else IPAddress_ID(hostnameASCII)
+        )
+
+        def verifyCallback(
+            conn: SSL.Connection, cert: X509, err: int, depth: int, ok: int
+        ) -> bool:
+            if depth != 0:
+                # We are only verifying the leaf certificate.
+                return bool(ok)
+
+            if verbose_logging:
+                _log_tls(hostnameASCII, conn, cert)
+
+            try:
+                verify_service_identity(extract_patterns(cert), [svcid], [])
+            except (CertificateError, VerificationError) as e:
+                logger.warning(
+                    'Remote certificate is not valid for hostname "%s"; %s',
+                    hostnameASCII,
+                    e,
+                )
+            except ValueError as e:
+                logger.warning(
+                    "Ignoring error while verifying certificate "
+                    'from host "%s" (exception: %r)',
+                    hostnameASCII,
+                    e,
+                )
+
+            return True
+
+        return verifyCallback
 
     def _identityVerifyingInfoCallback(
         self, connection: SSL.Connection, where: int, ret: Any
     ) -> None:
+        """Implementation for Twisted 25.5.0 and older."""
         if where & SSL.SSL_CB_HANDSHAKE_START and self._hostnameIsDnsName:
             connection.set_tlsext_host_name(self._hostnameBytes)
         elif where & SSL.SSL_CB_HANDSHAKE_DONE:
