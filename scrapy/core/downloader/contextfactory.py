@@ -105,7 +105,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             **kwargs,
         )
 
-    def getCertificateOptions(self) -> CertificateOptions:
+    def getCertificateOptions(self) -> CertificateOptions:  # pragma: no cover
         warnings.warn(
             "ScrapyClientContextFactory.getCertificateOptions() is deprecated.",
             ScrapyDeprecationWarning,
@@ -216,7 +216,7 @@ def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
 
 def load_context_factory_from_settings(
     settings: BaseSettings, crawler: Crawler
-) -> IPolicyForHTTPS:
+) -> IPolicyForHTTPS:  # pragma: no cover
     warnings.warn(
         "load_context_factory_from_settings() is deprecated.",
         ScrapyDeprecationWarning,
