@@ -7,7 +7,7 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from logging import DEBUG
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import Mock, call
 from urllib.parse import urlparse
 
@@ -22,10 +22,11 @@ from scrapy import signals
 from scrapy.core.engine import ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
-from scrapy.http import Request, Response
+from scrapy.http import Headers, Request, Response
 from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
+from scrapy.statscollectors import MemoryStatsCollector
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -38,9 +39,10 @@ from tests import get_testdata
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
     from scrapy.core.scheduler import Scheduler
     from scrapy.crawler import Crawler
-    from scrapy.statscollectors import MemoryStatsCollector
     from tests.mockserver.http import MockServer
 
 
@@ -133,16 +135,16 @@ class ChangeCloseReasonSpider(MySpider):
 class CrawlerRun:
     """A class to run the crawler and keep track of events occurred"""
 
-    def __init__(self, spider_class):
-        self.respplug = []
-        self.reqplug = []
-        self.reqdropped = []
-        self.reqreached = []
-        self.itemerror = []
-        self.itemresp = []
-        self.headers = {}
-        self.bytes = defaultdict(list)
-        self.signals_caught = {}
+    def __init__(self, spider_class: type[Spider]):
+        self.respplug: list[tuple[Response, Spider]] = []
+        self.reqplug: list[tuple[Request, Spider]] = []
+        self.reqdropped: list[tuple[Request, Spider]] = []
+        self.reqreached: list[tuple[Request, Spider]] = []
+        self.itemerror: list[tuple[Any, Response, Spider, Failure]] = []
+        self.itemresp: list[tuple[Any, Response]] = []
+        self.headers: dict[Request, Headers] = {}
+        self.bytes: defaultdict[Request, list[bytes]] = defaultdict(list)
+        self.signals_caught: dict[Any, dict[str, Any]] = {}
         self.spider_class = spider_class
 
     async def run(self, mockserver: MockServer) -> None:
@@ -188,35 +190,39 @@ class CrawlerRun:
     def geturl(self, path: str) -> str:
         return self.mockserver.url(path)
 
-    def getpath(self, url):
+    def getpath(self, url: str) -> str:
         u = urlparse(url)
         return u.path
 
-    def item_error(self, item, response, spider, failure):
+    def item_error(
+        self, item: Any, response: Response, spider: Spider, failure: Failure
+    ) -> None:
         self.itemerror.append((item, response, spider, failure))
 
-    def item_scraped(self, item, spider, response):
+    def item_scraped(self, item: Any, spider: Spider, response: Response) -> None:
         self.itemresp.append((item, response))
 
-    def headers_received(self, headers, body_length, request, spider):
+    def headers_received(
+        self, headers: Headers, body_length: int, request: Request, spider: Spider
+    ) -> None:
         self.headers[request] = headers
 
-    def bytes_received(self, data, request, spider):
+    def bytes_received(self, data: bytes, request: Request, spider: Spider) -> None:
         self.bytes[request].append(data)
 
-    def request_scheduled(self, request, spider):
+    def request_scheduled(self, request: Request, spider: Spider) -> None:
         self.reqplug.append((request, spider))
 
-    def request_reached(self, request, spider):
+    def request_reached(self, request: Request, spider: Spider) -> None:
         self.reqreached.append((request, spider))
 
-    def request_dropped(self, request, spider):
+    def request_dropped(self, request: Request, spider: Spider) -> None:
         self.reqdropped.append((request, spider))
 
-    def response_downloaded(self, response, spider):
+    def response_downloaded(self, response: Response, spider: Spider) -> None:
         self.respplug.append((response, spider))
 
-    def record_signal(self, *args, **kwargs):
+    def record_signal(self, *args: Any, **kwargs: Any) -> None:
         """Record a signal and its parameters"""
         signalargs = kwargs.copy()
         sig = signalargs.pop("signal")
@@ -294,8 +300,8 @@ class TestEngineBase:
     @staticmethod
     def _assert_scraped_items(run: CrawlerRun) -> None:
         assert len(run.itemresp) == 2
-        for item, response in run.itemresp:
-            item = ItemAdapter(item)
+        for item_, response in run.itemresp:
+            item = ItemAdapter(item_)
             assert item["url"] == response.url
             if "item1.html" in item["url"]:
                 assert item["name"] == "Item 1 name"
@@ -308,6 +314,7 @@ class TestEngineBase:
     def _assert_headers_received(run: CrawlerRun) -> None:
         for headers in run.headers.values():
             assert b"Server" in headers
+            assert headers[b"Server"]
             assert b"TwistedWeb" in headers[b"Server"]
             assert b"Date" in headers
             assert b"Content-Type" in headers
@@ -598,8 +605,8 @@ class TestEngineDownload(TestEngineDownloadAsync):
         return await maybe_deferred_to_future(engine.download(request))
 
 
-@pytest.mark.requires_reactor  # needs a reactor or an event loop for _Slot.heartbeat
-def test_request_scheduled_signal(caplog):
+@coroutine_test
+async def test_request_scheduled_signal(caplog):
     class TestScheduler(BaseScheduler):
         def __init__(self):
             self.enqueued = []
@@ -734,7 +741,8 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         crawler.engine = engine
         await engine.open_spider_async()
-        del cast("MemoryStatsCollector", crawler.stats).spider_stats
+        assert isinstance(crawler.stats, MemoryStatsCollector)
+        del crawler.stats.spider_stats
         await engine.close_spider_async()
         assert "Stats close failure" in caplog.text
 

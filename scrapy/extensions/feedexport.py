@@ -21,14 +21,13 @@ from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
 
 from twisted.internet.defer import Deferred, DeferredList
-from twisted.internet.threads import deferToThread
 from w3lib.url import file_uri_to_path
 from zope.interface import Interface, implementer
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
-from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
@@ -131,7 +130,7 @@ class BlockingFeedStorage(ABC):
         return NamedTemporaryFile(prefix="feed-", dir=path)
 
     def store(self, file: IO[bytes]) -> Deferred[None] | None:
-        return deferToThread(self._store_in_thread, file)
+        return deferred_from_coro(run_in_thread(self._store_in_thread, file))
 
     @abstractmethod
     def _store_in_thread(self, file: IO[bytes]) -> None:

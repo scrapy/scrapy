@@ -13,11 +13,10 @@ from twisted.web.client import Response as TxResponse
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.core.downloader.contextfactory import (
     ScrapyClientContextFactory,
-    load_context_factory_from_settings,
+    _load_context_factory_from_settings,
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.settings import Settings
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
@@ -29,6 +28,7 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
+    from twisted.internet.ssl import ContextFactory
     from twisted.web.iweb import IBodyProducer
 
 
@@ -38,9 +38,9 @@ class TestSlot:
         assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
 
 
-@pytest.mark.requires_reactor
+@pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
 class TestContextFactoryBase:
-    context_factory = None
+    context_factory: ContextFactory | None = None
 
     @async_yield_fixture
     async def server_url(self, tmp_path):
@@ -101,8 +101,7 @@ class TestContextFactory(TestContextFactoryBase):
     async def testPayload(self, server_url: str) -> None:
         s = "0123456789" * 10
         crawler = get_crawler()
-        settings = Settings()
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        client_context_factory = _load_context_factory_from_settings(crawler)
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
@@ -116,13 +115,11 @@ class TestContextFactory(TestContextFactoryBase):
                 ctx: OpenSSL.SSL.Context = super().getContext(hostname, port)
                 return ctx
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"ScrapyClientContextFactory\.getContext\(\) is deprecated",
+        ):
             MyFactory()
-            assert len(w) == 1
-            assert (
-                "Overriding ScrapyClientContextFactory.getContext() is deprecated"
-                in str(w[0].message)
-            )
 
 
 class TestContextFactoryTLSMethod(TestContextFactoryBase):
@@ -138,20 +135,17 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
     @coroutine_test
     async def test_setting_default(self, server_url: str) -> None:
         crawler = get_crawler()
-        settings = Settings()
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        client_context_factory = _load_context_factory_from_settings(crawler)
         assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
     def test_setting_none(self):
-        crawler = get_crawler()
-        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": None})
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": None})
         with pytest.raises(KeyError):
-            load_context_factory_from_settings(settings, crawler)
+            _load_context_factory_from_settings(crawler)
 
     def test_setting_bad(self):
-        crawler = get_crawler()
-        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
         with (
             pytest.warns(
                 ScrapyDeprecationWarning,
@@ -159,12 +153,11 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
             ),
             pytest.raises(KeyError),
         ):
-            load_context_factory_from_settings(settings, crawler)
+            _load_context_factory_from_settings(crawler)
 
     @coroutine_test
     async def test_setting_explicit(self, server_url: str) -> None:
-        crawler = get_crawler()
-        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
         with (
             pytest.warns(
                 ScrapyDeprecationWarning,
@@ -175,9 +168,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
                 match="Passing a non-default TLS method value to ScrapyClientContextFactory is deprecated",
             ),
         ):
-            client_context_factory = load_context_factory_from_settings(
-                settings, crawler
-            )
+            client_context_factory = _load_context_factory_from_settings(crawler)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 

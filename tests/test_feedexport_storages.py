@@ -116,7 +116,6 @@ class TestFileFeedStorage:
         assert storage.path == path
 
 
-@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
 class TestFTPFeedStorage:
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
@@ -231,7 +230,6 @@ class TestBlockingFeedStorage:
 
 
 @pytest.mark.requires_boto3
-@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
 class TestS3FeedStorage:
     def test_parse_credentials(self):
         aws_credentials = {
@@ -461,7 +459,6 @@ class TestS3FeedStorage:
         assert "S3 does not support appending to files" in str(log)
 
 
-@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
 class TestGCSFeedStorage:
     def test_parse_settings(self):
         try:

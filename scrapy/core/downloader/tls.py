@@ -2,14 +2,14 @@ import logging
 from typing import Any
 
 from OpenSSL import SSL
+from OpenSSL.SSL import Connection
+from service_identity import VerificationError
 from service_identity.exceptions import CertificateError
-from twisted.internet._sslverify import (
-    ClientTLSOptions,
-    VerificationError,
-    verifyHostname,
-)
+from service_identity.pyopenssl import verify_hostname, verify_ip_address
+from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers
 
+from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ssl import get_temp_key_info, x509name_to_string
 
 logger = logging.getLogger(__name__)
@@ -29,54 +29,64 @@ openssl_methods: dict[str, int] = {
 }
 
 
-class ScrapyClientTLSOptions(ClientTLSOptions):
+def _log_tls(hostname: str, connection: Connection) -> None:
+    logger.debug(
+        "SSL connection to %s using protocol %s, cipher %s",
+        hostname,
+        connection.get_protocol_version_name(),
+        connection.get_cipher_name(),
+    )
+    server_cert = connection.get_peer_certificate()
+    if server_cert:
+        logger.debug(
+            'SSL connection certificate: issuer "%s", subject "%s"',
+            x509name_to_string(server_cert.get_issuer()),
+            x509name_to_string(server_cert.get_subject()),
+        )
+    key_info = get_temp_key_info(connection._ssl)
+    if key_info:
+        logger.debug("SSL temp key: %s", key_info)
+
+
+class _ScrapyClientTLSOptions(ClientTLSOptions):
     """
     SSL Client connection creator ignoring certificate verification errors
-    (for genuinely invalid certificates or bugs in verification code).
+    (for genuinely invalid certificates or bugs in verification code) and
+    optionally logging TLS details of the connection.
 
     Same as Twisted's private _sslverify.ClientTLSOptions,
     except that VerificationError, CertificateError and ValueError
     exceptions are caught, so that the connection is not closed, only
     logging warnings. Also, HTTPS connection parameters logging is added.
+
+    Instances of this class are returned from
+    :class:`.ScrapyClientContextFactory`.
     """
 
     def __init__(self, hostname: str, ctx: SSL.Context, verbose_logging: bool = False):
-        super().__init__(hostname, ctx)
+        super().__init__(hostname, ctx)  # type: ignore[no-untyped-call]
         self.verbose_logging: bool = verbose_logging
 
     def _identityVerifyingInfoCallback(
         self, connection: SSL.Connection, where: int, ret: Any
     ) -> None:
-        if where & SSL.SSL_CB_HANDSHAKE_START:
+        if where & SSL.SSL_CB_HANDSHAKE_START and self._hostnameIsDnsName:
             connection.set_tlsext_host_name(self._hostnameBytes)
         elif where & SSL.SSL_CB_HANDSHAKE_DONE:
             if self.verbose_logging:
-                logger.debug(
-                    "SSL connection to %s using protocol %s, cipher %s",
-                    self._hostnameASCII,
-                    connection.get_protocol_version_name(),
-                    connection.get_cipher_name(),
-                )
-                server_cert = connection.get_peer_certificate()
-                if server_cert:
-                    logger.debug(
-                        'SSL connection certificate: issuer "%s", subject "%s"',
-                        x509name_to_string(server_cert.get_issuer()),
-                        x509name_to_string(server_cert.get_subject()),
-                    )
-                key_info = get_temp_key_info(connection._ssl)
-                if key_info:
-                    logger.debug("SSL temp key: %s", key_info)
+                _log_tls(self._hostnameASCII, connection)
 
             try:
-                verifyHostname(connection, self._hostnameASCII)
+                if self._hostnameIsDnsName:
+                    verify_hostname(connection, self._hostnameASCII)
+                else:
+                    verify_ip_address(connection, self._hostnameASCII)
             except (CertificateError, VerificationError) as e:
                 logger.warning(
                     'Remote certificate is not valid for hostname "%s"; %s',
                     self._hostnameASCII,
                     e,
                 )
-
             except ValueError as e:
                 logger.warning(
                     "Ignoring error while verifying certificate "
@@ -84,6 +94,14 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
                     self._hostnameASCII,
                     e,
                 )
+
+
+ScrapyClientTLSOptions = create_deprecated_class(
+    "ScrapyClientTLSOptions",
+    _ScrapyClientTLSOptions,
+    subclass_warn_message="{old} is deprecated.",
+    instance_warn_message="{cls} is deprecated.",
+)
 
 
 DEFAULT_CIPHERS: AcceptableCiphers = AcceptableCiphers.fromOpenSSLCipherString(

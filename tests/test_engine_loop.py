@@ -4,30 +4,21 @@ from collections import deque
 from logging import ERROR
 from typing import TYPE_CHECKING
 
-import pytest
-from twisted.internet.defer import Deferred
-
 from scrapy import Request, Spider, signals
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.test_scheduler import MemoryScheduler
+from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    import pytest
+
     from scrapy.http import Response
 
 
-async def sleep(seconds: float = 0.001) -> None:
-    from twisted.internet import reactor
-
-    deferred: Deferred[None] = Deferred()
-    reactor.callLater(seconds, deferred.callback, None)
-    await maybe_deferred_to_future(deferred)
-
-
 class TestMain:
-    @pytest.mark.requires_reactor  # TODO
     @coroutine_test
     async def test_sleep(self):
         """Neither asynchronous sleeps on Spider.start() nor the equivalent on
@@ -40,27 +31,25 @@ class TestMain:
             name = "test"
 
             async def start(self):
-                from twisted.internet import reactor
-
                 yield Request("data:,a")
 
-                await sleep(seconds)
+                await async_sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.pause()
                 self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
 
                 # During this time, the scheduler reports having requests but
                 # returns None.
-                await sleep(seconds)
+                await async_sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.unpause()
 
                 # The scheduler request is processed.
-                await sleep(seconds)
+                await async_sleep(seconds)
 
                 yield Request("data:,c")
 
-                await sleep(seconds)
+                await async_sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.pause()
                 self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,d"))
@@ -69,7 +58,7 @@ class TestMain:
                 # delayed call below, proving that the start iteration can
                 # finish before a scheduler “sleep” without causing the
                 # scheduler to finish.
-                reactor.callLater(seconds, self.crawler.engine._slot.scheduler.unpause)
+                call_later(seconds, self.crawler.engine._slot.scheduler.unpause)
 
             def parse(self, response):
                 pass

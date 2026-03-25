@@ -4,11 +4,17 @@ import pytest
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
-from scrapy.extensions import statsmailer
-from scrapy.mail import MailSender
 from scrapy.signalmanager import SignalManager
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.spider import DefaultSpider
+
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:The scrapy.extensions.statsmailer module is deprecated:scrapy.exceptions.ScrapyDeprecationWarning",
+    "ignore:The scrapy.mail module is deprecated:scrapy.exceptions.ScrapyDeprecationWarning",
+)
+
+from scrapy.extensions import statsmailer  # noqa: E402
+from scrapy.mail import MailSender  # noqa: E402
 
 
 @pytest.fixture

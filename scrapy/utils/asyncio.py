@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
+from twisted.internet.threads import deferToThread
 
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
@@ -278,3 +279,23 @@ class CallLaterResult:
         elif self._delayed_call and self._delayed_call.active():
             self._delayed_call.cancel()
             self._delayed_call = None
+
+
+async def run_in_thread(
+    func: Callable[_P, _T], *args: _P.args, **kwargs: _P.kwargs
+) -> _T:
+    """Call a function in a thread and return its result as a coroutine.
+
+    This uses either :func:`asyncio.to_thread` or
+    :func:`twisted.internet.threads.deferToThread`, depending on whether
+    asyncio support is available.
+
+    .. versionadded:: VERSION
+    """
+    if is_asyncio_available():
+        return await asyncio.to_thread(func, *args, **kwargs)
+
+    # circular import
+    from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
+
+    return await maybe_deferred_to_future(deferToThread(func, *args, **kwargs))

@@ -8,13 +8,12 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
 
-from twisted import version as twisted_version
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
-from twisted.python.versions import Version
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK, Request
+from scrapy.utils._deps_compat import TWISTED_FAILURE_HAS_STACK
 from scrapy.utils.asyncio import call_later, is_asyncio_available
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.decorators import _warn_spider_arg
@@ -31,6 +30,8 @@ from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
+    from collections.abc import Awaitable
+
     from typing_extensions import Self
 
     from scrapy import Spider
@@ -209,7 +210,9 @@ class MediaPipeline(ABC):
             self._modify_media_request(request)
             assert self.crawler.engine
             response = await self.crawler.engine.download_async(request)
-            return self.media_downloaded(response, request, info, item=item)
+            return await ensure_awaitable(
+                self.media_downloaded(response, request, info, item=item)
+            )
         except Exception:
             failure = self.media_failed(Failure(), request, info)
             if isinstance(failure, Failure):
@@ -228,7 +231,7 @@ class MediaPipeline(ABC):
             # minimize cached information for failure
             result.cleanFailure()
             result.frames = []
-            if twisted_version < Version("twisted", 24, 10, 0):
+            if TWISTED_FAILURE_HAS_STACK:
                 result.stack = []  # type: ignore[method-assign]
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
@@ -282,7 +285,7 @@ class MediaPipeline(ABC):
         info: SpiderInfo,
         *,
         item: Any = None,
-    ) -> FileInfo:
+    ) -> FileInfo | Awaitable[FileInfo]:
         """Handler for success downloads"""
         raise NotImplementedError
 

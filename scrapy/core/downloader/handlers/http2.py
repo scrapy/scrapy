@@ -6,10 +6,10 @@ from urllib.parse import urldefrag
 
 from twisted.web.client import URI
 
-from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
-from scrapy.exceptions import DownloadTimeoutError
+from scrapy.exceptions import DownloadTimeoutError, NotConfigured
 from scrapy.utils._download_handlers import (
     normalize_bind_address,
     wrap_twisted_exceptions,
@@ -32,15 +32,15 @@ class H2DownloadHandler(BaseDownloadHandler):
     lazy = True
 
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self._crawler = crawler
 
         from twisted.internet import reactor
 
         self._pool = H2ConnectionPool(reactor, crawler.settings)
-        self._context_factory = load_context_factory_from_settings(
-            crawler.settings, crawler
-        )
+        self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:

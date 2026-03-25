@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
-from typing import TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any
 from unittest import mock
 from urllib.parse import urljoin
 from urllib.request import pathname2url
@@ -44,12 +44,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
 
-def path_to_url(path):
+def path_to_url(path: Path) -> str:
     return urljoin("file:", pathname2url(str(path)))
 
 
-def printf_escape(string):
-    return string.replace("%", "%%")
+def printf_escape(s: str) -> str:
+    return s.replace("%", "%%")
 
 
 class FromCrawlerMixin:
@@ -239,8 +239,10 @@ class TestFeedExportBase(ABC):
     ) -> dict[str, Any]:
         pass
 
-    def _load_until_eof(self, data, load_func):
-        result = []
+    def _load_until_eof(
+        self, data: bytes, load_func: Callable[[IO[bytes]], Any]
+    ) -> list[Any]:
+        result: list[Any] = []
         with tempfile.TemporaryFile() as temp:
             temp.write(data)
             temp.seek(0)
@@ -286,7 +288,7 @@ class IsExportingListener:
             if self.start_without_finish:
                 self.start_without_finish = False
             else:
-                self.finish_before_start = True
+                self.finish_without_start = True
 
 
 class ExceptionJsonItemExporter(JsonItemExporter):
@@ -1149,7 +1151,6 @@ class TestFeedExport(TestFeedExportBase):
         data = await self.exported_no_data(settings)
         assert data["csv"] == b""
 
-    @pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
     @coroutine_test
     async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
         settings = {
