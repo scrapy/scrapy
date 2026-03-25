@@ -625,7 +625,7 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
 
-        resolver_class = load_object(self.settings["DNS_RESOLVER"])
+        resolver_class = load_object(self.settings["TWISTED_DNS_RESOLVER"])
         # We pass self, which is CrawlerProcess, instead of Crawler here,
         # which works because the default resolvers only use crawler.settings.
         resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]

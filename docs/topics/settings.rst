@@ -331,7 +331,7 @@ These settings are:
 -   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
     :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
--   :setting:`DNS_RESOLVER` and settings used by the corresponding
+-   :setting:`TWISTED_DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
     and :setting:`DNS_TIMEOUT` for the default one.
 
@@ -660,9 +660,9 @@ Default: ``10000``
 
 DNS in-memory cache size.
 
-.. setting:: DNS_RESOLVER
+.. setting:: TWISTED_DNS_RESOLVER
 
-DNS_RESOLVER
+TWISTED_DNS_RESOLVER
 ------------
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
