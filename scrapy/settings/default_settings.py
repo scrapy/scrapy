@@ -241,7 +241,6 @@ DEPTH_STATS_VERBOSE = False
 
 DNSCACHE_ENABLED = True
 DNSCACHE_SIZE = 10000
-TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
@@ -525,7 +524,7 @@ TELNETCONSOLE_USERNAME = "scrapy"
 TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
-
+TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 TWISTED_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 

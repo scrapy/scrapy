@@ -663,7 +663,7 @@ DNS in-memory cache size.
 .. setting:: TWISTED_DNS_RESOLVER
 
 TWISTED_DNS_RESOLVER
-------------
+--------------------
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 

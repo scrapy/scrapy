@@ -625,7 +625,19 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
 
-        resolver_class = load_object(self.settings["TWISTED_DNS_RESOLVER"])
+        if self.settings.get("DNS_RESOLVER"):
+            warnings.warn(
+                "The DNS_RESOLVER setting is deprecated, please use "
+                "TWISTED_DNS_RESOLVER instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            resolver_cls_path = self.settings["DNS_RESOLVER"]
+        else:
+            resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+
+        resolver_class = load_object(resolver_cls_path)
+
         # We pass self, which is CrawlerProcess, instead of Crawler here,
         # which works because the default resolvers only use crawler.settings.
         resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]
