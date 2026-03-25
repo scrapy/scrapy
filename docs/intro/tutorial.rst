@@ -53,6 +53,16 @@ directory where you'd like to store your code and run::
 
     scrapy startproject tutorial
 
+.. note::
+
+    If the ``scrapy`` command is not recognized on Windows (e.g., because the
+    Python Scripts folder is not in your ``PATH``), you can use the following
+    alternative::
+
+        python -m scrapy startproject tutorial
+
+    This applies to all ``scrapy`` commands mentioned in this tutorial.
+
 This will create a ``tutorial`` directory with the following contents::
 
     tutorial/
