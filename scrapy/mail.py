@@ -71,7 +71,7 @@ class MailSender:
         smtpssl: bool = False,
         debug: bool = False,
     ):
-        if is_reactorless():
+        if is_reactorless():  # pragma: no cover
             raise RuntimeError(f"{type(self).__name__} requires a Twisted reactor.")
         self.smtphost: str = smtphost
         self.smtpport: int = smtpport

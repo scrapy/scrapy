@@ -33,7 +33,7 @@ class HTTP10DownloadHandler:
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        if not crawler.settings.getbool("TWISTED_ENABLED"):
+        if not crawler.settings.getbool("TWISTED_ENABLED"):  # pragma: no cover
             raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         self.HTTPClientFactory: type[ScrapyHTTPClientFactory] = load_object(
             settings["DOWNLOADER_HTTPCLIENTFACTORY"]
