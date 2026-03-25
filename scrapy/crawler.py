@@ -790,6 +790,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         else:
             install_reactor(_asyncio_reactor_path, loop_path)
         self._initialized_reactor = True
+        self._closing_loop: bool = False
 
     def _stop_dfd(self) -> Deferred[Any]:
         return deferred_from_coro(self.stop())
@@ -820,20 +821,133 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     def _start_asyncio(
         self, stop_after_crawl: bool, install_signal_handlers: bool
     ) -> None:
-        # Very basic and will need multiple improvements.
-        # TODO https://docs.python.org/3/library/asyncio-runner.html#handling-keyboard-interruption
-        # TODO various exception handling
-        # TODO consider asyncio.run()
+        # We cannot use asyncio.run() here, because we can't let it handle the
+        # loop lifetime: _crawl() needs a loop (which we create in __init__()),
+        # because crawl() returns a Task.
+        # So we reproduce a part of asyncio.runners.Runner that is useful to us.
+
+        # Normal workflow:
+        # 1. _start_asyncio() calls _run_loop()
+        # 2. _run_loop() calls loop.run_forever()
+        # 3. Crawling tasks start and finish
+        # 4. _stop_loop() is called via join_task and calls loop.stop()
+        # 5. loop.run_forever() and thus _run_loop() return
+        # 6. _start_asyncio() calls _close_loop()
+        # 7. _close_loop() does finalization and calls loop.close()
+
+        # Normal workflow with stop_after_crawl=False: initial steps are the same,
+        # but after scraping tasks finish the loop isn't stopped and next steps
+        # don't happen. When the loop is stopped (externally), _start_asyncio()
+        # just returns.
+
+        # Workflow with Ctrl-C pressed once:
+        # 1. While loop.run_forever() blocks, _signal_shutdown_reactorless() is called
+        # 2. _signal_shutdown_reactorless() calls _shutdown_graceful_reactorless()
+        #    (via call_soon_threadsafe())
+        # 3. _shutdown_graceful_reactorless() calls stop()
+        # 4. stop() stops crawl tasks and waits until they stop
+        # 5. Steps 4-7 from the normal workflow happen, we ignore stop_after_crawl=False
+
+        # Workflow with Ctrl-C pressed twice:
+        # 1. While loop.run_forever() blocks, _signal_shutdown_reactorless() is called
+        # 2. _signal_shutdown_reactorless() calls _shutdown_graceful_reactorless()
+        #    (via call_soon_threadsafe()) and installs _signal_kill_reactorless() as the next handler
+        # 3. Before _shutdown_graceful_reactorless() completes, _signal_kill_reactorless() is called
+        # 4. _signal_kill_reactorless() calls loop.stop() (via call_soon_threadsafe())
+        # 5. loop.run_forever() and thus _run_loop() return
+        # 6. _start_asyncio() calls _close_loop()
+        # 7. _close_loop() cancels all pending tasks (including _shutdown_graceful_reactorless()),
+        #    does finalization and calls loop.close()
 
         loop = asyncio.get_event_loop()
         if stop_after_crawl:
             join_task = loop.create_task(self.join())
-            join_task.add_done_callback(lambda _: loop.stop())
+            join_task.add_done_callback(self._stop_loop)
         try:
-            loop.run_forever()  # blocking call
+            self._run_loop(loop, install_signal_handlers)  # blocking call
         finally:
+            if stop_after_crawl:
+                self._closing_loop = True
+                self._close_loop(loop)
+
+    def _run_loop(
+        self, loop: asyncio.AbstractEventLoop, install_signal_handlers: bool
+    ) -> None:
+        # similar to asyncio.runners.Runner.run()
+        if install_signal_handlers:
+            install_shutdown_handlers(self._signal_shutdown_reactorless)
+        loop.run_forever()
+
+    def _stop_loop(self, _: Any = None) -> None:
+        if not self._closing_loop:
+            asyncio.get_running_loop().stop()
+
+    def _close_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        # Similar to asyncio.runners.Runner.close()
+        try:
+            self._cancel_all_tasks(loop)
             loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.run_until_complete(loop.shutdown_default_executor())
+        finally:
+            asyncio.set_event_loop(None)
             loop.close()
+
+    @staticmethod
+    def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
+        # copy of asyncio.runners._cancel_all_tasks()
+        to_cancel = asyncio.all_tasks(loop)
+        if not to_cancel:
+            return
+
+        for task in to_cancel:
+            task.cancel()
+
+        loop.run_until_complete(asyncio.gather(*to_cancel, return_exceptions=True))
+
+        for task in to_cancel:
+            if task.cancelled():
+                continue
+            if task.exception() is not None:
+                loop.call_exception_handler(
+                    {
+                        "message": "unhandled exception during asyncio.run() shutdown",
+                        "exception": task.exception(),
+                        "task": task,
+                    }
+                )
+
+    def _signal_shutdown_reactorless(self, signum: int, _: Any) -> None:
+        install_shutdown_handlers(self._signal_kill_reactorless)
+        signame = signal_names[signum]
+        logger.info(
+            "Received %(signame)s, shutting down gracefully. Send again to force ",
+            {"signame": signame},
+        )
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        loop.call_soon_threadsafe(
+            loop.create_task, self._shutdown_graceful_reactorless()
+        )
+
+    def _signal_kill_reactorless(self, signum: int, _: Any) -> None:
+        install_shutdown_handlers(signal.SIG_IGN)
+        signame = signal_names[signum]
+        logger.info(
+            "Received %(signame)s twice, forcing unclean shutdown", {"signame": signame}
+        )
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        loop.call_soon_threadsafe(loop.stop)
+
+    async def _shutdown_graceful_reactorless(self) -> None:
+        try:
+            await self.stop()
+        finally:
+            self._stop_loop()
 
     def _start_twisted(
         self, stop_after_crawl: bool, install_signal_handlers: bool
