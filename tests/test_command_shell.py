@@ -132,6 +132,15 @@ class TestShellCommand:
         ret, _, err = proc("shell", "-c", code, "--set", "TWISTED_ENABLED=False")
         assert ret == 0, err
 
+    def test_no_reactor_unsupported(self) -> None:
+        # to be removed when it's supported
+        ret, out, err = proc("shell", "-c", "item", "--set", "TWISTED_ENABLED=False")
+        assert ret == 1, out or err
+        assert (
+            "RuntimeError: scrapy shell currently doesn't support TWISTED_ENABLED=False"
+            in err
+        )
+
 
 class TestInteractiveShell:
     def test_fetch(self, mockserver: MockServer) -> None:
