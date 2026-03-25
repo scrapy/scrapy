@@ -34,6 +34,7 @@ from scrapy.core.downloader.contextfactory import _load_context_factory_from_set
 from scrapy.exceptions import (
     DownloadCancelledError,
     DownloadTimeoutError,
+    NotConfigured,
     ResponseDataLossError,
     StopDownload,
 )
@@ -80,6 +81,8 @@ class _ResultT(TypedDict):
 
 class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self._crawler = crawler
 

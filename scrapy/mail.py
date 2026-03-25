@@ -7,6 +7,7 @@ See documentation in docs/topics/email.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from email import encoders as Encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -19,8 +20,10 @@ from typing import IO, TYPE_CHECKING, Any
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
+from scrapy.utils.reactorless import is_reactorless
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -49,6 +52,13 @@ def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
     return to_bytes(text)
 
 
+warnings.warn(
+    "The scrapy.mail module is deprecated and will be removed in a future release. "
+    "Please use a dedicated Python mail library instead.",
+    category=ScrapyDeprecationWarning,
+)
+
+
 class MailSender:
     def __init__(
         self,
@@ -61,6 +71,8 @@ class MailSender:
         smtpssl: bool = False,
         debug: bool = False,
     ):
+        if is_reactorless():  # pragma: no cover
+            raise RuntimeError(f"{type(self).__name__} requires a Twisted reactor.")
         self.smtphost: str = smtphost
         self.smtpport: int = smtpport
         self.smtpuser: bytes | None = _to_bytes_or_none(smtpuser)
@@ -71,7 +83,7 @@ class MailSender:
         self.debug: bool = debug
 
     @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:  # pragma: no cover
         settings = crawler.settings
         return cls(
             smtphost=settings["MAIL_HOST"],
