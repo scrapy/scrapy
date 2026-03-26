@@ -5,6 +5,7 @@ Item Exporters are used to export/serialize items into different formats.
 from __future__ import annotations
 
 import csv
+import logging
 import marshal
 import pickle
 import pprint
@@ -16,6 +17,8 @@ from xml.sax.saxutils import XMLGenerator
 from xml.sax.xmlreader import AttributesImpl
 
 from itemadapter import ItemAdapter, is_item
+
+logger = logging.getLogger(__name__)
 
 from scrapy.item import Field, Item
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
@@ -245,6 +248,7 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
+        self._warned_dropped_fields: set[str] = set()
 
     def serialize_field(
         self, field: Mapping[str, Any] | Field, name: str, value: Any
@@ -264,6 +268,20 @@ class CsvItemExporter(BaseItemExporter):
         if self._headers_not_written:
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
+
+        if self.fields_to_export is not None:
+            item_fields = set(ItemAdapter(item).keys())
+            if isinstance(self.fields_to_export, Mapping):
+                export_fields = set(self.fields_to_export.keys())
+            else:
+                export_fields = set(self.fields_to_export)
+            dropped = item_fields - export_fields - self._warned_dropped_fields
+            if dropped:
+                logger.warning(
+                    "CsvItemExporter: fields %s not in CSV headers and will be dropped",
+                    dropped,
+                )
+                self._warned_dropped_fields.update(dropped)
 
         fields = self._get_serialized_fields(item, default_value="", include_empty=True)
         values = list(self._build_row(x for _, x in fields))
