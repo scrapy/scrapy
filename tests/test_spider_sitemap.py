@@ -4,7 +4,6 @@ import gc
 import gzip
 import re
 import sys
-import tracemalloc
 import warnings
 from datetime import datetime
 from io import BytesIO
@@ -133,19 +132,14 @@ Sitemap: /sitemap-relative-url.xml
             memory ≈ BASE_OVERHEAD + sitemaps_n * PER_SITEMAP_COST * urls_n
 
         where:
-            - BASE_OVERHEAD accounts for fixed costs (Python interpreter, tracemalloc,
-            generator objects, etc.).
-            - PER_SITEMAP_COST is the approximate memory per URL in the materialized
-            case.
-
-        If a lazy implementation were introduced that retains the entire XML body
-        (e.g., through a parser reference), the actual memory consumption would grow
-        with a significantly larger per‑URL factor, causing the assertion to fail for
-        larger sitemaps_n.
+            - BASE_OVERHEAD accounts for fixed costs (mostly the cost of materialising the generator to list, etc.).
+            - PER_SITEMAP_COST is the approximate memory per URL.
         """
+        import tracemalloc  # noqa: PLC0415
+
         # empirically observed on `platform linux -- Python 3.13.3`
-        BASE_OVERHEAD = 200_000  # fixed cost (tracemalloc, generators, Python objects)
-        PER_SITEMAP_COST = 200  #  ~200 bytes per URL
+        BASE_OVERHEAD = 200_000  # fixed cost (lower without calling `list()`)
+        PER_SITEMAP_COST = 200  #  ~200 bytes per URL, ~500 in lazy case
 
         spider = self.spider_class("example.com")
 
@@ -163,12 +157,6 @@ Sitemap: /sitemap-relative-url.xml
         # queuing many sitemap requests at once. Force two GC cycles to handle finalizers that may be delayed.
         gc.collect()
         gc.collect()
-        # We intentionally measure *current* memory usage instead of peak.
-        # This test focuses on retained memory after responses are released,
-        # i.e. whether the returned generators keep sitemap bodies alive.
-        # Measuring current memory after gc.collect() reflects that steady-state
-        # behavior, while peak would overestimate memory usage and make the
-        # assertion unstable and unrelated to the goal of the test.
         current, _ = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
