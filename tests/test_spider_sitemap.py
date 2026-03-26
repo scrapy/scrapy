@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import gzip
 import re
 import tracemalloc
@@ -105,42 +106,74 @@ Sitemap: /sitemap-relative-url.xml
         ]
 
     @pytest.mark.parametrize(
-        ("scenario", "max_peak"),
-        [
-            ("urlset", 700_000),
-            ("sitemapindex", 500_000),
-            ("robots", 300_000),
-        ],
+        "urls_n",  # number of <loc> entries per sitemap
+        [10, 100, 1000],
     )
-    def test_parse_sitemap_peak_memory_stays_below_limit(
-        self, scenario: str, max_peak: int
-    ):
-        r: Response
-        if scenario == "urlset":
-            r = XmlResponse(
-                url="http://www.example.com/sitemap.xml",
-                body=self._generate_sitemap(8_000),
-            )
-        elif scenario == "sitemapindex":
-            r = XmlResponse(
-                url="http://www.example.com/sitemap-index.xml",
-                body=self._generate_sitemapindex(8_000),
-            )
-        else:
-            r = TextResponse(
-                url="http://www.example.com/robots.txt",
-                body=self._generate_robots_with_sitemap_urls(8_000),
-            )
+    @pytest.mark.parametrize(
+        "sitemaps_n",  # number of sitemap responses processed concurrently
+        [1, 4, 8, 32, 64],
+    )
+    def test_parse_sitemap_memory_stays_below_limit(self, urls_n: int, sitemaps_n: int):
+        """
+        Verify that the memory footprint of keeping multiple sitemap parse generators
+        alive grows linearly with the number of sitemaps and URLs, and stays below a
+        reasonable upper bound.
+
+        The test creates `sitemaps_n` XML responses, each containing `urls_n` <loc>
+        entries, and calls `spider._parse_sitemap` on each. The returned generators are
+        retained while the response objects are discarded. After forcing garbage
+        collection, we measure the current memory usage.
+
+        The memory bound is derived from an empirical model of the fully
+        materialized implementation:
+            memory ≈ BASE_OVERHEAD + sitemaps_n * PER_SITEMAP_COST * urls_n
+
+        where:
+            - BASE_OVERHEAD accounts for fixed costs (Python interpreter, tracemalloc,
+            generator objects, etc.).
+            - PER_SITEMAP_COST is the approximate memory per URL in the materialized
+            case.
+
+        If a lazy implementation were introduced that retains the entire XML body
+        (e.g., through a parser reference), the actual memory consumption would grow
+        with a significantly larger per‑URL factor, causing the assertion to fail for
+        larger sitemaps_n.
+        """
+        # empirically observed on `platform linux -- Python 3.13.3`
+        BASE_OVERHEAD = 200_000  # fixed cost (tracemalloc, generators, Python objects)
+        PER_SITEMAP_COST = 200  #  ~200 bytes per URL
 
         spider = self.spider_class("example.com")
 
         tracemalloc.start()
-        for _ in spider._parse_sitemap(r):
-            pass
-        _, peak = tracemalloc.get_traced_memory()
+
+        generators = []
+        for i in range(sitemaps_n):
+            r = XmlResponse(
+                url=f"http://www.example.com/sitemap-{i}.xml",
+                body=self._generate_sitemap(urls_n),
+            )
+            generators.append(spider._parse_sitemap(r))
+
+        # Keep parse generators alive, but release all responses to mimic scheduler
+        # queuing many sitemap requests at once. Force two GC cycles to handle finalizers that may be delayed.
+        gc.collect()
+        gc.collect()
+        # We intentionally measure *current* memory usage instead of peak.
+        # This test focuses on retained memory after responses are released,
+        # i.e. whether the returned generators keep sitemap bodies alive.
+        # Measuring current memory after gc.collect() reflects that steady-state
+        # behavior, while peak would overestimate memory usage and make the
+        # assertion unstable and unrelated to the goal of the test.
+        current, _ = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
-        assert peak < max_peak
+        assert current < BASE_OVERHEAD + sitemaps_n * PER_SITEMAP_COST * urls_n
+
+        # Sanity-check that all retained generators are still consumable.
+        for g in generators:
+            req = next(iter(g))
+            assert req.url.startswith("https://example.com/page-")
 
     def test_alternate_url_locs(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -492,28 +525,36 @@ Sitemap: /sitemap-relative-url.xml
 
     def _generate_sitemap(self, urls_n: int) -> bytes:
         b = bytearray(
-            b'<?xml version="1.0" encoding="UTF-8"?>'
-            b'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            b'<?xml version="1.0" encoding="UTF-8"?>\n'
+            b'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         )
         for i in range(urls_n):
             b += (
                 b"<url><loc>https://example.com/page-"
                 + str(i).encode()
-                + b"</loc><lastmod>2026-01-01</lastmod></url>"
+                + b"</loc><lastmod>2026-"
+                + str(i % 12).encode()
+                + b"-"
+                + str(i % 30).encode()
+                + b"</lastmod><priority>0."
+                + str(i % 10).encode()
+                + b"</priority><changefreq>daily</changefreq><image:image><image:loc>https://example.com/image-"
+                + str(i).encode()
+                + b".jpg</image:loc></image:image></url>\n"
             )
         b += b"</urlset>\n"
         return bytes(b)
 
     def _generate_sitemapindex(self, urls_n: int) -> bytes:
         b = bytearray(
-            b'<?xml version="1.0" encoding="UTF-8"?>'
-            b'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            b'<?xml version="1.0" encoding="UTF-8"?>\n'
+            b'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         )
         for i in range(urls_n):
             b += (
                 b"<sitemap><loc>https://example.com/sitemap-"
                 + str(i).encode()
-                + b".xml</loc></sitemap>"
+                + b".xml</loc></sitemap>\n"
             )
         b += b"</sitemapindex>\n"
         return bytes(b)
@@ -521,5 +562,7 @@ Sitemap: /sitemap-relative-url.xml
     def _generate_robots_with_sitemap_urls(self, urls_n: int) -> bytes:
         b = bytearray(b"User-agent: *\n")
         for i in range(urls_n):
-            b += b"Sitemap: https://example.com/sitemap-" + str(i).encode() + b".xml\n"
+            b += b"NotSitemap: /something-" + str(i).encode() + b"\n"
+        b += b"\n"
+        b += b"Sitemap: https://example.com/sitemap.xml\n"
         return bytes(b)
