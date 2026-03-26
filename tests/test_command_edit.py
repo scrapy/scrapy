@@ -21,43 +21,44 @@ class TestEditCommand(TestProjectBase):
     def create_spider(self, proj_path: Path):
         """creates spider needed for tests"""
         # setup: add "cat" as test environment editor
-        try:
+        editor_to_restore = None
+        if "EDITOR" in os.environ:
             editor_to_restore = os.environ["EDITOR"]
-        except KeyError:
-            editor_to_restore = None
-        finally:
-            os.environ["EDITOR"] = "cat"
+
+        os.environ["EDITOR"] = "cat"
 
         # setup: preserve scrapy settings in local environment
-        try:
+        scrapy_settings_to_restore = None
+        if "SCRAPY_SETTINGS_MODULE" in os.environ:
             scrapy_settings_to_restore = os.environ["SCRAPY_SETTINGS_MODULE"]
-        except KeyError:
-            scrapy_settings_to_restore = None
 
         # setup: create spider to edit
         test_name = "test_name"
         call("genspider", test_name, "test.com", cwd=proj_path)
         spider = proj_path / self.project_name / "spiders" / "test_name.py"
-        yield proj_path, spider, test_name
 
-        # teardown: remove spider from project
-        Path.unlink(spider)
+        try:
+            yield proj_path, spider, test_name
 
-        # teardown: restore previous editor
-        if editor_to_restore is not None:
-            os.environ["EDITOR"] = editor_to_restore
-        else:
-            # remove editor from os.environ if it exists
-            with suppress(KeyError):
-                os.environ.pop("EDITOR")
+        finally:
+            # teardown: remove spider from project
+            Path.unlink(spider)
 
-        # teardown: restore project settings in local environment
-        if scrapy_settings_to_restore is not None:
-            os.environ["SCRAPY_SETTINGS_MODULE"] = scrapy_settings_to_restore
-        else:
-            # remove "SCRAPY_SETTINGS_MODULE" from os.environ if it exists
-            with suppress(KeyError):
-                os.environ.pop("SCRAPY_SETTINGS_MODULE")
+            # teardown: restore previous editor
+            if editor_to_restore is not None:
+                os.environ["EDITOR"] = editor_to_restore
+            else:
+                # remove editor from os.environ if it exists
+                with suppress(KeyError):
+                    os.environ.pop("EDITOR")
+
+            # teardown: restore project settings in local environment
+            if scrapy_settings_to_restore is not None:
+                os.environ["SCRAPY_SETTINGS_MODULE"] = scrapy_settings_to_restore
+            else:
+                # remove "SCRAPY_SETTINGS_MODULE" from os.environ if it exists
+                with suppress(KeyError):
+                    os.environ.pop("SCRAPY_SETTINGS_MODULE")
 
     def test_edit_valid_spider(self, create_spider) -> None:
         """test call to edit command with correct spider name"""
@@ -79,28 +80,41 @@ class TestEditCommand(TestProjectBase):
     def test_edit_command_valid_directory(self, create_spider):
         """calls editor command directly from project directory"""
         proj_path, spider, test_name = create_spider
+        failures = []
 
         # change into cwd
         current = Path.cwd()
         os.chdir(proj_path)
 
-        # create edit command object
-        # teardown required as get_project_settings() mutates os.environ
-        cmd = Command()
-        cmd.settings = get_project_settings()
-        # grabs system editor to mock
-        editor = cmd.settings.get("EDITOR")
+        try:
+            # create edit command object
+            # teardown required as get_project_settings() mutates os.environ
+            cmd = Command()
+            cmd.settings = get_project_settings()
+            # grabs system editor to mock
+            editor = cmd.settings.get("EDITOR")
 
-        # parse commandline arguments
-        parser = ScrapyArgumentParser()
-        opts, _ = parser.parse_known_args(["edit", test_name])
+            # parse commandline arguments
+            parser = ScrapyArgumentParser()
+            opts, _ = parser.parse_known_args(["edit", test_name])
 
-        with mock.patch("scrapy.commands.edit.os.system", return_value=0) as mock_sys:
-            cmd.run([test_name], opts)
-            mock_sys.assert_called_once_with(f'{editor} "{spider}"')
+            with mock.patch(
+                "scrapy.commands.edit.os.system", return_value=0
+            ) as mock_sys:
+                cmd.run([test_name], opts)
+                mock_sys.assert_called_once_with(f'{editor} "{spider}"')
 
-        # move back into previous cwd
-        os.chdir(current)
+        # catch failure so we can restore cwd
+        except AssertionError as e:
+            failures.append(e)
+
+        finally:
+            # restore previous cwd
+            os.chdir(current)
+
+            # report test failure
+            if failures:
+                pytest.fail(f"{failures[0]}")
 
     def test_edit_as_subprocess(self, create_spider):
         """check that subprocess calls editor"""
