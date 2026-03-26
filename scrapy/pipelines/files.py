@@ -26,6 +26,7 @@ from twisted.internet.defer import Deferred, maybeDeferred
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
+from scrapy.http import request
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
 from scrapy.utils.asyncio import run_in_thread
@@ -607,7 +608,7 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        if not (200 <= response.status < 300):
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
@@ -721,13 +722,33 @@ class FilesPipeline(MediaPipeline):
         *,
         item: Any = None,
     ) -> str:
-        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
-        media_ext = Path(request.url).suffix
-        # Handles empty and wild extensions by trying to guess the
-        # mime type then extension or default to empty string otherwise
-        if media_ext not in mimetypes.types_map:
+        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        parsed = urlparse(request.url)
+        path = parsed.path
+        query = parsed.query
+
+        media_ext = Path(path).suffix.lower()
+
+        # Ignore extension if query exists (like .php?img=...)
+        if query:
+            media_ext = ""
+
+        # No query and unknown extension: try to recover from mime type
+        if not query and (not media_ext or media_ext not in mimetypes.types_map):
             media_ext = ""
             media_type = mimetypes.guess_type(request.url)[0]
             if media_type:
-                media_ext = cast("str", mimetypes.guess_extension(media_type))
+                guessed = mimetypes.guess_extension(media_type)
+                if guessed:
+                    media_ext = cast("str", guessed)
+
+        # Query exists: look for valid extension inside query string
+        if query and not media_ext:
+            for part in query.split("&"):
+                if "." in part:
+                    ext = Path(part).suffix.lower()
+                    if ext in mimetypes.types_map:
+                        media_ext = ext
+                        break
+
         return f"full/{media_guid}{media_ext}"

@@ -22,6 +22,7 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import NotConfigured
+from scrapy.pipelines.files import FileException
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
@@ -814,3 +815,46 @@ def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
 
     with pytest.raises(NotConfigured):
         FilesPipeline.from_crawler(crawler)
+        
+class TestFilesPipelineMediaDownloaded:
+    """Test FilesPipeline.media_downloaded status code handling."""
+
+    def setup_method(self):
+        self.tempdir = mkdtemp()
+        crawler = get_crawler(DefaultSpider, {"FILES_STORE": self.tempdir})
+        crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=_mocked_download_func)
+        self.pipeline = FilesPipeline.from_crawler(crawler)
+        self.pipeline.open_spider()          # no argument — matches existing TestFilesPipeline
+        self.info = self.pipeline.spiderinfo
+
+    def teardown_method(self):
+        rmtree(self.tempdir)
+
+    @coroutine_test
+    async def test_media_downloaded_accepts_201_created(self):
+        """HTTP 201 Created is a valid success code — file must not be rejected."""
+        request = Request("http://example.com/file.txt")
+        response = Response(
+            "http://example.com/file.txt",
+            status=201,
+            body=b"some file content",
+            request=request,
+        )
+        try:
+            await self.pipeline.media_downloaded(response, request, self.info)
+        except FileException as e:
+            pytest.fail(f"media_downloaded raised FileException for HTTP 201: {e}")
+
+    @coroutine_test
+    async def test_media_downloaded_rejects_404(self):
+        """HTTP 404 must still raise FileException — not a success code."""
+        request = Request("http://example.com/file.txt")
+        response = Response(
+            "http://example.com/file.txt",
+            status=404,
+            body=b"",
+            request=request,
+        )
+        with pytest.raises(FileException):
+            await self.pipeline.media_downloaded(response, request, self.info)     
