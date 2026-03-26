@@ -1,3 +1,5 @@
+import warnings
+
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
 
@@ -180,6 +182,40 @@ Disallow: /forum/active/
         "http://example.com/sitemap-uppercase.xml",
         "http://example.com/sitemap-relative-url.xml",
     ]
+
+
+def test_sitemap_urls_from_robots_str_compat():
+    robots = """User-agent: *
+Disallow: /aff/
+Disallow: /wl/
+
+# Search and shopping refining
+Disallow: /s*/*facet
+Disallow: /s*/*tags
+
+# Sitemap files
+Sitemap: http://example.com/sitemap.xml
+Sitemap: http://example.com/sitemap-product-index.xml
+Sitemap: HTTP://example.com/sitemap-uppercase.xml
+Sitemap: /sitemap-relative-url.xml
+
+# Forums
+Disallow: /forum/search/
+Disallow: /forum/active/
+"""
+
+    with warnings.catch_warnings(record=True) as w:
+        assert list(
+            sitemap_urls_from_robots(robots, base_url="http://example.com")
+        ) == [
+            "http://example.com/sitemap.xml",
+            "http://example.com/sitemap-product-index.xml",
+            "http://example.com/sitemap-uppercase.xml",
+            "http://example.com/sitemap-relative-url.xml",
+        ]
+        assert "Passing `str` type as `robots_text` is deprecated, use `bytes`" in str(
+            w[0].message
+        )
 
 
 def test_sitemap_blanklines():

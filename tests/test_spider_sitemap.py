@@ -3,6 +3,7 @@ from __future__ import annotations
 import gc
 import gzip
 import re
+import sys
 import tracemalloc
 import warnings
 from datetime import datetime
@@ -105,6 +106,9 @@ Sitemap: /sitemap-relative-url.xml
             "http://example.com/ok.xml",
         ]
 
+    @pytest.mark.skipif(
+        "PyPy" in sys.version, reason="PyPy does not have `_tracemalloc`"
+    )
     @pytest.mark.parametrize(
         "urls_n",  # number of <loc> entries per sitemap
         [10, 100, 1000],
