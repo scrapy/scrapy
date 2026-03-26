@@ -118,8 +118,8 @@ Sitemap: /sitemap-relative-url.xml
     )
     def test_parse_sitemap_memory_stays_below_limit(self, urls_n: int, sitemaps_n: int):
         """
-        Verify that the memory footprint of keeping multiple sitemap parse generators
-        alive grows linearly with the number of sitemaps and URLs, and stays below a
+        Verify that the memory footprint of sitemap parsing grows linearly
+        with the number of sitemaps and URLs, and stays below a
         reasonable upper bound.
 
         The test creates `sitemaps_n` XML responses, each containing `urls_n` <loc>
@@ -129,7 +129,7 @@ Sitemap: /sitemap-relative-url.xml
 
         The memory bound is derived from an empirical model of the fully
         materialized implementation:
-            memory ≈ BASE_OVERHEAD + sitemaps_n * PER_SITEMAP_COST * urls_n
+            memory ~= BASE_OVERHEAD + sitemaps_n * PER_SITEMAP_COST * urls_n
 
         where:
             - BASE_OVERHEAD accounts for fixed costs (mostly the cost of materialising the generator to list, etc.).
@@ -138,14 +138,33 @@ Sitemap: /sitemap-relative-url.xml
         import tracemalloc  # noqa: PLC0415
 
         # empirically observed on `platform linux -- Python 3.13.3`
-        BASE_OVERHEAD = 200_000  # fixed cost (lower without calling `list()`)
-        PER_SITEMAP_COST = 200  #  ~200 bytes per URL, ~500 in lazy case
+        BASE_OVERHEAD = 250_000  # fixed cost, lower in lazy case
+        PER_SITEMAP_COST = 200  #  ~200 bytes per URL, higher in lazy case
 
         spider = self.spider_class("example.com")
 
         tracemalloc.start()
 
-        generators = []
+        generators = [
+            spider._parse_sitemap(
+                TextResponse(
+                    url="http://www.example.com/robots.txt",
+                    body=self._generate_robots_with_sitemap_urls(2),
+                )
+            ),
+            spider._parse_sitemap(
+                XmlResponse(
+                    url="http://www.example.com/sitemap-index.xml",
+                    body=self._generate_sitemapindex(urls_n // 2),
+                )
+            ),
+            spider._parse_sitemap(
+                XmlResponse(
+                    url="http://www.example.com/sitemap-index.xml",
+                    body=self._generate_sitemapindex(urls_n // 2),
+                )
+            ),
+        ]
         for i in range(sitemaps_n):
             r = XmlResponse(
                 url=f"http://www.example.com/sitemap-{i}.xml",
@@ -165,7 +184,7 @@ Sitemap: /sitemap-relative-url.xml
         # Sanity-check that all retained generators are still consumable.
         for g in generators:
             req = next(iter(g))
-            assert req.url.startswith("https://example.com/page-")
+            assert req.url.startswith("https://example.com/")
 
     def test_alternate_url_locs(self):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -556,5 +575,6 @@ Sitemap: /sitemap-relative-url.xml
         for i in range(urls_n):
             b += b"NotSitemap: /something-" + str(i).encode() + b"\n"
         b += b"\n"
-        b += b"Sitemap: https://example.com/sitemap.xml\n"
+        for i in range(urls_n):
+            b += b"Sitemap: https://example.com/sitemap" + str(i).encode() + b".xml\n"
         return bytes(b)
