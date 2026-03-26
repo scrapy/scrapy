@@ -59,6 +59,19 @@ def test_arglist_to_dict():
 
 
 class TestPyprojectToml:
+    def test_multiple_projects(self, tmp_path, monkeypatch):
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.scrapy.settings]\n"
+            'default = "myproject1.settings"\n'
+            'project1 = "myproject1.settings"\n'
+            'project2 = "myproject2.settings"\n'
+        )
+        monkeypatch.chdir(tmp_path)
+        cfg = get_config()
+        assert cfg.get("settings", "default") == "myproject1.settings"
+        assert cfg.get("settings", "project1") == "myproject1.settings"
+        assert cfg.get("settings", "project2") == "myproject2.settings"
+
     def test_pyproject_toml_takes_precedence_over_scrapy_cfg(
         self, tmp_path, monkeypatch
     ):

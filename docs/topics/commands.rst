@@ -21,17 +21,8 @@ standalone ``scrapyd-deploy``. See `Deploying your project`_.)
 Configuration settings
 ======================
 
-Scrapy will look for configuration parameters in toml-style ``pyproject.toml``
-files in standard locations:
-
-1. ``/etc/pyproject.toml`` or ``c:\scrapy\pyproject.toml`` (system-wide),
-2. ``~/.config/pyproject.toml`` (``$XDG_CONFIG_HOME``) and ``~/.pyproject.toml`` (``$HOME``)
-   for global (user-wide) settings, and
-3. ``pyproject.toml`` inside a Scrapy project's root (see next section).
-
-Settings from these files are merged in the listed order of preference:
-user-defined values have higher priority than system-wide defaults
-and project-wide settings will override all others, when defined.
+Scrapy looks for project configuration in a ``pyproject.toml`` file located in 
+the project root directory (see next section).
 
 Scrapy also understands, and can be configured through, a number of environment
 variables. Currently these are:
