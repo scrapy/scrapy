@@ -138,9 +138,10 @@ Sitemap: /sitemap-relative-url.xml
         import tracemalloc  # noqa: PLC0415
 
         # empirically observed on `platform linux -- Python 3.13.3`
-        BASE_OVERHEAD = 250_000  # fixed cost, lower in lazy case
+        BASE_OVERHEAD = (
+            250_000 if sys.version_info >= (3, 12) else 300_000
+        )  # fixed cost, lower in lazy case
         PER_SITEMAP_COST = 200  #  ~200 bytes per URL, higher in lazy case
-
         spider = self.spider_class("example.com")
 
         tracemalloc.start()
