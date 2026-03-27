@@ -748,7 +748,7 @@ specific cipher that is not included in ``DEFAULT`` if a website requires it.
     :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
     to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
     It's currently unsupported by
-    :class:`scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -780,7 +780,7 @@ This setting must be one of these string values:
     :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
     to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
     It's currently unsupported by
-    :class:`scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -933,7 +933,7 @@ request.
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers. Specifying the port is unsupported by
-    :class:`scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOAD_HANDLERS
 

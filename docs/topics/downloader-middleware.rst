@@ -745,7 +745,7 @@ HttpProxyMiddleware
     Handling of this meta key needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers. It's currently unsupported by
-    :class:`scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
