@@ -799,7 +799,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         else:
             install_reactor(_asyncio_reactor_path, loop_path)
         self._initialized_reactor = True
-        self._closing_loop: bool = False
+        self._reactorless_main_task: asyncio.Future[None] | None = None
 
     def _stop_dfd(self) -> Deferred[Any]:
         return deferred_from_coro(self.stop())
@@ -836,60 +836,74 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         # So we reproduce a part of asyncio.runners.Runner that is useful to us.
 
         # Normal workflow:
-        # 1. _start_asyncio() calls _run_loop()
-        # 2. _run_loop() calls loop.run_forever()
+        # 1. _start_asyncio() creates a task for self.join() and calls _run_loop()
+        # 2. _run_loop() calls loop.run_until_complete(main_task)
         # 3. Crawling tasks start and finish
-        # 4. _stop_loop() is called via join_task and calls loop.stop()
-        # 5. loop.run_forever() and thus _run_loop() return
-        # 6. _start_asyncio() calls _close_loop()
-        # 7. _close_loop() does finalization and calls loop.close()
+        # 4. join() completes, loop.run_until_complete() and thus _run_loop() return
+        # 5. _start_asyncio() calls _close_loop()
+        # 6. _close_loop() does finalization and calls loop.close()
 
-        # Normal workflow with stop_after_crawl=False: initial steps are the same,
-        # but after scraping tasks finish the loop isn't stopped and next steps
-        # don't happen. When the loop is stopped (externally), _start_asyncio()
-        # just returns.
+        # Normal workflow with stop_after_crawl=False:
+        # 1. _start_asyncio() creates a simple future and calls _run_loop()
+        # 2. _run_loop() calls loop.run_until_complete(main_task)
+        # 3. Crawling tasks start and finish
+        # 4. _run_loop() blocks until the loop is stopped externally or the
+        #    future is cancelled via Ctrl-C
+        # 5. (after _run_loop() returns)  _start_asyncio() calls _close_loop()
+        # 6. _close_loop() does finalization and calls loop.close()
 
         # Workflow with Ctrl-C pressed once:
-        # 1. While loop.run_forever() blocks, _signal_shutdown_reactorless() is called
+        # 1. While loop.run_until_complete() blocks, _signal_shutdown_reactorless()
+        #    is called
         # 2. _signal_shutdown_reactorless() calls _shutdown_graceful_reactorless()
         #    (via call_soon_threadsafe())
         # 3. _shutdown_graceful_reactorless() calls stop()
-        # 4. stop() stops crawl tasks and waits until they stop
-        # 5. Steps 4-7 from the normal workflow happen, we ignore stop_after_crawl=False
+        # 4. For stop_after_crawl=True: crawl tasks finish, join() completes,
+        #    loop.run_until_complete() and thus _run_loop() return
+        #    For stop_after_crawl=False: _shutdown_graceful_reactorless() waits
+        #    for crawl tasks via join(), then cancels the main task,
+        #    loop.run_until_complete() raises CancelledError, _run_loop() returns
+        # 5. _start_asyncio() calls _close_loop()
+        # 6. _close_loop() does finalization and calls loop.close()
 
         # Workflow with Ctrl-C pressed twice:
-        # 1. While loop.run_forever() blocks, _signal_shutdown_reactorless() is called
+        # 1. While loop.run_until_complete() blocks, _signal_shutdown_reactorless()
+        #    is called
         # 2. _signal_shutdown_reactorless() calls _shutdown_graceful_reactorless()
-        #    (via call_soon_threadsafe()) and installs _signal_kill_reactorless() as the next handler
-        # 3. Before _shutdown_graceful_reactorless() completes, _signal_kill_reactorless() is called
-        # 4. _signal_kill_reactorless() calls loop.stop() (via call_soon_threadsafe())
-        # 5. loop.run_forever() and thus _run_loop() return
+        #    (via call_soon_threadsafe()) and installs _signal_kill_reactorless()
+        #    as the next handler
+        # 3. Before _shutdown_graceful_reactorless() completes,
+        #    _signal_kill_reactorless() is called
+        # 4. _signal_kill_reactorless() cancels the main task
+        #    (via call_soon_threadsafe())
+        # 5. loop.run_until_complete() raises CancelledError, _run_loop() returns
         # 6. _start_asyncio() calls _close_loop()
-        # 7. _close_loop() cancels all pending tasks (including _shutdown_graceful_reactorless()),
-        #    does finalization and calls loop.close()
+        # 7. _close_loop() cancels all pending tasks (including
+        #    _shutdown_graceful_reactorless()), does finalization and calls loop.close()
 
-        assert self._reactorless_loop
+        loop = self._reactorless_loop
+        assert loop
+
         if stop_after_crawl:
-            join_task = self._reactorless_loop.create_task(self.join())
-            join_task.add_done_callback(self._stop_loop)
+            self._reactorless_main_task = loop.create_task(self.join())
+        else:
+            self._reactorless_main_task = loop.create_future()
+        self._stop_after_crawl = stop_after_crawl
+
         try:
             self._run_loop(install_signal_handlers)  # blocking call
+        except asyncio.CancelledError:
+            pass
         finally:
-            if stop_after_crawl:
-                self._closing_loop = True
-                self._close_loop()
+            self._close_loop()
 
     def _run_loop(self, install_signal_handlers: bool) -> None:
         # similar to asyncio.runners.Runner.run()
         if install_signal_handlers:
             install_shutdown_handlers(self._signal_shutdown_reactorless)
         assert self._reactorless_loop
-        self._reactorless_loop.run_forever()
-
-    def _stop_loop(self, _: Any = None) -> None:
-        if not self._closing_loop:
-            assert self._reactorless_loop
-            self._reactorless_loop.stop()
+        assert self._reactorless_main_task
+        self._reactorless_loop.run_until_complete(self._reactorless_main_task)
 
     def _close_loop(self) -> None:
         # Similar to asyncio.runners.Runner.close()
@@ -900,6 +914,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.run_until_complete(loop.shutdown_default_executor())
         finally:
+            self._reactorless_main_task = None
             asyncio.set_event_loop(None)
             loop.close()
             self._reactorless_loop = None
@@ -943,18 +958,21 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
         loop.call_soon_threadsafe(_create_shutdown_task)
 
+    async def _shutdown_graceful_reactorless(self) -> None:
+        await self.stop()
+        if not self._stop_after_crawl:
+            # wait until crawl tasks finish and cancel the future
+            await self.join()
+            if self._reactorless_main_task and not self._reactorless_main_task.done():
+                self._reactorless_main_task.cancel()
+
     def _signal_kill_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(signal.SIG_IGN)
         self._log_kill(signum)
         if (loop := self._reactorless_loop) is None:
             return
-        loop.call_soon_threadsafe(loop.stop)
-
-    async def _shutdown_graceful_reactorless(self) -> None:
-        try:
-            await self.stop()
-        finally:
-            self._stop_loop()
+        if (task := self._reactorless_main_task) is not None:
+            loop.call_soon_threadsafe(task.cancel)
 
     def _start_twisted(
         self, stop_after_crawl: bool, install_signal_handlers: bool
