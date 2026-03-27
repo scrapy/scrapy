@@ -12,12 +12,10 @@ from typing import TYPE_CHECKING
 import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
-from twisted.internet.defer import Deferred
 from w3lib import __version__ as w3lib_version
 
-from scrapy.utils.asyncio import call_later
-from tests.utils import get_script_run_env
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils import async_sleep, get_script_run_env
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
@@ -207,33 +205,37 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Spider closed (finished)" in log
         assert "The value of FOO is 42" in log
 
-    def test_shutdown_graceful(self):
-        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
-        args = self.get_script_args("sleeping.py", "3")
+    def _test_shutdown_graceful(self, script: str = "sleeping.py") -> None:
+        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
+        args = self.get_script_args(script, "3")
         p = PopenSpawn(args, timeout=5, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
         p.expect_exact("Spider closed (shutdown)")
-        p.wait()
+        p.wait()  # type: ignore[no-untyped-call]
 
-    @inline_callbacks_test
-    def test_shutdown_forced(self):
-        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
-        args = self.get_script_args("sleeping.py", "10")
+    def test_shutdown_graceful(self) -> None:
+        self._test_shutdown_graceful()
+
+    async def _test_shutdown_forced(self, script: str = "sleeping.py") -> None:
+        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
+        args = self.get_script_args(script, "10")
         p = PopenSpawn(args, timeout=5, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
-        d = Deferred()
-        call_later(0.01, d.callback, None)
-        yield d
+        await async_sleep(0.01)
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
-        p.wait()
+        p.wait()  # type: ignore[no-untyped-call]
+
+    @coroutine_test
+    async def test_shutdown_forced(self) -> None:
+        await self._test_shutdown_forced()
 
 
 class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
@@ -396,6 +398,13 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
             in log
         )
+
+    def test_shutdown_graceful(self) -> None:
+        self._test_shutdown_graceful("reactorless_sleeping.py")
+
+    @coroutine_test
+    async def test_shutdown_forced(self) -> None:
+        await self._test_shutdown_forced("reactorless_sleeping.py")
 
 
 class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
