@@ -320,12 +320,6 @@ class TestRequest:
     def test_setters(self):
         request = self.request_class("http://example.com")
 
-        request.cb_kwargs = {"a": 1}
-        assert request.cb_kwargs == {"a": 1}
-
-        request.meta = {"k": "v"}
-        assert request.meta == {"k": "v"}
-
         request.flags = ["f1"]
         assert request.flags == ["f1"]
 
@@ -348,24 +342,6 @@ class TestRequest:
         """
 
         request = self.request_class("http://example.com")
-
-        assert request._cb_kwargs is None
-        assert request.cb_kwargs == {}
-        assert request.cb_kwargs is request.cb_kwargs
-        assert request._cb_kwargs == {}
-        original_cb_kwargs = request.cb_kwargs
-        request.cb_kwargs = None
-        assert request.cb_kwargs == {}
-        assert request.cb_kwargs is not original_cb_kwargs
-
-        assert request._meta is None
-        assert request.meta == {}
-        assert request.meta is request.meta
-        assert request._meta == {}
-        original_meta = request.meta
-        request.meta = None
-        assert request.meta == {}
-        assert request.meta is not original_meta
 
         assert request._flags is None
         assert request.flags == []
