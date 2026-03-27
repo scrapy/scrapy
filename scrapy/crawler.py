@@ -605,22 +605,30 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         from twisted.internet import reactor
 
         install_shutdown_handlers(self._signal_kill)
-        signame = signal_names[signum]
-        logger.info(
-            "Received %(signame)s, shutting down gracefully. Send again to force ",
-            {"signame": signame},
-        )
+        self._log_shutdown(signum)
         reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
 
         install_shutdown_handlers(signal.SIG_IGN)
+        self._log_kill(signum)
+        reactor.callFromThread(self._stop_reactor)
+
+    @staticmethod
+    def _log_shutdown(signum: int) -> None:
+        signame = signal_names[signum]
+        logger.info(
+            "Received %(signame)s, shutting down gracefully. Send again to force ",
+            {"signame": signame},
+        )
+
+    @staticmethod
+    def _log_kill(signum: int) -> None:
         signame = signal_names[signum]
         logger.info(
             "Received %(signame)s twice, forcing unclean shutdown", {"signame": signame}
         )
-        reactor.callFromThread(self._stop_reactor)
 
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
@@ -918,11 +926,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
     def _signal_shutdown_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(self._signal_kill_reactorless)
-        signame = signal_names[signum]
-        logger.info(
-            "Received %(signame)s, shutting down gracefully. Send again to force ",
-            {"signame": signame},
-        )
+        self._log_shutdown(signum)
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -933,10 +937,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
     def _signal_kill_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(signal.SIG_IGN)
-        signame = signal_names[signum]
-        logger.info(
-            "Received %(signame)s twice, forcing unclean shutdown", {"signame": signame}
-        )
+        self._log_kill(signum)
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
