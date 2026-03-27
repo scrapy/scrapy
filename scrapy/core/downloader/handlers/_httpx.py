@@ -9,8 +9,6 @@ from http.cookiejar import Cookie, CookieJar
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, NoReturn, TypedDict
 
-import httpx  # TODO
-
 from scrapy import Request, signals
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -46,6 +44,11 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
+try:
+    import httpx
+except ImportError:
+    httpx = None  # type: ignore[assignment]
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,14 +75,17 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
     _DEFAULT_CONNECT_TIMEOUT = 10
 
     def __init__(self, crawler: Crawler):
-        # we skip HttpxDownloadHandler tests with the non-asyncio reactor
-        if not is_asyncio_available():  # pragma: no cover
+        if not is_asyncio_available():
             raise NotConfigured(
                 f"{type(self).__name__} requires the asyncio support. Make"
                 f" sure that you have either enabled the asyncio Twisted"
                 f" reactor in the TWISTED_REACTOR setting or disabled the"
                 f" TWISTED_ENABLED setting. See the asyncio documentation"
                 f" of Scrapy for more information."
+            )
+        if httpx is None:  # pragma: no cover
+            raise NotConfigured(
+                f"{type(self).__name__} requires the httpx library to be installed."
             )
         super().__init__(crawler)
         logger.warning(

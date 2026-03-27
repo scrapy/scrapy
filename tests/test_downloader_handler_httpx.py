@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from scrapy import Request
+from scrapy import Request, Spider
+from scrapy.crawler import Crawler
+from scrapy.exceptions import NotConfigured
 from tests.test_downloader_handlers_http_base import (
     TestHttp11Base,
     TestHttpProxyBase,
@@ -40,6 +42,17 @@ class HttpxDownloadHandlerMixin:
         )
 
         return HttpxDownloadHandler
+
+
+@pytest.mark.only_not_asyncio
+def test_not_configured_without_asyncio() -> None:
+    from scrapy.core.downloader.handlers._httpx import (  # noqa: PLC0415
+        HttpxDownloadHandler,
+    )
+
+    crawler = Crawler(Spider)
+    with pytest.raises(NotConfigured):
+        HttpxDownloadHandler.from_crawler(crawler)
 
 
 class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
