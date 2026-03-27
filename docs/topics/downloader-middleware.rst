@@ -726,7 +726,7 @@ HttpProxyMiddleware
 .. class:: HttpProxyMiddleware
 
    This middleware sets the HTTP proxy to use for requests, by setting the
-   ``proxy`` meta value for :class:`~scrapy.Request` objects.
+   :reqmeta:`proxy` meta value for :class:`~scrapy.Request` objects.
 
    Like the Python standard library module :mod:`urllib.request`, it obeys
    the following environment variables:
@@ -735,10 +735,17 @@ HttpProxyMiddleware
    * ``https_proxy``
    * ``no_proxy``
 
-   You can also set the meta key ``proxy`` per-request, to a value like
+   You can also set the meta key :reqmeta:`proxy` per-request, to a value like
    ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
+
+.. note::
+
+    Handling of this meta key needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. It's currently unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

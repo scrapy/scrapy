@@ -206,6 +206,57 @@ uses the HTTP/1.1 protocol for them.
 
 It's implemented using :mod:`twisted.web.client`.
 
+HttpxDownloadHandler
+--------------------
+
+.. autoclass:: scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler
+
+| Supported schemes: ``http``, ``https``.
+| Lazy: no.
+
+This handler supports ``http://host/path`` and ``https://host/path`` URLs and
+uses the HTTP/1.1 protocol for them.
+
+It's implemented using the ``httpx`` library and needs it to be installed.
+
+If you want to use this handler you need to replace the default ones for the
+``http`` and ``https`` schemes:
+
+.. code-block:: python
+
+    DOWNLOAD_HANDLERS = {
+        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+    }
+
+.. warning::
+
+    This handler is experimental, and not yet recommended for production
+    environments. Future Scrapy versions may introduce related changes without
+    a deprecation period or warning or even remove it altogether.
+
+.. note::
+
+    As this handler is based on a different HTTP client implementation compared
+    to :class:`~.HTTP11DownloadHandler`, it's expected that its behavior on
+    some websites may be different. Additionally, these are the Scrapy features
+    that are explicitly not supported when using it:
+
+    - Proxy support (the :reqmeta:`proxy` meta key).
+
+    - Per-request bind address support (the :reqmeta:`bindaddress` meta key).
+      The global :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported but the
+      port number, if specified, will be ignored.
+
+    - The :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` and
+      :setting:`DOWNLOADER_CLIENT_TLS_METHOD` settings.
+
+    - Settings specific to the Twisted networking or HTTP implementation, like
+      :setting:`DNS_RESOLVER`.
+
+    - Using :ref:`non-asyncio reactors <disable-asyncio>` (``httpx`` requires
+      ``asyncio``).
+
 S3DownloadHandler
 -----------------
 
