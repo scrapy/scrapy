@@ -9,7 +9,7 @@ from http.cookiejar import Cookie, CookieJar
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, NoReturn, TypedDict
 
-import httpx
+import httpx  # TODO
 
 from scrapy import Request, signals
 from scrapy.exceptions import (
