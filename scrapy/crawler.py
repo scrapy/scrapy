@@ -775,6 +775,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     ):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
+        self._reactorless_loop: asyncio.AbstractEventLoop | None = None
         # We want the asyncio event loop to be installed early, so that it's
         # always the correct one. And as we do that, we can also install the
         # reactor here.
@@ -786,7 +787,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
                 raise RuntimeError(
                     "TWISTED_ENABLED is False but a Twisted reactor is installed."
                 )
-            set_asyncio_event_loop(loop_path)
+            self._reactorless_loop = set_asyncio_event_loop(loop_path)
             install_reactor_import_hook()
         elif is_reactor_installed():
             # The user could install a reactor before this class is instantiated.
@@ -867,31 +868,33 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         # 7. _close_loop() cancels all pending tasks (including _shutdown_graceful_reactorless()),
         #    does finalization and calls loop.close()
 
-        loop = asyncio.get_event_loop()
+        assert self._reactorless_loop
         if stop_after_crawl:
-            join_task = loop.create_task(self.join())
+            join_task = self._reactorless_loop.create_task(self.join())
             join_task.add_done_callback(self._stop_loop)
         try:
-            self._run_loop(loop, install_signal_handlers)  # blocking call
+            self._run_loop(install_signal_handlers)  # blocking call
         finally:
             if stop_after_crawl:
                 self._closing_loop = True
-                self._close_loop(loop)
+                self._close_loop()
 
-    def _run_loop(
-        self, loop: asyncio.AbstractEventLoop, install_signal_handlers: bool
-    ) -> None:
+    def _run_loop(self, install_signal_handlers: bool) -> None:
         # similar to asyncio.runners.Runner.run()
         if install_signal_handlers:
             install_shutdown_handlers(self._signal_shutdown_reactorless)
-        loop.run_forever()
+        assert self._reactorless_loop
+        self._reactorless_loop.run_forever()
 
     def _stop_loop(self, _: Any = None) -> None:
         if not self._closing_loop:
-            asyncio.get_running_loop().stop()
+            assert self._reactorless_loop
+            self._reactorless_loop.stop()
 
-    def _close_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+    def _close_loop(self) -> None:
         # Similar to asyncio.runners.Runner.close()
+        loop = self._reactorless_loop
+        assert loop
         try:
             self._cancel_all_tasks(loop)
             loop.run_until_complete(loop.shutdown_asyncgens())
@@ -899,6 +902,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         finally:
             asyncio.set_event_loop(None)
             loop.close()
+            self._reactorless_loop = None
 
     @staticmethod
     def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
@@ -927,15 +931,13 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     def _signal_shutdown_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(self._signal_kill_reactorless)
         self._log_shutdown(signum)
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
+        if (loop := self._reactorless_loop) is None:
             return
 
         def _create_shutdown_task() -> None:
             coro = self._shutdown_graceful_reactorless()
             try:
-                loop.create_task(coro)  # noqa: RUF006
+                loop.create_task(coro)
             except RuntimeError:
                 coro.close()
 
@@ -944,9 +946,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     def _signal_kill_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(signal.SIG_IGN)
         self._log_kill(signum)
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
+        if (loop := self._reactorless_loop) is None:
             return
         loop.call_soon_threadsafe(loop.stop)
 
