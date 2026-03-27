@@ -75,6 +75,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
     _DEFAULT_CONNECT_TIMEOUT = 10
 
     def __init__(self, crawler: Crawler):
+        # we skip HttpxDownloadHandler tests with the non-asyncio reactor
         if not is_asyncio_available():  # pragma: no cover
             raise NotConfigured(
                 f"{type(self).__name__} requires the asyncio support. Make"
