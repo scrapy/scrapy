@@ -632,9 +632,9 @@ class CrawlerProcessBase(CrawlerRunnerBase):
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            resolver_cls_path = self.settings.get("DNS_RESOLVER")
+            resolver_cls_path = self.settings["DNS_RESOLVER"]
         else:
-            resolver_cls_path = self.settings.get("TWISTED_DNS_RESOLVER")
+            resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
 
         resolver_class = load_object(resolver_cls_path)
 
