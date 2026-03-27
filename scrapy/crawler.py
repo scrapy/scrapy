@@ -931,9 +931,15 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             loop = asyncio.get_running_loop()
         except RuntimeError:
             return
-        loop.call_soon_threadsafe(
-            loop.create_task, self._shutdown_graceful_reactorless()
-        )
+
+        def _create_shutdown_task() -> None:
+            coro = self._shutdown_graceful_reactorless()
+            try:
+                loop.create_task(coro)  # noqa: RUF006
+            except RuntimeError:
+                coro.close()
+
+        loop.call_soon_threadsafe(_create_shutdown_task)
 
     def _signal_kill_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(signal.SIG_IGN)
