@@ -918,7 +918,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             if task.exception() is not None:
                 loop.call_exception_handler(
                     {
-                        "message": "unhandled exception during asyncio.run() shutdown",
+                        "message": "unhandled exception during AsyncCrawlerProcess shutdown",
                         "exception": task.exception(),
                         "task": task,
                     }
