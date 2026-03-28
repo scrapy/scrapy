@@ -124,3 +124,20 @@ class MySpider(scrapy.Spider):
             not in log
         )
         assert "Spider closed (finished)" in log
+
+    def test_no_reactor(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        self.logger.debug('It works!')
+        return
+        yield
+"""
+        log = self.get_log(spider_code, proj_path, args=("-s", "TWISTED_ENABLED=False"))
+        assert "[myspider] DEBUG: It works!" in log
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log

@@ -356,6 +356,18 @@ feed_exporter_closed
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
+memusage_warning_reached
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. signal:: memusage_warning_reached
+
+.. function:: memusage_warning_reached()
+
+    Sent by the :class:`~scrapy.extensions.memusage.MemoryUsage` extension when the
+    memory usage reaches the warning threshold (:setting:`MEMUSAGE_WARNING_MB`).
+
+    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+
 
 Request signals
 ---------------
@@ -423,8 +435,6 @@ request_left_downloader
 .. signal:: request_left_downloader
 .. function:: request_left_downloader(request, spider)
 
-    .. versionadded:: 2.0
-
     Sent when a :class:`~scrapy.Request` leaves the downloader, even in case of
     failure.
 
@@ -441,8 +451,6 @@ bytes_received
 
 .. signal:: bytes_received
 .. function:: bytes_received(data, request, spider)
-
-    .. versionadded:: 2.2
 
     Sent by the HTTP 1.1 and S3 download handlers when a group of bytes is
     received for a specific request. This signal might be fired multiple
@@ -471,8 +479,6 @@ headers_received
 
 .. signal:: headers_received
 .. function:: headers_received(headers, body_length, request, spider)
-
-    .. versionadded:: 2.5
 
     Sent by the HTTP 1.1 and S3 download handlers when the response headers are
     available for a given request, before downloading any additional content.

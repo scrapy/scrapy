@@ -32,3 +32,10 @@ Default scheduler
 .. autoclass:: Scheduler()
    :members:
    :special-members: __init__, __len__
+
+
+Priority queues
+===============
+
+.. autoclass:: scrapy.pqueues.DownloaderAwarePriorityQueue
+.. autoclass:: scrapy.pqueues.ScrapyPriorityQueue

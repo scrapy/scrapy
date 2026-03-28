@@ -10,8 +10,6 @@ from scrapy.utils.test import get_crawler
 
 
 class TestHttpProxyMiddleware:
-    failureException = AssertionError  # type: ignore[assignment]
-
     def setup_method(self):
         self._oldenv = os.environ.copy()
 

@@ -119,7 +119,7 @@ class MySpider(scrapy.Spider):
         log = self.get_log(
             tmp_path, dnscache_spider, args=("-s", "DNSCACHE_ENABLED=False")
         )
-        assert "DNSLookupError" not in log
+        assert "CannotResolveHostError" not in log
         assert "INFO: Spider opened" in log
 
     @pytest.mark.parametrize("value", [False, True])
@@ -212,6 +212,17 @@ class MySpider(scrapy.Spider):
             f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}"
             in log
         )
+
+    def test_no_reactor(self, tmp_path: Path) -> None:
+        log = self.get_log(
+            tmp_path,
+            self.debug_log_spider,
+            args=[
+                "-s",
+                "TWISTED_ENABLED=False",
+            ],
+        )
+        assert "Not using a Twisted reactor" in log
 
     def test_output(self, tmp_path: Path) -> None:
         spider_code = """

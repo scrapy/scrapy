@@ -13,12 +13,13 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
+from unittest.mock import MagicMock
 from urllib.parse import urlparse
 
 import attr
 import pytest
 from itemadapter import ItemAdapter
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
@@ -31,9 +32,11 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.settings import Settings
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 from .test_pipeline_media import _mocked_download_func
 
@@ -60,21 +63,37 @@ def get_ftp_content_and_delete(
     password: str,
     use_active_mode: bool = False,
 ) -> bytes:
-    ftp = FTP()
-    ftp.connect(host, port)
-    ftp.login(username, password)
-    if use_active_mode:
-        ftp.set_pasv(False)
-    ftp_data: list[bytes] = []
+    with FTP() as ftp:
+        ftp.connect(host, port)
+        ftp.login(username, password)
+        if use_active_mode:
+            ftp.set_pasv(False)
+        ftp_data: list[bytes] = []
 
-    def buffer_data(data: bytes) -> None:
-        ftp_data.append(data)
+        def buffer_data(data: bytes) -> None:
+            ftp_data.append(data)
 
-    ftp.retrbinary(f"RETR {path}", buffer_data)
-    dirname, filename = split(path)
-    ftp.cwd(dirname)
-    ftp.delete(filename)
+        ftp.retrbinary(f"RETR {path}", buffer_data)
+        dirname, filename = split(path)
+        ftp.cwd(dirname)
+        ftp.delete(filename)
     return b"".join(ftp_data)
+
+
+class DeferredFSFilesStore(FSFilesStore):
+    """A simple store with persist_file() returning a deferred."""
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        deferred = Deferred()
+        # short-hand super() doesn't work in nested functions
+        parent_persist_file = super().persist_file
+
+        def cb():
+            parent_persist_file(path, buf, info, meta=meta, headers=headers)
+            deferred.callback(None)
+
+        call_later(0.5, cb)
+        return deferred
 
 
 class TestFilesPipeline:
@@ -83,8 +102,8 @@ class TestFilesPipeline:
         settings_dict = {"FILES_STORE": self.tempdir}
         crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
         crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=_mocked_download_func)
         self.pipeline = FilesPipeline.from_crawler(crawler)
-        self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider()
 
     def teardown_method(self):
@@ -160,11 +179,11 @@ class TestFilesPipeline:
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
-    @inlineCallbacks
-    def test_file_not_expired(self):
+    @coroutine_test
+    async def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
             mock.patch.object(
                 FSFilesStore,
@@ -176,22 +195,16 @@ class TestFilesPipeline:
                 "get_media_requests",
                 return_value=[_prepare_request_object(item_url)],
             ),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = yield self.pipeline.process_item(item)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
 
-        for p in patchers:
-            p.stop()
-
-    @inlineCallbacks
-    def test_file_expired(self):
+    @coroutine_test
+    async def test_file_expired(self):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(
                 FSFilesStore,
                 "stat_file",
@@ -207,22 +220,16 @@ class TestFilesPipeline:
                 return_value=[_prepare_request_object(item_url)],
             ),
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = yield self.pipeline.process_item(item)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
 
-        for p in patchers:
-            p.stop()
-
-    @inlineCallbacks
-    def test_file_cached(self):
+    @coroutine_test
+    async def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
             mock.patch.object(
                 FSFilesStore,
@@ -238,16 +245,33 @@ class TestFilesPipeline:
                 "get_media_requests",
                 return_value=[_prepare_request_object(item_url, flags=["cached"])],
             ),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = yield self.pipeline.process_item(item)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "cached"
 
-        for p in patchers:
-            p.stop()
+    @coroutine_test
+    async def test_async_store(self) -> None:
+        """Test that async persist_file() works and is awaited."""
+
+        self.pipeline.store = DeferredFSFilesStore(self.tempdir)
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        assert result["files"][0]["checksum"]
+        # check that the file was written by persist_file()
+        path = Path(self.tempdir) / result["files"][0]["path"]
+        assert path.exists()
+        assert path.read_bytes() == b"data"
 
     def test_file_path_from_item(self):
         """
@@ -437,7 +461,7 @@ class TestFilesPipelineCustomSettings:
         """
         pipe_cls = self._generate_fake_pipeline()
         pipe = pipe_cls.from_crawler(get_crawler(None, {"FILES_STORE": tmp_path}))
-        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             custom_value = getattr(pipe, pipe_ins_attr)
             assert custom_value != self.default_cls_settings[pipe_attr]
             assert getattr(pipe, pipe_ins_attr) == getattr(pipe, pipe_attr)
@@ -468,7 +492,7 @@ class TestFilesPipelineCustomSettings:
         user_pipeline = UserDefinedFilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_cls_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_ins_attr) == custom_value
@@ -540,7 +564,7 @@ class TestFilesPipelineCustomSettings:
 
         pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
 
-        for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
+        for _, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_inst_attr) == expected_value
 
@@ -562,7 +586,7 @@ class TestFilesPipelineCustomSettings:
 
 @pytest.mark.requires_botocore
 class TestS3FilesStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -602,7 +626,7 @@ class TestS3FilesStore:
             # The call to read does not happen with Stubber
             assert buffer.method_calls == [mock.call.seek(0)]
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_stat(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -639,7 +663,7 @@ class TestS3FilesStore:
     "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
 )
 class TestGCSFilesStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         uri = os.environ.get("GCS_TEST_FILE_URI")
         if not uri:
@@ -664,7 +688,7 @@ class TestGCSFilesStore:
         assert blob.content_type == "application/octet-stream"
         assert expected_policy in acl
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_blob_path_consistency(self):
         """Test to make sure that paths used to store files is the same as the one used to get
         already uploaded files.
@@ -691,13 +715,17 @@ class TestGCSFilesStore:
 
 
 class TestFTPFileStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         data = b"TestFTPFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)
         meta = {"foo": "bar"}
         path = "full/filename"
         with MockFTPServer() as ftp_server:
+            # normally set via FilesPipeline.from_crawler()
+            FTPFilesStore.FTP_USERNAME = "anonymous"
+            FTPFilesStore.FTP_PASSWORD = "guest"
+
             store = FTPFilesStore(ftp_server.url("/"))
             empty_dict = yield store.stat_file(path, info=None)
             assert empty_dict == {}
@@ -723,13 +751,13 @@ class ItemWithFiles(Item):
     files = Field()
 
 
-def _create_item_with_files(*files):
+def _create_item_with_files(*files: str) -> ItemWithFiles:
     item = ItemWithFiles()
     item["file_urls"] = files
     return item
 
 
-def _prepare_request_object(item_url, flags=None):
+def _prepare_request_object(item_url: str, flags: list[str] | None = None) -> Request:
     return Request(
         item_url,
         meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},

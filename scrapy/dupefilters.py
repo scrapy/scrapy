@@ -55,6 +55,18 @@ class RFPDupeFilter(BaseDupeFilter):
     filters out requests with the canonical
     (:func:`w3lib.url.canonicalize_url`) :attr:`~scrapy.http.Request.url`,
     :attr:`~scrapy.http.Request.method` and :attr:`~scrapy.http.Request.body`.
+
+    Job directory contents
+    ======================
+
+    .. warning:: The files that this class generates in the :ref:`job directory
+        <job-dir>` are an implementation detail, and may change without a
+        warning in a future version of Scrapy. Do not rely on the following
+        information for anything other than debugging purposes.
+
+    When using :setting:`JOBDIR`, seen fingerprints are tracked in a file named
+    ``requests.seen`` in the :ref:`job directory <job-dir>`, which contains 1
+    request fingerprint per line.
     """
 
     def __init__(
@@ -73,7 +85,11 @@ class RFPDupeFilter(BaseDupeFilter):
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            self.file = Path(path, "requests.seen").open("a+", encoding="utf-8")
+            # line-by-line writing, see: https://github.com/scrapy/scrapy/issues/6019
+            self.file = Path(path, "requests.seen").open(
+                "a+", buffering=1, encoding="utf-8"
+            )
+            self.file.reconfigure(write_through=True)
             self.file.seek(0)
             self.fingerprints.update(x.rstrip() for x in self.file)
 

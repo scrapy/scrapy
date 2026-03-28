@@ -259,7 +259,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     # being available immediately which doesn't work when it's a wrapped coroutine.
     # It also needs @inlineCallbacks only because of downgrading so it can be removed when downgrading is removed.
     @inlineCallbacks
-    def _process_spider_output(
+    def _process_spider_output(  # noqa: PLR0912
         self,
         response: Response,
         result: Iterable[_T] | AsyncIterator[_T],
@@ -383,7 +383,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
+    ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:  # pragma: no cover
         warn(
             "SpiderMiddlewareManager.scrape_response() is deprecated, use scrape_response_async() instead",
             ScrapyDeprecationWarning,
@@ -436,7 +436,17 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self, spider: Spider | None = None
     ) -> AsyncIterator[Any] | None:
         if spider:
-            self._warn_spider_arg("process_start")
+            if self.crawler:
+                msg = (
+                    "Passing a spider argument to SpiderMiddlewareManager.process_start() is deprecated"
+                    " and the passed value is ignored."
+                )
+            else:
+                msg = (
+                    "Passing a spider argument to SpiderMiddlewareManager.process_start() is deprecated,"
+                    " SpiderMiddlewareManager should be instantiated with a Crawler instance instead."
+                )
+            warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
             self._set_compat_spider(spider)
         self._check_deprecated_start_requests_use()
         if self._use_start_requests:
@@ -450,7 +460,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             start = await self._process_chain("process_start", start)
         return start
 
-    def _check_deprecated_start_requests_use(self):
+    def _check_deprecated_start_requests_use(self) -> None:
         start_requests_cls = None
         start_cls = None
         spidercls = self._spider.__class__

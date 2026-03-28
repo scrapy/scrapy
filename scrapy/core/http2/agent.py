@@ -14,7 +14,7 @@ from twisted.web.client import (
 )
 from twisted.web.error import SchemeNotSupported
 
-from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory
+from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFactory
 from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
 
 if TYPE_CHECKING:
@@ -120,13 +120,13 @@ class H2Agent:
         self,
         reactor: ReactorBase,
         pool: H2ConnectionPool,
-        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
+        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
         connect_timeout: float | None = None,
-        bind_address: bytes | None = None,
+        bind_address: tuple[str, int] | None = None,
     ) -> None:
         self._reactor = reactor
         self._pool = pool
-        self._context_factory = AcceptableProtocolsContextFactory(
+        self._context_factory = _AcceptableProtocolsContextFactory(
             context_factory, acceptable_protocols=[b"h2"]
         )
         self.endpoint_factory = _StandardEndpointFactory(
@@ -164,9 +164,9 @@ class ScrapyProxyH2Agent(H2Agent):
         reactor: ReactorBase,
         proxy_uri: URI,
         pool: H2ConnectionPool,
-        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
+        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
         connect_timeout: float | None = None,
-        bind_address: bytes | None = None,
+        bind_address: tuple[str, int] | None = None,
     ) -> None:
         super().__init__(
             reactor=reactor,

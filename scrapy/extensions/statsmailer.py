@@ -6,10 +6,11 @@ Use STATSMAILER_RCPTS setting to enable and give the recipient mail address
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 from scrapy import Spider, signals
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.mail import MailSender
 
 if TYPE_CHECKING:
@@ -20,6 +21,12 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.statscollectors import StatsCollector
+
+warnings.warn(
+    "The scrapy.extensions.statsmailer module is deprecated and will be "
+    "removed in a future release.",
+    category=ScrapyDeprecationWarning,
+)
 
 
 class StatsMailer:

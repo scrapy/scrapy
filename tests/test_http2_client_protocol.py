@@ -12,14 +12,8 @@ from urllib.parse import urlencode
 
 import pytest
 from pytest_twisted import async_yield_fixture
-from twisted.internet.defer import (
-    CancelledError,
-    Deferred,
-    DeferredList,
-    inlineCallbacks,
-)
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
-from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
 from twisted.web.client import URI, ResponseFailed
 from twisted.web.http import H2_ENABLED
@@ -27,6 +21,7 @@ from twisted.web.http import Request as TxRequest
 from twisted.web.server import NOT_DONE_YET, Site
 from twisted.web.static import File
 
+from scrapy.exceptions import DownloadCancelledError, DownloadTimeoutError
 from scrapy.http import JsonRequest, Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -44,9 +39,12 @@ if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
 
 
-pytestmark = pytest.mark.skipif(
-    not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
-)
+pytestmark = [
+    pytest.mark.requires_reactor,  # H2ClientProtocol requires a reactor
+    pytest.mark.skipif(
+        not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+    ),
+]
 
 
 def generate_random_string(size: int) -> str:
@@ -215,7 +213,7 @@ class TestHttps2ClientProtocol:
         r.putChild(b"request-headers", RequestHeaders())
         return Site(r, timeout=None)
 
-    @async_yield_fixture
+    @async_yield_fixture  # type: ignore[untyped-decorator]
     async def server_port(self, site: Site) -> AsyncGenerator[int]:
         from twisted.internet import reactor
 
@@ -238,7 +236,7 @@ class TestHttps2ClientProtocol:
         ) + self.certificate_file.read_text(encoding="utf-8")
         return PrivateCertificate.loadPEM(pem)
 
-    @async_yield_fixture
+    @async_yield_fixture  # type: ignore[untyped-decorator]
     async def client(
         self, server_port: int, client_certificate: PrivateCertificate
     ) -> AsyncGenerator[H2ClientProtocol]:
@@ -294,7 +292,6 @@ class TestHttps2ClientProtocol:
         response = await make_request(client, request)
         assert response.status == expected_status
         assert response.body == expected_body
-        assert response.request == request
 
         content_length_header = response.headers.get("Content-Length")
         assert content_length_header is not None
@@ -360,7 +357,6 @@ class TestHttps2ClientProtocol:
         response = await make_request(client, request)
 
         assert response.status == expected_status
-        assert response.request == request
 
         content_length_header = response.headers.get("Content-Length")
         assert content_length_header is not None
@@ -415,9 +411,22 @@ class TestHttps2ClientProtocol:
             client, request, Data.JSON_LARGE, Data.EXTRA_LARGE, 200
         )
 
-    async def _check_POST_json_x10(self, *args, **kwargs):
+    async def _check_POST_json_x10(
+        self,
+        client: H2ClientProtocol,
+        request: Request,
+        expected_request_body: dict[str, str],
+        expected_extra_data: str,
+        expected_status: int,
+    ) -> None:
         async def get_coro() -> None:
-            await self._check_POST_json(*args, **kwargs)
+            await self._check_POST_json(
+                client,
+                request,
+                expected_request_body,
+                expected_extra_data,
+                expected_status,
+            )
 
         await self._check_repeat(get_coro, 10)
 
@@ -467,23 +476,23 @@ class TestHttps2ClientProtocol:
         d.cancel()
         response = cast("Response", (yield d))
         assert response.status == 499
-        assert response.request == request
 
     @deferred_f_from_coro_f
     async def test_download_maxsize_exceeded(
-        self, server_port: int, client: H2ClientProtocol
+        self,
+        caplog: pytest.LogCaptureFixture,
+        server_port: int,
+        client: H2ClientProtocol,
     ) -> None:
         request = Request(
             url=self.get_url(server_port, "/get-data-html-large"),
             meta={"download_maxsize": 1000},
         )
-        with pytest.raises(CancelledError) as exc_info:
+        with pytest.raises(
+            DownloadCancelledError,
+            match=r"Expected to receive \d+ bytes which is larger than download max size \(1000\)",
+        ):
             await make_request(client, request)
-        error_pattern = re.compile(
-            rf"Cancelling download of {request.url}: received response "
-            rf"size \(\d*\) larger than download max size \(1000\)"
-        )
-        assert len(re.findall(error_pattern, str(exc_info.value))) == 1
 
     @inlineCallbacks
     def test_received_dataloss_response(
@@ -510,7 +519,6 @@ class TestHttps2ClientProtocol:
         response = await make_request(client, request)
         assert response.status == 200
         assert response.body == Data.NO_CONTENT_LENGTH
-        assert response.request == request
         assert "Content-Length" not in response.headers
 
     async def _check_log_warnsize(
@@ -524,7 +532,6 @@ class TestHttps2ClientProtocol:
         with caplog.at_level("WARNING", "scrapy.core.http2.stream"):
             response = await make_request(client, request)
         assert response.status == 200
-        assert response.request == request
         assert response.body == expected_body
 
         # Check the warning is raised only once for this request
@@ -542,7 +549,7 @@ class TestHttps2ClientProtocol:
             meta={"download_warnsize": 1000},
         )
         warn_pattern = re.compile(
-            rf"Expected response size \(\d*\) larger than "
+            rf"Expected to receive \d+ bytes which is larger than "
             rf"download warn size \(1000\) in request {request}"
         )
 
@@ -562,8 +569,8 @@ class TestHttps2ClientProtocol:
             meta={"download_warnsize": 10},
         )
         warn_pattern = re.compile(
-            rf"Received more \(\d*\) bytes than download "
-            rf"warn size \(10\) in request {request}"
+            rf"Received \d+ bytes which is larger than "
+            rf"download warn size \(10\) in request {request}"
         )
 
         await self._check_log_warnsize(
@@ -673,7 +680,6 @@ class TestHttps2ClientProtocol:
     ) -> None:
         request = Request(self.get_url(server_port, "/status?n=200"))
         response = await make_request(client, request)
-        assert response.request == request
         assert isinstance(response.certificate, Certificate)
         assert response.certificate.original is not None
         assert response.certificate.getIssuer() == client_certificate.getIssuer()
@@ -724,7 +730,7 @@ class TestHttps2ClientProtocol:
         request = Request(self.get_url(server_port, "/timeout"))
 
         # Update the timer to 1s to test connection timeout
-        client.setTimeout(1)
+        client.setTimeout(1)  # type: ignore[no-untyped-call]
 
         with pytest.raises(ResponseFailed) as exc_info:
             yield make_request_dfd(client, request)
@@ -732,7 +738,7 @@ class TestHttps2ClientProtocol:
         for err in exc_info.value.reasons:
             from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
 
-            if isinstance(err, TxTimeoutError):
+            if isinstance(err, DownloadTimeoutError):
                 assert (
                     f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s"
                     in str(err)
@@ -751,7 +757,6 @@ class TestHttps2ClientProtocol:
         )
         response = await make_request(client, request)
         assert response.status == 200
-        assert response.request == request
 
         response_headers = json.loads(str(response.body, "utf-8"))
         assert isinstance(response_headers, dict)

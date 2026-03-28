@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, TypeVar
 import pytest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
-from scrapy.utils.defer import aiter_errback, deferred_f_from_coro_f
+from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
     MutableAsyncChain,
     MutableChain,
@@ -20,6 +20,7 @@ from scrapy.utils.python import (
     to_unicode,
     without_none_values,
 )
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -63,7 +64,7 @@ class TestMutableAsyncChain:
         for i in range(5, 7):
             yield i
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_mutableasyncchain(self):
         m = MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
         m.extend(self.g2())
@@ -73,7 +74,7 @@ class TestMutableAsyncChain:
         results = await collect_asyncgen(m)
         assert results == list(range(1, 10))
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_mutableasyncchain_exc(self):
         m = MutableAsyncChain(self.g1())
         m.extend(self.g4())

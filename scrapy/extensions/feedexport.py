@@ -6,37 +6,36 @@ See documentation in docs/topics/feed-exports.rst
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 import re
 import sys
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
 
-from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
-from twisted.internet.threads import deferToThread
+from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
 from zope.interface import Interface, implementer
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
+from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
 from scrapy.utils.conf import feed_complete_default_values_from_settings
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
-from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     from _typeshed import OpenBinaryMode
-    from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -89,20 +88,20 @@ class ItemFilter:
         return True  # accept all items by default
 
 
-class IFeedStorage(Interface):
+class IFeedStorage(Interface):  # type: ignore[misc]
     """Interface that all Feed Storages must implement"""
 
     # pylint: disable=no-self-argument
 
-    def __init__(uri, *, feed_options=None):  # pylint: disable=super-init-not-called
+    def __init__(uri, *, feed_options=None):  # type: ignore[no-untyped-def]  # pylint: disable=super-init-not-called
         """Initialize the storage with the parameters given in the URI and the
         feed-specific options (see :setting:`FEEDS`)"""
 
-    def open(spider):
+    def open(spider):  # type: ignore[no-untyped-def]
         """Open the storage for the given spider. It must return a file-like
         object that will be used for the exporters"""
 
-    def store(file):
+    def store(file):  # type: ignore[no-untyped-def]
         """Store the given file stream"""
 
 
@@ -131,7 +130,7 @@ class BlockingFeedStorage(ABC):
         return NamedTemporaryFile(prefix="feed-", dir=path)
 
     def store(self, file: IO[bytes]) -> Deferred[None] | None:
-        return deferToThread(self._store_in_thread, file)
+        return deferred_from_coro(run_in_thread(self._store_in_thread, file))
 
     @abstractmethod
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -431,8 +430,6 @@ class FeedSlot:
 
 
 class FeedExporter:
-    _pending_deferreds: list[Deferred[None]] = []
-
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         exporter = cls(crawler)
@@ -447,6 +444,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
+        self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -506,17 +504,24 @@ class FeedExporter:
             )
 
     async def close_spider(self, spider: Spider) -> None:
-        for slot in self.slots:
-            self._close_slot(slot, spider)
+        self._pending_close_coros.extend(
+            self._close_slot(slot, spider) for slot in self.slots
+        )
 
-        # Await all deferreds
-        if self._pending_deferreds:
-            await maybe_deferred_to_future(DeferredList(self._pending_deferreds))
+        if self._pending_close_coros:
+            if is_asyncio_available():
+                await asyncio.wait(
+                    [asyncio.create_task(coro) for coro in self._pending_close_coros]
+                )
+            else:
+                await DeferredList(
+                    deferred_from_coro(coro) for coro in self._pending_close_coros
+                )
 
         # Send FEED_EXPORTER_CLOSED signal
         await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
 
-    def _close_slot(self, slot: FeedSlot, spider: Spider) -> Deferred[None] | None:
+    async def _close_slot(self, slot: FeedSlot, spider: Spider) -> None:
         def get_file(slot_: FeedSlot) -> IO[bytes]:
             assert slot_.file
             if isinstance(slot_.file, PostProcessingManager):
@@ -533,45 +538,28 @@ class FeedExporter:
             slot.finish_exporting()
         else:
             # In this case, the file is not stored, so no processing is required.
-            return None
+            return
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[call-overload]
-
-        d.addCallback(
-            self._handle_store_success, logmsg, spider, type(slot.storage).__name__
-        )
-        d.addErrback(
-            self._handle_store_error, logmsg, spider, type(slot.storage).__name__
-        )
-        self._pending_deferreds.append(d)
-        d.addCallback(
-            lambda _: self.crawler.signals.send_catch_log_deferred(
-                signals.feed_slot_closed, slot=slot
+        slot_type = type(slot.storage).__name__
+        assert self.crawler.stats
+        try:
+            await ensure_awaitable(slot.storage.store(get_file(slot)))
+        except Exception:
+            logger.error(
+                "Error storing %s",
+                logmsg,
+                exc_info=True,
+                extra={"spider": spider},
             )
+            self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
+        else:
+            logger.info("Stored %s", logmsg, extra={"spider": spider})
+            self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
+
+        await self.crawler.signals.send_catch_log_async(
+            signals.feed_slot_closed, slot=slot
         )
-        d.addBoth(lambda _: self._pending_deferreds.remove(d))
-
-        return d
-
-    def _handle_store_error(
-        self, f: Failure, logmsg: str, spider: Spider, slot_type: str
-    ) -> None:
-        logger.error(
-            "Error storing %s",
-            logmsg,
-            exc_info=failure_to_exc_info(f),
-            extra={"spider": spider},
-        )
-        assert self.crawler.stats
-        self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
-
-    def _handle_store_success(
-        self, result: Any, logmsg: str, spider: Spider, slot_type: str
-    ) -> None:
-        logger.info("Stored %s", logmsg, extra={"spider": spider})
-        assert self.crawler.stats
-        self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
 
     def _start_new_batch(
         self,
@@ -627,7 +615,7 @@ class FeedExporter:
                 uri_params = self._get_uri_params(
                     spider, self.feeds[slot.uri_template]["uri_params"], slot
                 )
-                self._close_slot(slot, spider)
+                self._pending_close_coros.append(self._close_slot(slot, spider))
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,

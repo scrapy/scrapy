@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
+from scrapy import Spider
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
+from scrapy.crawler import Crawler
+from scrapy.exceptions import NotConfigured
 from tests.test_downloader_handlers_http_base import (
     TestHttp11Base,
     TestHttpProxyBase,
@@ -21,10 +26,19 @@ if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 
+pytestmark = pytest.mark.requires_reactor  # HTTP11DownloadHandler requires a reactor
+
+
 class HTTP11DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP11DownloadHandler
+
+
+def test_not_configured_without_reactor() -> None:
+    crawler = Crawler(Spider, {"TWISTED_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        HTTP11DownloadHandler.from_crawler(crawler)
 
 
 class TestHttp11(HTTP11DownloadHandlerMixin, TestHttp11Base):
@@ -60,7 +74,16 @@ class TestHttps11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCipher
 class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
     @property
     def settings_dict(self) -> dict[str, Any] | None:
-        return None  # default handler settings
+        return {
+            "DOWNLOAD_HANDLERS": {
+                "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+                "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+            }
+        }
+
+
+class TestHttps11WithCrawler(TestHttp11WithCrawler):
+    is_secure = True
 
 
 class TestHttp11Proxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):

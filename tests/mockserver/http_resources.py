@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import json
 import random
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 from urllib.parse import urlencode
 
 from twisted.internet.task import deferLater
@@ -11,6 +12,16 @@ from twisted.web.server import NOT_DONE_YET
 from twisted.web.util import Redirect, redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from twisted.internet.defer import Deferred
+    from twisted.web.http import Request
+
+
+_T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 def getarg(request, name, default=None, type_=None):
@@ -56,6 +67,18 @@ class HostHeaderResource(resource.Resource):
         return request.requestHeaders.getRawHeaders(b"host")[0]
 
 
+class ClientIPResource(resource.Resource):
+    """
+    A testing resource which renders itself as the request client IP address.
+    """
+
+    def render(self, request):
+        client_address = request.getClientAddress()
+        if client_address is None or client_address.host is None:
+            return b""
+        return to_bytes(client_address.host)
+
+
 class PayloadResource(resource.Resource):
     """
     A testing resource which renders itself as the contents of the request body
@@ -74,7 +97,14 @@ class PayloadResource(resource.Resource):
 class LeafResource(resource.Resource):
     isLeaf = True
 
-    def deferRequest(self, request, delay, f, *a, **kw):
+    def deferRequest(
+        self,
+        request: Request,
+        delay: float,
+        f: Callable[_P, _T],
+        *a: _P.args,
+        **kw: _P.kwargs,
+    ) -> Deferred[_T]:
         from twisted.internet import reactor
 
         def _cancelrequest(_):
@@ -193,10 +223,11 @@ class Drop(Partial):
         request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:
-            if abort and hasattr(tr, "abortConnection"):
-                tr.abortConnection()
-            else:
-                tr.loseConnection()
+            if tr:
+                if abort and hasattr(tr, "abortConnection"):
+                    tr.abortConnection()
+                else:
+                    tr.loseConnection()
         finally:
             request.finish()
 
@@ -281,7 +312,7 @@ class LargeChunkedFileResource(resource.Resource):
         from twisted.internet import reactor
 
         def response():
-            for i in range(1024):
+            for _ in range(1024):
                 request.write(b"x" * 1024)
             request.finish()
 
@@ -307,7 +338,8 @@ class UriResource(resource.Resource):
         # ToDo: implement proper HTTPS proxy tests, not faking them.
         if request.method != b"CONNECT":
             return request.uri
-        return b""
+        request.transport.write(b"HTTP/1.1 200 Connection established\r\n\r\n")
+        return NOT_DONE_YET
 
 
 class ResponseHeadersResource(resource.Resource):

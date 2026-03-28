@@ -19,7 +19,6 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
-from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
     configure_logging,
@@ -35,9 +34,11 @@ from scrapy.utils.reactor import (
     install_reactor,
     is_asyncio_reactor_installed,
     is_reactor_installed,
+    set_asyncio_event_loop,
     verify_installed_asyncio_event_loop,
     verify_installed_reactor,
 )
+from scrapy.utils.reactorless import install_reactor_import_hook
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Generator, Iterable
@@ -104,22 +105,27 @@ class Crawler:
             self,
         )
 
-        reactor_class: str = self.settings["TWISTED_REACTOR"]
-        event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
-        if self._init_reactor:
-            # this needs to be done after the spider settings are merged,
-            # but before something imports twisted.internet.reactor
+        use_reactor = self.settings.getbool("TWISTED_ENABLED")
+        if use_reactor:
+            reactor_class: str = self.settings["TWISTED_REACTOR"]
+            event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
+            if self._init_reactor:
+                # this needs to be done after the spider settings are merged,
+                # but before something imports twisted.internet.reactor
+                if reactor_class:
+                    install_reactor(reactor_class, event_loop)
+                else:
+                    from twisted.internet import reactor  # noqa: F401
             if reactor_class:
-                install_reactor(reactor_class, event_loop)
-            else:
-                from twisted.internet import reactor  # noqa: F401
-        if reactor_class:
-            verify_installed_reactor(reactor_class)
-            if is_asyncio_reactor_installed() and event_loop:
-                verify_installed_asyncio_event_loop(event_loop)
+                verify_installed_reactor(reactor_class)
+                if is_asyncio_reactor_installed() and event_loop:
+                    verify_installed_asyncio_event_loop(event_loop)
 
-        if self._init_reactor or reactor_class:
-            log_reactor_info()
+            if self._init_reactor or reactor_class:
+                log_reactor_info()
+        else:
+            logger.debug("Not using a Twisted reactor")
+            self._apply_reactorless_default_settings()
 
         self.extensions = ExtensionManager.from_crawler(self)
         self.settings.freeze()
@@ -128,6 +134,19 @@ class Crawler:
         logger.info(
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
+
+    def _apply_reactorless_default_settings(self) -> None:
+        """Change some setting defaults when not using a Twisted reactor.
+
+        Some settings need different defaults when using and not using a
+        reactor, but as we can't put this logic into default_settings.py we
+        change them here when the reactor is not used.
+        """
+        self.settings.set("TELNETCONSOLE_ENABLED", False, priority="default")
+        for scheme in ("http", "https"):
+            self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
+                "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler"
+            )
 
     # Cannot use @deferred_f_from_coro_f because that relies on the reactor
     # being installed already, which is done within _apply_settings(), inside
@@ -166,16 +185,10 @@ class Crawler:
         *args* and *kwargs* arguments, while setting the execution engine in
         motion. Should be called only once.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
 
         Complete when the crawl is finished.
-
-        This function requires
-        :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
-        installed.
         """
-        if not is_asyncio_available():
-            raise RuntimeError("Crawler.crawl_async() requires AsyncioSelectorReactor.")
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
@@ -216,7 +229,7 @@ class Crawler:
     async def stop_async(self) -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.crawling:
             self.crawling = False
@@ -382,6 +395,10 @@ class CrawlerRunner(CrawlerRunnerBase):
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         super().__init__(settings)
+        if not self.settings.getbool("TWISTED_ENABLED"):
+            raise RuntimeError(
+                f"{type(self).__name__} doesn't support TWISTED_ENABLED=False."
+            )
         self._active: set[Deferred[None]] = set()
 
     def crawl(
@@ -426,12 +443,16 @@ class CrawlerRunner(CrawlerRunnerBase):
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
+        failed = False
         try:
             yield d
+        except Exception:
+            failed = True
+            raise
         finally:
             self.crawlers.discard(crawler)
             self._active.discard(d)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+            self.bootstrap_failed |= not getattr(crawler, "spider", None) or failed
 
     def stop(self) -> Deferred[Any]:
         """
@@ -506,9 +527,16 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
                 "The crawler_or_spidercls argument cannot be a spider object, "
                 "it must be a spider class (or a Crawler object)"
             )
-        if not is_asyncio_reactor_installed():
+        if self.settings.getbool("TWISTED_ENABLED"):
+            if not is_asyncio_reactor_installed():
+                raise RuntimeError(
+                    f"When TWISTED_ENABLED is True, {type(self).__name__} "
+                    f"requires that the installed Twisted reactor is "
+                    f'"twisted.internet.asyncioreactor.AsyncioSelectorReactor".'
+                )
+        elif is_reactor_installed():
             raise RuntimeError(
-                f"{type(self).__name__} requires AsyncioSelectorReactor."
+                "TWISTED_ENABLED is False but a Twisted reactor is installed."
             )
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
@@ -518,7 +546,15 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
         loop = asyncio.get_event_loop()
         self.crawlers.add(crawler)
-        task = loop.create_task(crawler.crawl_async(*args, **kwargs))
+
+        async def _crawl_and_track() -> None:
+            try:
+                await crawler.crawl_async(*args, **kwargs)
+            except Exception:
+                self.bootstrap_failed = True
+                raise  # re-raise so asyncio still logs it to stderr naturally
+
+        task = loop.create_task(_crawl_and_track())
         self._active.add(task)
 
         def _done(_: asyncio.Task[None]) -> None:
@@ -569,22 +605,30 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         from twisted.internet import reactor
 
         install_shutdown_handlers(self._signal_kill)
-        signame = signal_names[signum]
-        logger.info(
-            "Received %(signame)s, shutting down gracefully. Send again to force ",
-            {"signame": signame},
-        )
+        self._log_shutdown(signum)
         reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
 
         install_shutdown_handlers(signal.SIG_IGN)
+        self._log_kill(signum)
+        reactor.callFromThread(self._stop_reactor)
+
+    @staticmethod
+    def _log_shutdown(signum: int) -> None:
+        signame = signal_names[signum]
+        logger.info(
+            "Received %(signame)s, shutting down gracefully. Send again to force ",
+            {"signame": signame},
+        )
+
+    @staticmethod
+    def _log_kill(signum: int) -> None:
         signame = signal_names[signum]
         logger.info(
             "Received %(signame)s twice, forcing unclean shutdown", {"signame": signame}
         )
-        reactor.callFromThread(self._stop_reactor)
 
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
@@ -731,13 +775,21 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     ):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
+        self._reactorless_loop: asyncio.AbstractEventLoop | None = None
         # We want the asyncio event loop to be installed early, so that it's
         # always the correct one. And as we do that, we can also install the
         # reactor here.
         # The ASYNCIO_EVENT_LOOP setting cannot be overridden by add-ons and
         # spiders when using AsyncCrawlerProcess.
         loop_path = self.settings["ASYNCIO_EVENT_LOOP"]
-        if is_reactor_installed():
+        if not self.settings.getbool("TWISTED_ENABLED"):
+            if is_reactor_installed():
+                raise RuntimeError(
+                    "TWISTED_ENABLED is False but a Twisted reactor is installed."
+                )
+            self._reactorless_loop = set_asyncio_event_loop(loop_path)
+            install_reactor_import_hook()
+        elif is_reactor_installed():
             # The user could install a reactor before this class is instantiated.
             # We need to make sure the reactor is the correct one and the loop
             # type matches the setting.
@@ -747,6 +799,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         else:
             install_reactor(_asyncio_reactor_path, loop_path)
         self._initialized_reactor = True
+        self._reactorless_main_task: asyncio.Future[None] | None = None
 
     def _stop_dfd(self) -> Deferred[Any]:
         return deferred_from_coro(self.stop())
@@ -768,6 +821,162 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         :param bool install_signal_handlers: whether to install the OS signal
             handlers from Twisted and Scrapy (default: True)
         """
+
+        if not self.settings.getbool("TWISTED_ENABLED"):
+            self._start_asyncio(stop_after_crawl, install_signal_handlers)
+        else:
+            self._start_twisted(stop_after_crawl, install_signal_handlers)
+
+    def _start_asyncio(
+        self, stop_after_crawl: bool, install_signal_handlers: bool
+    ) -> None:
+        # We cannot use asyncio.run() here, because we can't let it handle the
+        # loop lifetime: _crawl() needs a loop (which we create in __init__()),
+        # because crawl() returns a Task.
+        # So we reproduce a part of asyncio.runners.Runner that is useful to us.
+
+        # Normal workflow:
+        # 1. _start_asyncio() creates a task for self.join() and calls _run_loop()
+        # 2. _run_loop() calls loop.run_until_complete(main_task)
+        # 3. Crawling tasks start and finish
+        # 4. join() completes, loop.run_until_complete() and thus _run_loop() return
+        # 5. _start_asyncio() calls _close_loop()
+        # 6. _close_loop() does finalization and calls loop.close()
+
+        # Normal workflow with stop_after_crawl=False:
+        # 1. _start_asyncio() creates a simple future and calls _run_loop()
+        # 2. _run_loop() calls loop.run_until_complete(main_task)
+        # 3. Crawling tasks start and finish
+        # 4. _run_loop() blocks until the loop is stopped externally or the
+        #    future is cancelled via Ctrl-C
+        # 5. (after _run_loop() returns)  _start_asyncio() calls _close_loop()
+        # 6. _close_loop() does finalization and calls loop.close()
+
+        # Workflow with Ctrl-C pressed once:
+        # 1. While loop.run_until_complete() blocks, _signal_shutdown_reactorless()
+        #    is called
+        # 2. _signal_shutdown_reactorless() calls _shutdown_graceful_reactorless()
+        #    (via call_soon_threadsafe())
+        # 3. _shutdown_graceful_reactorless() calls stop()
+        # 4. For stop_after_crawl=True: crawl tasks finish, join() completes,
+        #    loop.run_until_complete() and thus _run_loop() return
+        #    For stop_after_crawl=False: _shutdown_graceful_reactorless() waits
+        #    for crawl tasks via join(), then cancels the main task,
+        #    loop.run_until_complete() raises CancelledError, _run_loop() returns
+        # 5. _start_asyncio() calls _close_loop()
+        # 6. _close_loop() does finalization and calls loop.close()
+
+        # Workflow with Ctrl-C pressed twice:
+        # 1. While loop.run_until_complete() blocks, _signal_shutdown_reactorless()
+        #    is called
+        # 2. _signal_shutdown_reactorless() calls _shutdown_graceful_reactorless()
+        #    (via call_soon_threadsafe()) and installs _signal_kill_reactorless()
+        #    as the next handler
+        # 3. Before _shutdown_graceful_reactorless() completes,
+        #    _signal_kill_reactorless() is called
+        # 4. _signal_kill_reactorless() cancels the main task
+        #    (via call_soon_threadsafe())
+        # 5. loop.run_until_complete() raises CancelledError, _run_loop() returns
+        # 6. _start_asyncio() calls _close_loop()
+        # 7. _close_loop() cancels all pending tasks (including
+        #    _shutdown_graceful_reactorless()), does finalization and calls loop.close()
+
+        loop = self._reactorless_loop
+        assert loop
+
+        if stop_after_crawl:
+            self._reactorless_main_task = loop.create_task(self.join())
+        else:
+            self._reactorless_main_task = loop.create_future()
+        self._stop_after_crawl = stop_after_crawl
+
+        try:
+            self._run_loop(install_signal_handlers)  # blocking call
+        except asyncio.CancelledError:
+            pass
+        finally:
+            self._close_loop()
+
+    def _run_loop(self, install_signal_handlers: bool) -> None:
+        # similar to asyncio.runners.Runner.run()
+        if install_signal_handlers:
+            install_shutdown_handlers(self._signal_shutdown_reactorless)
+        assert self._reactorless_loop
+        assert self._reactorless_main_task
+        self._reactorless_loop.run_until_complete(self._reactorless_main_task)
+
+    def _close_loop(self) -> None:
+        # Similar to asyncio.runners.Runner.close()
+        loop = self._reactorless_loop
+        assert loop
+        try:
+            self._cancel_all_tasks(loop)
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.run_until_complete(loop.shutdown_default_executor())
+        finally:
+            self._reactorless_main_task = None
+            asyncio.set_event_loop(None)
+            loop.close()
+            self._reactorless_loop = None
+
+    @staticmethod
+    def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
+        # copy of asyncio.runners._cancel_all_tasks()
+        to_cancel = asyncio.all_tasks(loop)
+        if not to_cancel:
+            return
+
+        for task in to_cancel:
+            task.cancel()
+
+        loop.run_until_complete(asyncio.gather(*to_cancel, return_exceptions=True))
+
+        for task in to_cancel:
+            if task.cancelled():
+                continue
+            if task.exception() is not None:
+                loop.call_exception_handler(
+                    {
+                        "message": "unhandled exception during AsyncCrawlerProcess shutdown",
+                        "exception": task.exception(),
+                        "task": task,
+                    }
+                )
+
+    def _signal_shutdown_reactorless(self, signum: int, _: Any) -> None:
+        install_shutdown_handlers(self._signal_kill_reactorless)
+        self._log_shutdown(signum)
+        if (loop := self._reactorless_loop) is None:
+            return
+
+        def _create_shutdown_task() -> None:
+            coro = self._shutdown_graceful_reactorless()
+            try:
+                loop.create_task(coro)
+            except RuntimeError:
+                coro.close()
+
+        loop.call_soon_threadsafe(_create_shutdown_task)
+
+    async def _shutdown_graceful_reactorless(self) -> None:
+        await self.stop()
+        if not self._stop_after_crawl:
+            # wait until crawl tasks finish and cancel the future
+            await self.join()
+            if self._reactorless_main_task and not self._reactorless_main_task.done():
+                self._reactorless_main_task.cancel()
+
+    def _signal_kill_reactorless(self, signum: int, _: Any) -> None:
+        install_shutdown_handlers(signal.SIG_IGN)
+        self._log_kill(signum)
+        if (loop := self._reactorless_loop) is None:
+            return
+        if (task := self._reactorless_main_task) is not None:
+            loop.call_soon_threadsafe(task.cancel)
+
+    def _start_twisted(
+        self, stop_after_crawl: bool, install_signal_handlers: bool
+    ) -> None:
         from twisted.internet import reactor
 
         if stop_after_crawl:
