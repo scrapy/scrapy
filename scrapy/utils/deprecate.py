@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import inspect
 import warnings
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import get_func_args_dict
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+
+_T = TypeVar("_T")
 
 
 def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> None:
@@ -25,7 +28,7 @@ def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> No
 
 def create_deprecated_class(
     name: str,
-    new_class: type,
+    new_class: type[_T],
     clsdict: dict[str, Any] | None = None,
     warn_category: type[Warning] = ScrapyDeprecationWarning,
     warn_once: bool = True,
@@ -33,7 +36,7 @@ def create_deprecated_class(
     new_class_path: str | None = None,
     subclass_warn_message: str = "{cls} inherits from deprecated class {old}, please inherit from {new}.",
     instance_warn_message: str = "{cls} is deprecated, instantiate {new} instead.",
-) -> type:
+) -> type[_T]:
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
     Subclasses of ``new_class`` are considered subclasses of this class.
@@ -135,7 +138,7 @@ def create_deprecated_class(
     return deprecated_cls
 
 
-def _clspath(cls: type, forced: str | None = None) -> str:
+def _clspath(cls: type[Any], forced: str | None = None) -> str:
     if forced is not None:
         return forced
     return f"{cls.__module__}.{cls.__name__}"
@@ -149,10 +152,10 @@ def update_classpath(path: str) -> str: ...
 
 
 @overload
-def update_classpath(path: Any) -> Any: ...
+def update_classpath(path: _T) -> _T: ...
 
 
-def update_classpath(path: Any) -> Any:
+def update_classpath(path: str | _T) -> str | _T:
     """Update a deprecated path from an object with its new location"""
     for prefix, replacement in DEPRECATION_RULES:
         if isinstance(path, str) and path.startswith(prefix):
@@ -165,7 +168,9 @@ def update_classpath(path: Any) -> Any:
     return path
 
 
-def method_is_overridden(subclass: type, base_class: type, method_name: str) -> bool:
+def method_is_overridden(
+    subclass: type[Any], base_class: type[Any], method_name: str
+) -> bool:
     """
     Return True if a method named ``method_name`` of a ``base_class``
     is overridden in a ``subclass``.
