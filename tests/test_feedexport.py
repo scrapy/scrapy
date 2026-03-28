@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
 
-def path_to_url(path: Path) -> str:
+def path_to_url(path: str | Path) -> str:
     return urljoin("file:", pathname2url(str(path)))
 
 
