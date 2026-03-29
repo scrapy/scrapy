@@ -1,5 +1,4 @@
 from io import StringIO
-from time import sleep, time
 from unittest import mock
 
 import pytest
@@ -64,23 +63,16 @@ Foo                                 1   oldest: 0s ago\n\n"""
 
 
 def test_get_oldest():
-    o1 = Foo()
+    for _ in range(100_000):  # run test 100_000 times
+        o1 = Foo()
 
-    o1_time = time()
+        o2 = Bar()
 
-    o2 = Bar()
-
-    o3_time = time()
-    if o3_time <= o1_time:
-        sleep(0.01)
-        o3_time = time()
-    if o3_time <= o1_time:
-        pytest.skip("time.time is not precise enough")
-
-    o3 = Foo()  # noqa: F841
-    assert trackref.get_oldest("Foo") is o1
-    assert trackref.get_oldest("Bar") is o2
-    assert trackref.get_oldest("XXX") is None
+        o3 = Foo()  # noqa: F841
+        assert trackref.get_oldest("Foo") is o1
+        assert trackref.get_oldest("Bar") is o2
+        assert trackref.get_oldest("Foo") is o1
+        assert trackref.get_oldest("XXX") is None
 
 
 def test_iter_all():

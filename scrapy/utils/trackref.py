@@ -13,7 +13,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 from operator import itemgetter
-from time import time
+from time import monotonic
+from types import NoneType
 from typing import TYPE_CHECKING, Any
 from weakref import WeakKeyDictionary
 
@@ -24,7 +25,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-NoneType = type(None)
 live_refs: defaultdict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
 
 
@@ -35,7 +35,7 @@ class object_ref:
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         obj = object.__new__(cls)
-        live_refs[cls][obj] = time()
+        live_refs[cls][obj] = monotonic()
         return obj
 
 
@@ -43,7 +43,7 @@ class object_ref:
 def format_live_refs(ignore: Any = NoneType) -> str:
     """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
-    now = time()
+    now = monotonic()
     for cls, wdict in sorted(live_refs.items(), key=lambda x: x[0].__name__):
         if not wdict:
             continue
