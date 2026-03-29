@@ -53,6 +53,9 @@ directory where you'd like to store your code and run::
 
     scrapy startproject tutorial
 
+.. note:: If you get an error like ``'scrapy' is not recognized`` on Windows,
+   try running ``python -m scrapy startproject tutorial`` instead.
+
 This will create a ``tutorial`` directory with the following contents::
 
     tutorial/
