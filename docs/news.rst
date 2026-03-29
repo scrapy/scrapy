@@ -3,8 +3,16 @@
 Release notes
 =============
 
-Scrapy VERSION (unreleased)
----------------------------
+.. _release-2.15.0:
+
+Scrapy 2.15.0 (unreleased)
+--------------------------
+
+Highlights:
+
+-   Experimental support for running without a Twisted reactor
+
+-   Experimental ``httpx``-based download handler
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -24,13 +32,212 @@ Backward-incompatible changes
 
     (:issue:`2183`, :issue:`6369`, :issue:`7182`)
 
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   The context factory class set as the value of the
+    :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` setting is now required to
+    support the ``method`` (recommended since Scrapy 1.2.0), ``tls_ciphers``
+    (recommended since Scrapy 1.8.0) and ``tls_verbose_logging`` (recommended
+    since Scrapy 1.8.0) ``__init__()`` arguments.
+    (:issue:`7353`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   ``scrapy.mail.MailSender`` is deprecated. Please use :mod:`smtplib`,
+    :mod:`twisted.mail.smtp` or other 3rd party email libraries.
+    (:issue:`7249`, :issue:`7263`)
+
+-   The ``scrapy.extensions.statsmailer.StatsMailer`` extension is deprecated.
+    You can instead implement your own notifications by handling the
+    :signal:`spider_closed` signal.
+    (:issue:`7249`, :issue:`7263`)
+
+-   The ``MEMUSAGE_NOTIFY_MAIL`` setting is deprecated. You can instead
+    implement your own notifications by handling the
+    :signal:`memusage_warning_reached` and :signal:`spider_closed` signals.
+    (:issue:`7249`, :issue:`7263`)
+
+-   The following implementation details of the context factory handling code
+    are deprecated:
+
+    - ``scrapy.core.downloader.contextfactory.AcceptableProtocolsContextFactory``
+
+    - ``scrapy.core.downloader.contextfactory.load_context_factory_from_settings()``
+
+    - ``scrapy.core.downloader.contextfactory.ScrapyClientContextFactory.getCertificateOptions()``
+
+    - ``scrapy.core.downloader.tls.ScrapyClientTLSOptions``
+
+    (:issue:`7353`)
+
+-   ``scrapy.commands.ScrapyCommand.set_crawler()`` is now deprecated.
+    (:issue:`7276`)
+
 New features
 ~~~~~~~~~~~~
+
+-   Added an *experimental* mode for running Scrapy without installing a
+    Twisted reactor: set :setting:`TWISTED_ENABLED` to ``False`` to enable it.
+    This mode has limitations, refer to its documentation for details. As long
+    as it's experimental, its behavior and related features and APIs may change
+    in future Scrapy releases in a breaking way.
+    (:issue:`6219`, :issue:`7185`, :issue:`7186`, :issue:`7187`, :issue:`7190`,
+    :issue:`7199`, :issue:`7228`, :issue:`7355`, :issue:`7366`)
+
+-   Added the :func:`scrapy.utils.reactorless.is_reactorless` function that
+    checks if there is a running asyncio event loop but no Twisted reactor.
+
+    (:issue:`7185`, :issue:`7199`)
+
+-   Changed :func:`scrapy.utils.asyncio.is_asyncio_available` to return
+    ``True`` if there is a running asyncio loop, even if no Twisted reactor is
+    installed.
+
+    (:issue:`7185`, :issue:`7199`)
+
+-   Added an *experimental* download handler that uses the httpx_ library and
+    doesn't require a Twisted reactor:
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. As
+    long as it's experimental, its behavior may change in future Scrapy
+    releases in a breaking way.
+    (:issue:`6805`, :issue:`7239`, :issue:`7368`)
+
+.. _httpx: https://www.python-httpx.org/
+
+-   Added the :setting:`DOWNLOAD_BIND_ADDRESS` setting as a global counterpart
+    to the per-request :reqmeta:`bindaddress` meta key.
+    (:issue:`7266`, :issue:`7283`)
+
+-   The built-in HTTP :ref:`download handlers <download-handlers-ref>` now
+    raise Scrapy-specific exceptions instead of implementation-specific ones,
+    to allow unified handling of similar problems caused by different
+    implementations. The default value of the :setting:`RETRY_EXCEPTIONS`
+    setting was updated replacing Twisted-specific exceptions with these new
+    ones. The exceptions:
+
+    - :exc:`~scrapy.exceptions.CannotResolveHostError`
+
+    - :exc:`~scrapy.exceptions.DownloadCancelledError`
+
+    - :exc:`~scrapy.exceptions.DownloadConnectionRefusedError`
+
+    - :exc:`~scrapy.exceptions.DownloadFailedError`
+
+    - :exc:`~scrapy.exceptions.DownloadTimeoutError`
+
+    - :exc:`~scrapy.exceptions.ResponseDataLossError`
+
+    - :exc:`~scrapy.exceptions.UnsupportedURLSchemeError`
+
+    (:issue:`7208`)
+
+-   Added the :signal:`memusage_warning_reached` signal emitted by the
+    :class:`~scrapy.extensions.memusage.MemoryUsage` extension when the memory
+    usage reaches :setting:`MEMUSAGE_WARNING_MB`.
+    (:issue:`7249`, :issue:`7263`)
 
 -   Added
     :meth:`Headers.to_tuple_list() <scrapy.http.headers.Headers.to_tuple_list>`
     that returns headers as a list of ``(key, value)`` tuples.
     (:issue:`7239`)
+
+Improvements
+~~~~~~~~~~~~
+
+-   :func:`asyncio.to_thread` is now used instead of
+    :func:`twisted.internet.threads.deferToThread` in the built-in feed
+    storages, media pipeline storages and the
+    ``scrapy.utils.decorators.inthread()`` decorator when available.
+    (:issue:`7183`, :issue:`7184`, :issue:`7349`)
+
+-   Improved memory footprint of :class:`~scrapy.Request` objects by adding
+    ``__slots__`` and omitting empty lists and dicts in some internal
+    attributes.
+    (:issue:`7036`, :issue:`7367`)
+
+-   :class:`~scrapy.core.downloader.contextfactory.ScrapyClientContextFactory`
+    no longer mutates the SSL context, to avoid the behavior that was
+    deprecated in pyOpenSSL 25.1.0.
+    (:issue:`6859`, :issue:`7353`)
+
+-   The server certificate verification code now correctly handles certificates
+    with IP addresses in ``subjectAltName``.
+    (:issue:`7353`)
+
+-   Other code refactoring and improvements.
+    (:issue:`7210`, :issue:`7238`)
+
+Bug fixes
+~~~~~~~~~
+
+-   :ref:`Media pipelines <topics-media-pipeline>` should now wait for uploads
+    to asynchronous storages (e.g.
+    :class:`~scrapy.pipelines.files.S3FilesStore`) to complete.
+    (:issue:`2183`, :issue:`6369`, :issue:`7182`)
+
+-   Fixed merging ``*_BASE`` settings (e.g. merging
+    :setting:`DOWNLOADER_MIDDLEWARES` with
+    :setting:`DOWNLOADER_MIDDLEWARES_BASE`) when a component is referred to by
+    a class object in one setting and by a string import path in the other one.
+    (:issue:`6912`, :issue:`6993`)
+
+-   ``scrapy runspider`` and ``scrapy crawl`` now set the exit code to 1 if an
+    exception happened early (this was broken in an earlier Scrapy version).
+    (:issue:`6820`, :issue:`7255`)
+
+-   Fixed omitting repeated warnings about data loss (see
+    :setting:`DOWNLOAD_FAIL_ON_DATALOSS`) in
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`.
+    (:issue:`7222`)
+
+-   Improved FTP connection management in
+    :class:`scrapy.pipelines.files.FTPFilesStore`.
+    (:issue:`7256`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Added :ref:`docs for using Pydantic models as items <pydantic-items>`.
+    (:issue:`6955`, :issue:`6966`)
+
+-   Documented :ref:`job directory contents <job-dir-contents>`.
+    (:issue:`4842`, :issue:`5260`)
+
+-   Improved docs for :attr:`~scrapy.Request.dont_filter`.
+    (:issue:`6398`, :issue:`7245`)
+
+-   Other documentation improvements and fixes.
+    (:issue:`7248`, :issue:`7274`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added the ``no-reactor`` test environment that doesn't install a Twisted
+    reactor and uses ``pytest-asyncio`` instead of ``pytest-twisted`` to run
+    asynchronous test functions.
+    (:issue:`6952`, :issue:`7189`, :issue:`7233`, :issue:`7234`, :issue:`7254`,
+    :issue:`7259`)
+
+-   Fixed running tests with ``pytest-xdist``.
+    (:issue:`7216`, :issue:`7257`)
+
+-   Type hints improvements and fixes.
+    (:issue:`7300`, :issue:`7331`)
+
+-   CI and test improvements and fixes.
+    (:issue:`7060`,
+    :issue:`7223`,
+    :issue:`7232`,
+    :issue:`7241`,
+    :issue:`7250`,
+    :issue:`7256`,
+    :issue:`7276`,
+    :issue:`7277`,
+    :issue:`7279`,
+    :issue:`7329`,
+    :issue:`7363`)
 
 .. _release-2.14.2:
 

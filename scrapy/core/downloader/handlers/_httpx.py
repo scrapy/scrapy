@@ -90,7 +90,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             )
         super().__init__(crawler)
         logger.warning(
-            "HttpxDownloadHandler is experimental and is not recommented for production use."
+            "HttpxDownloadHandler is experimental and is not recommended for production use."
         )
         self._tls_verbose_logging: bool = self.crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
