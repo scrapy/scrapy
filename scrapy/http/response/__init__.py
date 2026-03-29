@@ -86,7 +86,7 @@ class Response(object_ref):
         self._set_body(body)
         self._set_url(url)
         self.request: Request | None = request
-        self._flags: list[str] = list(flags) if flags else None
+        self._flags: list[str] | None = list(flags) if flags else None
         self.certificate: Certificate | None = certificate
         self.ip_address: IPv4Address | IPv6Address | None = ip_address
         self.protocol: str | None = protocol

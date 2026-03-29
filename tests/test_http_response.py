@@ -191,6 +191,19 @@ class TestResponse:
         assert response.headers == {}
         assert response.headers is not original_headers
 
+    def test_setters(self):
+        response = self.response_class("http://example.com")
+
+        response.flags = ["f1"]
+        assert response.flags == ["f1"]
+
+        headers = Headers({b"X-Test": b"1"})
+        response.headers = headers
+        assert response._headers is headers
+        response.headers = {b"A": b"b"}
+        assert isinstance(response.headers, Headers)
+        assert response._headers[b"A"] == b"b"
+
     def test_urljoin(self):
         """Test urljoin shortcut (only for existence, since behavior equals urljoin)"""
         joined = self.response_class("http://www.example.com").urljoin("/test")
