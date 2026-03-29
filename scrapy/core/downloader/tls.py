@@ -20,7 +20,6 @@ from service_identity.pyopenssl import (
 from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers
 
-from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ssl import get_temp_key_info, x509name_to_string
 
@@ -83,32 +82,92 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
 
     Instances of this class are returned from
     :class:`.ScrapyClientContextFactory`.
+
+    This class is used on Twisted 25.5.0 and older.
     """
 
     def __init__(self, hostname: str, ctx: SSL.Context, verbose_logging: bool = False):
-        if TWISTED_TLS_NEW_IMPL:
-            super().__init__(hostname, ctx, lambda: ctx)  # type: ignore[call-arg,no-untyped-call]
-        else:
-            super().__init__(hostname, ctx)  # type: ignore[no-untyped-call]
+        super().__init__(hostname, ctx)  # type: ignore[no-untyped-call]
+        self.verbose_logging: bool = verbose_logging
+
+    def _identityVerifyingInfoCallback(
+        self, connection: SSL.Connection, where: int, ret: Any
+    ) -> None:
+        if where & SSL.SSL_CB_HANDSHAKE_START and self._hostnameIsDnsName:
+            connection.set_tlsext_host_name(self._hostnameBytes)
+        elif where & SSL.SSL_CB_HANDSHAKE_DONE:
+            if self.verbose_logging:
+                _log_tls(self._hostnameASCII, connection)
+
+            try:
+                if self._hostnameIsDnsName:
+                    verify_hostname(connection, self._hostnameASCII)
+                else:
+                    verify_ip_address(connection, self._hostnameASCII)
+            except (CertificateError, VerificationError) as e:
+                logger.warning(
+                    'Remote certificate is not valid for hostname "%s"; %s',
+                    self._hostnameASCII,
+                    e,
+                )
+            except ValueError as e:
+                logger.warning(
+                    "Ignoring error while verifying certificate "
+                    'from host "%s" (exception: %r)',
+                    self._hostnameASCII,
+                    e,
+                )
+
+
+ScrapyClientTLSOptions = create_deprecated_class(
+    "ScrapyClientTLSOptions",
+    _ScrapyClientTLSOptions,
+    subclass_warn_message="{old} is deprecated.",
+    instance_warn_message="{cls} is deprecated.",
+)
+
+
+class _ScrapyClientTLSOptions26(ClientTLSOptions):
+    """
+    SSL Client connection creator ignoring certificate verification errors
+    (for genuinely invalid certificates or bugs in verification code) and
+    optionally logging TLS details of the connection.
+
+    Same as Twisted's private _sslverify.ClientTLSOptions,
+    except that VerificationError, CertificateError and ValueError
+    exceptions are caught, so that the connection is not closed, only
+    logging warnings. Also, HTTPS connection parameters logging is added.
+
+    Instances of this class are returned from
+    :class:`.ScrapyClientContextFactory`.
+
+    This class is used on Twisted newer than 25.5.0.
+    """
+
+    def __init__(
+        self,
+        createConnection: Callable[[TLSMemoryBIOProtocol], SSL.Connection],
+        hostname: str,
+        verbose_logging: bool = False,
+    ):
+        super().__init__(createConnection, hostname)  # type: ignore[no-untyped-call]
         self.verbose_logging: bool = verbose_logging
 
     def clientConnectionForTLS(
         self, tlsProtocol: TLSMemoryBIOProtocol
     ) -> SSL.Connection:
-        """This method is needed to override the verify callback on Twisted > 25.5.0."""
+        """This method is needed to override the verify callback."""
         conn = super().clientConnectionForTLS(tlsProtocol)  # type: ignore[no-untyped-call]
-        if TWISTED_TLS_NEW_IMPL:
-            callback = self._verifyCB(
-                self._hostnameIsDnsName, self._hostnameASCII, self.verbose_logging
-            )
-            conn.set_verify(SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT, callback)
+        callback = self._verifyCB(
+            self._hostnameIsDnsName, self._hostnameASCII, self.verbose_logging
+        )
+        conn.set_verify(SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT, callback)
         return conn
 
     @staticmethod
     def _verifyCB(
         hostIsDNS: bool, hostnameASCII: str, verbose_logging: bool
     ) -> Callable[[SSL.Connection, X509, int, int, int], bool]:
-        """Implementation for Twisted > 25.5.0."""
         svcid: ServiceID = (
             DNS_ID(hostnameASCII) if hostIsDNS else IPAddress_ID(hostnameASCII)
         )
@@ -142,43 +201,6 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
             return True
 
         return verifyCallback
-
-    def _identityVerifyingInfoCallback(
-        self, connection: SSL.Connection, where: int, ret: Any
-    ) -> None:
-        """Implementation for Twisted 25.5.0 and older."""
-        if where & SSL.SSL_CB_HANDSHAKE_START and self._hostnameIsDnsName:
-            connection.set_tlsext_host_name(self._hostnameBytes)
-        elif where & SSL.SSL_CB_HANDSHAKE_DONE:
-            if self.verbose_logging:
-                _log_tls(self._hostnameASCII, connection)
-
-            try:
-                if self._hostnameIsDnsName:
-                    verify_hostname(connection, self._hostnameASCII)
-                else:
-                    verify_ip_address(connection, self._hostnameASCII)
-            except (CertificateError, VerificationError) as e:
-                logger.warning(
-                    'Remote certificate is not valid for hostname "%s"; %s',
-                    self._hostnameASCII,
-                    e,
-                )
-            except ValueError as e:
-                logger.warning(
-                    "Ignoring error while verifying certificate "
-                    'from host "%s" (exception: %r)',
-                    self._hostnameASCII,
-                    e,
-                )
-
-
-ScrapyClientTLSOptions = create_deprecated_class(
-    "ScrapyClientTLSOptions",
-    _ScrapyClientTLSOptions,
-    subclass_warn_message="{old} is deprecated.",
-    instance_warn_message="{cls} is deprecated.",
-)
 
 
 DEFAULT_CIPHERS: AcceptableCiphers = AcceptableCiphers.fromOpenSSLCipherString(
