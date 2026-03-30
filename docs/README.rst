@@ -66,3 +66,5 @@ To compile the documentation to HTML run the following command::
     tox -e docs
 
 Documentation will be generated (in HTML format) inside the ``.tox/docs/tmp/html`` dir.
+
+FOO
