@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from operator import itemgetter
 from typing import Any, TypedDict
 
+import sphinx
 from docutils import nodes
 from docutils.nodes import Element, General, Node, document
 from docutils.parsers.rst import Directive
@@ -126,7 +127,7 @@ def rev_role(
     return [node], []
 
 
-def setup(app: Sphinx) -> None:
+def setup(app: Sphinx) -> dict[str, Any]:
     app.add_crossref_type(
         directivename="setting",
         rolename="setting",
@@ -157,3 +158,5 @@ def setup(app: Sphinx) -> None:
 
     app.connect("doctree-read", collect_scrapy_settings_refs)
     app.connect("doctree-resolved", replace_settingslist_nodes)
+
+    return {"version": sphinx.__display_version__, "parallel_read_safe": True}
