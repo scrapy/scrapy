@@ -3,7 +3,6 @@ from collections.abc import Sequence
 from operator import itemgetter
 from typing import Any, TypedDict
 
-import sphinx
 from docutils import nodes
 from docutils.nodes import Element, General, Node, document
 from docutils.parsers.rst import Directive
@@ -158,5 +157,4 @@ def setup(app: Sphinx) -> dict[str, Any]:
 
     app.connect("doctree-read", collect_scrapy_settings_refs)
     app.connect("doctree-resolved", replace_settingslist_nodes)
-
-    return {"version": sphinx.__display_version__, "parallel_read_safe": True}
+    return {"parallel_read_safe": True}
