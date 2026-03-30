@@ -64,11 +64,14 @@ Foo                                 1   oldest: 0s ago\n\n"""
 
 def test_get_oldest():
     for _ in range(100_000):  # run test 100_000 times
+        trackref.live_refs.clear()
+
         o1 = Foo()
 
         o2 = Bar()
 
         o3 = Foo()  # noqa: F841
+
         assert trackref.get_oldest("Foo") is o1
         assert trackref.get_oldest("Bar") is o2
         assert trackref.get_oldest("Foo") is o1
