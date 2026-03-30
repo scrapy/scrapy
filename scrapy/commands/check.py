@@ -102,16 +102,19 @@ class Command(ScrapyCommand):
 
             # start checks
             if opts.list:
-                for spider, methods in sorted(contract_reqs.items()):
-                    if not methods and not opts.verbose:
-                        continue
-                    print(spider)
-                    for method in sorted(methods):
-                        print(f"  * {method}")
+                print(
+                    "\n".join(
+                        f"{spider}\n"
+                        + "\n".join(f"  * {method}" for method in sorted(methods))
+                        for spider, methods in sorted(contract_reqs.items())
+                        if methods or opts.verbose
+                    ),
+                    flush=False,
+                )
             else:
-                start_time = time.time()
+                start_time = time.monotonic()
                 self.crawler_process.start()
-                stop = time.time()
+                stop = time.monotonic()
 
                 result.printErrors()
                 result.printSummary(start_time, stop)

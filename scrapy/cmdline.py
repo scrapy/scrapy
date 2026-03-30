@@ -100,25 +100,37 @@ def _pop_command_name(argv: list[str]) -> str | None:
 def _print_header(settings: BaseSettings, inproject: bool) -> None:
     version = scrapy.__version__
     if inproject:
-        print(f"Scrapy {version} - active project: {settings['BOT_NAME']}\n")
+        print(
+            f"Scrapy {version} - active project: {settings['BOT_NAME']}\n", flush=False
+        )
 
     else:
-        print(f"Scrapy {version} - no active project\n")
+        print(f"Scrapy {version} - no active project\n", flush=False)
 
 
 def _print_commands(settings: BaseSettings, inproject: bool) -> None:
     _print_header(settings, inproject)
-    print("Usage:")
-    print("  scrapy <command> [options] [args]\n")
-    print("Available commands:")
+    print(
+        "Usage:\n",
+        "  scrapy <command> [options] [args]\n",
+        "Available commands:\n",
+        flush=False,
+    )
     cmds = _get_commands_dict(settings, inproject)
-    for cmdname, cmdclass in sorted(cmds.items()):
-        print(f"  {cmdname:<13} {cmdclass.short_desc()}")
+    print(
+        "\n".join(
+            f"  {cmdname:<13} {cmdclass.short_desc()}"
+            for cmdname, cmdclass in sorted(cmds.items())
+        ),
+        flush=False,
+    )
     if not inproject:
-        print()
-        print("  [ more ]      More commands available when run from project directory")
-    print()
-    print('Use "scrapy <command> -h" to see more info about a command')
+        print(
+            "\n",
+            "  [ more ]      More commands available when run from project directory",
+            flush=False,
+        )
+    print("\n", 'Use "scrapy <command> -h" to see more info about a command')
 
 
 def _print_unknown_command_msg(

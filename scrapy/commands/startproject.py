@@ -123,12 +123,12 @@ class Command(ScrapyCommand):
             )
         print(
             f"New Scrapy project '{project_name}', using template directory "
-            f"'{self.templates_dir}', created in:"
+            f"'{self.templates_dir}', created in:\n",
+            f"    {project_dir.resolve()}\n\n",
+            "You can start your first spider with:\n",
+            f"    cd {project_dir}\n",
+            "    scrapy genspider example example.com",
         )
-        print(f"    {project_dir.resolve()}\n")
-        print("You can start your first spider with:")
-        print(f"    cd {project_dir}")
-        print("    scrapy genspider example example.com")
 
     @property
     def templates_dir(self) -> str:
