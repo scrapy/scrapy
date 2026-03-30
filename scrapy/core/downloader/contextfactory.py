@@ -141,10 +141,14 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             )
         # this matches the behavior of BrowserLikeContextFactory in that it
         # only uses self._ssl_method and doesn't support TLS logging or other
-        # features of ScrapyClientContextFactory
+        # features of ScrapyClientContextFactory, however it additionally
+        # supports self.tls_ciphers
         return optionsForClientTLS(
             hostname=hostname.decode("ascii"),
-            extraCertificateOptions={"method": self._ssl_method},
+            extraCertificateOptions={
+                "method": self._ssl_method,
+                "acceptableCiphers": self.tls_ciphers,
+            },
         )
 
 

@@ -39,19 +39,18 @@ class HTTP10DownloadHandler:
             settings["DOWNLOADER_HTTPCLIENTFACTORY"]
         )
         if settings["DOWNLOADER_CLIENTCONTEXTFACTORY"] == "SENTINEL":
-            context_factory_cls = ScrapyClientContextFactory
+            self.ClientContextFactory: type[ScrapyClientContextFactory] = (
+                ScrapyClientContextFactory
+            )
         else:  # pragma: no cover
             warnings.warn(
                 "The 'DOWNLOADER_CLIENTCONTEXTFACTORY' setting is deprecated.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            context_factory_cls = load_object(
+            self.ClientContextFactory = load_object(
                 settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
             )
-        self.ClientContextFactory: type[ScrapyClientContextFactory] = load_object(
-            context_factory_cls
-        )
         self._settings: BaseSettings = settings
         self._crawler: Crawler = crawler
 

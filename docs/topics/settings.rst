@@ -1095,6 +1095,12 @@ when making a request and abort the request if the verification fails.
     certificate problems are logged when this setting is set to ``False``)
     depends on its implementation.
 
+.. warning::
+    Enabling this setting disables handling of
+    :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING` in
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`.
+
 .. setting:: DUPEFILTER_CLASS
 
 DUPEFILTER_CLASS
