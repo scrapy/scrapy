@@ -267,9 +267,7 @@ DOWNLOAD_TIMEOUT = 180  # 3mins
 
 DOWNLOADER = "scrapy.core.downloader.Downloader"
 
-DOWNLOADER_CLIENTCONTEXTFACTORY = (
-    "scrapy.core.downloader.contextfactory.ScrapyClientContextFactory"
-)
+DOWNLOADER_CLIENTCONTEXTFACTORY = "SENTINEL"
 DOWNLOADER_CLIENT_TLS_CIPHERS = "DEFAULT"
 # Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"

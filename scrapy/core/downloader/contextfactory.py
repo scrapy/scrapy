@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from OpenSSL import SSL
 from twisted.internet._sslverify import _setAcceptableProtocols
@@ -203,14 +203,25 @@ def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
 
     Also passes values of other relevant settings to the factory class.
     """
+    if crawler.settings["DOWNLOADER_CLIENTCONTEXTFACTORY"] == "SENTINEL":
+        context_factory_cls = ScrapyClientContextFactory
+    else:  # pragma: no cover
+        warnings.warn(
+            "The 'DOWNLOADER_CLIENTCONTEXTFACTORY' setting is deprecated.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        context_factory_cls = load_object(
+            crawler.settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
+        )
     ssl_method = openssl_methods[crawler.settings.get("DOWNLOADER_CLIENT_TLS_METHOD")]
-    context_factory_cls = load_object(
-        crawler.settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
-    )
-    return build_from_crawler(
-        context_factory_cls,
-        crawler,
-        method=ssl_method,
+    return cast(
+        "IPolicyForHTTPS",
+        build_from_crawler(
+            context_factory_cls,
+            crawler,
+            method=ssl_method,
+        ),
     )
 
 
