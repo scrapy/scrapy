@@ -714,12 +714,6 @@ or even enable client-side authentication (and various other things).
     ``'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'``,
     which uses the platform's certificates to validate remote endpoints.
 
-If you do use a custom ContextFactory, make sure its ``__init__`` method
-accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
-:setting:`DOWNLOADER_CLIENT_TLS_METHOD`), a ``tls_verbose_logging``
-parameter (``bool``) and a ``tls_ciphers`` parameter (see
-:setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
-
 .. note::
 
     This setting is specific to the built-in Twisted-based download handlers:
@@ -753,6 +747,8 @@ specific cipher that is not included in ``DEFAULT`` if a website requires it.
     (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
     :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
     to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
+    It's currently unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -783,6 +779,8 @@ This setting must be one of these string values:
     (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
     :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
     to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
+    It's currently unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -929,6 +927,13 @@ For example:
 If set, built-in HTTP download handlers use this value by default.
 Set the :reqmeta:`bindaddress` request meta key to override it for a specific
 request.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Specifying the port is unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOAD_HANDLERS
 
