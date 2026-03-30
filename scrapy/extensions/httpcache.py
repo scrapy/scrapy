@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_WALL_OFFSET = time() - monotonic()
+
 
 class DummyPolicy:
     def __init__(self, settings: BaseSettings):
@@ -301,11 +303,7 @@ class DbmCacheStorage:
             return None  # not found
 
         ts = db[tkey]
-        float_ts = float(ts)
-        if (
-            0 < self.expiration_secs < monotonic() - float_ts
-            or 0 < self.expiration_secs < time() - float_ts
-        ):
+        if 0 < self.expiration_secs < _WALL_OFFSET + monotonic() - float(ts):
             return None  # expired
 
         return cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
@@ -387,10 +385,7 @@ class FilesystemCacheStorage:
         if not metapath.exists():
             return None  # not found
         mtime = metapath.stat().st_mtime
-        if (
-            0 < self.expiration_secs < monotonic() - mtime
-            or 0 < self.expiration_secs < time() - mtime
-        ):
+        if 0 < self.expiration_secs < _WALL_OFFSET + monotonic() - mtime:
             return None  # expired
         with self._open(metapath, "rb") as f:
             return cast("dict[str, Any]", pickle.load(f))  # noqa: S301
