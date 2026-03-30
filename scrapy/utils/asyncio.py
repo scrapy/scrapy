@@ -169,7 +169,7 @@ class AsyncioLoopingCall:
             raise ValueError("Interval must be greater than 0")
 
         self.interval = interval
-        self._start_time = time.time()
+        self._start_time = time.monotonic()
         if now:
             self._call()
         loop = asyncio.get_event_loop()
@@ -179,7 +179,7 @@ class AsyncioLoopingCall:
         """Return the time to sleep until the next call."""
         assert self.interval is not None
         assert self._start_time is not None
-        now = time.time()
+        now = time.monotonic()
         running_for = now - self._start_time
         return self.interval - (running_for % self.interval)
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import warnings
-from time import time
+from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag, urlparse, urlunparse
 
@@ -152,7 +152,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         self.headers: Headers = Headers(request.headers)
         self.response_headers: Headers | None = None
         self.timeout: float = request.meta.get("download_timeout") or timeout
-        self.start_time: float = time()
+        self.start_time: float = monotonic()
         self.deferred: defer.Deferred[Response] = defer.Deferred().addCallback(
             self._build_response, request
         )
@@ -199,7 +199,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         return p
 
     def gotHeaders(self, headers):
-        self.headers_time = time()
+        self.headers_time = monotonic()
         self.response_headers = headers
 
     def gotStatus(self, version, status, message):

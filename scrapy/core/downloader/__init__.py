@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 from collections import deque
 from datetime import datetime
-from time import time
+from time import monotonic
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -206,7 +206,7 @@ class Downloader:
             return
 
         # Delay queue processing if a download_delay is configured
-        now = time()
+        now = monotonic()
         delay = slot.download_delay()
         if delay:
             penalty = delay - now + slot.lastseen
@@ -275,7 +275,7 @@ class Downloader:
             slot.close()
 
     def _slot_gc(self, age: float = 60) -> None:
-        mintime = time() - age
+        mintime = monotonic() - age
         for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:
                 self.slots.pop(key).close()

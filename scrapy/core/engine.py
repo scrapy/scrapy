@@ -11,7 +11,7 @@ import asyncio
 import contextlib
 import logging
 import warnings
-from time import time
+from time import monotonic
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any
 
@@ -179,7 +179,7 @@ class ExecutionEngine:
         """
         if self._starting:
             raise RuntimeError("Engine already running")
-        self.start_time = time()
+        self.start_time = monotonic()
         self._starting = True
         await self.signals.send_catch_log_async(signal=signals.engine_started)
         if self._stopping:
