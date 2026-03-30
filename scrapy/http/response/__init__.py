@@ -151,7 +151,7 @@ class Response(object_ref):
         if isinstance(value, Headers):
             self._headers = value
         else:
-            self._headers = Headers(value) if value else None
+            self._headers = Headers(value)
 
     @property
     def flags(self) -> list[str]:
@@ -161,7 +161,7 @@ class Response(object_ref):
 
     @flags.setter
     def flags(self, value: list[str] | None) -> None:
-        self._flags = value or None
+        self._flags = value
 
     def __repr__(self) -> str:
         return f"<{self.status} {self.url}>"
