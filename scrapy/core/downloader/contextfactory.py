@@ -158,6 +158,14 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
     ``self._ssl_method`` is used from the parent class.
     """
 
+    def __init__(self, *args: Any, **kwargs: Any):
+        warnings.warn(
+            "BrowserLikeContextFactory is deprecated.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
+
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         return optionsForClientTLS(
             hostname=hostname.decode("ascii"),
