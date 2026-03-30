@@ -52,6 +52,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         tls_verbose_logging: bool = False,
         tls_ciphers: str | None = None,
         *args: Any,
+        verify_certificates: bool = False,
         **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)  # type: ignore[no-untyped-call]
@@ -68,6 +69,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             acceptableCiphers=self.tls_ciphers,
         )
         self._ctx = self._get_context()
+        self._verify_certificates = verify_certificates
         if method_is_overridden(type(self), ScrapyClientContextFactory, "getContext"):
             warnings.warn(
                 "Overriding ScrapyClientContextFactory.getContext() is deprecated and that method"
@@ -97,11 +99,13 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
         tls_ciphers: str | None = crawler.settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+        verify_certificates = crawler.settings.getbool("DOWNLOAD_VERIFY_CERTIFICATES")
         return cls(  # type: ignore[misc]
             *args,
             method=method,
             tls_verbose_logging=tls_verbose_logging,
             tls_ciphers=tls_ciphers,
+            verify_certificates=verify_certificates,
             **kwargs,
         )
 
@@ -129,10 +133,18 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         return ctx
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
-        return _ScrapyClientTLSOptions(
-            hostname.decode("ascii"),
-            self._ctx,
-            verbose_logging=self.tls_verbose_logging,
+        if not self._verify_certificates:
+            return _ScrapyClientTLSOptions(
+                hostname.decode("ascii"),
+                self._ctx,
+                verbose_logging=self.tls_verbose_logging,
+            )
+        # this matches the behavior of BrowserLikeContextFactory in that it
+        # only uses self._ssl_method and doesn't support TLS logging or other
+        # features of ScrapyClientContextFactory
+        return optionsForClientTLS(
+            hostname=hostname.decode("ascii"),
+            extraCertificateOptions={"method": self._ssl_method},
         )
 
 
@@ -160,7 +172,9 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
 
     def __init__(self, *args: Any, **kwargs: Any):
         warnings.warn(
-            "BrowserLikeContextFactory is deprecated.",
+            "BrowserLikeContextFactory is deprecated."
+            " You can set DOWNLOAD_VERIFY_CERTIFICATES=True to enable"
+            " certificate verification instead of using it.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )

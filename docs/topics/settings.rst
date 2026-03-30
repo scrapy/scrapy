@@ -1077,6 +1077,24 @@ Optionally, this can be set per-request basis by using the
     requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
     failure is always raised for every request that was using that connection.
 
+.. setting:: DOWNLOAD_VERIFY_CERTIFICATES
+
+DOWNLOAD_VERIFY_CERTIFICATES
+----------------------------
+
+Default: ``False``
+
+Whether the HTTPS download handlers should verify the server TLS certificate
+when making a request and abort the request if the verification fails.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. The exact behavior of a handler (e.g. whether
+    certificate problems are logged when this setting is set to ``False``)
+    depends on its implementation.
+
 .. setting:: DUPEFILTER_CLASS
 
 DUPEFILTER_CLASS
