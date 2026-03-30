@@ -25,7 +25,7 @@ def is_reactorless() -> bool:
         :func:`scrapy.utils.asyncio.is_asyncio_available()`, it has the same
         limitations for detecting a running asyncio event loop as that one.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.15.0
     """
     return is_asyncio_available() and not is_reactor_installed()
 
