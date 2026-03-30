@@ -29,6 +29,12 @@ jobs:
                 console.log(`PR #${prNumber} already closed.`);
                 return;
               }
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: prNumber,
+                labels: ['spam']
+              });
               await github.rest.issues.createComment({
                 owner,
                 repo,
