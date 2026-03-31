@@ -355,6 +355,14 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
         assert log.count("WARNING: ") == 2
 
+    def test_reactorless_custom_settings(self):
+        """Setting TWISTED_ENABLED=False in spider settings is not currently supported,
+        AsyncCrawlerProcess will install a reactor in this case.
+        """
+        log = self.run_script("reactorless_custom_settings.py")
+        assert "Spider closed (finished)" not in log
+        assert "TWISTED_ENABLED is False but a Twisted reactor is installed." in log
+
     def test_reactorless_datauri(self):
         log = self.run_script("reactorless_datauri.py")
         assert "Not using a Twisted reactor" in log
@@ -396,7 +404,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def test_reactorless_reactor(self):
         log = self.run_script("reactorless_reactor.py")
         assert (
-            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
+            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed."
             in log
         )
 
@@ -467,6 +475,14 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
             "setting (uvloop.Loop)"
         ) in log
 
+    def test_no_reactor(self):
+        log = self.run_script("no_reactor.py")
+        assert "Spider closed (finished)" not in log
+        assert (
+            "RuntimeError: We expected a Twisted reactor to be installed but it isn't."
+            in log
+        )
+
 
 class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     @property
@@ -524,6 +540,14 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "ERROR: " not in log
         assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
         assert log.count("WARNING: ") == 2
+
+    def test_reactorless_custom_settings(self):
+        """Setting TWISTED_ENABLED=False in spider settings is not currently supported,
+        AsyncCrawlerRunner will expect a reactor installed by the user.
+        """
+        log = self.run_script("reactorless_custom_settings.py")
+        assert "Spider closed (finished)" not in log
+        assert "We expected a Twisted reactor to be installed but it isn't." in log
 
     def test_reactorless_datauri(self):
         log = self.run_script("reactorless_datauri.py")

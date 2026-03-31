@@ -107,16 +107,26 @@ class Crawler:
 
         use_reactor = self.settings.getbool("TWISTED_ENABLED")
         if use_reactor:
+            # We either install a reactor or expect one to be installed.
             reactor_class: str = self.settings["TWISTED_REACTOR"]
             event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
             if self._init_reactor:
-                # this needs to be done after the spider settings are merged,
-                # but before something imports twisted.internet.reactor
+                # We need to install a reactor.
+                # This needs to be done after the spider settings are merged,
+                # but before something imports twisted.internet.reactor.
                 if reactor_class:
+                    # Install a specific reactor.
                     install_reactor(reactor_class, event_loop)
                 else:
+                    # Install the default one.
                     from twisted.internet import reactor  # noqa: F401
+            elif not is_reactor_installed():
+                # We need a reactor to be already installed.
+                raise RuntimeError(
+                    "We expected a Twisted reactor to be installed but it isn't."
+                )
             if reactor_class:
+                # We need to check that the correct reactor is installed.
                 verify_installed_reactor(reactor_class)
                 if is_asyncio_reactor_installed() and event_loop:
                     verify_installed_asyncio_event_loop(event_loop)
@@ -124,6 +134,11 @@ class Crawler:
             if self._init_reactor or reactor_class:
                 log_reactor_info()
         else:
+            # We expect a reactor to not be installed.
+            if is_reactor_installed():
+                raise RuntimeError(
+                    "TWISTED_ENABLED is False but a Twisted reactor is installed."
+                )
             logger.debug("Not using a Twisted reactor")
             self._apply_reactorless_default_settings()
 
@@ -529,6 +544,10 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
                 "it must be a spider class (or a Crawler object)"
             )
         if self.settings.getbool("TWISTED_ENABLED"):
+            if not is_reactor_installed():
+                raise RuntimeError(
+                    "We expected a Twisted reactor to be installed but it isn't."
+                )
             if not is_asyncio_reactor_installed():
                 raise RuntimeError(
                     f"When TWISTED_ENABLED is True, {type(self).__name__} "
