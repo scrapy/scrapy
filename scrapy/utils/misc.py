@@ -38,7 +38,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     Exception: if arg is a dict, [arg] will be returned
     """
     if arg is None:
-        return []
+        return ()
     if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
         return cast("Iterable[Any]", arg)
     return [arg]

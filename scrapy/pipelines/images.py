@@ -191,7 +191,7 @@ class ImagesPipeline(FilesPipeline):
         *,
         response_body: BytesIO,
     ) -> tuple[Image.Image, BytesIO]:
-        if image.format in ("PNG", "WEBP") and image.mode == "RGBA":
+        if image.format in {"PNG", "WEBP"} and image.mode == "RGBA":
             background = self._Image.new("RGBA", image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert("RGB")

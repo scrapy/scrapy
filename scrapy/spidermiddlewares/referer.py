@@ -103,7 +103,7 @@ class ReferrerPolicy(ABC):
         return self.tls_protected(url)
 
     def tls_protected(self, url: str) -> bool:
-        return urlparse(url).scheme in ("https", "ftps")
+        return urlparse(url).scheme in {"https", "ftps"}
 
 
 class NoReferrerPolicy(ReferrerPolicy):

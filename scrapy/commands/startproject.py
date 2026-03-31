@@ -90,7 +90,7 @@ class Command(ScrapyCommand):
         _make_writable(dst)
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        if len(args) not in (1, 2):
+        if len(args) not in {1, 2}:
             raise UsageError
 
         project_name = args[0]

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 def _import_file(filepath: str | PathLike[str]) -> ModuleType:
     abspath = Path(filepath).resolve()
-    if abspath.suffix not in (".py", ".pyw"):
+    if abspath.suffix not in {".py", ".pyw"}:
         raise ValueError(f"Not a Python source file: {abspath}")
     dirname = str(abspath.parent)
     sys.path = [dirname, *sys.path]

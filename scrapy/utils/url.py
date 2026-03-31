@@ -19,9 +19,14 @@ from w3lib.url import parse_url as _parse_url
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
+_public_w3lib_objects_set: frozenset[str] = frozenset(_public_w3lib_objects)
+
 
 def __getattr__(name: str) -> Any:
-    if name in ("_unquotepath", "_safe_chars", "parse_url", *_public_w3lib_objects):
+    if (
+        name in {"_unquotepath", "_safe_chars", "parse_url"}
+        or name in _public_w3lib_objects_set
+    ):
         obj_type = "attribute" if name == "_safe_chars" else "function"
         warnings.warn(
             f"The scrapy.utils.url.{name} {obj_type} is deprecated, use w3lib.url.{name} instead.",
@@ -53,7 +58,7 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
 def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
     """Return True if the url belongs to the given spider"""
     return url_is_from_any_domain(
-        url, [spider.name, *getattr(spider, "allowed_domains", [])]
+        url, [spider.name, *getattr(spider, "allowed_domains", ())]
     )
 
 
@@ -185,11 +190,11 @@ def strip_url(
         strip_default_port
         and parsed_url.port
         and (parsed_url.scheme, parsed_url.port)
-        in (
+        in {
             ("http", 80),
             ("https", 443),
             ("ftp", 21),
-        )
+        }
     ):
         netloc = netloc.replace(f":{parsed_url.port}", "")
 

@@ -184,9 +184,9 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         try:
             return bool(int(got))
         except ValueError:
-            if got in ("True", "true"):
+            if got in {"True", "true"}:
                 return True
-            if got in ("False", "false"):
+            if got in {"False", "false"}:
                 return False
             raise ValueError(
                 "Supported values for boolean settings "

@@ -78,7 +78,7 @@ class ReturnsContract(Contract):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
-        if len(self.args) not in [1, 2, 3]:
+        if len(self.args) not in {1, 2, 3}:
             raise ValueError(
                 f"Incorrect argument quantity: expected 1, 2 or 3, got {len(self.args)}"
             )
