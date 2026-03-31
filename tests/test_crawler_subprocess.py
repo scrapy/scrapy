@@ -380,7 +380,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
 
     def test_reactorless_telnetconsole_default(self):
         """By default TWISTED_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
-        log = self.run_script("reactorless_simple.py")
+        log = self.run_script("reactorless_simple.py")  # no need for a separate script
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
         assert "The TelnetConsole extension requires a Twisted reactor" not in log
@@ -404,7 +404,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def test_reactorless_reactor(self):
         log = self.run_script("reactorless_reactor.py")
         assert (
-            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed."
+            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
             in log
         )
 

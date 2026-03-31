@@ -303,10 +303,13 @@ Pre-crawler settings
 
 These settings cannot be :ref:`set from a spider <spider-settings>`.
 
-These settings are :setting:`SPIDER_LOADER_CLASS` and settings used by the
-corresponding :ref:`component <topics-components>`, e.g.
-:setting:`SPIDER_MODULES` and :setting:`SPIDER_LOADER_WARN_ONLY` for the
-default component.
+These settings are:
+
+-   :setting:`SPIDER_LOADER_CLASS`
+-   Settings used by the spider loader set in :setting:`SPIDER_LOADER_CLASS`,
+    e.g. :setting:`SPIDER_MODULES` and :setting:`SPIDER_LOADER_WARN_ONLY` for
+    the default component
+-   :setting:`TWISTED_ENABLED`
 
 .. _reactor-settings:
 
@@ -2055,6 +2058,10 @@ a reactor in the same process where a reactor was previously started and
 stopped) will not apply. This mode is currently experimental and may not be
 suitable for production use. It may also not be supported by 3rd-party code.
 See :ref:`asyncio-without-reactor` for more information about this mode.
+
+.. note:: This setting can't be set :ref:`per-spider <spider-settings>`.
+
+.. versionadded:: 2.15.0
 
 .. setting:: TWISTED_REACTOR
 

@@ -493,17 +493,24 @@ class CrawlerRunner(CrawlerRunnerBase):
 class AsyncCrawlerRunner(CrawlerRunnerBase):
     """
     This is a convenient helper class that keeps track of, manages and runs
-    crawlers inside an already setup :mod:`~twisted.internet.reactor`.
+    crawlers inside an already setup :mod:`~twisted.internet.reactor` or
+    asyncio event loop.
 
     The AsyncCrawlerRunner object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
+
+    When the :setting:`TWISTED_ENABLED` setting is set to ``True``, this class
+    requires a reactor to be installed and uses it, otherwise it requires a
+    reactor to not be installed but requires an asyncio event loop to be
+    installed and uses it.
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
     process. See :ref:`run-from-script` for an example.
 
     This class provides coroutine APIs. It requires
-    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` when used
+    with a reactor.
     """
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
@@ -736,8 +743,8 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
     ) -> None:
         """
         This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
-        size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
-        based on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+        size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS
+        resolver based on :setting:`DNSCACHE_ENABLED`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
@@ -777,6 +784,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     The AsyncCrawlerProcess object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
 
+    When the :setting:`TWISTED_ENABLED` setting is set to ``True``, this class
+    installs a reactor and uses it, otherwise it requires a reactor to not be
+    installed but installs an asyncio event loop and uses it.
+
     :param install_root_handler: whether to install root logging handler
         (default: True)
 
@@ -785,7 +796,8 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     process. See :ref:`run-from-script` for an example.
 
     This class provides coroutine APIs. It requires
-    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` when used
+    with a reactor.
     """
 
     def __init__(
@@ -828,9 +840,12 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
     ) -> None:
         """
-        This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
-        size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
-        based on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+        This method starts a :mod:`~twisted.internet.reactor`/asyncio event
+        loop, depending on the value of the :setting:`TWISTED_ENABLED` setting.
+
+        When using a reactor it adjusts its pool size to
+        :setting:`REACTOR_THREADPOOL_MAXSIZE` and installs a DNS resolver based
+        on :setting:`DNSCACHE_ENABLED`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.

@@ -131,8 +131,8 @@ example:
 
 .. _asyncio-without-reactor:
 
-Running without a Twisted reactor
-=================================
+Using Scrapy without a Twisted reactor
+======================================
 
 .. versionadded:: 2.15.0
 
@@ -153,8 +153,8 @@ Doing this provides several benefits in certain use cases:
 * There may be limitations imposed by
   :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` and related
   Twisted code, such as the requirement of using
-  :class:`~asyncio.SelectorEventLoop` on Windows, that do not apply if the
-  reactor is not used.
+  :class:`~asyncio.SelectorEventLoop` on Windows (see :ref:`asyncio-windows`),
+  that do not apply if the reactor is not used.
 * :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` manages the
   underlying event loop, and while :class:`~scrapy.crawler.AsyncCrawlerRunner`
   can use a pre-existing reactor which, in turn, can use a pre-existing event
@@ -275,7 +275,15 @@ the problematic imports.
 
 **RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed:**
 Scrapy is configured to run without a reactor, but a reactor is already
-installed before the Scrapy code is executed.
+installed before the Scrapy code is executed. If you are trying to set
+:setting:`TWISTED_ENABLED` via :ref:`per-spider settings <spider-settings>`,
+it's currently unsupported.
+
+**RuntimeError: We expected a Twisted reactor to be installed but it isn't:**
+Scrapy is configured to run with a reactor and not to install one, but a
+reactor wasn't installed before the Scrapy code is executed. If you are trying
+to set :setting:`TWISTED_ENABLED` via :ref:`per-spider settings
+<spider-settings>`, it's currently unsupported.
 
 **RuntimeError: <class> doesn't support TWISTED_ENABLED=False:** The listed
 class cannot be used with :setting:`TWISTED_ENABLED` set to ``False``. There
@@ -302,6 +310,9 @@ automatically when you change the :setting:`TWISTED_REACTOR` setting or call
           subprocesses (this is the case with `playwright`_), so you cannot use
           them together with Scrapy on Windows (but you should be able to use
           them on WSL or native Linux).
+
+.. note:: This problem doesn't apply when not using the reactor, see
+    :ref:`asyncio-without-reactor`.
 
 .. _playwright: https://github.com/microsoft/playwright-python
 
