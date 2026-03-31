@@ -413,6 +413,8 @@ ignore = [
     "S321",
     # Use a context manager for opening files
     "SIM115",
+    # Yoda condition detected
+    "SIM300",
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -436,8 +438,6 @@ split-on-trailing-comma = false
     # Skip bandit and allow blocking file I/O in tests
     "ASYNC240",
      "S",
-    # Yoda condition detected
-    "SIM300",
     # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
     # Assigning to `os.environ` doesn't clear the environment.
     "B003",
