@@ -147,6 +147,7 @@ class Crawler:
             self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
                 "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler"
             )
+        self.settings["DOWNLOAD_HANDLERS_BASE"]["ftp"] = None
 
     # Cannot use @deferred_f_from_coro_f because that relies on the reactor
     # being installed already, which is done within _apply_settings(), inside
