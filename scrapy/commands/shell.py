@@ -7,7 +7,7 @@ See documentation in docs/topics/shell.rst
 from __future__ import annotations
 
 from threading import Thread
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class Command(ScrapyCommand):
-    default_settings = {
+    default_settings: ClassVar[dict[str, Any]] = {
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "KEEP_ALIVE": True,
         "LOGSTATS_INTERVAL": 0,

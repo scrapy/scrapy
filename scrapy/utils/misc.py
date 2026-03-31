@@ -64,7 +64,7 @@ def load_object(path: str | Callable[..., Any]) -> Any:
     try:
         dot = path.rindex(".")
     except ValueError:
-        raise ValueError(f"Error loading object '{path}': not a full path")
+        raise ValueError(f"Error loading object '{path}': not a full path") from None
 
     module, name = path[:dot], path[dot + 1 :]
     mod = import_module(module)
@@ -72,7 +72,9 @@ def load_object(path: str | Callable[..., Any]) -> Any:
     try:
         obj = getattr(mod, name)
     except AttributeError:
-        raise NameError(f"Module '{module}' doesn't define any object named '{name}'")
+        raise NameError(
+            f"Module '{module}' doesn't define any object named '{name}'"
+        ) from None
 
     return obj
 

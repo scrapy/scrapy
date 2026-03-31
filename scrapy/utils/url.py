@@ -26,6 +26,7 @@ def __getattr__(name: str) -> Any:
         warnings.warn(
             f"The scrapy.utils.url.{name} {obj_type} is deprecated, use w3lib.url.{name} instead.",
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         return getattr(import_module("w3lib.url"), name)
 

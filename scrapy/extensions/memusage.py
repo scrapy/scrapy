@@ -39,8 +39,8 @@ class MemoryUsage:
         try:
             # stdlib's resource module is only available on unix platforms.
             self.resource = import_module("resource")
-        except ImportError:
-            raise NotConfigured
+        except ImportError as exc:
+            raise NotConfigured from exc
 
         self.crawler: Crawler = crawler
         self.warned: bool = False

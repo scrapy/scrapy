@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
@@ -30,7 +30,9 @@ def _import_file(filepath: str | PathLike[str]) -> ModuleType:
 
 
 class Command(BaseRunSpiderCommand):
-    default_settings = {"SPIDER_LOADER_CLASS": DummySpiderLoader}
+    default_settings: ClassVar[dict[str, Any]] = {
+        "SPIDER_LOADER_CLASS": DummySpiderLoader
+    }
 
     def syntax(self) -> str:
         return "[options] <spider_file>"
@@ -50,7 +52,7 @@ class Command(BaseRunSpiderCommand):
         try:
             module = _import_file(filename)
         except (ImportError, ValueError) as e:
-            raise UsageError(f"Unable to load {str(filename)!r}: {e}\n")
+            raise UsageError(f"Unable to load {str(filename)!r}: {e}\n") from e
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
             raise UsageError(f"No spider found in file: {filename}\n")

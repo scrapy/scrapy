@@ -6,7 +6,7 @@ from importlib.util import find_spec
 from pathlib import Path
 from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -34,7 +34,7 @@ def _make_writable(path: Path) -> None:
 
 class Command(ScrapyCommand):
     requires_crawler_process = False
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "<project_name> [project_dir]"

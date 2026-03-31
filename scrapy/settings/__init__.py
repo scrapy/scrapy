@@ -192,7 +192,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
                 "Supported values for boolean settings "
                 "are 0/1, True/False, '0'/'1', "
                 "'True'/'False' and 'true'/'false'"
-            )
+            ) from None
 
     def getint(self, name: _SettingsKey, default: int = 0) -> int:
         """
