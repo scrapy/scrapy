@@ -1,10 +1,17 @@
 import argparse
 import os
+import shlex
+import subprocess
 import sys
+from pathlib import Path
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.spiderloader import get_spider_loader
+
+
+def edit_file(editor: str, file_path: str | Path) -> int:
+    return subprocess.call([*shlex.split(editor), str(file_path)])
 
 
 class Command(ScrapyCommand):
@@ -44,4 +51,4 @@ class Command(ScrapyCommand):
         sfile = sys.modules[spidercls.__module__].__file__
         assert sfile
         sfile = sfile.replace(".pyc", ".py")
-        self.exitcode = os.system(f'{editor} "{sfile}"')  # noqa: S605
+        self.exitcode = edit_file(editor, sfile)

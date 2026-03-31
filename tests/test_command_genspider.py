@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import re
+import subprocess
+from os import chmod
 from pathlib import Path
 
 import pytest
 
+from scrapy.commands.edit import edit_file
 from tests.test_commands import TestProjectBase
 from tests.utils.cmdline import call, proc
 
@@ -62,6 +65,28 @@ class TestGenspiderCommand(TestProjectBase):
     def test_dump(self, proj_path: Path) -> None:
         assert call("genspider", "--dump=basic", cwd=proj_path) == 0
         assert call("genspider", "-d", "basic", cwd=proj_path) == 0
+
+    def test_edit(self, proj_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider_name = "example2"
+        spider = proj_path / self.project_name / "spiders" / f"{spider_name}.py"
+        edited_path = proj_path / "edited-path.txt"
+        editor = proj_path / "editor.sh"
+        editor.write_text(
+            "#!/bin/sh\nprintf '%s' \"$2\" > \"$1\"\n",
+            encoding="utf-8",
+        )
+        chmod(editor, 0o755)
+        monkeypatch.setenv("EDITOR", f"{editor} {edited_path}")
+
+        returncode, out, err = proc(
+            "genspider", "--edit", spider_name, "example2.com", cwd=proj_path
+        )
+
+        assert returncode == 0
+        assert spider.exists()
+        assert edited_path.read_text(encoding="utf-8") == str(spider)
+        assert f"Created spider {spider_name!r} using template 'basic' in module" in out
+        assert "ModuleNotFoundError" not in err
 
     def test_same_name_as_project(self, proj_path: Path) -> None:
         assert call("genspider", self.project_name, cwd=proj_path) == 2
@@ -161,6 +186,19 @@ class TestGenspiderCommand(TestProjectBase):
         m = find_in_file(spider, r"start_urls\s*=\s*\[['\"](.+)['\"]\]")
         assert m is not None
         assert m.group(1) == expected
+
+
+def test_edit_file_handles_paths_with_double_quotes(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_call(argv: list[str]) -> int:
+        calls.append(argv)
+        return 0
+
+    monkeypatch.setattr(subprocess, "call", fake_call)
+
+    assert edit_file('editor --flag', 'path/with"quote.py') == 0
+    assert calls == [["editor", "--flag", 'path/with"quote.py']]
 
 
 class TestGenspiderStandaloneCommand:
