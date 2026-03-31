@@ -309,7 +309,9 @@ class Request(object_ref):
         if isinstance(value, Headers):
             self._headers = value
         else:
-            self._headers = Headers(value, encoding=self.encoding)
+            self._headers = (
+                Headers(value, encoding=self.encoding) if value is not None else None
+            )
 
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"

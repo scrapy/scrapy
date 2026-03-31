@@ -178,6 +178,7 @@ class TestResponse:
         assert response._flags == []
         original_flags = response.flags
         response.flags = None
+        assert response._flags is None
         assert response.flags == []
         assert response.flags is not original_flags
 
@@ -188,7 +189,9 @@ class TestResponse:
         assert isinstance(response._headers, Headers)
         original_headers = response.headers
         response.headers = None
+        assert response._headers is None
         assert response.headers == {}
+        assert response._headers == {}
         assert response.headers is not original_headers
 
     def test_setters(self):

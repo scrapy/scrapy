@@ -151,7 +151,7 @@ class Response(object_ref):
         if isinstance(value, Headers):
             self._headers = value
         else:
-            self._headers = Headers(value)
+            self._headers = Headers(value) if value is not None else None
 
     @property
     def flags(self) -> list[str]:
