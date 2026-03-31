@@ -129,6 +129,160 @@ example:
 .. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
 
 
+.. _asyncio-without-reactor:
+
+Running without a Twisted reactor
+=================================
+
+.. versionadded:: 2.15.0
+
+.. warning::
+    This is currently experimental and may not be suitable for production use.
+
+It's possible to use Scrapy without installing a Twisted reactor at all, by
+setting the :setting:`TWISTED_ENABLED` setting to ``False``. In this mode
+Scrapy will use the asyncio event loop directly, and most of the Scrapy
+functionality will work in the same way.
+
+Doing this provides several benefits in certain use cases:
+
+* A Twisted reactor, once stopped, cannot be started again. This prevents, for
+  example, using several instances of
+  :class:`~scrapy.crawler.AsyncCrawlerProcess` in the same process when they
+  use a reactor, but with ``TWISTED_ENABLED=False`` it becomes possible.
+* There may be limitations imposed by
+  :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` and related
+  Twisted code, such as the requirement of using
+  :class:`~asyncio.SelectorEventLoop` on Windows, that do not apply if the
+  reactor is not used.
+* :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` manages the
+  underlying event loop, and while :class:`~scrapy.crawler.AsyncCrawlerRunner`
+  can use a pre-existing reactor which, in turn, can use a pre-existing event
+  loop, it's easier to use :class:`~scrapy.crawler.AsyncCrawlerRunner` with a
+  pre-existing loop directly.
+* Omitting the reactor machinery may improve performance and reliability.
+
+Limitations
+-----------
+
+As some Scrapy features and components require a reactor, they don't work and
+are disabled without it. Replacements that don't require a reactor may be added
+in future Scrapy versions. The following features are not available:
+
+* :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` (this
+  is likely the biggest difference; Scrapy provides an HTTP download handler
+  that doesn't require a reactor:
+  :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`)
+* :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler`
+* :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
+* :ref:`topics-shell`
+* :ref:`topics-telnetconsole`
+* :class:`~scrapy.crawler.CrawlerRunner` and
+  :class:`~scrapy.crawler.CrawlerProcess`
+* Twisted-specific DNS resolvers (the :setting:`DNS_RESOLVER` setting)
+
+Additionally, any 3rd-party code that requires a reactor won't work.
+
+Note that importing Twisted modules and, among other things, creating and using
+:class:`~twisted.internet.defer.Deferred` objects doesn't require a reactor, so
+code that uses :class:`~twisted.internet.defer.Deferred`,
+:class:`~twisted.python.failure.Failure` and some other Twisted APIs will not
+necessarily stop working.
+
+Other differences
+-----------------
+
+When :setting:`TWISTED_ENABLED` is set to ``False``, Scrapy will change the
+defaults of some other settings:
+
+* :setting:`TELNETCONSOLE_ENABLED` is set to ``False``.
+* The ``"http"`` and ``"https"`` keys in :setting:`DOWNLOAD_HANDLERS_BASE` are
+  set to ``"scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler"``.
+* The ``"ftp"`` key in :setting:`DOWNLOAD_HANDLERS_BASE` is set to ``None``.
+
+Thus, :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` is
+used by default for making HTTP(S) requests. Please refer to its documentation
+for its differences and limitations compared to
+:class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`.
+
+Additionally, :class:`~scrapy.crawler.AsyncCrawlerProcess` will install a
+:term:`meta path finder` that prevents :mod:`twisted.internet.reactor` from
+being imported.
+
+Adding support to existing code
+-------------------------------
+
+Code that doesn't directly use Twisted APIs or APIs that depend on Twisted ones
+doesn't need special support for running without a reactor.
+
+Here are some examples of APIs and patterns that need a replacement:
+
+* Using :meth:`reactor.callLater()
+  <twisted.internet.base.ReactorBase.callLater>` for sleeping or delayed calls.
+  You can use :meth:`asyncio.loop.call_later` instead.
+* Using :func:`twisted.internet.threads.deferToThread`,
+  :meth:`reactor.callFromThread()
+  <twisted.internet.base.ReactorBase.callFromThread>` and related APIs to
+  execute code in other threads. You can use :func:`asyncio.to_thread`,
+  :meth:`asyncio.loop.call_soon_threadsafe` and related APIs instead.
+* Using :class:`twisted.internet.task.LoopingCall` for scheduling repeated
+  tasks. As there is no direct replacement in the standard library, you may
+  need to write your own one using :func:`asyncio.sleep` in a task.
+* Using Twisted network client and server APIs (:meth:`reactor.connectTCP()
+  <twisted.internet.interfaces.IReactorTCP.connectTCP>`,
+  :meth:`reactor.listenTCP()
+  <twisted.internet.interfaces.IReactorTCP.listenTCP>`,
+  :mod:`twisted.web.client`, :mod:`twisted.mail.smtp` etc.). You can use other
+  built-in or 3rd-party libraries for this.
+* Using :class:`~scrapy.crawler.CrawlerProcess` or
+  :class:`~scrapy.crawler.CrawlerRunner`. You should use
+  :class:`~scrapy.crawler.AsyncCrawlerProcess` or
+  :class:`~scrapy.crawler.AsyncCrawlerRunner` respectively instead.
+* Checking whether ``asyncio`` support is available with
+  :func:`scrapy.utils.reactor.is_asyncio_reactor_installed`. You should use
+  :func:`scrapy.utils.asyncio.is_asyncio_available` instead.
+
+Scrapy provides unified helpers for some of these examples:
+
+.. autofunction:: scrapy.utils.asyncio.call_later
+.. autofunction:: scrapy.utils.asyncio.create_looping_call
+.. autoclass:: scrapy.utils.asyncio.AsyncioLoopingCall
+.. autofunction:: scrapy.utils.asyncio.run_in_thread
+
+If your code needs to know whether the reactor is available, you can either
+check for the value of the :setting:`TWISTED_ENABLED` setting (you need access
+to the :class:`~scrapy.crawler.Crawler` instance to do this) or use the
+following function:
+
+.. autofunction:: scrapy.utils.reactorless.is_reactorless
+
+In general, code that doesn't use the reactor (directly or indirectly) can be
+used unmodified both with the asyncio reactor and without a reactor. This
+includes code that converts Deferreds to futures and vice versa as described in
+:ref:`asyncio-await-dfd`.
+
+Troubleshooting
+---------------
+
+**ImportError: Import of twisted.internet.reactor is forbidden when running**
+**without a Twisted reactor [...]:** Scrapy is configured to run without a
+reactor, but some code imported :mod:`twisted.internet.reactor`, most likely
+because that code needs a reactor to be used. You need to stop using this code
+or set :setting:`TWISTED_ENABLED` back to ``True``. It's also possible that the
+reactor isn't really needed but was installed due to the problem described in
+:ref:`asyncio-preinstalled-reactor`, in which case it should be enough to fix
+the problematic imports.
+
+**RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed:**
+Scrapy is configured to run without a reactor, but a reactor is already
+installed before the Scrapy code is executed.
+
+**RuntimeError: <class> doesn't support TWISTED_ENABLED=False:** The listed
+class cannot be used with :setting:`TWISTED_ENABLED` set to ``False``. There
+may be a replacement in the :ref:`documentation above
+<asyncio-without-reactor>` or the documentation of the affected class.
+
+
 .. _asyncio-windows:
 
 Windows-specific notes
