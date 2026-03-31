@@ -13,11 +13,6 @@ class NoRequestsSpider(scrapy.Spider):
 process = AsyncCrawlerProcess(
     settings={
         "TWISTED_ENABLED": False,
-        "DOWNLOAD_HANDLERS": {
-            "http": None,
-            "https": None,
-            "ftp": None,
-        },
         "TELNETCONSOLE_ENABLED": False,
     }
 )

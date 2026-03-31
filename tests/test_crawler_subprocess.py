@@ -352,7 +352,8 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_datauri(self):
         log = self.run_script("reactorless_datauri.py")
@@ -371,7 +372,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
 
     def test_reactorless_telnetconsole_default(self):
         """By default TWISTED_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
-        log = self.run_script("reactorless_telnetconsole_default.py")
+        log = self.run_script("reactorless_simple.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
         assert "The TelnetConsole extension requires a Twisted reactor" not in log
@@ -521,7 +522,8 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_datauri(self):
         log = self.run_script("reactorless_datauri.py")
@@ -530,7 +532,8 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "{'data': 'foo'}" in log
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_reactor(self):
         log = self.run_script("reactorless_reactor.py")
