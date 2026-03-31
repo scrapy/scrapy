@@ -208,8 +208,8 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if (
             request.meta.get("dont_redirect", False)
             or response.status
-            in getattr(self.crawler.spider, "handle_httpstatus_list", [])
-            or response.status in request.meta.get("handle_httpstatus_list", [])
+            in getattr(self.crawler.spider, "handle_httpstatus_list", ())
+            or response.status in request.meta.get("handle_httpstatus_list", ())
             or request.meta.get("handle_httpstatus_all", False)
         ):
             return response
