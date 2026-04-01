@@ -305,11 +305,10 @@ These settings cannot be :ref:`set from a spider <spider-settings>`.
 
 These settings are:
 
--   :setting:`SPIDER_LOADER_CLASS`
--   Settings used by the spider loader set in :setting:`SPIDER_LOADER_CLASS`,
-    e.g. :setting:`SPIDER_MODULES` and :setting:`SPIDER_LOADER_WARN_ONLY` for
-    the default component
 -   :setting:`TWISTED_ENABLED`
+-   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
+    spider loader class, e.g. :setting:`SPIDER_MODULES` and
+    :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
 
 .. _reactor-settings:
 
@@ -660,8 +659,8 @@ Whether to enable DNS in-memory cache.
     This setting is only used by
     :class:`~scrapy.resolver.CachingThreadedResolver` and
     :class:`~scrapy.resolver.CachingHostnameResolver`. It has no effect when
-    :setting:`DNS_RESOLVER` is set to a different resolver or when
-    :setting:`TWISTED_ENABLED` is ``False``.
+    :setting:`TWISTED_ENABLED` is ``False``, and may have no effect either when
+    :setting:`DNS_RESOLVER` is set to a different resolver.
 
 .. setting:: DNSCACHE_SIZE
 
@@ -701,8 +700,8 @@ Timeout for processing of DNS queries in seconds. Float is supported.
 .. note::
     This setting is only used by
     :class:`~scrapy.resolver.CachingThreadedResolver`. It has no effect when
-    :setting:`DNS_RESOLVER` is set to a different resolver or when
-    :setting:`TWISTED_ENABLED` is ``False``.
+    :setting:`TWISTED_ENABLED` is ``False``, and may have no effect either when
+    :setting:`DNS_RESOLVER` is set to a different resolver.
 
 .. setting:: DOWNLOADER
 

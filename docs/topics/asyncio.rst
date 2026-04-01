@@ -269,8 +269,8 @@ includes code that converts Deferreds to futures and vice versa as described in
 Troubleshooting
 ---------------
 
-**ImportError: Import of twisted.internet.reactor is forbidden when running**
-**without a Twisted reactor [...]:** Scrapy is configured to run without a
+**ImportError: Import of twisted.internet.reactor is forbidden when running
+without a Twisted reactor [...]:** Scrapy is configured to run without a
 reactor, but some code imported :mod:`twisted.internet.reactor`, most likely
 because that code needs a reactor to be used. You need to stop using this code
 or set :setting:`TWISTED_ENABLED` back to ``True``. It's also possible that the
