@@ -105,8 +105,6 @@ def walk_modules_iter(path: str) -> Iterable[ModuleType]:
 
 def walk_modules(path: str) -> list[ModuleType]:
     """
-    **Deprecated** in favour of `walk_modules_iter`!
-
     Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
