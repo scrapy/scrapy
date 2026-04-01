@@ -169,9 +169,10 @@ As some Scrapy features and components require a reactor, they don't work and
 are disabled without it. Replacements that don't require a reactor may be added
 in future Scrapy versions. The following features are not available:
 
-* :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` (this
-  is likely the biggest difference; Scrapy provides an HTTP download handler
-  that doesn't require a reactor:
+* The default HTTP(S) download handler,
+  :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` (this
+  is likely the biggest difference; Scrapy provides an HTTP(S) download handler
+  that doesn't require a reactor and will be used instead of it:
   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`)
 * :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler`
 * :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
@@ -179,9 +180,11 @@ in future Scrapy versions. The following features are not available:
 * :ref:`topics-telnetconsole`
 * :class:`~scrapy.crawler.CrawlerRunner` and
   :class:`~scrapy.crawler.CrawlerProcess`
+  (:class:`~scrapy.crawler.AsyncCrawlerProcess` and
+  :class:`~scrapy.crawler.AsyncCrawlerRunner` are available)
 * Twisted-specific DNS resolvers (the :setting:`DNS_RESOLVER` setting)
-
-Additionally, any 3rd-party code that requires a reactor won't work.
+* User and 3rd-party code that requires a reactor (see :ref:`below
+  <asyncio-without-reactor-migrate>` for examples)
 
 Note that importing Twisted modules and, among other things, creating and using
 :class:`~twisted.internet.defer.Deferred` objects doesn't require a reactor, so
@@ -208,6 +211,8 @@ for its differences and limitations compared to
 Additionally, :class:`~scrapy.crawler.AsyncCrawlerProcess` will install a
 :term:`meta path finder` that prevents :mod:`twisted.internet.reactor` from
 being imported.
+
+.. _asyncio-without-reactor-migrate:
 
 Adding support to existing code
 -------------------------------
