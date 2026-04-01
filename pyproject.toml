@@ -437,7 +437,7 @@ split-on-trailing-comma = false
 "tests/**" = [
     # Skip bandit and allow blocking file I/O in tests
     "ASYNC240",
-     "S",
+    "S",
     # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
     # Assigning to `os.environ` doesn't clear the environment.
     "B003",
