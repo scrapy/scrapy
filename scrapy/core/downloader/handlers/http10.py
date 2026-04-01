@@ -5,7 +5,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
-from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
+from scrapy.core.downloader.contextfactory import _ScrapyClientContextFactory
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -39,8 +39,8 @@ class HTTP10DownloadHandler:
             settings["DOWNLOADER_HTTPCLIENTFACTORY"]
         )
         if settings["DOWNLOADER_CLIENTCONTEXTFACTORY"] == "SENTINEL":
-            self.ClientContextFactory: type[ScrapyClientContextFactory] = (
-                ScrapyClientContextFactory
+            self.ClientContextFactory: type[_ScrapyClientContextFactory] = (
+                _ScrapyClientContextFactory
             )
         else:  # pragma: no cover
             warnings.warn(
