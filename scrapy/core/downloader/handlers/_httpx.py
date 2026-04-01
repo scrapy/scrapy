@@ -92,9 +92,6 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         logger.warning(
             "HttpxDownloadHandler is experimental and is not recommented for production use."
         )
-        self._tls_verbose_logging: bool = self.crawler.settings.getbool(
-            "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
-        )
         bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         bind_address = normalize_bind_address(bind_address)
 

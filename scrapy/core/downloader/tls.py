@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 from OpenSSL import SSL
-from OpenSSL.SSL import Connection
 from service_identity import VerificationError
 from service_identity.exceptions import CertificateError
 from service_identity.pyopenssl import verify_hostname, verify_ip_address
@@ -10,7 +9,6 @@ from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers
 
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.utils.ssl import get_temp_key_info, x509name_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -29,53 +27,24 @@ openssl_methods: dict[str, int] = {
 }
 
 
-def _log_tls(hostname: str, connection: Connection) -> None:
-    logger.debug(
-        "SSL connection to %s using protocol %s, cipher %s",
-        hostname,
-        connection.get_protocol_version_name(),
-        connection.get_cipher_name(),
-    )
-    server_cert = connection.get_peer_certificate()
-    if server_cert:
-        logger.debug(
-            'SSL connection certificate: issuer "%s", subject "%s"',
-            x509name_to_string(server_cert.get_issuer()),
-            x509name_to_string(server_cert.get_subject()),
-        )
-    key_info = get_temp_key_info(connection._ssl)
-    if key_info:
-        logger.debug("SSL temp key: %s", key_info)
-
-
 class _ScrapyClientTLSOptions(ClientTLSOptions):
     """
     SSL Client connection creator ignoring certificate verification errors
-    (for genuinely invalid certificates or bugs in verification code) and
-    optionally logging TLS details of the connection.
+    (for genuinely invalid certificates or bugs in verification code).
 
     Same as Twisted's private _sslverify.ClientTLSOptions,
     except that VerificationError, CertificateError and ValueError
     exceptions are caught, so that the connection is not closed, only
-    logging warnings. Also, HTTPS connection parameters logging is added.
+    logging warnings.
 
     Instances of this class are returned from
     :class:`.ScrapyClientContextFactory`.
     """
 
-    def __init__(self, hostname: str, ctx: SSL.Context, verbose_logging: bool = False):
-        super().__init__(hostname, ctx)  # type: ignore[no-untyped-call]
-        self.verbose_logging: bool = verbose_logging
-
     def _identityVerifyingInfoCallback(
         self, connection: SSL.Connection, where: int, ret: Any
     ) -> None:
-        if where & SSL.SSL_CB_HANDSHAKE_START and self._hostnameIsDnsName:
-            connection.set_tlsext_host_name(self._hostnameBytes)
-        elif where & SSL.SSL_CB_HANDSHAKE_DONE:
-            if self.verbose_logging:
-                _log_tls(self._hostnameASCII, connection)
-
+        if where & SSL.SSL_CB_HANDSHAKE_DONE:
             try:
                 if self._hostnameIsDnsName:
                     verify_hostname(connection, self._hostnameASCII)
@@ -94,6 +63,8 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
                     self._hostnameASCII,
                     e,
                 )
+        else:
+            super()._identityVerifyingInfoCallback(connection, where, ret)
 
 
 ScrapyClientTLSOptions = create_deprecated_class(

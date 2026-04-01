@@ -114,3 +114,22 @@ def get_openssl_version() -> str:
     system_openssl_bytes = OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION)
     system_openssl = system_openssl_bytes.decode("ascii", errors="replace")
     return f"{OpenSSL.version.__version__} ({system_openssl})"
+
+
+def _log_ssl_conn_debug_info(hostname: str, connection: OpenSSL.SSL.Connection) -> None:
+    logger.debug(
+        "SSL connection to %s using protocol %s, cipher %s",
+        hostname,
+        connection.get_protocol_version_name(),
+        connection.get_cipher_name(),
+    )
+    server_cert = connection.get_peer_certificate()
+    if server_cert:
+        logger.debug(
+            'SSL connection certificate: issuer "%s", subject "%s"',
+            x509name_to_string(server_cert.get_issuer()),
+            x509name_to_string(server_cert.get_subject()),
+        )
+    key_info = get_temp_key_info(connection._ssl)
+    if key_info:
+        logger.debug("SSL temp key: %s", key_info)
