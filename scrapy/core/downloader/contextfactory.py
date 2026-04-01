@@ -135,6 +135,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         if not self._verify_certificates:
             return _ScrapyClientTLSOptions(hostname.decode("ascii"), self._ctx)  # type: ignore[no-untyped-call]
+        # Note that this doesn't use self._ctx
         return optionsForClientTLS(
             hostname=hostname.decode("ascii"),
             extraCertificateOptions={
