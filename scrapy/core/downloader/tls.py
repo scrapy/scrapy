@@ -64,7 +64,7 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
                     e,
                 )
         else:
-            super()._identityVerifyingInfoCallback(connection, where, ret)
+            super()._identityVerifyingInfoCallback(connection, where, ret)  # type: ignore[no-untyped-call]
 
 
 ScrapyClientTLSOptions = create_deprecated_class(
