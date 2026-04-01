@@ -691,35 +691,6 @@ Default: ``'scrapy.core.downloader.Downloader'``
 
 The downloader to use for crawling.
 
-.. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
-
-DOWNLOADER_CLIENTCONTEXTFACTORY
--------------------------------
-
-Default: ``'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'``
-
-Represents the classpath to the ContextFactory to use.
-
-Here, "ContextFactory" is a Twisted term for SSL/TLS contexts, defining
-the TLS/SSL protocol version to use, whether to do certificate verification,
-or even enable client-side authentication (and various other things).
-
-.. note::
-
-    Scrapy default context factory **does NOT perform remote server
-    certificate verification**. This is usually fine for web scraping.
-
-    If you do need remote server certificate verification enabled,
-    Scrapy also has another context factory class that you can set,
-    ``'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'``,
-    which uses the platform's certificates to validate remote endpoints.
-
-.. note::
-
-    This setting is specific to the built-in Twisted-based download handlers:
-    :class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`.
-
 .. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
 
 DOWNLOADER_CLIENT_TLS_CIPHERS
@@ -742,12 +713,7 @@ specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
-    download handlers
-    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
-    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
-    It's currently unsupported by
+    by all 3rd-party handlers. It's currently unsupported by
     :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
@@ -774,12 +740,7 @@ This setting must be one of these string values:
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
-    download handlers
-    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
-    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
-    It's currently unsupported by
+    by all 3rd-party handlers. It's currently unsupported by
     :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
@@ -798,11 +759,7 @@ the TLS-related libraries.
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
-    download handlers
-    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
-    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
+    by all 3rd-party handlers.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
@@ -1119,6 +1076,30 @@ Optionally, this can be set per-request basis by using the
     error, the corresponding HTTP/2 connection may be corrupted, affecting other
     requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
     failure is always raised for every request that was using that connection.
+
+.. setting:: DOWNLOAD_VERIFY_CERTIFICATES
+
+DOWNLOAD_VERIFY_CERTIFICATES
+----------------------------
+
+Default: ``False``
+
+Whether the HTTPS download handlers should verify the server TLS certificate
+when making a request and abort the request if the verification fails.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. The exact behavior of a handler (e.g. whether
+    certificate problems are logged when this setting is set to ``False``)
+    depends on its implementation.
+
+.. warning::
+    Enabling this setting disables handling of
+    :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING` in
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`.
 
 .. setting:: DUPEFILTER_CLASS
 
