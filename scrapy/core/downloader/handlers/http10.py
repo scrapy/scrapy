@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
+from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -17,7 +18,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy import Request
-    from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
     from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -38,9 +38,19 @@ class HTTP10DownloadHandler:
         self.HTTPClientFactory: type[ScrapyHTTPClientFactory] = load_object(
             settings["DOWNLOADER_HTTPCLIENTFACTORY"]
         )
-        self.ClientContextFactory: type[ScrapyClientContextFactory] = load_object(
-            settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
-        )
+        if settings["DOWNLOADER_CLIENTCONTEXTFACTORY"] == "SENTINEL":
+            self.ClientContextFactory: type[ScrapyClientContextFactory] = (
+                ScrapyClientContextFactory
+            )
+        else:  # pragma: no cover
+            warnings.warn(
+                "The 'DOWNLOADER_CLIENTCONTEXTFACTORY' setting is deprecated.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self.ClientContextFactory = load_object(
+                settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
+            )
         self._settings: BaseSettings = settings
         self._crawler: Crawler = crawler
 

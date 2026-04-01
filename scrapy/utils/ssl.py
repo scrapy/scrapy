@@ -39,10 +39,16 @@ def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
     if method_setting not in _STDLIB_PROTOCOL_MAP:
         raise ValueError(f"Unsupported TLS method: {method_setting}")
     ciphers_setting: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+    verify_setting = settings.getbool("DOWNLOAD_VERIFY_CERTIFICATES")
 
     ctx = ssl.SSLContext(_STDLIB_PROTOCOL_MAP[method_setting])
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    if verify_setting:
+        ctx.check_hostname = True
+        ctx.verify_mode = ssl.CERT_REQUIRED
+        ctx.load_default_certs()
+    else:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
     if ciphers_setting:
         ctx.set_ciphers(ciphers_setting)
     return ctx
@@ -114,3 +120,22 @@ def get_openssl_version() -> str:
     system_openssl_bytes = OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION)
     system_openssl = system_openssl_bytes.decode("ascii", errors="replace")
     return f"{OpenSSL.version.__version__} ({system_openssl})"
+
+
+def _log_ssl_conn_debug_info(hostname: str, connection: OpenSSL.SSL.Connection) -> None:
+    logger.debug(
+        "SSL connection to %s using protocol %s, cipher %s",
+        hostname,
+        connection.get_protocol_version_name(),
+        connection.get_cipher_name(),
+    )
+    server_cert = connection.get_peer_certificate()
+    if server_cert:
+        logger.debug(
+            'SSL connection certificate: issuer "%s", subject "%s"',
+            x509name_to_string(server_cert.get_issuer()),
+            x509name_to_string(server_cert.get_subject()),
+        )
+    key_info = get_temp_key_info(connection._ssl)
+    if key_info:
+        logger.debug("SSL temp key: %s", key_info)
