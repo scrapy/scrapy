@@ -103,19 +103,11 @@ def walk_modules_iter(path: str) -> Iterable[ModuleType]:
                 yield import_module(fullpath)
 
 
-def walk_modules(path: str) -> list[ModuleType]:
+def walk_modules(path: str) -> list[ModuleType]:  # pragma: no cover
     """
     Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
-
-    For example:
-    >>> walk_modules('scrapy.utils')
-    [<module 'scrapy.utils' from '...'>, ...]
-    >>> walk_modules('scrapy.utils.nonexistent')
-    Traceback (most recent call last):
-        ...
-    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'
     """
     warnings.warn(
         (

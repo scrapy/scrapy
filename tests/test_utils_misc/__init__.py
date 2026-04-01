@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Field, Item
 from scrapy.utils.misc import (
     arg_to_iter,
@@ -64,7 +65,15 @@ class TestUtilsMisc:
         with pytest.raises(ImportError):
             for _ in walk_modules_iter("nomodule999"):
                 pass
-        with pytest.raises(ImportError):
+        with (
+            pytest.raises(ImportError),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="The scrapy.utils.misc.walk_modules function is deprecated and will be "
+                "removed in a future version of Scrapy. "
+                "Use scrapy.utils.misc.walk_modules_iter instead.",
+            ),
+        ):
             walk_modules("nomodule999")
 
     def test_walk_modules_egg(self):
