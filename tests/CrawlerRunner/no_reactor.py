@@ -1,3 +1,5 @@
+from twisted.python import log
+
 from scrapy import Spider
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
@@ -13,4 +15,5 @@ class NoRequestsSpider(Spider):
 
 configure_logging()
 runner = CrawlerRunner()
-runner.crawl(NoRequestsSpider)
+d = runner.crawl(NoRequestsSpider)
+d.addErrback(log.err)
