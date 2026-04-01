@@ -102,6 +102,8 @@ An optional base class for custom handlers is provided:
     :undoc-members:
     :member-order: bysource
 
+.. _download-handlers-exceptions:
+
 Exceptions raised by download handlers
 ======================================
 

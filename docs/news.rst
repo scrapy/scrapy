@@ -17,6 +17,13 @@ Highlights:
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-   The built-in HTTP :ref:`download handlers <download-handlers-ref>` now
+    raise Scrapy-specific exceptions instead of implementation-specific ones,
+    see :ref:`download-handlers-exceptions`. This can affect user code that
+    handles downloader exceptions, such as ``process_exception()`` methods of
+    custom :ref:`downloader middlewares <topics-downloader-middleware-custom>`.
+    (:issue:`7208`)
+
 -   In order to fix a long-standing bug with handling of asynchronous storages
     the following changes were made to media pipeline classes, which can impact
     some of the user code that subclasses them or calls their methods directly:
@@ -37,9 +44,8 @@ Deprecation removals
 
 -   The context factory class set as the value of the
     :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` setting is now required to
-    support the ``method`` (recommended since Scrapy 1.2.0), ``tls_ciphers``
-    (recommended since Scrapy 1.8.0) and ``tls_verbose_logging`` (recommended
-    since Scrapy 1.8.0) ``__init__()`` arguments.
+    support the ``method`` ``__init__()`` argument, recommended since Scrapy
+    1.2.0.
     (:issue:`7353`)
 
 Deprecations
@@ -80,9 +86,10 @@ New features
 
 -   Added an *experimental* mode for running Scrapy without installing a
     Twisted reactor: set :setting:`TWISTED_ENABLED` to ``False`` to enable it.
-    This mode has limitations, refer to its documentation for details. As long
-    as it's experimental, its behavior and related features and APIs may change
-    in future Scrapy releases in a breaking way.
+    This mode has limitations, refer to :ref:`its documentation
+    <asyncio-without-reactor>` for details. As long as it's experimental, its
+    behavior and related features and APIs may change in future Scrapy releases
+    in a breaking way.
     (:issue:`6219`, :issue:`7185`, :issue:`7186`, :issue:`7187`, :issue:`7190`,
     :issue:`7199`, :issue:`7228`, :issue:`7355`, :issue:`7366`)
 
@@ -149,7 +156,7 @@ Improvements
 -   :func:`asyncio.to_thread` is now used instead of
     :func:`twisted.internet.threads.deferToThread` in the built-in feed
     storages, media pipeline storages and the
-    ``scrapy.utils.decorators.inthread()`` decorator when available.
+    :func:`scrapy.utils.decorators.inthread` decorator when available.
     (:issue:`7183`, :issue:`7184`, :issue:`7349`)
 
 -   Improved memory footprint of :class:`~scrapy.Request` objects by adding
