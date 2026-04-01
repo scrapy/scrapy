@@ -166,6 +166,86 @@ with :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`):
 
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
+And here are examples of using these classes with :setting:`TWISTED_ENABLED`
+set to ``False``.
+
+Simple usage of :class:`~scrapy.crawler.AsyncCrawlerProcess`:
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerProcess
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    process = AsyncCrawlerProcess(
+        settings={
+            "TWISTED_ENABLED": False,
+        }
+    )
+
+    process.crawl(MySpider)
+    process.start()  # the script will block here until the crawling is finished
+
+With ``TWISTED_ENABLED=False`` you can use several instances of
+:class:`~scrapy.crawler.AsyncCrawlerProcess` in the same process:
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerProcess
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    process1 = AsyncCrawlerProcess(
+        settings={
+            "TWISTED_ENABLED": False,
+        }
+    )
+    process1.crawl(MySpider)
+    process1.start()
+
+    process2 = AsyncCrawlerProcess(
+        settings={
+            "TWISTED_ENABLED": False,
+        }
+    )
+    process2.crawl(MySpider)
+    process2.start()
+
+Using :func:`asyncio.run` with :class:`~scrapy.crawler.AsyncCrawlerRunner`:
+
+.. code-block:: python
+
+    import asyncio
+
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    async def main():
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = AsyncCrawlerRunner(settings={"TWISTED_ENABLED": False})
+        await runner.crawl(MySpider)  # completes when the spider finishes
+
+
+    asyncio.run(main())
+
+
 .. _run-multiple-spiders:
 
 Running multiple spiders in the same process

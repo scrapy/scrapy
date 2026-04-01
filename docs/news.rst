@@ -663,7 +663,7 @@ New features
     (:issue:`4463`, :issue:`6804`)
 
 -   Added :func:`scrapy.utils.asyncio.is_asyncio_available` as an alternative
-    to :func:`scrapy.utils.defer.is_asyncio_reactor_installed` with a
+    to :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` with a
     future-proof name and semantics.
     (:issue:`6827`)
 
