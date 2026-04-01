@@ -141,10 +141,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                     hostname.decode("ascii"),
                     verbose_logging=self.tls_verbose_logging,
                 )
-            return _ScrapyClientTLSOptions(  # type: ignore[no-untyped-call]
-                hostname.decode("ascii"),
-                self._ctx,
-            )
+            return _ScrapyClientTLSOptions(hostname.decode("ascii"), self._ctx)  # type: ignore[no-untyped-call]
         # Note that this doesn't use self._ctx
         return optionsForClientTLS(
             hostname=hostname.decode("ascii"),

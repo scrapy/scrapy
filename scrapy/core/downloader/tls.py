@@ -99,13 +99,12 @@ ScrapyClientTLSOptions = create_deprecated_class(
 class _ScrapyClientTLSOptions26(ClientTLSOptions):
     """
     SSL Client connection creator ignoring certificate verification errors
-    (for genuinely invalid certificates or bugs in verification code) and
-    optionally logging TLS details of the connection.
+    (for genuinely invalid certificates or bugs in verification code).
 
     Same as Twisted's private _sslverify.ClientTLSOptions,
     except that VerificationError, CertificateError and ValueError
     exceptions are caught, so that the connection is not closed, only
-    logging warnings. Also, HTTPS connection parameters logging is added.
+    logging warnings.
 
     Instances of this class are returned from
     :class:`.ScrapyClientContextFactory`.
