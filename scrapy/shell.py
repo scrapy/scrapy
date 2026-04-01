@@ -12,7 +12,8 @@ import signal
 from typing import TYPE_CHECKING, Any
 
 from itemadapter import is_item
-from twisted.internet import defer, threads
+from twisted.internet import threads
+from twisted.internet.defer import Deferred
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
@@ -103,7 +104,7 @@ class Shell:
                 self.vars, shells=shells, banner=self.vars.pop("banner", "")
             )
 
-    def _schedule(self, request: Request, spider: Spider | None) -> defer.Deferred[Any]:
+    def _schedule(self, request: Request, spider: Spider | None) -> Deferred[Any]:
         if is_asyncio_reactor_installed():
             # set the asyncio event loop for the current thread
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
@@ -222,7 +223,7 @@ def inspect_response(response: Response, spider: Spider) -> None:
     signal.signal(signal.SIGINT, sigint_handler)
 
 
-def _request_deferred(request: Request) -> defer.Deferred[Any]:
+def _request_deferred(request: Request) -> Deferred[Any]:
     """Wrap a request inside a Deferred.
 
     This function is harmful, do not use it until you know what you are doing.
@@ -241,7 +242,7 @@ def _request_deferred(request: Request) -> defer.Deferred[Any]:
         request.errback = request_errback
         return result
 
-    d: defer.Deferred[Any] = defer.Deferred()
+    d: Deferred[Any] = Deferred()
     d.addBoth(_restore_callbacks)
     if request.callback:
         d.addCallback(request.callback)
