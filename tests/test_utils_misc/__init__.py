@@ -13,6 +13,7 @@ from scrapy.utils.misc import (
     rel_has_nofollow,
     set_environ,
     walk_modules,
+    walk_modules_iter,
 )
 
 
@@ -38,7 +39,7 @@ class TestUtilsMisc:
             load_object({})
 
     def test_walk_modules(self):
-        mods = walk_modules("tests.test_utils_misc.test_walk_modules")
+        mods = walk_modules_iter("tests.test_utils_misc.test_walk_modules")
         expected = [
             "tests.test_utils_misc.test_walk_modules",
             "tests.test_utils_misc.test_walk_modules.mod",
@@ -47,19 +48,22 @@ class TestUtilsMisc:
         ]
         assert {m.__name__ for m in mods} == set(expected)
 
-        mods = walk_modules("tests.test_utils_misc.test_walk_modules.mod")
+        mods = walk_modules_iter("tests.test_utils_misc.test_walk_modules.mod")
         expected = [
             "tests.test_utils_misc.test_walk_modules.mod",
             "tests.test_utils_misc.test_walk_modules.mod.mod0",
         ]
         assert {m.__name__ for m in mods} == set(expected)
 
-        mods = walk_modules("tests.test_utils_misc.test_walk_modules.mod1")
+        mods = walk_modules_iter("tests.test_utils_misc.test_walk_modules.mod1")
         expected = [
             "tests.test_utils_misc.test_walk_modules.mod1",
         ]
         assert {m.__name__ for m in mods} == set(expected)
 
+        with pytest.raises(ImportError):
+            for _ in walk_modules_iter("nomodule999"):
+                pass
         with pytest.raises(ImportError):
             walk_modules("nomodule999")
 
@@ -67,7 +71,7 @@ class TestUtilsMisc:
         egg = str(Path(__file__).parent / "test.egg")
         sys.path.append(egg)
         try:
-            mods = walk_modules("testegg")
+            mods = walk_modules_iter("testegg")
             expected = [
                 "testegg.spiders",
                 "testegg.spiders.a",

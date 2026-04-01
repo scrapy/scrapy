@@ -77,26 +77,59 @@ def load_object(path: str | Callable[..., Any]) -> Any:
     return obj
 
 
-def walk_modules(path: str) -> list[ModuleType]:
+def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
 
-    For example: walk_modules('scrapy.utils')
+    For example:
+    >>> list(walk_modules_iter('scrapy.utils'))
+    [<module 'scrapy.utils' from '...'>, ...]
+    >>> gen = walk_modules_iter('scrapy.utils.nonexistent') # error not raised until the generator is consumed
+    >>> list(gen)
+    Traceback (most recent call last):
+        ...
+    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'
     """
 
-    mods: list[ModuleType] = []
     mod = import_module(path)
-    mods.append(mod)
+    yield mod
     if hasattr(mod, "__path__"):
         for _, subpath, ispkg in iter_modules(mod.__path__):
             fullpath = path + "." + subpath
             if ispkg:
-                mods += walk_modules(fullpath)
+                yield from walk_modules_iter(fullpath)
             else:
-                submod = import_module(fullpath)
-                mods.append(submod)
-    return mods
+                yield import_module(fullpath)
+
+
+def walk_modules(path: str) -> list[ModuleType]:
+    """
+    **Deprecated** in favour of `walk_modules_iter`!
+
+    Loads a module and all its submodules from the given module path and
+    returns them. If *any* module throws an exception while importing, that
+    exception is thrown back.
+
+    For example:
+    >>> walk_modules('scrapy.utils')
+    [<module 'scrapy.utils' from '...'>, ...]
+    >>> walk_modules('scrapy.utils.nonexistent')
+    Traceback (most recent call last):
+        ...
+    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'
+    """
+    warnings.warn(
+        (
+            "The scrapy.utils.misc.walk_modules function is deprecated and will be "
+            "removed in a future version of Scrapy. "
+            "Use scrapy.utils.misc.walk_modules_iter instead."
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
+    return list(walk_modules_iter(path))
 
 
 def md5sum(file: IO[bytes]) -> str:

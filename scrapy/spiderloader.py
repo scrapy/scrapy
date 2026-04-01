@@ -9,7 +9,7 @@ from zope.interface import implementer
 from zope.interface.verify import verifyClass
 
 from scrapy.interfaces import ISpiderLoader
-from scrapy.utils.misc import load_object, walk_modules
+from scrapy.utils.misc import load_object, walk_modules_iter
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -88,7 +88,7 @@ class SpiderLoader:
     def _load_all_spiders(self) -> None:
         for name in self.spider_modules:
             try:
-                for module in walk_modules(name):
+                for module in walk_modules_iter(name):
                     self._load_spiders(module)
             except (ImportError, SyntaxError):
                 if self.warn_only:
