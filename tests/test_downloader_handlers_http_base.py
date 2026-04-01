@@ -25,6 +25,7 @@ from scrapy.exceptions import (
     DownloadFailedError,
     DownloadTimeoutError,
     ResponseDataLossError,
+    ScrapyDeprecationWarning,
     StopDownload,
     UnsupportedURLSchemeError,
 )
@@ -728,6 +729,38 @@ class TestHttps11Base(TestHttp11Base):
                 response = await download_handler.download_request(request)
         assert response.body == b"Works"
         assert self.tls_log_message in caplog.text
+
+    @coroutine_test
+    async def test_verify_certs_deprecated(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        with (  # noqa: PT031
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="'DOWNLOADER_CLIENTCONTEXTFACTORY' setting is deprecated",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="BrowserLikeContextFactory is deprecated",
+            ),
+        ):
+            async with self.get_dh(
+                {
+                    "DOWNLOADER_CLIENTCONTEXTFACTORY": "scrapy.core.downloader.contextfactory.BrowserLikeContextFactory"
+                }
+            ) as download_handler:
+                with pytest.raises(
+                    (DownloadConnectionRefusedError, DownloadFailedError)
+                ):
+                    await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_verify_certs(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh(
+            {"DOWNLOAD_VERIFY_CERTIFICATES": True}
+        ) as download_handler:
+            with pytest.raises((DownloadConnectionRefusedError, DownloadFailedError)):
+                await download_handler.download_request(request)
 
 
 class TestSimpleHttpsBase(ABC):
