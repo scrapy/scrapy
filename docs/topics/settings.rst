@@ -798,11 +798,7 @@ the TLS-related libraries.
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
-    download handlers
-    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
-    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
+    by all 3rd-party handlers.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
