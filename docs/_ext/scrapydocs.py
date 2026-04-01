@@ -126,7 +126,7 @@ def rev_role(
     return [node], []
 
 
-def setup(app: Sphinx) -> None:
+def setup(app: Sphinx) -> dict[str, Any]:
     app.add_crossref_type(
         directivename="setting",
         rolename="setting",
@@ -157,3 +157,4 @@ def setup(app: Sphinx) -> None:
 
     app.connect("doctree-read", collect_scrapy_settings_refs)
     app.connect("doctree-resolved", replace_settingslist_nodes)
+    return {"parallel_read_safe": True}
