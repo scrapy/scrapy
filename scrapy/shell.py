@@ -34,6 +34,44 @@ from scrapy.utils.response import open_in_browser
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+# Hopefully temporary architecture notes
+#
+# The Shell class is always instantiated in the "main" thread. There are two
+# official ways to use it:
+# 1. scrapy.commands.shell, which makes a secondary thread and calls
+# CrawlerProcess.start() in it, which runs a reactor there.
+# 2. scrapy.shell.inspect_response(), which just creates Shell() in the current
+# thread.
+#
+# Shell.inthread is True when this class is run in a thread separate from the
+# reactor, e.g. the 1st way (in other words, the reactor is in a secondary
+# thread).
+# Shell.inthread is False when this class is run in the same thread as the
+# reactor, e.g. the 2nd way.
+# The only thing that differs is availability of fetch() (it needs the
+# reactor to be in a separate thread: the shell sends the request to
+# the reactor and waits for the result synchronously).
+#
+# Thus the only thing Shell needs an event loop for is fetch(). More machinery
+# is used for it to work. In chronological order:
+# 1. scrapy.commands.shell.Command.run() creates a crawler and an engine, then
+# calls
+# _schedule_coro(crawler.engine.start_async(_start_request_processing=False)).
+# (_schedule_coro() here is problematic for reactorless becaused it calls
+# is_asyncio_available() and the loop is not running yet), which initializes
+# the engine but doesn't start processing of the start requests (which we don't
+# have anyway).
+# 2. scrapy.commands.shell.Command.run() calls crawler_process.start() in a
+# thread which starts a reactor in that thread.
+# 3. When fetch() is called, it prepares a request and calls Shell._schedule()
+# in the reactor thread (via threads.blockingCallFromThread()).
+# 4. Shell._schedule() calls Shell._open_spider() (on the first call).
+# 5. Shell._open_spider() calls engine.open_spider_async(close_if_idle=False)
+# and engine._start_request_processing().
+# 6. Shell._schedule() calls engine.crawl(request), scheduling the request.
+# 7. Shell._schedule() via _request_deferred() waits until the request callback
+# is called. When it's called, the response becomes available.
+
 
 class Shell:
     relevant_classes: tuple[type, ...] = (Crawler, Spider, Request, Response, Settings)
