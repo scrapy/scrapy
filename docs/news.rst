@@ -43,9 +43,8 @@ Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
 -   The context factory class set as the value of the
-    :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` setting is now required to
-    support the ``method`` ``__init__()`` argument, recommended since Scrapy
-    1.2.0.
+    ``DOWNLOADER_CLIENTCONTEXTFACTORY`` setting is now required to support the
+    ``method`` ``__init__()`` argument, recommended since Scrapy 1.2.0.
     (:issue:`7353`)
 
 Deprecations
@@ -65,6 +64,19 @@ Deprecations
     :signal:`memusage_warning_reached` and :signal:`spider_closed` signals.
     (:issue:`7249`, :issue:`7263`)
 
+-   The ``DOWNLOADER_CLIENTCONTEXTFACTORY`` setting is deprecated. If you were
+    using it to switch to
+    ``scrapy.core.downloader.contextfactory.BrowserLikeContextFactory``, please
+    use the new :setting:`DOWNLOAD_VERIFY_CERTIFICATES` setting instead. If you
+    cannot use the default context factory for some other reason, please
+    subclass the :ref:`download handler <download-handlers-ref>` instead.
+    (:issue:`7352`, :issue:`7379`)
+
+-   ``scrapy.core.downloader.contextfactory.BrowserLikeContextFactory`` is
+    deprecated. You can set the new :setting:`DOWNLOAD_VERIFY_CERTIFICATES`
+    setting to ``True`` instead.
+    (:issue:`7379`)
+
 -   The following implementation details of the context factory handling code
     are deprecated:
 
@@ -78,7 +90,7 @@ Deprecations
 
     (:issue:`7353`)
 
--   ``scrapy.commands.ScrapyCommand.set_crawler()`` is now deprecated.
+-   ``scrapy.commands.ScrapyCommand.set_crawler()`` is deprecated.
     (:issue:`7276`)
 
 New features
@@ -91,17 +103,16 @@ New features
     behavior and related features and APIs may change in future Scrapy releases
     in a breaking way.
     (:issue:`6219`, :issue:`7185`, :issue:`7186`, :issue:`7187`, :issue:`7190`,
-    :issue:`7199`, :issue:`7228`, :issue:`7355`, :issue:`7366`)
+    :issue:`7197`, :issue:`7199`, :issue:`7209`, :issue:`7228`, :issue:`7355`,
+    :issue:`7366`, :issue:`7385`)
 
 -   Added the :func:`scrapy.utils.reactorless.is_reactorless` function that
     checks if there is a running asyncio event loop but no Twisted reactor.
-
     (:issue:`7185`, :issue:`7199`)
 
 -   Changed :func:`scrapy.utils.asyncio.is_asyncio_available` to return
     ``True`` if there is a running asyncio loop, even if no Twisted reactor is
     installed.
-
     (:issue:`7185`, :issue:`7199`)
 
 -   Added an *experimental* download handler that uses the httpx_ library and
@@ -109,13 +120,18 @@ New features
     :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. As
     long as it's experimental, its behavior may change in future Scrapy
     releases in a breaking way.
-    (:issue:`6805`, :issue:`7239`, :issue:`7368`)
+    (:issue:`6805`, :issue:`7239`, :issue:`7368`, :issue:`7384`)
 
-.. _httpx: https://www.python-httpx.org/
+    .. _httpx: https://www.python-httpx.org/
 
 -   Added the :setting:`DOWNLOAD_BIND_ADDRESS` setting as a global counterpart
     to the per-request :reqmeta:`bindaddress` meta key.
     (:issue:`7266`, :issue:`7283`)
+
+-   Added the :setting:`DOWNLOAD_VERIFY_CERTIFICATES` setting that can be set
+    to ``True`` to make Scrapy abort HTTPS requests when the server certificate
+    is invalid or doesn't match the domain.
+    (:issue:`7379`)
 
 -   The built-in HTTP :ref:`download handlers <download-handlers-ref>` now
     raise Scrapy-specific exceptions instead of implementation-specific ones,
@@ -150,6 +166,12 @@ New features
     that returns headers as a list of ``(key, value)`` tuples.
     (:issue:`7239`)
 
+-   :class:`~scrapy.core.downloader.handlers.s3.S3DownloadHandler` now uses the
+    download handler configured for the ``"https"`` scheme to make requests
+    instead of always using
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`.
+    (:issue:`7369`, :issue:`7370`)
+
 Improvements
 ~~~~~~~~~~~~
 
@@ -168,6 +190,13 @@ Improvements
     no longer mutates the SSL context, to avoid the behavior that was
     deprecated in pyOpenSSL 25.1.0.
     (:issue:`6859`, :issue:`7353`)
+
+-   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` now handle
+    :setting:`TLS verbose logging <DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING>`
+    directly instead of relying on
+    ``scrapy.core.downloader.contextfactory.ScrapyClientContextFactory``.
+    (:issue:`7387`)
 
 -   The server certificate verification code now correctly handles certificates
     with IP addresses in ``subjectAltName``.
@@ -215,6 +244,10 @@ Documentation
 -   Improved docs for :attr:`~scrapy.Request.dont_filter`.
     (:issue:`6398`, :issue:`7245`)
 
+-   Clarified that settings related to :setting:`DNS_RESOLVER` are only taken
+    into account if the selected resolver supports them.
+    (:issue:`7385`)
+
 -   Other documentation improvements and fixes.
     (:issue:`7248`, :issue:`7274`)
 
@@ -244,7 +277,8 @@ Quality assurance
     :issue:`7277`,
     :issue:`7279`,
     :issue:`7329`,
-    :issue:`7363`)
+    :issue:`7363`,
+    :issue:`7381`)
 
 .. _release-2.14.2:
 
