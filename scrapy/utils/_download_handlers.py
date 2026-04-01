@@ -48,6 +48,9 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
         self._fail_on_dataloss: bool = crawler.settings.getbool(
             "DOWNLOAD_FAIL_ON_DATALOSS"
         )
+        self._tls_verbose_logging: bool = crawler.settings.getbool(
+            "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
+        )
         self._fail_on_dataloss_warned: bool = False
 
 

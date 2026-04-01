@@ -35,6 +35,7 @@ from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Request, Response
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
+from scrapy.utils.ssl import _log_ssl_conn_debug_info
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
@@ -92,6 +93,8 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         uri: URI,
         settings: Settings,
         conn_lost_deferred: Deferred[list[BaseException]],
+        *,
+        tls_verbose_logging: bool = False,
     ) -> None:
         """
         Arguments:
@@ -101,8 +104,10 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             settings -- Scrapy project settings
             conn_lost_deferred -- Deferred fires with the reason: Failure to notify
                 that connection was lost
+            tls_verbose_logging -- Whether to log TLS details
         """
         self._conn_lost_deferred: Deferred[list[BaseException]] = conn_lost_deferred
+        self._tls_verbose_logging: bool = tls_verbose_logging
 
         config = H2Configuration(client_side=True, header_encoding="utf-8")
         self.conn = H2Connection(config=config)
@@ -277,6 +282,11 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             self._lose_connection_with_error(
                 [InvalidNegotiatedProtocol(self.transport.negotiatedProtocol)]
             )
+
+        if self._tls_verbose_logging:
+            connection = self.transport.getHandle()
+            hostname = self.metadata["uri"].host.decode("ascii")
+            _log_ssl_conn_debug_info(hostname, connection)
 
     def _check_received_data(self, data: bytes) -> None:
         """Checks for edge cases where the connection to remote fails
@@ -454,13 +464,21 @@ class H2ClientFactory(Factory):
         uri: URI,
         settings: Settings,
         conn_lost_deferred: Deferred[list[BaseException]],
+        *,
+        tls_verbose_logging: bool = False,
     ) -> None:
         self.uri = uri
         self.settings = settings
         self.conn_lost_deferred = conn_lost_deferred
+        self.tls_verbose_logging = tls_verbose_logging
 
     def buildProtocol(self, addr: IAddress) -> H2ClientProtocol:
-        return H2ClientProtocol(self.uri, self.settings, self.conn_lost_deferred)
+        return H2ClientProtocol(
+            self.uri,
+            self.settings,
+            self.conn_lost_deferred,
+            tls_verbose_logging=self.tls_verbose_logging,
+        )
 
     def acceptableProtocols(self) -> list[bytes]:
         return [PROTOCOL_NAME]

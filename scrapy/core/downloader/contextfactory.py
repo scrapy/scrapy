@@ -57,7 +57,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     ):
         super().__init__(*args, **kwargs)  # type: ignore[no-untyped-call]
         self._ssl_method: int = method
-        self.tls_verbose_logging: bool = tls_verbose_logging
+        self.tls_verbose_logging: bool = tls_verbose_logging  # unused
         self.tls_ciphers: AcceptableCiphers
         if tls_ciphers:
             self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
@@ -134,15 +134,8 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         if not self._verify_certificates:
-            return _ScrapyClientTLSOptions(
-                hostname.decode("ascii"),
-                self._ctx,
-                verbose_logging=self.tls_verbose_logging,
-            )
-        # this matches the behavior of BrowserLikeContextFactory in that it
-        # only uses self._ssl_method and doesn't support TLS logging or other
-        # features of ScrapyClientContextFactory, however it additionally
-        # supports self.tls_ciphers
+            return _ScrapyClientTLSOptions(hostname.decode("ascii"), self._ctx)  # type: ignore[no-untyped-call]
+        # Note that this doesn't use self._ctx
         return optionsForClientTLS(
             hostname=hostname.decode("ascii"),
             extraCertificateOptions={
