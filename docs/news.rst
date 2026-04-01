@@ -5369,7 +5369,7 @@ Backward-incompatible changes
     consistency with similar classes (:issue:`3929`, :issue:`3982`)
 
 *   If you are using a custom context factory
-    (:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`), its ``__init__`` method must
+    (``DOWNLOADER_CLIENTCONTEXTFACTORY``), its ``__init__`` method must
     accept two new parameters: ``tls_verbose_logging`` and ``tls_ciphers``
     (:issue:`2111`, :issue:`3392`, :issue:`3442`, :issue:`3450`)
 

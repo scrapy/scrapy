@@ -39,10 +39,16 @@ def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
     if method_setting not in _STDLIB_PROTOCOL_MAP:
         raise ValueError(f"Unsupported TLS method: {method_setting}")
     ciphers_setting: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+    verify_setting = settings.getbool("DOWNLOAD_VERIFY_CERTIFICATES")
 
     ctx = ssl.SSLContext(_STDLIB_PROTOCOL_MAP[method_setting])
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    if verify_setting:
+        ctx.check_hostname = True
+        ctx.verify_mode = ssl.CERT_REQUIRED
+        ctx.load_default_certs()
+    else:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
     if ciphers_setting:
         ctx.set_ciphers(ciphers_setting)
     return ctx
