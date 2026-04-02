@@ -85,7 +85,7 @@ class FTPDownloadHandler(BaseDownloadHandler):
     }
 
     def __init__(self, crawler: Crawler):
-        if not crawler.settings.getbool("TWISTED_ENABLED"):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self.default_user = crawler.settings["FTP_USER"]

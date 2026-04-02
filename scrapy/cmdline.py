@@ -12,7 +12,7 @@ import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
 from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
 from scrapy.exceptions import UsageError
-from scrapy.utils.misc import walk_modules
+from scrapy.utils.misc import walk_modules_iter
 from scrapy.utils.project import get_project_settings, inside_project
 from scrapy.utils.python import garbage_collect
 from scrapy.utils.reactor import _asyncio_reactor_path
@@ -40,7 +40,7 @@ class ScrapyArgumentParser(argparse.ArgumentParser):
 def _iter_command_classes(module_name: str) -> Iterable[type[ScrapyCommand]]:
     # TODO: add `name` attribute to commands and merge this function with
     # scrapy.utils.spider.iter_spider_classes
-    for module in walk_modules(module_name):
+    for module in walk_modules_iter(module_name):
         for obj in vars(module).values():
             if (
                 inspect.isclass(obj)
