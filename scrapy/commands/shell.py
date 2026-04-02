@@ -97,6 +97,7 @@ class Command(ScrapyCommand):
         shell.start(url=url, redirect=not opts.no_redirect)
 
     def _start_crawler_thread(self) -> None:
+        """Run self.crawler_process.start() in a separate thread."""
         assert self.crawler_process
         t = Thread(
             target=self.crawler_process.start,
