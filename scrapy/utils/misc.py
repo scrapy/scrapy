@@ -23,9 +23,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
     from types import ModuleType
 
-    # typing.Never requires Python 3.11
-    from typing_extensions import Never
-
     from scrapy import Spider
     from scrapy.crawler import Crawler
 
@@ -38,7 +35,7 @@ _P = ParamSpec("_P")
 
 
 @overload
-def arg_to_iter(arg: None) -> Iterable[Never]: ...
+def arg_to_iter(arg: None) -> tuple[()]: ...
 @overload
 def arg_to_iter(arg: _ITER_T) -> Iterable[_ITER_T]: ...
 @overload
