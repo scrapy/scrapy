@@ -156,9 +156,7 @@ class Shell:
                 self.vars, shells=shells, banner=self.vars.pop("banner", "")
             )
 
-    def _schedule(
-        self, request: Request, spider: Spider | None
-    ) -> Deferred[tuple[Any, Spider | None]]:
+    def _schedule(self, request: Request, spider: Spider | None) -> Deferred[Any]:
         """Send the request to the engine, wait for the result.
 
         Runs in the reactor thread.
@@ -171,10 +169,8 @@ class Shell:
             set_asyncio_event_loop(event_loop_path)
         # send the request to the engine
         _schedule_coro(self._crawl_request(request, spider))
-        # d will fire when the request callback runs (via the callback hijacking in _request_deferred())
-        d = _request_deferred(request)
-        d.addCallback(lambda x: (x, spider))
-        return d
+        # this will fire when the request callback runs (via the callback hijacking in _request_deferred())
+        return _request_deferred(request)
 
     async def _crawl_request(self, request: Request, spider: Spider | None) -> None:
         if not self.spider:
@@ -215,12 +211,12 @@ class Shell:
             from twisted.internet import reactor
 
             with contextlib.suppress(IgnoreRequest):
-                response, spider = threads.blockingCallFromThread(
+                response = threads.blockingCallFromThread(
                     reactor, self._schedule, request, spider
                 )
         else:
             raise RuntimeError("fetch() currently requires a reactor.")
-        self.populate_vars(response, request, spider)
+        self.populate_vars(response, request, self.spider)
 
     def populate_vars(
         self,
