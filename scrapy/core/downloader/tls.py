@@ -38,7 +38,7 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
     logging warnings.
 
     Instances of this class are returned from
-    :class:`.ScrapyClientContextFactory`.
+    :class:`._ScrapyClientContextFactory`.
     """
 
     def _identityVerifyingInfoCallback(
