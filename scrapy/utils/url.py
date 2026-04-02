@@ -50,15 +50,18 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     host = _parse_url(url).netloc.lower()
     if not host:
         return False
-    domains = [d.lower() for d in domains]
-    return any((host == d) or (host.endswith(f".{d}")) for d in domains)
+    return any((host == d) or (host.endswith(f".{d}")) for d in map(str.lower, domains))
+
+
+def _spider_domains(spider: type[Spider]) -> Iterable[str]:
+    yield spider.name
+    if allowed_domains := getattr(spider, "allowed_domains", None):
+        yield from allowed_domains
 
 
 def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
     """Return True if the url belongs to the given spider"""
-    return url_is_from_any_domain(
-        url, [spider.name, *getattr(spider, "allowed_domains", ())]
-    )
+    return url_is_from_any_domain(url, _spider_domains(spider))
 
 
 def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
