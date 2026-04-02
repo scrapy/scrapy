@@ -6,6 +6,7 @@ See documentation in docs/topics/shell.rst
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import os
 import signal
@@ -61,11 +62,8 @@ if TYPE_CHECKING:
 # is used for it to work. In chronological order:
 # 1. scrapy.commands.shell.Command.run() creates a crawler and an engine, then
 # calls
-# _schedule_coro(crawler.engine.start_async(_start_request_processing=False)).
-# (_schedule_coro() here is problematic for reactorless becaused it calls
-# is_asyncio_available() and the loop is not running yet), which initializes
-# the engine but doesn't start processing of the start requests (which we don't
-# have anyway).
+# _schedule_coro(crawler.engine.start_async(_start_request_processing=False)),
+# which initializes the engine but doesn't start processing of requests.
 # 2. scrapy.commands.shell.Command.run() calls crawler_process.start() in a
 # thread which starts a reactor in that thread.
 # 3. When fetch() is called, it prepares a request and calls Shell._schedule()
@@ -76,6 +74,16 @@ if TYPE_CHECKING:
 # 6. Shell._schedule() calls engine.crawl(request), scheduling the request.
 # 7. Shell._schedule() via _request_deferred() waits until the request callback
 # is called. When it's called, the response becomes available.
+#
+# In the reactorless mode this is slightly different, the engine initialization
+# happens in the event loop thread as many things need either a reactor or a
+# running event loop (that it works in the main thread when using a reactor can
+# be considered a coincidence and it should ideally be refactored to not do
+# that).
+#
+# Side note: it should be possible to remove _request_deferred() by using
+# engine.download() instead of engine.schedule(), losing the usual stuff like
+# spider middlewares (none of which should be important).
 
 
 class Shell:
@@ -86,8 +94,15 @@ class Shell:
         crawler: Crawler,
         update_vars: Callable[[dict[str, Any]], None] | None = None,
         code: str | None = None,
+        *,
+        loop: asyncio.AbstractEventLoop | None = None,
     ):
         self._use_reactor = crawler.settings.getbool("TWISTED_REACTOR_ENABLED")
+        if not self._use_reactor and not loop:  # pragma: no cover
+            raise RuntimeError(
+                "Shell needs the crawler loop reference when TWISTED_REACTOR_ENABLED=False."
+            )
+        self._loop = loop
         self.crawler: Crawler = crawler
         self.update_vars: Callable[[dict[str, Any]], None] = update_vars or (
             lambda x: None
@@ -97,7 +112,12 @@ class Shell:
         if self._use_reactor:
             self._inthread: bool = not threadable.isInIOThread()
         else:
-            self._inthread = False  # TODO
+            try:
+                # in case there is also a running loop in the main thread
+                current_loop = asyncio.get_running_loop()
+                self._inthread = current_loop is not self._loop
+            except RuntimeError:
+                self._inthread = True
         self.code: str | None = code
         self.vars: dict[str, Any] = {}
 
@@ -160,13 +180,12 @@ class Shell:
                 self.vars, shells=shells, banner=self.vars.pop("banner", "")
             )
 
-    @deferred_f_from_coro_f
     async def _schedule(self, request: Request, spider: Spider | None) -> Response:
         """Send the request to the engine, wait for the result.
 
         Runs in the reactor thread.
         """
-        if is_asyncio_reactor_installed():
+        if self._use_reactor and is_asyncio_reactor_installed():
             # set the asyncio event loop for the current thread
             # TODO is this still needed? set_asyncio_event_loop() is already
             # called by either AsyncCrawlerProcess.__init__() or Crawler._apply_settings()
@@ -214,10 +233,15 @@ class Shell:
 
             with contextlib.suppress(IgnoreRequest):
                 response = threads.blockingCallFromThread(
-                    reactor, self._schedule, request, spider
+                    reactor, deferred_f_from_coro_f(self._schedule), request, spider
                 )
         else:
-            raise RuntimeError("fetch() currently requires a reactor.")
+            assert self._loop
+            with contextlib.suppress(IgnoreRequest):
+                future = asyncio.run_coroutine_threadsafe(
+                    self._schedule(request, spider), self._loop
+                )
+                response = future.result()
         self.populate_vars(response, request, self.spider)
 
     def populate_vars(
@@ -277,7 +301,11 @@ def inspect_response(response: Response, spider: Spider) -> None:
     # Shell.start removes the SIGINT handler, so save it and re-add it after
     # the shell has closed
     sigint_handler = signal.getsignal(signal.SIGINT)
-    Shell(spider.crawler).start(response=response, spider=spider)
+    if not spider.crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+        loop = asyncio.get_running_loop()
+    else:
+        loop = None
+    Shell(spider.crawler, loop=loop).start(response=response, spider=spider)
     signal.signal(signal.SIGINT, sigint_handler)
 
 
