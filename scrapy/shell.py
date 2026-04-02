@@ -83,13 +83,17 @@ class Shell:
         update_vars: Callable[[dict[str, Any]], None] | None = None,
         code: str | None = None,
     ):
+        self._use_reactor = crawler.settings.getbool("TWISTED_REACTOR_ENABLED")
         self.crawler: Crawler = crawler
         self.update_vars: Callable[[dict[str, Any]], None] = update_vars or (
             lambda x: None
         )
         self.item_class: type = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
         self.spider: Spider | None = None
-        self._inthread: bool = not threadable.isInIOThread()
+        if self._use_reactor:
+            self._inthread: bool = not threadable.isInIOThread()
+        else:
+            self._inthread = False  # TODO
         self.code: str | None = code
         self.vars: dict[str, Any] = {}
 
@@ -187,8 +191,6 @@ class Shell:
         redirect: bool = True,
         **kwargs: Any,
     ) -> None:
-        from twisted.internet import reactor
-
         if isinstance(request_or_url, Request):
             request = request_or_url
         else:
@@ -201,10 +203,15 @@ class Shell:
             else:
                 request.meta["handle_httpstatus_all"] = True
         response = None
-        with contextlib.suppress(IgnoreRequest):
-            response, spider = threads.blockingCallFromThread(
-                reactor, self._schedule, request, spider
-            )
+        if self._use_reactor:
+            from twisted.internet import reactor
+
+            with contextlib.suppress(IgnoreRequest):
+                response, spider = threads.blockingCallFromThread(
+                    reactor, self._schedule, request, spider
+                )
+        else:
+            raise RuntimeError("fetch() currently requires a reactor.")
         self.populate_vars(response, request, spider)
 
     def populate_vars(
