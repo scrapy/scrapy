@@ -7,6 +7,11 @@ subclass from object_ref (instead of object).
 About performance: This library has a minimal performance impact when enabled,
 and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
+
+.. note:: PyPy uses a tracing garbage collector, so objects may
+    remain in the ``live_refs`` longer than expected, even after they
+    go out of scope. If deterministic behavior is required, you may need
+    to explicitly trigger garbage collection or call ``trackref.live_refs.clear()``.
 """
 
 from __future__ import annotations
@@ -74,4 +79,4 @@ def iter_all(class_name: str) -> Iterable[Any]:
     for cls, wdict in live_refs.items():
         if cls.__name__ == class_name:
             return wdict.keys()
-    return []
+    return ()
