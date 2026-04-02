@@ -12,7 +12,7 @@ class NoRequestsSpider(scrapy.Spider):
 
 process = AsyncCrawlerProcess(
     settings={
-        "TWISTED_ENABLED": False,
+        "TWISTED_REACTOR_ENABLED": False,
         "TELNETCONSOLE_ENABLED": True,
     }
 )

@@ -27,7 +27,7 @@ disable it if you want. For more information about the extension itself see
     or disable it completely using :setting:`TELNETCONSOLE_ENABLED` option.
 
 .. note::
-    This feature is not supported when :setting:`TWISTED_ENABLED` is ``False``.
+    This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 .. highlight:: none
 

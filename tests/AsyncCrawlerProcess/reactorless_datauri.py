@@ -12,16 +12,7 @@ class DataSpider(Spider):
         return {"data": response.text}
 
 
-process = AsyncCrawlerProcess(
-    settings={
-        "TWISTED_ENABLED": False,
-        "DOWNLOAD_HANDLERS": {
-            "http": None,
-            "https": None,
-            "ftp": None,
-        },
-    }
-)
+process = AsyncCrawlerProcess(settings={"TWISTED_REACTOR_ENABLED": False})
 
 process.crawl(DataSpider)
 process.start()

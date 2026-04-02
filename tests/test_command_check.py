@@ -55,7 +55,7 @@ class CheckSpider(scrapy.Spider):
         self._write_contract(proj_path, contracts, parse_def)
         args = ["check"]
         if not use_reactor:
-            args += ["-s", "TWISTED_ENABLED=False"]
+            args += ["-s", "TWISTED_REACTOR_ENABLED=False"]
         ret, out, err = proc(*args, cwd=proj_path)
         assert "F" not in out
         assert "OK" in err

@@ -140,8 +140,8 @@ Using Scrapy without a Twisted reactor
     This is currently experimental and may not be suitable for production use.
 
 It's possible to use Scrapy without installing a Twisted reactor at all, by
-setting the :setting:`TWISTED_ENABLED` setting to ``False``. In this mode
-Scrapy will use the asyncio event loop directly, and most of the Scrapy
+setting the :setting:`TWISTED_REACTOR_ENABLED` setting to ``False``. In this
+mode Scrapy will use the asyncio event loop directly, and most of the Scrapy
 functionality will work in the same way.
 
 Doing this provides several benefits in certain use cases:
@@ -149,7 +149,8 @@ Doing this provides several benefits in certain use cases:
 * A Twisted reactor, once stopped, cannot be started again. This prevents, for
   example, using several instances of
   :class:`~scrapy.crawler.AsyncCrawlerProcess` in the same process when they
-  use a reactor, but with ``TWISTED_ENABLED=False`` it becomes possible.
+  use a reactor, but with ``TWISTED_REACTOR_ENABLED=False`` it becomes
+  possible.
 * There may be limitations imposed by
   :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` and related
   Twisted code, such as the requirement of using
@@ -195,8 +196,8 @@ necessarily stop working.
 Other differences
 -----------------
 
-When :setting:`TWISTED_ENABLED` is set to ``False``, Scrapy will change the
-defaults of some other settings:
+When :setting:`TWISTED_REACTOR_ENABLED` is set to ``False``, Scrapy will change
+the defaults of some other settings:
 
 * :setting:`TELNETCONSOLE_ENABLED` is set to ``False``.
 * The ``"http"`` and ``"https"`` keys in :setting:`DOWNLOAD_HANDLERS_BASE` are
@@ -255,8 +256,8 @@ Scrapy provides unified helpers for some of these examples:
 .. autofunction:: scrapy.utils.asyncio.run_in_thread
 
 If your code needs to know whether the reactor is available, you can either
-check for the value of the :setting:`TWISTED_ENABLED` setting (you need access
-to the :class:`~scrapy.crawler.Crawler` instance to do this) or use the
+check for the value of the :setting:`TWISTED_REACTOR_ENABLED` setting (you need
+access to the :class:`~scrapy.crawler.Crawler` instance to do this) or use the
 following function:
 
 .. autofunction:: scrapy.utils.reactorless.is_reactorless
@@ -273,26 +274,26 @@ Troubleshooting
 without a Twisted reactor [...]:** Scrapy is configured to run without a
 reactor, but some code imported :mod:`twisted.internet.reactor`, most likely
 because that code needs a reactor to be used. You need to stop using this code
-or set :setting:`TWISTED_ENABLED` back to ``True``. It's also possible that the
-reactor isn't really needed but was installed due to the problem described in
-:ref:`asyncio-preinstalled-reactor`, in which case it should be enough to fix
-the problematic imports.
+or set :setting:`TWISTED_REACTOR_ENABLED` back to ``True``. It's also possible
+that the reactor isn't really needed but was installed due to the problem
+described in :ref:`asyncio-preinstalled-reactor`, in which case it should be
+enough to fix the problematic imports.
 
-**RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed:**
-Scrapy is configured to run without a reactor, but a reactor is already
-installed before the Scrapy code is executed. If you are trying to set
-:setting:`TWISTED_ENABLED` via :ref:`per-spider settings <spider-settings>`,
-it's currently unsupported.
+**RuntimeError: TWISTED_REACTOR_ENABLED is False but a Twisted reactor is
+installed:** Scrapy is configured to run without a reactor, but a reactor is
+already installed before the Scrapy code is executed. If you are trying to set
+:setting:`TWISTED_REACTOR_ENABLED` via :ref:`per-spider settings
+<spider-settings>`, it's currently unsupported.
 
 **RuntimeError: We expected a Twisted reactor to be installed but it isn't:**
 Scrapy is configured to run with a reactor and not to install one, but a
 reactor wasn't installed before the Scrapy code is executed. If you are trying
-to set :setting:`TWISTED_ENABLED` via :ref:`per-spider settings
+to set :setting:`TWISTED_REACTOR_ENABLED` via :ref:`per-spider settings
 <spider-settings>`, it's currently unsupported.
 
-**RuntimeError: <class> doesn't support TWISTED_ENABLED=False:** The listed
-class cannot be used with :setting:`TWISTED_ENABLED` set to ``False``. There
-may be a replacement in the :ref:`documentation above
+**RuntimeError: <class> doesn't support TWISTED_REACTOR_ENABLED=False:** The
+listed class cannot be used with :setting:`TWISTED_REACTOR_ENABLED` set to
+``False``. There may be a replacement in the :ref:`documentation above
 <asyncio-without-reactor>` or the documentation of the affected class.
 
 
