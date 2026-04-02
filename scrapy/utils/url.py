@@ -19,14 +19,13 @@ from w3lib.url import parse_url as _parse_url
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
-_public_w3lib_objects_set: frozenset[str] = frozenset(_public_w3lib_objects)
+_DEPRECATED_NAMES: frozenset[str] = frozenset(
+    {"_unquotepath", "_safe_chars", "parse_url", *_public_w3lib_objects}
+)
 
 
 def __getattr__(name: str) -> Any:
-    if (
-        name in {"_unquotepath", "_safe_chars", "parse_url"}
-        or name in _public_w3lib_objects_set
-    ):
+    if name in _DEPRECATED_NAMES:
         obj_type = "attribute" if name == "_safe_chars" else "function"
         warnings.warn(
             f"The scrapy.utils.url.{name} {obj_type} is deprecated, use w3lib.url.{name} instead.",
