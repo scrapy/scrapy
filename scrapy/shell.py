@@ -27,7 +27,11 @@ from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import _schedule_coro
+from scrapy.utils.defer import (
+    _schedule_coro,
+    deferred_f_from_coro_f,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
@@ -156,7 +160,8 @@ class Shell:
                 self.vars, shells=shells, banner=self.vars.pop("banner", "")
             )
 
-    def _schedule(self, request: Request, spider: Spider | None) -> Deferred[Any]:
+    @deferred_f_from_coro_f
+    async def _schedule(self, request: Request, spider: Spider | None) -> Response:
         """Send the request to the engine, wait for the result.
 
         Runs in the reactor thread.
@@ -167,16 +172,13 @@ class Shell:
             # called by either AsyncCrawlerProcess.__init__() or Crawler._apply_settings()
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
             set_asyncio_event_loop(event_loop_path)
-        # send the request to the engine
-        _schedule_coro(self._crawl_request(request, spider))
-        # this will fire when the request callback runs (via the callback hijacking in _request_deferred())
-        return _request_deferred(request)
-
-    async def _crawl_request(self, request: Request, spider: Spider | None) -> None:
         if not self.spider:
             await self._open_spider(spider)
         assert self.crawler.engine is not None
+        # send the request to the engine
         self.crawler.engine.crawl(request)
+        # this will fire when the request callback runs (via the callback hijacking in _request_deferred())
+        return await maybe_deferred_to_future(_request_deferred(request))
 
     async def _open_spider(self, spider: Spider | None) -> None:
         if spider is None:
@@ -206,7 +208,7 @@ class Shell:
                 )
             else:
                 request.meta["handle_httpstatus_all"] = True
-        response = None
+        response: Response | None = None
         if self._use_reactor:
             from twisted.internet import reactor
 
