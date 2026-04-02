@@ -122,7 +122,7 @@ class Shell:
         self.vars: dict[str, Any] = {}
 
     @property
-    def inthread(self) -> bool:
+    def inthread(self) -> bool:  # pragma: no cover
         warnings.warn(
             "Shell.inthread is deprecated, use Shell.fetch_available instead.",
             ScrapyDeprecationWarning,
