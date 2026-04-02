@@ -407,7 +407,7 @@ with multiples lines
         settings_dict = get_reactor_settings()
         runner_cls = (
             CrawlerRunner
-            if settings_dict.get("TWISTED_ENABLED", True)
+            if settings_dict.get("TWISTED_REACTOR_ENABLED", True)
             else AsyncCrawlerRunner
         )
         runner = runner_cls(settings_dict)

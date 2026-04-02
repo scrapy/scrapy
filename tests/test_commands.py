@@ -355,7 +355,7 @@ class TestBenchCommand:
             "CLOSESPIDER_TIMEOUT=0.01",
         ]
         if not use_reactor:
-            args += ["-s", "TWISTED_ENABLED=False"]
+            args += ["-s", "TWISTED_REACTOR_ENABLED=False"]
         _, _, err = proc(*args)
         assert "INFO: Crawled" in err
         assert "Unhandled Error" not in err

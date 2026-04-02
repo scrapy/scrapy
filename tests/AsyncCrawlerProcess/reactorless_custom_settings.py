@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
     custom_settings = {
-        "TWISTED_ENABLED": False,
+        "TWISTED_REACTOR_ENABLED": False,
     }
 
     async def start(self):

@@ -18,7 +18,7 @@ Once you get familiarized with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
 
 .. note::
-    This feature is not supported when :setting:`TWISTED_ENABLED` is ``False``.
+    This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 Configuring the shell
 =====================

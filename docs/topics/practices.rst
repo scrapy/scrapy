@@ -166,8 +166,8 @@ with :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`):
 
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
-And here are examples of using these classes with :setting:`TWISTED_ENABLED`
-set to ``False``.
+And here are examples of using these classes with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``.
 
 Simple usage of :class:`~scrapy.crawler.AsyncCrawlerProcess`:
 
@@ -184,14 +184,14 @@ Simple usage of :class:`~scrapy.crawler.AsyncCrawlerProcess`:
 
     process = AsyncCrawlerProcess(
         settings={
-            "TWISTED_ENABLED": False,
+            "TWISTED_REACTOR_ENABLED": False,
         }
     )
 
     process.crawl(MySpider)
     process.start()  # the script will block here until the crawling is finished
 
-With ``TWISTED_ENABLED=False`` you can use several instances of
+With ``TWISTED_REACTOR_ENABLED=False`` you can use several instances of
 :class:`~scrapy.crawler.AsyncCrawlerProcess` in the same process:
 
 .. code-block:: python
@@ -207,7 +207,7 @@ With ``TWISTED_ENABLED=False`` you can use several instances of
 
     process1 = AsyncCrawlerProcess(
         settings={
-            "TWISTED_ENABLED": False,
+            "TWISTED_REACTOR_ENABLED": False,
         }
     )
     process1.crawl(MySpider)
@@ -215,7 +215,7 @@ With ``TWISTED_ENABLED=False`` you can use several instances of
 
     process2 = AsyncCrawlerProcess(
         settings={
-            "TWISTED_ENABLED": False,
+            "TWISTED_REACTOR_ENABLED": False,
         }
     )
     process2.crawl(MySpider)
@@ -239,7 +239,7 @@ Using :func:`asyncio.run` with :class:`~scrapy.crawler.AsyncCrawlerRunner`:
 
     async def main():
         configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-        runner = AsyncCrawlerRunner(settings={"TWISTED_ENABLED": False})
+        runner = AsyncCrawlerRunner(settings={"TWISTED_REACTOR_ENABLED": False})
         await runner.crawl(MySpider)  # completes when the spider finishes
 
 
