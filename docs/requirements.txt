@@ -138,12 +138,10 @@ sphinx==9.1.0
     #   sphinxcontrib-jquery
 sphinx-copybutton==0.5.2
     # via sphinx-scrapy
-sphinx-llms-txt==0.7.1
+sphinx-llms-txt @ git+https://github.com/zytedata/sphinx-llms-txt.git@5e8866cb0cc249aa2017ad9050b3b83a7ca16f69
     # via sphinx-scrapy
-sphinx-markdown-builder @ git+https://github.com/AdrianAtZyte/sphinx-markdown-builder.git@8b654c2b5c2cdca8276767c7363a9d1cb6b542ec
-    # via
-    #   -r requirements.in
-    #   sphinx-scrapy
+sphinx-markdown-builder @ git+https://github.com/zytedata/sphinx-markdown-builder.git@ac9f8babfe622e4300099ab44b96d9d9228e742e
+    # via sphinx-scrapy
 sphinx-notfound-page==1.1.0
     # via -r requirements.in
 sphinx-rtd-dark-mode==1.3.0
@@ -152,7 +150,7 @@ sphinx-rtd-theme==3.1.0
     # via
     #   -r requirements.in
     #   sphinx-rtd-dark-mode
-sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@e0a0796f17dca89f1e4b221005d2eebedce0c5d2
+sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@46c52fc3a6d5ee632a8ef6bccf4daa1ff53e96fd
     # via -r requirements.in
 sphinxcontrib-applehelp==2.0.0
     # via sphinx

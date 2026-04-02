@@ -2,8 +2,7 @@ h2
 pydantic
 scrapy-spider-metadata
 sphinx
-sphinx-markdown-builder @ git+https://github.com/AdrianAtZyte/sphinx-markdown-builder.git@8b654c2b5c2cdca8276767c7363a9d1cb6b542ec
 sphinx-notfound-page
 sphinx-rtd-theme
 sphinx-rtd-dark-mode
-sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@e0a0796f17dca89f1e4b221005d2eebedce0c5d2
+sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@0.7.0
