@@ -9,6 +9,7 @@ from __future__ import annotations
 import contextlib
 import os
 import signal
+import warnings
 from typing import TYPE_CHECKING, Any
 
 from itemadapter import is_item
@@ -19,14 +20,14 @@ from w3lib.url import any_to_uri
 
 import scrapy
 from scrapy.crawler import Crawler
-from scrapy.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import _schedule_coro, deferred_f_from_coro_f
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
@@ -43,10 +44,10 @@ if TYPE_CHECKING:
 # 2. scrapy.shell.inspect_response(), which just creates Shell() in the current
 # thread.
 #
-# Shell.inthread is True when this class is run in a thread separate from the
+# Shell._inthread is True when this class is run in a thread separate from the
 # reactor, e.g. the 1st way (in other words, the reactor is in a secondary
 # thread).
-# Shell.inthread is False when this class is run in the same thread as the
+# Shell._inthread is False when this class is run in the same thread as the
 # reactor, e.g. the 2nd way.
 # The only thing that differs is availability of fetch() (it needs the
 # reactor to be in a separate thread: the shell sends the request to
@@ -88,9 +89,23 @@ class Shell:
         )
         self.item_class: type = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
         self.spider: Spider | None = None
-        self.inthread: bool = not threadable.isInIOThread()
+        self._inthread: bool = not threadable.isInIOThread()
         self.code: str | None = code
         self.vars: dict[str, Any] = {}
+
+    @property
+    def inthread(self) -> bool:
+        warnings.warn(
+            "Shell.inthread is deprecated, use Shell.fetch_available instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._inthread
+
+    @property
+    def fetch_available(self) -> bool:
+        """Whether fetch() can be used."""
+        return self._inthread
 
     def start(
         self,
@@ -142,23 +157,20 @@ class Shell:
             # set the asyncio event loop for the current thread
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
             set_asyncio_event_loop(event_loop_path)
-
-        def crawl_request(_: None) -> None:
-            assert self.crawler.engine is not None
-            self.crawler.engine.crawl(request)
-
-        d2 = self._open_spider(spider)
-        d2.addCallback(crawl_request)
-
+        # send the request to the engine
+        _schedule_coro(self._crawl_request(request, spider))
+        # d will fire when the request callback runs (via the callback hijacking in _request_deferred())
         d = _request_deferred(request)
         d.addCallback(lambda x: (x, spider))
         return d
 
-    @deferred_f_from_coro_f
-    async def _open_spider(self, spider: Spider | None) -> None:
-        if self.spider:
-            return
+    async def _crawl_request(self, request: Request, spider: Spider | None) -> None:
+        if not self.spider:
+            await self._open_spider(spider)
+        assert self.crawler.engine is not None
+        self.crawler.engine.crawl(request)
 
+    async def _open_spider(self, spider: Spider | None) -> None:
         if spider is None:
             spider = self.crawler.spider or self.crawler._create_spider()
 
@@ -208,7 +220,7 @@ class Shell:
         self.vars["spider"] = spider
         self.vars["request"] = request
         self.vars["response"] = response
-        if self.inthread:
+        if self.fetch_available:
             self.vars["fetch"] = self.fetch
         self.vars["view"] = open_in_browser
         self.vars["shelp"] = self.print_help
@@ -229,7 +241,7 @@ class Shell:
             if self._is_relevant(v):
                 b.append(f"  {k:<10} {v}")
         b.append("Useful shortcuts:")
-        if self.inthread:
+        if self.fetch_available:
             b.append(
                 "  fetch(url[, redirect=True]) "
                 "Fetch URL and update local objects (by default, redirects are followed)"
