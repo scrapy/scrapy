@@ -161,7 +161,7 @@ def rev_role(
     return [node], []
 
 
-def setup(app: Sphinx) -> None:
+def setup(app: Sphinx) -> dict[str, Any]:
     app.add_role("source", source_role)
     app.add_role("commit", commit_role)
     app.add_role("issue", issue_role)
@@ -179,3 +179,4 @@ def setup(app: Sphinx) -> None:
 
     app.connect("doctree-read", collect_scrapy_settings_refs)
     app.connect("doctree-resolved", replace_settingslist_nodes)
+    return {"parallel_read_safe": True}

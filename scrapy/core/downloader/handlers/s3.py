@@ -3,11 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from scrapy import Request
@@ -40,7 +39,10 @@ class S3DownloadHandler(BaseDownloadHandler):
                 )
             )
 
-        _http_handler = build_from_crawler(HTTP11DownloadHandler, crawler)
+        _http_handler = build_from_crawler(
+            load_object(crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"]),
+            crawler,
+        )
         self._download_http = _http_handler.download_request
 
     async def download_request(self, request: Request) -> Response:

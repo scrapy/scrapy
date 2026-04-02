@@ -83,9 +83,9 @@ class Command(ScrapyCommand):
         # crawling engine, so the set up in the crawl method won't work
         crawler = self.crawler_process._create_crawler(spidercls)
         crawler._apply_settings()
-        if not crawler.settings.getbool("TWISTED_ENABLED"):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise RuntimeError(
-                "scrapy shell currently doesn't support TWISTED_ENABLED=False"
+                "scrapy shell currently doesn't support TWISTED_REACTOR_ENABLED=False"
             )
         # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()
