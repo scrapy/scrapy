@@ -6,7 +6,7 @@ import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from pathlib import Path
-from time import monotonic, time
+from time import time
 from typing import IO, TYPE_CHECKING, Any, Concatenate, cast
 from weakref import WeakKeyDictionary
 
@@ -30,8 +30,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-_WALL_OFFSET = time() - monotonic()
 
 
 class DummyPolicy:
@@ -126,7 +124,7 @@ class RFC2616Policy:
         if b"no-cache" in cc or b"no-cache" in ccreq:
             return False
 
-        now = monotonic()
+        now = time()
         freshnesslifetime = self._compute_freshness_lifetime(
             cachedresponse, request, now
         )
@@ -303,7 +301,7 @@ class DbmCacheStorage:
             return None  # not found
 
         ts = db[tkey]
-        if 0 < self.expiration_secs < _WALL_OFFSET + monotonic() - float(ts):
+        if 0 < self.expiration_secs < time() - float(ts):
             return None  # expired
 
         return cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
@@ -385,7 +383,7 @@ class FilesystemCacheStorage:
         if not metapath.exists():
             return None  # not found
         mtime = metapath.stat().st_mtime
-        if 0 < self.expiration_secs < _WALL_OFFSET + monotonic() - mtime:
+        if 0 < self.expiration_secs < time() - mtime:
             return None  # expired
         with self._open(metapath, "rb") as f:
             return cast("dict[str, Any]", pickle.load(f))  # noqa: S301
