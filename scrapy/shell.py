@@ -147,7 +147,7 @@ class Shell:
             assert self.crawler.engine is not None
             self.crawler.engine.crawl(request)
 
-        d2 = self._open_spider(request, spider)
+        d2 = self._open_spider(spider)
         d2.addCallback(crawl_request)
 
         d = _request_deferred(request)
@@ -155,7 +155,7 @@ class Shell:
         return d
 
     @deferred_f_from_coro_f
-    async def _open_spider(self, request: Request, spider: Spider | None) -> None:
+    async def _open_spider(self, spider: Spider | None) -> None:
         if self.spider:
             return
 
