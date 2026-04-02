@@ -162,6 +162,14 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
                 stacklevel=2,
             )
 
+        if name == "DNS_RESOLVER":
+            warnings.warn(
+                "The DNS_RESOLVER setting is deprecated, please use "
+                "TWISTED_DNS_RESOLVER instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         return self[name] if self[name] is not None else default
 
     def getbool(self, name: _SettingsKey, default: bool = False) -> bool:
