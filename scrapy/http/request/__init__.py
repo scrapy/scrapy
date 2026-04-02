@@ -242,19 +242,11 @@ class Request(object_ref):
             self._cb_kwargs = {}
         return self._cb_kwargs
 
-    @cb_kwargs.setter
-    def cb_kwargs(self, value: dict[str, Any] | None) -> None:
-        self._cb_kwargs = value or None
-
     @property
     def meta(self) -> dict[str, Any]:
         if self._meta is None:
             self._meta = {}
         return self._meta
-
-    @meta.setter
-    def meta(self, value: dict[str, Any] | None) -> None:
-        self._meta = value or None
 
     @property
     def url(self) -> str:

@@ -39,6 +39,7 @@ from urllib.parse import unquote
 from twisted.internet.protocol import ClientCreator, Protocol
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -84,6 +85,8 @@ class FTPDownloadHandler(BaseDownloadHandler):
     }
 
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self.default_user = crawler.settings["FTP_USER"]
         self.default_password = crawler.settings["FTP_PASSWORD"]

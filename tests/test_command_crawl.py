@@ -137,7 +137,9 @@ class MySpider(scrapy.Spider):
         return
         yield
 """
-        log = self.get_log(spider_code, proj_path, args=("-s", "TWISTED_ENABLED=False"))
+        log = self.get_log(
+            spider_code, proj_path, args=("-s", "TWISTED_REACTOR_ENABLED=False")
+        )
         assert "[myspider] DEBUG: It works!" in log
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log

@@ -219,7 +219,7 @@ class MySpider(scrapy.Spider):
             self.debug_log_spider,
             args=[
                 "-s",
-                "TWISTED_ENABLED=False",
+                "TWISTED_REACTOR_ENABLED=False",
             ],
         )
         assert "Not using a Twisted reactor" in log

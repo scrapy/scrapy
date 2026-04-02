@@ -185,8 +185,8 @@ __all__ = [
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
     "TWISTED_DNS_RESOLVER",
-    "TWISTED_ENABLED",
     "TWISTED_REACTOR",
+    "TWISTED_REACTOR_ENABLED",
     "URLLENGTH_LIMIT",
     "USER_AGENT",
     "WARN_ON_GENERATOR_RETURN_VALUE",
@@ -243,9 +243,9 @@ DNSCACHE_ENABLED = True
 DNSCACHE_SIZE = 10000
 DNS_TIMEOUT = 60
 
-DOWNLOAD_DELAY = 0
-
 DOWNLOAD_BIND_ADDRESS = None
+
+DOWNLOAD_DELAY = 0
 
 DOWNLOAD_FAIL_ON_DATALOSS = True
 
@@ -264,11 +264,11 @@ DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
 
 DOWNLOAD_TIMEOUT = 180  # 3mins
 
+DOWNLOAD_VERIFY_CERTIFICATES = False
+
 DOWNLOADER = "scrapy.core.downloader.Downloader"
 
-DOWNLOADER_CLIENTCONTEXTFACTORY = (
-    "scrapy.core.downloader.contextfactory.ScrapyClientContextFactory"
-)
+DOWNLOADER_CLIENTCONTEXTFACTORY = "SENTINEL"
 DOWNLOADER_CLIENT_TLS_CIPHERS = "DEFAULT"
 # Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
@@ -524,8 +524,10 @@ TELNETCONSOLE_USERNAME = "scrapy"
 TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
+
 TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
-TWISTED_ENABLED = True
+
+TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 URLLENGTH_LIMIT = 2083

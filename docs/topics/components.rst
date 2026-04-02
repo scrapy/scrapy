@@ -15,8 +15,6 @@ That includes the classes that you may assign to the following settings:
 
 -   :setting:`DOWNLOAD_HANDLERS`
 
--   :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`
-
 -   :setting:`DOWNLOADER_MIDDLEWARES`
 
 -   :setting:`DUPEFILTER_CLASS`

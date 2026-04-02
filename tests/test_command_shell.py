@@ -129,8 +129,21 @@ class TestShellCommand:
     def test_shell_fetch_no_reactor(self, mockserver: MockServer) -> None:
         url = mockserver.url("/html")
         code = f"fetch('{url}')"
-        ret, _, err = proc("shell", "-c", code, "--set", "TWISTED_ENABLED=False")
+        ret, _, err = proc(
+            "shell", "-c", code, "--set", "TWISTED_REACTOR_ENABLED=False"
+        )
         assert ret == 0, err
+
+    def test_no_reactor_unsupported(self) -> None:
+        # to be removed when it's supported
+        ret, out, err = proc(
+            "shell", "-c", "item", "--set", "TWISTED_REACTOR_ENABLED=False"
+        )
+        assert ret == 1, out or err
+        assert (
+            "RuntimeError: scrapy shell currently doesn't support TWISTED_REACTOR_ENABLED=False"
+            in err
+        )
 
 
 class TestInteractiveShell:

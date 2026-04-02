@@ -27,6 +27,7 @@ from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import _schedule_coro, deferred_f_from_coro_f
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
 
@@ -44,6 +45,10 @@ class Shell:
         code: str | None = None,
     ):
         self.crawler: Crawler = crawler
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):  # pragma: no cover
+            raise RuntimeError(
+                f"{global_object_name(self.__class__)} currently doesn't support TWISTED_REACTOR_ENABLED=False."
+            )
         self.update_vars: Callable[[dict[str, Any]], None] = update_vars or (
             lambda x: None
         )
