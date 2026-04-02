@@ -77,13 +77,23 @@ if TYPE_CHECKING:
 #
 # In the reactorless mode this is slightly different, the engine initialization
 # happens in the event loop thread as many things need either a reactor or a
-# running event loop (that it works in the main thread when using a reactor can
-# be considered a coincidence and it should ideally be refactored to not do
-# that).
+# running event loop.
 #
 # Side note: it should be possible to remove _request_deferred() by using
 # engine.download() instead of engine.schedule(), losing the usual stuff like
 # spider middlewares (none of which should be important).
+#
+# Other architecture problems:
+# * scrapy.cmdline.execute() creates an AsyncCrawlerProcess instance which
+#   immediately installs a reactor (which is maybe not thread-specific?) or an
+#   event loop (which *is* thread-specific, so the main thread will always have
+#   a (not running) loop installed.
+# * scrapy.commands.shell.Command.run() calls _schedule_coro() in the main
+#   thread, and various engine init code also calls similar things,
+#   conceptually this shouldn't work (and doesn't in the reactorless mode, so
+#   there the initialization is moved to the event loop thread).
+# * The engine has several code paths specifically for the shell, and the shell
+#   uses several private members of the engine and of AsyncCrawlerProcess.
 
 
 class Shell:

@@ -118,7 +118,6 @@ class Command(ScrapyCommand):
         future.result()
 
     def _get_reactorless_loop(self) -> asyncio.AbstractEventLoop:
-        # only needed in the reactorless code path
         assert self.crawler_process
         assert isinstance(self.crawler_process, AsyncCrawlerProcess)
         loop = self.crawler_process._reactorless_loop
