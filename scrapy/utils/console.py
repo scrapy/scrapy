@@ -13,7 +13,7 @@ KnownShellsT = dict[str, Callable[..., EmbedFuncT]]
 
 
 def _embed_ipython_shell(
-    namespace: dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start an IPython Shell"""
     try:
@@ -44,7 +44,7 @@ def _embed_ipython_shell(
 
 
 def _embed_bpython_shell(
-    namespace: dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a bpython shell"""
     import bpython  # noqa: PLC0415
@@ -57,7 +57,7 @@ def _embed_bpython_shell(
 
 
 def _embed_ptpython_shell(
-    namespace: dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a ptpython shell"""
     import ptpython.repl  # noqa: PLC0415  # pylint: disable=import-error
@@ -71,7 +71,7 @@ def _embed_ptpython_shell(
 
 
 def _embed_standard_shell(
-    namespace: dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a standard python shell"""
     try:  # readline module is only available on unix systems

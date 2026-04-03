@@ -31,8 +31,8 @@ class PeriodicLog:
         self,
         stats: StatsCollector,
         interval: float = 60.0,
-        ext_stats: dict[str, Any] = {},
-        ext_delta: dict[str, Any] = {},
+        ext_stats: dict[str, Any] | None = None,
+        ext_delta: dict[str, Any] | None = None,
         ext_timing_enabled: bool = False,
     ):
         self.stats: StatsCollector = stats
