@@ -106,7 +106,7 @@ def curl_to_request_kwargs(
     if argv:
         msg = f"Unrecognized options: {', '.join(argv)}"
         if ignore_unknown_options:
-            warnings.warn(msg)
+            warnings.warn(msg, stacklevel=2)
         else:
             raise ValueError(msg)
 

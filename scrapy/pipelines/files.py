@@ -18,7 +18,7 @@ from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
+from typing import IO, TYPE_CHECKING, Any, ClassVar, NoReturn, Protocol, TypedDict, cast
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -161,7 +161,7 @@ class S3FilesStore:
     AWS_VERIFY = None
 
     POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
-    HEADERS = {
+    HEADERS: ClassVar[dict[str, str]] = {
         "Cache-Control": "max-age=172800",
     }
 
@@ -226,7 +226,7 @@ class S3FilesStore:
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in (meta or {}).items()},
+                Metadata={k: str(v) for k, v in meta.items()} if meta else {},
                 ACL=self.POLICY,
                 **extra,
             )
@@ -269,7 +269,9 @@ class S3FilesStore:
             try:
                 kwarg = mapping[key]
             except KeyError:
-                raise TypeError(f'Header "{key}" is not supported by botocore')
+                raise TypeError(
+                    f'Header "{key}" is not supported by botocore'
+                ) from None
             extra[kwarg] = value
         return extra
 
@@ -339,7 +341,7 @@ class GCSFilesStore:
         blob_path = self._get_blob_path(path)
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
-        blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
+        blob.metadata = {k: str(v) for k, v in meta.items()} if meta else {}
         return deferred_from_coro(
             run_in_thread(
                 blob.upload_from_string,
@@ -435,7 +437,7 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME: str = "file"
     EXPIRES: int = 90
-    STORE_SCHEMES: dict[str, type[FilesStoreProtocol]] = {
+    STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]] = {
         "": FSFilesStore,
         "file": FSFilesStore,
         "s3": S3FilesStore,
@@ -656,7 +658,7 @@ class FilesPipeline(MediaPipeline):
                 exc_info=True,
                 extra={"spider": info.spider},
             )
-            raise FileException(str(exc))
+            raise FileException(str(exc)) from exc
 
         return {
             "url": request.url,

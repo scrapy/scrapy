@@ -5,7 +5,7 @@ import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -47,7 +47,7 @@ def verify_url_scheme(url: str) -> str:
 
 class Command(ScrapyCommand):
     requires_crawler_process = False
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[options] <name> <domain>"

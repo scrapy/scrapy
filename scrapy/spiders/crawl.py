@@ -102,11 +102,12 @@ class CrawlSpider(Spider):
         self._compile_rules()
         if method_is_overridden(self.__class__, CrawlSpider, "_parse_response"):
             warnings.warn(
-                f"The CrawlSpider._parse_response method, which the "
+                "The CrawlSpider._parse_response method, which the "
                 f"{global_object_name(self.__class__)} class overrides, is "
-                f"deprecated: it will be removed in future Scrapy releases. "
-                f"Please override the CrawlSpider.parse_with_rules method "
-                f"instead."
+                "deprecated: it will be removed in future Scrapy releases. "
+                "Please override the CrawlSpider.parse_with_rules method "
+                "instead.",
+                stacklevel=2,
             )
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
@@ -118,7 +119,7 @@ class CrawlSpider(Spider):
         )
 
     def parse_start_url(self, response: Response, **kwargs: Any) -> Any:
-        return []
+        return ()
 
     def process_results(
         self, response: Response, results: Iterable[Any]
@@ -209,8 +210,9 @@ class CrawlSpider(Spider):
     def _compile_rules(self) -> None:
         self._rules = []
         for rule in self.rules:
-            self._rules.append(copy.copy(rule))
-            self._rules[-1]._compile(self)
+            copied_rule = copy.copy(rule)
+            copied_rule._compile(self)
+            self._rules.append(copied_rule)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:

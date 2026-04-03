@@ -415,25 +415,6 @@ ignore = [
     "SIM115",
     # Yoda condition detected
     "SIM300",
-
-    # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
-
-    # Assigning to `os.environ` doesn't clear the environment.
-    "B003",
-    # Do not use mutable data structures for argument defaults.
-    "B006",
-    # Found useless expression.
-    "B018",
-    # No explicit stacklevel argument found.
-    "B028",
-    # Within an `except` clause, raise exceptions with `raise ... from`
-    "B904",
-    # `for` loop variable overwritten by assignment target
-    "PLW2901",
-    # Mutable class attributes should be annotated with `typing.ClassVar`
-    "RUF012",
-    # Use capitalized environment variable
-    "SIM112",
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -453,8 +434,28 @@ split-on-trailing-comma = false
 "scrapy/linkextractors/__init__.py" = ["E402"]
 "scrapy/spiders/__init__.py" = ["E402"]
 
-# Skip bandit and allow blocking file I/O in tests
-"tests/**" = ["ASYNC240", "S"]
+"tests/**" = [
+    # Skip bandit and allow blocking file I/O in tests
+    "ASYNC240",
+    "S",
+    # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
+    # Assigning to `os.environ` doesn't clear the environment.
+    "B003",
+    # Do not use mutable data structures for argument defaults.
+    "B006",
+    # Found useless expression.
+    "B018",
+    # No explicit stacklevel argument found.
+    "B028",
+    # Within an `except` clause, raise exceptions with `raise ... from`
+    "B904",
+    # `for` loop variable overwritten by assignment target
+    "PLW2901",
+    # Mutable class attributes should be annotated with `typing.ClassVar`
+    "RUF012",
+    # Use capitalized environment variable
+    "SIM112",
+]
 
 # Issues pending a review:
 "docs/conf.py" = ["E402"]

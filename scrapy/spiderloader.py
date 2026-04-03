@@ -77,6 +77,7 @@ class SpiderLoader:
             warnings.warn(
                 "There are several spiders with the same name:\n\n"
                 f"{dupes_string}\n\n  This can cause unexpected behavior.",
+                stacklevel=2,
                 category=UserWarning,
             )
 
@@ -96,6 +97,7 @@ class SpiderLoader:
                         f"\n{traceback.format_exc()}Could not load spiders "
                         f"from module '{name}'. "
                         "See above traceback for details.",
+                        stacklevel=2,
                         category=RuntimeWarning,
                     )
                 else:
@@ -114,7 +116,7 @@ class SpiderLoader:
         try:
             return self._spiders[spider_name]
         except KeyError:
-            raise KeyError(f"Spider not found: {spider_name}")
+            raise KeyError(f"Spider not found: {spider_name}") from None
 
     def find_by_request(self, request: Request) -> list[str]:
         """

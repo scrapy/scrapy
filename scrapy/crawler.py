@@ -663,7 +663,7 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
         # We pass self, which is CrawlerProcess, instead of Crawler here,
         # which works because the default resolvers only use crawler.settings.
-        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]
+        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[call-overload]
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
