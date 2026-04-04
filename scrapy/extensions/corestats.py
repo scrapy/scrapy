@@ -43,8 +43,7 @@ class CoreStats:
     def spider_closed(self, spider: Spider, reason: str) -> None:
         assert self.start_time is not None
         assert self._start_time_mono is not None
-        finish_time = datetime.now(tz=timezone.utc)
-        finish_time_mono = monotonic()
+        finish_time, finish_time_mono = datetime.now(tz=timezone.utc), monotonic()
         elapsed_time_seconds = finish_time_mono - self._start_time_mono
         self.stats.set_value("elapsed_time_seconds", elapsed_time_seconds)
         self.stats.set_value("finish_time", finish_time)
