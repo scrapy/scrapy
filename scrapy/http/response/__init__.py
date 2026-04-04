@@ -248,13 +248,24 @@ class Response(object_ref):
     ) -> Iterable[Request]:
         """
         Return an iterable of :class:`~.Request` instances to follow all links
-        in ``urls``. It accepts the same arguments as ``Request.__init__()`` method,
-        but elements of ``urls`` can be relative URLs or :class:`~scrapy.link.Link` objects,
-        not only absolute URLs.
+        in ``urls``. It accepts the same arguments as ``Request.__init__()``
+        method, but elements of ``urls`` can be relative URLs or
+        :class:`~scrapy.link.Link` objects, not only absolute URLs.
 
         :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow_all`
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
+
+        .. warning::
+
+            The ``cb_kwargs`` dict, if provided, is shared across all generated
+            :class:`~.Request` objects. To pass independent keyword arguments
+            to each callback, use a generator with
+            :meth:`~scrapy.http.Response.follow` instead::
+
+                def parse(self, response):
+                    for i, url in enumerate(response.css('a::attr(href)')):
+                        yield response.follow(url, cb_kwargs={"index": i})
         """
         if not hasattr(urls, "__iter__"):
             raise TypeError("'urls' argument must be an iterable")
