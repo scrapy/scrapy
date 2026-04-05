@@ -143,7 +143,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
             raise ValueError(f"{item!r} not found in the {name} setting ({value!r}).")
         self.set(name, [v for v in value if v != item], self.getpriority(name) or 0)
 
-    def get(self, name: _SettingsKey, default: Any = None) -> Any:
+    def get(self, key: _SettingsKey, default: Any = None) -> Any:
         """
         Get a setting value without affecting its original type.
 
@@ -153,8 +153,8 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         :param default: the value to return if no setting is found
         :type default: object
         """
-        if name == "CONCURRENT_REQUESTS_PER_IP" and (
-            isinstance(self[name], int) and self[name] != 0
+        if key == "CONCURRENT_REQUESTS_PER_IP" and (
+            isinstance(self[key], int) and self[key] != 0
         ):
             warnings.warn(
                 "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead.",
@@ -162,7 +162,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
                 stacklevel=2,
             )
 
-        return self[name] if self[name] is not None else default
+        return self[key] if self[key] is not None else default
 
     def getbool(self, name: _SettingsKey, default: bool = False) -> bool:
         """
@@ -482,15 +482,15 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
 
     def setdefault(
         self,
-        name: _SettingsKey,
+        key: _SettingsKey,
         default: Any = None,
         priority: int | str = "project",
     ) -> Any:
-        if name not in self:
-            self.set(name, default, priority)
+        if key not in self:
+            self.set(key, default, priority)
             return default
 
-        return self.attributes[name].value
+        return self.attributes[key].value
 
     def setdefault_in_component_priority_dict(
         self, name: _SettingsKey, cls: type, priority: int | None
@@ -661,14 +661,14 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         else:
             p.text(pformat(self.copy_to_dict()))
 
-    def pop(self, name: _SettingsKey, default: Any = __default) -> Any:
+    def pop(self, key: _SettingsKey, default: Any = __default) -> Any:
         try:
-            value = self.attributes[name].value
+            value = self.attributes[key].value
         except KeyError:
             if default is self.__default:
                 raise
             return default
-        self.__delitem__(name)
+        del self[key]
         return value
 
 

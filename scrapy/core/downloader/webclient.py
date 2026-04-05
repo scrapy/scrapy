@@ -49,8 +49,8 @@ class ScrapyHTTPPageGetter(HTTPClient):
     def lineReceived(self, line):
         return HTTPClient.lineReceived(self, line.rstrip())
 
-    def handleHeader(self, key, value):
-        self.headers.appendlist(key, value)
+    def handleHeader(self, key, val):
+        self.headers.appendlist(key, val)
 
     def handleStatus(self, version, status, message):
         self.factory.gotStatus(version, status, message)

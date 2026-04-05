@@ -274,7 +274,7 @@ class ExecutionEngine:
         """
         assert self._start is not None
         try:
-            item_or_request = await self._start.__anext__()
+            item_or_request = await anext(self._start)
         except StopAsyncIteration:
             self._start = None
         except Exception as exception:

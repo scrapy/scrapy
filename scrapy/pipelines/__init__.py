@@ -35,16 +35,16 @@ class ItemPipelineManager(MiddlewareManager):
     def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
         return build_component_list(settings.getwithbase("ITEM_PIPELINES"))
 
-    def _add_middleware(self, pipe: Any) -> None:
-        if hasattr(pipe, "open_spider"):
-            self.methods["open_spider"].append(pipe.open_spider)
-            self._check_mw_method_spider_arg(pipe.open_spider)
-        if hasattr(pipe, "close_spider"):
-            self.methods["close_spider"].appendleft(pipe.close_spider)
-            self._check_mw_method_spider_arg(pipe.close_spider)
-        if hasattr(pipe, "process_item"):
-            self.methods["process_item"].append(pipe.process_item)
-            self._check_mw_method_spider_arg(pipe.process_item)
+    def _add_middleware(self, mw: Any) -> None:
+        if hasattr(mw, "open_spider"):
+            self.methods["open_spider"].append(mw.open_spider)
+            self._check_mw_method_spider_arg(mw.open_spider)
+        if hasattr(mw, "close_spider"):
+            self.methods["close_spider"].appendleft(mw.close_spider)
+            self._check_mw_method_spider_arg(mw.close_spider)
+        if hasattr(mw, "process_item"):
+            self.methods["process_item"].append(mw.process_item)
+            self._check_mw_method_spider_arg(mw.process_item)
 
     def process_item(self, item: Any, spider: Spider) -> Deferred[Any]:
         warnings.warn(

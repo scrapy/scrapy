@@ -669,17 +669,17 @@ class _ResponseReader(Protocol):
             assert hostname is not None
             _log_ssl_conn_debug_info(hostname, connection)
 
-    def dataReceived(self, bodyBytes: bytes) -> None:
+    def dataReceived(self, data: bytes) -> None:
         # This maybe called several times after cancel was called with buffered data.
         if self._finished.called:
             return
 
         assert self.transport
-        self._bodybuf.write(bodyBytes)
-        self._bytes_received += len(bodyBytes)
+        self._bodybuf.write(data)
+        self._bytes_received += len(data)
 
         if stop_download := check_stop_download(
-            signals.bytes_received, self._crawler, self._request, data=bodyBytes
+            signals.bytes_received, self._crawler, self._request, data=data
         ):
             self.transport.stopProducing()
             self.transport.loseConnection()

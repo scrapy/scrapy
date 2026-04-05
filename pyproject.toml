@@ -200,6 +200,7 @@ jobs = 1          # >1 hides results
 extension-pkg-allow-list=[
     "lxml",
 ]
+load-plugins = ["pylint_per_file_ignores"]
 
 [tool.pylint."MESSAGES CONTROL"]
 enable = [
@@ -259,15 +260,13 @@ disable = [
     "unused-import",
 
     # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
-    "abstract-method",
     "arguments-differ",
-    "arguments-renamed",
-    "dangerous-default-value",
     "keyword-arg-before-vararg",
-    "pointless-statement",
-    "raise-missing-from",
-    "unnecessary-dunder-call",
-    "used-before-assignment",
+]
+# requiers `pylint_per_file_ignores`plugin
+per-file-ignores = [
+    # Extended list of ones that we may want to address, but for tests and docs
+    "./tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unnecessary-dunder-call,used-before-assignment",
 ]
 
 [tool.pytest.ini_options]

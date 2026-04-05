@@ -73,6 +73,6 @@ class TestProcessProtocol(ProcessProtocol):
     def errReceived(self, data: bytes) -> None:
         self.err += data
 
-    def processEnded(self, status: Failure) -> None:
-        self.exitcode = cast("ProcessTerminated", status.value).exitCode
+    def processEnded(self, reason: Failure) -> None:
+        self.exitcode = cast("ProcessTerminated", reason.value).exitCode
         self.deferred.callback(self)
