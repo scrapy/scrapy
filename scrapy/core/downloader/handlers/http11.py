@@ -6,6 +6,7 @@ import ipaddress
 import logging
 import re
 from contextlib import suppress
+from functools import partial
 from io import BytesIO
 from time import time
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
@@ -547,11 +548,7 @@ class ScrapyAgent:
                 get_warnsize_msg(expected_size, warnsize, request, expected=True)
             )
 
-        def _cancel(_: Any) -> None:
-            # Abort connection immediately.
-            txresponse._transport._producer.abortConnection()
-
-        d: Deferred[_ResultT] = Deferred(_cancel)
+        d: Deferred[_ResultT] = Deferred(partial(self._cancel, txresponse=txresponse))
         txresponse.deliverBody(
             _ResponseReader(
                 finished=d,
@@ -569,6 +566,11 @@ class ScrapyAgent:
         self._txresponse = txresponse
 
         return d
+
+    @staticmethod
+    def _cancel(_: Any, txresponse: TxResponse) -> None:
+        # Abort connection immediately.
+        txresponse._transport._producer.abortConnection()
 
     def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
