@@ -169,7 +169,7 @@ def _get_method(obj: Any, name: Any) -> Any:
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError(f"Method {name!r} not found in: {obj}")
+        raise ValueError(f"Method {name!r} not found in: {obj}") from None
 
 
 def request_to_curl(request: Request) -> str:

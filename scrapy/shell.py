@@ -45,9 +45,9 @@ class Shell:
         code: str | None = None,
     ):
         self.crawler: Crawler = crawler
-        if not crawler.settings.getbool("TWISTED_ENABLED"):  # pragma: no cover
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):  # pragma: no cover
             raise RuntimeError(
-                f"{global_object_name(self.__class__)} currently doesn't support TWISTED_ENABLED=False."
+                f"{global_object_name(self.__class__)} currently doesn't support TWISTED_REACTOR_ENABLED=False."
             )
         self.update_vars: Callable[[dict[str, Any]], None] = update_vars or (
             lambda x: None

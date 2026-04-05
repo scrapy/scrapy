@@ -128,7 +128,7 @@ def get_reactor_settings() -> dict[str, Any]:
         # running some 3rd-party library tests without initializing a reactor
         # properly. The first two cases are fine, but we cannot distinguish the
         # last one from them.
-        settings["TWISTED_ENABLED"] = False
+        settings["TWISTED_REACTOR_ENABLED"] = False
         settings["DOWNLOAD_HANDLERS"] = {
             "ftp": None,
             "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",

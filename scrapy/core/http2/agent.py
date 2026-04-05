@@ -43,6 +43,10 @@ class H2ConnectionPool:
             ConnectionKeyT, deque[Deferred[H2ClientProtocol]]
         ] = {}
 
+        self._tls_verbose_logging: bool = settings.getbool(
+            "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
+        )
+
     def get_connection(
         self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
     ) -> Deferred[H2ClientProtocol]:
@@ -71,7 +75,12 @@ class H2ConnectionPool:
         conn_lost_deferred: Deferred[list[BaseException]] = Deferred()
         conn_lost_deferred.addCallback(self._remove_connection, key)
 
-        factory = H2ClientFactory(uri, self.settings, conn_lost_deferred)
+        factory = H2ClientFactory(
+            uri,
+            self.settings,
+            conn_lost_deferred,
+            tls_verbose_logging=self._tls_verbose_logging,
+        )
         conn_d = endpoint.connect(factory)
         conn_d.addCallback(self.put_connection, key)
 

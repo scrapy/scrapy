@@ -2,7 +2,7 @@ import argparse
 import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, ClassVar
 from unittest import TextTestResult as _TextTestResult
 from unittest import TextTestRunner
 
@@ -44,7 +44,7 @@ class TextTestResult(_TextTestResult):
 
 class Command(ScrapyCommand):
     requires_project = True
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[options] <spider>"

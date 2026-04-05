@@ -22,6 +22,8 @@ from scrapy.utils._download_handlers import (
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from hpack import HeaderTuple
 
     from scrapy.core.http2.protocol import H2ClientProtocol
@@ -150,7 +152,7 @@ class Stream:
             # flow control window
             "flow_controlled_size": 0,
             # Headers received after sending the request
-            "headers": Headers({}),
+            "headers": Headers(),
         }
 
         def _cancel(_: Any) -> None:
@@ -391,7 +393,7 @@ class Stream:
     def close(
         self,
         reason: StreamCloseReason,
-        errors: list[BaseException] | None = None,
+        errors: Sequence[BaseException] | None = None,
         from_protocol: bool = False,
     ) -> None:
         """Based on the reason sent we will handle each case."""
@@ -405,7 +407,7 @@ class Stream:
 
         # Have default value of errors as an empty list as
         # some cases can add a list of exceptions
-        errors = errors or []
+        errors = errors or ()
 
         if not from_protocol:
             self._protocol.pop_stream(self.stream_id)
@@ -470,7 +472,7 @@ class Stream:
             self._deferred_response.errback(ResponseFailed(errors))
 
         elif reason is StreamCloseReason.INACTIVE:
-            errors.insert(0, InactiveStreamClosed(self._request))
+            errors = (InactiveStreamClosed(self._request), *errors)
             self._deferred_response.errback(ResponseFailed(errors))
 
         else:

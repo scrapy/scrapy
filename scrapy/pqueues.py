@@ -350,8 +350,9 @@ class DownloaderAwarePriorityQueue:
         self.crawler: Crawler = crawler
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
-        for slot, startprios in (slot_startprios or {}).items():
-            self.pqueues[slot] = self.pqfactory(slot, startprios)
+        if slot_startprios:
+            for slot, startprios in slot_startprios.items():
+                self.pqueues[slot] = self.pqfactory(slot, startprios)
 
     def pqfactory(
         self, slot: str, startprios: Iterable[int] = ()

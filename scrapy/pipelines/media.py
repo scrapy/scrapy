@@ -230,9 +230,9 @@ class MediaPipeline(ABC):
         if isinstance(result, Failure):
             # minimize cached information for failure
             result.cleanFailure()
-            result.frames = []
+            result.frames.clear()
             if TWISTED_FAILURE_HAS_STACK:
-                result.stack = []  # type: ignore[method-assign]
+                result.stack.clear()
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
             #

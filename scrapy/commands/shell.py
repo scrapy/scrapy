@@ -7,7 +7,7 @@ See documentation in docs/topics/shell.rst
 from __future__ import annotations
 
 from threading import Thread
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class Command(ScrapyCommand):
-    default_settings = {
+    default_settings: ClassVar[dict[str, Any]] = {
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "KEEP_ALIVE": True,
         "LOGSTATS_INTERVAL": 0,
@@ -83,9 +83,9 @@ class Command(ScrapyCommand):
         # crawling engine, so the set up in the crawl method won't work
         crawler = self.crawler_process._create_crawler(spidercls)
         crawler._apply_settings()
-        if not crawler.settings.getbool("TWISTED_ENABLED"):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise RuntimeError(
-                "scrapy shell currently doesn't support TWISTED_ENABLED=False"
+                "scrapy shell currently doesn't support TWISTED_REACTOR_ENABLED=False"
             )
         # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()

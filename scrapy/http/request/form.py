@@ -8,7 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
 from parsel.csstranslator import HTMLTranslator
@@ -39,7 +39,7 @@ FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
 class FormRequest(Request):
     __slots__ = ()
 
-    valid_form_methods = ["GET", "POST"]
+    valid_form_methods: ClassVar[list[str]] = ["GET", "POST"]
 
     def __init__(
         self, *args: Any, formdata: FormdataType = None, **kwargs: Any
@@ -153,7 +153,7 @@ def _get_form(
     try:
         form = forms[formnumber]
     except IndexError:
-        raise IndexError(f"Form number {formnumber} not found in {response}")
+        raise IndexError(f"Form number {formnumber} not found in {response}") from None
     return cast("FormElement", form)
 
 
@@ -167,7 +167,7 @@ def _get_inputs(
     try:
         formdata_keys = dict(formdata or ()).keys()
     except (ValueError, TypeError):
-        raise ValueError("formdata should be a dict or iterable of tuples")
+        raise ValueError("formdata should be a dict or iterable of tuples") from None
 
     if not formdata:
         formdata = []
