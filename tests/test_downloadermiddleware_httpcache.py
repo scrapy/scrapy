@@ -8,16 +8,17 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from twisted.internet.task import deferLater
 
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.test import get_crawler
+from tests.utils import async_sleep
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import AsyncGenerator
 
     from scrapy.crawler import Crawler
 
@@ -57,7 +58,7 @@ class TestBase:
         return settings
 
     @asynccontextmanager
-    async def _get_crawler(self, **new_settings: Any) -> Generator[Crawler]:
+    async def _get_crawler(self, **new_settings: Any) -> AsyncGenerator[Crawler, None]:
         settings = self._get_settings(**new_settings)
         crawler = get_crawler(Spider, settings)
         crawler.spider = crawler._create_spider("example.com")
@@ -69,12 +70,16 @@ class TestBase:
             crawler.stats.close_spider()
 
     @asynccontextmanager
-    async def _storage(self, **new_settings: Any):
+    async def _storage(
+        self, **new_settings: Any
+    ) -> AsyncGenerator[tuple[Any, Crawler], None]:
         async with self._middleware(**new_settings) as mw:
             yield mw.storage, mw.crawler
 
     @asynccontextmanager
-    async def _middleware(self, **new_settings: Any) -> Generator[HttpCacheMiddleware]:
+    async def _middleware(
+        self, **new_settings: Any
+    ) -> AsyncGenerator[HttpCacheMiddleware, None]:
         async with self._get_crawler(**new_settings) as crawler:
             assert crawler.spider
             mw = HttpCacheMiddleware.from_crawler(crawler)
@@ -94,44 +99,82 @@ class TestBase:
 class StorageTestMixin:
     """Mixin containing storage-specific test methods."""
 
-    async def test_storage(self):
-        from twisted.internet import reactor
+    def test_storage(self):
+        async def _test():
+            async with self._storage() as (storage, crawler):
+                request2 = self.request.copy()
+                assert (
+                    await ensure_awaitable(
+                        storage.retrieve_response(crawler.spider, request2)
+                    )
+                    is None
+                )
 
-        async with self._storage() as (storage, crawler):
-            request2 = self.request.copy()
-            assert storage.retrieve_response(crawler.spider, request2) is None
+                await ensure_awaitable(
+                    storage.store_response(crawler.spider, self.request, self.response)
+                )
+                response2 = await ensure_awaitable(
+                    storage.retrieve_response(crawler.spider, request2)
+                )
+                assert isinstance(response2, HtmlResponse)  # content-type header
+                self.assertEqualResponse(self.response, response2)
 
-            storage.store_response(crawler.spider, self.request, self.response)
-            response2 = storage.retrieve_response(crawler.spider, request2)
-            assert isinstance(response2, HtmlResponse)  # content-type header
-            self.assertEqualResponse(self.response, response2)
+                await async_sleep(2)  # wait for cache to expire
+                assert (
+                    await ensure_awaitable(
+                        storage.retrieve_response(crawler.spider, request2)
+                    )
+                    is None
+                )
 
-            await deferLater(reactor, 2, lambda: None)  # wait for cache to expire
-            assert storage.retrieve_response(crawler.spider, request2) is None
+        return deferred_from_coro(_test())
 
-    async def test_storage_never_expire(self):
-        from twisted.internet import reactor
+    def test_storage_never_expire(self):
+        async def _test():
+            async with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as (storage, crawler):
+                assert (
+                    await ensure_awaitable(
+                        storage.retrieve_response(crawler.spider, self.request)
+                    )
+                    is None
+                )
+                await ensure_awaitable(
+                    storage.store_response(crawler.spider, self.request, self.response)
+                )
+                await async_sleep(0.5)  # give the chance to expire
+                assert await ensure_awaitable(
+                    storage.retrieve_response(crawler.spider, self.request)
+                )
 
-        async with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as (storage, crawler):
-            assert storage.retrieve_response(crawler.spider, self.request) is None
-            storage.store_response(crawler.spider, self.request, self.response)
-            await deferLater(reactor, 0.5, lambda: None)  # give the chance to expire
-            assert storage.retrieve_response(crawler.spider, self.request)
+        return deferred_from_coro(_test())
 
-    async def test_storage_no_content_type_header(self):
+    def test_storage_no_content_type_header(self):
         """Test that the response body is used to get the right response class
         even if there is no Content-Type header"""
-        async with self._storage() as (storage, crawler):
-            assert storage.retrieve_response(crawler.spider, self.request) is None
-            response = Response(
-                "http://www.example.com",
-                body=b"<!DOCTYPE html>\n<title>.</title>",
-                status=202,
-            )
-            storage.store_response(crawler.spider, self.request, response)
-            cached_response = storage.retrieve_response(crawler.spider, self.request)
-            assert isinstance(cached_response, HtmlResponse)
-            self.assertEqualResponse(response, cached_response)
+
+        async def _test():
+            async with self._storage() as (storage, crawler):
+                assert (
+                    await ensure_awaitable(
+                        storage.retrieve_response(crawler.spider, self.request)
+                    )
+                    is None
+                )
+                response = Response(
+                    "http://www.example.com",
+                    body=b"<!DOCTYPE html>\n<title>.</title>",
+                    status=202,
+                )
+                await ensure_awaitable(
+                    storage.store_response(crawler.spider, self.request, response)
+                )
+                cached_response = await ensure_awaitable(
+                    storage.retrieve_response(crawler.spider, self.request)
+                )
+                assert isinstance(cached_response, HtmlResponse)
+                self.assertEqualResponse(response, cached_response)
+
+        return deferred_from_coro(_test())
 
 
 class PolicyTestMixin:
