@@ -101,7 +101,7 @@ def set_asyncio_event_loop_policy() -> None:
     if sys.platform == "win32" and not isinstance(
         policy, asyncio.WindowsSelectorEventLoopPolicy
     ):
-        policy = asyncio.WindowsSelectorEventLoopPolicy()  # pylint: disable=deprecated-class
+        policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
 
 
