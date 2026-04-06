@@ -13,9 +13,10 @@ from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
-from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
+from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.test import get_crawler
 from tests.utils import async_sleep
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -99,82 +100,75 @@ class TestBase:
 class StorageTestMixin:
     """Mixin containing storage-specific test methods."""
 
-    def test_storage(self):
-        async def _test():
-            async with self._storage() as (storage, crawler):
-                request2 = self.request.copy()
-                assert (
-                    await ensure_awaitable(
-                        storage.retrieve_response(crawler.spider, request2)
-                    )
-                    is None
-                )
-
+    @coroutine_test
+    async def test_storage(self):
+        async with self._storage() as (storage, crawler):
+            request2 = self.request.copy()
+            assert (
                 await ensure_awaitable(
-                    storage.store_response(crawler.spider, self.request, self.response)
-                )
-                response2 = await ensure_awaitable(
                     storage.retrieve_response(crawler.spider, request2)
                 )
-                assert isinstance(response2, HtmlResponse)  # content-type header
-                self.assertEqualResponse(self.response, response2)
+                is None
+            )
 
-                await async_sleep(2)  # wait for cache to expire
-                assert (
-                    await ensure_awaitable(
-                        storage.retrieve_response(crawler.spider, request2)
-                    )
-                    is None
-                )
+            await ensure_awaitable(
+                storage.store_response(crawler.spider, self.request, self.response)
+            )
+            response2 = await ensure_awaitable(
+                storage.retrieve_response(crawler.spider, request2)
+            )
+            assert isinstance(response2, HtmlResponse)  # content-type header
+            self.assertEqualResponse(self.response, response2)
 
-        return deferred_from_coro(_test())
-
-    def test_storage_never_expire(self):
-        async def _test():
-            async with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as (storage, crawler):
-                assert (
-                    await ensure_awaitable(
-                        storage.retrieve_response(crawler.spider, self.request)
-                    )
-                    is None
-                )
+            await async_sleep(2)  # wait for cache to expire
+            assert (
                 await ensure_awaitable(
-                    storage.store_response(crawler.spider, self.request, self.response)
+                    storage.retrieve_response(crawler.spider, request2)
                 )
-                await async_sleep(0.5)  # give the chance to expire
-                assert await ensure_awaitable(
+                is None
+            )
+
+    @coroutine_test
+    async def test_storage_never_expire(self):
+        async with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as (storage, crawler):
+            assert (
+                await ensure_awaitable(
                     storage.retrieve_response(crawler.spider, self.request)
                 )
+                is None
+            )
+            await ensure_awaitable(
+                storage.store_response(crawler.spider, self.request, self.response)
+            )
+            await async_sleep(0.5)  # give the chance to expire
+            assert await ensure_awaitable(
+                storage.retrieve_response(crawler.spider, self.request)
+            )
 
-        return deferred_from_coro(_test())
-
-    def test_storage_no_content_type_header(self):
+    @coroutine_test
+    async def test_storage_no_content_type_header(self):
         """Test that the response body is used to get the right response class
         even if there is no Content-Type header"""
-
-        async def _test():
-            async with self._storage() as (storage, crawler):
-                assert (
-                    await ensure_awaitable(
-                        storage.retrieve_response(crawler.spider, self.request)
-                    )
-                    is None
-                )
-                response = Response(
-                    "http://www.example.com",
-                    body=b"<!DOCTYPE html>\n<title>.</title>",
-                    status=202,
-                )
+        async with self._storage() as (storage, crawler):
+            assert (
                 await ensure_awaitable(
-                    storage.store_response(crawler.spider, self.request, response)
-                )
-                cached_response = await ensure_awaitable(
                     storage.retrieve_response(crawler.spider, self.request)
                 )
-                assert isinstance(cached_response, HtmlResponse)
-                self.assertEqualResponse(response, cached_response)
-
-        return deferred_from_coro(_test())
+                is None
+            )
+            response = Response(
+                "http://www.example.com",
+                body=b"<!DOCTYPE html>\n<title>.</title>",
+                status=202,
+            )
+            await ensure_awaitable(
+                storage.store_response(crawler.spider, self.request, response)
+            )
+            cached_response = await ensure_awaitable(
+                storage.retrieve_response(crawler.spider, self.request)
+            )
+            assert isinstance(cached_response, HtmlResponse)
+            self.assertEqualResponse(response, cached_response)
 
 
 class PolicyTestMixin:
