@@ -11,6 +11,7 @@ import pytest
 
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
+from scrapy.extensions.httpcache import FilesystemCacheStorage
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
@@ -179,14 +180,21 @@ class PolicyTestMixin:
         async with self._middleware() as mw:
             self.request.meta["dont_cache"] = True
             await mw.process_response(self.request, self.response)
-            assert mw.storage.retrieve_response(mw.crawler.spider, self.request) is None
+            assert (
+                await ensure_awaitable(
+                    mw.storage.retrieve_response(mw.crawler.spider, self.request)
+                )
+                is None
+            )
 
         async with self._middleware() as mw:
             self.request.meta["dont_cache"] = False
             await mw.process_response(self.request, self.response)
             if mw.policy.should_cache_response(self.response, self.request):
                 assert isinstance(
-                    mw.storage.retrieve_response(mw.crawler.spider, self.request),
+                    await ensure_awaitable(
+                        mw.storage.retrieve_response(mw.crawler.spider, self.request)
+                    ),
                     self.response.__class__,
                 )
 
@@ -246,7 +254,12 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert await mw.process_request(req) is None
             await mw.process_response(req, res)
 
-            assert mw.storage.retrieve_response(mw.crawler.spider, req) is None
+            assert (
+                await ensure_awaitable(
+                    mw.storage.retrieve_response(mw.crawler.spider, req)
+                )
+                is None
+            )
             assert await mw.process_request(req) is None
 
         # s3 scheme response is cached by default
@@ -266,7 +279,12 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert await mw.process_request(req) is None
             await mw.process_response(req, res)
 
-            assert mw.storage.retrieve_response(mw.crawler.spider, req) is None
+            assert (
+                await ensure_awaitable(
+                    mw.storage.retrieve_response(mw.crawler.spider, req)
+                )
+                is None
+            )
             assert await mw.process_request(req) is None
 
     @coroutine_test
@@ -276,7 +294,12 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert await mw.process_request(self.request) is None
             await mw.process_response(self.request, self.response)
 
-            assert mw.storage.retrieve_response(mw.crawler.spider, self.request) is None
+            assert (
+                await ensure_awaitable(
+                    mw.storage.retrieve_response(mw.crawler.spider, self.request)
+                )
+                is None
+            )
             assert await mw.process_request(self.request) is None
 
         # test response is cached
@@ -323,7 +346,12 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             # response for a request with no-store must not be cached
             res1 = await self._process_requestresponse(mw, req1, res0)
             self.assertEqualResponse(res1, res0)
-            assert mw.storage.retrieve_response(mw.crawler.spider, req1) is None
+            assert (
+                await ensure_awaitable(
+                    mw.storage.retrieve_response(mw.crawler.spider, req1)
+                )
+                is None
+            )
             # Re-do request without no-store and expect it to be cached
             res2 = await self._process_requestresponse(mw, req0, res0)
             assert "cached" not in res2.flags
@@ -384,7 +412,9 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                 )
                 self.assertEqualResponse(res1, res0)
                 self.assertEqualResponse(res2, res0)
-                resc = mw.storage.retrieve_response(mw.crawler.spider, req0)
+                resc = await ensure_awaitable(
+                    mw.storage.retrieve_response(mw.crawler.spider, req0)
+                )
                 if shouldcache:
                     self.assertEqualResponse(resc, res1)
                     assert "cached" in res2.flags
@@ -604,6 +634,26 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                 assert "cached" in res2.flags
 
 
+class AsyncDummyCacheStorage(FilesystemCacheStorage):
+    """A simple async storage that wraps FilesystemCacheStorage for testing."""
+
+    async def open_spider(self, spider):
+        await async_sleep(0.01)
+        super().open_spider(spider)
+
+    async def close_spider(self, spider):
+        await async_sleep(0.01)
+        super().close_spider(spider)
+
+    async def retrieve_response(self, spider, request):
+        await async_sleep(0.01)
+        return super().retrieve_response(spider, request)
+
+    async def store_response(self, spider, request, response):
+        await async_sleep(0.01)
+        super().store_response(spider, request, response)
+
+
 # Concrete test classes that combine storage and policy mixins
 
 
@@ -651,3 +701,8 @@ class TestFilesystemStorageGzipWithDummyPolicy(TestFilesystemStorageWithDummyPol
     def _get_settings(self, **new_settings) -> dict[str, Any]:
         new_settings.setdefault("HTTPCACHE_GZIP", True)
         return super()._get_settings(**new_settings)
+
+
+class TestAsyncStorageWithDummyPolicy(TestBase, StorageTestMixin, DummyPolicyTestMixin):
+    storage_class = f"{__name__}.AsyncDummyCacheStorage"
+    policy_class = "scrapy.extensions.httpcache.DummyPolicy"
