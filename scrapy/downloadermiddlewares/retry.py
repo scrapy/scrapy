@@ -25,11 +25,11 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    import scrapy
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.http.request import Request
     from scrapy.settings import BaseSettings
-    from scrapy.spiders import Spider
 
 
 retry_logger = getLogger(__name__)
@@ -38,7 +38,7 @@ retry_logger = getLogger(__name__)
 def get_retry_request(
     request: Request,
     *,
-    spider: Spider,
+    spider: scrapy.Spider,
     reason: str | Exception | type[Exception] = "unspecified",
     max_retry_times: int | None = None,
     priority_adjust: int | None = None,
@@ -145,7 +145,10 @@ class RetryMiddleware:
 
     @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider | None = None
+        self,
+        request: Request,
+        response: Response,
+        spider: scrapy.Spider | None = None,
     ) -> Request | Response:
         if request.meta.get("dont_retry", False):
             return response
@@ -156,7 +159,10 @@ class RetryMiddleware:
 
     @_warn_spider_arg
     def process_exception(
-        self, request: Request, exception: Exception, spider: Spider | None = None
+        self,
+        request: Request,
+        exception: Exception,
+        spider: scrapy.Spider | None = None,
     ) -> Request | Response | None:
         if isinstance(exception, self.exceptions_to_retry) and not request.meta.get(
             "dont_retry", False
