@@ -49,13 +49,13 @@ class Slot:
     delay: float
     randomize_delay: bool
 
-    active: set[Request] = field(default_factory=set, init=False)
+    active: set[Request] = field(default_factory=set, init=False, repr=False)
     queue: deque[tuple[Request, Deferred[Response]]] = field(
-        default_factory=deque, init=False
+        default_factory=deque, init=False, repr=False
     )
-    transferring: set[Request] = field(default_factory=set, init=False)
-    lastseen: float = field(default=0, init=False)
-    latercall: CallLaterResult | None = field(default=None, init=False)
+    transferring: set[Request] = field(default_factory=set, init=False, repr=False)
+    lastseen: float = field(default=0, init=False, repr=False)
+    latercall: CallLaterResult | None = field(default=None, init=False, repr=False)
 
     def free_transfer_slots(self) -> int:
         return self.concurrency - len(self.transferring)
@@ -69,13 +69,6 @@ class Slot:
         if self.latercall:
             self.latercall.cancel()
             self.latercall = None
-
-    def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(concurrency={self.concurrency!r}, "
-            f"delay={self.delay:.2f}, "
-            f"randomize_delay={self.randomize_delay!r})"
-        )
 
     def __str__(self) -> str:
         return (
