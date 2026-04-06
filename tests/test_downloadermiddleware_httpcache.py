@@ -174,6 +174,7 @@ class StorageTestMixin:
 class PolicyTestMixin:
     """Mixin containing policy-specific test methods."""
 
+    @coroutine_test
     async def test_dont_cache(self):
         async with self._middleware() as mw:
             self.request.meta["dont_cache"] = True
@@ -193,6 +194,7 @@ class PolicyTestMixin:
 class DummyPolicyTestMixin(PolicyTestMixin):
     """Mixin containing dummy policy specific test methods."""
 
+    @coroutine_test
     async def test_middleware(self):
         async with self._middleware() as mw:
             assert await mw.process_request(self.request) is None
@@ -202,6 +204,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
 
+    @coroutine_test
     async def test_different_request_response_urls(self):
         async with self._middleware() as mw:
             req = Request("http://host.com/path")
@@ -213,6 +216,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             self.assertEqualResponse(res, cached)
             assert "cached" in cached.flags
 
+    @coroutine_test
     async def test_middleware_ignore_missing(self):
         async with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
             with pytest.raises(IgnoreRequest):
@@ -223,6 +227,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
 
+    @coroutine_test
     async def test_middleware_ignore_schemes(self):
         # http responses are cached by default
         req, res = Request("http://test.com/"), Response("http://test.com/")
@@ -264,6 +269,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert mw.storage.retrieve_response(mw.crawler.spider, req) is None
             assert await mw.process_request(req) is None
 
+    @coroutine_test
     async def test_middleware_ignore_http_codes(self):
         # test response is not cached
         async with self._middleware(HTTPCACHE_IGNORE_HTTP_CODES=[202]) as mw:
@@ -305,6 +311,7 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             print("Result", result)
             raise
 
+    @coroutine_test
     async def test_request_cacheability(self):
         res0 = Response(
             self.request.url, status=200, headers={"Expires": self.tomorrow}
@@ -333,6 +340,7 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             self.assertEqualResponse(res5, res0b)
             assert "cached" in res5.flags
 
+    @coroutine_test
     async def test_response_cacheability(self):
         responses = [
             # 304 is not cacheable no matter what servers sends
@@ -409,6 +417,7 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                     assert not resc
                     assert "cached" not in res2.flags
 
+    @coroutine_test
     async def test_cached_and_fresh(self):
         sampledata = [
             (200, {"Date": self.yesterday, "Expires": self.tomorrow}),
@@ -472,6 +481,7 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                 self.assertEqualResponse(res1, res3)
                 assert "cached" in res3.flags
 
+    @coroutine_test
     async def test_cached_and_stale(self):
         sampledata = [
             (200, {"Date": self.today, "Expires": self.yesterday}),
@@ -552,6 +562,7 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                 else:
                     assert "cached" in res5.flags
 
+    @coroutine_test
     async def test_process_exception(self):
         async with self._middleware() as mw:
             res0 = Response(self.request.url, headers={"Expires": self.yesterday})
@@ -568,6 +579,7 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             await mw.process_request(req0)
             assert mw.process_exception(req0, Exception("foo")) is None
 
+    @coroutine_test
     async def test_ignore_response_cache_controls(self):
         sampledata = [
             (200, {"Date": self.yesterday, "Expires": self.tomorrow}),
@@ -628,6 +640,7 @@ class TestDbmStorageWithCustomDbmModule(TestDbmStorageWithDummyPolicy):
         new_settings.setdefault("HTTPCACHE_DBM_MODULE", self.dbm_module)
         return super()._get_settings(**new_settings)
 
+    @coroutine_test
     async def test_custom_dbm_module_loaded(self):
         # make sure our dbm module has been loaded
         async with self._storage() as (storage, _):
