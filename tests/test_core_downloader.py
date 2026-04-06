@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 class TestSlot:
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
+        assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
