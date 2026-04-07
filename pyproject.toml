@@ -263,7 +263,7 @@ disable = [
     "arguments-differ",
     "keyword-arg-before-vararg",
 ]
-# requiers `pylint_per_file_ignores`plugin
+# requiers `pylint_per_file_ignores` plugin
 per-file-ignores = [
     # Extended list of ones that we may want to address, but for tests and docs
     "./tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unnecessary-dunder-call,used-before-assignment",
