@@ -197,8 +197,6 @@ class Shell:
         """
         if self._use_reactor and is_asyncio_reactor_installed():
             # set the asyncio event loop for the current thread
-            # TODO is this still needed? set_asyncio_event_loop() is already
-            # called by either AsyncCrawlerProcess.__init__() or Crawler._apply_settings()
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
             set_asyncio_event_loop(event_loop_path)
         if not self.spider:
