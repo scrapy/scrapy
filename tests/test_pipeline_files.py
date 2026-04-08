@@ -228,6 +228,9 @@ class TestFilesPipeline:
         ):
             result = await self.pipeline.process_item(item)
             assert result["files"][0]["status"] == "downloaded"
+    
+    
+    
     @coroutine_test
     @pytest.mark.parametrize("status", [201, 202, 206])
     async def test_file_2xx_responses_downloaded(self, status):
