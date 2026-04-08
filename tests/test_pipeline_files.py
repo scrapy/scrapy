@@ -178,6 +178,9 @@ class TestFilesPipeline:
         path = "some/image/key.jpg"
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
+    
+    
+        
 
     @coroutine_test
     async def test_file_not_expired(self):
@@ -199,6 +202,78 @@ class TestFilesPipeline:
             result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
+
+        
+    @coroutine_test
+    async def test_file_201_response_downloaded(self):
+        """Regression test for #1615: 201 Created should be treated as success."""
+        item_url = "http://example.com/file_201.pdf"
+        item = _create_item_with_files(item_url)
+
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(FSFilesStore, "stat_file", return_value={
+                "checksum": "abc",
+                "last_modified": time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2),
+            }),
+            mock.patch.object(FilesPipeline, "get_media_requests", return_value=[
+                _prepare_request_object(item_url, status=201)
+            ]),
+            mock.patch.object(FilesPipeline, "media_downloaded", return_value={
+                "url": item_url,
+                "path": "file_201.pdf",
+                "status": "downloaded",
+                "checksum": "abc"
+            })  
+        ):
+            result = await self.pipeline.process_item(item)
+            assert result["files"][0]["status"] == "downloaded"
+    @coroutine_test
+    @pytest.mark.parametrize("status", [201, 202, 206])
+    async def test_file_2xx_responses_downloaded(self, status):
+        """All 2xx status codes should succeed, not just 200."""
+        item_url = f"http://example.com/file_{status}.pdf"
+        item = _create_item_with_files(item_url)
+
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(FSFilesStore, "stat_file", return_value={
+                "checksum": "abc",
+                "last_modified": time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2),
+            }),
+            mock.patch.object(FilesPipeline, "get_media_requests", return_value=[
+                _prepare_request_object(item_url, status=status)
+            ]),
+            mock.patch.object(FilesPipeline, "media_downloaded", return_value={
+                "url": item_url,
+                "path": f"file_{status}.pdf",
+                "status": "downloaded",
+                "checksum": "abc"
+            })  
+        ):
+            result = await self.pipeline.process_item(item)
+            assert result["files"][0]["status"] == "downloaded"
+
+
+    @coroutine_test
+    @pytest.mark.parametrize("status", [400, 404, 500])
+    async def test_file_error_responses_not_downloaded(self, status):
+        """Non-2xx status codes should result in no files downloaded."""
+        item_url = f"http://example.com/file_{status}.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url, status=status)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        # item_completed is called with the failure, files list should be empty
+        assert result["files"] == []
+
+
 
     @coroutine_test
     async def test_file_expired(self):
@@ -757,10 +832,10 @@ def _create_item_with_files(*files: str) -> ItemWithFiles:
     return item
 
 
-def _prepare_request_object(item_url: str, flags: list[str] | None = None) -> Request:
+def _prepare_request_object(item_url: str, flags: list[str] | None = None, status: int = 200) -> Request:
     return Request(
         item_url,
-        meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},
+        meta={"response": Response(item_url, status=status, body=b"data", flags=flags)},
     )
 
 
