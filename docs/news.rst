@@ -5250,7 +5250,7 @@ New features
     components already supported (:issue:`4126`)
 
 *   :class:`scrapy.utils.python.MutableChain.__iter__` now returns ``self``,
-    `allowing it to be used as a sequence <https://lgtm.com/rules/4850080/>`_
+    allowing it to be used as a sequence.
     (:issue:`4153`)
 
 
@@ -7191,8 +7191,7 @@ Keep reading for more details on other improvements and bug fixes.
 Beta Python 3 Support
 ~~~~~~~~~~~~~~~~~~~~~
 
-We have been `hard at work to make Scrapy run on Python 3
-<https://github.com/scrapy/scrapy/wiki/Python-3-Porting>`_. As a result, now
+We have been hard at work to make Scrapy run on Python 3. As a result, now
 you can run spiders on Python 3.3, 3.4 and 3.5 (Twisted >= 15.5 required). Some
 features are still missing (and some may never be ported).
 

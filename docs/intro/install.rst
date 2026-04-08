@@ -273,7 +273,7 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _setuptools: https://pypi.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
-.. _Anaconda: https://docs.anaconda.com/anaconda/
+.. _Anaconda: https://www.anaconda.com/docs/main
 .. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
 .. _Visual Studio: https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio
 .. _Microsoft C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/

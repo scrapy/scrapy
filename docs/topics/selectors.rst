@@ -983,9 +983,9 @@ Here we first iterate over ``itemscope`` elements, and for each one,
 we look for all ``itemprops`` elements and exclude those that are themselves
 inside another ``itemscope``.
 
-.. _EXSLT: http://exslt.org/
-.. _regular expressions: http://exslt.org/regexp/index.html
-.. _set manipulation: http://exslt.org/set/index.html
+.. _EXSLT: https://exslt.github.io/
+.. _regular expressions: https://exslt.github.io/regexp/index.html
+.. _set manipulation: https://exslt.github.io/set/index.html
 
 Other XPath extensions
 ----------------------
@@ -1190,4 +1190,4 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object:
 
 .. skip: end
 
-.. _Google Base XML feed: https://support.google.com/merchants/answer/160589?hl=en&ref_topic=2473799
+.. _Google Base XML feed: https://support.google.com/merchants/answer/14987622

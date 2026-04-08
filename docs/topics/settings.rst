@@ -1287,7 +1287,7 @@ FEED_STORAGE_GCS_ACL
 --------------------
 
 The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
-For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
+For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://docs.cloud.google.com/storage/docs/access-control/lists>`_.
 
 .. setting:: FORCE_CRAWLER_PROCESS
 
@@ -2162,7 +2162,7 @@ Use ``0`` to allow URLs of any length.
 The default value is copied from the `Microsoft Internet Explorer maximum URL
 length`_, even though this setting exists for different reasons.
 
-.. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
+.. _Microsoft Internet Explorer maximum URL length: https://web.archive.org/web/20250206050143/https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
 
 .. setting:: USER_AGENT
 
