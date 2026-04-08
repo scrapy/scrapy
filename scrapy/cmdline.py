@@ -46,7 +46,7 @@ def _iter_command_classes(module_name: str) -> Iterable[type[ScrapyCommand]]:
                 inspect.isclass(obj)
                 and issubclass(obj, ScrapyCommand)
                 and obj.__module__ == module.__name__
-                and obj not in (ScrapyCommand, BaseRunSpiderCommand)
+                and obj not in {ScrapyCommand, BaseRunSpiderCommand}
             ):
                 yield obj
 

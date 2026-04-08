@@ -114,6 +114,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"Scrapy 2.13 for details: "
                 f"https://docs.scrapy.org/en/2.13/news.html",
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
 
     def _add_middleware(self, mw: Any) -> None:
@@ -502,6 +503,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"copy-pasting. See the release notes of Scrapy 2.13 for "
                 f"details: https://docs.scrapy.org/en/2.13/news.html",
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
 
         if (

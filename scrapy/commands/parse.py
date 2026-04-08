@@ -4,7 +4,7 @@ import functools
 import inspect
 import json
 import logging
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, overload
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -39,8 +39,8 @@ class Command(BaseRunSpiderCommand):
     requires_project = True
 
     spider: Spider | None = None
-    items: dict[int, list[Any]] = {}
-    requests: dict[int, list[Request]] = {}
+    items: ClassVar[dict[int, list[Any]]] = {}
+    requests: ClassVar[dict[int, list[Request]]] = {}
     spidercls: type[Spider] | None
 
     first_response = None
@@ -387,7 +387,7 @@ class Command(BaseRunSpiderCommand):
                     "Invalid -m/--meta value, pass a valid json string to -m or --meta. "
                     'Example: --meta=\'{"foo" : "bar"}\'',
                     print_help=False,
-                )
+                ) from None
 
     def process_request_cb_kwargs(self, opts: argparse.Namespace) -> None:
         if opts.cbkwargs:
@@ -398,7 +398,7 @@ class Command(BaseRunSpiderCommand):
                     "Invalid --cbkwargs value, pass a valid json string to --cbkwargs. "
                     'Example: --cbkwargs=\'{"foo" : "bar"}\'',
                     print_help=False,
-                )
+                ) from None
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # parse arguments

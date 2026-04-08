@@ -147,7 +147,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         # issue a callback after `_disconnect_timeout` seconds.
         #
         # See also https://github.com/scrapy/scrapy/issues/2653
-        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, [])
+        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, ())
 
         try:
             await maybe_deferred_to_future(d)

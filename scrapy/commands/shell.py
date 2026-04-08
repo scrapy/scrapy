@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from threading import Thread
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
 from scrapy.crawler import AsyncCrawlerProcess, Crawler
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class Command(ScrapyCommand):
-    default_settings = {
+    default_settings: ClassVar[dict[str, Any]] = {
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "KEEP_ALIVE": True,
         "LOGSTATS_INTERVAL": 0,

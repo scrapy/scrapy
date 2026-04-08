@@ -4731,7 +4731,7 @@ Highlights:
 * :ref:`FTP support <media-pipeline-ftp>` for media pipelines
 * New :attr:`Response.certificate <scrapy.http.Response.certificate>`
   attribute
-* IPv6 support through :setting:`DNS_RESOLVER`
+* IPv6 support through ``DNS_RESOLVER``
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4839,7 +4839,7 @@ New features
     :class:`twisted.internet.ssl.Certificate` object for HTTPS responses
     (:issue:`2726`, :issue:`4054`)
 
-*   A new :setting:`DNS_RESOLVER` setting allows enabling IPv6 support
+*   A new ``DNS_RESOLVER`` setting allows enabling IPv6 support
     (:issue:`1031`, :issue:`4227`)
 
 *   A new :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE` setting allows configuring

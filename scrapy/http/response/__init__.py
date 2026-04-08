@@ -86,7 +86,7 @@ class Response(object_ref):
             raise AttributeError(
                 "Response.cb_kwargs not available, this response "
                 "is not tied to any request"
-            )
+            ) from None
 
     @property
     def meta(self) -> dict[str, Any]:
@@ -95,7 +95,7 @@ class Response(object_ref):
         except AttributeError:
             raise AttributeError(
                 "Response.meta not available, this response is not tied to any request"
-            )
+            ) from None
 
     @property
     def url(self) -> str:
