@@ -2201,6 +2201,4 @@ case to see how to enable and use them.
 .. settingslist::
 
 .. _Amazon web services: https://aws.amazon.com/
-.. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search
-.. _depth-first order: https://en.wikipedia.org/wiki/Depth-first_search
 .. _Google Cloud Storage: https://cloud.google.com/storage/

@@ -543,7 +543,7 @@ you may want to take a look first at this `XPath tutorial`_.
 .. note::
     Some of the tips are based on `this post from Zyte's blog`_.
 
-.. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
+.. _XPath tutorial: http://www.zvon.org/comp/r/tut-XPath_1.html
 .. _this post from Zyte's blog: https://www.zyte.com/blog/xpath-tips-from-the-web-scraping-trenches/
 
 
@@ -728,7 +728,7 @@ But using the ``.`` to mean the node, works:
     >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
     ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-.. _`XPath string function`: https://www.w3.org/TR/xpath-10/#section-String-Functions
+.. _XPath string function: https://www.w3.org/TR/xpath-10/#section-String-Functions
 
 .. _topics-selectors-xpath-variables:
 

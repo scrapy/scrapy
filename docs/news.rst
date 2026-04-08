@@ -7259,7 +7259,7 @@ Additional New Features and Enhancements
 - Other refactoring, optimizations and cleanup (:issue:`1476`, :issue:`1481`,
   :issue:`1477`, :issue:`1315`, :issue:`1290`, :issue:`1750`, :issue:`1881`).
 
-.. _`Code of Conduct`: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
+.. _Code of Conduct: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
 
 
 Deprecations and Removals

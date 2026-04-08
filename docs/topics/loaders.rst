@@ -452,4 +452,3 @@ organization of your Loaders collection - that's up to you and your project's
 needs.
 
 .. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
-.. _processors: https://itemloaders.readthedocs.io/en/latest/built-in-processors.html

@@ -391,7 +391,6 @@ And their unit-tests are in::
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
-.. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _PEP 257: https://peps.python.org/pep-0257/

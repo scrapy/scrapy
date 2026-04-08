@@ -263,7 +263,6 @@ reinstall Twisted with the :code:`tls` extra option::
 For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 
 .. _Python: https://www.python.org/
-.. _pip: https://pip.pypa.io/en/latest/installing/
 .. _lxml: https://lxml.de/index.html
 .. _parsel: https://pypi.org/project/parsel/
 .. _w3lib: https://pypi.org/project/w3lib/
@@ -275,6 +274,5 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _zsh: https://www.zsh.org/
 .. _Anaconda: https://www.anaconda.com/docs/main
 .. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
-.. _Visual Studio: https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio
 .. _Microsoft C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 .. _conda-forge: https://conda-forge.org/
