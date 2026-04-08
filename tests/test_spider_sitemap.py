@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gzip
+import re
 import warnings
 from datetime import datetime
 from io import BytesIO
@@ -43,6 +44,9 @@ class TestSitemapSpider(TestSpider):
         r = Response(url="http://www.example.com/favicon.ico", body=self.BODY)
         self.assertSitemapBody(r, None)
 
+        r = XmlResponse(url="http://www.example.com/", body=b"")
+        self.assertSitemapBody(r, b"")
+
     def test_get_sitemap_body_gzip_headers(self):
         r = Response(
             url="http://www.example.com/sitemap",
@@ -83,6 +87,20 @@ Sitemap: /sitemap-relative-url.xml
             "http://example.com/sitemap-product-index.xml",
             "http://example.com/sitemap-uppercase.xml",
             "http://www.example.com/sitemap-relative-url.xml",
+        ]
+
+    def test_get_sitemap_urls_from_robotstxt_skips_invalid_utf8_urls(self):
+        robots = (
+            b"User-agent: *\n"
+            b"Sitemap: http://example.com/\xff.xml\n"
+            b"Sitemap: http://example.com/ok.xml\n"
+        )
+
+        r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
+        spider = self.spider_class("example.com")
+
+        assert [req.url for req in spider._parse_sitemap(r)] == [
+            "http://example.com/ok.xml",
         ]
 
     def test_alternate_url_locs(self):
@@ -217,6 +235,79 @@ Sitemap: /sitemap-relative-url.xml
         assert [req.url for req in spider._parse_sitemap(r)] == [
             "http://www.example.com/sitemap2.xml"
         ]
+
+    @pytest.mark.parametrize(
+        ("rule", "result"),
+        [(r"english", ["http://www.example.com/english/"]), (r"nonexistent", [])],
+    )
+    def test_sitemap_filter_with_rule(self, rule: str, result: list[str]):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url><loc>http://www.example.com/english/</loc></url>
+        <url><loc>http://www.example.com/portuguese/</loc></url>
+    </urlset>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+
+        class _RuleSpider(self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_rules = [(rule, "parse")]
+
+        spider = _RuleSpider("example.com")
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == result
+
+    def test_parse_sitemap_empty_body(self):
+        r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
+        spider = self.spider_class("example.com")
+
+        with LogCapture() as lc:
+            results = list(spider._parse_sitemap(r))
+
+        assert not results
+
+        lc.check(
+            (
+                "scrapy.spiders.sitemap",
+                "WARNING",
+                "Ignoring invalid sitemap: <200 http://www.example.com/sitemap.xml>",
+            )
+        )
+
+    def test_parse_sitemap_not_sitemap(self):
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <some attr="string">
+        <tag><tag3>sometext</tag3></tag>
+        <tag2><tag4>sometext2</tag4></tag2>
+    </some>"""
+        r = XmlResponse(url="http://www.example.com/random.xml", body=body)
+        spider = self.spider_class("example.com")
+
+        results = list(spider._parse_sitemap(r))
+
+        assert not results
+
+    @pytest.mark.parametrize(
+        ("follow", "result"),
+        [
+            (r"1.xml", ["http://www.example.com/sitemap1.xml"]),
+            (re.compile(r"sitemap\d"), ["http://www.example.com/sitemap1.xml"]),
+            (r"nonexistent", []),
+        ],
+    )
+    def test_sitemap_follow(self, follow, result):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <sitemap>
+            <loc>http://www.example.com/sitemap1.xml</loc>
+        </sitemap>
+    </sitemapindex>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+
+        class _FollowSpider(self.spider_class):
+            sitemap_follow = [follow]
+
+        spider = _FollowSpider("example.com")
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == result
 
     def test_compression_bomb_setting(self):
         settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
