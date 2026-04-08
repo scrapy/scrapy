@@ -204,9 +204,10 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
     _run_print_help(parser, cmd.process_options, args, opts)
 
     if cmd.requires_crawler_process:
-        if settings[
-            "TWISTED_REACTOR"
-        ] == _asyncio_reactor_path and not settings.getbool("FORCE_CRAWLER_PROCESS"):
+        if (
+            settings["TWISTED_REACTOR"] == _asyncio_reactor_path
+            and not settings.getbool("FORCE_CRAWLER_PROCESS")
+        ) or not settings.getbool("TWISTED_REACTOR_ENABLED"):
             cmd.crawler_process = AsyncCrawlerProcess(settings)
         else:
             cmd.crawler_process = CrawlerProcess(settings)
