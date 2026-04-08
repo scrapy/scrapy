@@ -108,8 +108,7 @@ class Command(ScrapyCommand):
                         + "\n".join(f"  * {method}" for method in sorted(methods))
                         for spider, methods in sorted(contract_reqs.items())
                         if methods or opts.verbose
-                    ),
-                    flush=False,
+                    )
                 )
             else:
                 start_time = time.monotonic()
