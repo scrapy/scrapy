@@ -49,7 +49,7 @@ class SitemapSpider(Spider):
         self._cbs: list[tuple[re.Pattern[str], CallbackT]] = []
         for r, c in self.sitemap_rules:
             if isinstance(c, str):
-                c = cast("CallbackT", getattr(self, c))
+                c = cast("CallbackT", getattr(self, c))  # noqa: PLW2901
             self._cbs.append((regex(r), c))
         self._follow: list[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
 

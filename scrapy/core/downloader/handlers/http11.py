@@ -30,10 +30,11 @@ from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IRe
 from zope.interface import implementer
 
 from scrapy import Request, signals
-from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.exceptions import (
     DownloadCancelledError,
     DownloadTimeoutError,
+    NotConfigured,
     ResponseDataLossError,
     StopDownload,
 )
@@ -52,6 +53,7 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.ssl import _log_ssl_conn_debug_info
 from scrapy.utils.url import add_http_if_no_scheme
 
 if TYPE_CHECKING:
@@ -80,6 +82,8 @@ class _ResultT(TypedDict):
 
 class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self._crawler = crawler
 
@@ -91,8 +95,8 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         )
         self._pool._factory.noisy = False
 
-        self._contextFactory: IPolicyForHTTPS = load_context_factory_from_settings(
-            crawler.settings, crawler
+        self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
+            crawler
         )
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         self._disconnect_timeout: int = 1
@@ -118,6 +122,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
             ),
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
+            tls_verbose_logging=self._tls_verbose_logging,
         )
         try:
             with wrap_twisted_exceptions():
@@ -142,7 +147,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         # issue a callback after `_disconnect_timeout` seconds.
         #
         # See also https://github.com/scrapy/scrapy/issues/2653
-        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, [])
+        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, ())
 
         try:
             await maybe_deferred_to_future(d)
@@ -388,6 +393,7 @@ class ScrapyAgent:
         warnsize: int = 0,
         fail_on_dataloss: bool = True,
         crawler: Crawler,
+        tls_verbose_logging: bool = False,
     ):
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectTimeout: float = connectTimeout
@@ -398,6 +404,7 @@ class ScrapyAgent:
         self._fail_on_dataloss: bool = fail_on_dataloss
         self._txresponse: TxResponse | None = None
         self._crawler: Crawler = crawler
+        self._tls_verbose_logging: bool = tls_verbose_logging
 
     def _get_agent(self, request: Request, timeout: float) -> Agent:
         from twisted.internet import reactor
@@ -554,6 +561,7 @@ class ScrapyAgent:
                 warnsize=warnsize,
                 fail_on_dataloss=fail_on_dataloss,
                 crawler=self._crawler,
+                tls_verbose_logging=self._tls_verbose_logging,
             )
         )
 
@@ -609,6 +617,8 @@ class _ResponseReader(Protocol):
         warnsize: int,
         fail_on_dataloss: bool,
         crawler: Crawler,
+        *,
+        tls_verbose_logging: bool = False,
     ):
         self._finished: Deferred[_ResultT] = finished
         self._txresponse: TxResponse = txresponse
@@ -622,6 +632,7 @@ class _ResponseReader(Protocol):
         self._certificate: ssl.Certificate | None = None
         self._ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None = None
         self._crawler: Crawler = crawler
+        self._tls_verbose_logging: bool = tls_verbose_logging
 
     def _finish_response(
         self, flags: list[str] | None = None, stop_download: StopDownload | None = None
@@ -649,6 +660,12 @@ class _ResponseReader(Protocol):
             self._ip_address = ipaddress.ip_address(
                 self.transport._producer.getPeer().host
             )
+
+        if self._tls_verbose_logging:
+            connection = self.transport._producer.getHandle()
+            hostname = urlparse_cached(self._request).hostname
+            assert hostname is not None
+            _log_ssl_conn_debug_info(hostname, connection)
 
     def dataReceived(self, bodyBytes: bytes) -> None:
         # This maybe called several times after cancel was called with buffered data.

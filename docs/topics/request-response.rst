@@ -646,7 +646,7 @@ bindaddress
 
 The default local outgoing address for download-handler connections.
 
-This setting can be either:
+This meta value can be either:
 
 - a host address as a string (e.g. ``"127.0.0.2"``), in which case the local
   port is chosen automatically, or
@@ -674,6 +674,10 @@ If not set, built-in HTTP download handlers use the value of
 :setting:`DOWNLOAD_BIND_ADDRESS` as the default bind address.
 Set the :reqmeta:`bindaddress` request meta key to override it for a
 specific request.
+
+This meta key is not supported by
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
+:setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
 
 .. reqmeta:: download_timeout
 

@@ -6,7 +6,10 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from scrapy import Spider
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
+from scrapy.crawler import Crawler
+from scrapy.exceptions import NotConfigured
 from tests.test_downloader_handlers_http_base import (
     TestHttp11Base,
     TestHttpProxyBase,
@@ -30,6 +33,12 @@ class HTTP11DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP11DownloadHandler
+
+
+def test_not_configured_without_reactor() -> None:
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        HTTP11DownloadHandler.from_crawler(crawler)
 
 
 class TestHttp11(HTTP11DownloadHandlerMixin, TestHttp11Base):

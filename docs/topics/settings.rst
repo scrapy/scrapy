@@ -303,11 +303,12 @@ Pre-crawler settings
 
 These settings cannot be :ref:`set from a spider <spider-settings>`.
 
-These settings are :setting:`SPIDER_LOADER_CLASS` and settings used by the
-corresponding :ref:`component <topics-components>`, e.g.
-:setting:`SPIDER_MODULES` and :setting:`SPIDER_LOADER_WARN_ONLY` for the
-default component.
+These settings are:
 
+-   :setting:`TWISTED_REACTOR_ENABLED`
+-   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
+    spider loader class, e.g. :setting:`SPIDER_MODULES` and
+    :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
 
 .. _reactor-settings:
 
@@ -356,6 +357,9 @@ ignoring the value of :setting:`TWISTED_REACTOR` and using the value of
 e.g. in :ref:`per-spider settings <spider-settings>`, an exception will be
 raised.
 
+All of these settings, except for :setting:`ASYNCIO_EVENT_LOOP`, are only used
+when the Twisted reactor is used, i.e. when :setting:`TWISTED_REACTOR_ENABLED`
+is ``True``.
 
 .. _topics-settings-ref:
 
@@ -651,6 +655,13 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
+.. note::
+    This setting is only used by
+    :class:`~scrapy.resolver.CachingThreadedResolver` and
+    :class:`~scrapy.resolver.CachingHostnameResolver`. It has no effect when
+    :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
+    either when :setting:`DNS_RESOLVER` is set to a different resolver.
+
 .. setting:: DNSCACHE_SIZE
 
 DNSCACHE_SIZE
@@ -658,7 +669,7 @@ DNSCACHE_SIZE
 
 Default: ``10000``
 
-DNS in-memory cache size.
+DNS in-memory cache size, see :setting:`DNSCACHE_ENABLED`.
 
 .. setting:: DNS_RESOLVER
 
@@ -667,11 +678,15 @@ DNS_RESOLVER
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
-The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
-supports specifying a timeout for DNS requests via the :setting:`DNS_TIMEOUT` setting,
-but works only with IPv4 addresses. Scrapy provides an alternative resolver,
+The class to be used by Twisted to resolve DNS names. The default
+``scrapy.resolver.CachingThreadedResolver`` supports specifying a timeout for
+DNS requests via the :setting:`DNS_TIMEOUT` setting, but works only with IPv4
+addresses. Scrapy provides an alternative resolver,
 ``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
 take the :setting:`DNS_TIMEOUT` setting into account.
+
+.. note::
+    This setting has no effect when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 .. setting:: DNS_TIMEOUT
 
@@ -682,6 +697,12 @@ Default: ``60``
 
 Timeout for processing of DNS queries in seconds. Float is supported.
 
+.. note::
+    This setting is only used by
+    :class:`~scrapy.resolver.CachingThreadedResolver`. It has no effect when
+    :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
+    either when :setting:`DNS_RESOLVER` is set to a different resolver.
+
 .. setting:: DOWNLOADER
 
 DOWNLOADER
@@ -690,41 +711,6 @@ DOWNLOADER
 Default: ``'scrapy.core.downloader.Downloader'``
 
 The downloader to use for crawling.
-
-.. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
-
-DOWNLOADER_CLIENTCONTEXTFACTORY
--------------------------------
-
-Default: ``'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'``
-
-Represents the classpath to the ContextFactory to use.
-
-Here, "ContextFactory" is a Twisted term for SSL/TLS contexts, defining
-the TLS/SSL protocol version to use, whether to do certificate verification,
-or even enable client-side authentication (and various other things).
-
-.. note::
-
-    Scrapy default context factory **does NOT perform remote server
-    certificate verification**. This is usually fine for web scraping.
-
-    If you do need remote server certificate verification enabled,
-    Scrapy also has another context factory class that you can set,
-    ``'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'``,
-    which uses the platform's certificates to validate remote endpoints.
-
-If you do use a custom ContextFactory, make sure its ``__init__`` method
-accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
-:setting:`DOWNLOADER_CLIENT_TLS_METHOD`), a ``tls_verbose_logging``
-parameter (``bool``) and a ``tls_ciphers`` parameter (see
-:setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
-
-.. note::
-
-    This setting is specific to the built-in Twisted-based download handlers:
-    :class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
 
@@ -748,11 +734,8 @@ specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
-    download handlers
-    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
-    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
+    by all 3rd-party handlers. It's currently unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -778,11 +761,8 @@ This setting must be one of these string values:
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
-    download handlers
-    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
-    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
+    by all 3rd-party handlers. It's currently unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -800,11 +780,7 @@ the TLS-related libraries.
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
-    download handlers
-    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
-    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
-    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
+    by all 3rd-party handlers.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
@@ -930,6 +906,13 @@ If set, built-in HTTP download handlers use this value by default.
 Set the :reqmeta:`bindaddress` request meta key to override it for a specific
 request.
 
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Specifying the port is unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+
 .. setting:: DOWNLOAD_HANDLERS
 
 DOWNLOAD_HANDLERS
@@ -960,6 +943,20 @@ Default:
         "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
     }
 
+(when :setting:`TWISTED_REACTOR_ENABLED` is ``True``)
+
+.. code-block:: python
+
+    {
+        "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
+        "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
+        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
+        "ftp": None,
+    }
+
+(when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
 
 A dict containing the :ref:`download handlers <topics-download-handlers>`
 enabled by default in Scrapy. You should never modify this setting in your
@@ -1114,6 +1111,24 @@ Optionally, this can be set per-request basis by using the
     error, the corresponding HTTP/2 connection may be corrupted, affecting other
     requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
     failure is always raised for every request that was using that connection.
+
+.. setting:: DOWNLOAD_VERIFY_CERTIFICATES
+
+DOWNLOAD_VERIFY_CERTIFICATES
+----------------------------
+
+Default: ``False``
+
+Whether the HTTPS download handlers should verify the server TLS certificate
+when making a request and abort the request if the verification fails.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. The exact behavior of a handler (e.g. whether
+    certificate problems are logged when this setting is set to ``False``)
+    depends on its implementation.
 
 .. setting:: DUPEFILTER_CLASS
 
@@ -1562,13 +1577,12 @@ MEMUSAGE_ENABLED
 
 Default: ``True``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 Whether to enable the memory usage extension. This extension keeps track of
 a peak memory used by the process (it writes it to stats). It can also
 optionally shutdown the Scrapy process when it exceeds a memory limit
-(see :setting:`MEMUSAGE_LIMIT_MB`), and notify by email when that happened
-(see :setting:`MEMUSAGE_NOTIFY_MAIL`).
+(see :setting:`MEMUSAGE_LIMIT_MB`).
 
 See :ref:`topics-extensions-ref-memusage`.
 
@@ -1579,10 +1593,11 @@ MEMUSAGE_LIMIT_MB
 
 Default: ``0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 The maximum amount of memory to allow (in megabytes) before shutting down
-Scrapy  (if MEMUSAGE_ENABLED is True). If zero, no check will be performed.
+Scrapy (if :setting:`MEMUSAGE_ENABLED` is ``True``). If zero, no check will be
+performed.
 
 See :ref:`topics-extensions-ref-memusage`.
 
@@ -1593,7 +1608,7 @@ MEMUSAGE_CHECK_INTERVAL_SECONDS
 
 Default: ``60.0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 The :ref:`Memory usage extension <topics-extensions-ref-memusage>`
 checks the current memory usage, versus the limits set by
@@ -1604,23 +1619,6 @@ This sets the length of these intervals, in seconds.
 
 See :ref:`topics-extensions-ref-memusage`.
 
-.. setting:: MEMUSAGE_NOTIFY_MAIL
-
-MEMUSAGE_NOTIFY_MAIL
---------------------
-
-Default: ``False``
-
-Scope: ``scrapy.extensions.memusage``
-
-A list of emails to notify if the memory limit has been reached.
-
-Example::
-
-    MEMUSAGE_NOTIFY_MAIL = ['user@example.com']
-
-See :ref:`topics-extensions-ref-memusage`.
-
 .. setting:: MEMUSAGE_WARNING_MB
 
 MEMUSAGE_WARNING_MB
@@ -1628,10 +1626,13 @@ MEMUSAGE_WARNING_MB
 
 Default: ``0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
-The maximum amount of memory to allow (in megabytes) before sending a warning
-email notifying about it. If zero, no warning will be produced.
+The maximum amount of memory to allow (in megabytes) before sending a
+:signal:`memusage_warning_reached` signal (if :setting:`MEMUSAGE_ENABLED` is
+``True``). If zero, no signal will be sent.
+
+See :ref:`topics-extensions-ref-memusage`.
 
 .. setting:: NEWSPIDER_MODULE
 
@@ -1983,22 +1984,12 @@ finishes.
 
 For more info see: :ref:`topics-stats`.
 
-.. setting:: STATSMAILER_RCPTS
-
-STATSMAILER_RCPTS
------------------
-
-Default: ``[]`` (empty list)
-
-Send Scrapy stats after spiders finish scraping. See
-:class:`~scrapy.extensions.statsmailer.StatsMailer` for more info.
-
 .. setting:: TELNETCONSOLE_ENABLED
 
 TELNETCONSOLE_ENABLED
 ---------------------
 
-Default: ``True``
+Default: ``True`` (``False`` when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
 
 A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
 will be enabled (provided its extension is also enabled).
@@ -2016,6 +2007,35 @@ command.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
+
+.. setting:: TWISTED_REACTOR_ENABLED
+
+TWISTED_REACTOR_ENABLED
+-----------------------
+
+Default: ``True``
+
+Whether to install and use the Twisted reactor.
+
+If this is set to ``True``, Scrapy will use the Twisted reactor and will
+install one according to the :setting:`TWISTED_REACTOR` setting value when
+appropriate (e.g. when running via :ref:`the command-line tool
+<topics-commands>`). This is the traditional mode of using Scrapy.
+
+If this is set to ``False``, Scrapy will use the asyncio event loop directly
+and will not attempt to install or use a reactor. Features that require a
+reactor won't be available, but Twisted APIs that don't require a reactor,
+including :class:`~twisted.internet.defer.Deferred` and
+:class:`~twisted.python.failure.Failure`, will still be available. On the other
+hand, limitations related to Twisted reactors (such as not being able to start
+a reactor in the same process where a reactor was previously started and
+stopped) will not apply. This mode is currently experimental and may not be
+suitable for production use. It may also not be supported by 3rd-party code.
+See :ref:`asyncio-without-reactor` for more information about this mode.
+
+.. note:: This setting can't be set :ref:`per-spider <spider-settings>`.
+
+.. versionadded:: 2.15.0
 
 .. setting:: TWISTED_REACTOR
 

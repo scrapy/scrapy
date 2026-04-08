@@ -98,9 +98,9 @@ recommend that such custom components should be written in the following way:
    (``MY_FALLBACK_DOWNLOAD_HANDLER`` mentioned earlier) and set the default
    setting to the component provided by the add-on (e.g.
    ``MyDownloadHandler``). If the fallback setting is already set by the user,
-   they shouldn't change it.
+   it should not be changed.
 3. This way, if there are several add-ons that want to modify the same setting,
-   all of them will fallback to the component from the previous one and then to
+   all of them will fall back to the component from the previous one and then to
    the Scrapy default. The order of that depends on the priority order in the
    ``ADDONS`` setting.
 

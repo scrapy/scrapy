@@ -77,6 +77,25 @@ def make_setting_element(
     return item
 
 
+def make_setting_markdown_item(
+    setting_data: SettingData, app: Sphinx, fromdocname: str
+) -> str:
+    uri = app.builder.get_relative_uri(fromdocname, setting_data["docname"])
+    if uri.startswith("#"):
+        target = f"#{setting_data['refid']}"
+    else:
+        target = f"{uri}#{setting_data['refid']}"
+    return f"* [{setting_data['setting_name']}]({target})"
+
+
+def _iter_sorted_settings(env: Any, fromdocname: str) -> list[SettingData]:
+    return [
+        d
+        for d in sorted(env.scrapy_all_settings, key=itemgetter("setting_name"))  # type: ignore[attr-defined]
+        if fromdocname != d["docname"]
+    ]
+
+
 def replace_settingslist_nodes(
     app: Sphinx, doctree: document, fromdocname: str
 ) -> None:
@@ -87,11 +106,27 @@ def replace_settingslist_nodes(
         settings_list.extend(
             [
                 make_setting_element(d, app, fromdocname)
-                for d in sorted(env.scrapy_all_settings, key=itemgetter("setting_name"))  # type: ignore[attr-defined]
-                if fromdocname != d["docname"]
+                for d in _iter_sorted_settings(env, fromdocname)
             ]
         )
         node.replace_self(settings_list)
+
+
+def visit_settingslist_node_markdown(translator: Any, _node: Node) -> None:
+    builder = translator.builder
+    env = builder.env
+    fromdocname = getattr(builder, "current_doc_name", env.docname)
+    lines = [
+        make_setting_markdown_item(setting_data, builder.app, fromdocname)
+        for setting_data in _iter_sorted_settings(env, fromdocname)
+    ]
+    if lines:
+        translator.add("\n".join(lines), prefix_eol=2, suffix_eol=2)
+    raise nodes.SkipNode
+
+
+def depart_settingslist_node_markdown(_translator: Any, _node: Node) -> None:
+    return None
 
 
 def source_role(
@@ -126,34 +161,22 @@ def rev_role(
     return [node], []
 
 
-def setup(app: Sphinx) -> None:
-    app.add_crossref_type(
-        directivename="setting",
-        rolename="setting",
-        indextemplate="pair: %s; setting",
-    )
-    app.add_crossref_type(
-        directivename="signal",
-        rolename="signal",
-        indextemplate="pair: %s; signal",
-    )
-    app.add_crossref_type(
-        directivename="command",
-        rolename="command",
-        indextemplate="pair: %s; command",
-    )
-    app.add_crossref_type(
-        directivename="reqmeta",
-        rolename="reqmeta",
-        indextemplate="pair: %s; reqmeta",
-    )
+def setup(app: Sphinx) -> dict[str, Any]:
     app.add_role("source", source_role)
     app.add_role("commit", commit_role)
     app.add_role("issue", issue_role)
     app.add_role("rev", rev_role)
 
-    app.add_node(SettingslistNode)
+    app.add_node(
+        SettingslistNode,
+        markdown=(visit_settingslist_node_markdown, depart_settingslist_node_markdown),
+        singlemarkdown=(
+            visit_settingslist_node_markdown,
+            depart_settingslist_node_markdown,
+        ),
+    )
     app.add_directive("settingslist", SettingsListDirective)
 
     app.connect("doctree-read", collect_scrapy_settings_refs)
     app.connect("doctree-resolved", replace_settingslist_nodes)
+    return {"parallel_read_safe": True}

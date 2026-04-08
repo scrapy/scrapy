@@ -184,15 +184,15 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         try:
             return bool(int(got))
         except ValueError:
-            if got in ("True", "true"):
+            if got in {"True", "true"}:
                 return True
-            if got in ("False", "false"):
+            if got in {"False", "false"}:
                 return False
             raise ValueError(
                 "Supported values for boolean settings "
                 "are 0/1, True/False, '0'/'1', "
                 "'True'/'False' and 'true'/'false'"
-            )
+            ) from None
 
     def getint(self, name: _SettingsKey, default: int = 0) -> int:
         """

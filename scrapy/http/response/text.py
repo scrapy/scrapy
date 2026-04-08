@@ -297,7 +297,7 @@ def _url_from_selector(sel: parsel.Selector) -> str:
         return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, "tag"):
         raise _InvalidSelector(f"Unsupported selector: {sel}")
-    if sel.root.tag not in ("a", "link"):
+    if sel.root.tag not in {"a", "link"}:
         raise _InvalidSelector(
             f"Only <a> and <link> elements are supported; got <{sel.root.tag}>"
         )

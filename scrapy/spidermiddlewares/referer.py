@@ -103,7 +103,7 @@ class ReferrerPolicy(ABC):
         return self.tls_protected(url)
 
     def tls_protected(self, url: str) -> bool:
-        return urlparse(url).scheme in ("https", "ftps")
+        return urlparse(url).scheme in {"https", "ftps"}
 
 
 class NoReferrerPolicy(ReferrerPolicy):
@@ -424,7 +424,7 @@ class RefererMiddleware(BaseSpiderMiddleware):
             msg += " (import paths from the response Referrer-Policy header are not allowed)"
         if not warning_only:
             raise RuntimeError(msg)
-        warnings.warn(msg, RuntimeWarning)
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)
         return None
 
     def get_processed_request(

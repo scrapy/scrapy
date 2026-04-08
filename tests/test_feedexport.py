@@ -1151,7 +1151,6 @@ class TestFeedExport(TestFeedExportBase):
         data = await self.exported_no_data(settings)
         assert data["csv"] == b""
 
-    @pytest.mark.requires_reactor  # TODO: needs a reactor for BlockingFeedStorage
     @coroutine_test
     async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
         settings = {
