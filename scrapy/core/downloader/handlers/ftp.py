@@ -33,12 +33,13 @@ from __future__ import annotations
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, ClassVar
 from urllib.parse import unquote
 
 from twisted.internet.protocol import ClientCreator, Protocol
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -78,12 +79,14 @@ _CODE_RE = re.compile(r"\d+")
 
 
 class FTPDownloadHandler(BaseDownloadHandler):
-    CODE_MAPPING: dict[str, int] = {
+    CODE_MAPPING: ClassVar[dict[str, int]] = {
         "550": 404,
         "default": 503,
     }
 
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self.default_user = crawler.settings["FTP_USER"]
         self.default_password = crawler.settings["FTP_PASSWORD"]

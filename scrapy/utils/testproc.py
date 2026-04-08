@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import sys
 import warnings
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ProcessProtocol
@@ -21,12 +21,13 @@ if TYPE_CHECKING:
 warnings.warn(
     "The scrapy.utils.testproc module is deprecated.",
     ScrapyDeprecationWarning,
+    stacklevel=2,
 )
 
 
 class ProcessTest:
     command: str | None = None
-    prefix = [sys.executable, "-m", "scrapy.cmdline"]
+    prefix: ClassVar[list[str]] = [sys.executable, "-m", "scrapy.cmdline"]
     cwd = os.getcwd()  # trial chdirs to temp dir  # noqa: PTH109
 
     def execute(

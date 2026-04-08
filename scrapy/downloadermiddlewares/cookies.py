@@ -139,7 +139,7 @@ class CookiesMiddleware:
         for key in ("name", "value", "path", "domain"):
             value = cookie.get(key)
             if value is None:
-                if key in ("name", "value"):
+                if key in {"name", "value"}:
                     msg = f"Invalid cookie found in request {request}: {cookie} ('{key}' is missing)"
                     logger.warning(msg)
                     return None
@@ -176,7 +176,7 @@ class CookiesMiddleware:
         Extract cookies from the Request.cookies attribute
         """
         if not request.cookies:
-            return []
+            return ()
         cookies: Iterable[VerboseCookie]
         if isinstance(request.cookies, dict):
             cookies = tuple({"name": k, "value": v} for k, v in request.cookies.items())

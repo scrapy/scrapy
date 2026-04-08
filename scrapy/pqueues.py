@@ -351,8 +351,9 @@ class DownloaderAwarePriorityQueue:
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
         self._last_selected_slot: str | None = None
-        for slot, startprios in (slot_startprios or {}).items():
-            self.pqueues[slot] = self.pqfactory(slot, startprios)
+        if slot_startprios:
+            for slot, startprios in slot_startprios.items():
+                self.pqueues[slot] = self.pqfactory(slot, startprios)
 
     def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
         last = self._last_selected_slot

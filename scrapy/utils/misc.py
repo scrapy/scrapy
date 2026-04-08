@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from typing import IO, TYPE_CHECKING, Any, TypeVar, cast
+from typing import IO, TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
@@ -28,9 +28,20 @@ if TYPE_CHECKING:
 
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
-T = TypeVar("T")
+_ITER_T = TypeVar("_ITER_T", bound=dict | Item | str | bytes)
+_T = TypeVar("_T")
+_T_co = TypeVar("_T_co", covariant=True)
+_P = ParamSpec("_P")
 
 
+@overload
+def arg_to_iter(arg: None) -> tuple[()]: ...
+@overload
+def arg_to_iter(arg: _ITER_T) -> Iterable[_ITER_T]: ...
+@overload
+def arg_to_iter(arg: Iterable[_T]) -> Iterable[_T]: ...
+@overload
+def arg_to_iter(arg: _T) -> Iterable[_T]: ...
 def arg_to_iter(arg: Any) -> Iterable[Any]:
     """Convert an argument to an iterable. The argument can be a None, single
     value, or an iterable.
@@ -38,9 +49,9 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     Exception: if arg is a dict, [arg] will be returned
     """
     if arg is None:
-        return []
+        return ()
     if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
-        return cast("Iterable[Any]", arg)
+        return arg
     return [arg]
 
 
@@ -64,7 +75,7 @@ def load_object(path: str | Callable[..., Any]) -> Any:
     try:
         dot = path.rindex(".")
     except ValueError:
-        raise ValueError(f"Error loading object '{path}': not a full path")
+        raise ValueError(f"Error loading object '{path}': not a full path") from None
 
     module, name = path[:dot], path[dot + 1 :]
     mod = import_module(module)
@@ -72,31 +83,56 @@ def load_object(path: str | Callable[..., Any]) -> Any:
     try:
         obj = getattr(mod, name)
     except AttributeError:
-        raise NameError(f"Module '{module}' doesn't define any object named '{name}'")
+        raise NameError(
+            f"Module '{module}' doesn't define any object named '{name}'"
+        ) from None
 
     return obj
 
 
-def walk_modules(path: str) -> list[ModuleType]:
+def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
 
-    For example: walk_modules('scrapy.utils')
+    For example:
+    >>> list(walk_modules_iter('scrapy.utils'))
+    [<module 'scrapy.utils' from '...'>, ...]
+    >>> gen = walk_modules_iter('scrapy.utils.nonexistent') # error not raised until the generator is consumed
+    >>> list(gen)
+    Traceback (most recent call last):
+        ...
+    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'
     """
 
-    mods: list[ModuleType] = []
     mod = import_module(path)
-    mods.append(mod)
+    yield mod
     if hasattr(mod, "__path__"):
         for _, subpath, ispkg in iter_modules(mod.__path__):
             fullpath = path + "." + subpath
             if ispkg:
-                mods += walk_modules(fullpath)
+                yield from walk_modules_iter(fullpath)
             else:
-                submod = import_module(fullpath)
-                mods.append(submod)
-    return mods
+                yield import_module(fullpath)
+
+
+def walk_modules(path: str) -> list[ModuleType]:  # pragma: no cover
+    """
+    Loads a module and all its submodules from the given module path and
+    returns them. If *any* module throws an exception while importing, that
+    exception is thrown back.
+    """
+    warnings.warn(
+        (
+            "The scrapy.utils.misc.walk_modules function is deprecated and will be "
+            "removed in a future version of Scrapy. "
+            "Use scrapy.utils.misc.walk_modules_iter instead."
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
+    return list(walk_modules_iter(path))
 
 
 def md5sum(file: IO[bytes]) -> str:
@@ -129,9 +165,40 @@ def rel_has_nofollow(rel: str | None) -> bool:
     return rel is not None and "nofollow" in rel.replace(",", " ").split()
 
 
+class SupportsFromCrawler(Protocol[_T_co, _P]):
+    @classmethod
+    def from_crawler(
+        cls, crawler: Crawler, /, *args: _P.args, **kwargs: _P.kwargs
+    ) -> _T_co: ...
+
+
+@overload
 def build_from_crawler(
-    objcls: type[T], crawler: Crawler, /, *args: Any, **kwargs: Any
-) -> T:
+    objcls: SupportsFromCrawler[_T_co, _P],
+    crawler: Crawler,
+    /,
+    *args: _P.args,
+    **kwargs: _P.kwargs,
+) -> _T_co: ...
+
+
+@overload
+def build_from_crawler(
+    objcls: Callable[_P, _T_co],
+    crawler: Crawler,
+    /,
+    *args: _P.args,
+    **kwargs: _P.kwargs,
+) -> _T_co: ...
+
+
+def build_from_crawler(
+    objcls: Any,
+    crawler: Crawler,
+    /,
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
     """Construct a class instance using its ``from_crawler()`` or ``__init__()`` constructor.
 
     .. versionadded:: 2.12
@@ -141,14 +208,14 @@ def build_from_crawler(
     Raises ``TypeError`` if the resulting instance is ``None``.
     """
     if hasattr(objcls, "from_crawler"):
-        instance = objcls.from_crawler(crawler, *args, **kwargs)  # type: ignore[attr-defined]
+        instance = objcls.from_crawler(crawler, *args, **kwargs)
         method_name = "from_crawler"
     else:
         instance = objcls(*args, **kwargs)
         method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
-    return cast("T", instance)
+    return instance
 
 
 @contextmanager

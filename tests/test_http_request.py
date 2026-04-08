@@ -320,12 +320,6 @@ class TestRequest:
     def test_setters(self):
         request = self.request_class("http://example.com")
 
-        request.cb_kwargs = {"a": 1}
-        assert request.cb_kwargs == {"a": 1}
-
-        request.meta = {"k": "v"}
-        assert request.meta == {"k": "v"}
-
         request.flags = ["f1"]
         assert request.flags == ["f1"]
 
@@ -349,30 +343,13 @@ class TestRequest:
 
         request = self.request_class("http://example.com")
 
-        assert request._cb_kwargs is None
-        assert request.cb_kwargs == {}
-        assert request.cb_kwargs is request.cb_kwargs
-        assert request._cb_kwargs == {}
-        original_cb_kwargs = request.cb_kwargs
-        request.cb_kwargs = None
-        assert request.cb_kwargs == {}
-        assert request.cb_kwargs is not original_cb_kwargs
-
-        assert request._meta is None
-        assert request.meta == {}
-        assert request.meta is request.meta
-        assert request._meta == {}
-        original_meta = request.meta
-        request.meta = None
-        assert request.meta == {}
-        assert request.meta is not original_meta
-
         assert request._flags is None
         assert request.flags == []
         assert request.flags is request.flags
         assert request._flags == []
         original_flags = request.flags
         request.flags = None
+        assert request._flags is None
         assert request.flags == []
         assert request.flags is not original_flags
 
@@ -382,6 +359,7 @@ class TestRequest:
         assert request._cookies == {}
         original_cookies = request.cookies
         request.cookies = None
+        assert request._cookies is None
         assert request.cookies == {}
         assert request.cookies is not original_cookies
 
@@ -397,7 +375,9 @@ class TestRequest:
         assert isinstance(request._headers, Headers)
         original_headers = request.headers
         request.headers = None
+        assert request._headers is None
         assert request.headers == {}
+        assert request._headers == {}
         assert request.headers is not original_headers
 
     def test_no_callback(self):

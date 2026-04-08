@@ -523,7 +523,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
             "parse",
             mockserver.url("/html"),
             "-s",
-            "TWISTED_ENABLED=False",
+            "TWISTED_REACTOR_ENABLED=False",
             cwd=proj_path,
         )
         assert "INFO: Got response 200" in stderr

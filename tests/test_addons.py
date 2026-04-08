@@ -110,7 +110,7 @@ class TestAddonManager:
 
         runner_cls = (
             CrawlerRunner
-            if settings_dict.get("TWISTED_ENABLED", True)
+            if settings_dict.get("TWISTED_REACTOR_ENABLED", True)
             else AsyncCrawlerRunner
         )
 
@@ -201,7 +201,7 @@ class TestAddonManager:
         settings.set("KEY", "default", priority="default")
         runner_cls = (
             CrawlerRunner
-            if settings.getbool("TWISTED_ENABLED", True)
+            if settings.getbool("TWISTED_REACTOR_ENABLED", True)
             else AsyncCrawlerRunner
         )
         runner = runner_cls(settings)

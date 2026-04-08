@@ -93,6 +93,10 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
 class TestHttps11(HttpxDownloadHandlerMixin, TestHttps11Base):
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
+    @pytest.mark.skip(reason="The check is Twisted-specific")
+    def test_verify_certs_deprecated(self):
+        pass
+
 
 class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):
     pass

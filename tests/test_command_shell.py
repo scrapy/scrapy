@@ -22,6 +22,12 @@ class TestShellCommand:
         _, out, _ = proc("shell", "-c", "item")
         assert "{}" in out
 
+    def test_empty_no_reactor(self) -> None:
+        _, out, _ = proc(
+            "shell", "-c", "item", "--set", "TWISTED_REACTOR_ENABLED=False"
+        )
+        assert "{}" in out
+
     def test_response_body(self, mockserver: MockServer) -> None:
         _, out, _ = proc("shell", mockserver.url("/text"), "-c", "response.body")
         assert "Works" in out
@@ -125,11 +131,12 @@ class TestShellCommand:
         assert ret == 0, err
         assert "RuntimeError: There is no current event loop in thread" not in err
 
-    @pytest.mark.xfail(reason="Not implemented yet", strict=True)
     def test_shell_fetch_no_reactor(self, mockserver: MockServer) -> None:
         url = mockserver.url("/html")
         code = f"fetch('{url}')"
-        ret, _, err = proc("shell", "-c", code, "--set", "TWISTED_ENABLED=False")
+        ret, _, err = proc(
+            "shell", "-c", code, "--set", "TWISTED_REACTOR_ENABLED=False"
+        )
         assert ret == 0, err
 
 

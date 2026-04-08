@@ -2,7 +2,7 @@ import argparse
 import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, ClassVar
 from unittest import TextTestResult as _TextTestResult
 from unittest import TextTestRunner
 
@@ -44,7 +44,7 @@ class TextTestResult(_TextTestResult):
 
 class Command(ScrapyCommand):
     requires_project = True
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[options] <spider>"
@@ -102,16 +102,18 @@ class Command(ScrapyCommand):
 
             # start checks
             if opts.list:
-                for spider, methods in sorted(contract_reqs.items()):
-                    if not methods and not opts.verbose:
-                        continue
-                    print(spider)
-                    for method in sorted(methods):
-                        print(f"  * {method}")
+                print(
+                    "\n".join(
+                        f"{spider}\n"
+                        + "\n".join(f"  * {method}" for method in sorted(methods))
+                        for spider, methods in sorted(contract_reqs.items())
+                        if methods or opts.verbose
+                    )
+                )
             else:
-                start_time = time.time()
+                start_time = time.monotonic()
                 self.crawler_process.start()
-                stop = time.time()
+                stop = time.monotonic()
 
                 result.printErrors()
                 result.printSummary(start_time, stop)

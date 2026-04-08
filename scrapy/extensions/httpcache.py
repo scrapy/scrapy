@@ -106,10 +106,10 @@ class RFC2616Policy:
         if b"max-age" in cc or b"Expires" in response.headers:
             return True
         # Firefox fallbacks this statuses to one year expiration if none is set
-        if response.status in (300, 301, 308):
+        if response.status in {300, 301, 308}:
             return True
         # Other statuses without expiration requires at least one validator
-        if response.status in (200, 203, 401):
+        if response.status in {200, 203, 401}:
             return b"Last-Modified" in response.headers or b"ETag" in response.headers
         # Any other is probably not eligible for caching
         # Makes no sense to cache responses that does not contain expiration
@@ -216,7 +216,7 @@ class RFC2616Policy:
             return (date - lastmodified) / 10
 
         # This request can be cached indefinitely
-        if response.status in (300, 301, 308):
+        if response.status in {300, 301, 308}:
             return self.MAXAGE
 
         # Insufficient information to compute freshness lifetime

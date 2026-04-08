@@ -638,13 +638,13 @@ class TestCrawlerProcess(TestBaseCrawler):
 class TestAsyncCrawlerProcess(TestBaseCrawler):
     def test_crawler_process_accepts_dict(self, reactor_pytest: str) -> None:
         runner = AsyncCrawlerProcess(
-            {"foo": "bar", "TWISTED_ENABLED": reactor_pytest != "none"},
+            {"foo": "bar", "TWISTED_REACTOR_ENABLED": reactor_pytest != "none"},
             install_root_handler=False,
         )
         assert runner.settings["foo"] == "bar"
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
-    @pytest.mark.requires_reactor  # can't pass TWISTED_ENABLED=False
+    @pytest.mark.requires_reactor  # can't pass TWISTED_REACTOR_ENABLED=False
     def test_crawler_process_accepts_None(self) -> None:
         runner = AsyncCrawlerProcess(install_root_handler=False)
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")

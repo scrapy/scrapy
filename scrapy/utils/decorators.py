@@ -6,9 +6,10 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, overload
 
 from twisted.internet.defer import Deferred, maybeDeferred
-from twisted.internet.threads import deferToThread
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncio import run_in_thread
+from scrapy.utils.defer import deferred_from_coro
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine
@@ -59,12 +60,15 @@ def defers(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:  # pragma: no 
 
 def inthread(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
     """Decorator to call a function in a thread and return a deferred with the
-    result
+    result.
+
+    .. versionchanged:: VERSION
+        Now uses :func:`asyncio.to_thread` if the asyncio support is available.
     """
 
     @wraps(func)
     def wrapped(*a: _P.args, **kw: _P.kwargs) -> Deferred[_T]:
-        return deferToThread(func, *a, **kw)
+        return deferred_from_coro(run_in_thread(func, *a, **kw))
 
     return wrapped
 
