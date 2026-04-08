@@ -24,7 +24,7 @@ Backward-incompatible changes
     custom :ref:`downloader middlewares <topics-downloader-middleware-custom>`.
     (:issue:`7208`)
 
--   In order to fix a long-standing bug with handling of asynchronous storages
+-   In order to fix a long-standing bug with handling of asynchronous storages,
     the following changes were made to media pipeline classes, which can impact
     some of the user code that subclasses them or calls their methods directly:
 
@@ -59,12 +59,14 @@ Backward-incompatible changes
         being set to ``None``. Update code that relied on ``is None`` checks or
         the previous coercion behaviour.
 
+    (:issue:`7036`, :issue:`7367`, :issue:`7374`)
+
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
 -   The context factory class set as the value of the
     ``DOWNLOADER_CLIENTCONTEXTFACTORY`` setting is now required to support the
-    ``method`` ``__init__()`` argument, recommended since Scrapy 1.2.0.
+    ``method`` argument of ``__init__()``, recommended since Scrapy 1.2.0.
     (:issue:`7353`)
 
 Deprecations
@@ -83,6 +85,10 @@ Deprecations
     implement your own notifications by handling the
     :signal:`memusage_warning_reached` and :signal:`spider_closed` signals.
     (:issue:`7249`, :issue:`7263`)
+
+-   The ``DNS_RESOLVER`` setting was renamed to :setting:`TWISTED_DNS_RESOLVER`
+    and the old name is deprecated.
+    (:issue:`7350`, :issue:`7361`)
 
 -   The ``DOWNLOADER_CLIENTCONTEXTFACTORY`` setting is deprecated. If you were
     using it to switch to
@@ -104,11 +110,25 @@ Deprecations
 
     - ``scrapy.core.downloader.contextfactory.load_context_factory_from_settings()``
 
-    - ``scrapy.core.downloader.contextfactory.ScrapyClientContextFactory.getCertificateOptions()``
+    - ``scrapy.core.downloader.contextfactory.ScrapyClientContextFactory``
 
     - ``scrapy.core.downloader.tls.ScrapyClientTLSOptions``
 
-    (:issue:`7353`)
+    (:issue:`7353`, :issue:`7391`)
+
+-   Passing :class:`str` instead of :class:`bytes` to
+    :class:`scrapy.utils.sitemap.Sitemap` and
+    :func:`scrapy.utils.sitemap.sitemap_urls_from_robots` is deprecated.
+    (:issue:`7007`)
+
+-   ``scrapy.utils.misc.walk_modules()`` is deprecated. You can use
+    :func:`scrapy.utils.misc.walk_modules_iter` instead.
+    (:issue:`7388`)
+
+-   ``scrapy.shell.Shell.inthread`` is deprecated. You can use
+    :attr:`scrapy.shell.Shell.fetch_available` instead to check if
+    :func:`~scrapy.shell.Shell.fetch` can be used.
+    (:issue:`7395`)
 
 -   ``scrapy.commands.ScrapyCommand.set_crawler()`` is deprecated.
     (:issue:`7276`)
@@ -117,14 +137,25 @@ New features
 ~~~~~~~~~~~~
 
 -   Added an *experimental* mode for running Scrapy without installing a
-    Twisted reactor: set :setting:`TWISTED_ENABLED` to ``False`` to enable it.
-    This mode has limitations, refer to :ref:`its documentation
+    Twisted reactor: set :setting:`TWISTED_REACTOR_ENABLED` to ``False`` to
+    enable it. This mode has limitations, refer to :ref:`its documentation
     <asyncio-without-reactor>` for details. As long as it's experimental, its
     behavior and related features and APIs may change in future Scrapy releases
     in a breaking way.
-    (:issue:`6219`, :issue:`7185`, :issue:`7186`, :issue:`7187`, :issue:`7190`,
-    :issue:`7197`, :issue:`7199`, :issue:`7209`, :issue:`7228`, :issue:`7355`,
-    :issue:`7366`, :issue:`7385`)
+    (:issue:`6219`,
+    :issue:`7185`,
+    :issue:`7186`,
+    :issue:`7187`,
+    :issue:`7188`,
+    :issue:`7190`,
+    :issue:`7197`,
+    :issue:`7199`,
+    :issue:`7209`,
+    :issue:`7228`,
+    :issue:`7355`,
+    :issue:`7366`,
+    :issue:`7385`,
+    :issue:`7395`)
 
 -   Added the :func:`scrapy.utils.reactorless.is_reactorless` function that
     checks if there is a running asyncio event loop but no Twisted reactor.
@@ -192,6 +223,11 @@ New features
     :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`.
     (:issue:`7369`, :issue:`7370`)
 
+-   Added :func:`scrapy.utils.misc.walk_modules_iter` as a replacement for
+    ``scrapy.utils.misc.walk_modules()`` that returns an iterable instead of a
+    list.
+    (:issue:`7388`)
+
 Improvements
 ~~~~~~~~~~~~
 
@@ -201,29 +237,42 @@ Improvements
     :func:`scrapy.utils.decorators.inthread` decorator when available.
     (:issue:`7183`, :issue:`7184`, :issue:`7349`)
 
--   Improved memory footprint of :class:`~scrapy.Request` objects by adding
-    ``__slots__`` and omitting empty lists and dicts in some internal
-    attributes.
-    (:issue:`7036`, :issue:`7367`)
+-   Improved memory footprint of :class:`~scrapy.Request` and
+    :class:`~scrapy.http.Response` objects by adding ``__slots__`` and omitting
+    empty lists and dicts in some internal attributes.
+    (:issue:`7036`, :issue:`7367`, :issue:`7374`)
 
--   :class:`~scrapy.core.downloader.contextfactory.ScrapyClientContextFactory`
+-   :class:`~scrapy.core.downloader.contextfactory._ScrapyClientContextFactory`
     no longer mutates the SSL context, to avoid the behavior that was
     deprecated in pyOpenSSL 25.1.0.
     (:issue:`6859`, :issue:`7353`)
 
+-   Improved memory usage of :class:`~scrapy.spiders.sitemap.SitemapSpider` and
+    :class:`scrapy.utils.sitemap.Sitemap`.
+    (:issue:`3529`, :issue:`7007`)
+
+-   Improved the scheduling behavior of
+    :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` when crawling
+    multiple domains.
+    (:issue:`7293`, :issue:`7351`)
+
 -   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
     :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` now handle
-    :setting:`TLS verbose logging <DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING>`
+    TLS verbose logging (see :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING`)
     directly instead of relying on
-    ``scrapy.core.downloader.contextfactory.ScrapyClientContextFactory``.
+    :class:`~scrapy.core.downloader.contextfactory._ScrapyClientContextFactory`.
     (:issue:`7387`)
 
 -   The server certificate verification code now correctly handles certificates
     with IP addresses in ``subjectAltName``.
     (:issue:`7353`)
 
+-   Improved reliability of :func:`scrapy.utils.trackref.get_oldest`.
+    (:issue:`1758`, :issue:`7375`)
+
 -   Other code refactoring and improvements.
-    (:issue:`7210`, :issue:`7238`)
+    (:issue:`7210`, :issue:`7238`, :issue:`7376`, :issue:`7386`, :issue:`7395`,
+    :issue:`7405`, :issue:`7410`)
 
 Bug fixes
 ~~~~~~~~~
@@ -243,8 +292,8 @@ Bug fixes
     exception happened early (this was broken in an earlier Scrapy version).
     (:issue:`6820`, :issue:`7255`)
 
--   Fixed omitting repeated warnings about data loss (see
-    :setting:`DOWNLOAD_FAIL_ON_DATALOSS`) in
+-   Fixed repeated warnings about data loss (see
+    :setting:`DOWNLOAD_FAIL_ON_DATALOSS`) not being suppressed in
     :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`.
     (:issue:`7222`)
 
@@ -252,8 +301,21 @@ Bug fixes
     :class:`scrapy.pipelines.files.FTPFilesStore`.
     (:issue:`7256`)
 
+-   Fixed the ``spider`` variable in the :ref:`shell <topics-shell>`, which
+    wasn't available since Scrapy 2.13.0.
+    (:issue:`7395`)
+
 Documentation
 ~~~~~~~~~~~~~
+
+-   sphinx-scrapy_ is now used for building the documentation.
+    (:issue:`7380`, :issue:`7406`)
+
+    .. _sphinx-scrapy: https://github.com/scrapy/sphinx-scrapy
+
+-   The ``llms.txt`` and ``llms-full.txt`` files are now generated when the
+    HTML documentation is built.
+    (:issue:`7380`)
 
 -   Added :ref:`docs for using Pydantic models as items <pydantic-items>`.
     (:issue:`6955`, :issue:`6966`)
@@ -264,12 +326,12 @@ Documentation
 -   Improved docs for :attr:`~scrapy.Request.dont_filter`.
     (:issue:`6398`, :issue:`7245`)
 
--   Clarified that settings related to :setting:`DNS_RESOLVER` are only taken
-    into account if the selected resolver supports them.
+-   Clarified that settings related to :setting:`TWISTED_DNS_RESOLVER` are only
+    taken into account if the selected resolver supports them.
     (:issue:`7385`)
 
 -   Other documentation improvements and fixes.
-    (:issue:`7248`, :issue:`7274`)
+    (:issue:`7248`, :issue:`7274`, :issue:`7408`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
@@ -298,7 +360,8 @@ Quality assurance
     :issue:`7279`,
     :issue:`7329`,
     :issue:`7363`,
-    :issue:`7381`)
+    :issue:`7381`,
+    :issue:`7402`)
 
 .. _release-2.14.2:
 
