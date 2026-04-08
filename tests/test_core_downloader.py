@@ -132,13 +132,29 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
 
     def test_setting_bad(self):
         crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
-        with pytest.raises(KeyError):
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="Setting DOWNLOADER_CLIENT_TLS_METHOD to a non-default value is deprecated",
+            ),
+            pytest.raises(KeyError),
+        ):
             _load_context_factory_from_settings(crawler)
 
     @coroutine_test
     async def test_setting_explicit(self, server_url: str) -> None:
         crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
-        client_context_factory = _load_context_factory_from_settings(crawler)
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="Setting DOWNLOADER_CLIENT_TLS_METHOD to a non-default value is deprecated",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="Passing a non-default TLS method value to ScrapyClientContextFactory is deprecated",
+            ),
+        ):
+            client_context_factory = _load_context_factory_from_settings(crawler)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
@@ -154,7 +170,13 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
 
     @coroutine_test
     async def test_direct_init(self, server_url: str) -> None:
-        client_context_factory = _ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Passing a non-default TLS method value to ScrapyClientContextFactory is deprecated",
+        ):
+            client_context_factory = _ScrapyClientContextFactory(
+                OpenSSL.SSL.TLSv1_2_METHOD
+            )
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
