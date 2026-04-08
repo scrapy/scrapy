@@ -26,6 +26,8 @@ from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from twisted.internet._sslverify import ClientTLSOptions
 
     # typing.Self requires Python 3.11
@@ -36,7 +38,7 @@ if TYPE_CHECKING:
 
 
 @contextmanager
-def _filter_method_warning():
+def _filter_method_warning() -> Generator[None]:
     with warnings.catch_warnings():
         # Twisted deprecation, https://github.com/scrapy/scrapy/issues/3288
         warnings.filterwarnings(
