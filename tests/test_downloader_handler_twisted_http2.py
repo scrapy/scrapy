@@ -52,7 +52,7 @@ class H2DownloadHandlerMixin:
 def test_not_configured_without_reactor() -> None:
     from scrapy.core.downloader.handlers.http2 import H2DownloadHandler  # noqa: PLC0415
 
-    crawler = Crawler(Spider, {"TWISTED_ENABLED": False})
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         H2DownloadHandler.from_crawler(crawler)
 

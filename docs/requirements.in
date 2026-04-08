@@ -1,0 +1,8 @@
+h2
+pydantic
+scrapy-spider-metadata
+sphinx
+sphinx-notfound-page
+sphinx-rtd-theme
+sphinx-rtd-dark-mode
+sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@0.7.1

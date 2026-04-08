@@ -265,7 +265,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
     def _lose_connection_with_error(self, errors: list[BaseException]) -> None:
         """Helper function to lose the connection with the error sent as a
         reason"""
-        self._conn_lost_errors += errors
+        self._conn_lost_errors.extend(errors)
         assert self.transport is not None  # typing
         self.transport.loseConnection()
 
@@ -310,7 +310,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             if isinstance(e, FrameTooLargeError):
                 # hyper-h2 does not drop the connection in this scenario, we
                 # need to abort the connection manually.
-                self._conn_lost_errors += [e]
+                self._conn_lost_errors.append(e)
                 assert self.transport is not None  # typing
                 self.transport.abortConnection()
                 return

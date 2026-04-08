@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 def is_reactorless() -> bool:
     """Check if we are running in the reactorless mode, i.e. with
-    :setting:`TWISTED_ENABLED` set to ``False``.
+    :setting:`TWISTED_REACTOR_ENABLED` set to ``False``.
 
     As this checks the runtime state and not the setting itself, it can be
     wrong when executed very early, before the reactor and/or the asyncio event

@@ -19,13 +19,18 @@ from w3lib.url import parse_url as _parse_url
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
+_DEPRECATED_NAMES: frozenset[str] = frozenset(
+    {"_unquotepath", "_safe_chars", "parse_url", *_public_w3lib_objects}
+)
+
 
 def __getattr__(name: str) -> Any:
-    if name in ("_unquotepath", "_safe_chars", "parse_url", *_public_w3lib_objects):
+    if name in _DEPRECATED_NAMES:
         obj_type = "attribute" if name == "_safe_chars" else "function"
         warnings.warn(
             f"The scrapy.utils.url.{name} {obj_type} is deprecated, use w3lib.url.{name} instead.",
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         return getattr(import_module("w3lib.url"), name)
 
@@ -45,15 +50,18 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     host = _parse_url(url).netloc.lower()
     if not host:
         return False
-    domains = [d.lower() for d in domains]
-    return any((host == d) or (host.endswith(f".{d}")) for d in domains)
+    return any((host == d) or (host.endswith(f".{d}")) for d in map(str.lower, domains))
+
+
+def _spider_domains(spider: type[Spider]) -> Iterable[str]:
+    yield spider.name
+    if allowed_domains := getattr(spider, "allowed_domains", None):
+        yield from allowed_domains
 
 
 def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
     """Return True if the url belongs to the given spider"""
-    return url_is_from_any_domain(
-        url, [spider.name, *getattr(spider, "allowed_domains", [])]
-    )
+    return url_is_from_any_domain(url, _spider_domains(spider))
 
 
 def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
@@ -184,11 +192,11 @@ def strip_url(
         strip_default_port
         and parsed_url.port
         and (parsed_url.scheme, parsed_url.port)
-        in (
+        in {
             ("http", 80),
             ("https", 443),
             ("ftp", 21),
-        )
+        }
     ):
         netloc = netloc.replace(f":{parsed_url.port}", "")
 

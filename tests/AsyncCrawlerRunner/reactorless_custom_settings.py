@@ -9,7 +9,7 @@ from scrapy.utils.reactorless import is_reactorless
 class NoRequestsSpider(Spider):
     name = "no_request"
     custom_settings = {
-        "TWISTED_ENABLED": False,
+        "TWISTED_REACTOR_ENABLED": False,
     }
 
     async def start(self):

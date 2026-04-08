@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from typing import Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
@@ -10,7 +11,7 @@ from scrapy.spiderloader import get_spider_loader
 class Command(ScrapyCommand):
     requires_project = True
     requires_crawler_process = False
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "<spider>"

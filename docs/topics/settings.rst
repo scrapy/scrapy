@@ -305,7 +305,7 @@ These settings cannot be :ref:`set from a spider <spider-settings>`.
 
 These settings are:
 
--   :setting:`TWISTED_ENABLED`
+-   :setting:`TWISTED_REACTOR_ENABLED`
 -   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
     spider loader class, e.g. :setting:`SPIDER_MODULES` and
     :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
@@ -332,7 +332,7 @@ These settings are:
 -   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
     :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
--   :setting:`DNS_RESOLVER` and settings used by the corresponding
+-   :setting:`TWISTED_DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
     and :setting:`DNS_TIMEOUT` for the default one.
 
@@ -358,8 +358,8 @@ e.g. in :ref:`per-spider settings <spider-settings>`, an exception will be
 raised.
 
 All of these settings, except for :setting:`ASYNCIO_EVENT_LOOP`, are only used
-when the Twisted reactor is used, i.e. when :setting:`TWISTED_ENABLED` is
-``True``.
+when the Twisted reactor is used, i.e. when :setting:`TWISTED_REACTOR_ENABLED`
+is ``True``.
 
 .. _topics-settings-ref:
 
@@ -659,8 +659,8 @@ Whether to enable DNS in-memory cache.
     This setting is only used by
     :class:`~scrapy.resolver.CachingThreadedResolver` and
     :class:`~scrapy.resolver.CachingHostnameResolver`. It has no effect when
-    :setting:`TWISTED_ENABLED` is ``False``, and may have no effect either when
-    :setting:`DNS_RESOLVER` is set to a different resolver.
+    :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
+    either when :setting:`DNS_RESOLVER` is set to a different resolver.
 
 .. setting:: DNSCACHE_SIZE
 
@@ -671,10 +671,10 @@ Default: ``10000``
 
 DNS in-memory cache size, see :setting:`DNSCACHE_ENABLED`.
 
-.. setting:: DNS_RESOLVER
+.. setting:: TWISTED_DNS_RESOLVER
 
-DNS_RESOLVER
-------------
+TWISTED_DNS_RESOLVER
+--------------------
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
@@ -686,7 +686,7 @@ addresses. Scrapy provides an alternative resolver,
 take the :setting:`DNS_TIMEOUT` setting into account.
 
 .. note::
-    This setting has no effect when :setting:`TWISTED_ENABLED` is ``False``.
+    This setting has no effect when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 .. setting:: DNS_TIMEOUT
 
@@ -700,8 +700,8 @@ Timeout for processing of DNS queries in seconds. Float is supported.
 .. note::
     This setting is only used by
     :class:`~scrapy.resolver.CachingThreadedResolver`. It has no effect when
-    :setting:`TWISTED_ENABLED` is ``False``, and may have no effect either when
-    :setting:`DNS_RESOLVER` is set to a different resolver.
+    :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
+    either when :setting:`DNS_RESOLVER` is set to a different resolver.
 
 .. setting:: DOWNLOADER
 
@@ -943,7 +943,7 @@ Default:
         "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
     }
 
-(when :setting:`TWISTED_ENABLED` is ``True``)
+(when :setting:`TWISTED_REACTOR_ENABLED` is ``True``)
 
 .. code-block:: python
 
@@ -956,7 +956,7 @@ Default:
         "ftp": None,
     }
 
-(when :setting:`TWISTED_ENABLED` is ``False``)
+(when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
 
 A dict containing the :ref:`download handlers <topics-download-handlers>`
 enabled by default in Scrapy. You should never modify this setting in your
@@ -1989,7 +1989,7 @@ For more info see: :ref:`topics-stats`.
 TELNETCONSOLE_ENABLED
 ---------------------
 
-Default: ``True`` (``False`` when :setting:`TWISTED_ENABLED` is ``False``)
+Default: ``True`` (``False`` when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
 
 A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
 will be enabled (provided its extension is also enabled).
@@ -2008,10 +2008,10 @@ command.
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
 
-.. setting:: TWISTED_ENABLED
+.. setting:: TWISTED_REACTOR_ENABLED
 
-TWISTED_ENABLED
----------------
+TWISTED_REACTOR_ENABLED
+-----------------------
 
 Default: ``True``
 

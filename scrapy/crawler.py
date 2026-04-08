@@ -16,7 +16,7 @@ from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
-from scrapy.settings import Settings, overridden_settings
+from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils.defer import deferred_from_coro
@@ -105,7 +105,7 @@ class Crawler:
             self,
         )
 
-        use_reactor = self.settings.getbool("TWISTED_ENABLED")
+        use_reactor = self.settings.getbool("TWISTED_REACTOR_ENABLED")
         if use_reactor:
             # We either install a reactor or expect one to be installed.
             reactor_class: str = self.settings["TWISTED_REACTOR"]
@@ -137,7 +137,7 @@ class Crawler:
             # We expect a reactor to not be installed.
             if is_reactor_installed():
                 raise RuntimeError(
-                    "TWISTED_ENABLED is False but a Twisted reactor is installed."
+                    "TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed."
                 )
             logger.debug("Not using a Twisted reactor")
             self._apply_reactorless_default_settings()
@@ -411,9 +411,9 @@ class CrawlerRunner(CrawlerRunnerBase):
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         super().__init__(settings)
-        if not self.settings.getbool("TWISTED_ENABLED"):
+        if not self.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise RuntimeError(
-                f"{type(self).__name__} doesn't support TWISTED_ENABLED=False."
+                f"{type(self).__name__} doesn't support TWISTED_REACTOR_ENABLED=False."
             )
         self._active: set[Deferred[None]] = set()
 
@@ -499,10 +499,10 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
     The AsyncCrawlerRunner object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
 
-    When the :setting:`TWISTED_ENABLED` setting is set to ``True``, this class
-    requires a reactor to be installed and uses it, otherwise it requires a
-    reactor to not be installed but requires an asyncio event loop to be
-    installed and uses it.
+    When the :setting:`TWISTED_REACTOR_ENABLED` setting is set to ``True``,
+    this class requires a reactor to be installed and uses it, otherwise it
+    requires a reactor to not be installed but requires an asyncio event loop
+    to be installed and uses it.
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
@@ -550,20 +550,20 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
                 "The crawler_or_spidercls argument cannot be a spider object, "
                 "it must be a spider class (or a Crawler object)"
             )
-        if self.settings.getbool("TWISTED_ENABLED"):
+        if self.settings.getbool("TWISTED_REACTOR_ENABLED"):
             if not is_reactor_installed():
                 raise RuntimeError(
                     "We expected a Twisted reactor to be installed but it isn't."
                 )
             if not is_asyncio_reactor_installed():
                 raise RuntimeError(
-                    f"When TWISTED_ENABLED is True, {type(self).__name__} "
+                    f"When TWISTED_REACTOR_ENABLED is True, {type(self).__name__} "
                     f"requires that the installed Twisted reactor is "
                     f'"twisted.internet.asyncioreactor.AsyncioSelectorReactor".'
                 )
         elif is_reactor_installed():
             raise RuntimeError(
-                "TWISTED_ENABLED is False but a Twisted reactor is installed."
+                "TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed."
             )
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
@@ -660,10 +660,32 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
 
-        resolver_class = load_object(self.settings["DNS_RESOLVER"])
+        dns_priority = self.settings.getpriority("DNS_RESOLVER") or 0
+        default_priority = SETTINGS_PRIORITIES["default"]
+
+        if dns_priority > default_priority:
+            warnings.warn(
+                "The DNS_RESOLVER setting is deprecated, please use "
+                "TWISTED_DNS_RESOLVER instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
+            twisted_dns_priority = (
+                self.settings.getpriority("TWISTED_DNS_RESOLVER") or 0
+            )
+            if twisted_dns_priority > dns_priority:
+                resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+            else:
+                resolver_cls_path = self.settings["DNS_RESOLVER"]
+        else:
+            resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+
+        resolver_class = load_object(resolver_cls_path)
+
         # We pass self, which is CrawlerProcess, instead of Crawler here,
         # which works because the default resolvers only use crawler.settings.
-        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]
+        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[call-overload]
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
@@ -784,9 +806,9 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     The AsyncCrawlerProcess object must be instantiated with a
     :class:`~scrapy.settings.Settings` object.
 
-    When the :setting:`TWISTED_ENABLED` setting is set to ``True``, this class
-    installs a reactor and uses it, otherwise it requires a reactor to not be
-    installed but installs an asyncio event loop and uses it.
+    When the :setting:`TWISTED_REACTOR_ENABLED` setting is set to ``True``,
+    this class installs a reactor and uses it, otherwise it requires a reactor
+    to not be installed but installs an asyncio event loop and uses it.
 
     :param install_root_handler: whether to install root logging handler
         (default: True)
@@ -814,10 +836,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         # The ASYNCIO_EVENT_LOOP setting cannot be overridden by add-ons and
         # spiders when using AsyncCrawlerProcess.
         loop_path = self.settings["ASYNCIO_EVENT_LOOP"]
-        if not self.settings.getbool("TWISTED_ENABLED"):
+        if not self.settings.getbool("TWISTED_REACTOR_ENABLED"):
             if is_reactor_installed():
                 raise RuntimeError(
-                    "TWISTED_ENABLED is False but a Twisted reactor is installed."
+                    "TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed."
                 )
             self._reactorless_loop = set_asyncio_event_loop(loop_path)
             install_reactor_import_hook()
@@ -840,8 +862,9 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
     ) -> None:
         """
-        This method starts a :mod:`~twisted.internet.reactor`/asyncio event
-        loop, depending on the value of the :setting:`TWISTED_ENABLED` setting.
+        This method starts a :mod:`~twisted.internet.reactor` or an asyncio
+        event loop, depending on the value of the
+        :setting:`TWISTED_REACTOR_ENABLED` setting.
 
         When using a reactor it adjusts its pool size to
         :setting:`REACTOR_THREADPOOL_MAXSIZE` and installs a DNS resolver based
@@ -857,7 +880,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             handlers from Twisted and Scrapy (default: True)
         """
 
-        if not self.settings.getbool("TWISTED_ENABLED"):
+        if not self.settings.getbool("TWISTED_REACTOR_ENABLED"):
             self._start_asyncio(stop_after_crawl, install_signal_handlers)
         else:
             self._start_twisted(stop_after_crawl, install_signal_handlers)

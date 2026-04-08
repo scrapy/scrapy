@@ -9,6 +9,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 warnings.warn(
     "The scrapy.utils.testsite module is deprecated.",
     ScrapyDeprecationWarning,
+    stacklevel=2,
 )
 
 

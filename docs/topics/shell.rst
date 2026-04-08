@@ -17,9 +17,6 @@ spider, without having to run the spider to test every change.
 Once you get familiarized with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
 
-.. note::
-    This feature is not supported when :setting:`TWISTED_ENABLED` is ``False``.
-
 Configuring the shell
 =====================
 

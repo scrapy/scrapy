@@ -167,7 +167,7 @@ This handler supports ``ftp://host/path`` FTP URIs.
 It's implemented using :mod:`twisted.protocols.ftp`.
 
 .. note::
-    This handler is not supported when :setting:`TWISTED_ENABLED` is ``False``.
+    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 .. _twisted-http2-handler:
 
@@ -223,7 +223,7 @@ If you want to use this handler you need to replace the default one for the
 .. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
 .. note::
-    This handler is not supported when :setting:`TWISTED_ENABLED` is ``False``.
+    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 HTTP11DownloadHandler
 ---------------------
@@ -239,7 +239,7 @@ uses the HTTP/1.1 protocol for them.
 It's implemented using :mod:`twisted.web.client`.
 
 .. note::
-    This handler is not supported when :setting:`TWISTED_ENABLED` is ``False``.
+    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 HttpxDownloadHandler
 --------------------

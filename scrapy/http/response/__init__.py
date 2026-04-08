@@ -38,16 +38,19 @@ class Response(object_ref):
     downloaded (by the Downloader) and fed to the Spiders for processing.
     """
 
-    attributes: tuple[str, ...] = (
-        "url",
+    __attrs_and_slots = (
         "status",
-        "headers",
-        "body",
-        "flags",
         "request",
         "certificate",
         "ip_address",
         "protocol",
+    )
+    attributes: tuple[str, ...] = (
+        "url",
+        "headers",
+        "body",
+        "flags",
+        *__attrs_and_slots,
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
@@ -55,6 +58,16 @@ class Response(object_ref):
 
     Currently used by :meth:`Response.replace`.
     """
+
+    __slots__ = (
+        "__weakref__",
+        "_url",
+        "_body",
+        "_headers",
+        "_flags",
+        *__attrs_and_slots,
+    )
+    del __attrs_and_slots
 
     def __init__(
         self,
@@ -68,12 +81,12 @@ class Response(object_ref):
         ip_address: IPv4Address | IPv6Address | None = None,
         protocol: str | None = None,
     ):
-        self.headers: Headers = Headers(headers or {})
+        self._headers: Headers | None = Headers(headers) if headers else None
         self.status: int = int(status)
         self._set_body(body)
         self._set_url(url)
         self.request: Request | None = request
-        self.flags: list[str] = [] if flags is None else list(flags)
+        self._flags: list[str] | None = list(flags) if flags else None
         self.certificate: Certificate | None = certificate
         self.ip_address: IPv4Address | IPv6Address | None = ip_address
         self.protocol: str | None = protocol
@@ -86,7 +99,7 @@ class Response(object_ref):
             raise AttributeError(
                 "Response.cb_kwargs not available, this response "
                 "is not tied to any request"
-            )
+            ) from None
 
     @property
     def meta(self) -> dict[str, Any]:
@@ -95,7 +108,7 @@ class Response(object_ref):
         except AttributeError:
             raise AttributeError(
                 "Response.meta not available, this response is not tied to any request"
-            )
+            ) from None
 
     @property
     def url(self) -> str:
@@ -124,6 +137,31 @@ class Response(object_ref):
             )
         else:
             self._body = body
+
+    @property
+    def headers(self) -> Headers:
+        if self._headers is None:
+            self._headers = Headers()
+        return self._headers
+
+    @headers.setter
+    def headers(
+        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None
+    ) -> None:
+        if isinstance(value, Headers):
+            self._headers = value
+        else:
+            self._headers = Headers(value) if value is not None else None
+
+    @property
+    def flags(self) -> list[str]:
+        if self._flags is None:
+            self._flags = []
+        return self._flags
+
+    @flags.setter
+    def flags(self, value: list[str] | None) -> None:
+        self._flags = value
 
     def __repr__(self) -> str:
         return f"<{self.status} {self.url}>"
