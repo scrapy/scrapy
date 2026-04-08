@@ -16,7 +16,7 @@ from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
-from scrapy.settings import Settings, overridden_settings
+from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils.defer import deferred_from_coro
@@ -660,7 +660,29 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
 
-        resolver_class = load_object(self.settings["DNS_RESOLVER"])
+        dns_priority = self.settings.getpriority("DNS_RESOLVER") or 0
+        default_priority = SETTINGS_PRIORITIES["default"]
+
+        if dns_priority > default_priority:
+            warnings.warn(
+                "The DNS_RESOLVER setting is deprecated, please use "
+                "TWISTED_DNS_RESOLVER instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
+            twisted_dns_priority = (
+                self.settings.getpriority("TWISTED_DNS_RESOLVER") or 0
+            )
+            if twisted_dns_priority > dns_priority:
+                resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+            else:
+                resolver_cls_path = self.settings["DNS_RESOLVER"]
+        else:
+            resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+
+        resolver_class = load_object(resolver_cls_path)
+
         # We pass self, which is CrawlerProcess, instead of Crawler here,
         # which works because the default resolvers only use crawler.settings.
         resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[call-overload]
