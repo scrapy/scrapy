@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
 
 from OpenSSL import SSL
@@ -34,6 +35,18 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
 
 
+@contextmanager
+def _filter_method_warning():
+    with warnings.catch_warnings():
+        # Twisted deprecation, https://github.com/scrapy/scrapy/issues/3288
+        warnings.filterwarnings(
+            "ignore",
+            message=r"Passing method to twisted\.internet\.ssl\.CertificateOptions",
+            category=DeprecationWarning,
+        )
+        yield
+
+
 @implementer(IPolicyForHTTPS)
 class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     """Non-peer-certificate verifying HTTPS context factory.
@@ -63,11 +76,12 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
         else:
             self.tls_ciphers = DEFAULT_CIPHERS
-        self._certificate_options = CertificateOptions(
-            method=self._ssl_method,
-            fixBrokenPeers=True,
-            acceptableCiphers=self.tls_ciphers,
-        )
+        with _filter_method_warning():
+            self._certificate_options = CertificateOptions(
+                method=self._ssl_method,
+                fixBrokenPeers=True,
+                acceptableCiphers=self.tls_ciphers,
+            )
         self._ctx = self._get_context()
         self._verify_certificates = verify_certificates
 
@@ -110,13 +124,14 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         if not self._verify_certificates:
             return _ScrapyClientTLSOptions(hostname.decode("ascii"), self._ctx)  # type: ignore[no-untyped-call]
         # Note that this doesn't use self._ctx
-        return optionsForClientTLS(
-            hostname=hostname.decode("ascii"),
-            extraCertificateOptions={
-                "method": self._ssl_method,
-                "acceptableCiphers": self.tls_ciphers,
-            },
-        )
+        with _filter_method_warning():
+            return optionsForClientTLS(
+                hostname=hostname.decode("ascii"),
+                extraCertificateOptions={
+                    "method": self._ssl_method,
+                    "acceptableCiphers": self.tls_ciphers,
+                },
+            )
 
 
 ScrapyClientContextFactory = create_deprecated_class(
@@ -160,10 +175,11 @@ class BrowserLikeContextFactory(_ScrapyClientContextFactory):
         super().__init__(*args, **kwargs)
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
-        return optionsForClientTLS(
-            hostname=hostname.decode("ascii"),
-            extraCertificateOptions={"method": self._ssl_method},
-        )
+        with _filter_method_warning():
+            return optionsForClientTLS(
+                hostname=hostname.decode("ascii"),
+                extraCertificateOptions={"method": self._ssl_method},
+            )
 
 
 @implementer(IPolicyForHTTPS)
