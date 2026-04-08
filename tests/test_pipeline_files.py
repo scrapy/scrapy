@@ -273,6 +273,46 @@ class TestFilesPipeline:
         assert path.exists()
         assert path.read_bytes() == b"data"
 
+    @coroutine_test
+    async def test_media_downloaded_201_created_succeeds(self):
+        """Status 201 Created is a valid 2xx and must not raise FileException"""
+        item_url = "http://example.com/file_201.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={"response": Response(item_url, status=201, body=b"data")},
+        )
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[request],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+
+    @coroutine_test
+    async def test_media_downloaded_404_fails(self):
+        """Non-2xx responses must still be rejected after the fix."""
+        item_url = "http://example.com/file_404.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={"response": Response(item_url, status=404, body=b"not found")},
+        )
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[request],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"] == []
+
     def test_file_path_from_item(self):
         """
         Custom file path based on item data, overriding default implementation
