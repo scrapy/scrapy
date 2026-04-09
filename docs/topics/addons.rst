@@ -166,7 +166,7 @@ Use a fallback component:
 
 .. code-block:: python
 
-    from scrapy.utils.misc import build_from_crawler
+    from scrapy.utils.misc import build_from_crawler, load_object
 
 
     FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
