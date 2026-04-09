@@ -82,7 +82,7 @@ class _ResultT(TypedDict):
 
 class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
-        if not crawler.settings.getbool("TWISTED_ENABLED"):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self._crawler = crawler
@@ -147,7 +147,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         # issue a callback after `_disconnect_timeout` seconds.
         #
         # See also https://github.com/scrapy/scrapy/issues/2653
-        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, [])
+        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, ())
 
         try:
             await maybe_deferred_to_future(d)

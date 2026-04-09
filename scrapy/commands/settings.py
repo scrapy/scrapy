@@ -1,5 +1,6 @@
 import argparse
 import json
+from typing import Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
 from scrapy.settings import BaseSettings
@@ -7,7 +8,7 @@ from scrapy.settings import BaseSettings
 
 class Command(ScrapyCommand):
     requires_crawler_process = False
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[options]"

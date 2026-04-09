@@ -57,7 +57,7 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
     logging warnings.
 
     Instances of this class are returned from
-    :class:`.ScrapyClientContextFactory`.
+    :class:`._ScrapyClientContextFactory`.
 
     This class is used on Twisted 25.5.0 and older.
     """

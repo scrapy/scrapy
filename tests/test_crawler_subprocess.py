@@ -313,7 +313,8 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def test_reactorless(self):
         log = self.run_script("reactorless.py")
         assert (
-            "RuntimeError: CrawlerProcess doesn't support TWISTED_ENABLED=False" in log
+            "RuntimeError: CrawlerProcess doesn't support TWISTED_REACTOR_ENABLED=False"
+            in log
         )
 
 
@@ -356,7 +357,20 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
+        assert log.count("WARNING: ") == 2
+
+    def test_reactorless_custom_settings(self):
+        """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
+        currently supported, AsyncCrawlerProcess will install a reactor in this
+        case.
+        """
+        log = self.run_script("reactorless_custom_settings.py")
+        assert "Spider closed (finished)" not in log
+        assert (
+            "TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed."
+            in log
+        )
 
     def test_reactorless_datauri(self):
         log = self.run_script("reactorless_datauri.py")
@@ -365,7 +379,8 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "{'data': 'foo'}" in log
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_import_hook(self):
         log = self.run_script("reactorless_import_hook.py")
@@ -374,8 +389,8 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
 
     def test_reactorless_telnetconsole_default(self):
-        """By default TWISTED_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
-        log = self.run_script("reactorless_telnetconsole_default.py")
+        """By default TWISTED_REACTOR_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
+        log = self.run_script("reactorless_simple.py")  # no need for a separate script
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
         assert "The TelnetConsole extension requires a Twisted reactor" not in log
@@ -399,7 +414,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def test_reactorless_reactor(self):
         log = self.run_script("reactorless_reactor.py")
         assert (
-            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
+            "RuntimeError: TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed"
             in log
         )
 
@@ -470,6 +485,14 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
             "setting (uvloop.Loop)"
         ) in log
 
+    def test_no_reactor(self):
+        log = self.run_script("no_reactor.py")
+        assert "Spider closed (finished)" not in log
+        assert (
+            "RuntimeError: We expected a Twisted reactor to be installed but it isn't."
+            in log
+        )
+
 
 class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     @property
@@ -502,7 +525,8 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     def test_reactorless(self):
         log = self.run_script("reactorless.py")
         assert (
-            "RuntimeError: CrawlerRunner doesn't support TWISTED_ENABLED=False" in log
+            "RuntimeError: CrawlerRunner doesn't support TWISTED_REACTOR_ENABLED=False"
+            in log
         )
 
 
@@ -515,7 +539,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         log = self.run_script("simple_default_reactor.py")
         assert "Spider closed (finished)" not in log
         assert (
-            "RuntimeError: When TWISTED_ENABLED is True, "
+            "RuntimeError: When TWISTED_REACTOR_ENABLED is True, "
             "AsyncCrawlerRunner requires that the installed Twisted reactor"
         ) in log
 
@@ -525,7 +549,17 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
+        assert log.count("WARNING: ") == 2
+
+    def test_reactorless_custom_settings(self):
+        """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
+        currently supported, AsyncCrawlerRunner will expect a reactor installed
+        by the user.
+        """
+        log = self.run_script("reactorless_custom_settings.py")
+        assert "Spider closed (finished)" not in log
+        assert "We expected a Twisted reactor to be installed but it isn't." in log
 
     def test_reactorless_datauri(self):
         log = self.run_script("reactorless_datauri.py")
@@ -534,11 +568,12 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "{'data': 'foo'}" in log
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
+        assert log.count("WARNING: ") == 2
 
     def test_reactorless_reactor(self):
         log = self.run_script("reactorless_reactor.py")
         assert (
-            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
+            "RuntimeError: TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed"
             in log
         )

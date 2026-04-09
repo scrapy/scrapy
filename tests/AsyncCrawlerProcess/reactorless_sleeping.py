@@ -14,7 +14,7 @@ class SleepingSpider(scrapy.Spider):
         await asyncio.sleep(int(sys.argv[1]))
 
 
-process = AsyncCrawlerProcess(settings={"TWISTED_ENABLED": False})
+process = AsyncCrawlerProcess(settings={"TWISTED_REACTOR_ENABLED": False})
 
 process.crawl(SleepingSpider)
 process.start()

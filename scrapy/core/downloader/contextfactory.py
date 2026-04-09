@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
 
 from OpenSSL import SSL
@@ -22,10 +23,12 @@ from scrapy.core.downloader.tls import (
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
-from scrapy.utils.deprecate import create_deprecated_class, method_is_overridden
+from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from twisted.internet._sslverify import ClientTLSOptions
 
     # typing.Self requires Python 3.11
@@ -35,8 +38,20 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
 
 
+@contextmanager
+def _filter_method_warning() -> Generator[None]:
+    with warnings.catch_warnings():
+        # Twisted deprecation, https://github.com/scrapy/scrapy/issues/3288
+        warnings.filterwarnings(
+            "ignore",
+            message=r"Passing method to twisted\.internet\.ssl\.CertificateOptions",
+            category=DeprecationWarning,
+        )
+        yield
+
+
 @implementer(IPolicyForHTTPS)
-class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
+class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     """Non-peer-certificate verifying HTTPS context factory.
 
     Default OpenSSL method is ``TLS_METHOD`` (also called ``SSLv23_METHOD``)
@@ -64,29 +79,14 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
         else:
             self.tls_ciphers = DEFAULT_CIPHERS
-        self._certificate_options = CertificateOptions(
-            method=self._ssl_method,
-            fixBrokenPeers=True,
-            acceptableCiphers=self.tls_ciphers,
-        )
+        with _filter_method_warning():
+            self._certificate_options = CertificateOptions(
+                method=self._ssl_method,
+                fixBrokenPeers=True,
+                acceptableCiphers=self.tls_ciphers,
+            )
         self._ctx = self._get_context()
         self._verify_certificates = verify_certificates
-        if method_is_overridden(type(self), ScrapyClientContextFactory, "getContext"):
-            warnings.warn(
-                "Overriding ScrapyClientContextFactory.getContext() is deprecated and that method"
-                " will be removed in a future Scrapy version. Override creatorForNetloc() instead.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-        if method_is_overridden(
-            type(self), ScrapyClientContextFactory, "getCertificateOptions"
-        ):  # pragma: no cover
-            warnings.warn(
-                "Overriding ScrapyClientContextFactory.getCertificateOptions() is deprecated and that method"
-                " will be removed in a future Scrapy version. Override creatorForNetloc() instead.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
 
     @classmethod
     def from_crawler(
@@ -111,21 +111,11 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         )
 
     def getCertificateOptions(self) -> CertificateOptions:  # pragma: no cover
-        warnings.warn(
-            "ScrapyClientContextFactory.getCertificateOptions() is deprecated.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return self._certificate_options
 
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
     def getContext(self, hostname: Any = None, port: Any = None) -> SSL.Context:
-        warnings.warn(
-            "ScrapyClientContextFactory.getContext() is deprecated.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         return self._ctx
 
     def _get_context(self) -> SSL.Context:
@@ -143,17 +133,26 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 )
             return _ScrapyClientTLSOptions(hostname.decode("ascii"), self._ctx)  # type: ignore[no-untyped-call]
         # Note that this doesn't use self._ctx
-        return optionsForClientTLS(
-            hostname=hostname.decode("ascii"),
-            extraCertificateOptions={
-                "method": self._ssl_method,
-                "acceptableCiphers": self.tls_ciphers,
-            },
-        )
+        with _filter_method_warning():
+            return optionsForClientTLS(
+                hostname=hostname.decode("ascii"),
+                extraCertificateOptions={
+                    "method": self._ssl_method,
+                    "acceptableCiphers": self.tls_ciphers,
+                },
+            )
+
+
+ScrapyClientContextFactory = create_deprecated_class(
+    "ScrapyClientContextFactory",
+    _ScrapyClientContextFactory,
+    subclass_warn_message="{old} is deprecated.",
+    instance_warn_message="{cls} is deprecated.",
+)
 
 
 @implementer(IPolicyForHTTPS)
-class BrowserLikeContextFactory(ScrapyClientContextFactory):
+class BrowserLikeContextFactory(_ScrapyClientContextFactory):
     """
     Twisted-recommended context factory for web clients.
 
@@ -185,10 +184,11 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
         super().__init__(*args, **kwargs)
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
-        return optionsForClientTLS(
-            hostname=hostname.decode("ascii"),
-            extraCertificateOptions={"method": self._ssl_method},
-        )
+        with _filter_method_warning():
+            return optionsForClientTLS(
+                hostname=hostname.decode("ascii"),
+                extraCertificateOptions={"method": self._ssl_method},
+            )
 
 
 @implementer(IPolicyForHTTPS)
@@ -246,7 +246,7 @@ def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
     Also passes values of other relevant settings to the factory class.
     """
     if crawler.settings["DOWNLOADER_CLIENTCONTEXTFACTORY"] == "SENTINEL":
-        context_factory_cls = ScrapyClientContextFactory
+        context_factory_cls = _ScrapyClientContextFactory
     else:  # pragma: no cover
         warnings.warn(
             "The 'DOWNLOADER_CLIENTCONTEXTFACTORY' setting is deprecated.",

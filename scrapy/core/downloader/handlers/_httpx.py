@@ -81,8 +81,8 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
                 f"{type(self).__name__} requires the asyncio support. Make"
                 f" sure that you have either enabled the asyncio Twisted"
                 f" reactor in the TWISTED_REACTOR setting or disabled the"
-                f" TWISTED_ENABLED setting. See the asyncio documentation"
-                f" of Scrapy for more information."
+                f" TWISTED_REACTOR_ENABLED setting. See the asyncio"
+                f" documentation of Scrapy for more information."
             )
         if httpx is None:  # pragma: no cover
             raise NotConfigured(
@@ -90,7 +90,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             )
         super().__init__(crawler)
         logger.warning(
-            "HttpxDownloadHandler is experimental and is not recommented for production use."
+            "HttpxDownloadHandler is experimental and is not recommended for production use."
         )
         bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         bind_address = normalize_bind_address(bind_address)

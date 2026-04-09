@@ -102,6 +102,32 @@ An optional base class for custom handlers is provided:
     :undoc-members:
     :member-order: bysource
 
+.. _download-handlers-exceptions:
+
+Exceptions raised by download handlers
+======================================
+
+.. versionadded:: 2.15.0
+
+The built-in download handlers raise Scrapy-specific exceptions instead of
+implementation-specific ones, so that code that handles these exceptions can be
+written in a generic way. We recommend custom download handlers to also use
+these exceptions.
+
+.. autoexception:: scrapy.exceptions.CannotResolveHostError
+
+.. autoexception:: scrapy.exceptions.DownloadCancelledError
+
+.. autoexception:: scrapy.exceptions.DownloadConnectionRefusedError
+
+.. autoexception:: scrapy.exceptions.DownloadFailedError
+
+.. autoexception:: scrapy.exceptions.DownloadTimeoutError
+
+.. autoexception:: scrapy.exceptions.ResponseDataLossError
+
+.. autoexception:: scrapy.exceptions.UnsupportedURLSchemeError
+
 .. _download-handlers-ref:
 
 Built-in download handlers reference
@@ -139,6 +165,9 @@ FTPDownloadHandler
 This handler supports ``ftp://host/path`` FTP URIs.
 
 It's implemented using :mod:`twisted.protocols.ftp`.
+
+.. note::
+    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 .. _twisted-http2-handler:
 
@@ -193,6 +222,9 @@ If you want to use this handler you need to replace the default one for the
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
+.. note::
+    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
+
 HTTP11DownloadHandler
 ---------------------
 
@@ -205,6 +237,9 @@ This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 protocol for them.
 
 It's implemented using :mod:`twisted.web.client`.
+
+.. note::
+    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 HttpxDownloadHandler
 --------------------

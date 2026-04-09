@@ -303,11 +303,12 @@ Pre-crawler settings
 
 These settings cannot be :ref:`set from a spider <spider-settings>`.
 
-These settings are :setting:`SPIDER_LOADER_CLASS` and settings used by the
-corresponding :ref:`component <topics-components>`, e.g.
-:setting:`SPIDER_MODULES` and :setting:`SPIDER_LOADER_WARN_ONLY` for the
-default component.
+These settings are:
 
+-   :setting:`TWISTED_REACTOR_ENABLED`
+-   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
+    spider loader class, e.g. :setting:`SPIDER_MODULES` and
+    :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
 
 .. _reactor-settings:
 
@@ -331,7 +332,7 @@ These settings are:
 -   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
     :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
--   :setting:`DNS_RESOLVER` and settings used by the corresponding
+-   :setting:`TWISTED_DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
     and :setting:`DNS_TIMEOUT` for the default one.
 
@@ -356,6 +357,9 @@ ignoring the value of :setting:`TWISTED_REACTOR` and using the value of
 e.g. in :ref:`per-spider settings <spider-settings>`, an exception will be
 raised.
 
+All of these settings, except for :setting:`ASYNCIO_EVENT_LOOP`, are only used
+when the Twisted reactor is used, i.e. when :setting:`TWISTED_REACTOR_ENABLED`
+is ``True``.
 
 .. _topics-settings-ref:
 
@@ -651,6 +655,13 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
+.. note::
+    This setting is only used by
+    :class:`~scrapy.resolver.CachingThreadedResolver` and
+    :class:`~scrapy.resolver.CachingHostnameResolver`. It has no effect when
+    :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
+    either when :setting:`DNS_RESOLVER` is set to a different resolver.
+
 .. setting:: DNSCACHE_SIZE
 
 DNSCACHE_SIZE
@@ -658,20 +669,24 @@ DNSCACHE_SIZE
 
 Default: ``10000``
 
-DNS in-memory cache size.
+DNS in-memory cache size, see :setting:`DNSCACHE_ENABLED`.
 
-.. setting:: DNS_RESOLVER
+.. setting:: TWISTED_DNS_RESOLVER
 
-DNS_RESOLVER
-------------
+TWISTED_DNS_RESOLVER
+--------------------
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
-The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
-supports specifying a timeout for DNS requests via the :setting:`DNS_TIMEOUT` setting,
-but works only with IPv4 addresses. Scrapy provides an alternative resolver,
+The class to be used by Twisted to resolve DNS names. The default
+``scrapy.resolver.CachingThreadedResolver`` supports specifying a timeout for
+DNS requests via the :setting:`DNS_TIMEOUT` setting, but works only with IPv4
+addresses. Scrapy provides an alternative resolver,
 ``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
 take the :setting:`DNS_TIMEOUT` setting into account.
+
+.. note::
+    This setting has no effect when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 .. setting:: DNS_TIMEOUT
 
@@ -681,6 +696,12 @@ DNS_TIMEOUT
 Default: ``60``
 
 Timeout for processing of DNS queries in seconds. Float is supported.
+
+.. note::
+    This setting is only used by
+    :class:`~scrapy.resolver.CachingThreadedResolver`. It has no effect when
+    :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
+    either when :setting:`DNS_RESOLVER` is set to a different resolver.
 
 .. setting:: DOWNLOADER
 
@@ -766,7 +787,7 @@ the TLS-related libraries.
 DOWNLOADER_MIDDLEWARES
 ----------------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing the downloader middlewares enabled in your project, and their
 orders. For more info see :ref:`topics-downloader-middleware-setting`.
@@ -922,6 +943,20 @@ Default:
         "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
     }
 
+(when :setting:`TWISTED_REACTOR_ENABLED` is ``True``)
+
+.. code-block:: python
+
+    {
+        "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
+        "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
+        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
+        "ftp": None,
+    }
+
+(when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
 
 A dict containing the :ref:`download handlers <topics-download-handlers>`
 enabled by default in Scrapy. You should never modify this setting in your
@@ -1204,7 +1239,7 @@ command will prefer it over the default setting.
 EXTENSIONS
 ----------
 
-Default:: ``{}``
+Default: ``{}``
 
 :ref:`Component priority dictionary <component-priority-dictionaries>` of
 enabled extensions. See :ref:`topics-extensions`.
@@ -1252,7 +1287,7 @@ FEED_STORAGE_GCS_ACL
 --------------------
 
 The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
-For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
+For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://docs.cloud.google.com/storage/docs/access-control/lists>`_.
 
 .. setting:: FORCE_CRAWLER_PROCESS
 
@@ -1826,7 +1861,7 @@ Scrapy does not process new requests.
 SPIDER_CONTRACTS
 ----------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing the spider contracts enabled in your project, used for
 testing spiders. For more info see :ref:`topics-contracts`.
@@ -1887,7 +1922,7 @@ warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
 SPIDER_MIDDLEWARES
 ------------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing the spider middlewares enabled in your project, and their
 orders. For more info see :ref:`topics-spider-middleware-setting`.
@@ -1954,7 +1989,7 @@ For more info see: :ref:`topics-stats`.
 TELNETCONSOLE_ENABLED
 ---------------------
 
-Default: ``True``
+Default: ``True`` (``False`` when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)
 
 A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
 will be enabled (provided its extension is also enabled).
@@ -1972,6 +2007,35 @@ command.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
+
+.. setting:: TWISTED_REACTOR_ENABLED
+
+TWISTED_REACTOR_ENABLED
+-----------------------
+
+Default: ``True``
+
+Whether to install and use the Twisted reactor.
+
+If this is set to ``True``, Scrapy will use the Twisted reactor and will
+install one according to the :setting:`TWISTED_REACTOR` setting value when
+appropriate (e.g. when running via :ref:`the command-line tool
+<topics-commands>`). This is the traditional mode of using Scrapy.
+
+If this is set to ``False``, Scrapy will use the asyncio event loop directly
+and will not attempt to install or use a reactor. Features that require a
+reactor won't be available, but Twisted APIs that don't require a reactor,
+including :class:`~twisted.internet.defer.Deferred` and
+:class:`~twisted.python.failure.Failure`, will still be available. On the other
+hand, limitations related to Twisted reactors (such as not being able to start
+a reactor in the same process where a reactor was previously started and
+stopped) will not apply. This mode is currently experimental and may not be
+suitable for production use. It may also not be supported by 3rd-party code.
+See :ref:`asyncio-without-reactor` for more information about this mode.
+
+.. note:: This setting can't be set :ref:`per-spider <spider-settings>`.
+
+.. versionadded:: 2.15.0
 
 .. setting:: TWISTED_REACTOR
 
@@ -2098,7 +2162,7 @@ Use ``0`` to allow URLs of any length.
 The default value is copied from the `Microsoft Internet Explorer maximum URL
 length`_, even though this setting exists for different reasons.
 
-.. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
+.. _Microsoft Internet Explorer maximum URL length: https://web.archive.org/web/20250206050143/https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
 
 .. setting:: USER_AGENT
 
@@ -2137,6 +2201,4 @@ case to see how to enable and use them.
 .. settingslist::
 
 .. _Amazon web services: https://aws.amazon.com/
-.. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search
-.. _depth-first order: https://en.wikipedia.org/wiki/Depth-first_search
 .. _Google Cloud Storage: https://cloud.google.com/storage/

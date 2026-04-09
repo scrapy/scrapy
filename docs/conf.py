@@ -28,11 +28,9 @@ author = "Scrapy developers"
 extensions = [
     "notfound.extension",
     "scrapydocs",
-    "sphinx.ext.autodoc",
+    "sphinx_scrapy",
     "scrapyfixautodoc",  # Must be after "sphinx.ext.autodoc"
     "sphinx.ext.coverage",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.viewcode",
     "sphinx_rtd_dark_mode",
 ]
 
@@ -147,22 +145,24 @@ coverage_ignore_pyobjects = [
 # -- Options for the InterSphinx extension -----------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
 
-intersphinx_mapping = {
-    "attrs": ("https://www.attrs.org/en/stable/", None),
-    "coverage": ("https://coverage.readthedocs.io/en/latest", None),
-    "cryptography": ("https://cryptography.io/en/latest/", None),
-    "cssselect": ("https://cssselect.readthedocs.io/en/latest", None),
-    "itemloaders": ("https://itemloaders.readthedocs.io/en/latest/", None),
-    "parsel": ("https://parsel.readthedocs.io/en/latest/", None),
-    "pytest": ("https://docs.pytest.org/en/latest", None),
-    "python": ("https://docs.python.org/3", None),
-    "sphinx": ("https://www.sphinx-doc.org/en/master", None),
-    "tox": ("https://tox.wiki/en/latest/", None),
-    "twisted": ("https://docs.twisted.org/en/stable/", None),
-    "twistedapi": ("https://docs.twisted.org/en/stable/api/", None),
-    "w3lib": ("https://w3lib.readthedocs.io/en/latest", None),
-}
 intersphinx_disabled_reftypes: Sequence[str] = []
+
+# sphinx-scrapy ---------------------------------------------------------------
+
+scrapy_intersphinx_enable = [
+    "attrs",
+    "coverage",
+    "cryptography",
+    "cssselect",
+    "itemloaders",
+    "parsel",
+    "pytest",
+    "sphinx",
+    "tox",
+    "twisted",
+    "twistedapi",
+    "w3lib",
+]
 
 # -- Other options ------------------------------------------------------------
 default_dark_mode = False
