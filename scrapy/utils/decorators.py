@@ -62,7 +62,7 @@ def inthread(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
     """Decorator to call a function in a thread and return a deferred with the
     result.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.15.0
         Now uses :func:`asyncio.to_thread` if the asyncio support is available.
     """
 
