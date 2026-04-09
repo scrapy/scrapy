@@ -24,6 +24,26 @@ Backward-incompatible changes
 
     (:issue:`2183`, :issue:`6369`, :issue:`7182`)
 
+-   ``Request`` and ``Response`` objects: ``__slots__`` and setter changes:
+
+    -   :class:`scrapy.http.Request` and :class:`scrapy.http.Response` now
+        define ``__slots__``. Assigning arbitrary attributes to instances (for
+        example, ``response.foo = 1``) will raise ``AttributeError``. Store
+        per-request/response data in the request/response ``meta`` mapping
+        instead of attaching new attributes to the objects.
+
+    -   If you maintain custom ``Request`` or ``Response`` subclasses that
+        relied on dynamic instance attributes, either add ``'__dict__'`` to
+        your subclass ``__slots__`` to allow dynamic attributes, or migrate
+        per-instance state to ``meta`` or explicit documented attributes.
+
+    -   The setters for ``headers``, ``flags`` and ``cookies`` no longer coerce
+        falsy values into ``None``. For example, ``request.headers = {}`` now
+        stores an empty :class:`scrapy.http.headers.Headers` instance (not
+        ``None``), and ``request.flags = []`` remains an empty list instead of
+        being set to ``None``. Update code that relied on ``is None`` checks or
+        the previous coercion behaviour.
+
 New features
 ~~~~~~~~~~~~
 
@@ -4731,7 +4751,7 @@ Highlights:
 * :ref:`FTP support <media-pipeline-ftp>` for media pipelines
 * New :attr:`Response.certificate <scrapy.http.Response.certificate>`
   attribute
-* IPv6 support through :setting:`DNS_RESOLVER`
+* IPv6 support through ``DNS_RESOLVER``
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4839,7 +4859,7 @@ New features
     :class:`twisted.internet.ssl.Certificate` object for HTTPS responses
     (:issue:`2726`, :issue:`4054`)
 
-*   A new :setting:`DNS_RESOLVER` setting allows enabling IPv6 support
+*   A new ``DNS_RESOLVER`` setting allows enabling IPv6 support
     (:issue:`1031`, :issue:`4227`)
 
 *   A new :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE` setting allows configuring

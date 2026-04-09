@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from collections import deque
+from dataclasses import dataclass, field
 from datetime import datetime
 from time import time
 from typing import TYPE_CHECKING, Any
@@ -40,24 +41,21 @@ if TYPE_CHECKING:
     from scrapy.signalmanager import SignalManager
 
 
+@dataclass(slots=True, eq=False)
 class Slot:
     """Downloader slot"""
 
-    def __init__(
-        self,
-        concurrency: int,
-        delay: float,
-        randomize_delay: bool,
-    ):
-        self.concurrency: int = concurrency
-        self.delay: float = delay
-        self.randomize_delay: bool = randomize_delay
+    concurrency: int
+    delay: float
+    randomize_delay: bool
 
-        self.active: set[Request] = set()
-        self.queue: deque[tuple[Request, Deferred[Response]]] = deque()
-        self.transferring: set[Request] = set()
-        self.lastseen: float = 0
-        self.latercall: CallLaterResult | None = None
+    active: set[Request] = field(default_factory=set, init=False, repr=False)
+    queue: deque[tuple[Request, Deferred[Response]]] = field(
+        default_factory=deque, init=False, repr=False
+    )
+    transferring: set[Request] = field(default_factory=set, init=False, repr=False)
+    lastseen: float = field(default=0, init=False, repr=False)
+    latercall: CallLaterResult | None = field(default=None, init=False, repr=False)
 
     def free_transfer_slots(self) -> int:
         return self.concurrency - len(self.transferring)
@@ -71,14 +69,6 @@ class Slot:
         if self.latercall:
             self.latercall.cancel()
             self.latercall = None
-
-    def __repr__(self) -> str:
-        cls_name = self.__class__.__name__
-        return (
-            f"{cls_name}(concurrency={self.concurrency!r}, "
-            f"delay={self.delay:.2f}, "
-            f"randomize_delay={self.randomize_delay!r})"
-        )
 
     def __str__(self) -> str:
         return (

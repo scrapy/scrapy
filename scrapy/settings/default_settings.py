@@ -48,7 +48,6 @@ __all__ = [
     "DEPTH_STATS_VERBOSE",
     "DNSCACHE_ENABLED",
     "DNSCACHE_SIZE",
-    "DNS_RESOLVER",
     "DNS_TIMEOUT",
     "DOWNLOADER",
     "DOWNLOADER_CLIENTCONTEXTFACTORY",
@@ -185,6 +184,7 @@ __all__ = [
     "TELNETCONSOLE_PORT",
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
+    "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
     "URLLENGTH_LIMIT",
@@ -525,6 +525,8 @@ TELNETCONSOLE_USERNAME = "scrapy"
 TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
+
+TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"

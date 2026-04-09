@@ -177,7 +177,6 @@ in future Scrapy versions. The following features are not available:
   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`)
 * :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler`
 * :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-* :ref:`topics-shell`
 * :ref:`topics-telnetconsole`
 * :class:`~scrapy.crawler.CrawlerRunner` and
   :class:`~scrapy.crawler.CrawlerProcess`
