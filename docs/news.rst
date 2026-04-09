@@ -289,7 +289,7 @@ Bug fixes
     (:issue:`6912`, :issue:`6993`)
 
 -   ``scrapy runspider`` and ``scrapy crawl`` now set the exit code to 1 if an
-    exception happened early (this was broken in an earlier Scrapy version).
+    exception happened early (this was broken since Scrapy 2.13.0).
     (:issue:`6820`, :issue:`7255`)
 
 -   Fixed repeated warnings about data loss (see
