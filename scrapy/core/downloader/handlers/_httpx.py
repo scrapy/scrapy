@@ -90,7 +90,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             )
         super().__init__(crawler)
         logger.warning(
-            "HttpxDownloadHandler is experimental and is not recommented for production use."
+            "HttpxDownloadHandler is experimental and is not recommended for production use."
         )
         bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         bind_address = normalize_bind_address(bind_address)
