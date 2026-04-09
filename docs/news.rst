@@ -308,13 +308,11 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 
--   sphinx-scrapy_ is now used for building the documentation.
-    (:issue:`7380`, :issue:`7406`)
+-   The ``llms.txt`` and ``llms-full.txt`` files and Markdown versions of pages
+    are now generated when the HTML documentation is built.
+    (:issue:`7380`)
 
-    .. _sphinx-scrapy: https://github.com/scrapy/sphinx-scrapy
-
--   The ``llms.txt`` and ``llms-full.txt`` files are now generated when the
-    HTML documentation is built.
+-   Added a "Copy as Markdown" button to the HTML documentation.
     (:issue:`7380`)
 
 -   Added :ref:`docs for using Pydantic models as items <pydantic-items>`.
@@ -331,7 +329,7 @@ Documentation
     (:issue:`7385`)
 
 -   Other documentation improvements and fixes.
-    (:issue:`7248`, :issue:`7274`, :issue:`7408`)
+    (:issue:`7248`, :issue:`7274`, :issue:`7406`, :issue:`7408`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
