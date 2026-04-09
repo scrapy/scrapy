@@ -725,14 +725,14 @@ class FilesPipeline(MediaPipeline):
         item: Any = None,
     ) -> str:
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
-        
-        #try the raw URL
-        media_ext = Path(request.url).suffix
-        
-        #if that gave us garbage like .txt?fizz fallback to the clean path
+
+        # clean it up and look at the path first
+        parsed_url = urlparse_cached(request)
+        media_ext = Path(parsed_url.path).suffix
+
+        # if path has no extension look at the raw  URL
         if media_ext not in mimetypes.types_map:
-            parsed_url = urlparse_cached(request)
-            media_ext = Path(parsed_url.path).suffix
+            media_ext = Path(request.url).suffix
 
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise
