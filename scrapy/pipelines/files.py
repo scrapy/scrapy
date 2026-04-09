@@ -33,6 +33,7 @@ from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
@@ -724,7 +725,15 @@ class FilesPipeline(MediaPipeline):
         item: Any = None,
     ) -> str:
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
+        
+        #try the raw URL
         media_ext = Path(request.url).suffix
+        
+        #if that gave us garbage like .txt?fizz fallback to the clean path
+        if media_ext not in mimetypes.types_map:
+            parsed_url = urlparse_cached(request)
+            media_ext = Path(parsed_url.path).suffix
+
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise
         if media_ext not in mimetypes.types_map:
