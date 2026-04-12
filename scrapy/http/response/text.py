@@ -220,7 +220,7 @@ class TextResponse(Response):
 
     def follow_all(
         self,
-        urls: Iterable[str | Link] | parsel.SelectorList | None = None,
+        urls: Iterable[str | Link] | parsel.SelectorList[Any] | None = None,
         callback: CallbackT | None = None,
         method: str = "GET",
         headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,

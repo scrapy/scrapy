@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
-_ITER_T = TypeVar("_ITER_T", bound=dict | Item | str | bytes)
+_ITER_T = TypeVar("_ITER_T", bound=dict[Any, Any] | Item | str | bytes)
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
 _P = ParamSpec("_P")
@@ -252,7 +252,9 @@ def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
         yield node
 
 
-_generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
+_generator_callbacks_cache: LocalWeakReferencedCache[Callable[..., Any], bool] = (
+    LocalWeakReferencedCache(limit=128)
+)
 
 
 def _returns_none(return_node: ast.Return) -> bool:

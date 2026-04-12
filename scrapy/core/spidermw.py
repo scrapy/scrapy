@@ -11,7 +11,7 @@ from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
 from functools import wraps
 from inspect import isasyncgenfunction
 from itertools import islice
-from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 from warnings import warn
 
 from twisted.python.failure import Failure
@@ -79,7 +79,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         request: Request,
     ) -> Iterable[_T] | AsyncIterator[_T]:
         for method in self.methods["process_spider_input"]:
-            method = cast("Callable", method)
+            assert method is not None
             try:
                 if method in self._mw_methods_requiring_spider:
                     result = method(response=response, spider=self._spider)
@@ -248,9 +248,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod
-    def _get_process_spider_output(mw: Any) -> Callable | None:
-        normal_method: Callable | None = getattr(mw, "process_spider_output", None)
-        async_method: Callable | None = getattr(mw, "process_spider_output_async", None)
+    def _get_process_spider_output(mw: Any) -> Callable[..., Any] | None:
+        normal_method: Callable[..., Any] | None = getattr(
+            mw, "process_spider_output", None
+        )
+        async_method: Callable[..., Any] | None = getattr(
+            mw, "process_spider_output_async", None
+        )
         if not async_method:
             if normal_method and not isasyncgenfunction(normal_method):
                 raise TypeError(

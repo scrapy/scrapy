@@ -39,7 +39,7 @@ class AttrsNameItem:
 
 @dataclasses.dataclass
 class NameDataClass:
-    name: list = dataclasses.field(default_factory=list)
+    name: list[str] = dataclasses.field(default_factory=list)
 
 
 # test item loaders

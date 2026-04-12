@@ -4,7 +4,7 @@ import os
 import sys
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pytest
 from pexpect.popen_spawn import PopenSpawn
@@ -151,8 +151,7 @@ class TestInteractiveShell:
         env = os.environ.copy()
         env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        # https://github.com/python/typeshed/issues/14915
-        p = PopenSpawn(args, env=cast("os._Environ", env), timeout=5)
+        p = PopenSpawn(args, env=env, timeout=5)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline(f"fetch('{mockserver.url('/')}')")
