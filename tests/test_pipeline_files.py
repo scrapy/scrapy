@@ -180,6 +180,34 @@ class TestFilesPipeline:
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
     @coroutine_test
+    async def test_file_download_non_200_2xx_status(self):
+        """Files with 2xx status codes other than 200 (e.g. 201 Created) should
+        be downloaded successfully. Regression test for issue #1615."""
+        for status in (201, 202, 206):
+            item_url = f"http://example.com/file_{status}.pdf"
+            item = _create_item_with_files(item_url)
+            request = Request(
+                item_url,
+                meta={
+                    "response": Response(
+                        item_url, status=status, body=b"data", flags=[]
+                    )
+                },
+            )
+            with (
+                mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+                mock.patch.object(
+                    FilesPipeline,
+                    "get_media_requests",
+                    return_value=[request],
+                ),
+            ):
+                result = await self.pipeline.process_item(item)
+            assert result["files"][0]["status"] == "downloaded", (
+                f"Expected status 'downloaded' for HTTP {status} response"
+            )
+
+    @coroutine_test
     async def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
