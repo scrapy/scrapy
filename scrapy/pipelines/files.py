@@ -609,7 +609,7 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        if response.status // 100 != 2:
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
@@ -617,6 +617,36 @@ class FilesPipeline(MediaPipeline):
                 extra={"spider": info.spider},
             )
             raise FileException("download-error")
+
+        if not response.body:
+            location = response.headers.get(b"Location")
+            if location is not None:
+                location_url = response.urljoin(location.decode("latin-1"))
+                logger.debug(
+                    "File (location): Following Location header from "
+                    "%(request)s to %(location_url)s referred in <%(referer)s>",
+                    {
+                        "request": request,
+                        "location_url": location_url,
+                        "referer": referer,
+                    },
+                    extra={"spider": info.spider},
+                )
+                assert self.crawler.engine
+                location_request = request.replace(url=location_url)
+                response = await self.crawler.engine.download_async(location_request)
+                if response.status // 100 != 2:
+                    logger.warning(
+                        "File (code: %(status)s): Error downloading file from "
+                        "%(request)s referred in <%(referer)s>",
+                        {
+                            "status": response.status,
+                            "request": request,
+                            "referer": referer,
+                        },
+                        extra={"spider": info.spider},
+                    )
+                    raise FileException("download-error")
 
         if not response.body:
             logger.warning(

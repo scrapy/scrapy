@@ -23,6 +23,7 @@ from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
+from scrapy.http.request import NO_CALLBACK
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
     FilesPipeline,
@@ -272,6 +273,86 @@ class TestFilesPipeline:
         path = Path(self.tempdir) / result["files"][0]["path"]
         assert path.exists()
         assert path.read_bytes() == b"data"
+
+    @coroutine_test
+    async def test_file_downloaded_with_2xx_status(self):
+        """HTTP 2xx responses (e.g. 201 Created) should be accepted."""
+        item_url = "http://example.com/file_201.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={"response": Response(item_url, status=201, body=b"created-data")},
+        )
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[request],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        assert result["files"][0]["checksum"]
+
+    @coroutine_test
+    async def test_file_downloaded_non_2xx_rejected(self):
+        """Non-2xx responses should still be rejected."""
+        item_url = "http://example.com/file_404.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={"response": Response(item_url, status=404, body=b"not found")},
+        )
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[request],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"] == []
+
+    @coroutine_test
+    async def test_file_downloaded_201_follows_location(self):
+        """HTTP 201 with empty body and Location header follows the URL."""
+        item_url = "http://example.com/create_file.pdf"
+        location_url = "http://example.com/files/created.pdf"
+        item = _create_item_with_files(item_url)
+
+        initial_response = Response(
+            item_url,
+            status=201,
+            headers={b"Location": location_url.encode()},
+            body=b"",
+        )
+        location_response = Response(location_url, status=200, body=b"file-content")
+
+        call_count = 0
+
+        async def mock_download(request):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return initial_response
+            return location_response
+
+        self.pipeline.crawler.engine = MagicMock(download_async=mock_download)
+
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[Request(item_url, callback=NO_CALLBACK)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        assert result["files"][0]["checksum"]
+        assert call_count == 2
 
     def test_file_path_from_item(self):
         """
