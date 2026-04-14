@@ -305,6 +305,13 @@ Bug fixes
     wasn't available since Scrapy 2.13.0.
     (:issue:`7395`)
 
+-   :class:`~scrapy.pipelines.files.FilesPipeline` now accepts HTTP ``201
+    Created`` responses in addition to ``200 OK``. If a ``201`` response has an
+    empty body but includes a ``Location`` header, the pipeline follows that URL
+    to retrieve the actual file (per :rfc:`9110`). Previously any status other
+    than ``200`` was treated as a download error.
+    (:issue:`1615`)
+
 Documentation
 ~~~~~~~~~~~~~
 

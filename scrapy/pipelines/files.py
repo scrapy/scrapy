@@ -19,7 +19,7 @@ from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any, ClassVar, NoReturn, Protocol, TypedDict, cast
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -609,7 +609,7 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        if response.status not in (200, 201):
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
@@ -617,6 +617,32 @@ class FilesPipeline(MediaPipeline):
                 extra={"spider": info.spider},
             )
             raise FileException("download-error")
+
+        if response.status == 201 and not response.body:
+            location = response.headers.get(b"Location")
+            if not location:
+                logger.warning(
+                    "File (empty-content): Empty file from %(request)s referred "
+                    "in <%(referer)s>: no-content",
+                    {"request": request, "referer": referer},
+                    extra={"spider": info.spider},
+                )
+                raise FileException("empty-content")
+            # HTTP 201 Created with a Location header and empty body: follow
+            # the Location to retrieve the actual file, as per RFC 9110 §15.3.2
+            location_url = urljoin(request.url, location.decode())
+            new_request = request.replace(url=location_url)
+            self._modify_media_request(new_request)
+            assert self.crawler.engine
+            response = await self.crawler.engine.download_async(new_request)
+            if response.status != 200:
+                logger.warning(
+                    "File (code: %(status)s): Error downloading file from "
+                    "%(request)s referred in <%(referer)s>",
+                    {"status": response.status, "request": new_request, "referer": referer},
+                    extra={"spider": info.spider},
+                )
+                raise FileException("download-error")
 
         if not response.body:
             logger.warning(

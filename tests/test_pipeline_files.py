@@ -25,6 +25,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
+    FileException,
     FilesPipeline,
     FSFilesStore,
     FTPFilesStore,
@@ -814,3 +815,73 @@ def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
 
     with pytest.raises(NotConfigured):
         FilesPipeline.from_crawler(crawler)
+
+
+class TestMediaDownloaded:
+    """Tests for FilesPipeline.media_downloaded HTTP 201 semantics (issue #1615)."""
+
+    def setup_method(self):
+        self.tempdir = mkdtemp()
+        self.crawler = get_crawler(DefaultSpider, {"FILES_STORE": self.tempdir})
+        self.crawler.spider = self.crawler._create_spider()
+        self.crawler.engine = MagicMock()
+        self.pipe = FilesPipeline.from_crawler(self.crawler)
+        self.pipe.open_spider()
+        self.info = self.pipe.spiderinfo
+
+    def teardown_method(self):
+        rmtree(self.tempdir)
+
+    @coroutine_test
+    async def test_200_downloaded(self):
+        request = Request("http://example.com/file.png")
+        response = Response("http://example.com/file.png", status=200, body=b"data")
+        result = await self.pipe.media_downloaded(response, request, self.info)
+        assert result["status"] == "downloaded"
+
+    @coroutine_test
+    async def test_201_with_body_downloaded(self):
+        """201 Created with a body in the response: save the body directly."""
+        request = Request("http://example.com/file.png")
+        response = Response("http://example.com/file.png", status=201, body=b"data")
+        result = await self.pipe.media_downloaded(response, request, self.info)
+        assert result["status"] == "downloaded"
+
+    @coroutine_test
+    async def test_201_with_location_follows_and_downloads(self):
+        """201 Created with empty body + Location: follow Location to get the file."""
+        original_url = "http://example.com/create"
+        location_url = "http://example.com/created-file.png"
+
+        request = Request(original_url)
+        response = Response(
+            original_url,
+            status=201,
+            headers={"Location": location_url},
+        )
+        follow_response = Response(location_url, status=200, body=b"data")
+
+        async def mock_download(req):
+            return follow_response
+
+        self.crawler.engine.download_async = mock_download
+
+        result = await self.pipe.media_downloaded(response, request, self.info)
+        assert result["status"] == "downloaded"
+        assert result["url"] == original_url
+
+    @coroutine_test
+    async def test_201_empty_body_no_location_raises_empty_content(self):
+        """201 Created with empty body and no Location: raise FileException('empty-content')."""
+        request = Request("http://example.com/file.png")
+        response = Response("http://example.com/file.png", status=201)
+        with pytest.raises(FileException, match="empty-content"):
+            await self.pipe.media_downloaded(response, request, self.info)
+
+    @coroutine_test
+    async def test_non_2xx_raises_download_error(self):
+        """Non-200/201 status codes must raise FileException('download-error')."""
+        request = Request("http://example.com/file.png")
+        response = Response("http://example.com/file.png", status=404)
+        with pytest.raises(FileException, match="download-error"):
+            await self.pipe.media_downloaded(response, request, self.info)
