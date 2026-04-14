@@ -273,6 +273,39 @@ class TestFilesPipeline:
         assert path.exists()
         assert path.read_bytes() == b"data"
 
+    @pytest.mark.parametrize("status", [201, 202, 204])
+    @coroutine_test
+    async def test_file_download_accepts_2xx_status(self, status):
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={"response": Response(item_url, status=status, body=b"data")},
+        )
+        with mock.patch.object(
+            FilesPipeline,
+            "get_media_requests",
+            return_value=[request],
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+
+    @coroutine_test
+    async def test_file_download_rejects_non_2xx_status(self):
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={"response": Response(item_url, status=404, body=b"not found")},
+        )
+        with mock.patch.object(
+            FilesPipeline,
+            "get_media_requests",
+            return_value=[request],
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"] == []
+
     def test_file_path_from_item(self):
         """
         Custom file path based on item data, overriding default implementation
