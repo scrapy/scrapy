@@ -277,6 +277,11 @@ Improvements
 Bug fixes
 ~~~~~~~~~
 
+-   :meth:`FilesPipeline.media_downloaded
+    <scrapy.pipelines.files.FilesPipeline.media_downloaded>` now accepts any
+    2xx HTTP response as a successful download, instead of only ``200 OK``.
+    (:issue:`1615`)
+
 -   :ref:`Media pipelines <topics-media-pipeline>` should now wait for uploads
     to asynchronous storages (e.g.
     :class:`~scrapy.pipelines.files.S3FilesStore`) to complete.
