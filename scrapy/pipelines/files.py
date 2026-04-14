@@ -490,6 +490,9 @@ class FilesPipeline(MediaPipeline):
         self.files_result_field: str = settings.get(
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
+        self.accepted_status_codes: tuple[int, ...] = settings.get(
+            resolve("FILES_ACCEPTED_STATUS_CODES"), (200, 201)
+        )
 
         super().__init__(crawler=crawler)
 
@@ -609,7 +612,7 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        if response.status not in self.accepted_status_codes:
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
