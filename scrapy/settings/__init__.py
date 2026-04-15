@@ -322,15 +322,30 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
             )
         return copy.deepcopy(value)
 
-    def getwithbase(self, name: _SettingsKey) -> BaseSettings:
+    def getwithbase(
+        self, name: _SettingsKey, normalize_keys: bool = True
+    ) -> BaseSettings:
         """Get a composition of a dictionary-like setting and its `_BASE`
         counterpart.
 
         :param name: name of the dictionary-like setting
         :type name: str
+
+        :param normalize_keys: whether to normalize keys by loading objects.
+            Set to False for settings like FEED_EXPORTERS where keys are
+            format names (e.g. 'csv.gz'), not import paths.
+        :type normalize_keys: bool
         """
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
+
+        if not normalize_keys:
+            # Skip key normalization for settings where keys are not import paths
+            # (e.g., FEED_EXPORTERS, FEED_STORAGES, DOWNLOAD_HANDLERS)
+            result = dict(self[name + "_BASE"] or {})
+            override = dict(self[name] or {})
+            result.update(override)
+            return BaseSettings({k: v for k, v in result.items() if v is not None})
 
         normalized_keys = {}
         obj_keys = set()

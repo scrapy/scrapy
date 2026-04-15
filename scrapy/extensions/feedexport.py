@@ -644,7 +644,10 @@ class FeedExporter:
 
     def _load_components(self, setting_prefix: str) -> dict[str, Any]:
         conf = without_none_values(
-            cast("dict[str, str]", self.settings.getwithbase(setting_prefix))
+            cast(
+                "dict[str, str]",
+                self.settings.getwithbase(setting_prefix, normalize_keys=False),
+            )
         )
         d = {}
         for k, v in conf.items():

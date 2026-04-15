@@ -105,6 +105,20 @@ class TestFeedExportConfig:
                 Settings(), ["output1.json"], overwrite_output=["output2.json"]
             )
 
+    def test_feed_export_config_with_dotted_format_names(self):
+        """Test that format names containing dots (like 'csv.gz') work correctly
+        in CLI feed processing. This addresses Issue #7426.
+        """
+        settings = Settings()
+        # Override FEED_EXPORTERS to include a format name with a dot
+        settings["FEED_EXPORTERS"] = {
+            "csv.gz": "scrapy.exporters.CsvItemExporter",
+        }
+        # User should explicitly specify format with colon when format contains dots
+        # e.g., scrapy crawl -o output:csv.gz
+        result = feed_process_params_from_cli(settings, ["output:csv.gz"])
+        assert result == {"output": {"format": "csv.gz"}}
+
     def test_feed_complete_default_values_from_settings_empty(self):
         feed = {}
         settings = Settings(

@@ -465,6 +465,35 @@ class TestBaseSettings:
             assert isinstance(value, BaseSettings)
             assert dict(value) == expected
 
+    def test_getwithbase_with_normalize_keys_false(self):
+        """Test that format names containing dots (like 'csv.gz') work correctly
+        when normalize_keys=False.
+
+        This addresses the regression from PR #6993 where getwithbase() would
+        incorrectly treat format names as import paths.
+        """
+        settings = BaseSettings()
+        settings["FEED_EXPORTERS_BASE"] = BaseSettings(
+            {
+                "json": "scrapy.exporters.JsonItemExporter",
+                "csv": "scrapy.exporters.CsvItemExporter",
+            }
+        )
+        settings["FEED_EXPORTERS"] = {
+            "csv.gz": "my_exporter.CsvGzipExporter",
+            "json.gz": "my_exporter.JsonGzipExporter",
+        }
+
+        # With normalize_keys=False, keys with dots should work correctly
+        result = settings.getwithbase("FEED_EXPORTERS", normalize_keys=False)
+        assert isinstance(result, BaseSettings)
+        assert "csv.gz" in result
+        assert "json.gz" in result
+        assert "json" in result
+        assert "csv" in result
+        assert result["csv.gz"] == "my_exporter.CsvGzipExporter"
+        assert result["json.gz"] == "my_exporter.JsonGzipExporter"
+
     def test_getwithbase_warns_on_duplicate_import_paths(self, caplog):
         settings = BaseSettings()
         settings["FOO"] = BaseSettings(
