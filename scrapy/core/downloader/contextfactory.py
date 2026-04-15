@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
 
 from OpenSSL import SSL
-from twisted.internet._sslverify import _setAcceptableProtocols
 from twisted.internet.ssl import (
     AcceptableCiphers,
     CertificateOptions,
@@ -19,9 +18,11 @@ from zope.interface.verify import verifyObject
 from scrapy.core.downloader.tls import (
     DEFAULT_CIPHERS,
     _ScrapyClientTLSOptions,
+    _ScrapyClientTLSOptions26,
     openssl_methods,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import build_from_crawler, load_object
 
@@ -124,6 +125,12 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         if not self._verify_certificates:
+            if TWISTED_TLS_NEW_IMPL:
+                return _ScrapyClientTLSOptions26(
+                    self._certificate_options._makeTLSConnection,
+                    hostname.decode("ascii"),
+                    verbose_logging=self.tls_verbose_logging,
+                )
             return _ScrapyClientTLSOptions(hostname.decode("ascii"), self._ctx)  # type: ignore[no-untyped-call]
         # Note that this doesn't use self._ctx
         with _filter_method_warning():
@@ -194,7 +201,18 @@ class _AcceptableProtocolsContextFactory:
     the acceptable protocols on the :class:`.ClientTLSOptions` instance
     returned by it. It's only needed because we support custom factories via
     :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
+
+    It's a no-op on Twisted newer than 25.5.0, though using it with custom
+    factories on those Twisted versions may be not enough for HTTP/2 support.
     """
+
+    # Something needs to call set_alpn_protos() for ALPN to work.
+    # Older Twisted does it in _setAcceptableProtocols(), called from
+    # OpenSSLCertificateOptions._makeContext() which we don't use so we call
+    # _setAcceptableProtocols() here instead. We could move it to
+    # ScrapyClientContextFactory if it was mandatory to use that class.
+    # Newer Twisted does it in OpenSSLCertificateOptions._makeTLSConnection()
+    # which we now call in ScrapyClientContextFactory for TLS to work at all.
 
     def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
         verifyObject(IPolicyForHTTPS, context_factory)
@@ -205,7 +223,12 @@ class _AcceptableProtocolsContextFactory:
         options: ClientTLSOptions = self._wrapped_context_factory.creatorForNetloc(
             hostname, port
         )
-        _setAcceptableProtocols(options._ctx, self._acceptable_protocols)
+        if not TWISTED_TLS_NEW_IMPL:
+            from twisted.internet._sslverify import (  # noqa: PLC0415
+                _setAcceptableProtocols,
+            )
+
+            _setAcceptableProtocols(options._ctx, self._acceptable_protocols)
         return options
 
 

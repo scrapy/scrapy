@@ -7,8 +7,7 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
-    # Twisted pinned until Scrapy is updated for its internal TLS API changes
-    "Twisted>=21.7.0,<=25.5.0",
+    "Twisted>=21.7.0",
     "cryptography>=37.0.0",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -20,7 +19,7 @@ dependencies = [
     "protego>=0.1.15",
     "pyOpenSSL>=22.0.0",
     "queuelib>=1.4.2",
-    "service_identity>=18.1.0",
+    "service_identity>=23.1.0",
     "tldextract",
     "w3lib>=1.17.0",
     "zope.interface>=5.1.0",

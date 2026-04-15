@@ -42,6 +42,9 @@ class TestHttp10(HTTP10DownloadHandlerMixin, TestHttpBase):
         assert response.protocol == "HTTP/1.0"
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*does not explicitly provide any OpenSSL connection-creator.*"
+)
 class TestHttps10(TestHttp10):
     is_secure = True
 
