@@ -1,4 +1,4 @@
-import warnings
+import logging
 
 import pytest
 
@@ -115,20 +115,14 @@ def test_process_request_no_allowed_domains(value):
     assert mw.process_request(request) is None
 
 
-def test_process_request_invalid_domains():
+def test_process_request_invalid_domains(caplog):
     crawler = get_crawler(Spider)
     allowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     crawler.spider = crawler._create_spider(name="a", allowed_domains=allowed_domains)
     mw = OffsiteMiddleware.from_crawler(crawler)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
+    with caplog.at_level(logging.ERROR):
         mw.spider_opened(crawler.spider)
-    request = Request("https://a.example")
-    assert mw.process_request(request) is None
-    for letter in ("b", "c"):
-        request = Request(f"https://{letter}.example")
-        with pytest.raises(IgnoreRequest):
-            mw.process_request(request)
+    assert "Invalid domain configuration" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -205,20 +199,14 @@ def test_request_scheduled_no_allowed_domains(value):
     assert mw.request_scheduled(request, crawler.spider) is None
 
 
-def test_request_scheduled_invalid_domains():
+def test_request_scheduled_invalid_domains(caplog):
     crawler = get_crawler(Spider)
     allowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     crawler.spider = crawler._create_spider(name="a", allowed_domains=allowed_domains)
     mw = OffsiteMiddleware.from_crawler(crawler)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
+    with caplog.at_level(logging.ERROR):
         mw.spider_opened(crawler.spider)
-    request = Request("https://a.example")
-    assert mw.request_scheduled(request, crawler.spider) is None
-    for letter in ("b", "c"):
-        request = Request(f"https://{letter}.example")
-        with pytest.raises(IgnoreRequest):
-            mw.request_scheduled(request, crawler.spider)
+    assert "Invalid domain configuration" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -304,25 +292,24 @@ def test_process_request_no_disallowed_domains(value):
     assert mw.process_request(request) is None
 
 
-def test_process_request_invalid_disallowed_domains():
+@pytest.mark.parametrize(
+    "disallowed_domains",
+    [
+        ["a.example", None],
+        ["a.example", "http:////b.example"],
+        ["a.example", "//c.example:8080"],
+    ],
+)
+def test_process_request_invalid_disallowed_domains(disallowed_domains, caplog):
     crawler = get_crawler(Spider)
-    disallowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     crawler.spider = crawler._create_spider(
         name="a", disallowed_domains=disallowed_domains
     )
 
     mw = OffsiteMiddleware.from_crawler(crawler)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
+    with caplog.at_level(logging.ERROR):
         mw.spider_opened(crawler.spider)
-
-    request = Request("https://a.example")
-    with pytest.raises(IgnoreRequest):
-        mw.process_request(request)
-
-    for letter in ("b", "c"):
-        request = Request(f"https://{letter}.example")
-        assert mw.process_request(request) is None
+    assert "Invalid domain configuration" in caplog.text
 
 
 @pytest.mark.parametrize(

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 import re
-import warnings
 from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -38,10 +38,23 @@ class OffsiteMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
-        self.disallowed_host_regex: re.Pattern[str] | None = (
-            self._get_disallowed_host_regex(spider)
-        )
+        try:
+            self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
+            self.disallowed_host_regex: re.Pattern[str] | None = (
+                self._get_disallowed_host_regex(spider)
+            )
+        except ValueError as exc:
+            logger.error(
+                "Invalid domain configuration: %(error)s",
+                {"error": exc},
+                extra={"spider": spider},
+            )
+            if self.crawler.engine:
+                _schedule_coro(
+                    self.crawler.engine.close_spider_async(
+                        reason="invalid_domain_configuration"
+                    )
+                )
 
     def request_scheduled(self, request: Request, spider: Spider) -> None:
         self.process_request(request)
@@ -78,11 +91,14 @@ class OffsiteMiddleware:
 
     @staticmethod
     def _process_domains(
-        domains_list: list[str | None], domains_type: str
+        domains_list: list[str | None],
+        domains_type: str,
     ) -> list[str]:
         """Process a domains list and return a list of valid, regex-escaped domains.
 
-        Entries that are URLs or contain ports are warned about and skipped.
+        Raises ``ValueError`` on invalid entries (``None``, URLs, or
+        domains with ports) so that the spider fails fast on
+        misconfigured domains.
         """
         url_pattern = re.compile(r"^https?://.*$")
         port_pattern = re.compile(r":\d+$")
@@ -90,21 +106,18 @@ class OffsiteMiddleware:
 
         for domain in domains_list:
             if domain is None:
-                continue
+                raise ValueError(f"{domains_type} contains empty value.")
             if url_pattern.match(domain):
-                message = (
+                raise ValueError(
                     f"{domains_type} accepts only domains, not URLs. "
                     f"Ignoring URL entry {domain} in {domains_type}."
                 )
-                warnings.warn(message)
-            elif port_pattern.search(domain):
-                message = (
+            if port_pattern.search(domain):
+                raise ValueError(
                     f"{domains_type} accepts only domains without ports. "
                     f"Ignoring entry {domain} in {domains_type}."
                 )
-                warnings.warn(message)
-            else:
-                valid_domains.append(re.escape(domain))
+            valid_domains.append(re.escape(domain))
         return valid_domains
 
     def get_host_regex(self, spider: Spider) -> re.Pattern[str]:
