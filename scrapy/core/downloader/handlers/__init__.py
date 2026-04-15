@@ -60,7 +60,7 @@ class DownloadHandlers:
         handlers: dict[str, str | Callable[..., Any]] = without_none_values(
             cast(
                 "dict[str, str | Callable[..., Any]]",
-                crawler.settings.getwithbase("DOWNLOAD_HANDLERS"),
+                crawler.settings.getwithbase("DOWNLOAD_HANDLERS", normalize_keys=False),
             )
         )
         for scheme, clspath in handlers.items():
