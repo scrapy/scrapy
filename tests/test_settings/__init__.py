@@ -494,6 +494,28 @@ class TestBaseSettings:
         msg = caplog.records[0].message
         assert "tests.test_settings.Component1" in msg
 
+    def test_getwithbase_dotted_string_keys(self):
+        """getwithbase() must not raise NameError for dotted format string keys.
+
+        FEED_EXPORTERS and similar settings may use dotted strings as dict keys
+        (e.g. "csv.gz", "json.gz").  In 2.15.0 getwithbase() began normalising
+        keys via load_object(), which imports the left-hand side as a module and
+        then tries to look up the right-hand side as an attribute.  For "csv.gz"
+        that raises NameError (``csv`` module has no ``gz`` attribute).
+
+        Regression: https://github.com/scrapy/scrapy/issues/7426
+        """
+        s = BaseSettings()
+        s.set("FEED_EXPORTERS", {"csv.gz": "scrapy.exporters.CsvItemExporter"})
+        s.set(
+            "FEED_EXPORTERS_BASE",
+            {"json": "scrapy.exporters.JsonItemExporter"},
+        )
+        # Should not raise NameError
+        result = s.getwithbase("FEED_EXPORTERS")
+        assert "csv.gz" in result
+        assert "json" in result
+
     def test_getwithbase_invalid_setting_name(self):
         settings = BaseSettings()
         with pytest.raises(
