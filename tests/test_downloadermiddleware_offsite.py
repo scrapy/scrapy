@@ -330,3 +330,88 @@ def test_request_scheduled_no_disallowed_domains(value):
     mw.spider_opened(crawler.spider)
     request = Request("https://example.com")
     assert mw.request_scheduled(request, crawler.spider) is None
+
+
+@pytest.mark.parametrize(
+    ("value", "filtered"),
+    [
+        (UNSET, True),
+        (None, True),
+        (False, True),
+        (True, False),
+    ],
+)
+def test_request_scheduled_disallowed_dont_filter(value, filtered):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", disallowed_domains=["a.example"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+
+    kwargs = {}
+    if value is not UNSET:
+        kwargs["dont_filter"] = value
+    request = Request("https://a.example", **kwargs)
+
+    if filtered:
+        with pytest.raises(IgnoreRequest):
+            mw.request_scheduled(request, crawler.spider)
+    else:
+        assert mw.request_scheduled(request, crawler.spider) is None
+
+    request2 = Request("https://b.example")
+    assert mw.request_scheduled(request2, crawler.spider) is None
+
+
+@pytest.mark.parametrize(
+    ("allow_offsite", "dont_filter", "filtered"),
+    [
+        (True, UNSET, False),
+        (True, None, False),
+        (True, False, False),
+        (True, True, False),
+        (False, UNSET, True),
+        (False, None, True),
+        (False, False, True),
+        (False, True, False),
+    ],
+)
+def test_request_scheduled_disallowed_allow_offsite(
+    allow_offsite, dont_filter, filtered
+):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", disallowed_domains=["a.example"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+
+    kwargs = {"meta": {}}
+    if allow_offsite is not UNSET:
+        kwargs["meta"]["allow_offsite"] = allow_offsite
+    if dont_filter is not UNSET:
+        kwargs["dont_filter"] = dont_filter
+    request = Request("https://a.example", **kwargs)
+
+    if filtered:
+        with pytest.raises(IgnoreRequest):
+            mw.request_scheduled(request, crawler.spider)
+    else:
+        assert mw.request_scheduled(request, crawler.spider) is None
+
+
+@pytest.mark.parametrize(
+    "disallowed_domains",
+    [
+        ["a.example", None],
+        ["a.example", "http:////b.example"],
+        ["a.example", "//c.example:8080"],
+    ],
+)
+def test_request_scheduled_invalid_disallowed_domains(disallowed_domains, caplog):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(
+        name="a", disallowed_domains=disallowed_domains
+    )
+
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    with caplog.at_level(logging.ERROR):
+        mw.spider_opened(crawler.spider)
+    assert "Invalid domain configuration" in caplog.text
