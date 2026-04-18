@@ -65,7 +65,7 @@ def is_asyncio_available() -> bool:
         calling it from code such as spiders and Scrapy components, if Scrapy
         is run using one of the supported ways).
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.15.0
         This function now also returns ``True`` if there is a running asyncio
         loop, even if no Twisted reactor is installed.
     """
@@ -302,7 +302,7 @@ async def run_in_thread(
     :func:`twisted.internet.threads.deferToThread`, depending on whether
     asyncio support is available.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.15.0
     """
     if is_asyncio_available():
         return await asyncio.to_thread(func, *args, **kwargs)

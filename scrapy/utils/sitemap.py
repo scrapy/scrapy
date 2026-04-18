@@ -117,6 +117,11 @@ def sitemap_urls_from_robots(
                 yield urljoin(base_url or "", url)
 
     else:
+        warnings.warn(
+            "Passing `str` type as `robots_text` is deprecated, use `bytes`",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         yield from _sitemap_urls_from_robots_str(robots_text, base_url)
 
 
@@ -124,11 +129,6 @@ def _sitemap_urls_from_robots_str(
     robots_text: str,
     base_url: str | None = None,
 ) -> Iterable[str]:
-    warnings.warn(
-        "Passing `str` type as `robots_text` is deprecated, use `bytes`",
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
     for line in StringIO(robots_text):
         if line.lstrip()[:8].lower() == "sitemap:":
             url = line.partition(":")[2].strip()

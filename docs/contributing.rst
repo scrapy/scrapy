@@ -258,7 +258,7 @@ Scrapy:
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
-  See https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git
+  See https://docs.github.com/en/get-started/git-basics/setting-your-username-in-git
   for setup instructions.
 
 .. _scrapy-pre-commit:
@@ -390,8 +390,7 @@ And their unit-tests are in::
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
-.. _Scrapy subreddit: https://reddit.com/r/scrapy
-.. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
+.. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _PEP 257: https://peps.python.org/pep-0257/

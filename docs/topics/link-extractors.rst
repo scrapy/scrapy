@@ -159,5 +159,3 @@ Link
    :synopsis: Link from link extractors
 
 .. autoclass:: Link
-
-.. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

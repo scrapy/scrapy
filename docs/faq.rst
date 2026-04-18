@@ -418,4 +418,3 @@ See :issue:`2680`.
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
-.. _user agents: https://en.wikipedia.org/wiki/User_agent
