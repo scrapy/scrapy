@@ -25,6 +25,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
+    FileException,
     FilesPipeline,
     FSFilesStore,
     FTPFilesStore,
@@ -317,6 +318,37 @@ class TestFilesPipeline:
 
         with pytest.raises(TypeError, match="file_urls must be a list of URLs"):
             list(pipeline.get_media_requests(item, None))
+
+    @coroutine_test
+    async def test_file_download_with_201_status(self):
+        """FilesPipeline should accept 201 and other 2xx status codes (#1615)."""
+        item_url = "http://example.com/created-file.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={},
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url, response_status=201)],
+            ),
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+
+    @coroutine_test
+    async def test_file_download_with_non_2xx_fails(self):
+        """FilesPipeline should reject non-2xx status codes."""
+        response = Response("http://example.com/missing.pdf", status=404, body=b"nope")
+        request = Request("http://example.com/missing.pdf")
+        with pytest.raises(FileException):
+            await self.pipeline.media_downloaded(
+                response, request, self.pipeline.spiderinfo
+            )
 
 
 class TestFilesPipelineFieldsMixin(ABC):
@@ -766,10 +798,10 @@ def _create_item_with_files(*files: str) -> ItemWithFiles:
     return item
 
 
-def _prepare_request_object(item_url: str, flags: list[str] | None = None) -> Request:
+def _prepare_request_object(item_url: str, flags: list[str] | None = None, response_status: int = 200) -> Request:
     return Request(
         item_url,
-        meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},
+        meta={"response": Response(item_url, status=response_status, body=b"data", flags=flags)},
     )
 
 
