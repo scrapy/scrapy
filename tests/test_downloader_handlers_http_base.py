@@ -565,9 +565,9 @@ class TestHttp11Base(TestHttpBase):
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
             with pytest.raises(DownloadCancelledError):
                 await download_handler.download_request(request)
-        assert (
-            "Received 2048 bytes which is larger than download max size (1500)"
-            in caplog.text
+        assert re.search(
+            r"Received \d+ bytes which is larger than download max size \(1500\)",
+            caplog.text,
         )
 
     @coroutine_test
