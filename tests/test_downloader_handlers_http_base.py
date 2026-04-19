@@ -236,9 +236,9 @@ class TestHttpBase(ABC):
             assert header_name in response.headers, (
                 f"Response was missing expected header {header_name}"
             )
-            assert response.headers[header_name] == bytes(
-                header_value, encoding="utf-8"
-            )
+            assert response.headers.getlist(header_name) == [
+                header_value.encode(encoding="utf-8")
+            ]
 
     @coroutine_test
     async def test_redirect_status(self, mockserver: MockServer) -> None:
