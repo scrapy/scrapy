@@ -79,7 +79,7 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_unsupported_scheme(self) -> None:
-        request = Request("ftp://unsupported.scheme")
+        request = Request("unsupp://unsupported.scheme")
         async with self.get_dh() as download_handler:
             with pytest.raises(UnsupportedURLSchemeError):
                 await download_handler.download_request(request)
