@@ -117,6 +117,9 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
                 local_address=self._bind_address,
             ),
         )
+        # https://github.com/encode/httpx/discussions/1566
+        for header_name in ("accept", "accept-encoding", "user-agent"):
+            self._client.headers.pop(header_name, None)
 
     async def download_request(self, request: Request) -> Response:
         self._warn_unsupported_meta(request.meta)

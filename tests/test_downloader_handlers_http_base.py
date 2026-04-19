@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from http import HTTPStatus
 from ipaddress import IPv4Address
 from socket import gethostbyname
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import urlparse
 
 import pytest
@@ -55,6 +55,8 @@ if TYPE_CHECKING:
 
 class TestHttpBase(ABC):
     is_secure = False
+    # default headers added by the underlying library that cannot be suppressed
+    always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
 
     @property
     @abstractmethod
@@ -185,6 +187,26 @@ class TestHttpBase(ABC):
         assert body["headers"]["X-Custom-Header"] == ["foo", "bar"]
 
     @coroutine_test
+    async def test_server_receives_no_extra_headers(
+        self, mockserver: MockServer
+    ) -> None:
+        """Test that the handler doesn't add headers to the request."""
+        request = Request(mockserver.url("/echo", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert "headers" in body
+        received_headers = set(body["headers"].keys())
+        allowed_headers = {
+            "Connection",
+            "Content-Length",
+            "Host",
+        } | self.always_present_req_headers
+        extra_headers = received_headers - allowed_headers
+        assert not extra_headers, body["headers"]
+
+    @coroutine_test
     async def test_server_receives_correct_request_body(
         self, mockserver: MockServer
     ) -> None:
@@ -239,6 +261,29 @@ class TestHttpBase(ABC):
             assert response.headers.getlist(header_name) == [
                 header_value.encode(encoding="utf-8")
             ]
+
+    @coroutine_test
+    async def test_download_no_extra_response_headers(
+        self, mockserver: MockServer
+    ) -> None:
+        """Test that the handler doesn't add headers to the response."""
+        request = Request(
+            mockserver.url("/response-headers", is_secure=self.is_secure),
+            headers={"content-type": "application/json"},
+            body=json.dumps({}),
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        received_headers = set(response.headers.keys())
+        allowed_headers = {
+            b"Content-Length",
+            b"Content-Type",
+            b"Date",
+            b"Server",
+        }
+        extra_headers = received_headers - allowed_headers
+        assert not extra_headers, response.headers
 
     @coroutine_test
     async def test_redirect_status(self, mockserver: MockServer) -> None:
