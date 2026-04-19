@@ -506,6 +506,14 @@ class TestHttpBase(ABC):
             assert "Cookie" not in headers
             assert "cookie" not in headers
 
+    @coroutine_test
+    async def test_download_latency(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            await download_handler.download_request(request)
+        assert "download_latency" in request.meta
+        assert request.meta["download_latency"] >= 0
+
 
 class TestHttp11Base(TestHttpBase):
     """HTTP 1.1 test case"""

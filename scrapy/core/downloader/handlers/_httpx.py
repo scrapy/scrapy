@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import ssl
+import time
 from http.cookiejar import Cookie, CookieJar
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, NoReturn, TypedDict
@@ -127,9 +128,10 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         timeout: float = request.meta.get(
             "download_timeout", self._DEFAULT_CONNECT_TIMEOUT
         )
-
+        start_time = time.monotonic()
         try:
             async with self._get_httpx_response(request, timeout) as httpx_response:
+                request.meta["download_latency"] = time.monotonic() - start_time
                 return await self._read_response(httpx_response, request)
         except httpx.TimeoutException as e:
             raise DownloadTimeoutError(
