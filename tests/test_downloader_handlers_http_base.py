@@ -409,9 +409,7 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_response_header_content_length(self, mockserver: MockServer) -> None:
-        request = Request(
-            mockserver.url("/text", is_secure=self.is_secure), method="GET"
-        )
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.headers[b"content-length"] == b"5"
@@ -722,9 +720,7 @@ class TestHttp11Base(TestHttpBase):
 
     @coroutine_test
     async def test_protocol(self, mockserver: MockServer) -> None:
-        request = Request(
-            mockserver.url("/host", is_secure=self.is_secure), method="GET"
-        )
+        request = Request(mockserver.url("/host", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.protocol == "HTTP/1.1"
