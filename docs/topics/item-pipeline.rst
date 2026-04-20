@@ -19,6 +19,78 @@ Typical uses of item pipelines are:
 * checking for duplicates (and dropping them)
 * storing the scraped item in a database
 
+.. _topics-item-pipeline-overview:
+
+How item pipelines fit into Scrapy
+===================================
+
+When a spider yields an item, Scrapy passes it to the item pipeline — a
+chain of components executed one after another. Each component can validate,
+enrich, filter, or store the item before passing it on.
+
+The data flows in this order::
+
+    Spider (yields item)
+        → Pipeline component 1  (lowest priority number, runs first)
+        → Pipeline component 2
+        → ...  (or DropItem to stop processing)
+
+A pipeline component only runs if it is registered in the
+:setting:`ITEM_PIPELINES` setting in ``settings.py``. Defining the class
+alone has no effect.
+
+.. _topics-item-pipeline-minimal-example:
+
+Minimal end-to-end example
+---------------------------
+
+The following shows a complete integration — a spider that yields an item,
+a pipeline that validates it, and the settings that wire them together.
+
+``myproject/items.py``::
+
+    import scrapy
+
+    class BookItem(scrapy.Item):
+        title = scrapy.Field()
+        price = scrapy.Field()
+
+``myproject/spiders/books_spider.py``::
+
+    import scrapy
+    from myproject.items import BookItem
+
+    class BooksSpider(scrapy.Spider):
+        name = "books"
+        start_urls = ["https://books.toscrape.com"]
+
+        def parse(self, response):
+            for book in response.css("article.product_pod"):
+                item = BookItem()
+                item["title"] = book.css("h3 a::attr(title)").get()
+                item["price"] = book.css(".price_color::text").get()
+                yield item
+
+``myproject/pipelines.py``::
+
+    from itemadapter import ItemAdapter
+    from scrapy.exceptions import DropItem
+
+    class PriceValidationPipeline:
+        def process_item(self, item, spider):
+            adapter = ItemAdapter(item)
+            if not adapter.get("price"):
+                raise DropItem(f"Missing price in: {item!r}")
+            return item
+
+``myproject/settings.py``::
+
+    ITEM_PIPELINES = {
+        "myproject.pipelines.PriceValidationPipeline": 100,
+    }
+
+Running ``scrapy crawl books`` will scrape items and pass each through
+``PriceValidationPipeline`` before any further processing.
 
 Writing your own item pipeline
 ==============================
@@ -244,6 +316,59 @@ returns multiples items with the same id:
             else:
                 self.ids_seen.add(adapter["id"])
                 return item
+
+.. _topics-item-pipeline-pitfalls:
+
+Common pitfalls
+================
+
+**Not returning the item.**
+:meth:`process_item` must either return an item object or raise
+:exc:`~scrapy.exceptions.DropItem`. Returning ``None`` silently stops
+the item from reaching subsequent pipeline components.
+
+.. code-block:: python
+
+    # Wrong — returns None implicitly
+    def process_item(self, item, spider):
+           adapter = ItemAdapter(item)
+           adapter["price"] = float(adapter["price"].strip("£"))
+
+    # Correct
+    def process_item(self, item, spider):
+           adapter = ItemAdapter(item)
+           adapter["price"] = float(adapter["price"].strip("£"))
+           return item
+
+**Pipeline not running.**
+A pipeline class must be listed in :setting:`ITEM_PIPELINES` in
+``settings.py`` to have any effect. The integer value controls execution
+order — lower numbers run first.
+
+   .. code-block:: python
+
+       ITEM_PIPELINES = {
+           "myproject.pipelines.ValidationPipeline": 100,  # runs first
+           "myproject.pipelines.DatabasePipeline": 800,    # runs second
+       }
+
+**Opening resources in** ``__init__``.
+   Use :meth:`open_spider` to open database connections or file handles,
+   and :meth:`close_spider` to release them. This ties resource lifecycle
+   to the crawl, not to class instantiation.
+
+   .. code-block:: python
+
+       class DatabasePipeline:
+           def open_spider(self, spider):
+               self.conn = db.connect()
+
+           def close_spider(self, spider):
+               self.conn.close()
+
+           def process_item(self, item, spider):
+               self.conn.insert(ItemAdapter(item).asdict())
+               return item
 
 
 Activating an Item Pipeline component
