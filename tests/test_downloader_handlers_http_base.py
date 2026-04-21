@@ -510,7 +510,7 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             await download_handler.download_request(request)
         assert "download_latency" in request.meta
-        assert request.meta["download_latency"] >= 0
+        assert request.meta["download_latency"] > 0
 
 
 class TestHttp11Base(TestHttpBase):
