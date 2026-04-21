@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import platform
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -510,7 +511,13 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             await download_handler.download_request(request)
         assert "download_latency" in request.meta
-        assert request.meta["download_latency"] > 0
+        latency = request.meta["download_latency"]
+        if sys.version_info < (3, 13) and platform.system() == "Windows":
+            # time.monotonic() resolution is too low here:
+            # https://docs.python.org/3/whatsnew/3.13.html#time
+            assert latency >= 0
+        else:
+            assert latency > 0
 
 
 class TestHttp11Base(TestHttpBase):
