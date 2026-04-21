@@ -457,7 +457,8 @@ class Stream:
 
             # There maybe no :status in headers, we make
             # HTTP Status Code: 499 - Client Closed Request
-            self._response["status"] = 499
+            if self._response["status"] is None:
+                self._response["status"] = 499
             self._fire_response_deferred()
 
         elif reason is StreamCloseReason.RESET:
