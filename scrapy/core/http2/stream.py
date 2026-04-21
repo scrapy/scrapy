@@ -24,8 +24,6 @@ from scrapy.utils.httpobj import urlparse_cached
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from hpack import HeaderTuple
-
     from scrapy.core.http2.protocol import H2ClientProtocol
     from scrapy.http import Request, Response
 
@@ -153,6 +151,8 @@ class Stream:
             "flow_controlled_size": 0,
             # Headers received after sending the request
             "headers": Headers(),
+            # Response status code
+            "status": None,
         }
 
         def _cancel(_: Any) -> None:
@@ -361,9 +361,13 @@ class Stream:
             self._response["flow_controlled_size"], self.stream_id
         )
 
-    def receive_headers(self, headers: list[HeaderTuple]) -> None:
+    def receive_headers(self, headers: list[tuple[str, str]]) -> None:
         for name, value in headers:
-            self._response["headers"].appendlist(name, value)
+            if name == ":status":
+                # it's a pseudo-header
+                self._response["status"] = int(value)
+            else:
+                self._response["headers"].appendlist(name, value)
 
         # Check if we exceed the allowed max data size which can be received
         expected_size = int(self._response["headers"].get(b"Content-Length", -1))
@@ -453,7 +457,8 @@ class Stream:
 
             # There maybe no :status in headers, we make
             # HTTP Status Code: 499 - Client Closed Request
-            self._response["headers"][":status"] = "499"
+            if self._response["status"] is None:
+                self._response["status"] = 499
             self._fire_response_deferred()
 
         elif reason is StreamCloseReason.RESET:
@@ -492,7 +497,7 @@ class Stream:
 
         response = make_response(
             url=self._request.url,
-            status=int(self._response["headers"][":status"]),
+            status=self._response["status"],
             headers=self._response["headers"],
             body=self._response["body"].getvalue(),
             certificate=self._protocol.metadata["certificate"],
