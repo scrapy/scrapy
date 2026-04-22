@@ -424,6 +424,30 @@ class TestBaseSettings:
             "csv.gz": "bar",
         }
 
+    @pytest.mark.parametrize(
+        ("key", "exception"),
+        [
+            pytest.param(1, TypeError, id="type-error"),
+            pytest.param("foo", ValueError, id="value-error"),
+            pytest.param("csv.gz", NameError, id="name-error"),
+        ],
+    )
+    def test_get_component_priority_dict_with_base_handles_load_object_exceptions(
+        self, key, exception
+    ):
+        with pytest.raises(exception):
+            load_object(key)
+
+        settings = BaseSettings(
+            {
+                "FOO": BaseSettings({key: 1}),
+            }
+        )
+        value = settings.get_component_priority_dict_with_base("FOO")
+
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == {key: 1}
+
     def test_get_component_priority_dict_with_base_override_none_by_type(self):
         settings = BaseSettings()
         setting_names = set()
