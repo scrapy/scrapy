@@ -336,10 +336,10 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         """
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
-
-        result = dict(self[name + "_BASE"] or {})
-        result.update(self[name] or {})
-        return BaseSettings({k: v for k, v in result.items() if v is not None})
+        compbs = BaseSettings()
+        compbs.update(self[name + "_BASE"])
+        compbs.update(self[name])
+        return compbs
 
     def get_component_priority_dict_with_base(self, name: _SettingsKey) -> BaseSettings:
         """Get a composition of a component priority dictionary setting and
