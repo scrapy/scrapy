@@ -156,12 +156,16 @@ class TestTextResponse(TestResponse):
 
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""
+        body = b"\xff\xfeh\x00i\x00"
         r = self.response_class(
             "http://www.example.com",
-            body=b"\xff\xfeh\x00i\x00",
+            body=body,
             encoding="utf-16",
         )
-        self._assert_response_values(r, "utf-16", "hi")
+        # Pass the body as bytes so the assertion does not re-encode "hi" with
+        # the host's native UTF-16 byte order, which would break this test on
+        # big-endian architectures (see scrapy/scrapy#5954).
+        self._assert_response_values(r, "utf-16", body)
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
         r6 = self.response_class(
