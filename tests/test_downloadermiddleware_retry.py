@@ -7,7 +7,10 @@ from twisted.internet.error import ConnectError, ConnectionDone, ConnectionLost
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
 from scrapy.exceptions import (
     CannotResolveHostError,
+    DownloadConnectBindError,
     DownloadConnectionRefusedError,
+    DownloadNoRouteError,
+    DownloadTCPTimedOutError,
     DownloadTimeoutError,
     IgnoreRequest,
 )
@@ -90,8 +93,11 @@ class TestRetry:
             ConnectionDone,
             ConnectionLost,
             DownloadTimeoutError,
+            DownloadTCPTimedOutError,
             DownloadConnectionRefusedError,
+            DownloadConnectBindError,
             CannotResolveHostError,
+            DownloadNoRouteError,
         ]
 
         for exc in exceptions:

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import errno
 import ipaddress
 import logging
+import socket
 import ssl
 import time
 from http.cookiejar import Cookie, CookieJar
@@ -14,8 +16,11 @@ from scrapy import Request, signals
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
+    DownloadConnectBindError,
     DownloadConnectionRefusedError,
     DownloadFailedError,
+    DownloadNoRouteError,
+    DownloadTCPTimedOutError,
     DownloadTimeoutError,
     NotConfigured,
     ResponseDataLossError,
@@ -51,6 +56,82 @@ except ImportError:
     httpx = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
+
+
+def _errno_values(*names: str) -> tuple[int, ...]:
+    return tuple(
+        value for name in names if (value := getattr(errno, name, None)) is not None
+    )
+
+
+_CONNECT_ERRNO_MAP: tuple[tuple[tuple[int, ...], type[Exception]], ...] = (
+    (_errno_values("ECONNREFUSED", "WSAECONNREFUSED"), DownloadConnectionRefusedError),
+    (
+        _errno_values(
+            "ENETUNREACH",
+            "EHOSTUNREACH",
+            "WSAENETUNREACH",
+            "WSAEHOSTUNREACH",
+        ),
+        DownloadNoRouteError,
+    ),
+    (_errno_values("ETIMEDOUT", "WSAETIMEDOUT"), DownloadTCPTimedOutError),
+    (
+        _errno_values(
+            "EADDRINUSE",
+            "EADDRNOTAVAIL",
+            "WSAEADDRINUSE",
+            "WSAEADDRNOTAVAIL",
+        ),
+        DownloadConnectBindError,
+    ),
+)
+
+
+def _find_nested_os_error(exc: BaseException) -> OSError | None:
+    fallback_os_error: OSError | None = None
+    to_visit: list[BaseException] = [exc]
+    seen: set[int] = set()
+    while to_visit:
+        current = to_visit.pop()
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        if isinstance(current, OSError):
+            if isinstance(current, socket.gaierror) or current.errno is not None:
+                return current
+            if fallback_os_error is None:
+                fallback_os_error = current
+
+        next_exceptions = [current.__cause__, current.__context__]
+        to_visit.extend(
+            next_exception
+            for next_exception in next_exceptions
+            if isinstance(next_exception, BaseException)
+        )
+
+        grouped_exceptions = getattr(current, "exceptions", None)
+        if isinstance(grouped_exceptions, tuple):
+            to_visit.extend(
+                nested_exception
+                for nested_exception in grouped_exceptions
+                if isinstance(nested_exception, BaseException)
+            )
+
+    return fallback_os_error
+
+
+def _to_scrapy_connect_error(exc: httpx.ConnectError) -> Exception:
+    os_error = _find_nested_os_error(exc)
+    message = str(exc)
+    if os_error is None:
+        return DownloadFailedError(message)
+    if isinstance(os_error, socket.gaierror):
+        return CannotResolveHostError(message)
+    for errnos, scrapy_exc_cls in _CONNECT_ERRNO_MAP:
+        if os_error.errno in errnos:
+            return scrapy_exc_cls(message)
+    return DownloadFailedError(message)
 
 
 class _BaseResponseArgs(TypedDict):
@@ -133,6 +214,10 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             async with self._get_httpx_response(request, timeout) as httpx_response:
                 request.meta["download_latency"] = time.monotonic() - start_time
                 return await self._read_response(httpx_response, request)
+        except httpx.ConnectTimeout as e:
+            raise DownloadTCPTimedOutError(
+                f"Connecting to {request.url} took longer than {timeout} seconds."
+            ) from e
         except httpx.TimeoutException as e:
             raise DownloadTimeoutError(
                 f"Getting {request.url} took longer than {timeout} seconds."
@@ -140,15 +225,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         except httpx.UnsupportedProtocol as e:
             raise UnsupportedURLSchemeError(str(e)) from e
         except httpx.ConnectError as e:
-            error_message = str(e)
-            if (
-                "Name or service not known" in error_message
-                or "getaddrinfo failed" in error_message
-                or "nodename nor servname" in error_message
-                or "Temporary failure in name resolution" in error_message
-            ):
-                raise CannotResolveHostError(error_message) from e
-            raise DownloadConnectionRefusedError(str(e)) from e
+            raise _to_scrapy_connect_error(e) from e
         except httpx.NetworkError as e:
             raise DownloadFailedError(str(e)) from e
         except httpx.RemoteProtocolError as e:

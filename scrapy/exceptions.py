@@ -63,8 +63,20 @@ class DownloadConnectionRefusedError(Exception):
     """Indicates that a connection was refused by the server."""
 
 
+class DownloadConnectBindError(Exception):
+    """Indicates that binding to a local address failed."""
+
+
 class CannotResolveHostError(Exception):
     """Indicates that the provided hostname cannot be resolved."""
+
+
+class DownloadNoRouteError(Exception):
+    """Indicates that no route to the remote host exists."""
+
+
+class DownloadTCPTimedOutError(Exception):
+    """Indicates that establishing a TCP connection timed out."""
 
 
 class DownloadTimeoutError(Exception):

@@ -7,9 +7,14 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import CancelledError
+from twisted.internet.error import ConnectBindError as TxConnectBindError
+from twisted.internet.error import ConnectError as TxConnectError
 from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
 from twisted.internet.error import DNSLookupError
+from twisted.internet.error import NoRouteError as TxNoRouteError
+from twisted.internet.error import TCPTimedOutError as TxTCPTimedOutError
 from twisted.internet.error import TimeoutError as TxTimeoutError
+from twisted.internet.error import UnknownHostError as TxUnknownHostError
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 from twisted.web.error import SchemeNotSupported
@@ -19,8 +24,11 @@ from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
+    DownloadConnectBindError,
     DownloadConnectionRefusedError,
     DownloadFailedError,
+    DownloadNoRouteError,
+    DownloadTCPTimedOutError,
     DownloadTimeoutError,
     StopDownload,
     UnsupportedURLSchemeError,
@@ -54,6 +62,44 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
         self._fail_on_dataloss_warned: bool = False
 
 
+_TWISTED_CONNECT_ERROR_MAP: tuple[
+    tuple[type[TxConnectError], type[Exception]],
+    ...,
+] = (
+    (TxConnectionRefusedError, DownloadConnectionRefusedError),
+    (TxConnectBindError, DownloadConnectBindError),
+    (TxUnknownHostError, CannotResolveHostError),
+    (TxNoRouteError, DownloadNoRouteError),
+    (TxTCPTimedOutError, DownloadTCPTimedOutError),
+    (TxTimeoutError, DownloadTimeoutError),
+)
+
+
+def _map_twisted_connect_exception(exc: TxConnectError) -> Exception:
+    message = str(exc)
+    for twisted_exc_cls, scrapy_exc_cls in _TWISTED_CONNECT_ERROR_MAP:
+        if isinstance(exc, twisted_exc_cls):
+            return scrapy_exc_cls(message)
+    return DownloadFailedError(message)
+
+
+def _map_response_failed_exception(exc: ResponseFailed) -> Exception | None:
+    mapped_exception: Exception | None = None
+    for reason in exc.reasons:
+        if isinstance(reason.value, TxConnectError):
+            current_exception: Exception = _map_twisted_connect_exception(reason.value)
+        elif isinstance(reason.value, DNSLookupError):
+            current_exception = CannotResolveHostError(str(reason.value))
+        else:
+            return None
+        if mapped_exception is None:
+            mapped_exception = current_exception
+            continue
+        if type(mapped_exception) is not type(current_exception):
+            return None
+    return mapped_exception
+
+
 @contextmanager
 def wrap_twisted_exceptions() -> Iterator[None]:
     """Context manager that wraps Twisted exceptions into Scrapy exceptions."""
@@ -63,14 +109,14 @@ def wrap_twisted_exceptions() -> Iterator[None]:
         raise UnsupportedURLSchemeError(str(e)) from e
     except CancelledError as e:
         raise DownloadCancelledError(str(e)) from e
-    except TxConnectionRefusedError as e:
-        raise DownloadConnectionRefusedError(str(e)) from e
     except DNSLookupError as e:
         raise CannotResolveHostError(str(e)) from e
+    except TxConnectError as e:
+        raise _map_twisted_connect_exception(e) from e
     except ResponseFailed as e:
+        if mapped_exception := _map_response_failed_exception(e):
+            raise mapped_exception from e
         raise DownloadFailedError(str(e)) from e
-    except TxTimeoutError as e:
-        raise DownloadTimeoutError(str(e)) from e
 
 
 def check_stop_download(

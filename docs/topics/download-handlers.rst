@@ -118,9 +118,15 @@ these exceptions.
 
 .. autoexception:: scrapy.exceptions.DownloadCancelledError
 
+.. autoexception:: scrapy.exceptions.DownloadConnectBindError
+
 .. autoexception:: scrapy.exceptions.DownloadConnectionRefusedError
 
 .. autoexception:: scrapy.exceptions.DownloadFailedError
+
+.. autoexception:: scrapy.exceptions.DownloadNoRouteError
+
+.. autoexception:: scrapy.exceptions.DownloadTCPTimedOutError
 
 .. autoexception:: scrapy.exceptions.DownloadTimeoutError
 

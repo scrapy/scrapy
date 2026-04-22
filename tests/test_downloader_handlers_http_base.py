@@ -6,6 +6,7 @@ import gzip
 import json
 import platform
 import re
+import socket
 import sys
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
@@ -22,6 +23,7 @@ from twisted.python.failure import Failure
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
+    DownloadConnectBindError,
     DownloadConnectionRefusedError,
     DownloadFailedError,
     DownloadTimeoutError,
@@ -523,6 +525,15 @@ class TestHttpBase(ABC):
 class TestHttp11Base(TestHttpBase):
     """HTTP 1.1 test case"""
 
+    @staticmethod
+    def _system_allows_nonlocal_bind() -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            try:
+                sock.bind(("198.51.100.1", 0))
+            except OSError:
+                return False
+        return True
+
     @coroutine_test
     async def test_download_without_maxsize_limit(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
@@ -747,6 +758,18 @@ class TestHttp11Base(TestHttpBase):
         ) as download_handler:
             response = await download_handler.download_request(request)
         assert response.body == b"127.0.0.2"
+
+    @coroutine_test
+    async def test_download_bind_address_nonlocal(self, mockserver: MockServer) -> None:
+        if self._system_allows_nonlocal_bind():
+            pytest.skip("This system allows binding to non-local addresses")
+
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh(
+            {"DOWNLOAD_BIND_ADDRESS": ("198.51.100.1", 0)}
+        ) as download_handler:
+            with pytest.raises(DownloadConnectBindError):
+                await download_handler.download_request(request)
 
     @pytest.mark.skipif(
         sys.platform == "darwin",
