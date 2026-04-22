@@ -348,7 +348,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         def normalize_key(key: Any) -> str:
             try:
                 loaded_key = load_object(key)
-            except (AttributeError, TypeError, ValueError):
+            except (AttributeError, TypeError, ValueError, NameError):
                 loaded_key = key
             else:
                 import_path = global_object_name(loaded_key)
