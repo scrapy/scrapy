@@ -323,10 +323,32 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         return copy.deepcopy(value)
 
     def getwithbase(self, name: _SettingsKey) -> BaseSettings:
-        """Get a composition of a dictionary-like setting and its `_BASE`
+        """Get a composition of a dictionary-like setting and its ``_BASE``
         counterpart.
 
+        Use
+        :meth:`~scrapy.settings.BaseSettings.get_component_priority_dict_with_base`
+        instead if the setting is a :ref:`component priority dictionary
+        <component-priority-dictionaries>`.
+
         :param name: name of the dictionary-like setting
+        :type name: str
+        """
+        if not isinstance(name, str):
+            raise ValueError(f"Base setting key must be a string, got {name}")
+
+        result = dict(self[name + "_BASE"] or {})
+        result.update(self[name] or {})
+        return BaseSettings({k: v for k, v in result.items() if v is not None})
+
+    def get_component_priority_dict_with_base(self, name: _SettingsKey) -> BaseSettings:
+        """Get a composition of a component priority dictionary setting and
+        its ``_BASE`` counterpart.
+
+        Keys are resolved to their import path for deduplication and then
+        restored to their latest input representation.
+
+        :param name: name of the component priority dictionary setting
         :type name: str
         """
         if not isinstance(name, str):
@@ -345,10 +367,10 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
                 f"be kept."
             )
 
-        def normalize_key(key: Any) -> str:
+        def normalize_key(key: Any) -> Any:
             try:
                 loaded_key = load_object(key)
-            except (AttributeError, TypeError, ValueError):
+            except (AttributeError, NameError, TypeError, ValueError):
                 loaded_key = key
             else:
                 import_path = global_object_name(loaded_key)

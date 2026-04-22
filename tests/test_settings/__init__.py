@@ -410,7 +410,21 @@ class TestBaseSettings:
         assert frozencopy.frozen
         assert frozencopy is not self.settings
 
-    def test_getwithbase_override_none_by_type(self):
+    def test_getwithbase_for_dotted_keys(self):
+        settings = BaseSettings(
+            {
+                "FEED_EXPORTERS_BASE": BaseSettings({"json": "foo"}),
+                "FEED_EXPORTERS": BaseSettings({"csv.gz": "bar"}),
+            }
+        )
+        value = settings.getwithbase("FEED_EXPORTERS")
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == {
+            "json": "foo",
+            "csv.gz": "bar",
+        }
+
+    def test_get_component_priority_dict_with_base_override_none_by_type(self):
         settings = BaseSettings()
         setting_names = set()
         for k, v in scrapy_default_settings.__dict__.items():
@@ -426,10 +440,10 @@ class TestBaseSettings:
                 load_object(import_path): None for import_path in v
             }
         for setting_name in setting_names:
-            value = settings.getwithbase(setting_name)
+            value = settings.get_component_priority_dict_with_base(setting_name)
             assert not dict(value)
 
-    def test_getwithbase_override_value_by_type(self):
+    def test_get_component_priority_dict_with_base_override_value_by_type(self):
         settings = BaseSettings()
         setting_names = set()
         value = 0
@@ -446,7 +460,10 @@ class TestBaseSettings:
                 load_object(import_path): value for import_path in v
             }
         for setting_name in setting_names:
-            assert settings.getwithbase(setting_name) == settings[setting_name]
+            assert (
+                settings.get_component_priority_dict_with_base(setting_name)
+                == settings[setting_name]
+            )
 
     def test_getwithbase_for_non_component_priority_dicts(self):
         settings = BaseSettings()
@@ -465,7 +482,9 @@ class TestBaseSettings:
             assert isinstance(value, BaseSettings)
             assert dict(value) == expected
 
-    def test_getwithbase_warns_on_duplicate_import_paths(self, caplog):
+    def test_get_component_priority_dict_with_base_warns_on_duplicate_import_paths(
+        self, caplog
+    ):
         settings = BaseSettings()
         settings["FOO"] = BaseSettings(
             {
@@ -474,20 +493,22 @@ class TestBaseSettings:
             }
         )
         with caplog.at_level(logging.WARNING):
-            value = settings.getwithbase("FOO")
+            value = settings.get_component_priority_dict_with_base("FOO")
         assert isinstance(value, BaseSettings)
         assert dict(value) == {"scrapy.http.Request": 2}
         assert caplog.records, "Expected a warning to be logged"
         msg = caplog.records[0].message
         assert "scrapy.http.request.Request" in msg
 
-    def test_getwithbase_warns_on_duplicate_mixed_type_and_path(self, caplog):
+    def test_get_component_priority_dict_with_base_warns_on_duplicate_mixed_type_and_path(
+        self, caplog
+    ):
         settings = BaseSettings()
         settings["FOO"] = BaseSettings(
             {Component1: 1, "tests.test_settings.Component1": 2}
         )
         with caplog.at_level(logging.WARNING):
-            value = settings.getwithbase("FOO")
+            value = settings.get_component_priority_dict_with_base("FOO")
         assert isinstance(value, BaseSettings)
         assert dict(value) == {"tests.test_settings.Component1": 2}
         assert caplog.records, "Expected a warning to be logged"
@@ -500,6 +521,13 @@ class TestBaseSettings:
             ValueError, match="Base setting key must be a string, got 123"
         ):
             settings.getwithbase(123)
+
+    def test_get_component_priority_dict_with_base_invalid_setting_name(self):
+        settings = BaseSettings()
+        with pytest.raises(
+            ValueError, match="Base setting key must be a string, got 123"
+        ):
+            settings.get_component_priority_dict_with_base(123)
 
 
 class TestSettings:
