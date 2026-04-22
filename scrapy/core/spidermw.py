@@ -56,7 +56,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
-        return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
+        return build_component_list(
+            settings.get_component_priority_dict_with_base("SPIDER_MIDDLEWARES")
+        )
 
     def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
         self._check_deprecated_process_start_requests_use(middlewares)

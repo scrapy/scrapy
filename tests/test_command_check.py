@@ -186,7 +186,9 @@ class CheckSpider(scrapy.Spider):
         output = StringIO()
         sys.stdout = output
         cmd = Command()
-        cmd.settings = Mock(getwithbase=Mock(return_value={}))
+        cmd.settings = Mock(
+            get_component_priority_dict_with_base=Mock(return_value={}),
+        )
         cm_cls_mock.return_value = cm_mock = Mock()
         spider_loader_mock = Mock()
         cmd.crawler_process = Mock(spider_loader=spider_loader_mock)
@@ -211,7 +213,9 @@ class CheckSpider(scrapy.Spider):
         self, cm_cls_mock
     ) -> None:
         cmd = Command()
-        cmd.settings = Mock(getwithbase=Mock(return_value={}))
+        cmd.settings = Mock(
+            get_component_priority_dict_with_base=Mock(return_value={}),
+        )
         cm_cls_mock.return_value = cm_mock = Mock()
         spider_loader_mock = Mock()
         cmd.crawler_process = Mock(spider_loader=spider_loader_mock)
