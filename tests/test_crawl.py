@@ -304,7 +304,8 @@ with multiples lines
             )
         self._assert_retried(log)
 
-    def _assert_retried(self, log):
+    @staticmethod
+    def _assert_retried(log: LogCapture | str) -> None:
         assert str(log).count("Retrying") == 2
         assert str(log).count("Gave up retrying") == 1
 
@@ -406,7 +407,7 @@ with multiples lines
         settings_dict = get_reactor_settings()
         runner_cls = (
             CrawlerRunner
-            if settings_dict.get("TWISTED_ENABLED", True)
+            if settings_dict.get("TWISTED_REACTOR_ENABLED", True)
             else AsyncCrawlerRunner
         )
         runner = runner_cls(settings_dict)

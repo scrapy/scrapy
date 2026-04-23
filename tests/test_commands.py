@@ -345,14 +345,18 @@ Unknown command: abc
 
 
 class TestBenchCommand:
-    def test_run(self) -> None:
-        _, _, err = proc(
+    @pytest.mark.parametrize("use_reactor", [True, False])
+    def test_run(self, use_reactor: bool) -> None:
+        args: list[str] = [
             "bench",
             "-s",
             "LOGSTATS_INTERVAL=0.001",
             "-s",
             "CLOSESPIDER_TIMEOUT=0.01",
-        )
+        ]
+        if not use_reactor:
+            args += ["-s", "TWISTED_REACTOR_ENABLED=False"]
+        _, _, err = proc(*args)
         assert "INFO: Crawled" in err
         assert "Unhandled Error" not in err
         assert "log_count/ERROR" not in err
@@ -374,27 +378,28 @@ class TestViewCommand:
 
 
 class TestHelpMessage(TestProjectBase):
-    COMMANDS = [
-        "parse",
-        "startproject",
-        "view",
-        "crawl",
-        "edit",
-        "list",
-        "fetch",
-        "settings",
-        "shell",
-        "runspider",
-        "version",
-        "genspider",
-        "check",
-        "bench",
-    ]
-
-    def test_help_messages(self, proj_path: Path) -> None:
-        for command in self.COMMANDS:
-            _, out, _ = proc(command, "-h", cwd=proj_path)
-            assert "Usage" in out
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "parse",
+            "startproject",
+            "view",
+            "crawl",
+            "edit",
+            "list",
+            "fetch",
+            "settings",
+            "shell",
+            "runspider",
+            "version",
+            "genspider",
+            "check",
+            "bench",
+        ],
+    )
+    def test_help_messages(self, proj_path: Path, command: str) -> None:
+        _, out, _ = proc(command, "-h", cwd=proj_path)
+        assert "Usage" in out
 
 
 class TestPopCommandName:

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
+from twisted.internet.threads import deferToThread
 
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
@@ -64,7 +65,7 @@ def is_asyncio_available() -> bool:
         calling it from code such as spiders and Scrapy components, if Scrapy
         is run using one of the supported ways).
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.15.0
         This function now also returns ``True`` if there is a running asyncio
         loop, even if no Twisted reactor is installed.
     """
@@ -131,13 +132,16 @@ async def _parallel_asyncio(
 
 class AsyncioLoopingCall:
     """A simple implementation of a periodic call using asyncio, keeping
-    some API and behavior compatibility with the Twisted ``LoopingCall``.
+    some API and behavior compatibility with
+    :class:`~twisted.internet.task.LoopingCall`.
 
     The function is called every *interval* seconds, independent of the finish
     time of the previous call. If the function  is still running when it's time
     to call it again, calls are skipped until the function finishes.
 
     The function must not return a coroutine or a ``Deferred``.
+
+    .. versionadded:: 2.14.0
     """
 
     def __init__(self, func: Callable[_P, _T], *args: _P.args, **kwargs: _P.kwargs):
@@ -215,8 +219,12 @@ def create_looping_call(
 ) -> AsyncioLoopingCall | LoopingCall:
     """Create an instance of a looping call class.
 
-    This creates an instance of :class:`AsyncioLoopingCall` or
-    :class:`LoopingCall`, depending on whether asyncio support is available.
+    This creates an instance of
+    :class:`~scrapy.utils.asyncio.AsyncioLoopingCall` or
+    :class:`~twisted.internet.task.LoopingCall`, depending on whether asyncio
+    support is available.
+
+    .. versionadded:: 2.14.0
     """
     if is_asyncio_available():
         return AsyncioLoopingCall(func, *args, **kwargs)
@@ -228,8 +236,11 @@ def call_later(
 ) -> CallLaterResult:
     """Schedule a function to be called after a delay.
 
-    This uses either ``loop.call_later()`` or ``reactor.callLater()``, depending
-    on whether asyncio support is available.
+    This uses either :meth:`asyncio.loop.call_later` or
+    :meth:`reactor.callLater() <twisted.internet.base.ReactorBase.callLater>`,
+    depending on whether asyncio support is available.
+
+    .. versionadded:: 2.14.0
     """
     if is_asyncio_available():
         loop = asyncio.get_event_loop()
@@ -248,6 +259,8 @@ class CallLaterResult:
     no ``active()`` (as there is no such public API in
     :class:`asyncio.TimerHandle`) but ``cancel()`` can be called on already
     called or cancelled instances.
+
+    .. versionadded:: 2.14.0
     """
 
     _timer_handle: asyncio.TimerHandle | None = None
@@ -278,3 +291,23 @@ class CallLaterResult:
         elif self._delayed_call and self._delayed_call.active():
             self._delayed_call.cancel()
             self._delayed_call = None
+
+
+async def run_in_thread(
+    func: Callable[_P, _T], *args: _P.args, **kwargs: _P.kwargs
+) -> _T:
+    """Call a function in a thread and return its result as a coroutine.
+
+    This uses either :func:`asyncio.to_thread` or
+    :func:`twisted.internet.threads.deferToThread`, depending on whether
+    asyncio support is available.
+
+    .. versionadded:: 2.15.0
+    """
+    if is_asyncio_available():
+        return await asyncio.to_thread(func, *args, **kwargs)
+
+    # circular import
+    from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
+
+    return await maybe_deferred_to_future(deferToThread(func, *args, **kwargs))

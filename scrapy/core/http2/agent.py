@@ -14,7 +14,7 @@ from twisted.web.client import (
 )
 from twisted.web.error import SchemeNotSupported
 
-from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory
+from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFactory
 from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
 
 if TYPE_CHECKING:
@@ -42,6 +42,10 @@ class H2ConnectionPool:
         self._pending_requests: dict[
             ConnectionKeyT, deque[Deferred[H2ClientProtocol]]
         ] = {}
+
+        self._tls_verbose_logging: bool = settings.getbool(
+            "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
+        )
 
     def get_connection(
         self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
@@ -71,7 +75,12 @@ class H2ConnectionPool:
         conn_lost_deferred: Deferred[list[BaseException]] = Deferred()
         conn_lost_deferred.addCallback(self._remove_connection, key)
 
-        factory = H2ClientFactory(uri, self.settings, conn_lost_deferred)
+        factory = H2ClientFactory(
+            uri,
+            self.settings,
+            conn_lost_deferred,
+            tls_verbose_logging=self._tls_verbose_logging,
+        )
         conn_d = endpoint.connect(factory)
         conn_d.addCallback(self.put_connection, key)
 
@@ -122,11 +131,11 @@ class H2Agent:
         pool: H2ConnectionPool,
         context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
         connect_timeout: float | None = None,
-        bind_address: bytes | None = None,
+        bind_address: tuple[str, int] | None = None,
     ) -> None:
         self._reactor = reactor
         self._pool = pool
-        self._context_factory = AcceptableProtocolsContextFactory(
+        self._context_factory = _AcceptableProtocolsContextFactory(
             context_factory, acceptable_protocols=[b"h2"]
         )
         self.endpoint_factory = _StandardEndpointFactory(
@@ -166,7 +175,7 @@ class ScrapyProxyH2Agent(H2Agent):
         pool: H2ConnectionPool,
         context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
         connect_timeout: float | None = None,
-        bind_address: bytes | None = None,
+        bind_address: tuple[str, int] | None = None,
     ) -> None:
         super().__init__(
             reactor=reactor,

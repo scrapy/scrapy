@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 import attr
 import pytest
 from itemadapter import ItemAdapter
+from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
@@ -31,6 +32,7 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.settings import Settings
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
@@ -78,6 +80,22 @@ def get_ftp_content_and_delete(
     return b"".join(ftp_data)
 
 
+class DeferredFSFilesStore(FSFilesStore):
+    """A simple store with persist_file() returning a deferred."""
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        deferred = Deferred()
+        # short-hand super() doesn't work in nested functions
+        parent_persist_file = super().persist_file
+
+        def cb():
+            parent_persist_file(path, buf, info, meta=meta, headers=headers)
+            deferred.callback(None)
+
+        call_later(0.5, cb)
+        return deferred
+
+
 class TestFilesPipeline:
     def setup_method(self):
         self.tempdir = mkdtemp()
@@ -90,6 +108,15 @@ class TestFilesPipeline:
 
     def teardown_method(self):
         rmtree(self.tempdir)
+
+    def test_file_path_query_parameters(self):
+        file_path = self.pipeline.file_path
+
+        req1 = Request("http://foo.bar/baz.txt?fizz")
+        assert file_path(req1) == "full/a2b4913a62f65445aeae2bac08cd8c3b41d7195e.txt"
+
+        req2 = Request("http://foo.bar/get_img.php?file=photo.jpg")
+        assert file_path(req2) == "full/118230fd648f1080c81c234d5e2463ea496f8c05.jpg"
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
@@ -165,7 +192,7 @@ class TestFilesPipeline:
     async def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
             mock.patch.object(
                 FSFilesStore,
@@ -177,22 +204,16 @@ class TestFilesPipeline:
                 "get_media_requests",
                 return_value=[_prepare_request_object(item_url)],
             ),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = await self.pipeline.process_item(item)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
-
-        for p in patchers:
-            p.stop()
 
     @coroutine_test
     async def test_file_expired(self):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(
                 FSFilesStore,
                 "stat_file",
@@ -208,22 +229,16 @@ class TestFilesPipeline:
                 return_value=[_prepare_request_object(item_url)],
             ),
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = await self.pipeline.process_item(item)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
-
-        for p in patchers:
-            p.stop()
 
     @coroutine_test
     async def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
             mock.patch.object(
                 FSFilesStore,
@@ -239,16 +254,33 @@ class TestFilesPipeline:
                 "get_media_requests",
                 return_value=[_prepare_request_object(item_url, flags=["cached"])],
             ),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = await self.pipeline.process_item(item)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "cached"
 
-        for p in patchers:
-            p.stop()
+    @coroutine_test
+    async def test_async_store(self) -> None:
+        """Test that async persist_file() works and is awaited."""
+
+        self.pipeline.store = DeferredFSFilesStore(self.tempdir)
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        assert result["files"][0]["checksum"]
+        # check that the file was written by persist_file()
+        path = Path(self.tempdir) / result["files"][0]["path"]
+        assert path.exists()
+        assert path.read_bytes() == b"data"
 
     def test_file_path_from_item(self):
         """
@@ -691,7 +723,6 @@ class TestGCSFilesStore:
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
-@pytest.mark.requires_reactor  # needs a reactor for FTPFilesStore
 class TestFTPFileStore:
     @inline_callbacks_test
     def test_persist(self):
@@ -729,13 +760,13 @@ class ItemWithFiles(Item):
     files = Field()
 
 
-def _create_item_with_files(*files):
+def _create_item_with_files(*files: str) -> ItemWithFiles:
     item = ItemWithFiles()
     item["file_urls"] = files
     return item
 
 
-def _prepare_request_object(item_url, flags=None):
+def _prepare_request_object(item_url: str, flags: list[str] | None = None) -> Request:
     return Request(
         item_url,
         meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},

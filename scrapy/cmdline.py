@@ -12,7 +12,7 @@ import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
 from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
 from scrapy.exceptions import UsageError
-from scrapy.utils.misc import walk_modules
+from scrapy.utils.misc import walk_modules_iter
 from scrapy.utils.project import get_project_settings, inside_project
 from scrapy.utils.python import garbage_collect
 from scrapy.utils.reactor import _asyncio_reactor_path
@@ -40,13 +40,13 @@ class ScrapyArgumentParser(argparse.ArgumentParser):
 def _iter_command_classes(module_name: str) -> Iterable[type[ScrapyCommand]]:
     # TODO: add `name` attribute to commands and merge this function with
     # scrapy.utils.spider.iter_spider_classes
-    for module in walk_modules(module_name):
+    for module in walk_modules_iter(module_name):
         for obj in vars(module).values():
             if (
                 inspect.isclass(obj)
                 and issubclass(obj, ScrapyCommand)
                 and obj.__module__ == module.__name__
-                and obj not in (ScrapyCommand, BaseRunSpiderCommand)
+                and obj not in {ScrapyCommand, BaseRunSpiderCommand}
             ):
                 yield obj
 
@@ -108,17 +108,24 @@ def _print_header(settings: BaseSettings, inproject: bool) -> None:
 
 def _print_commands(settings: BaseSettings, inproject: bool) -> None:
     _print_header(settings, inproject)
-    print("Usage:")
-    print("  scrapy <command> [options] [args]\n")
-    print("Available commands:")
+    print(
+        "Usage:\n",
+        "  scrapy <command> [options] [args]\n",
+        "Available commands:\n",
+    )
     cmds = _get_commands_dict(settings, inproject)
-    for cmdname, cmdclass in sorted(cmds.items()):
-        print(f"  {cmdname:<13} {cmdclass.short_desc()}")
+    print(
+        "\n".join(
+            f"  {cmdname:<13} {cmdclass.short_desc()}"
+            for cmdname, cmdclass in sorted(cmds.items())
+        )
+    )
     if not inproject:
-        print()
-        print("  [ more ]      More commands available when run from project directory")
-    print()
-    print('Use "scrapy <command> -h" to see more info about a command')
+        print(
+            "\n",
+            "  [ more ]      More commands available when run from project directory",
+        )
+    print("\n", 'Use "scrapy <command> -h" to see more info about a command')
 
 
 def _print_unknown_command_msg(
@@ -197,9 +204,10 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
     _run_print_help(parser, cmd.process_options, args, opts)
 
     if cmd.requires_crawler_process:
-        if settings[
-            "TWISTED_REACTOR"
-        ] == _asyncio_reactor_path and not settings.getbool("FORCE_CRAWLER_PROCESS"):
+        if (
+            settings["TWISTED_REACTOR"] == _asyncio_reactor_path
+            and not settings.getbool("FORCE_CRAWLER_PROCESS")
+        ) or not settings.getbool("TWISTED_REACTOR_ENABLED"):
             cmd.crawler_process = AsyncCrawlerProcess(settings)
         else:
             cmd.crawler_process = CrawlerProcess(settings)

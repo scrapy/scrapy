@@ -9,7 +9,9 @@ import pytest
 from testfixtures import LogCapture
 from twisted.web.http import H2_ENABLED
 
-from scrapy.exceptions import UnsupportedURLSchemeError
+from scrapy import Spider
+from scrapy.crawler import Crawler
+from scrapy.exceptions import NotConfigured, UnsupportedURLSchemeError
 from scrapy.http import Request
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
 
 
 pytestmark = [
-    pytest.mark.requires_reactor,
+    pytest.mark.requires_reactor,  # H2DownloadHandler requires a reactor
     pytest.mark.skipif(
         not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
     ),
@@ -47,14 +49,20 @@ class H2DownloadHandlerMixin:
         return H2DownloadHandler
 
 
+def test_not_configured_without_reactor() -> None:
+    from scrapy.core.downloader.handlers.http2 import H2DownloadHandler  # noqa: PLC0415
+
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        H2DownloadHandler.from_crawler(crawler)
+
+
 class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 
     @deferred_f_from_coro_f
     async def test_protocol(self, mockserver: MockServer) -> None:
-        request = Request(
-            mockserver.url("/host", is_secure=self.is_secure), method="GET"
-        )
+        request = Request(mockserver.url("/host", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.protocol == "h2"

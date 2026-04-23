@@ -48,6 +48,9 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
         self._fail_on_dataloss: bool = crawler.settings.getbool(
             "DOWNLOAD_FAIL_ON_DATALOSS"
         )
+        self._tls_verbose_logging: bool = crawler.settings.getbool(
+            "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
+        )
         self._fail_on_dataloss_warned: bool = False
 
 
@@ -146,3 +149,11 @@ def get_dataloss_msg(url: str) -> str:
         f"responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
         f" -- This message won't be shown in further requests"
     )
+
+
+def normalize_bind_address(
+    value: str | tuple[str, int] | None,
+) -> tuple[str, int] | None:
+    if isinstance(value, str):
+        return (value, 0)
+    return value

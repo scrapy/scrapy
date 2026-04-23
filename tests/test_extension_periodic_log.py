@@ -3,12 +3,11 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-import pytest
-
 from scrapy.extensions.periodic_log import PeriodicLog
 from scrapy.utils.test import get_crawler
 
 from .spiders import MetaSpider
+from .utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -59,10 +58,10 @@ stats_dump_2 = {
 
 
 class CustomPeriodicLog(PeriodicLog):
-    def set_a(self):
+    def set_a(self) -> None:
         self.stats._stats = stats_dump_1
 
-    def set_b(self):
+    def set_b(self) -> None:
         self.stats._stats = stats_dump_2
 
 
@@ -88,15 +87,17 @@ class TestPeriodicLog:
         assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
         assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
-    def test_log_delta(self):
-        def emulate(settings=None):
+    @coroutine_test
+    async def test_log_delta(self):
+        def emulate(
+            settings: dict[str, Any] | None = None,
+        ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
             spider = MetaSpider()
             ext = extension(settings)
             ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_delta()
-            ext.set_a()
+            ext.set_b()
             b = ext.log_delta()
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
@@ -152,15 +153,17 @@ class TestPeriodicLog:
             ),
         )
 
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
-    def test_log_stats(self):
-        def emulate(settings=None):
+    @coroutine_test
+    async def test_log_stats(self):
+        def emulate(
+            settings: dict[str, Any] | None = None,
+        ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
             spider = MetaSpider()
             ext = extension(settings)
             ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_crawler_stats()
-            ext.set_a()
+            ext.set_b()
             b = ext.log_crawler_stats()
             ext.spider_closed(spider, reason="finished")
             return ext, a, b

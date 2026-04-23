@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -25,6 +26,8 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
 
+pytestmark = pytest.mark.only_asyncio
+
 pytest.importorskip("httpx")
 
 
@@ -40,19 +43,24 @@ class HttpxDownloadHandlerMixin:
 
 
 class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
+    handler_supports_bindaddress_meta = False
+
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="127.0.0.2 is not available on macOS by default",
+    )
     @coroutine_test
-    async def test_unsupported_bindaddress(
+    async def test_bind_address_port_warning(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        meta = {"bindaddress": "127.0.0.2"}
-        request = Request(mockserver.url("/text"), meta=meta)
-        async with self.get_dh() as download_handler:
+        request = Request(mockserver.url("/client-ip"))
+        async with self.get_dh(
+            {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 12345)}
+        ) as download_handler:
             response = await download_handler.download_request(request)
-        assert response.body == b"Works"
-        assert (
-            "The 'bindaddress' request meta key is not supported by HttpxDownloadHandler"
-            in caplog.text
-        )
+        assert response.body == b"127.0.0.2"
+        assert "DOWNLOAD_BIND_ADDRESS specifies a port (12345)" in caplog.text
+        assert "Ignoring the port" in caplog.text
 
     @coroutine_test
     async def test_unsupported_proxy(
@@ -70,30 +78,33 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
 
 
 class TestHttps11(HttpxDownloadHandlerMixin, TestHttps11Base):
+    handler_supports_bindaddress_meta = False
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
+
+    @pytest.mark.skip(reason="The check is Twisted-specific")
+    def test_verify_certs_deprecated(self):
+        pass
 
 
 class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):
     pass
 
 
-class Https11WrongHostnameTestCase(
-    HttpxDownloadHandlerMixin, TestHttpsWrongHostnameBase
-):
+class TestHttps11WrongHostname(HttpxDownloadHandlerMixin, TestHttpsWrongHostnameBase):
     pass
 
 
-class Https11InvalidDNSId(HttpxDownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+class TestHttps11InvalidDNSId(HttpxDownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
     pass
 
 
-class Https11InvalidDNSPattern(
+class TestHttps11InvalidDNSPattern(
     HttpxDownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
 ):
     pass
 
 
-class Https11CustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBase):
+class TestHttps11CustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBase):
     pass
 
 

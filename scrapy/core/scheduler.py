@@ -461,9 +461,10 @@ class Scheduler(BaseScheduler):
         except TypeError:  # pragma: no cover
             warn(
                 f"The __init__ method of {global_object_name(self.pqclass)} "
-                f"does not support a `start_queue_cls` keyword-only "
-                f"parameter.",
+                "does not support a `start_queue_cls` keyword-only "
+                "parameter.",
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
             return build_from_crawler(
                 self.pqclass,
@@ -490,9 +491,10 @@ class Scheduler(BaseScheduler):
         except TypeError:  # pragma: no cover
             warn(
                 f"The __init__ method of {global_object_name(self.pqclass)} "
-                f"does not support a `start_queue_cls` keyword-only "
-                f"parameter.",
+                "does not support a `start_queue_cls` keyword-only "
+                "parameter.",
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
             q = build_from_crawler(
                 self.pqclass,
@@ -521,7 +523,7 @@ class Scheduler(BaseScheduler):
     def _read_dqs_state(self, dqdir: str) -> Any:
         path = Path(dqdir, "active.json")
         if not path.exists():
-            return []
+            return ()
         with path.open(encoding="utf-8") as f:
             return json.load(f)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 import OpenSSL.SSL
 import pytest
@@ -12,12 +12,12 @@ from twisted.web.client import Response as TxResponse
 
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.core.downloader.contextfactory import (
-    ScrapyClientContextFactory,
-    load_context_factory_from_settings,
+    _load_context_factory_from_settings,
+    _ScrapyClientContextFactory,
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.settings import Settings
+from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
@@ -29,18 +29,19 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
+    from twisted.internet.ssl import ContextFactory
     from twisted.web.iweb import IBodyProducer
 
 
 class TestSlot:
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
+        assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
 
 
-@pytest.mark.requires_reactor
+@pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
 class TestContextFactoryBase:
-    context_factory = None
+    context_factory: ContextFactory | None = None
 
     @async_yield_fixture
     async def server_url(self, tmp_path):
@@ -98,36 +99,54 @@ class TestContextFactoryBase:
 
 class TestContextFactory(TestContextFactoryBase):
     @coroutine_test
-    async def testPayload(self, server_url: str) -> None:
+    async def test_payload(self, server_url: str) -> None:
         s = "0123456789" * 10
         crawler = get_crawler()
-        settings = Settings()
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        client_context_factory = _load_context_factory_from_settings(crawler)
         body = await self.get_page(
             server_url + "payload", client_context_factory, body=s
         )
         assert body == to_bytes(s)
 
-    def test_override_getContext(self):
-        class MyFactory(ScrapyClientContextFactory):
-            def getContext(
-                self, hostname: Any = None, port: Any = None
-            ) -> OpenSSL.SSL.Context:
-                ctx: OpenSSL.SSL.Context = super().getContext(hostname, port)
-                return ctx
+    def test_no_context_sharing(self) -> None:
+        """Every call to creatorForNetloc() should give a fresh context."""
+        crawler = get_crawler()
+        client_context_factory: _ScrapyClientContextFactory = (
+            _load_context_factory_from_settings(crawler)
+        )
+        creator1 = client_context_factory.creatorForNetloc(b"website1.tld", 443)
+        assert creator1._hostnameBytes == b"website1.tld"
+        creator2 = client_context_factory.creatorForNetloc(b"website2.tld", 443)
+        assert creator2._hostnameBytes == b"website2.tld"
+        assert creator1._ctx is not creator2._ctx
 
-        with warnings.catch_warnings(record=True) as w:
-            MyFactory()
-            assert len(w) == 1
-            assert (
-                "Overriding ScrapyClientContextFactory.getContext() is deprecated"
-                in str(w[0].message)
+    @pytest.mark.skipif(
+        PYOPENSSL_SET_CIPHER_LIST_TMP_CONN,
+        reason="Fails or doesn't make sense on this pyOpenSSL version",
+    )
+    def test_no_immutable_ctx_warning(self) -> None:
+        """There should be no pyOpenSSL context modification warning.
+
+        pyOpenSSL < 25.1.0 doesn't produce this warning, and on 25.1.0 it's
+        always produced due to
+        https://github.com/scrapy/scrapy/issues/6859#issuecomment-4294917851.
+        """
+        crawler = get_crawler()
+        client_context_factory: _ScrapyClientContextFactory = (
+            _load_context_factory_from_settings(crawler)
+        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error",
+                category=DeprecationWarning,
+                message="Attempting to mutate a Context after a Connection was created",
             )
+            client_context_factory.creatorForNetloc(b"website.tld", 443)
 
 
 class TestContextFactoryTLSMethod(TestContextFactoryBase):
     async def _assert_factory_works(
-        self, server_url: str, client_context_factory: ScrapyClientContextFactory
+        self, server_url: str, client_context_factory: _ScrapyClientContextFactory
     ) -> None:
         s = "0123456789" * 10
         body = await self.get_page(
@@ -138,28 +157,24 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
     @coroutine_test
     async def test_setting_default(self, server_url: str) -> None:
         crawler = get_crawler()
-        settings = Settings()
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        client_context_factory = _load_context_factory_from_settings(crawler)
         assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
     def test_setting_none(self):
-        crawler = get_crawler()
-        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": None})
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": None})
         with pytest.raises(KeyError):
-            load_context_factory_from_settings(settings, crawler)
+            _load_context_factory_from_settings(crawler)
 
     def test_setting_bad(self):
-        crawler = get_crawler()
-        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
         with pytest.raises(KeyError):
-            load_context_factory_from_settings(settings, crawler)
+            _load_context_factory_from_settings(crawler)
 
     @coroutine_test
     async def test_setting_explicit(self, server_url: str) -> None:
-        crawler = get_crawler()
-        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
+        client_context_factory = _load_context_factory_from_settings(crawler)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
@@ -167,13 +182,15 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
     async def test_direct_from_crawler(self, server_url: str) -> None:
         # the setting is ignored
         crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
-        client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
+        client_context_factory = build_from_crawler(
+            _ScrapyClientContextFactory, crawler
+        )
         assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
     @coroutine_test
     async def test_direct_init(self, server_url: str) -> None:
-        client_context_factory = ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
+        client_context_factory = _ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 

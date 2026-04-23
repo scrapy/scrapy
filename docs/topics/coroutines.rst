@@ -73,12 +73,6 @@ In the future we plan to add support for the ``async def`` syntax to these APIs
 or replace them with other APIs where changing the existing ones isn't
 possible.
 
-These APIs don't have a coroutine-based counterpart:
-
--   :class:`~scrapy.mail.MailSender`
-
-    - :meth:`~scrapy.mail.MailSender.send`
-
 These APIs have a coroutine-based implementation and a Deferred-based one:
 
 -   :class:`scrapy.crawler.Crawler`:
@@ -137,18 +131,11 @@ wrapping a :class:`~twisted.internet.defer.Deferred` object into a
 :class:`~asyncio.Future` object or vice versa. See :ref:`asyncio-await-dfd` for
 more information about this.
 
-For example:
-
--   The :meth:`MailSender.send() <scrapy.mail.MailSender.send>` method returns
-    a :class:`~twisted.internet.defer.Deferred` object that fires when the
-    email is sent. You can use this object directly in Deferred-based code or
-    convert it into a :class:`~asyncio.Future` object with
-    :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
--   A custom scheduler needs to define an ``open()`` method that can return a
-    :class:`~twisted.internet.defer.Deferred` object. You can write a method
-    that works with Deferreds and returns one directly, or you can write a
-    coroutine and convert it into a function that returns a Deferred with
-    :func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
+For example: a custom scheduler needs to define an ``open()`` method that can
+return a :class:`~twisted.internet.defer.Deferred` object. You can write a
+method that works with Deferreds and returns one directly, or you can write a
+coroutine and convert it into a function that returns a Deferred with
+:func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
 
 
 General usage

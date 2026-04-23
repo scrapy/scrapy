@@ -40,12 +40,13 @@ except ImportError:
     pass
 else:
     try:
-        brotli.Decompressor.can_accept_more_data
+        brotli.Decompressor.can_accept_more_data  # noqa: B018
     except AttributeError:  # pragma: no cover
         warnings.warn(
             "You have brotli installed. But 'br' encoding support now requires "
             "brotli's or brotlicffi's version >= 1.2.0. Please upgrade "
             "brotli/brotlicffi to make Scrapy decode 'br' encoded responses.",
+            stacklevel=2,
         )
     else:
         ACCEPTED_ENCODINGS.append(b"br")

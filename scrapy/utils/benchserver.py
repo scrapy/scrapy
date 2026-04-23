@@ -36,7 +36,7 @@ def _getarg(
 if __name__ == "__main__":
     from twisted.internet import reactor
 
-    root = Root()
+    root = Root()  # type: ignore[no-untyped-call]
     factory = Site(root)
     httpPort = reactor.listenTCP(8998, Site(root))
 

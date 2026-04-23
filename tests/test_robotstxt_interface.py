@@ -8,7 +8,7 @@ from scrapy.robotstxt import (
 )
 
 
-def rerp_available():
+def rerp_available() -> bool:
     # check if robotexclusionrulesparser is installed
     try:
         from robotexclusionrulesparser import (  # noqa: PLC0415

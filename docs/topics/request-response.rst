@@ -644,7 +644,40 @@ Those are:
 bindaddress
 -----------
 
-The IP of the outgoing IP address to use for the performing the request.
+The default local outgoing address for download-handler connections.
+
+This meta value can be either:
+
+- a host address as a string (e.g. ``"127.0.0.2"``), in which case the local
+  port is chosen automatically, or
+
+- a ``(host, port)`` tuple (e.g. ``("127.0.0.2", 50000)``) to bind to both a
+  specific local interface and a specific local port.
+
+For example:
+
+.. code-block:: python
+
+    Request(
+        "https://example.org",
+        meta={"bindaddress": "127.0.0.2"},
+    )
+
+.. code-block:: python
+
+    Request(
+        "https://example.org",
+        meta={"bindaddress": ("127.0.0.2", 50000)},
+    )
+
+If not set, built-in HTTP download handlers use the value of
+:setting:`DOWNLOAD_BIND_ADDRESS` as the default bind address.
+Set the :reqmeta:`bindaddress` request meta key to override it for a
+specific request.
+
+This meta key is not supported by
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
+:setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
 
 .. reqmeta:: download_timeout
 

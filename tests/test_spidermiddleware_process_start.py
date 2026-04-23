@@ -320,6 +320,11 @@ class TestMain:
                 DeprecatedWrapSpider,
             )
 
+    @coroutine_test
+    async def test_universal_mw_uses_process_start(self):
+        """Test that process_start_requests() isn't used when process_start() exists."""
+        await self._test([UniversalSpiderMiddleware], ModernWrapSpider, [ITEM_B])
+
     async def _test_sleep(self, spider_middlewares):
         class TestSpider(Spider):
             name = "test"
@@ -341,12 +346,12 @@ class TestMain:
             [NoOpSpiderMiddleware, AsyncioSleepSpiderMiddleware, NoOpSpiderMiddleware]
         )
 
-    @pytest.mark.requires_reactor
+    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
     @coroutine_test
     async def test_twisted_sleep_single(self):
         await self._test_sleep([TwistedSleepSpiderMiddleware])
 
-    @pytest.mark.requires_reactor
+    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
     @coroutine_test
     async def test_twisted_sleep_multiple(self):
         await self._test_sleep(

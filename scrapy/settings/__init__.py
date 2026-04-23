@@ -162,6 +162,14 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
                 stacklevel=2,
             )
 
+        if name == "DNS_RESOLVER":
+            warnings.warn(
+                "The DNS_RESOLVER setting is deprecated, please use "
+                "TWISTED_DNS_RESOLVER instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         return self[name] if self[name] is not None else default
 
     def getbool(self, name: _SettingsKey, default: bool = False) -> bool:
@@ -184,15 +192,15 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         try:
             return bool(int(got))
         except ValueError:
-            if got in ("True", "true"):
+            if got in {"True", "true"}:
                 return True
-            if got in ("False", "false"):
+            if got in {"False", "false"}:
                 return False
             raise ValueError(
                 "Supported values for boolean settings "
                 "are 0/1, True/False, '0'/'1', "
                 "'True'/'False' and 'true'/'false'"
-            )
+            ) from None
 
     def getint(self, name: _SettingsKey, default: int = 0) -> int:
         """
@@ -315,10 +323,32 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         return copy.deepcopy(value)
 
     def getwithbase(self, name: _SettingsKey) -> BaseSettings:
-        """Get a composition of a dictionary-like setting and its `_BASE`
+        """Get a composition of a dictionary-like setting and its ``_BASE``
         counterpart.
 
+        Use
+        :meth:`~scrapy.settings.BaseSettings.get_component_priority_dict_with_base`
+        instead if the setting is a :ref:`component priority dictionary
+        <component-priority-dictionaries>`.
+
         :param name: name of the dictionary-like setting
+        :type name: str
+        """
+        if not isinstance(name, str):
+            raise ValueError(f"Base setting key must be a string, got {name}")
+        compbs = BaseSettings()
+        compbs.update(self[name + "_BASE"])
+        compbs.update(self[name])
+        return compbs
+
+    def get_component_priority_dict_with_base(self, name: _SettingsKey) -> BaseSettings:
+        """Get a composition of a component priority dictionary setting and
+        its ``_BASE`` counterpart.
+
+        Keys are resolved to their import path for deduplication and then
+        restored to their latest input representation.
+
+        :param name: name of the component priority dictionary setting
         :type name: str
         """
         if not isinstance(name, str):
@@ -337,10 +367,10 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
                 f"be kept."
             )
 
-        def normalize_key(key: Any) -> str:
+        def normalize_key(key: Any) -> Any:
             try:
                 loaded_key = load_object(key)
-            except (AttributeError, TypeError, ValueError):
+            except (NameError, TypeError, ValueError):
                 loaded_key = key
             else:
                 import_path = global_object_name(loaded_key)
