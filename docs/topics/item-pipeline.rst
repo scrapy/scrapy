@@ -4,8 +4,11 @@
 Item Pipeline
 =============
 
-After an item has been scraped by a spider, it is sent to the Item Pipeline
-which processes it through several components that are executed sequentially.
+After an item has been scraped by a spider, it is sent to the Item Pipeline.
+
+A pipeline component only runs if it is registered in the
+:setting:`ITEM_PIPELINES` setting in ``settings.py``. Defining the class
+alone has no effect.
 
 Each item pipeline component (sometimes referred as just "Item Pipeline") is a
 Python class that implements a simple method. They receive an item and perform
@@ -18,79 +21,6 @@ Typical uses of item pipelines are:
 * validating scraped data (checking that the items contain certain fields)
 * checking for duplicates (and dropping them)
 * storing the scraped item in a database
-
-.. _topics-item-pipeline-overview:
-
-How item pipelines fit into Scrapy
-===================================
-
-When a spider yields an item, Scrapy passes it to the item pipeline — a
-chain of components executed one after another. Each component can validate,
-enrich, filter, or store the item before passing it on.
-
-The data flows in this order::
-
-    Spider (yields item)
-        → Pipeline component 1  (lowest priority number, runs first)
-        → Pipeline component 2
-        → ...  (or DropItem to stop processing)
-
-A pipeline component only runs if it is registered in the
-:setting:`ITEM_PIPELINES` setting in ``settings.py``. Defining the class
-alone has no effect.
-
-.. _topics-item-pipeline-minimal-example:
-
-Minimal end-to-end example
----------------------------
-
-The following shows a complete integration — a spider that yields an item,
-a pipeline that validates it, and the settings that wire them together.
-
-``myproject/items.py``::
-
-    import scrapy
-
-    class BookItem(scrapy.Item):
-        title = scrapy.Field()
-        price = scrapy.Field()
-
-``myproject/spiders/books_spider.py``::
-
-    import scrapy
-    from myproject.items import BookItem
-
-    class BooksSpider(scrapy.Spider):
-        name = "books"
-        start_urls = ["https://books.toscrape.com"]
-
-        def parse(self, response):
-            for book in response.css("article.product_pod"):
-                item = BookItem()
-                item["title"] = book.css("h3 a::attr(title)").get()
-                item["price"] = book.css(".price_color::text").get()
-                yield item
-
-``myproject/pipelines.py``::
-
-    from itemadapter import ItemAdapter
-    from scrapy.exceptions import DropItem
-
-    class PriceValidationPipeline:
-        def process_item(self, item, spider):
-            adapter = ItemAdapter(item)
-            if not adapter.get("price"):
-                raise DropItem(f"Missing price in: {item!r}")
-            return item
-
-``myproject/settings.py``::
-
-    ITEM_PIPELINES = {
-        "myproject.pipelines.PriceValidationPipeline": 100,
-    }
-
-Running ``scrapy crawl books`` will scrape items and pass each through
-``PriceValidationPipeline`` before any further processing.
 
 Writing your own item pipeline
 ==============================
@@ -317,59 +247,60 @@ returns multiples items with the same id:
                 self.ids_seen.add(adapter["id"])
                 return item
 
-.. _topics-item-pipeline-pitfalls:
+.. _topics-item-pipeline-minimal-example:
 
-Common pitfalls
-================
+End-to-end example
+==================
 
-**Not returning the item.**
-:meth:`process_item` must either return an item object or raise
-:exc:`~scrapy.exceptions.DropItem`. Returning ``None`` silently stops
-the item from reaching subsequent pipeline components.
+The following shows a complete integration — a spider that yields an item,
+a pipeline that validates it, and the settings that wire them together.
 
-.. code-block:: python
+Each yielded item is processed by the enabled pipelines in order of their priority values defined in :setting:`ITEM_PIPELINES`.
 
-    # Wrong — returns None implicitly
-    def process_item(self, item, spider):
-           adapter = ItemAdapter(item)
-           adapter["price"] = float(adapter["price"].strip("£"))
+``myproject/items.py``::
 
-    # Correct
-    def process_item(self, item, spider):
-           adapter = ItemAdapter(item)
-           adapter["price"] = float(adapter["price"].strip("£"))
-           return item
+    import scrapy
 
-**Pipeline not running.**
-A pipeline class must be listed in :setting:`ITEM_PIPELINES` in
-``settings.py`` to have any effect. The integer value controls execution
-order — lower numbers run first.
+    class BookItem(scrapy.Item):
+        title = scrapy.Field()
+        price = scrapy.Field()
 
-   .. code-block:: python
+``myproject/spiders/books_spider.py``::
 
-       ITEM_PIPELINES = {
-           "myproject.pipelines.ValidationPipeline": 100,  # runs first
-           "myproject.pipelines.DatabasePipeline": 800,    # runs second
-       }
+    import scrapy
+    from myproject.items import BookItem
 
-**Opening resources in** ``__init__``.
-   Use :meth:`open_spider` to open database connections or file handles,
-   and :meth:`close_spider` to release them. This ties resource lifecycle
-   to the crawl, not to class instantiation.
+    class BooksSpider(scrapy.Spider):
+        name = "books"
+        start_urls = ["https://books.toscrape.com"]
 
-   .. code-block:: python
+        def parse(self, response):
+            for book in response.css("article.product_pod"):
+                item = BookItem()
+                item["title"] = book.css("h3 a::attr(title)").get()
+                item["price"] = book.css(".price_color::text").get()
+                yield item
 
-       class DatabasePipeline:
-           def open_spider(self, spider):
-               self.conn = db.connect()
+``myproject/pipelines.py``::
 
-           def close_spider(self, spider):
-               self.conn.close()
+    from itemadapter import ItemAdapter
+    from scrapy.exceptions import DropItem
 
-           def process_item(self, item, spider):
-               self.conn.insert(ItemAdapter(item).asdict())
-               return item
+    class PriceValidationPipeline:
+        def process_item(self, item, spider):
+            adapter = ItemAdapter(item)
+            if not adapter.get("price"):
+                raise DropItem(f"Missing price in: {item!r}")
+            return item
 
+``myproject/settings.py``::
+
+    ITEM_PIPELINES = {
+        "myproject.pipelines.PriceValidationPipeline": 100,
+    }
+
+Running ``scrapy crawl books`` will scrape items and pass each item through
+``PriceValidationPipeline`` before any further processing.
 
 Activating an Item Pipeline component
 =====================================
@@ -387,3 +318,64 @@ To activate an Item Pipeline component you must add its class to the
 The integer values you assign to classes in this setting determine the
 order in which they run: items go through from lower valued to higher
 valued classes. It's customary to define these numbers in the 0-1000 range.
+
+.. _topics-item-pipeline-pitfalls:
+
+Common pitfalls
+===============
+
+Not returning the item
+----------------------
+
+:meth:`process_item` must either return an item object or raise
+:exc:`~scrapy.exceptions.DropItem`. Returning ``None`` silently stops
+the item from reaching subsequent pipeline components:
+
+.. code-block:: python
+
+    # Wrong — returns None implicitly
+    def process_item(self, item, spider):
+        adapter = ItemAdapter(item)
+        adapter["price"] = float(adapter["price"].strip("£"))
+
+    # Correct
+    def process_item(self, item, spider):
+        adapter = ItemAdapter(item)
+        adapter["price"] = float(adapter["price"].strip("£"))
+        return item
+
+Pipeline not running
+--------------------
+
+If a pipeline class is not being called, first check the Scrapy log at
+startup — enabled pipelines are listed there, which makes it easy to
+confirm whether your pipeline was picked up at all.
+
+A common cause is that the pipeline is not listed in
+:setting:`ITEM_PIPELINES` in ``settings.py``. Another is that a
+higher-priority :setting:`ITEM_PIPELINES` definition elsewhere — for
+example in a spider's ``custom_settings``, or in a cloud service
+configuration — is silently overriding your ``settings.py`` value.
+Accidentally defining :setting:`ITEM_PIPELINES` twice in ``settings.py``
+is also a known source of this problem; static analysis tools like
+``ruff`` can help catch it.
+
+Opening resources in ``__init__``
+----------------------------------
+
+Use :meth:`open_spider` to open database connections or file handles,
+and :meth:`close_spider` to release them. This ties the resource
+lifecycle to the crawl, not to class instantiation:
+
+.. code-block:: python
+
+    class DatabasePipeline:
+        def open_spider(self, spider):
+            self.conn = db.connect()
+
+        def close_spider(self, spider):
+            self.conn.close()
+
+        def process_item(self, item, spider):
+            self.conn.insert(ItemAdapter(item).asdict())
+            return item
