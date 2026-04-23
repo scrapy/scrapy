@@ -94,13 +94,27 @@ def open_in_browser(
     # circular imports
     from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
 
-    # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
         if b"<base" not in body:
-            _remove_html_comments(body)
-            repl = rf'\0<base href="{response.url}">'
-            body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
+            body = _remove_html_comments(body)
+            base_tag = f'<base href="{response.url}">'
+
+            # Try to insert after <head> tag first (existing behavior)
+            if re.search(rb"<head[^<>]*?>", body):
+                repl = rf"\0{base_tag}"
+                body = re.sub(rb"<head[^<>]*?>", to_bytes(repl), body, count=1)
+            # No head tag found, try to insert at beginning of body
+            elif re.search(rb"<body[^<>]*?>", body):
+                repl = rf"\0<head>{base_tag}</head>"
+                body = re.sub(rb"<body[^<>]*?>", to_bytes(repl), body, count=1)
+            # If no body tag, try finding html tag
+            elif re.search(rb"<html[^<>]*?>", body):
+                repl = rf"\0<head>{base_tag}</head>"
+                body = re.sub(rb"<html[^<>]*?>", to_bytes(repl), body, count=1)
+            else:
+                # As a last resort, prepend to document
+                body = to_bytes(f"<head>{base_tag}</head>") + body
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"
