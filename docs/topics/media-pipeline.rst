@@ -774,4 +774,60 @@ To enable your custom media pipeline component you must add its class import pat
 
    ITEM_PIPELINES = {"myproject.pipelines.MyImagesPipeline": 300}
 
+Content-Based Image Filtering Pipeline
+--------------------------------------
+
+This example overrides the ``get_images()`` method of Images Pipeline for content-based filtering. 
+With a TensorFlow_ image classifier, we can build up a dataset featuring target labels through a broad crawl.::
+
+    import numpy as np
+    from PIL import Image
+    from io import BytesIO
+
+    import scrapy
+    from scrapy.pipelines.images import ImagesPipeline, ImageException
+
+    import tensorflow as tf
+    import tensorflow_hub as hub
+
+    class ImageClassifierPipeline(ImagesPipeline):
+        def __init__(self, store_uri, download_func=None, settings=None):
+            super().__init__(store_uri, settings=settings, download_func=download_func)
+
+            self.label = settings.getint("IMAGE_LABEL")
+
+            # Initializing model
+            self.image_size = 224
+            self.model = tf.keras.Sequential([
+                tf.keras.layers.Lambda(lambda x: tf.keras.applications.mobilenet.preprocess_input(x)),
+                hub.KerasLayer("https://tfhub.dev/google/imagenet/mobilenet_v2_130_224/classification/4")
+                ])
+            self.model.build([None, self.image_size, self.image_size, 3])
+
+        def get_images(self, response, request, info, *, item=None):
+            path = self.file_path(request, response=response, info=info, item=item)
+            orig_image = Image.open(BytesIO(response.body))
+
+            # Prepare image for inference
+            img = np.expand_dims(np.array(orig_image.resize([self.image_size]*2, Image.NEAREST)), axis=0)
+
+            # Get top predicted label
+            prediction = self.model.predict(img)[0].argsort()[::-1][0]
+
+            if prediction != self.label:
+                raise ImageException("Image does not match label")
+
+            image, buf = self.convert_image(orig_image)
+            yield path, image, buf
+
+Similar to the first example, add its class import path to the
+:setting:`ITEM_PIPELINES` setting. Also, specify the label_ for filtering.::
+
+   ITEM_PIPELINES = {
+       'myproject.pipelines.ImageClassifierPipeline': 300
+   }
+   IMAGE_LABEL = 2  # Look for goldfish
+
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5
+.. _TensorFlow: https://tensorflow.org
+.. _label: https://storage.googleapis.com/download.tensorflow.org/data/ImageNetLabels.txt
