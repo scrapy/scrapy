@@ -227,7 +227,10 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
-        # sending the second signal too fast often causes problems
+        # sending a new signal too fast often causes problems
+        await async_sleep(0.01)
+        p.kill(sig)
+        p.expect_exact("dropping downloader requests")
         await async_sleep(0.01)
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")

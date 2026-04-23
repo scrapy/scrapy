@@ -768,3 +768,26 @@ class TestEngineCloseSpider:
         await engine.open_spider_async()
         await engine.close_spider_async()
         assert "Error running spider_closed_callback" in caplog.text
+
+    @coroutine_test
+    async def test_fast_close_stops_downloader_and_records_dropped_requests(
+        self, crawler: Crawler
+    ) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = engine
+        await engine.open_spider_async()
+
+        calls = 0
+
+        async def fast_stop_downloader() -> int:
+            nonlocal calls
+            calls += 1
+            return 3
+
+        engine.downloader.stop_async = fast_stop_downloader
+
+        await engine.close_spider_async(mode="fast")
+
+        assert calls == 1
+        assert crawler.stats
+        assert crawler.stats.get_value("downloader/request_dropped_count") == 3

@@ -788,3 +788,45 @@ async def test_deprecated_crawler_stop() -> None:
         ScrapyDeprecationWarning, match=r"Crawler.stop\(\) is deprecated"
     ):
         await maybe_deferred_to_future(crawler.stop())
+
+
+@coroutine_test
+async def test_crawler_stop_async_invalid_mode() -> None:
+    crawler = get_crawler(DefaultSpider)
+    with pytest.raises(ValueError, match=r"Unknown stop mode"):
+        await crawler.stop_async(mode="invalid")
+
+
+@coroutine_test
+async def test_crawler_force_stop_falls_back_to_fast(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    crawler = get_crawler(DefaultSpider)
+
+    class DummyEngine:
+        called_mode: str | None = None
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called_mode = mode
+
+    crawler.engine = DummyEngine()  # type: ignore[assignment]
+
+    with caplog.at_level(logging.WARNING):
+        await crawler.stop_async(mode="force")
+
+    assert crawler.engine.called_mode == "fast"
+    assert "Falling back to fast stop" in caplog.text
+
+
+@coroutine_test
+async def test_crawler_force_stop_uses_force_callback() -> None:
+    crawler = get_crawler(DefaultSpider)
+    called = False
+
+    def force_stop_callback() -> None:
+        nonlocal called
+        called = True
+
+    crawler._set_force_stop_callback(force_stop_callback)
+    await crawler.stop_async(mode="force")
+    assert called

@@ -13,6 +13,7 @@ from twisted.python.failure import Failure
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.exceptions import DownloadCancelledError
 from scrapy.resolver import dnscache
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -23,7 +24,6 @@ from scrapy.utils.asyncio import (
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
-    _schedule_coro,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
@@ -117,6 +117,9 @@ class Downloader:
             DownloaderMiddlewareManager.from_crawler(crawler)
         )
         self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
+        self._accepting_requests: bool = True
+        self._fast_stopping: bool = False
+        self._download_tasks: dict[Request, Deferred[None]] = {}
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
@@ -174,6 +177,10 @@ class Downloader:
 
     # passed as download_func into self.middleware.download() in self.fetch()
     async def _enqueue_request(self, request: Request) -> Response:
+        if not self._accepting_requests:
+            raise DownloadCancelledError(
+                "The downloader is shutting down and not accepting new requests"
+            )
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
@@ -208,11 +215,20 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, queue_dfd = slot.queue.popleft()
-            _schedule_coro(self._wait_for_download(slot, request, queue_dfd))
+            download_dfd = deferred_from_coro(
+                self._wait_for_download(slot, request, queue_dfd)
+            )
+            assert isinstance(download_dfd, Deferred)
+            self._download_tasks[request] = download_dfd
+            download_dfd.addBoth(self._download_task_done, request)
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(slot)
                 break
+
+    def _download_task_done(self, result: Any, request: Request) -> Any:
+        self._download_tasks.pop(request, None)
+        return result
 
     def _latercall(self, slot: Slot) -> None:
         slot.latercall = None
@@ -255,11 +271,49 @@ class Downloader:
         try:
             response = await self._download(slot, request)
         except Exception:
-            queue_dfd.errback(Failure())
+            if not queue_dfd.called:
+                queue_dfd.errback(Failure())
         else:
             queue_dfd.callback(response)  # awaited in _enqueue_request()
 
+    async def stop_async(self) -> int:
+        self._accepting_requests = False
+        self._fast_stopping = True
+
+        dropped_count = 0
+
+        for slot in self.slots.values():
+            slot.close()
+            while slot.queue:
+                request, queue_dfd = slot.queue.popleft()
+                dropped_count += 1
+                if not queue_dfd.called:
+                    queue_dfd.errback(
+                        Failure(
+                            DownloadCancelledError(
+                                "Request dropped due to fast downloader shutdown"
+                            )
+                        )
+                    )
+                self.signals.send_catch_log(
+                    signal=signals.request_left_downloader,
+                    request=request,
+                    spider=self.crawler.spider,
+                )
+
+        for download_dfd in list(self._download_tasks.values()):
+            if download_dfd.called:
+                continue
+            dropped_count += 1
+            download_dfd.cancel()
+
+        if dropped_count:
+            await _defer_sleep_async()
+
+        return dropped_count
+
     def close(self) -> None:
+        self._accepting_requests = False
         self._stop_slot_gc()
         for slot in self.slots.values():
             slot.close()
