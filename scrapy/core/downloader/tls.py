@@ -85,7 +85,7 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
                     e,
                 )
         else:
-            super()._identityVerifyingInfoCallback(connection, where, ret)  # type: ignore[no-untyped-call]
+            super()._identityVerifyingInfoCallback(connection, where, ret)  # type: ignore[misc]
 
 
 ScrapyClientTLSOptions = create_deprecated_class(
@@ -118,14 +118,14 @@ class _ScrapyClientTLSOptions26(ClientTLSOptions):
         hostname: str,
         verbose_logging: bool = False,
     ):
-        super().__init__(createConnection, hostname)  # type: ignore[no-untyped-call]
+        super().__init__(createConnection, hostname)
         self.verbose_logging: bool = verbose_logging
 
     def clientConnectionForTLS(
         self, tlsProtocol: TLSMemoryBIOProtocol
     ) -> SSL.Connection:
         """This method is needed to override the verify callback."""
-        conn: SSL.Connection = super().clientConnectionForTLS(tlsProtocol)  # type: ignore[no-untyped-call]
+        conn = super().clientConnectionForTLS(tlsProtocol)
         callback = self._verifyCB(
             self._hostnameIsDnsName, self._hostnameASCII, self.verbose_logging
         )

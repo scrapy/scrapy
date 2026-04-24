@@ -109,7 +109,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def _get_cert_options(self) -> CertificateOptions:
         with _filter_method_warning():
-            return CertificateOptions(  # type: ignore[no-any-return]
+            return CertificateOptions(
                 method=self._ssl_method,
                 fixBrokenPeers=True,
                 acceptableCiphers=self.tls_ciphers,
@@ -132,13 +132,14 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             # Our options class is needed to skip verification errors
             if TWISTED_TLS_NEW_IMPL:
                 return _ScrapyClientTLSOptions26(
-                    self._get_cert_options()._makeTLSConnection,  # type: ignore[attr-defined]
+                    self._get_cert_options()._makeTLSConnection,
                     hostname.decode("ascii"),
                     verbose_logging=self.tls_verbose_logging,
                 )
             return _ScrapyClientTLSOptions(
-                hostname.decode("ascii"), self._get_context()
-            )  # type: ignore[no-untyped-call]
+                hostname.decode("ascii"),  # type: ignore[arg-type]
+                self._get_context(),  # type: ignore[arg-type]
+            )
         # Otherwise use the normal Twisted function.
         # Note that this doesn't use self._get_context().
         with _filter_method_warning():
@@ -232,11 +233,11 @@ class _AcceptableProtocolsContextFactory:
             hostname, port
         )
         if not TWISTED_TLS_NEW_IMPL:
-            from twisted.internet._sslverify import (  # noqa: PLC0415
+            from twisted.internet._sslverify import (  # type: ignore[attr-defined]  # noqa: PLC0415
                 _setAcceptableProtocols,
             )
 
-            _setAcceptableProtocols(options._ctx, self._acceptable_protocols)
+            _setAcceptableProtocols(options._ctx, self._acceptable_protocols)  # type: ignore[attr-defined]
         return options
 
 

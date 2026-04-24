@@ -225,7 +225,8 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-                self._tunneledHost, self._tunneledPort
+                self._tunneledHost,  # type: ignore[arg-type]
+                self._tunneledPort,
             )
             self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)

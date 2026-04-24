@@ -118,7 +118,7 @@ class TestContextFactory(TestContextFactoryBase):
         assert creator1._hostnameBytes == b"website1.tld"
         creator2 = client_context_factory.creatorForNetloc(b"website2.tld", 443)
         assert creator2._hostnameBytes == b"website2.tld"
-        assert creator1._ctx is not creator2._ctx
+        assert creator1._ctx is not creator2._ctx  # type: ignore[attr-defined]
 
     @pytest.mark.skipif(
         PYOPENSSL_SET_CIPHER_LIST_TMP_CONN,
