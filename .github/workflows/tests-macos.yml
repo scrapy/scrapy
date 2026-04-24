@@ -22,7 +22,7 @@ jobs:
         env:
           - TOXENV: py
         include:
-          - python-version: '3.13'
+          - python-version: '3.14'
             env:
               TOXENV: no-reactor
 

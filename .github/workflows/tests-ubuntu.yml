@@ -37,7 +37,7 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: default-reactor
-        - python-version: "3.13"
+        - python-version: "3.14"
           env:
             TOXENV: no-reactor
         # pinned due to https://github.com/pypy/pypy/issues/5388
@@ -69,7 +69,7 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: extra-deps
-        - python-version: "3.13"
+        - python-version: "3.14"
           env:
             TOXENV: no-reactor-extra-deps
         # pinned due to https://github.com/pypy/pypy/issues/5388
@@ -79,7 +79,7 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: botocore
-        - python-version: "3.13"
+        - python-version: "3.14"
           env:
             TOXENV: mitmproxy
 
