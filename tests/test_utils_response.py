@@ -177,11 +177,7 @@ def test_inject_base_url(body: bytes) -> None:
         assert b"<head" in bbody
         return True
 
-    resp = HtmlResponse(
-        url,
-        body=body,
-    )
-
+    resp = HtmlResponse(url, body=body)
     assert open_in_browser(resp, _openfunc=check_base_url)
 
 
