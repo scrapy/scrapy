@@ -265,7 +265,7 @@ disable = [
 ]
 # requires `pylint_per_file_ignores` plugin
 per-file-ignores = [
-    # Extended list of ones that we may want to address, but for tests and docs
+    # Extended list of ones that we may want to address, only for tests
     "./tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unnecessary-dunder-call,used-before-assignment",
 ]
 
