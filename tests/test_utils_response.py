@@ -111,36 +111,27 @@ def test_response_status_message():
     assert response_status_message(573) == "573 Unknown Status"
 
 
-def test_inject_base_url():
-    url = "http://www.example.com"
-
-    def check_base_url(burl):
-        path = urlparse(burl).path
-        if not path or not Path(path).exists():
-            path = burl.replace("file://", "")
-        bbody = Path(path).read_bytes()
-        assert bbody.count(b'<base href="' + to_bytes(url) + b'">') == 1
-        return True
-
-    r1 = HtmlResponse(
-        url,
-        body=b"""
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param(
+            b"""
     <html>
         <head><title>Dummy</title></head>
         <body><p>Hello world.</p></body>
     </html>""",
-    )
-    r2 = HtmlResponse(
-        url,
-        body=b"""
+            id="Simple",
+        ),
+        pytest.param(
+            b"""
     <html>
         <head id="foo"><title>Dummy</title></head>
         <body>Hello world.</body>
     </html>""",
-    )
-    r3 = HtmlResponse(
-        url,
-        body=b"""
+            id="<head> with attrs",
+        ),
+        pytest.param(
+            b"""
     <html>
         <head><title>Dummy</title></head>
         <body>
@@ -148,19 +139,19 @@ def test_inject_base_url():
             <p>Hello world.</p>
         </body>
     </html>""",
-    )
-    r4 = HtmlResponse(
-        url,
-        body=b"""
+            id="Misleading tag",
+        ),
+        pytest.param(
+            b"""
     <html>
         <!-- <head>Dummy comment</head> -->
         <head><title>Dummy</title></head>
         <body><p>Hello world.</p></body>
     </html>""",
-    )
-    r5 = HtmlResponse(
-        url,
-        body=b"""
+            id="Misleading comment",
+        ),
+        pytest.param(
+            b"""
     <html>
         <!--[if IE]>
         <head><title>IE head</title></head>
@@ -170,21 +161,28 @@ def test_inject_base_url():
         <!--<![endif]-->
         <body><p>Hello world.</p></body>
     </html>""",
+            id="Conditional comment",
+        ),
+    ],
+)
+def test_inject_base_url(body: bytes) -> None:
+    url = "http://www.example.com"
+
+    def check_base_url(burl):
+        path = urlparse(burl).path
+        if not path or not Path(path).exists():
+            path = burl.replace("file://", "")
+        bbody = Path(path).read_bytes()
+        assert bbody.count(b'><base href="' + to_bytes(url) + b'">') == 1
+        assert b"<head" in bbody
+        return True
+
+    resp = HtmlResponse(
+        url,
+        body=body,
     )
 
-    assert open_in_browser(r1, _openfunc=check_base_url), "Inject base url"
-    assert open_in_browser(r2, _openfunc=check_base_url), (
-        "Inject base url with argumented head"
-    )
-    assert open_in_browser(r3, _openfunc=check_base_url), (
-        "Inject unique base url with misleading tag"
-    )
-    assert open_in_browser(r4, _openfunc=check_base_url), (
-        "Inject unique base url with misleading comment"
-    )
-    assert open_in_browser(r5, _openfunc=check_base_url), (
-        "Inject unique base url with conditional comment"
-    )
+    assert open_in_browser(resp, _openfunc=check_base_url)
 
 
 def test_open_in_browser_redos_comment():
