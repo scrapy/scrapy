@@ -115,8 +115,8 @@ class TestFilesPipeline:
         req1 = Request("http://foo.bar/baz.txt?fizz")
         assert file_path(req1) == "full/a2b4913a62f65445aeae2bac08cd8c3b41d7195e.txt"
 
-        req2 = Request("http://foo.bar/get_img.php?file=photo.jpg")
-        assert file_path(req2) == "full/118230fd648f1080c81c234d5e2463ea496f8c05.jpg"
+        req2 = Request("http://foo.bar/get_img.foo?file=photo.jpg")
+        assert file_path(req2) == "full/7fc9461c9fd836515bea6983373097203a7d748e.jpg"
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
@@ -141,10 +141,10 @@ class TestFilesPipeline:
         assert (
             file_path(
                 Request(
-                    "http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg"
+                    "http://www.dfsonline.co.uk/get_prod_image?img=status_0907_mdm.jpg"
                 )
             )
-            == "full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg"
+            == "full/c67f916ff9d542e822dedf38f9fcb146d1faba78.jpg"
         )
         assert (
             file_path(Request("http://www.dorma.co.uk/images/product_details/2532/"))
@@ -165,10 +165,10 @@ class TestFilesPipeline:
         assert (
             file_path(
                 Request(
-                    "http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg.bohaha"
+                    "http://www.dfsonline.co.uk/get_prod_image?img=status_0907_mdm.jpg.bohaha"
                 )
             )
-            == "full/76c00cef2ef669ae65052661f68d451162829507"
+            == "full/e75f2fa260521b56f6b6a867447b8002d00b5841"
         )
         assert (
             file_path(
