@@ -8,6 +8,7 @@ import asyncio
 import inspect
 import warnings
 from asyncio import Future
+from collections import deque
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
 from typing import (
@@ -230,7 +231,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
         self.callable_args: tuple[Any, ...] = callable_args
         self.callable_kwargs: dict[str, Any] = callable_kwargs
         self.finished: bool = False
-        self.waiting_deferreds: list[Deferred[Any]] = []
+        self.waiting_deferreds: deque[Deferred[Any]] = deque()
         self.anext_deferred: Deferred[_T] | None = None
 
     def _callback(self, result: _T) -> None:
@@ -241,7 +242,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
         callable_result = self.callable(
             result, *self.callable_args, **self.callable_kwargs
         )
-        d = self.waiting_deferreds.pop(0)
+        d = self.waiting_deferreds.popleft()
         if isinstance(callable_result, Deferred):
             callable_result.chainDeferred(d)
         else:

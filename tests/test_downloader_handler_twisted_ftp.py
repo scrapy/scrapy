@@ -206,6 +206,6 @@ class TestAnonymousFTP(TestFTPBase):
 
 
 def test_not_configured_without_reactor() -> None:
-    crawler = Crawler(Spider, {"TWISTED_ENABLED": False})
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         FTPDownloadHandler.from_crawler(crawler)

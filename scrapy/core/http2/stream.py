@@ -22,7 +22,7 @@ from scrapy.utils._download_handlers import (
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
-    from hpack import HeaderTuple
+    from collections.abc import Sequence
 
     from scrapy.core.http2.protocol import H2ClientProtocol
     from scrapy.http import Request, Response
@@ -150,7 +150,9 @@ class Stream:
             # flow control window
             "flow_controlled_size": 0,
             # Headers received after sending the request
-            "headers": Headers({}),
+            "headers": Headers(),
+            # Response status code
+            "status": None,
         }
 
         def _cancel(_: Any) -> None:
@@ -359,9 +361,13 @@ class Stream:
             self._response["flow_controlled_size"], self.stream_id
         )
 
-    def receive_headers(self, headers: list[HeaderTuple]) -> None:
+    def receive_headers(self, headers: list[tuple[str, str]]) -> None:
         for name, value in headers:
-            self._response["headers"].appendlist(name, value)
+            if name == ":status":
+                # it's a pseudo-header
+                self._response["status"] = int(value)
+            else:
+                self._response["headers"].appendlist(name, value)
 
         # Check if we exceed the allowed max data size which can be received
         expected_size = int(self._response["headers"].get(b"Content-Length", -1))
@@ -391,7 +397,7 @@ class Stream:
     def close(
         self,
         reason: StreamCloseReason,
-        errors: list[BaseException] | None = None,
+        errors: Sequence[BaseException] | None = None,
         from_protocol: bool = False,
     ) -> None:
         """Based on the reason sent we will handle each case."""
@@ -405,7 +411,7 @@ class Stream:
 
         # Have default value of errors as an empty list as
         # some cases can add a list of exceptions
-        errors = errors or []
+        errors = errors or ()
 
         if not from_protocol:
             self._protocol.pop_stream(self.stream_id)
@@ -451,7 +457,8 @@ class Stream:
 
             # There maybe no :status in headers, we make
             # HTTP Status Code: 499 - Client Closed Request
-            self._response["headers"][":status"] = "499"
+            if self._response["status"] is None:
+                self._response["status"] = 499
             self._fire_response_deferred()
 
         elif reason is StreamCloseReason.RESET:
@@ -470,7 +477,7 @@ class Stream:
             self._deferred_response.errback(ResponseFailed(errors))
 
         elif reason is StreamCloseReason.INACTIVE:
-            errors.insert(0, InactiveStreamClosed(self._request))
+            errors = (InactiveStreamClosed(self._request), *errors)
             self._deferred_response.errback(ResponseFailed(errors))
 
         else:
@@ -490,7 +497,7 @@ class Stream:
 
         response = make_response(
             url=self._request.url,
-            status=int(self._response["headers"][":status"]),
+            status=self._response["status"],
             headers=self._response["headers"],
             body=self._response["body"].getvalue(),
             certificate=self._protocol.metadata["certificate"],

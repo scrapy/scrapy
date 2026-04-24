@@ -200,7 +200,7 @@ class S3FeedStorage(BlockingFeedStorage):
         try:
             import boto3.session  # noqa: PLC0415
         except ImportError:
-            raise NotConfigured("missing boto3 library")
+            raise NotConfigured("missing boto3 library") from None
         u = urlparse(uri)
         assert u.hostname
         self.bucketname: str = u.hostname
@@ -250,10 +250,19 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        kwargs: dict[str, Any] = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
-        self.s3_client.upload_fileobj(
-            Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
-        )
+        if self.acl:
+            self.s3_client.upload_fileobj(
+                Bucket=self.bucketname,
+                Key=self.keyname,
+                Fileobj=file,
+                ExtraArgs={"ACL": self.acl},
+            )
+        else:
+            self.s3_client.upload_fileobj(
+                Bucket=self.bucketname,
+                Key=self.keyname,
+                Fileobj=file,
+            )
         file.close()
 
 
@@ -468,9 +477,13 @@ class FeedExporter:
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
-        for uri, feed_options in self.settings.getdict("FEEDS").items():
+        for settings_uri, feed_options in self.settings.getdict("FEEDS").items():
             # handle pathlib.Path objects
-            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
+            uri = (
+                str(settings_uri)
+                if not isinstance(settings_uri, Path)
+                else settings_uri.absolute().as_uri()
+            )
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )
@@ -692,9 +705,7 @@ class FeedExporter:
         uri_params_function: str | UriParamsCallableT | None,
         slot: FeedSlot | None = None,
     ) -> dict[str, Any]:
-        params = {}
-        for k in dir(spider):
-            params[k] = getattr(spider, k)
+        params = {k: getattr(spider, k) for k in dir(spider)}
         utc_now = datetime.now(tz=timezone.utc)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")

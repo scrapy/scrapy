@@ -43,21 +43,8 @@ class HttpxDownloadHandlerMixin:
 
 
 class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
-    @coroutine_test
-    async def test_unsupported_bindaddress(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        meta = {"bindaddress": ("127.0.0.2", 0)}
-        request = Request(mockserver.url("/text"), meta=meta)
-        async with self.get_dh() as download_handler:
-            response = await download_handler.download_request(request)
-        assert response.body == b"Works"
-        assert (
-            "The 'bindaddress' request meta key is not supported by HttpxDownloadHandler"
-            in caplog.text
-        )
+    handler_supports_bindaddress_meta = False
 
-    # skip macOS tests
     @pytest.mark.skipif(
         sys.platform == "darwin",
         reason="127.0.0.2 is not available on macOS by default",
@@ -91,7 +78,12 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
 
 
 class TestHttps11(HttpxDownloadHandlerMixin, TestHttps11Base):
+    handler_supports_bindaddress_meta = False
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
+
+    @pytest.mark.skip(reason="The check is Twisted-specific")
+    def test_verify_certs_deprecated(self):
+        pass
 
 
 class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):

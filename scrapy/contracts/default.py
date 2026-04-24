@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from itemadapter import ItemAdapter, is_item
 
@@ -68,7 +68,7 @@ class ReturnsContract(Contract):
     """
 
     name = "returns"
-    object_type_verifiers: dict[str | None, Callable[[Any], bool]] = {
+    object_type_verifiers: ClassVar[dict[str | None, Callable[[Any], bool]]] = {
         "request": lambda x: isinstance(x, Request),
         "requests": lambda x: isinstance(x, Request),
         "item": is_item,
@@ -78,7 +78,7 @@ class ReturnsContract(Contract):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
-        if len(self.args) not in [1, 2, 3]:
+        if len(self.args) not in {1, 2, 3}:
             raise ValueError(
                 f"Incorrect argument quantity: expected 1, 2 or 3, got {len(self.args)}"
             )

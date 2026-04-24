@@ -56,7 +56,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
-        return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
+        return build_component_list(
+            settings.get_component_priority_dict_with_base("SPIDER_MIDDLEWARES")
+        )
 
     def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
         self._check_deprecated_process_start_requests_use(middlewares)
@@ -114,6 +116,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"Scrapy 2.13 for details: "
                 f"https://docs.scrapy.org/en/2.13/news.html",
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
 
     def _add_middleware(self, mw: Any) -> None:
@@ -502,6 +505,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"copy-pasting. See the release notes of Scrapy 2.13 for "
                 f"details: https://docs.scrapy.org/en/2.13/news.html",
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
 
         if (

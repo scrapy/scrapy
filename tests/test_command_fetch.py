@@ -33,6 +33,6 @@ class TestFetchCommand:
 
     def test_no_reactor(self, mockserver: MockServer) -> None:
         _, out, _ = proc(
-            "fetch", "-s", "TWISTED_ENABLED=False", mockserver.url("/text")
+            "fetch", "-s", "TWISTED_REACTOR_ENABLED=False", mockserver.url("/text")
         )
         assert out.strip() == "Works"

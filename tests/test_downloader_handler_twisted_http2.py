@@ -52,7 +52,7 @@ class H2DownloadHandlerMixin:
 def test_not_configured_without_reactor() -> None:
     from scrapy.core.downloader.handlers.http2 import H2DownloadHandler  # noqa: PLC0415
 
-    crawler = Crawler(Spider, {"TWISTED_ENABLED": False})
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         H2DownloadHandler.from_crawler(crawler)
 
@@ -62,9 +62,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     @deferred_f_from_coro_f
     async def test_protocol(self, mockserver: MockServer) -> None:
-        request = Request(
-            mockserver.url("/host", is_secure=self.is_secure), method="GET"
-        )
+        request = Request(mockserver.url("/host", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.protocol == "h2"

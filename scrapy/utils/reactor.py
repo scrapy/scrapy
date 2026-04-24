@@ -76,7 +76,7 @@ class CallLaterOnce(Generic[_T]):
 
         for d in self._deferreds:
             call_later(0, d.callback, None)
-        self._deferreds = []
+        self._deferreds.clear()
 
         return result
 

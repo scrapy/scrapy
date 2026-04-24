@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import ssl
+import time
 from http.cookiejar import Cookie, CookieJar
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, NoReturn, TypedDict
@@ -81,8 +82,8 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
                 f"{type(self).__name__} requires the asyncio support. Make"
                 f" sure that you have either enabled the asyncio Twisted"
                 f" reactor in the TWISTED_REACTOR setting or disabled the"
-                f" TWISTED_ENABLED setting. See the asyncio documentation"
-                f" of Scrapy for more information."
+                f" TWISTED_REACTOR_ENABLED setting. See the asyncio"
+                f" documentation of Scrapy for more information."
             )
         if httpx is None:  # pragma: no cover
             raise NotConfigured(
@@ -90,10 +91,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             )
         super().__init__(crawler)
         logger.warning(
-            "HttpxDownloadHandler is experimental and is not recommented for production use."
-        )
-        self._tls_verbose_logging: bool = self.crawler.settings.getbool(
-            "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
+            "HttpxDownloadHandler is experimental and is not recommended for production use."
         )
         bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         bind_address = normalize_bind_address(bind_address)
@@ -120,6 +118,9 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
                 local_address=self._bind_address,
             ),
         )
+        # https://github.com/encode/httpx/discussions/1566
+        for header_name in ("accept", "accept-encoding", "user-agent"):
+            self._client.headers.pop(header_name, None)
 
     async def download_request(self, request: Request) -> Response:
         self._warn_unsupported_meta(request.meta)
@@ -127,9 +128,10 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         timeout: float = request.meta.get(
             "download_timeout", self._DEFAULT_CONNECT_TIMEOUT
         )
-
+        start_time = time.monotonic()
         try:
             async with self._get_httpx_response(request, timeout) as httpx_response:
+                request.meta["download_latency"] = time.monotonic() - start_time
                 return await self._read_response(httpx_response, request)
         except httpx.TimeoutException as e:
             raise DownloadTimeoutError(
@@ -138,12 +140,14 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         except httpx.UnsupportedProtocol as e:
             raise UnsupportedURLSchemeError(str(e)) from e
         except httpx.ConnectError as e:
+            error_message = str(e)
             if (
-                "Name or service not known" in str(e)
-                or "getaddrinfo failed" in str(e)
-                or "nodename nor servname" in str(e)
+                "Name or service not known" in error_message
+                or "getaddrinfo failed" in error_message
+                or "nodename nor servname" in error_message
+                or "Temporary failure in name resolution" in error_message
             ):
-                raise CannotResolveHostError(str(e)) from e
+                raise CannotResolveHostError(error_message) from e
             raise DownloadConnectionRefusedError(str(e)) from e
         except httpx.NetworkError as e:
             raise DownloadFailedError(str(e)) from e
