@@ -66,6 +66,8 @@ class LxmlParserLinkExtractor:
         unique: bool = False,
         strip: bool = True,
         canonicalized: bool = False,
+        deny_tag: Callable[[str], bool] | None = None,
+        deny_attr: Callable[[str], bool] | None = None,
     ):
         # mypy doesn't infer types for operator.* and also for partial()
         self.scan_tag: Callable[[str], bool] = (
@@ -88,6 +90,8 @@ class LxmlParserLinkExtractor:
             if canonicalized
             else _canonicalize_link_url
         )
+        self.deny_tag: Callable[[str], bool] | None = deny_tag
+        self.deny_attr: Callable[[str], bool] | None = deny_attr
 
     def _iter_links(
         self, document: HtmlElement
@@ -95,9 +99,13 @@ class LxmlParserLinkExtractor:
         for el in document.iter(etree.Element):
             if not self.scan_tag(_nons(el.tag)):
                 continue
+            if self.deny_tag and self.deny_tag(_nons(el.tag)):
+                continue
             attribs = el.attrib
             for attrib in attribs:
                 if not self.scan_attr(attrib):
+                    continue
+                if self.deny_attr and self.deny_attr(attrib):
                     continue
                 yield el, attrib, attribs[attrib]
 
@@ -173,6 +181,8 @@ class LxmlLinkExtractor:
         restrict_xpaths: str | Iterable[str] = (),
         tags: str | Iterable[str] = ("a", "area"),
         attrs: str | Iterable[str] = ("href",),
+        deny_tags: str | Iterable[str] = (),
+        deny_attrs: str | Iterable[str] = (),
         canonicalize: bool = False,
         unique: bool = True,
         process_value: Callable[[Any], Any] | None = None,
@@ -182,6 +192,8 @@ class LxmlLinkExtractor:
         restrict_text: _RegexOrSeveral | None = None,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
+        deny_tags_set = set(arg_to_iter(deny_tags))
+        deny_attrs_set = set(arg_to_iter(deny_attrs))
         self.link_extractor = LxmlParserLinkExtractor(
             tag=partial(operator.contains, tags),
             attr=partial(operator.contains, attrs),
@@ -189,6 +201,8 @@ class LxmlLinkExtractor:
             process=process_value,
             strip=strip,
             canonicalized=not canonicalize,
+            deny_tag=partial(operator.contains, deny_tags_set) if deny_tags_set else None,
+            deny_attr=partial(operator.contains, deny_attrs_set) if deny_attrs_set else None,
         )
         self.allow_res: list[re.Pattern[str]] = self._compile_regexes(allow)
         self.deny_res: list[re.Pattern[str]] = self._compile_regexes(deny)
