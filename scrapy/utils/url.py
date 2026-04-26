@@ -9,11 +9,9 @@ import re
 import warnings
 from importlib import import_module
 from typing import TYPE_CHECKING, Any, TypeAlias
-from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
-from warnings import warn
+from urllib.parse import ParseResult, urlparse, urlunparse
 
 from w3lib.url import __all__ as _public_w3lib_objects
-from w3lib.url import add_or_replace_parameter as _add_or_replace_parameter
 from w3lib.url import any_to_uri as _any_to_uri
 from w3lib.url import parse_url as _parse_url
 
@@ -68,39 +66,6 @@ def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     """Return True if the url ends with one of the extensions provided"""
     lowercase_path = _parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
-
-
-def escape_ajax(url: str) -> str:
-    """
-    Return the crawlable url
-
-    >>> escape_ajax("www.example.com/ajax.html#!key=value")
-    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html?k1=v1&k2=v2#!key=value")
-    'www.example.com/ajax.html?k1=v1&k2=v2&_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html?#!key=value")
-    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html#!")
-    'www.example.com/ajax.html?_escaped_fragment_='
-
-    URLs that are not "AJAX crawlable" (according to Google) returned as-is:
-
-    >>> escape_ajax("www.example.com/ajax.html#key=value")
-    'www.example.com/ajax.html#key=value'
-    >>> escape_ajax("www.example.com/ajax.html#")
-    'www.example.com/ajax.html#'
-    >>> escape_ajax("www.example.com/ajax.html")
-    'www.example.com/ajax.html'
-    """
-    warn(
-        "escape_ajax() is deprecated and will be removed in a future Scrapy version.",
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    defrag, frag = urldefrag(url)
-    if not frag.startswith("!"):
-        return url
-    return _add_or_replace_parameter(defrag, "_escaped_fragment_", frag[1:])
 
 
 def add_http_if_no_scheme(url: str) -> str:
