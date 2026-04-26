@@ -125,13 +125,11 @@ one or more of these methods:
         :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
 
-        Consider defining this method as an :term:`asynchronous generator`,
-        which will be a requirement in a future version of Scrapy. However, if
-        you plan on sharing your spider middleware with other people, consider
-        either :ref:`enforcing Scrapy 2.7 <enforce-component-requirements>`
-        as a minimum requirement of your spider middleware, or :ref:`making
-        your spider middleware universal <universal-spider-middleware>` so that
-        it works with Scrapy versions earlier than Scrapy 2.7.
+        If this method is synchronous, it will be ignored and the middleware
+        needs to define an asynchronous ``process_spider_output_async()``
+        method that will be called instead. This is a temporary measure for
+        supporting  middlewares that support Scrapy versions earlier than
+        Scrapy 2.7, see :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
           spider
@@ -145,8 +143,7 @@ one or more of these methods:
         :async:
 
         If defined, this method must be an :term:`asynchronous generator`,
-        which will be called instead of :meth:`process_spider_output` if
-        ``result`` is an :term:`asynchronous iterable`.
+        which will be called instead of :meth:`process_spider_output`.
 
     .. method:: process_spider_exception(response, exception)
 
