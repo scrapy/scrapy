@@ -8,7 +8,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from logging import DEBUG
 from typing import TYPE_CHECKING, Any, cast
-from unittest.mock import Mock, call
+from unittest.mock import Mock, call, patch
 from urllib.parse import urlparse
 
 import attr
@@ -784,9 +784,8 @@ class TestEngineCloseSpider:
             calls += 1
             return 3
 
-        engine.downloader.stop_async = fast_stop_downloader
-
-        await engine.close_spider_async(mode="fast")
+        with patch.object(engine.downloader, "stop_async", fast_stop_downloader):
+            await engine.close_spider_async(mode="fast")
 
         assert calls == 1
         assert crawler.stats

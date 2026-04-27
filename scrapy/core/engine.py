@@ -641,6 +641,7 @@ class ExecutionEngine:
             extra={"spider": self.spider},
         )
 
+    # pylint: disable=too-many-statements
     async def close_spider_async(  # noqa: PLR0912, PLR0915
         self,
         *,

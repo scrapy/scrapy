@@ -794,7 +794,7 @@ async def test_deprecated_crawler_stop() -> None:
 async def test_crawler_stop_async_invalid_mode() -> None:
     crawler = get_crawler(DefaultSpider)
     with pytest.raises(ValueError, match=r"Unknown stop mode"):
-        await crawler.stop_async(mode="invalid")
+        await crawler.stop_async(mode="invalid")  # type: ignore[arg-type]
 
 
 @coroutine_test
@@ -809,12 +809,13 @@ async def test_crawler_force_stop_falls_back_to_fast(
         async def stop_async(self, *, mode: str = "graceful") -> None:
             self.called_mode = mode
 
-    crawler.engine = DummyEngine()  # type: ignore[assignment]
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
 
     with caplog.at_level(logging.WARNING):
         await crawler.stop_async(mode="force")
 
-    assert crawler.engine.called_mode == "fast"
+    assert dummy_engine.called_mode == "fast"
     assert "Falling back to fast stop" in caplog.text
 
 

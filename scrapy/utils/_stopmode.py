@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, cast
+from typing import Literal
 
 StopMode = Literal["graceful", "fast", "force"]
 
@@ -18,10 +18,9 @@ def normalize_stop_mode(mode: StopMode | None, *, allow_force: bool = True) -> S
         raise ValueError(
             f"Unknown stop mode {mode!r}. Expected one of: graceful, fast, force"
         )
-    normalized = cast("StopMode", mode)
-    if normalized == "force" and not allow_force:
+    if mode == "force" and not allow_force:
         raise ValueError("The force stop mode is not supported in this context")
-    return normalized
+    return mode
 
 
 def max_stop_mode(mode1: StopMode, mode2: StopMode) -> StopMode:

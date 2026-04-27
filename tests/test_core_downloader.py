@@ -31,6 +31,7 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from twisted.internet.ssl import ContextFactory
+    from twisted.python.failure import Failure
     from twisted.web.iweb import IBodyProducer
 
 
@@ -220,7 +221,7 @@ async def test_stop_async_drops_queued_requests() -> None:
 
     request = Request("https://example.com")
     queue_dfd: Deferred = Deferred()
-    failures = []
+    failures: list[Failure] = []
     queue_dfd.addErrback(failures.append)
     slot.queue.append((request, queue_dfd))
 
