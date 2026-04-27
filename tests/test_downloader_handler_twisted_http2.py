@@ -6,12 +6,15 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from testfixtures import LogCapture
-from twisted.web.client import ResponseFailed
 from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
-from scrapy.exceptions import NotConfigured, UnsupportedURLSchemeError
+from scrapy.exceptions import (
+    DownloadFailedError,
+    NotConfigured,
+    UnsupportedURLSchemeError,
+)
 from scrapy.http import Request
 from scrapy.utils.defer import maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
@@ -142,7 +145,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
     async def test_data_loss_handling(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
-            with pytest.raises(ResponseFailed):
+            with pytest.raises(DownloadFailedError):
                 await download_handler.download_request(request)
 
 
