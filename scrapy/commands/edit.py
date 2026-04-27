@@ -11,7 +11,31 @@ from scrapy.spiderloader import get_spider_loader
 
 
 def edit_file(editor: str, file_path: str | Path) -> int:
-    return subprocess.call([*shlex.split(editor), str(file_path)])
+    active_editor = editor or os.environ.get('EDITOR')
+
+    if not active_editor:
+        if sys.platform == 'win32':
+            active_editor = 'notepad'
+        else:
+            active_editor = 'vi'
+
+    if "%s" in active_editor:
+        active_editor = active_editor.replace("%s", sys.executable)
+
+    try:
+        if sys.platform == 'win32':
+            command = [*shlex.split(active_editor, posix=False), str(file_path)]
+        else:
+            command = [*shlex.split(active_editor), str(file_path)]
+
+        return subprocess.call(command)
+
+    except FileNotFoundError:
+        # 3. Messaggio amichevole se l'editor non esiste
+        print(f"Error: Could not find the editor '{active_editor}'.", file=sys.stderr)
+        print("Please set the EDITOR environment variable to your preferred text editor.", file=sys.stderr)
+        return 1
+
 
 
 class Command(ScrapyCommand):
