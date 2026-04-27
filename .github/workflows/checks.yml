@@ -27,13 +27,13 @@ jobs:
           env:
             TOXENV: typing-tests
         # Keep in sync with pyproject.toml tool.sphinx-scrapy.python-version.
-        - python-version: "3.13"
+        - python-version: "3.14"
           env:
             TOXENV: docs
         - python-version: "3.14"
           env:
             TOXENV: docs-tests
-        - python-version: "3.13"
+        - python-version: "3.14"
           env:
             TOXENV: twinecheck
 
