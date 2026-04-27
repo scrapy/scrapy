@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -58,7 +57,8 @@ def test_not_configured_without_reactor() -> None:
 
 
 class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
-    HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
+    http2 = True
+    handler_supports_http2_dataloss: bool = False
 
     @deferred_f_from_coro_f
     async def test_protocol(self, mockserver: MockServer) -> None:
@@ -67,18 +67,6 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             response = await download_handler.download_request(request)
         assert response.protocol == "h2"
 
-    def test_download_cause_data_loss(self) -> None:  # type: ignore[override]
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_cause_data_loss_double_warning(self) -> None:  # type: ignore[override]
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_allow_data_loss(self) -> None:  # type: ignore[override]
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_allow_data_loss_via_setting(self) -> None:  # type: ignore[override]
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
     def test_download_conn_failed(self) -> None:  # type: ignore[override]
         # Unlike HTTP11DownloadHandler which raises it from download_request()
         # (without any special handling), here ConnectionRefusedError (raised in
@@ -86,12 +74,6 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         # an unhandled exception in a Deferred and the handler waits until
         # DOWNLOAD_TIMEOUT.
         pytest.skip("The handler doesn't properly reraise ConnectionRefusedError")
-
-    def test_download_conn_lost(self) -> None:  # type: ignore[override]
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_conn_aborted(self) -> None:  # type: ignore[override]
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     def test_download_dns_error(self) -> None:  # type: ignore[override]
         # Unlike HTTP11DownloadHandler which raises it from download_request()
@@ -153,16 +135,6 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
                 f"{actual_content_length!r} instead",
             )
         )
-
-    @deferred_f_from_coro_f
-    async def test_duplicate_header(self, mockserver: MockServer) -> None:
-        request = Request(mockserver.url("/echo", is_secure=self.is_secure))
-        header, value1, value2 = "Custom-Header", "foo", "bar"
-        request.headers.appendlist(header, value1)
-        request.headers.appendlist(header, value2)
-        async with self.get_dh() as download_handler:
-            response = await download_handler.download_request(request)
-        assert json.loads(response.text)["headers"][header] == [value1, value2]
 
 
 class TestHttps2WrongHostname(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
