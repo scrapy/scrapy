@@ -58,7 +58,7 @@ def test_not_configured_without_reactor() -> None:
 
 class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
     http2 = True
-    handler_supports_http2_dataloss: bool = False
+    handler_supports_http2_dataloss = False
 
     @deferred_f_from_coro_f
     async def test_protocol(self, mockserver: MockServer) -> None:
