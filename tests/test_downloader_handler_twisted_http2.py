@@ -6,13 +6,14 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from testfixtures import LogCapture
+from twisted.web.client import ResponseFailed
 from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured, UnsupportedURLSchemeError
 from scrapy.http import Request
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
     TestHttpProxyBase,
     TestHttps11Base,
@@ -22,6 +23,7 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
 )
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
@@ -60,7 +62,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
     http2 = True
     handler_supports_http2_dataloss = False
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_protocol(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/host", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
@@ -83,7 +85,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         # DOWNLOAD_TIMEOUT.
         pytest.skip("The handler doesn't properly reraise DNSLookupError")
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_concurrent_requests_same_domain(
         self, mockserver: MockServer
     ) -> None:
@@ -98,7 +100,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             assert response2.headers["Content-Length"] == b"79"
 
     @pytest.mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_connect_request(self, mockserver: MockServer) -> None:
         request = Request(
             mockserver.url("/file", is_secure=self.is_secure), method="CONNECT"
@@ -107,7 +109,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             response = await download_handler.download_request(request)
         assert response.body == b""
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_custom_content_length_good(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
         custom_content_length = str(len(request.body))
@@ -116,7 +118,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             response = await download_handler.download_request(request)
         assert response.text == custom_content_length
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_custom_content_length_bad(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
         actual_content_length = str(len(request.body))
@@ -135,6 +137,13 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
                 f"{actual_content_length!r} instead",
             )
         )
+
+    @coroutine_test
+    async def test_data_loss_handling(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(ResponseFailed):
+                await download_handler.download_request(request)
 
 
 class TestHttps2WrongHostname(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
@@ -186,7 +195,7 @@ class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
     expected_http_proxy_request_body = b"/"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_download_with_proxy_https_timeout(
         self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
@@ -195,7 +204,7 @@ class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
                 super().test_download_with_proxy_https_timeout(proxy_mockserver)  # type: ignore[arg-type]
             )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_download_with_proxy_without_http_scheme(
         self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:

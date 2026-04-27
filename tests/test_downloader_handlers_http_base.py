@@ -526,7 +526,8 @@ class TestHttp11Base(TestHttpBase):
     # stream error (of type PROTOCOL_ERROR) so the client will send
     # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
     # connection (see handling of ProtocolError in
-    # h2.connection.H2Connection.receive_data()).
+    # h2.connection.H2Connection.receive_data()), thus closing all streams that
+    # were using it, and we handle this as a normal exception.
     handler_supports_http2_dataloss: bool = True
 
     @coroutine_test
