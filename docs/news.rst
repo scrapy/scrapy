@@ -3,6 +3,31 @@
 Release notes
 =============
 
+.. _release-2.15.1:
+
+Scrapy 2.15.1 (2026-04-23)
+--------------------------
+
+Bug fixes
+~~~~~~~~~
+
+-   Sharing of the SSL context between multiple connections, introduced in
+    Scrapy 2.15.0, is reverted as it caused problems and wasn't actually
+    needed.
+    (:issue:`7445`, :issue:`7450`)
+
+-   Fixed :meth:`scrapy.settings.BaseSettings.getwithbase` failing on keys with
+    dots that aren't import names. It now works the way it worked before Scrapy
+    2.15.0, without trying to match class objects and import path. A separate
+    method,
+    :func:`~scrapy.settings.BaseSettings.get_component_priority_dict_with_base`,
+    was added that does that, and it is now used for :ref:`component priority
+    dictionaries <component-priority-dictionaries>`.
+    (:issue:`7426`, :issue:`7449`)
+
+-   Documentation rendering improvements.
+    (:issue:`7452`, :issue:`7454`)
+
 .. _release-2.15.0:
 
 Scrapy 2.15.0 (2026-04-09)
