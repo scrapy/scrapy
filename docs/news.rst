@@ -3,6 +3,16 @@
 Release notes
 =============
 
+.. _release-2.15.2:
+
+Scrapy 2.15.2 (unreleased)
+--------------------------
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed links in https://docs.scrapy.org/llms.txt (:issue:`7467`)
+
 .. _release-2.15.1:
 
 Scrapy 2.15.1 (2026-04-23)
