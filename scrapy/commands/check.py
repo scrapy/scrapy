@@ -109,9 +109,9 @@ class Command(ScrapyCommand):
                     for method in sorted(methods):
                         print(f"  * {method}")
             else:
-                start_time = time.monotonic()
+                start_time = time.time()
                 self.crawler_process.start()
-                stop = time.monotonic()
+                stop = time.time()
 
                 result.printErrors()
                 result.printSummary(start_time, stop)
