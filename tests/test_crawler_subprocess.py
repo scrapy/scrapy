@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 from packaging.version import parse as parse_version
-from pexpect.exceptions import EOF
 from pexpect.popen_spawn import PopenSpawn
 from w3lib import __version__ as w3lib_version
 
@@ -232,10 +231,9 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         await async_sleep(0.01)
         p.kill(sig)
         p.expect_exact("dropping downloader requests")
+        await async_sleep(0.01)
         p.kill(sig)
-        # Depending on timing, fast shutdown may complete before the third
-        # signal handler logs the force-shutdown message.
-        p.expect_exact(["forcing unclean shutdown", EOF])
+        p.expect_exact("forcing unclean shutdown", timeout=10)
         p.wait()  # type: ignore[no-untyped-call]
 
     @coroutine_test
