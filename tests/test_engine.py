@@ -37,6 +37,7 @@ from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
+from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
@@ -474,14 +475,14 @@ class TestEngine(TestEngineBase):
         with patch.object(
             engine, "close_spider_async", new_callable=AsyncMock
         ) as close:
-            task = asyncio.create_task(engine.stop_async(mode="fast"))
-            await asyncio.sleep(0)
+            stop_dfd = deferred_from_coro(engine.stop_async(mode="fast"))
+            await async_sleep(0)
             close.assert_called_once_with(reason="shutdown", mode="fast")
-            assert not task.done()
+            assert not stop_dfd.called
 
             assert engine._closewait
             engine._closewait.callback(None)
-            await task
+            await maybe_deferred_to_future(stop_dfd)
 
     @coroutine_test
     async def test_handle_downloader_output_ignores_fast_cancelled_failures(
