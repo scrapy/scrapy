@@ -7,7 +7,7 @@ import logging
 import re
 from contextlib import suppress
 from io import BytesIO
-from time import time
+from time import monotonic
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
@@ -460,7 +460,7 @@ class ScrapyAgent:
         if isinstance(agent, self._TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
-        start_time = time()
+        start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
             to_bytes(url, encoding="ascii"),
@@ -489,7 +489,7 @@ class ScrapyAgent:
         raise DownloadTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
-        request.meta["download_latency"] = time() - start_time
+        request.meta["download_latency"] = monotonic() - start_time
         return result
 
     @staticmethod
