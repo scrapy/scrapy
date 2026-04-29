@@ -278,6 +278,11 @@ class Crawler:
         if self.engine is None:
             return
 
+        # During shutdown callbacks, graceful stop may be re-entered after
+        # the engine has already switched to non-running state.
+        if mode == "graceful" and not self.engine.running:
+            return
+
         try:
             await self.engine.stop_async(mode=mode)
         except RuntimeError as exc:

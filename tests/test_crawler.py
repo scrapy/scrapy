@@ -798,6 +798,26 @@ async def test_crawler_stop_async_invalid_mode() -> None:
 
 
 @coroutine_test
+async def test_crawler_graceful_stop_non_running_engine_is_noop() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = False
+        called = False
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called = True
+
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
+
+    await crawler.stop_async(mode="graceful")
+
+    assert dummy_engine.called is False
+
+
+@coroutine_test
 async def test_crawler_force_stop_falls_back_to_fast(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
