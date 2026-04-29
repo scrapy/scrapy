@@ -261,8 +261,6 @@ class Crawler:
         was_crawling = self.crawling
         self.crawling = False
 
-        # Keep repeated graceful stop calls as no-ops, while allowing
-        # fast/force escalation when shutdown is already in progress.
         if not was_crawling and mode == "graceful":
             return
 
