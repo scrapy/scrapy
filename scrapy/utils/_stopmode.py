@@ -21,7 +21,7 @@ def _normalize_stop_mode(mode: _StopMode, *, allow_force: bool = True) -> _StopM
     return mode
 
 
-def max_stop_mode(mode1: _StopMode, mode2: _StopMode) -> _StopMode:
+def _max_stop_mode(mode1: _StopMode, mode2: _StopMode) -> _StopMode:
     if _STOP_MODE_PRIORITY[mode1] >= _STOP_MODE_PRIORITY[mode2]:
         return mode1
     return mode2

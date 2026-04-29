@@ -29,7 +29,7 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
-from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode, max_stop_mode
+from scrapy.utils._stopmode import _max_stop_mode, _normalize_stop_mode, _StopMode
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     create_looping_call,
@@ -226,7 +226,7 @@ class ExecutionEngine:
         if not self._starting and not self._stopping:
             raise RuntimeError("Engine not running")
 
-        self._stop_mode = max_stop_mode(self._stop_mode, mode)
+        self._stop_mode = _max_stop_mode(self._stop_mode, mode)
 
         if self._stopping:
             if self.spider is not None and self._stop_mode == "fast":
@@ -653,7 +653,7 @@ class ExecutionEngine:
         .. versionadded:: 2.14
         """
         mode = _normalize_stop_mode(mode, allow_force=False)
-        self._stop_mode = max_stop_mode(self._stop_mode, mode)
+        self._stop_mode = _max_stop_mode(self._stop_mode, mode)
 
         if self.spider is None:
             raise RuntimeError("Spider not opened")
