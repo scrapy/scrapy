@@ -907,7 +907,7 @@ async def test_crawler_process_force_stop_via_public_crawler_api() -> None:
     crawler_process = CrawlerProcess(install_root_handler=False)
     called = False
 
-    def stop_reactor() -> None:
+    def stop_reactor(_: Any = None) -> None:
         nonlocal called
         called = True
 
@@ -931,7 +931,7 @@ async def test_async_crawler_process_force_stop_reactor_enabled_via_public_crawl
     )
     called = False
 
-    def stop_reactor() -> None:
+    def stop_reactor(_: Any = None) -> None:
         nonlocal called
         called = True
 
@@ -956,7 +956,7 @@ async def test_async_crawler_process_force_stop_reactorless_without_loop(
         install_root_handler=False,
     )
     crawler_process._reactorless_loop = None
-    crawler_process._reactorless_main_task = object()
+    crawler_process._reactorless_main_task = None
     crawler = crawler_process.create_crawler(DefaultSpider)
 
     await crawler.stop_async(mode="force")
@@ -989,10 +989,12 @@ async def test_async_crawler_process_force_stop_reactorless_with_task(
 
     loop = DummyLoop()
     task = DummyTask()
-    crawler_process._reactorless_loop = loop
-    crawler_process._reactorless_main_task = task
+    crawler_process._reactorless_loop = cast("asyncio.AbstractEventLoop", loop)
+    crawler_process._reactorless_main_task = cast("asyncio.Future[None]", task)
     crawler = crawler_process.create_crawler(DefaultSpider)
 
     await crawler.stop_async(mode="force")
 
-    assert loop.callback == task.cancel
+    assert loop.callback is not None
+    loop.callback()
+    assert task.called is True
