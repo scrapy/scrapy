@@ -29,7 +29,7 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
-from scrapy.utils._stopmode import StopMode, max_stop_mode, normalize_stop_mode
+from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode, max_stop_mode
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     create_looping_call,
@@ -120,7 +120,7 @@ class ExecutionEngine:
         self.running: bool = False
         self._starting: bool = False
         self._stopping: bool = False
-        self._stop_mode: StopMode = "graceful"
+        self._stop_mode: _StopMode = "graceful"
         self._downloader_fast_stopped: bool = False
         self.paused: bool = False
         self._spider_closed_callback: Callable[
@@ -206,7 +206,7 @@ class ExecutionEngine:
             await maybe_deferred_to_future(self._closewait)
 
     def stop(
-        self, *, mode: StopMode = "graceful"
+        self, *, mode: _StopMode = "graceful"
     ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.stop() is deprecated, use stop_async() instead",
@@ -215,13 +215,13 @@ class ExecutionEngine:
         )
         return deferred_from_coro(self.stop_async(mode=mode))
 
-    async def stop_async(self, *, mode: StopMode = "graceful") -> None:
+    async def stop_async(self, *, mode: _StopMode = "graceful") -> None:
         """Gracefully stop the execution engine.
 
         .. versionadded:: 2.14
         """
 
-        mode = normalize_stop_mode(mode, allow_force=False)
+        mode = _normalize_stop_mode(mode, allow_force=False)
 
         if not self._starting and not self._stopping:
             raise RuntimeError("Engine not running")
@@ -613,7 +613,7 @@ class ExecutionEngine:
         self,
         spider: Spider,
         reason: str = "cancelled",
-        mode: StopMode = "graceful",
+        mode: _StopMode = "graceful",
     ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.close_spider() is deprecated, use close_spider_async() instead",
@@ -646,13 +646,13 @@ class ExecutionEngine:
         self,
         *,
         reason: str = "cancelled",
-        mode: StopMode = "graceful",
+        mode: _StopMode = "graceful",
     ) -> None:
         """Close (cancel) spider and clear all its outstanding requests.
 
         .. versionadded:: 2.14
         """
-        mode = normalize_stop_mode(mode, allow_force=False)
+        mode = _normalize_stop_mode(mode, allow_force=False)
         self._stop_mode = max_stop_mode(self._stop_mode, mode)
 
         if self.spider is None:

@@ -19,7 +19,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
-from scrapy.utils._stopmode import StopMode, normalize_stop_mode
+from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.log import (
     configure_logging,
@@ -242,7 +242,7 @@ class Crawler:
     def _create_engine(self) -> ExecutionEngine:
         return ExecutionEngine(self, lambda _: self.stop_async())
 
-    def stop(self, *, mode: StopMode = "graceful") -> Deferred[None]:
+    def stop(self, *, mode: _StopMode = "graceful") -> Deferred[None]:
         """Start a graceful stop of the crawler and return a deferred that is
         fired when the crawler is stopped."""
         warnings.warn(
@@ -252,12 +252,12 @@ class Crawler:
         )
         return deferred_from_coro(self.stop_async(mode=mode))
 
-    async def stop_async(self, *, mode: StopMode = "graceful") -> None:
+    async def stop_async(self, *, mode: _StopMode = "graceful") -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.
 
         .. versionadded:: 2.14
         """
-        mode = normalize_stop_mode(mode)
+        mode = _normalize_stop_mode(mode)
         was_crawling = self.crawling
         self.crawling = False
 
@@ -506,13 +506,13 @@ class CrawlerRunner(CrawlerRunnerBase):
             self._active.discard(d)
             self.bootstrap_failed |= not getattr(crawler, "spider", None) or failed
 
-    def stop(self, *, mode: StopMode = "graceful") -> Deferred[Any]:
+    def stop(self, *, mode: _StopMode = "graceful") -> Deferred[Any]:
         """
         Stops simultaneously all the crawling jobs taking place.
 
         Returns a deferred that is fired when they all have ended.
         """
-        mode = normalize_stop_mode(mode)
+        mode = _normalize_stop_mode(mode)
         return DeferredList(
             deferred_from_coro(c.stop_async(mode=mode)) for c in self.crawlers
         )
@@ -631,13 +631,13 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         task.add_done_callback(_done)
         return task
 
-    async def stop(self, *, mode: StopMode = "graceful") -> None:
+    async def stop(self, *, mode: _StopMode = "graceful") -> None:
         """
         Stops simultaneously all the crawling jobs taking place.
 
         Completes when they all have ended.
         """
-        mode = normalize_stop_mode(mode)
+        mode = _normalize_stop_mode(mode)
         if self.crawlers:
             await asyncio.wait(
                 [asyncio.create_task(c.stop_async(mode=mode)) for c in self.crawlers]
@@ -760,7 +760,7 @@ class CrawlerProcessBase(CrawlerRunnerBase):
             )
 
     @abstractmethod
-    def _stop_dfd(self, *, mode: StopMode = "graceful") -> Deferred[Any]:
+    def _stop_dfd(self, *, mode: _StopMode = "graceful") -> Deferred[Any]:
         raise NotImplementedError
 
     @inlineCallbacks
@@ -830,7 +830,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
         crawler._set_force_stop_callback(self._force_stop)
         return crawler
 
-    def _stop_dfd(self, *, mode: StopMode = "graceful") -> Deferred[Any]:
+    def _stop_dfd(self, *, mode: _StopMode = "graceful") -> Deferred[Any]:
         return self.stop(mode=mode)
 
     def start(
@@ -938,7 +938,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         if (task := self._reactorless_main_task) is not None:
             loop.call_soon_threadsafe(task.cancel)
 
-    def _stop_dfd(self, *, mode: StopMode = "graceful") -> Deferred[Any]:
+    def _stop_dfd(self, *, mode: _StopMode = "graceful") -> Deferred[Any]:
         return deferred_from_coro(self.stop(mode=mode))
 
     def start(
@@ -1084,7 +1084,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
                     }
                 )
 
-    def _schedule_reactorless_shutdown(self, *, mode: StopMode) -> None:
+    def _schedule_reactorless_shutdown(self, *, mode: _StopMode) -> None:
         if (loop := self._reactorless_loop) is None:
             return
 
@@ -1107,7 +1107,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         self._log_fast_shutdown(signum)
         self._schedule_reactorless_shutdown(mode="fast")
 
-    async def _shutdown_reactorless(self, *, mode: StopMode) -> None:
+    async def _shutdown_reactorless(self, *, mode: _StopMode) -> None:
         await self.stop(mode=mode)
         if not self._stop_after_crawl:
             # wait until crawl tasks finish and cancel the future
