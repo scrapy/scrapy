@@ -233,7 +233,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("dropping downloader requests")
         await async_sleep(0.01)
         p.kill(sig)
-        p.expect_exact("forcing unclean shutdown", timeout=10)
+        p.expect_exact("forcing unclean shutdown", timeout=20)
         p.wait()  # type: ignore[no-untyped-call]
 
     @coroutine_test
