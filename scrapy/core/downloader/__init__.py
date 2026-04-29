@@ -118,7 +118,6 @@ class Downloader:
         )
         self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
         self._accepting_requests: bool = True
-        self._fast_stopping: bool = False
         self._download_tasks: dict[Request, Deferred[None]] = {}
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
@@ -278,7 +277,6 @@ class Downloader:
 
     async def stop_async(self) -> int:
         self._accepting_requests = False
-        self._fast_stopping = True
 
         dropped_count = 0
 

@@ -851,3 +851,34 @@ async def test_crawler_force_stop_uses_force_callback() -> None:
     crawler._set_force_stop_callback(force_stop_callback)
     await crawler.stop_async(mode="force")
     assert called
+
+
+@coroutine_test
+async def test_crawler_stop_async_without_engine_is_noop() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    await crawler.stop_async(mode="graceful")
+
+    assert crawler.crawling is False
+
+
+@coroutine_test
+async def test_crawler_stop_async_ignores_engine_not_running_runtime_error() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = True
+        called = False
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called = True
+            raise RuntimeError("Engine not running")
+
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
+
+    await crawler.stop_async(mode="graceful")
+
+    assert dummy_engine.called is True
