@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 
 from scrapy.exceptions import UsageError
@@ -5,8 +7,10 @@ from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
     arglist_to_dict,
     build_component_list,
+    closest_config,
     feed_complete_default_values_from_settings,
     feed_process_params_from_cli,
+    get_config,
 )
 
 
@@ -52,6 +56,57 @@ def test_arglist_to_dict():
         "arg1": "val1",
         "arg2": "val2",
     }
+
+
+class TestPyprojectToml:
+    def test_multiple_projects(self, tmp_path, monkeypatch):
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.scrapy.settings]\n"
+            'default = "myproject1.settings"\n'
+            'project1 = "myproject1.settings"\n'
+            'project2 = "myproject2.settings"\n'
+        )
+        monkeypatch.chdir(tmp_path)
+        cfg = get_config()
+        assert cfg.get("settings", "default") == "myproject1.settings"
+        assert cfg.get("settings", "project1") == "myproject1.settings"
+        assert cfg.get("settings", "project2") == "myproject2.settings"
+
+    def test_pyproject_toml_takes_precedence_over_scrapy_cfg(
+        self, tmp_path, monkeypatch
+    ):
+        (tmp_path / "scrapy.cfg").write_text("[settings]\ndefault = from_scrapy_cfg\n")
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.scrapy.settings]\ndefault = 'from_pyproject_toml'\n"
+        )
+        monkeypatch.chdir(tmp_path)
+        cfg = get_config()
+        assert cfg.get("settings", "default") == "from_pyproject_toml"
+
+    def test_scrapy_cfg_not_read_when_pyproject_toml_present(
+        self, tmp_path, monkeypatch
+    ):
+        (tmp_path / "scrapy.cfg").write_text(
+            "[settings]\ndefault = from_scrapy_cfg\n"
+            "[deploy]\nproject = from_scrapy_cfg\n"
+        )
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.scrapy.settings]\ndefault = 'from_pyproject_toml'\n"
+        )
+        monkeypatch.chdir(tmp_path)
+        cfg = get_config()
+        assert not cfg.has_section("deploy")
+
+    def test_malformed_toml_warns_and_falls_back(self, tmp_path, monkeypatch):
+        (tmp_path / "pyproject.toml").write_text("[tool.scrapy\nnot valid toml")
+        (tmp_path / "scrapy.cfg").write_text("[settings]\ndefault = from_scrapy_cfg\n")
+        monkeypatch.chdir(tmp_path)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            config_type, _ = closest_config()
+        assert config_type == "cfg"
+        assert len(w) == 1
+        assert "invalid TOML" in str(w[0].message)
 
 
 class TestFeedExportConfig:
