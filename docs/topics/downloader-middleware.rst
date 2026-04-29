@@ -494,6 +494,10 @@ Writing your own storage backend
 You can implement a cache storage backend by creating a Python class that
 defines the methods described below.
 
+.. note::
+    All methods of a custom HTTP cache storage can also be defined as asynchronous
+    coroutines using ``async def``.
+
 .. module:: scrapy.extensions.httpcache
 
 .. class:: CacheStorage
