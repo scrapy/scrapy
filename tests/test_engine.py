@@ -485,6 +485,20 @@ class TestEngine(TestEngineBase):
             await maybe_deferred_to_future(stop_dfd)
 
     @coroutine_test
+    async def test_stop_async_reentrant_graceful_without_spider_or_closewait(
+        self,
+    ) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine._stopping = True
+
+        with patch.object(
+            engine, "close_spider_async", new_callable=AsyncMock
+        ) as close:
+            await engine.stop_async(mode="graceful")
+
+        close.assert_not_called()
+
+    @coroutine_test
     async def test_handle_downloader_output_ignores_fast_cancelled_failures(
         self,
     ) -> None:

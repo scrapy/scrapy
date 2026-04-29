@@ -945,6 +945,25 @@ async def test_async_crawler_process_force_stop_reactor_enabled_via_public_crawl
 
 @pytest.mark.only_asyncio
 @coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_without_main_task(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False},
+        install_root_handler=False,
+    )
+    assert crawler_process._reactorless_loop is not None
+    assert crawler_process._reactorless_main_task is None
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
 async def test_async_crawler_process_force_stop_reactorless_without_loop(
     reactor_pytest: str,
 ) -> None:
@@ -998,3 +1017,48 @@ async def test_async_crawler_process_force_stop_reactorless_with_task(
     assert loop.callback is not None
     loop.callback()
     assert task.called is True
+
+
+def test_async_crawler_process_schedule_reactorless_shutdown_without_loop() -> None:
+    crawler_process = object.__new__(AsyncCrawlerProcess)
+    crawler_process._reactorless_loop = None
+
+    crawler_process._schedule_reactorless_shutdown(mode="graceful")
+
+
+def test_async_crawler_process_schedule_reactorless_shutdown_runtime_error() -> None:
+    crawler_process = object.__new__(AsyncCrawlerProcess)
+
+    class DummyLoop:
+        scheduled = False
+        create_task_called = False
+
+        def call_soon_threadsafe(self, callback) -> None:
+            self.scheduled = True
+            callback()
+
+        def create_task(self, coro) -> None:
+            self.create_task_called = True
+            raise RuntimeError("event loop is closing")
+
+    class DummyCoro:
+        closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    loop = DummyLoop()
+    coro = DummyCoro()
+
+    def shutdown_reactorless(*, mode: str) -> DummyCoro:
+        assert mode == "graceful"
+        return coro
+
+    crawler_process._reactorless_loop = cast("asyncio.AbstractEventLoop", loop)
+    crawler_process._shutdown_reactorless = shutdown_reactorless
+
+    crawler_process._schedule_reactorless_shutdown(mode="graceful")
+
+    assert loop.scheduled
+    assert loop.create_task_called
+    assert coro.closed

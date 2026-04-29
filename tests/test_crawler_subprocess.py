@@ -420,6 +420,9 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def test_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful("reactorless_sleeping.py")
 
+    def test_shutdown_graceful_stop_after_crawl_false(self) -> None:
+        self._test_shutdown_graceful("reactorless_sleeping_no_stop_after_crawl.py")
+
     @coroutine_test
     async def test_shutdown_forced(self) -> None:
         await self._test_shutdown_forced("reactorless_sleeping.py")
