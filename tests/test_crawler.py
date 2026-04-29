@@ -5,6 +5,7 @@ import warnings
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
 from twisted.internet.defer import Deferred
@@ -1049,15 +1050,20 @@ def test_async_crawler_process_schedule_reactorless_shutdown_runtime_error() -> 
 
     loop = DummyLoop()
     coro = DummyCoro()
+    called_mode: str | None = None
 
     def shutdown_reactorless(*, mode: str) -> DummyCoro:
-        assert mode == "graceful"
+        nonlocal called_mode
+        called_mode = mode
         return coro
 
     crawler_process._reactorless_loop = cast("asyncio.AbstractEventLoop", loop)
-    crawler_process._shutdown_reactorless = shutdown_reactorless
+    with patch.object(
+        crawler_process, "_shutdown_reactorless", new=shutdown_reactorless
+    ):
+        crawler_process._schedule_reactorless_shutdown(mode="graceful")
 
-    crawler_process._schedule_reactorless_shutdown(mode="graceful")
+    assert called_mode == "graceful"
 
     assert loop.scheduled
     assert loop.create_task_called
