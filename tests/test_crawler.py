@@ -882,3 +882,117 @@ async def test_crawler_stop_async_ignores_engine_not_running_runtime_error() -> 
     await crawler.stop_async(mode="graceful")
 
     assert dummy_engine.called is True
+
+
+@coroutine_test
+async def test_crawler_stop_async_reraises_other_runtime_errors() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = True
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            raise RuntimeError("different runtime error")
+
+    crawler.engine = DummyEngine()  # type: ignore[assignment]
+
+    with pytest.raises(RuntimeError, match="different runtime error"):
+        await crawler.stop_async(mode="graceful")
+
+
+@pytest.mark.requires_reactor
+@coroutine_test
+async def test_crawler_process_force_stop_via_public_crawler_api() -> None:
+    crawler_process = CrawlerProcess(install_root_handler=False)
+    called = False
+
+    def stop_reactor() -> None:
+        nonlocal called
+        called = True
+
+    crawler_process._stop_reactor = stop_reactor  # type: ignore[method-assign]
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert called
+
+
+@pytest.mark.only_asyncio
+@pytest.mark.requires_reactor
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactor_enabled_via_public_crawler_api() -> (
+    None
+):
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": True},
+        install_root_handler=False,
+    )
+    called = False
+
+    def stop_reactor() -> None:
+        nonlocal called
+        called = True
+
+    crawler_process._stop_reactor = stop_reactor  # type: ignore[method-assign]
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert called
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_without_loop(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False},
+        install_root_handler=False,
+    )
+    crawler_process._reactorless_loop = None
+    crawler_process._reactorless_main_task = object()
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_with_task(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False},
+        install_root_handler=False,
+    )
+
+    class DummyLoop:
+        callback = None
+
+        def call_soon_threadsafe(self, callback) -> None:
+            self.callback = callback
+
+    class DummyTask:
+        called = False
+
+        def cancel(self) -> None:
+            self.called = True
+
+    loop = DummyLoop()
+    task = DummyTask()
+    crawler_process._reactorless_loop = loop
+    crawler_process._reactorless_main_task = task
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert loop.callback == task.cancel
