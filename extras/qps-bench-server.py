@@ -18,7 +18,7 @@ class Root(Resource):
         self.tail.clear()
         self.start = self.lastmark = self.lasttime = time()
 
-    def getChild(self, request, name):
+    def getChild(self, path, request):
         return self
 
     def render(self, request):

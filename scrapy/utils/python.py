@@ -99,6 +99,16 @@ def to_bytes(
     return text.encode(encoding, errors)
 
 
+def _chunk_iter(text: str, chunk_size: int) -> Iterable[tuple[str, int]]:
+    offset = len(text)
+    while True:
+        offset -= chunk_size * 1024
+        if offset <= 0:
+            break
+        yield (text[offset:], offset)
+    yield (text, 0)
+
+
 def re_rsearch(
     pattern: str | Pattern[str], text: str, chunk_size: int = 1024
 ) -> tuple[int, int] | None:
@@ -115,19 +125,10 @@ def re_rsearch(
     the start position of the match, and the ending (regarding the entire text).
     """
 
-    def _chunk_iter() -> Iterable[tuple[str, int]]:
-        offset = len(text)
-        while True:
-            offset -= chunk_size * 1024
-            if offset <= 0:
-                break
-            yield (text[offset:], offset)
-        yield (text, 0)
-
     if isinstance(pattern, str):
         pattern = re.compile(pattern)
 
-    for chunk, offset in _chunk_iter():
+    for chunk, offset in _chunk_iter(text, chunk_size):
         matches = list(pattern.finditer(chunk))
         if matches:
             start, end = matches[-1].span()

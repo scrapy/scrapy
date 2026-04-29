@@ -75,87 +75,82 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         download_func: Callable[[Request], Coroutine[Any, Any, Response]],
         request: Request,
     ) -> Response | Request:
-        async def process_request(request: Request) -> Response | Request:
-            for method in self.methods["process_request"]:
-                method = cast("Callable", method)
-                if method in self._mw_methods_requiring_spider:
-                    response = await ensure_awaitable(
-                        method(request=request, spider=self._spider),
-                        _warn=global_object_name(method),
-                    )
-                else:
-                    response = await ensure_awaitable(
-                        method(request=request), _warn=global_object_name(method)
-                    )
-                if response is not None and not isinstance(
-                    response, (Response, Request)
-                ):
-                    raise _InvalidOutput(
-                        f"Middleware {method.__qualname__} must return None, Response or "
-                        f"Request, got {response.__class__.__name__}"
-                    )
-                if response:
-                    return response
-            return await download_func(request)
-
-        async def process_response(response: Response | Request) -> Response | Request:
-            if response is None:
-                raise TypeError("Received None in process_response")
-            if isinstance(response, Request):
-                return response
-
-            for method in self.methods["process_response"]:
-                method = cast("Callable", method)
-                if method in self._mw_methods_requiring_spider:
-                    response = await ensure_awaitable(
-                        method(request=request, response=response, spider=self._spider),
-                        _warn=global_object_name(method),
-                    )
-                else:
-                    response = await ensure_awaitable(
-                        method(request=request, response=response),
-                        _warn=global_object_name(method),
-                    )
-                if not isinstance(response, (Response, Request)):
-                    raise _InvalidOutput(
-                        f"Middleware {method.__qualname__} must return Response or Request, "
-                        f"got {type(response)}"
-                    )
-                if isinstance(response, Request):
-                    return response
-            return response
-
-        async def process_exception(exception: Exception) -> Response | Request:
-            for method in self.methods["process_exception"]:
-                method = cast("Callable", method)
-                if method in self._mw_methods_requiring_spider:
-                    response = await ensure_awaitable(
-                        method(
-                            request=request, exception=exception, spider=self._spider
-                        ),
-                        _warn=global_object_name(method),
-                    )
-                else:
-                    response = await ensure_awaitable(
-                        method(request=request, exception=exception),
-                        _warn=global_object_name(method),
-                    )
-                if response is not None and not isinstance(
-                    response, (Response, Request)
-                ):
-                    raise _InvalidOutput(
-                        f"Middleware {method.__qualname__} must return None, Response or "
-                        f"Request, got {type(response)}"
-                    )
-                if response:
-                    return response
-            raise exception
 
         try:
-            result: Response | Request = await process_request(request)
+            result: Response | Request = await self._process_request(
+                request, download_func
+            )
         except Exception as ex:
             await _defer_sleep_async()
             # either returns a request or response (which we pass to process_response())
             # or reraises the exception
-            result = await process_exception(ex)
-        return await process_response(result)
+            result = await self._process_exception(ex, request)
+        return await self._process_response(result, request)
+
+    def _handle_mw_method(self, method: Callable, **kwargs: Any) -> Any:
+        if method in self._mw_methods_requiring_spider:
+            kwargs["spider"] = self._spider
+
+        return method(**kwargs)
+
+    async def _process_request(
+        self,
+        request: Request,
+        download_func: Callable[[Request], Coroutine[Any, Any, Response]],
+    ) -> Response | Request:
+        for method in self.methods["process_request"]:
+            method = cast("Callable", method)
+            response = await ensure_awaitable(
+                self._handle_mw_method(method, request=request),
+                _warn=global_object_name(method),
+            )
+            if response is not None and not isinstance(response, (Response, Request)):
+                raise _InvalidOutput(
+                    f"Middleware {method.__qualname__} must return None, Response or "
+                    f"Request, got {response.__class__.__name__}"
+                )
+            if response:
+                return response
+        return await download_func(request)
+
+    async def _process_response(
+        self, response: Response | Request, request: Request
+    ) -> Response | Request:
+        if response is None:
+            raise TypeError("Received None in process_response")
+        if isinstance(response, Request):
+            return response
+
+        for method in self.methods["process_response"]:
+            method = cast("Callable", method)
+            response = await ensure_awaitable(
+                self._handle_mw_method(method, request=request, response=response),
+                _warn=global_object_name(method),
+            )
+
+            if not isinstance(response, (Response, Request)):
+                raise _InvalidOutput(
+                    f"Middleware {method.__qualname__} must return Response or Request, "
+                    f"got {type(response)}"
+                )
+            if isinstance(response, Request):
+                return response
+        return response
+
+    async def _process_exception(
+        self, exception: Exception, request: Request | Response
+    ) -> Response | Request:
+        for method in self.methods["process_exception"]:
+            method = cast("Callable", method)
+            response = await ensure_awaitable(
+                self._handle_mw_method(method, request=request, exception=exception),
+                _warn=global_object_name(method),
+            )
+            if response is not None and not isinstance(response, (Response, Request)):
+                raise _InvalidOutput(
+                    f"Middleware {method.__qualname__} must return None, Response or "
+                    f"Request, got {type(response)}"
+                )
+            if response:
+                return response
+        raise exception

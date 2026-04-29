@@ -73,6 +73,6 @@ class TestProcessProtocol(ProcessProtocol):
     def errReceived(self, data: bytes) -> None:
         self.err += data
 
-    def processEnded(self, status: Failure) -> None:
+    def processEnded(self, status: Failure) -> None:  # pylint: disable=arguments-renamed
         self.exitcode = cast("ProcessTerminated", status.value).exitCode
         self.deferred.callback(self)

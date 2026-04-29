@@ -9,7 +9,7 @@ from twisted.web.server import Request, Site
 class Root(Resource):
     isLeaf = True
 
-    def getChild(self, name: str, request: Request) -> Resource:
+    def getChild(self, path: str, request: Request) -> Resource:
         return self
 
     def render(self, request: Request) -> bytes:
