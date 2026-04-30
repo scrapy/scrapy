@@ -680,8 +680,7 @@ Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
 The class to be used by Twisted to resolve DNS names. The default
 ``scrapy.resolver.CachingThreadedResolver`` supports specifying a timeout for
-DNS requests via the :setting:`DNS_TIMEOUT` setting, but works only with IPv4
-addresses. Scrapy provides an alternative resolver,
+DNS requests via the :setting:`DNS_TIMEOUT` setting, but works with both IPv4 and IPv6. Scrapy provides an alternative resolver,
 ``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
 take the :setting:`DNS_TIMEOUT` setting into account.
 
