@@ -282,9 +282,10 @@ button, pass its element:
 
 .. code-block:: python
 
-    form = response.css("form#checkout")
-    submit = form.css('button[name="pay"]')
-    request_data = form2request(form, click=submit)
+    def parse(self, response):
+        form = response.css("form#checkout")
+        submit = form.css('button[name="pay"]')
+        request_data = form2request(form, click=submit)
 
 .. _topics-request-response-ref-request-userlogin:
 
