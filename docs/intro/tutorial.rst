@@ -47,6 +47,9 @@ as well as the `suggested resources in the learnpython-subreddit`_.
 
 Creating a project
 ==================
+.. note::
+   If you are on Windows and the ``scrapy`` command doesn't work, 
+   try using ``python -m scrapy`` instead.
 
 Before you start scraping, you will have to set up a new Scrapy project. Enter a
 directory where you'd like to store your code and run::
