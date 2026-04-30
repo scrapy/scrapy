@@ -217,6 +217,8 @@ scrapy.Spider
 
        .. code-block:: python
 
+           from urllib.parse import urlencode
+
            import scrapy
 
 
@@ -224,13 +226,14 @@ scrapy.Spider
                name = "myspider"
 
                def start_requests(self):
-                   return [
-                       scrapy.FormRequest(
-                           "http://www.example.com/login",
-                           formdata={"user": "john", "pass": "secret"},
-                           callback=self.logged_in,
-                       )
-                   ]
+                   form_data = {"user": "john", "pass": "secret"}
+                   yield scrapy.Request(
+                       "http://www.example.com/login",
+                       method="POST",
+                       body=urlencode(form_data),
+                       headers={"Content-Type": "application/x-www-form-urlencoded"},
+                       callback=self.logged_in,
+                   )
 
                def logged_in(self, response):
                    # here you would extract links to follow and return Requests for

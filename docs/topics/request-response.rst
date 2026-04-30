@@ -276,7 +276,70 @@ Request objects
 Creating requests that submit HTML forms
 ----------------------------------------
 
-…
+Use :doc:`form2request <form2request:index>` to build request data from an HTML
+``<form>`` element and convert it to a :class:`~scrapy.Request`.
+
+Install it with pip:
+
+.. code-block:: bash
+
+    pip install form2request
+
+Select the desired form with CSS or XPath, then build and convert request
+data:
+
+.. code-block:: python
+
+    from form2request import form2request
+
+
+    def parse(self, response):
+        form = response.css("form#search")
+        request_data = form2request(form, data={"q": "scrapy"})
+        yield request_data.to_scrapy(callback=self.parse_results)
+
+Use ``data`` to override field values. To drop a field from the resulting
+request, set its value to ``None``.
+
+By default, form2request simulates clicking the first submit button. To submit
+without clicking any button, pass ``click=False``. To click a specific submit
+button, pass its element:
+
+.. code-block:: python
+
+    form = response.css("form#checkout")
+    submit = form.css('button[name="pay"]')
+    request_data = form2request(form, click=submit)
+
+.. _topics-request-response-ref-request-userlogin:
+
+Using form2request to simulate a user login
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is usual for web sites to provide pre-populated form fields through ``<input
+type="hidden">`` elements, such as session related data or authentication
+tokens (for login pages). Build the request from the form and only override the
+credentials:
+
+.. code-block:: python
+
+    import scrapy
+    from form2request import form2request
+
+
+    class LoginSpider(scrapy.Spider):
+        name = "example.com"
+        start_urls = ["http://www.example.com/users/login.php"]
+
+        def parse(self, response):
+            form = response.css("form")
+            request_data = form2request(
+                form,
+                data={"username": "john", "password": "secret"},
+            )
+            yield request_data.to_scrapy(callback=self.after_login)
+
+        def after_login(self, response): ...
 
 
 Other functions related to requests
@@ -796,156 +859,6 @@ Request subclasses
 
 Here is the list of built-in :class:`Request` subclasses. You can also subclass
 it to implement your own custom functionality.
-
-FormRequest objects
--------------------
-
-The FormRequest class extends the base :class:`Request` with functionality for
-dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
-fields with form data from :class:`Response` objects.
-
-.. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
-
-.. class:: scrapy.http.request.form.FormRequest
-.. class:: scrapy.http.FormRequest
-.. class:: scrapy.FormRequest(url, [formdata, ...])
-
-    The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
-    remaining arguments are the same as for the :class:`Request` class and are
-    not documented here.
-
-    :param formdata: is a dictionary (or iterable of (key, value) tuples)
-       containing HTML Form data which will be url-encoded and assigned to the
-       body of the request.
-    :type formdata: dict or collections.abc.Iterable
-
-    The :class:`FormRequest` objects support the following class method in
-    addition to the standard :class:`Request` methods:
-
-    .. classmethod:: FormRequest.from_response(response, [formname=None, formid=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
-
-       Returns a new :class:`FormRequest` object with its form field values
-       pre-populated with those found in the HTML ``<form>`` element contained
-       in the given response. For an example see
-       :ref:`topics-request-response-ref-request-userlogin`.
-
-       The policy is to automatically simulate a click, by default, on any form
-       control that looks clickable, like a ``<input type="submit">``.  Even
-       though this is quite convenient, and often the desired behaviour,
-       sometimes it can cause problems which could be hard to debug. For
-       example, when working with forms that are filled and/or submitted using
-       javascript, the default :meth:`from_response` behaviour may not be the
-       most appropriate. To disable this behaviour you can set the
-       ``dont_click`` argument to ``True``. Also, if you want to change the
-       control clicked (instead of disabling it) you can also use the
-       ``clickdata`` argument.
-
-       .. caution:: Using this method with select elements which have leading
-          or trailing whitespace in the option values will not work due to a
-          `bug in lxml`_, which should be fixed in lxml 3.8 and above.
-
-       :param response: the response containing a HTML form which will be used
-          to pre-populate the form fields
-       :type response: :class:`Response` object
-
-       :param formname: if given, the form with name attribute set to this value will be used.
-       :type formname: str
-
-       :param formid: if given, the form with id attribute set to this value will be used.
-       :type formid: str
-
-       :param formxpath: if given, the first form that matches the xpath will be used.
-       :type formxpath: str
-
-       :param formcss: if given, the first form that matches the css selector will be used.
-       :type formcss: str
-
-       :param formnumber: the number of form to use, when the response contains
-          multiple forms. The first one (and also the default) is ``0``.
-       :type formnumber: int
-
-       :param formdata: fields to override in the form data. If a field was
-          already present in the response ``<form>`` element, its value is
-          overridden by the one passed in this parameter. If a value passed in
-          this parameter is ``None``, the field will not be included in the
-          request, even if it was present in the response ``<form>`` element.
-       :type formdata: dict
-
-       :param clickdata: attributes to lookup the control clicked. If it's not
-         given, the form data will be submitted simulating a click on the
-         first clickable element. In addition to html attributes, the control
-         can be identified by its zero-based index relative to other
-         submittable inputs inside the form, via the ``nr`` attribute.
-       :type clickdata: dict
-
-       :param dont_click: If True, the form data will be submitted without
-         clicking in any element.
-       :type dont_click: bool
-
-       The other parameters of this class method are passed directly to the
-       :class:`FormRequest` ``__init__`` method.
-
-Request usage examples
-----------------------
-
-Using FormRequest to send data via HTTP POST
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you want to simulate a HTML Form POST in your spider and send a couple of
-key-value fields, you can return a :class:`FormRequest` object (from your
-spider) like this:
-
-.. skip: next
-.. code-block:: python
-
-   return [
-       FormRequest(
-           url="http://www.example.com/post/action",
-           formdata={"name": "John Doe", "age": "27"},
-           callback=self.after_post,
-       )
-   ]
-
-.. _topics-request-response-ref-request-userlogin:
-
-Using FormRequest.from_response() to simulate a user login
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-It is usual for web sites to provide pre-populated form fields through ``<input
-type="hidden">`` elements, such as session related data or authentication
-tokens (for login pages). When scraping, you'll want these fields to be
-automatically pre-populated and only override a couple of them, such as the
-user name and password. You can use the :meth:`FormRequest.from_response`
-method for this job. Here's an example spider which uses it:
-
-.. code-block:: python
-
-    import scrapy
-
-
-    def authentication_failed(response):
-        # TODO: Check the contents of the response and return True if it failed
-        # or False if it succeeded.
-        pass
-
-
-    class LoginSpider(scrapy.Spider):
-        name = "example.com"
-        start_urls = ["http://www.example.com/users/login.php"]
-
-        def parse(self, response):
-            return scrapy.FormRequest.from_response(
-                response,
-                formdata={"username": "john", "password": "secret"},
-                callback=self.after_login,
-            )
-
-        def after_login(self, response):
-            if authentication_failed(response):
-                self.logger.error("Login failed")
-                return
-
-            # continue scraping with authenticated session...
 
 JsonRequest
 -----------
