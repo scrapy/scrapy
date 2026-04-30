@@ -1,10 +1,8 @@
 from unittest import TextTestResult
-from warnings import catch_warnings, filterwarnings
 
 import pytest
 from twisted.python import failure
 
-from scrapy import FormRequest
 from scrapy.contracts import Contract, ContractsManager
 from scrapy.contracts.default import (
     CallbackKeywordArgumentsContract,
@@ -13,7 +11,6 @@ from scrapy.contracts.default import (
     ScrapesContract,
     UrlContract,
 )
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.item import Field, Item
 from scrapy.spidermiddlewares.httperror import HttpError
@@ -36,6 +33,12 @@ class ResponseMetaMock(ResponseMock):
     meta = None
 
 
+class TaggedRequest(Request):
+    def __init__(self, url, contract_tag=None, **kwargs):
+        super().__init__(url, **kwargs)
+        self.contract_tag = contract_tag
+
+
 class CustomSuccessContract(Contract):
     name = "custom_success_contract"
 
@@ -51,12 +54,13 @@ class CustomFailContract(Contract):
         raise TypeError("Error in adjust_request_args")
 
 
-class CustomFormContract(Contract):
-    name = "custom_form"
-    request_cls = FormRequest
+class CustomTaggedRequestContract(Contract):
+    name = "custom_tagged_request"
+    request_cls = TaggedRequest
 
     def adjust_request_args(self, args):
-        args["formdata"] = {"name": "scrapy"}
+        args["contract_tag"] = "custom"
+        args["method"] = "POST"
         return args
 
 
@@ -181,10 +185,10 @@ class DemoSpider(Spider):
         @returns items 1 1
         """
 
-    def custom_form(self, response):
+    def custom_tagged_request(self, response):
         """
         @url http://scrapy.org
-        @custom_form
+        @custom_tagged_request
         """
 
     def invalid_regex(self, response):
@@ -255,7 +259,7 @@ class TestContractsManager:
         MetadataContract,
         ReturnsContract,
         ScrapesContract,
-        CustomFormContract,
+        CustomTaggedRequestContract,
         CustomSuccessContract,
         CustomFailContract,
     ]
@@ -535,21 +539,21 @@ class TestContractsManager:
 
         assert crawler.spider.visited == 2
 
-    def test_form_contract(self):
+    def test_custom_tagged_request_contract(self):
         spider = DemoSpider()
-        with catch_warnings():
-            filterwarnings("ignore", category=ScrapyDeprecationWarning)
-            request = self.conman.from_method(spider.custom_form, self.results)
+        request = self.conman.from_method(spider.custom_tagged_request, self.results)
         assert request.method == "POST"
-        assert isinstance(request, FormRequest)
+        assert isinstance(request, TaggedRequest)
+        assert request.contract_tag == "custom"
 
     def test_inherited_contracts(self):
         spider = InheritsDemoSpider()
 
-        with catch_warnings():
-            filterwarnings("ignore", category=ScrapyDeprecationWarning)
-            requests = self.conman.from_spider(spider, self.results)
+        requests = self.conman.from_spider(spider, self.results)
         assert requests
+        assert any(
+            isinstance(request, TaggedRequest) for request in requests if request
+        )
 
 
 class CustomFailContractPreProcess(Contract):

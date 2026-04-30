@@ -1,10 +1,7 @@
-from warnings import catch_warnings, filterwarnings
-
 import pytest
 
 from scrapy import Request, Spider
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import FormRequest, JsonRequest
+from scrapy.http import JsonRequest
 from scrapy.utils.request import request_from_dict
 
 
@@ -70,14 +67,10 @@ class TestRequestSerialization:
             assert r1.dumps_kwargs == r2.dumps_kwargs
 
     def test_request_class(self):
-        with catch_warnings():
-            filterwarnings("ignore", category=ScrapyDeprecationWarning)
-            r1 = FormRequest("http://www.example.com")
-            self._assert_serializes_ok(r1, spider=self.spider)
-        r2 = CustomRequest("http://www.example.com")
+        r1 = CustomRequest("http://www.example.com")
+        self._assert_serializes_ok(r1, spider=self.spider)
+        r2 = JsonRequest("http://www.example.com", dumps_kwargs={"indent": 4})
         self._assert_serializes_ok(r2, spider=self.spider)
-        r3 = JsonRequest("http://www.example.com", dumps_kwargs={"indent": 4})
-        self._assert_serializes_ok(r3, spider=self.spider)
 
     def test_callback_serialization(self):
         r = Request(
