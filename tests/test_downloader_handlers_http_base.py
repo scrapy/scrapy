@@ -1075,6 +1075,8 @@ class TestHttpWithCrawlerBase(ABC):
 class TestHttpProxyBase(ABC):
     is_secure = False
     expected_http_proxy_request_body = b"http://example.com"
+    expected_http_proxy_quoted_request_body = b"http://example.com/list?%5B0%5D=a"
+    expected_http_proxy_verbatim_request_body = b"http://example.com/list?[0]=a"
 
     @property
     @abstractmethod
@@ -1146,3 +1148,25 @@ class TestHttpProxyBase(ABC):
         assert response.status == 200
         assert response.url == request.url
         assert response.body == self.expected_http_proxy_request_body
+
+    @coroutine_test
+    async def test_download_with_proxy_verbatim_url(
+        self, proxy_mockserver: ProxyEchoMockServer
+    ) -> None:
+        http_proxy = proxy_mockserver.url("", is_secure=self.is_secure)
+        url = "http://example.com/list?[0]=a"
+        request = Request(url, meta={"proxy": http_proxy})
+        request_verbatim = Request(
+            url, meta={"proxy": http_proxy, "verbatim_url": True}
+        )
+
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+            response_verbatim = await download_handler.download_request(
+                request_verbatim
+            )
+
+        assert response.status == 200
+        assert response_verbatim.status == 200
+        assert response.body == self.expected_http_proxy_quoted_request_body
+        assert response_verbatim.body == self.expected_http_proxy_verbatim_request_body

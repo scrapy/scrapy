@@ -58,10 +58,14 @@ def test_request_httprepr_for_non_http_request(r: Request) -> None:
 class TestFingerprint:
     function: staticmethod = staticmethod(fingerprint)
     cache: (
-        WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]]
-        | WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], str]]
+        WeakKeyDictionary[
+            Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
+        ]
+        | WeakKeyDictionary[
+            Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], str]
+        ]
     ) = _fingerprint_cache
-    default_cache_key = (None, False)
+    default_cache_key = (None, False, False)
     known_hashes: tuple[tuple[Request, bytes | str, dict], ...] = (
         (
             Request("http://example.org"),
@@ -129,6 +133,16 @@ class TestFingerprint:
             {"include_headers": ["A"], "keep_fragments": True},
         ),
         (
+            Request("https://example.org/#a", meta={"verbatim_url": True}),
+            b"<\x1a\xeb\x85y\xdeW\xfb\xdcq\x88\xee\xaf\x17\xdd\x0c\xbfH\x18\x1f",
+            {},
+        ),
+        (
+            Request("https://example.org/#a", meta={"verbatim_url": True}),
+            b"<\x1a\xeb\x85y\xdeW\xfb\xdcq\x88\xee\xaf\x17\xdd\x0c\xbfH\x18\x1f",
+            {"keep_fragments": True},
+        ),
+        (
             Request("https://example.org/ab"),
             b"N\xe5l\xb8\x12@iw\xe2\xf3\x1bp\xea\xffp!u\xe2\x8a\xc6",
             {},
@@ -145,6 +159,21 @@ class TestFingerprint:
         r2 = Request("http://www.example.com/query?cat=222&id=111")
         assert self.function(r1) == self.function(r1)
         assert self.function(r1) == self.function(r2)
+
+    def test_verbatim_url(self):
+        raw_url = "https://example.org/?id[]=1"
+        canonical_url = "https://example.org/?id%5B%5D=1"
+
+        request = Request(raw_url)
+        request_verbatim_raw = Request(raw_url, meta={"verbatim_url": True})
+        request_verbatim_canonical = Request(canonical_url, meta={"verbatim_url": True})
+
+        assert request.url == canonical_url
+        assert self.function(request) == self.function(request_verbatim_canonical)
+        assert self.function(request_verbatim_raw) != self.function(request)
+        assert self.function(request_verbatim_raw) != self.function(
+            request_verbatim_canonical
+        )
 
     def test_query_string_key_without_value(self):
         r1 = Request("http://www.example.com/hnnoticiaj1.aspx?78132,199")
@@ -190,6 +219,23 @@ class TestFingerprint:
         assert self.function(r1) == self.function(r1, keep_fragments=True)
         assert self.function(r2) != self.function(r2, keep_fragments=True)
         assert self.function(r1) != self.function(r2, keep_fragments=True)
+
+    def test_verbatim_url_fragment(self):
+        r1 = Request(
+            "http://www.example.com/test.html#fragment1",
+            meta={"verbatim_url": True},
+        )
+        r2 = Request(
+            "http://www.example.com/test.html#fragment2",
+            meta={"verbatim_url": True},
+        )
+
+        assert self.function(r1) != self.function(r2)
+        assert self.function(r1) == self.function(r1, keep_fragments=True)
+        assert self.function(r2) == self.function(r2, keep_fragments=True)
+        assert self.function(r1, keep_fragments=True) != self.function(
+            r2, keep_fragments=True
+        )
 
     def test_method_and_body(self):
         r1 = Request("http://www.example.com")

@@ -103,6 +103,14 @@ class TestRequest:
         r = self.request_class(url="http://www.scrapy.org/blank space")
         assert r.url == "http://www.scrapy.org/blank%20space"
 
+    def test_url_verbatim_meta(self):
+        url = "http://www.scrapy.org/list?[0]=a"
+        r = self.request_class(url=url)
+        assert r.url == "http://www.scrapy.org/list?%5B0%5D=a"
+
+        r = self.request_class(url=url, meta={"verbatim_url": True})
+        assert r.url == url
+
     def test_url_encoding(self):
         r = self.request_class(url="http://www.scrapy.org/price/£")
         assert r.url == "http://www.scrapy.org/price/%C2%A3"
