@@ -20,13 +20,13 @@ following example:
         This function parses a sample response. Some contracts are mingled
         with this docstring.
 
-        @url http://www.amazon.com/s?field-keywords=selfish+gene
+        @url http://www.example.com/s?field-keywords=selfish+gene
         @returns items 1 16
         @returns requests 0 0
         @scrapes Title Author Year Price
         """
 
-This callback is tested using three built-in contracts:
+You can use the following contracts:
 
 .. module:: scrapy.contracts.default
 
@@ -45,6 +45,14 @@ This callback is tested using three built-in contracts:
     ::
 
     @cb_kwargs {"arg1": "value1", "arg2": "value2", ...}
+
+.. class:: MetadataContract
+
+    This contract (``@meta``) sets the :attr:`meta <scrapy.Request.meta>`
+    attribute for the sample request. It must be a valid JSON dictionary.
+    ::
+
+    @meta {"arg1": "value1", "arg2": "value2", ...}
 
 .. class:: ReturnsContract
 

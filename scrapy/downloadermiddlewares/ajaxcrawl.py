@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
+from warnings import warn
 
 from w3lib import html
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response
+from scrapy.utils.url import escape_ajax
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -24,18 +26,24 @@ logger = logging.getLogger(__name__)
 class AjaxCrawlMiddleware:
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
-    For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
     """
 
     def __init__(self, settings: BaseSettings):
         if not settings.getbool("AJAXCRAWL_ENABLED"):
             raise NotConfigured
 
+        warn(
+            "scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware is deprecated"
+            " and will be removed in a future Scrapy version.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
         # XXX: Google parses at least first 100k bytes; scrapy's redirect
         # middleware parses first 4k. 4k turns out to be insufficient
         # for this middleware, and parsing 100k could be slow.
         # We use something in between (32K) by default.
-        self.lookup_bytes: int = settings.getint("AJAXCRAWL_MAXSIZE", 32768)
+        self.lookup_bytes: int = settings.getint("AJAXCRAWL_MAXSIZE")
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -43,7 +51,7 @@ class AjaxCrawlMiddleware:
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if not isinstance(response, HtmlResponse) or response.status != 200:
             return response
 
@@ -57,8 +65,7 @@ class AjaxCrawlMiddleware:
         if not self._has_ajax_crawlable_variant(response):
             return response
 
-        # scrapy already handles #! links properly
-        ajax_crawl_request = request.replace(url=request.url + "#!")
+        ajax_crawl_request = request.replace(url=escape_ajax(request.url + "#!"))
         logger.debug(
             "Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
             {"ajax_crawl_request": ajax_crawl_request, "request": request},
@@ -70,14 +77,12 @@ class AjaxCrawlMiddleware:
 
     def _has_ajax_crawlable_variant(self, response: Response) -> bool:
         """
-        Return True if a page without hash fragment could be "AJAX crawlable"
-        according to https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
+        Return True if a page without hash fragment could be "AJAX crawlable".
         """
         body = response.text[: self.lookup_bytes]
         return _has_ajaxcrawlable_meta(body)
 
 
-# XXX: move it to w3lib?
 _ajax_crawlable_re: re.Pattern[str] = re.compile(
     r'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>'
 )

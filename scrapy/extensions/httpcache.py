@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import gzip
 import logging
-import os
-import pickle  # nosec
+import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from pathlib import Path
 from time import time
-from types import ModuleType
-from typing import IO, TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union, cast
+from typing import IO, TYPE_CHECKING, Any, Concatenate, cast
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
@@ -19,15 +17,16 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.request import RequestFingerprinter
 
 if TYPE_CHECKING:
-    # typing.Concatenate requires Python 3.10
-    from typing_extensions import Concatenate
+    import os
+    from collections.abc import Callable
+    from types import ModuleType
 
     from scrapy.http.request import Request
     from scrapy.settings import BaseSettings
     from scrapy.spiders import Spider
+    from scrapy.utils.request import RequestFingerprinterProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -35,8 +34,8 @@ logger = logging.getLogger(__name__)
 
 class DummyPolicy:
     def __init__(self, settings: BaseSettings):
-        self.ignore_schemes: List[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
-        self.ignore_http_codes: List[int] = [
+        self.ignore_schemes: list[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
+        self.ignore_http_codes: list[int] = [
             int(x) for x in settings.getlist("HTTPCACHE_IGNORE_HTTP_CODES")
         ]
 
@@ -62,18 +61,16 @@ class RFC2616Policy:
 
     def __init__(self, settings: BaseSettings):
         self.always_store: bool = settings.getbool("HTTPCACHE_ALWAYS_STORE")
-        self.ignore_schemes: List[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
+        self.ignore_schemes: list[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
         self._cc_parsed: WeakKeyDictionary[
-            Union[Request, Response], Dict[bytes, Optional[bytes]]
+            Request | Response, dict[bytes, bytes | None]
         ] = WeakKeyDictionary()
-        self.ignore_response_cache_controls: List[bytes] = [
+        self.ignore_response_cache_controls: list[bytes] = [
             to_bytes(cc)
             for cc in settings.getlist("HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS")
         ]
 
-    def _parse_cachecontrol(
-        self, r: Union[Request, Response]
-    ) -> Dict[bytes, Optional[bytes]]:
+    def _parse_cachecontrol(self, r: Request | Response) -> dict[bytes, bytes | None]:
         if r not in self._cc_parsed:
             cch = r.headers.get(b"Cache-Control", b"")
             assert cch is not None
@@ -89,10 +86,7 @@ class RFC2616Policy:
             return False
         cc = self._parse_cachecontrol(request)
         # obey user-agent directive "Cache-Control: no-store"
-        if b"no-store" in cc:
-            return False
-        # Any other is eligible for caching
-        return True
+        return b"no-store" not in cc
 
     def should_cache_response(self, response: Response, request: Request) -> bool:
         # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
@@ -112,10 +106,10 @@ class RFC2616Policy:
         if b"max-age" in cc or b"Expires" in response.headers:
             return True
         # Firefox fallbacks this statuses to one year expiration if none is set
-        if response.status in (300, 301, 308):
+        if response.status in {300, 301, 308}:
             return True
         # Other statuses without expiration requires at least one validator
-        if response.status in (200, 203, 401):
+        if response.status in {200, 203, 401}:
             return b"Last-Modified" in response.headers or b"ETag" in response.headers
         # Any other is probably not eligible for caching
         # Makes no sense to cache responses that does not contain expiration
@@ -189,7 +183,7 @@ class RFC2616Policy:
         if b"ETag" in cachedresponse.headers:
             request.headers[b"If-None-Match"] = cachedresponse.headers[b"ETag"]
 
-    def _get_max_age(self, cc: Dict[bytes, Optional[bytes]]) -> Optional[int]:
+    def _get_max_age(self, cc: dict[bytes, bytes | None]) -> int | None:
         try:
             return max(0, int(cc[b"max-age"]))  # type: ignore[arg-type]
         except (KeyError, ValueError):
@@ -222,7 +216,7 @@ class RFC2616Policy:
             return (date - lastmodified) / 10
 
         # This request can be cached indefinitely
-        if response.status in (300, 301, 308):
+        if response.status in {300, 301, 308}:
             return self.MAXAGE
 
         # Insufficient information to compute freshness lifetime
@@ -268,12 +262,14 @@ class DbmCacheStorage:
         )
 
         assert spider.crawler.request_fingerprinter
-        self._fingerprinter: RequestFingerprinter = spider.crawler.request_fingerprinter
+        self._fingerprinter: RequestFingerprinterProtocol = (
+            spider.crawler.request_fingerprinter
+        )
 
     def close_spider(self, spider: Spider) -> None:
         self.db.close()
 
-    def retrieve_response(self, spider: Spider, request: Request) -> Optional[Response]:
+    def retrieve_response(self, spider: Spider, request: Request) -> Response | None:
         data = self._read_data(spider, request)
         if data is None:
             return None  # not cached
@@ -282,8 +278,7 @@ class DbmCacheStorage:
         headers = Headers(data["headers"])
         body = data["body"]
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+        return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
@@ -298,7 +293,7 @@ class DbmCacheStorage:
         self.db[f"{key}_data"] = pickle.dumps(data, protocol=4)
         self.db[f"{key}_time"] = str(time())
 
-    def _read_data(self, spider: Spider, request: Request) -> Optional[Dict[str, Any]]:
+    def _read_data(self, spider: Spider, request: Request) -> dict[str, Any] | None:
         key = self._fingerprinter.fingerprint(request).hex()
         db = self.db
         tkey = f"{key}_time"
@@ -309,7 +304,7 @@ class DbmCacheStorage:
         if 0 < self.expiration_secs < time() - float(ts):
             return None  # expired
 
-        return cast(Dict[str, Any], pickle.loads(db[f"{key}_data"]))  # nosec
+        return cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
 
 
 class FilesystemCacheStorage:
@@ -318,9 +313,7 @@ class FilesystemCacheStorage:
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
         # https://github.com/python/mypy/issues/10740
-        self._open: Callable[
-            Concatenate[Union[str, os.PathLike], str, ...], IO[bytes]
-        ] = (
+        self._open: Callable[Concatenate[str | os.PathLike, str, ...], IO[bytes]] = (
             gzip.open if self.use_gzip else open  # type: ignore[assignment]
         )
 
@@ -337,7 +330,7 @@ class FilesystemCacheStorage:
     def close_spider(self, spider: Spider) -> None:
         pass
 
-    def retrieve_response(self, spider: Spider, request: Request) -> Optional[Response]:
+    def retrieve_response(self, spider: Spider, request: Request) -> Response | None:
         """Return response if present in cache, or None otherwise."""
         metadata = self._read_meta(spider, request)
         if metadata is None:
@@ -351,8 +344,7 @@ class FilesystemCacheStorage:
         status = metadata["status"]
         headers = Headers(headers_raw_to_dict(rawheaders))
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+        return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
@@ -385,7 +377,7 @@ class FilesystemCacheStorage:
         key = self._fingerprinter.fingerprint(request).hex()
         return str(Path(self.cachedir, spider.name, key[0:2], key))
 
-    def _read_meta(self, spider: Spider, request: Request) -> Optional[Dict[str, Any]]:
+    def _read_meta(self, spider: Spider, request: Request) -> dict[str, Any] | None:
         rpath = Path(self._get_request_path(spider, request))
         metapath = rpath / "pickled_meta"
         if not metapath.exists():
@@ -394,10 +386,10 @@ class FilesystemCacheStorage:
         if 0 < self.expiration_secs < time() - mtime:
             return None  # expired
         with self._open(metapath, "rb") as f:
-            return cast(Dict[str, Any], pickle.load(f))  # nosec
+            return cast("dict[str, Any]", pickle.load(f))  # noqa: S301
 
 
-def parse_cachecontrol(header: bytes) -> Dict[bytes, Optional[bytes]]:
+def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:
     """Parse Cache-Control header
 
     https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
@@ -417,7 +409,7 @@ def parse_cachecontrol(header: bytes) -> Dict[bytes, Optional[bytes]]:
     return directives
 
 
-def rfc1123_to_epoch(date_str: Union[str, bytes, None]) -> Optional[int]:
+def rfc1123_to_epoch(date_str: str | bytes | None) -> int | None:
     try:
         date_str = to_unicode(date_str, encoding="ascii")  # type: ignore[arg-type]
         return mktime_tz(parsedate_tz(date_str))  # type: ignore[arg-type]

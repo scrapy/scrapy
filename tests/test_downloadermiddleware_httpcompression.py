@@ -2,9 +2,8 @@ from gzip import GzipFile
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
-from unittest import SkipTest, TestCase
-from warnings import catch_warnings
 
+import pytest
 from testfixtures import LogCapture
 from w3lib.encoding import resolve_encoding
 
@@ -12,7 +11,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -24,7 +23,7 @@ SAMPLEDIR = Path(tests_datadir, "compressed")
 
 FORMAT = {
     "gzip": ("html-gzip.bin", "gzip"),
-    "x-gzip": ("html-gzip.bin", "gzip"),
+    "x-gzip": ("html-gzip.bin", "x-gzip"),
     "rawdeflate": ("html-rawdeflate.bin", "deflate"),
     "zlibdeflate": ("html-zlibdeflate.bin", "deflate"),
     "gzip-deflate": ("html-gzip-deflate.bin", "gzip, deflate"),
@@ -51,16 +50,36 @@ FORMAT = {
 }
 
 
-class HttpCompressionTest(TestCase):
-    def setUp(self):
+def _skip_if_no_br() -> None:
+    try:
+        try:
+            import brotli  # noqa: PLC0415
+
+            brotli.Decompressor.can_accept_more_data
+        except (ImportError, AttributeError):
+            import brotlicffi  # noqa: PLC0415
+
+            brotlicffi.Decompressor.can_accept_more_data
+    except (ImportError, AttributeError):
+        pytest.skip("no brotli support")
+
+
+def _skip_if_no_zstd() -> None:
+    try:
+        import zstandard  # noqa: F401,PLC0415
+    except ImportError:
+        pytest.skip("no zstd support (zstandard)")
+
+
+class TestHttpCompression:
+    def setup_method(self):
         self.crawler = get_crawler(Spider)
-        self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
-        self.crawler.stats.open_spider(self.spider)
+        self.crawler.stats.open_spider()
 
     def _getresponse(self, coding):
         if coding not in FORMAT:
-            raise ValueError()
+            raise ValueError
 
         samplefile, contentencoding = FORMAT[coding]
 
@@ -81,27 +100,24 @@ class HttpCompressionTest(TestCase):
         return response
 
     def assertStatsEqual(self, key, value):
-        self.assertEqual(
-            self.crawler.stats.get_value(key, spider=self.spider),
-            value,
-            str(self.crawler.stats.get_stats(self.spider)),
+        assert self.crawler.stats.get_value(key) == value, str(
+            self.crawler.stats.get_stats()
         )
 
     def test_setting_false_compression_enabled(self):
-        self.assertRaises(
-            NotConfigured,
-            HttpCompressionMiddleware.from_crawler,
-            get_crawler(settings_dict={"COMPRESSION_ENABLED": False}),
-        )
+        with pytest.raises(NotConfigured):
+            HttpCompressionMiddleware.from_crawler(
+                get_crawler(settings_dict={"COMPRESSION_ENABLED": False})
+            )
 
     def test_setting_default_compression_enabled(self):
-        self.assertIsInstance(
+        assert isinstance(
             HttpCompressionMiddleware.from_crawler(get_crawler()),
             HttpCompressionMiddleware,
         )
 
     def test_setting_true_compression_enabled(self):
-        self.assertIsInstance(
+        assert isinstance(
             HttpCompressionMiddleware.from_crawler(
                 get_crawler(settings_dict={"COMPRESSION_ENABLED": True})
             ),
@@ -111,17 +127,15 @@ class HttpCompressionTest(TestCase):
     def test_process_request(self):
         request = Request("http://scrapytest.org")
         assert "Accept-Encoding" not in request.headers
-        self.mw.process_request(request, self.spider)
-        self.assertEqual(
-            request.headers.get("Accept-Encoding"), b", ".join(ACCEPTED_ENCODINGS)
-        )
+        self.mw.process_request(request)
+        assert request.headers.get("Accept-Encoding") == b", ".join(ACCEPTED_ENCODINGS)
 
     def test_process_response_gzip(self):
         response = self._getresponse("gzip")
         request = response.request
 
-        self.assertEqual(response.headers["Content-Encoding"], b"gzip")
-        newresponse = self.mw.process_response(request, response, self.spider)
+        assert response.headers["Content-Encoding"] == b"gzip"
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
         assert "Content-Encoding" not in newresponse.headers
@@ -129,36 +143,64 @@ class HttpCompressionTest(TestCase):
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
     def test_process_response_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
+
         response = self._getresponse("br")
         request = response.request
-        self.assertEqual(response.headers["Content-Encoding"], b"br")
-        newresponse = self.mw.process_response(request, response, self.spider)
+        assert response.headers["Content-Encoding"] == b"br"
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
         assert "Content-Encoding" not in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
-    def test_process_response_zstd(self):
+    def test_process_response_br_unsupported(self):
         try:
-            import zstandard  # noqa: F401
+            try:
+                import brotli  # noqa: F401,PLC0415
+
+                pytest.skip("Requires not having brotli support")
+            except ImportError:
+                import brotlicffi  # noqa: F401,PLC0415
+
+                pytest.skip("Requires not having brotli support")
         except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+            pass
+        response = self._getresponse("br")
+        request = response.request
+        assert response.headers["Content-Encoding"] == b"br"
+        with LogCapture(
+            "scrapy.downloadermiddlewares.httpcompression",
+            propagate=False,
+            level=WARNING,
+        ) as log:
+            newresponse = self.mw.process_response(request, response)
+        log.check(
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                "WARNING",
+                (
+                    "HttpCompressionMiddleware cannot decode the response for "
+                    "http://scrapytest.org/ from unsupported encoding(s) 'br'. "
+                    "You need to install brotli or brotlicffi >= 1.2.0 to decode 'br'."
+                ),
+            ),
+        )
+        assert newresponse is not response
+        assert newresponse.headers.getlist("Content-Encoding") == [b"br"]
+
+    def test_process_response_zstd(self):
+        _skip_if_no_zstd()
+
         raw_content = None
         for check_key in FORMAT:
             if not check_key.startswith("zstd-"):
                 continue
             response = self._getresponse(check_key)
             request = response.request
-            self.assertEqual(response.headers["Content-Encoding"], b"zstd")
-            newresponse = self.mw.process_response(request, response, self.spider)
+            assert response.headers["Content-Encoding"] == b"zstd"
+            newresponse = self.mw.process_response(request, response)
             if raw_content is None:
                 raw_content = newresponse.body
             else:
@@ -167,12 +209,42 @@ class HttpCompressionTest(TestCase):
             assert newresponse.body.startswith(b"<!DOCTYPE")
             assert "Content-Encoding" not in newresponse.headers
 
+    def test_process_response_zstd_unsupported(self):
+        try:
+            import zstandard  # noqa: F401,PLC0415
+
+            pytest.skip("Requires not having zstandard support")
+        except ImportError:
+            pass
+        response = self._getresponse("zstd-static-content-size")
+        request = response.request
+        assert response.headers["Content-Encoding"] == b"zstd"
+        with LogCapture(
+            "scrapy.downloadermiddlewares.httpcompression",
+            propagate=False,
+            level=WARNING,
+        ) as log:
+            newresponse = self.mw.process_response(request, response)
+        log.check(
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                "WARNING",
+                (
+                    "HttpCompressionMiddleware cannot decode the response for"
+                    " http://scrapytest.org/ from unsupported encoding(s) 'zstd'."
+                    " You need to install zstandard to decode 'zstd'."
+                ),
+            ),
+        )
+        assert newresponse is not response
+        assert newresponse.headers.getlist("Content-Encoding") == [b"zstd"]
+
     def test_process_response_rawdeflate(self):
         response = self._getresponse("rawdeflate")
         request = response.request
 
-        self.assertEqual(response.headers["Content-Encoding"], b"deflate")
-        newresponse = self.mw.process_response(request, response, self.spider)
+        assert response.headers["Content-Encoding"] == b"deflate"
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
         assert "Content-Encoding" not in newresponse.headers
@@ -183,8 +255,8 @@ class HttpCompressionTest(TestCase):
         response = self._getresponse("zlibdeflate")
         request = response.request
 
-        self.assertEqual(response.headers["Content-Encoding"], b"deflate")
-        newresponse = self.mw.process_response(request, response, self.spider)
+        assert response.headers["Content-Encoding"] == b"deflate"
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
         assert "Content-Encoding" not in newresponse.headers
@@ -196,7 +268,7 @@ class HttpCompressionTest(TestCase):
         request = Request("http://scrapytest.org")
 
         assert not response.headers.get("Content-Encoding")
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is response
         assert newresponse.body.startswith(b"<!DOCTYPE")
         self.assertStatsEqual("httpcompression/response_count", None)
@@ -206,14 +278,14 @@ class HttpCompressionTest(TestCase):
         response = self._getresponse("gzip")
         response.headers["Content-Encoding"] = ["uuencode", "gzip"]
         request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
-        self.assertEqual(newresponse.headers.getlist("Content-Encoding"), [b"uuencode"])
+        assert newresponse.headers.getlist("Content-Encoding") == [b"uuencode"]
 
     def test_multi_compression_single_header(self):
         response = self._getresponse("gzip-deflate")
         request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert "Content-Encoding" not in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
@@ -222,17 +294,30 @@ class HttpCompressionTest(TestCase):
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = [b"gzip, foo, deflate"]
         request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
-        assert newresponse is not response
-        self.assertEqual(
-            newresponse.headers.getlist("Content-Encoding"), [b"gzip", b"foo"]
+        with LogCapture(
+            "scrapy.downloadermiddlewares.httpcompression",
+            propagate=False,
+            level=WARNING,
+        ) as log:
+            newresponse = self.mw.process_response(request, response)
+        log.check(
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                "WARNING",
+                (
+                    "HttpCompressionMiddleware cannot decode the response for"
+                    " http://scrapytest.org/ from unsupported encoding(s) 'gzip,foo'."
+                ),
+            ),
         )
+        assert newresponse is not response
+        assert newresponse.headers.getlist("Content-Encoding") == [b"gzip", b"foo"]
 
     def test_multi_compression_multiple_header(self):
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = ["gzip", "deflate"]
         request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert "Content-Encoding" not in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
@@ -241,17 +326,15 @@ class HttpCompressionTest(TestCase):
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = ["gzip", "foo", "deflate"]
         request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
-        self.assertEqual(
-            newresponse.headers.getlist("Content-Encoding"), [b"gzip", b"foo"]
-        )
+        assert newresponse.headers.getlist("Content-Encoding") == [b"gzip", b"foo"]
 
     def test_multi_compression_single_and_multiple_header(self):
         response = self._getresponse("gzip-deflate-gzip")
         response.headers["Content-Encoding"] = ["gzip", "deflate, gzip"]
         request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert "Content-Encoding" not in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
@@ -260,11 +343,9 @@ class HttpCompressionTest(TestCase):
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = ["gzip", "foo,deflate"]
         request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
-        self.assertEqual(
-            newresponse.headers.getlist("Content-Encoding"), [b"gzip", b"foo"]
-        )
+        assert newresponse.headers.getlist("Content-Encoding") == [b"gzip", b"foo"]
 
     def test_process_response_encoding_inside_body(self):
         headers = {
@@ -284,10 +365,10 @@ class HttpCompressionTest(TestCase):
         )
         request = Request("http://www.example.com/")
 
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert isinstance(newresponse, HtmlResponse)
-        self.assertEqual(newresponse.body, plainbody)
-        self.assertEqual(newresponse.encoding, resolve_encoding("gb2312"))
+        assert newresponse.body == plainbody
+        assert newresponse.encoding == resolve_encoding("gb2312")
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
@@ -309,10 +390,10 @@ class HttpCompressionTest(TestCase):
         )
         request = Request("http://www.example.com/")
 
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert isinstance(newresponse, HtmlResponse)
-        self.assertEqual(newresponse.body, plainbody)
-        self.assertEqual(newresponse.encoding, resolve_encoding("gb2312"))
+        assert newresponse.body == plainbody
+        assert newresponse.encoding == resolve_encoding("gb2312")
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
@@ -332,10 +413,10 @@ class HttpCompressionTest(TestCase):
         )
         request = Request("http://www.example.com/index")
 
-        newresponse = self.mw.process_response(request, response, self.spider)
+        newresponse = self.mw.process_response(request, response)
         assert isinstance(newresponse, respcls)
-        self.assertEqual(newresponse.body, plainbody)
-        self.assertEqual(newresponse.encoding, resolve_encoding("gb2312"))
+        assert newresponse.body == plainbody
+        assert newresponse.encoding == resolve_encoding("gb2312")
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
@@ -344,10 +425,10 @@ class HttpCompressionTest(TestCase):
         response.headers["Content-Type"] = "application/gzip"
         request = response.request
 
-        newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertIsNot(newresponse, response)
-        self.assertTrue(newresponse.body.startswith(b"<!DOCTYPE"))
-        self.assertNotIn("Content-Encoding", newresponse.headers)
+        newresponse = self.mw.process_response(request, response)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" not in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -356,10 +437,10 @@ class HttpCompressionTest(TestCase):
         response.headers["Content-Type"] = "application/octet-stream"
         request = response.request
 
-        newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertIsNot(newresponse, response)
-        self.assertTrue(newresponse.body.startswith(b"<!DOCTYPE"))
-        self.assertNotIn("Content-Encoding", newresponse.headers)
+        newresponse = self.mw.process_response(request, response)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" not in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -368,10 +449,10 @@ class HttpCompressionTest(TestCase):
         response.headers["Content-Type"] = "binary/octet-stream"
         request = response.request
 
-        newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertIsNot(newresponse, response)
-        self.assertTrue(newresponse.body.startswith(b"<!DOCTYPE"))
-        self.assertNotIn("Content-Encoding", newresponse.headers)
+        newresponse = self.mw.process_response(request, response)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" not in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
@@ -416,8 +497,8 @@ class HttpCompressionTest(TestCase):
         )
         request = Request("http://www.example.com/")
 
-        newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertEqual(gunzip(newresponse.body), plainbody)
+        newresponse = self.mw.process_response(request, response)
+        assert gunzip(newresponse.body) == plainbody
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 230)
 
@@ -427,36 +508,27 @@ class HttpCompressionTest(TestCase):
         request = response.request
         request.method = "HEAD"
         response = response.replace(body=None)
-        newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertIs(newresponse, response)
-        self.assertEqual(response.body, b"")
+        newresponse = self.mw.process_response(request, response)
+        assert newresponse is response
+        assert response.body == b""
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
 
     def _test_compression_bomb_setting(self, compression_id):
-        settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
+        settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
         crawler = get_crawler(Spider, settings_dict=settings)
         spider = crawler._create_spider("scrapytest.org")
         mw = HttpCompressionMiddleware.from_crawler(crawler)
         mw.open_spider(spider)
 
-        response = self._getresponse(f"bomb-{compression_id}")
-        self.assertRaises(
-            IgnoreRequest,
-            mw.process_response,
-            response.request,
-            response,
-            spider,
-        )
+        response = self._getresponse(f"bomb-{compression_id}")  # 11_511_612 B
+        with pytest.raises(IgnoreRequest) as exc_info:
+            mw.process_response(response.request, response)
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
     def test_compression_bomb_setting_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
+
         self._test_compression_bomb_setting("br")
 
     def test_compression_bomb_setting_deflate(self):
@@ -466,15 +538,13 @@ class HttpCompressionTest(TestCase):
         self._test_compression_bomb_setting("gzip")
 
     def test_compression_bomb_setting_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
+
         self._test_compression_bomb_setting("zstd")
 
     def _test_compression_bomb_spider_attr(self, compression_id):
         class DownloadMaxSizeSpider(Spider):
-            download_maxsize = 10_000_000
+            download_maxsize = 1_000_000
 
         crawler = get_crawler(DownloadMaxSizeSpider)
         spider = crawler._create_spider("scrapytest.org")
@@ -482,35 +552,28 @@ class HttpCompressionTest(TestCase):
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        self.assertRaises(
-            IgnoreRequest,
-            mw.process_response,
-            response.request,
-            response,
-            spider,
-        )
+        with pytest.raises(IgnoreRequest) as exc_info:
+            mw.process_response(response.request, response)
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
+
         self._test_compression_bomb_spider_attr("br")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_deflate(self):
         self._test_compression_bomb_spider_attr("deflate")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_gzip(self):
         self._test_compression_bomb_spider_attr("gzip")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
+
         self._test_compression_bomb_spider_attr("zstd")
 
     def _test_compression_bomb_request_meta(self, compression_id):
@@ -520,23 +583,14 @@ class HttpCompressionTest(TestCase):
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        response.meta["download_maxsize"] = 10_000_000
-        self.assertRaises(
-            IgnoreRequest,
-            mw.process_response,
-            response.request,
-            response,
-            spider,
-        )
+        response.meta["download_maxsize"] = 1_000_000
+        with pytest.raises(IgnoreRequest) as exc_info:
+            mw.process_response(response.request, response)
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
     def test_compression_bomb_request_meta_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
+
         self._test_compression_bomb_request_meta("br")
 
     def test_compression_bomb_request_meta_deflate(self):
@@ -546,10 +600,8 @@ class HttpCompressionTest(TestCase):
         self._test_compression_bomb_request_meta("gzip")
 
     def test_compression_bomb_request_meta_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
+
         self._test_compression_bomb_request_meta("zstd")
 
     def _test_download_warnsize_setting(self, compression_id):
@@ -565,7 +617,7 @@ class HttpCompressionTest(TestCase):
             propagate=False,
             level=WARNING,
         ) as log:
-            mw.process_response(response.request, response, spider)
+            mw.process_response(response.request, response)
         log.check(
             (
                 "scrapy.downloadermiddlewares.httpcompression",
@@ -579,13 +631,8 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_download_warnsize_setting_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
+
         self._test_download_warnsize_setting("br")
 
     def test_download_warnsize_setting_deflate(self):
@@ -595,10 +642,8 @@ class HttpCompressionTest(TestCase):
         self._test_download_warnsize_setting("gzip")
 
     def test_download_warnsize_setting_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
+
         self._test_download_warnsize_setting("zstd")
 
     def _test_download_warnsize_spider_attr(self, compression_id):
@@ -616,7 +661,7 @@ class HttpCompressionTest(TestCase):
             propagate=False,
             level=WARNING,
         ) as log:
-            mw.process_response(response.request, response, spider)
+            mw.process_response(response.request, response)
         log.check(
             (
                 "scrapy.downloadermiddlewares.httpcompression",
@@ -629,27 +674,24 @@ class HttpCompressionTest(TestCase):
             ),
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
+
         self._test_download_warnsize_spider_attr("br")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_deflate(self):
         self._test_download_warnsize_spider_attr("deflate")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_gzip(self):
         self._test_download_warnsize_spider_attr("gzip")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
+
         self._test_download_warnsize_spider_attr("zstd")
 
     def _test_download_warnsize_request_meta(self, compression_id):
@@ -665,7 +707,7 @@ class HttpCompressionTest(TestCase):
             propagate=False,
             level=WARNING,
         ) as log:
-            mw.process_response(response.request, response, spider)
+            mw.process_response(response.request, response)
         log.check(
             (
                 "scrapy.downloadermiddlewares.httpcompression",
@@ -679,13 +721,8 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_download_warnsize_request_meta_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
+
         self._test_download_warnsize_request_meta("br")
 
     def test_download_warnsize_request_meta_deflate(self):
@@ -695,34 +732,37 @@ class HttpCompressionTest(TestCase):
         self._test_download_warnsize_request_meta("gzip")
 
     def test_download_warnsize_request_meta_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
+
         self._test_download_warnsize_request_meta("zstd")
 
-
-class HttpCompressionSubclassTest(TestCase):
-    def test_init_missing_stats(self):
-        class HttpCompressionMiddlewareSubclass(HttpCompressionMiddleware):
-            def __init__(self):
-                super().__init__()
-
+    def _get_truncated_response(self, compression_id):
         crawler = get_crawler(Spider)
-        with catch_warnings(record=True) as caught_warnings:
-            HttpCompressionMiddlewareSubclass.from_crawler(crawler)
-        messages = tuple(
-            str(warning.message)
-            for warning in caught_warnings
-            if warning.category is ScrapyDeprecationWarning
-        )
-        self.assertEqual(
-            messages,
-            (
-                (
-                    "HttpCompressionMiddleware subclasses must either modify "
-                    "their '__init__' method to support a 'crawler' parameter "
-                    "or reimplement their 'from_crawler' method."
-                ),
-            ),
-        )
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+        response = self._getresponse(compression_id)
+        truncated_body = response.body[: len(response.body) // 2]
+        response = response.replace(body=truncated_body)
+        return mw.process_response(response.request, response)
+
+    def test_process_truncated_response_br(self):
+        _skip_if_no_br()
+        resp = self._get_truncated_response("br")
+        assert resp.body.startswith(b"<!DOCTYPE")
+
+    def test_process_truncated_response_zlibdeflate(self):
+        resp = self._get_truncated_response("zlibdeflate")
+        assert resp.body.startswith(b"<!DOCTYPE")
+
+    def test_process_truncated_response_gzip(self):
+        resp = self._get_truncated_response("gzip")
+        assert resp.body.startswith(b"<!DOCTYPE")
+
+    def test_process_truncated_response_zstd(self):
+        _skip_if_no_zstd()
+        for check_key in FORMAT:
+            if not check_key.startswith("zstd-"):
+                continue
+            resp = self._get_truncated_response(check_key)
+            assert len(resp.body) == 0

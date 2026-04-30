@@ -1,26 +1,62 @@
-import asyncio
-import sys
+import scrapy
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.reactor import (
+    install_reactor,
+    is_asyncio_reactor_installed,
+    is_reactor_installed,
+)
 
-from twisted.internet import asyncioreactor
+if is_reactor_installed():
+    raise RuntimeError(
+        "Reactor already installed before is_asyncio_reactor_installed()."
+    )
 
-if sys.version_info >= (3, 8) and sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-asyncioreactor.install(asyncio.get_event_loop())
+try:
+    is_asyncio_reactor_installed()
+except RuntimeError:
+    pass
+else:
+    raise RuntimeError("is_asyncio_reactor_installed() did not raise RuntimeError.")
 
-import scrapy  # noqa: E402
-from scrapy.crawler import CrawlerProcess  # noqa: E402
+try:
+    is_asyncio_available()
+except RuntimeError:
+    pass
+else:
+    raise RuntimeError("is_asyncio_available() did not raise RuntimeError.")
+
+if is_reactor_installed():
+    raise RuntimeError(
+        "Reactor already installed after is_asyncio_reactor_installed()."
+    )
+
+install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+
+if not is_asyncio_reactor_installed():
+    raise RuntimeError("Wrong reactor installed after install_reactor().")
+
+
+class ReactorCheckExtension:
+    def __init__(self):
+        if not is_asyncio_reactor_installed():
+            raise RuntimeError("ReactorCheckExtension requires the asyncio reactor.")
+        if not is_asyncio_available():
+            raise RuntimeError("ReactorCheckExtension requires asyncio support.")
 
 
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
-    def start_requests(self):
-        return []
+    async def start(self):
+        return
+        yield
 
 
 process = CrawlerProcess(
     settings={
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+        "EXTENSIONS": {ReactorCheckExtension: 0},
     }
 )
 process.crawl(NoRequestsSpider)

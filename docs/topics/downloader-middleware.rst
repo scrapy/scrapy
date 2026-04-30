@@ -61,26 +61,23 @@ particular setting. See each middleware documentation for more info.
 Writing your own downloader middleware
 ======================================
 
-Each downloader middleware is a Python class that defines one or more of the
-methods defined below.
-
-The main entry point is the ``from_crawler`` class method, which receives a
-:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
-object gives you access, for example, to the :ref:`settings <topics-settings>`.
+Each downloader middleware is a :ref:`component <topics-components>` that
+defines one or more of these methods:
 
 .. module:: scrapy.downloadermiddlewares
 
 .. class:: DownloaderMiddleware
 
-   .. note::  Any of the downloader middleware methods may also return a deferred.
+   .. note::  Any of the downloader middleware methods may be defined as a
+        coroutine function (``async def``).
 
-   .. method:: process_request(request, spider)
+   .. method:: process_request(request)
 
       This method is called for each request that goes through the download
       middleware.
 
       :meth:`process_request` should either: return ``None``, return a
-      :class:`~scrapy.Response` object, return a :class:`~scrapy.http.Request`
+      :class:`~scrapy.http.Response` object, return a :class:`~scrapy.Request`
       object, or raise :exc:`~scrapy.exceptions.IgnoreRequest`.
 
       If it returns ``None``, Scrapy will continue processing this request, executing all
@@ -106,10 +103,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       :param request: the request being processed
       :type request: :class:`~scrapy.Request` object
 
-      :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.Spider` object
-
-   .. method:: process_response(request, response, spider)
+   .. method:: process_response(request, response)
 
       :meth:`process_response` should either: return a :class:`~scrapy.http.Response`
       object, return a :class:`~scrapy.Request` object or
@@ -133,14 +127,12 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       :param response: the response being processed
       :type response: :class:`~scrapy.http.Response` object
 
-      :param spider: the spider for which this response is intended
-      :type spider: :class:`~scrapy.Spider` object
+   .. method:: process_exception(request, exception)
 
-   .. method:: process_exception(request, exception, spider)
-
-      Scrapy calls :meth:`process_exception` when a download handler
-      or a :meth:`process_request` (from a downloader middleware) raises an
-      exception (including an :exc:`~scrapy.exceptions.IgnoreRequest` exception)
+      Scrapy calls :meth:`process_exception` when a :ref:`download handler
+      <topics-download-handlers>` or a :meth:`process_request` (from a
+      downloader middleware) raises an exception (including an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception).
 
       :meth:`process_exception` should return: either ``None``,
       a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
@@ -163,20 +155,6 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
       :param exception: the raised exception
       :type exception: an ``Exception`` object
-
-      :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.Spider` object
-
-   .. method:: from_crawler(cls, crawler)
-
-      If present, this classmethod is called to create a middleware instance
-      from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-      of the middleware. Crawler object provides access to all Scrapy core
-      components like settings and signals; it is a way for middleware to
-      access them and hook its functionality into Scrapy.
-
-      :param crawler: crawler that uses this middleware
-      :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 .. _topics-downloader-middleware-ref:
 
@@ -313,13 +291,12 @@ DownloadTimeoutMiddleware
 .. class:: DownloadTimeoutMiddleware
 
     This middleware sets the download timeout for requests specified in the
-    :setting:`DOWNLOAD_TIMEOUT` setting or :attr:`download_timeout`
-    spider attribute.
+    :setting:`DOWNLOAD_TIMEOUT` setting.
 
 .. note::
 
-    You can also set download timeout per-request using
-    :reqmeta:`download_timeout` Request.meta key; this is supported
+    You can also set download timeout per-request using the
+    :reqmeta:`download_timeout` :attr:`.Request.meta` key; this is supported
     even when DownloadTimeoutMiddleware is disabled.
 
 HttpAuthMiddleware
@@ -749,7 +726,7 @@ HttpProxyMiddleware
 .. class:: HttpProxyMiddleware
 
    This middleware sets the HTTP proxy to use for requests, by setting the
-   ``proxy`` meta value for :class:`~scrapy.Request` objects.
+   :reqmeta:`proxy` meta value for :class:`~scrapy.Request` objects.
 
    Like the Python standard library module :mod:`urllib.request`, it obeys
    the following environment variables:
@@ -758,10 +735,37 @@ HttpProxyMiddleware
    * ``https_proxy``
    * ``no_proxy``
 
-   You can also set the meta key ``proxy`` per-request, to a value like
+   You can also set the meta key :reqmeta:`proxy` per-request, to a value like
    ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
+
+.. note::
+
+    Handling of this meta key needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. It's currently unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+
+HttpProxyMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: HTTPPROXY_ENABLED
+.. setting:: HTTPPROXY_AUTH_ENCODING
+
+HTTPPROXY_ENABLED
+^^^^^^^^^^^^^^^^^
+
+Default: ``True``
+
+Whether or not to enable the :class:`HttpProxyMiddleware`.
+
+HTTPPROXY_AUTH_ENCODING
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``"latin-1"``
+
+The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 
 OffsiteMiddleware
 -----------------
@@ -797,9 +801,12 @@ OffsiteMiddleware
    :attr:`~scrapy.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
-   If the request has the :attr:`~scrapy.Request.dont_filter` attribute
-   set, the offsite middleware will allow the request even if its domain is not
-   listed in allowed domains.
+   .. reqmeta:: allow_offsite
+
+   If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
+   ``True`` or :attr:`Request.meta` has ``allow_offsite`` set to ``True``, then
+   the OffsiteMiddleware will allow the request even if its domain is not listed
+   in allowed domains.
 
 RedirectMiddleware
 ------------------
@@ -876,7 +883,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
-After this maximum, the request's response is returned as is.
+If maximum redirections are exceeded, the request is aborted and ignored.
 
 MetaRefreshMiddleware
 ---------------------
@@ -918,17 +925,9 @@ Default: ``[]``
 
 Meta tags within these tags are ignored.
 
-.. versionchanged:: 2.0
-   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``["script", "noscript"]`` to ``[]``.
-
 .. versionchanged:: 2.11.2
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
    ``[]`` to ``["noscript"]``.
-
-.. versionchanged:: VERSION
-   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``[]`` to ``['noscript']``.
 
 .. setting:: METAREFRESH_MAXDELAY
 
@@ -1021,15 +1020,14 @@ RETRY_EXCEPTIONS
 Default::
 
     [
-        'twisted.internet.defer.TimeoutError',
-        'twisted.internet.error.TimeoutError',
-        'twisted.internet.error.DNSLookupError',
-        'twisted.internet.error.ConnectionRefusedError',
+        'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.DownloadConnectionRefusedError',
+        'scrapy.exceptions.DownloadFailedError',
+        'scrapy.exceptions.DownloadTimeoutError',
+        'scrapy.exceptions.ResponseDataLossError',
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
-        'twisted.internet.error.TCPTimedOutError',
-        'twisted.web.client.ResponseFailed',
         IOError,
         'scrapy.core.downloader.handlers.http11.TunnelError',
     ]
@@ -1086,7 +1084,6 @@ RobotsTxtMiddleware
     * :ref:`Protego <protego-parser>` (default)
     * :ref:`RobotFileParser <python-robotfileparser>`
     * :ref:`Robotexclusionrulesparser <rerp-parser>`
-    * :ref:`Reppy <reppy-parser>` (deprecated)
 
     You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
     setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
@@ -1106,7 +1103,7 @@ Parsers vary in several aspects:
 
 * Support for wildcard matching
 
-* Usage of `length based rule <https://developers.google.com/search/reference/robots_txt#order-of-precedence-for-group-member-lines>`_:
+* Usage of `length based rule <https://developers.google.com/crawling/docs/robots-txt/robots-txt-spec#order-of-precedence-for-rules>`_:
   in particular for ``Allow`` and ``Disallow`` directives, where the most
   specific rule based on the length of the path trumps the less specific
   (shorter) rule
@@ -1124,7 +1121,7 @@ Based on `Protego <https://github.com/scrapy/protego>`_:
 * implemented in Python
 
 * is compliant with `Google's Robots.txt Specification
-  <https://developers.google.com/search/reference/robots_txt>`_
+  <https://developers.google.com/crawling/docs/robots-txt/robots-txt-spec>`_
 
 * supports wildcard matching
 
@@ -1154,43 +1151,12 @@ In order to use this parser, set:
 
 * :setting:`ROBOTSTXT_PARSER` to ``scrapy.robotstxt.PythonRobotParser``
 
-.. _reppy-parser:
-
-Reppy parser
-~~~~~~~~~~~~
-
-Based on `Reppy <https://github.com/seomoz/reppy/>`_:
-
-* is a Python wrapper around `Robots Exclusion Protocol Parser for C++
-  <https://github.com/seomoz/rep-cpp>`_
-
-* is compliant with `Martijn Koster's 1996 draft specification
-  <https://www.robotstxt.org/norobots-rfc.txt>`_
-
-* supports wildcard matching
-
-* uses the length based rule
-
-Native implementation, provides better speed than Protego.
-
-In order to use this parser:
-
-* Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
-
-    .. warning:: `Upstream issue #122
-        <https://github.com/seomoz/reppy/issues/122>`_ prevents reppy usage in Python 3.9+.
-        Because of this the Reppy parser is deprecated.
-
-* Set :setting:`ROBOTSTXT_PARSER` setting to
-  ``scrapy.robotstxt.ReppyRobotParser``
-
-
 .. _rerp-parser:
 
 Robotexclusionrulesparser
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
+Based on `Robotexclusionrulesparser <https://pypi.org/project/robotexclusionrulesparser/>`_:
 
 * implemented in Python
 
@@ -1203,7 +1169,7 @@ Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 
 In order to use this parser:
 
-* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+* Install ``Robotexclusionrulesparser`` by running
   ``pip install robotexclusionrulesparser``
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
@@ -1248,64 +1214,8 @@ UserAgentMiddleware
 
 .. class:: UserAgentMiddleware
 
-   Middleware that allows spiders to override the default user agent.
+   Middleware that sets the ``User-Agent`` header.
 
-   In order for a spider to override the default user agent, its ``user_agent``
-   attribute must be set.
-
-.. _ajaxcrawl-middleware:
-
-AjaxCrawlMiddleware
--------------------
-
-.. module:: scrapy.downloadermiddlewares.ajaxcrawl
-
-.. class:: AjaxCrawlMiddleware
-
-   Middleware that finds 'AJAX crawlable' page variants based
-   on meta-fragment html tag. See
-   https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
-   for more info.
-
-   .. note::
-
-       Scrapy finds 'AJAX crawlable' pages for URLs like
-       ``'http://example.com/!#foo=bar'`` even without this middleware.
-       AjaxCrawlMiddleware is necessary when URL doesn't contain ``'!#'``.
-       This is often a case for 'index' or 'main' website pages.
-
-AjaxCrawlMiddleware Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. setting:: AJAXCRAWL_ENABLED
-
-AJAXCRAWL_ENABLED
-^^^^^^^^^^^^^^^^^
-
-Default: ``False``
-
-Whether the AjaxCrawlMiddleware will be enabled. You may want to
-enable it for :ref:`broad crawls <topics-broad-crawls>`.
-
-HttpProxyMiddleware settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. setting:: HTTPPROXY_ENABLED
-.. setting:: HTTPPROXY_AUTH_ENCODING
-
-HTTPPROXY_ENABLED
-^^^^^^^^^^^^^^^^^
-
-Default: ``True``
-
-Whether or not to enable the :class:`HttpProxyMiddleware`.
-
-HTTPPROXY_AUTH_ENCODING
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Default: ``"latin-1"``
-
-The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
-
+   The header value is taken from the :setting:`USER_AGENT` setting.
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm

@@ -1,5 +1,10 @@
 name: Checks
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
+  pull_request:
 
 concurrency:
   group: ${{github.workflow}}-${{ github.ref }}
@@ -12,27 +17,31 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: "3.12"
+        - python-version: "3.13"
           env:
             TOXENV: pylint
-        - python-version: 3.8
+        - python-version: "3.10"
           env:
             TOXENV: typing
-        - python-version: 3.8
+        - python-version: "3.10"
           env:
             TOXENV: typing-tests
-        - python-version: "3.12"  # Keep in sync with .readthedocs.yml
+        # Keep in sync with pyproject.toml tool.sphinx-scrapy.python-version.
+        - python-version: "3.13"
           env:
             TOXENV: docs
-        - python-version: "3.12"
+        - python-version: "3.13"
+          env:
+            TOXENV: docs-tests
+        - python-version: "3.13"
           env:
             TOXENV: twinecheck
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -45,5 +54,5 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - uses: pre-commit/action@v3.0.1

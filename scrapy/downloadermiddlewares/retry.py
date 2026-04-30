@@ -7,17 +7,16 @@ RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
 
 Failed pages are collected on the scraping process and rescheduled at the end,
-once the spider has finished crawling all regular (non failed) pages.
+once the spider has finished crawling all regular (non-failed) pages.
 """
 
 from __future__ import annotations
 
-import warnings
 from logging import Logger, getLogger
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING
 
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.settings import BaseSettings, Settings
+from scrapy.exceptions import NotConfigured
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 from scrapy.utils.response import response_status_message
@@ -26,46 +25,26 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    import scrapy
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.http.request import Request
-    from scrapy.spiders import Spider
+    from scrapy.settings import BaseSettings
 
 
 retry_logger = getLogger(__name__)
 
 
-def backwards_compatibility_getattr(self: Any, name: str) -> Tuple[Any, ...]:
-    if name == "EXCEPTIONS_TO_RETRY":
-        warnings.warn(
-            "Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
-            "Use the RETRY_EXCEPTIONS setting instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return tuple(
-            load_object(x) if isinstance(x, str) else x
-            for x in Settings().getlist("RETRY_EXCEPTIONS")
-        )
-    raise AttributeError(
-        f"{self.__class__.__name__!r} object has no attribute {name!r}"
-    )
-
-
-class BackwardsCompatibilityMetaclass(type):
-    __getattr__ = backwards_compatibility_getattr
-
-
 def get_retry_request(
     request: Request,
     *,
-    spider: Spider,
-    reason: Union[str, Exception, Type[Exception]] = "unspecified",
-    max_retry_times: Optional[int] = None,
-    priority_adjust: Optional[int] = None,
+    spider: scrapy.Spider,
+    reason: str | Exception | type[Exception] = "unspecified",
+    max_retry_times: int | None = None,
+    priority_adjust: int | None = None,
     logger: Logger = retry_logger,
     stats_base_key: str = "retry",
-) -> Optional[Request]:
+) -> Request | None:
     """
     Returns a new :class:`~scrapy.Request` object to retry the specified
     request, or ``None`` if retries of the specified request have been
@@ -137,67 +116,70 @@ def get_retry_request(
         return new_request
     stats.inc_value(f"{stats_base_key}/max_reached")
     logger.error(
-        "Gave up retrying %(request)s (failed %(retry_times)d times): " "%(reason)s",
+        "Gave up retrying %(request)s (failed %(retry_times)d times): %(reason)s",
         {"request": request, "retry_times": retry_times, "reason": reason},
         extra={"spider": spider},
     )
     return None
 
 
-class RetryMiddleware(metaclass=BackwardsCompatibilityMetaclass):
+class RetryMiddleware:
+    crawler: Crawler
+
     def __init__(self, settings: BaseSettings):
         if not settings.getbool("RETRY_ENABLED"):
             raise NotConfigured
         self.max_retry_times = settings.getint("RETRY_TIMES")
         self.retry_http_codes = {int(x) for x in settings.getlist("RETRY_HTTP_CODES")}
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
-
-        try:
-            self.exceptions_to_retry = self.__getattribute__("EXCEPTIONS_TO_RETRY")
-        except AttributeError:
-            # If EXCEPTIONS_TO_RETRY is not "overridden"
-            self.exceptions_to_retry = tuple(
-                load_object(x) if isinstance(x, str) else x
-                for x in settings.getlist("RETRY_EXCEPTIONS")
-            )
+        self.exceptions_to_retry = tuple(
+            load_object(x) if isinstance(x, str) else x
+            for x in settings.getlist("RETRY_EXCEPTIONS")
+        )
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler.settings)
+        o = cls(crawler.settings)
+        o.crawler = crawler
+        return o
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+        self,
+        request: Request,
+        response: Response,
+        spider: scrapy.Spider | None = None,
+    ) -> Request | Response:
         if request.meta.get("dont_retry", False):
             return response
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
-            return self._retry(request, reason, spider) or response
+            return self._retry(request, reason) or response
         return response
 
+    @_warn_spider_arg
     def process_exception(
-        self, request: Request, exception: Exception, spider: Spider
-    ) -> Union[Request, Response, None]:
+        self,
+        request: Request,
+        exception: Exception,
+        spider: scrapy.Spider | None = None,
+    ) -> Request | Response | None:
         if isinstance(exception, self.exceptions_to_retry) and not request.meta.get(
             "dont_retry", False
         ):
-            return self._retry(request, exception, spider)
+            return self._retry(request, exception)
         return None
 
     def _retry(
-        self,
-        request: Request,
-        reason: Union[str, Exception, Type[Exception]],
-        spider: Spider,
-    ) -> Optional[Request]:
+        self, request: Request, reason: str | Exception | type[Exception]
+    ) -> Request | None:
         max_retry_times = request.meta.get("max_retry_times", self.max_retry_times)
         priority_adjust = request.meta.get("priority_adjust", self.priority_adjust)
+        assert self.crawler.spider
         return get_retry_request(
             request,
             reason=reason,
-            spider=spider,
+            spider=self.crawler.spider,
             max_retry_times=max_retry_times,
             priority_adjust=priority_adjust,
         )
-
-    __getattr__ = backwards_compatibility_getattr

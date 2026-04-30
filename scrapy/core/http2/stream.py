@@ -3,21 +3,26 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
-from twisted.internet.defer import CancelledError, Deferred
+from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
+from scrapy.exceptions import DownloadCancelledError
 from scrapy.http.headers import Headers
-from scrapy.responsetypes import responsetypes
+from scrapy.utils._download_handlers import (
+    get_maxsize_msg,
+    get_warnsize_msg,
+    make_response,
+)
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
-    from hpack import HeaderTuple
+    from collections.abc import Sequence
 
     from scrapy.core.http2.protocol import H2ClientProtocol
     from scrapy.http import Request, Response
@@ -74,6 +79,9 @@ class StreamCloseReason(Enum):
     # As a result sending this request will the end the connection
     INVALID_HOSTNAME = 7
 
+    # Actual response body size is more than allowed limit
+    MAXSIZE_EXCEEDED_ACTUAL = 8
+
 
 class Stream:
     """Represents a single HTTP/2 Stream.
@@ -113,7 +121,7 @@ class Stream:
 
         # Metadata of an HTTP/2 connection stream
         # initialized when stream is instantiated
-        self.metadata: Dict[str, Any] = {
+        self.metadata: dict[str, Any] = {
             "request_content_length": (
                 0 if self._request.body is None else len(self._request.body)
             ),
@@ -134,7 +142,7 @@ class Stream:
         # Private variable used to build the response
         # this response is then converted to appropriate Response class
         # passed to the response deferred callback
-        self._response: Dict[str, Any] = {
+        self._response: dict[str, Any] = {
             # Data received frame by frame from the server is appended
             # and passed to the response Deferred when completely received.
             "body": BytesIO(),
@@ -142,7 +150,9 @@ class Stream:
             # flow control window
             "flow_controlled_size": 0,
             # Headers received after sending the request
-            "headers": Headers({}),
+            "headers": Headers(),
+            # Response status code
+            "status": None,
         }
 
         def _cancel(_: Any) -> None:
@@ -193,10 +203,10 @@ class Stream:
             url.netloc == str(self._protocol.metadata["uri"].host, "utf-8")
             or url.netloc == str(self._protocol.metadata["uri"].netloc, "utf-8")
             or url.netloc
-            == f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}'
+            == f"{self._protocol.metadata['ip_address']}:{self._protocol.metadata['uri'].port}"
         )
 
-    def _get_request_headers(self) -> List[Tuple[str, str]]:
+    def _get_request_headers(self) -> list[tuple[str, str]]:
         url = urlparse_cached(self._request)
 
         path = url.path
@@ -333,14 +343,16 @@ class Stream:
             self._download_maxsize
             and self._response["flow_controlled_size"] > self._download_maxsize
         ):
-            self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED)
+            self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED_ACTUAL)
             return
 
         if self._log_warnsize:
             self.metadata["reached_warnsize"] = True
-            warning_msg = (
-                f'Received more ({self._response["flow_controlled_size"]}) bytes than download '
-                f"warn size ({self._download_warnsize}) in request {self._request}"
+            warning_msg = get_warnsize_msg(
+                self._response["flow_controlled_size"],
+                self._download_warnsize,
+                self._request,
+                expected=False,
             )
             logger.warning(warning_msg)
 
@@ -349,9 +361,13 @@ class Stream:
             self._response["flow_controlled_size"], self.stream_id
         )
 
-    def receive_headers(self, headers: List[HeaderTuple]) -> None:
+    def receive_headers(self, headers: list[tuple[str, str]]) -> None:
         for name, value in headers:
-            self._response["headers"].appendlist(name, value)
+            if name == ":status":
+                # it's a pseudo-header
+                self._response["status"] = int(value)
+            else:
+                self._response["headers"].appendlist(name, value)
 
         # Check if we exceed the allowed max data size which can be received
         expected_size = int(self._response["headers"].get(b"Content-Length", -1))
@@ -361,9 +377,8 @@ class Stream:
 
         if self._log_warnsize:
             self.metadata["reached_warnsize"] = True
-            warning_msg = (
-                f"Expected response size ({expected_size}) larger than "
-                f"download warn size ({self._download_warnsize}) in request {self._request}"
+            warning_msg = get_warnsize_msg(
+                expected_size, self._download_warnsize, self._request, expected=True
             )
             logger.warning(warning_msg)
 
@@ -382,7 +397,7 @@ class Stream:
     def close(
         self,
         reason: StreamCloseReason,
-        errors: Optional[List[BaseException]] = None,
+        errors: Sequence[BaseException] | None = None,
         from_protocol: bool = False,
     ) -> None:
         """Based on the reason sent we will handle each case."""
@@ -396,7 +411,7 @@ class Stream:
 
         # Have default value of errors as an empty list as
         # some cases can add a list of exceptions
-        errors = errors or []
+        errors = errors or ()
 
         if not from_protocol:
             self._protocol.pop_stream(self.stream_id)
@@ -411,18 +426,23 @@ class Stream:
         # As we immediately cancel the request when maxsize is exceeded while
         # receiving DATA_FRAME's when we have received the headers (not
         # having Content-Length)
-        if reason is StreamCloseReason.MAXSIZE_EXCEEDED:
+        if reason in {
+            StreamCloseReason.MAXSIZE_EXCEEDED,
+            StreamCloseReason.MAXSIZE_EXCEEDED_ACTUAL,
+        }:
             expected_size = int(
                 self._response["headers"].get(
                     b"Content-Length", self._response["flow_controlled_size"]
                 )
             )
-            error_msg = (
-                f"Cancelling download of {self._request.url}: received response "
-                f"size ({expected_size}) larger than download max size ({self._download_maxsize})"
+            error_msg = get_maxsize_msg(
+                expected_size,
+                self._download_maxsize,
+                self._request,
+                expected=reason == StreamCloseReason.MAXSIZE_EXCEEDED,
             )
             logger.error(error_msg)
-            self._deferred_response.errback(CancelledError(error_msg))
+            self._deferred_response.errback(DownloadCancelledError(error_msg))
 
         elif reason is StreamCloseReason.ENDED:
             self._fire_response_deferred()
@@ -437,7 +457,8 @@ class Stream:
 
             # There maybe no :status in headers, we make
             # HTTP Status Code: 499 - Client Closed Request
-            self._response["headers"][":status"] = "499"
+            if self._response["status"] is None:
+                self._response["status"] = 499
             self._fire_response_deferred()
 
         elif reason is StreamCloseReason.RESET:
@@ -445,7 +466,7 @@ class Stream:
                 ResponseFailed(
                     [
                         Failure(
-                            f'Remote peer {self._protocol.metadata["ip_address"]} sent RST_STREAM',
+                            f"Remote peer {self._protocol.metadata['ip_address']} sent RST_STREAM",
                             ProtocolError,
                         )
                     ]
@@ -456,7 +477,7 @@ class Stream:
             self._deferred_response.errback(ResponseFailed(errors))
 
         elif reason is StreamCloseReason.INACTIVE:
-            errors.insert(0, InactiveStreamClosed(self._request))
+            errors = (InactiveStreamClosed(self._request), *errors)
             self._deferred_response.errback(ResponseFailed(errors))
 
         else:
@@ -465,7 +486,7 @@ class Stream:
                 InvalidHostname(
                     self._request,
                     str(self._protocol.metadata["uri"].host, "utf-8"),
-                    f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}',
+                    f"{self._protocol.metadata['ip_address']}:{self._protocol.metadata['uri'].port}",
                 )
             )
 
@@ -474,22 +495,13 @@ class Stream:
         and fires the response deferred callback with the
         generated response instance"""
 
-        body = self._response["body"].getvalue()
-        response_cls = responsetypes.from_args(
-            headers=self._response["headers"],
+        response = make_response(
             url=self._request.url,
-            body=body,
-        )
-
-        response = response_cls(
-            url=self._request.url,
-            status=int(self._response["headers"][":status"]),
+            status=self._response["status"],
             headers=self._response["headers"],
-            body=body,
-            request=self._request,
+            body=self._response["body"].getvalue(),
             certificate=self._protocol.metadata["certificate"],
             ip_address=self._protocol.metadata["ip_address"],
             protocol="h2",
         )
-
         self._deferred_response.callback(response)

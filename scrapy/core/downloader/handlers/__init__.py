@@ -2,29 +2,25 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Optional,
-    Protocol,
-    Type,
-    Union,
-    cast,
-)
-
-from twisted.internet import defer
+import warnings
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import NotConfigured, NotSupported
+from scrapy.exceptions import NotConfigured, NotSupported, ScrapyDeprecationWarning
+from scrapy.utils.defer import (
+    deferred_from_coro,
+    ensure_awaitable,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.python import without_none_values
+from scrapy.utils.python import global_object_name, without_none_values
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from twisted.internet.defer import Deferred
 
     from scrapy.crawler import Crawler
@@ -34,25 +30,36 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# This is the official API but we temporarily support the old deprecated one:
+# * lazy is not mandatory (defaults to True).
+# * download_request() can return a Deferred[Response] instead of a coroutine,
+# and takes a spider argument in this case.
+# * close() can return None or Deferred[None] instead of a coroutine.
+# * close() is not mandatory.
+
+
 class DownloadHandlerProtocol(Protocol):
-    def download_request(
-        self, request: Request, spider: Spider
-    ) -> Deferred[Response]: ...
+    lazy: bool
+
+    async def download_request(self, request: Request) -> Response: ...
+
+    async def close(self) -> None: ...
 
 
 class DownloadHandlers:
     def __init__(self, crawler: Crawler):
         self._crawler: Crawler = crawler
-        self._schemes: Dict[str, Union[str, Callable[..., Any]]] = (
-            {}
-        )  # stores acceptable schemes on instancing
-        self._handlers: Dict[str, DownloadHandlerProtocol] = (
-            {}
-        )  # stores instanced handlers for schemes
-        self._notconfigured: Dict[str, str] = {}  # remembers failed handlers
-        handlers: Dict[str, Union[str, Callable[..., Any]]] = without_none_values(
+        # stores acceptable schemes on instancing
+        self._schemes: dict[str, str | Callable[..., Any]] = {}
+        # stores instanced handlers for schemes
+        self._handlers: dict[str, DownloadHandlerProtocol] = {}
+        # remembers failed handlers
+        self._notconfigured: dict[str, str] = {}
+        # remembers handlers with Deferred-based download_request()
+        self._old_style_handlers: set[str] = set()
+        handlers: dict[str, str | Callable[..., Any]] = without_none_values(
             cast(
-                Dict[str, Union[str, Callable[..., Any]]],
+                "dict[str, str | Callable[..., Any]]",
                 crawler.settings.getwithbase("DOWNLOAD_HANDLERS"),
             )
         )
@@ -62,7 +69,7 @@ class DownloadHandlers:
 
         crawler.signals.connect(self._close, signals.engine_stopped)
 
-    def _get_handler(self, scheme: str) -> Optional[DownloadHandlerProtocol]:
+    def _get_handler(self, scheme: str) -> DownloadHandlerProtocol | None:
         """Lazy-load the downloadhandler for a scheme
         only on the first request for that scheme.
         """
@@ -78,12 +85,21 @@ class DownloadHandlers:
 
     def _load_handler(
         self, scheme: str, skip_lazy: bool = False
-    ) -> Optional[DownloadHandlerProtocol]:
+    ) -> DownloadHandlerProtocol | None:
         path = self._schemes[scheme]
         try:
-            dhcls: Type[DownloadHandlerProtocol] = load_object(path)
-            if skip_lazy and getattr(dhcls, "lazy", True):
-                return None
+            dhcls: type[DownloadHandlerProtocol] = load_object(path)
+            if skip_lazy:
+                if not hasattr(dhcls, "lazy"):
+                    warnings.warn(
+                        f"{global_object_name(dhcls)} doesn't define a 'lazy' attribute."
+                        f" This is deprecated, please add 'lazy = True' (which is the current"
+                        f" default value) to the class definition.",
+                        category=ScrapyDeprecationWarning,
+                        stacklevel=1,
+                    )
+                if getattr(dhcls, "lazy", True):
+                    return None
             dh = build_from_crawler(
                 dhcls,
                 self._crawler,
@@ -100,21 +116,63 @@ class DownloadHandlers:
             )
             self._notconfigured[scheme] = str(ex)
             return None
-        else:
-            self._handlers[scheme] = dh
-            return dh
+        self._handlers[scheme] = dh
+        if not inspect.iscoroutinefunction(dh.download_request):  # pragma: no cover
+            warnings.warn(
+                f"{global_object_name(dh.download_request)} is not a coroutine function."
+                f" This is deprecated, please rewrite it to return a coroutine and remove"
+                f" the 'spider' argument.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=1,
+            )
+            self._old_style_handlers.add(scheme)
+        return dh
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
+    def download_request(
+        self, request: Request, spider: Spider | None = None
+    ) -> Deferred[Response]:  # pragma: no cover
+        warnings.warn(
+            "DownloadHandlers.download_request() is deprecated, use download_request_async() instead",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.download_request_async(request))
+
+    async def download_request_async(self, request: Request) -> Response:
         scheme = urlparse_cached(request).scheme
         handler = self._get_handler(scheme)
         if not handler:
             raise NotSupported(
                 f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
             )
-        return handler.download_request(request, spider)
+        assert self._crawler.spider
+        if scheme in self._old_style_handlers:  # pragma: no cover
+            return await maybe_deferred_to_future(
+                cast(
+                    "Deferred[Response]",
+                    handler.download_request(request, self._crawler.spider),  # type: ignore[call-arg]
+                )
+            )
+        return await handler.download_request(request)
 
-    @defer.inlineCallbacks
-    def _close(self, *_a: Any, **_kw: Any) -> Generator[Deferred[Any], Any, None]:
+    async def _close(self) -> None:
         for dh in self._handlers.values():
-            if hasattr(dh, "close"):
-                yield dh.close()
+            if not hasattr(dh, "close"):  # pragma: no cover
+                warnings.warn(
+                    f"{global_object_name(dh)} doesn't define a close() method."
+                    f" This is deprecated, please add an empty 'async def close()' method.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=1,
+                )
+                continue
+
+            if inspect.iscoroutinefunction(dh.close):
+                await dh.close()
+            else:  # pragma: no cover
+                warnings.warn(
+                    f"{global_object_name(dh.close)} is not a coroutine function."
+                    f" This is deprecated, please rewrite it to return a coroutine.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=1,
+                )
+                await ensure_awaitable(dh.close())

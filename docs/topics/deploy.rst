@@ -54,6 +54,6 @@ just like ``scrapyd-deploy``.
 .. _scrapyd-client: https://github.com/scrapy/scrapyd-client
 .. _scrapyd-deploy documentation: https://scrapyd.readthedocs.io/en/latest/deploy.html
 .. _shub: https://shub.readthedocs.io/en/latest/
-.. _Zyte: https://zyte.com/
+.. _Zyte: https://www.zyte.com/
 .. _Zyte Scrapy Cloud: https://www.zyte.com/scrapy-cloud/
 .. _Zyte Scrapy Cloud documentation: https://docs.zyte.com/scrapy-cloud.html

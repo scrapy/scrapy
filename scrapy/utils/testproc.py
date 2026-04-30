@@ -1,27 +1,40 @@
+# pragma: no file cover
 from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, cast
+import warnings
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from twisted.internet.defer import Deferred
-from twisted.internet.error import ProcessTerminated
 from twisted.internet.protocol import ProcessProtocol
 
+from scrapy.exceptions import ScrapyDeprecationWarning
+
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from twisted.internet.error import ProcessTerminated
     from twisted.python.failure import Failure
 
 
+warnings.warn(
+    "The scrapy.utils.testproc module is deprecated.",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
+
+
 class ProcessTest:
-    command: Optional[str] = None
-    prefix = [sys.executable, "-m", "scrapy.cmdline"]
-    cwd = os.getcwd()  # trial chdirs to temp dir
+    command: str | None = None
+    prefix: ClassVar[list[str]] = [sys.executable, "-m", "scrapy.cmdline"]
+    cwd = os.getcwd()  # trial chdirs to temp dir  # noqa: PTH109
 
     def execute(
         self,
         args: Iterable[str],
         check_code: bool = True,
-        settings: Optional[str] = None,
+        settings: str | None = None,
     ) -> Deferred[TestProcessProtocol]:
         from twisted.internet import reactor
 
@@ -29,22 +42,22 @@ class ProcessTest:
         if settings is not None:
             env["SCRAPY_SETTINGS_MODULE"] = settings
         assert self.command
-        cmd = self.prefix + [self.command] + list(args)
+        cmd = [*self.prefix, self.command, *args]
         pp = TestProcessProtocol()
         pp.deferred.addCallback(self._process_finished, cmd, check_code)
         reactor.spawnProcess(pp, cmd[0], cmd, env=env, path=self.cwd)
         return pp.deferred
 
     def _process_finished(
-        self, pp: TestProcessProtocol, cmd: List[str], check_code: bool
-    ) -> Tuple[int, bytes, bytes]:
+        self, pp: TestProcessProtocol, cmd: list[str], check_code: bool
+    ) -> tuple[int, bytes, bytes]:
         if pp.exitcode and check_code:
             msg = f"process {cmd} exit with code {pp.exitcode}"
             msg += f"\n>>> stdout <<<\n{pp.out.decode()}"
             msg += "\n"
             msg += f"\n>>> stderr <<<\n{pp.err.decode()}"
             raise RuntimeError(msg)
-        return cast(int, pp.exitcode), pp.out, pp.err
+        return cast("int", pp.exitcode), pp.out, pp.err
 
 
 class TestProcessProtocol(ProcessProtocol):
@@ -52,7 +65,7 @@ class TestProcessProtocol(ProcessProtocol):
         self.deferred: Deferred[TestProcessProtocol] = Deferred()
         self.out: bytes = b""
         self.err: bytes = b""
-        self.exitcode: Optional[int] = None
+        self.exitcode: int | None = None
 
     def outReceived(self, data: bytes) -> None:
         self.out += data
@@ -61,5 +74,5 @@ class TestProcessProtocol(ProcessProtocol):
         self.err += data
 
     def processEnded(self, status: Failure) -> None:
-        self.exitcode = cast(ProcessTerminated, status.value).exitCode
+        self.exitcode = cast("ProcessTerminated", status.value).exitCode
         self.deferred.callback(self)

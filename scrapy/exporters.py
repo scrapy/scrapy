@@ -2,15 +2,18 @@
 Item Exporters are used to export/serialize items into different formats.
 """
 
+from __future__ import annotations
+
 import csv
 import marshal
-import pickle  # nosec
+import pickle
 import pprint
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
-from json import JSONEncoder
-from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple, Union
-from xml.sax.saxutils import XMLGenerator  # nosec
-from xml.sax.xmlreader import AttributesImpl  # nosec
+from typing import TYPE_CHECKING, Any
+from xml.sax.saxutils import XMLGenerator
+from xml.sax.xmlreader import AttributesImpl
 
 from itemadapter import ItemAdapter, is_item
 
@@ -18,55 +21,59 @@ from scrapy.item import Field, Item
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
+if TYPE_CHECKING:
+    from json import JSONEncoder
+
 __all__ = [
     "BaseItemExporter",
-    "PprintItemExporter",
-    "PickleItemExporter",
     "CsvItemExporter",
-    "XmlItemExporter",
-    "JsonLinesItemExporter",
     "JsonItemExporter",
+    "JsonLinesItemExporter",
     "MarshalItemExporter",
+    "PickleItemExporter",
+    "PprintItemExporter",
+    "XmlItemExporter",
 ]
 
 
-class BaseItemExporter:
+class BaseItemExporter(ABC):
     def __init__(self, *, dont_fail: bool = False, **kwargs: Any):
-        self._kwargs: Dict[str, Any] = kwargs
+        self._kwargs: dict[str, Any] = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
 
-    def _configure(self, options: Dict[str, Any], dont_fail: bool = False) -> None:
+    def _configure(self, options: dict[str, Any], dont_fail: bool = False) -> None:
         """Configure the exporter by popping options from the ``options`` dict.
         If dont_fail is set, it won't raise an exception on unexpected options
         (useful for using with keyword arguments in subclasses ``__init__`` methods)
         """
-        self.encoding: Optional[str] = options.pop("encoding", None)
-        self.fields_to_export: Union[Mapping[str, str], Iterable[str], None] = (
-            options.pop("fields_to_export", None)
+        self.encoding: str | None = options.pop("encoding", None)
+        self.fields_to_export: Mapping[str, str] | Iterable[str] | None = options.pop(
+            "fields_to_export", None
         )
         self.export_empty_fields: bool = options.pop("export_empty_fields", False)
-        self.indent: Optional[int] = options.pop("indent", None)
+        self.indent: int | None = options.pop("indent", None)
         if not dont_fail and options:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
+    @abstractmethod
     def export_item(self, item: Any) -> None:
         raise NotImplementedError
 
     def serialize_field(
-        self, field: Union[Mapping[str, Any], Field], name: str, value: Any
+        self, field: Mapping[str, Any] | Field, name: str, value: Any
     ) -> Any:
         serializer: Callable[[Any], Any] = field.get("serializer", lambda x: x)
         return serializer(value)
 
-    def start_exporting(self) -> None:
+    def start_exporting(self) -> None:  # noqa: B027
         pass
 
-    def finish_exporting(self) -> None:
+    def finish_exporting(self) -> None:  # noqa: B027
         pass
 
     def _get_serialized_fields(
-        self, item: Any, default_value: Any = None, include_empty: Optional[bool] = None
-    ) -> Iterable[Tuple[str, Any]]:
+        self, item: Any, default_value: Any = None, include_empty: bool | None = None
+    ) -> Iterable[tuple[str, Any]]:
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
         """
@@ -76,10 +83,7 @@ class BaseItemExporter:
             include_empty = self.export_empty_fields
 
         if self.fields_to_export is None:
-            if include_empty:
-                field_iter = item.field_names()
-            else:
-                field_iter = item.keys()
+            field_iter = item.field_names() if include_empty else item.keys()
         elif isinstance(self.fields_to_export, Mapping):
             if include_empty:
                 field_iter = self.fields_to_export.items()
@@ -87,11 +91,10 @@ class BaseItemExporter:
                 field_iter = (
                     (x, y) for x, y in self.fields_to_export.items() if x in item
                 )
+        elif include_empty:
+            field_iter = self.fields_to_export
         else:
-            if include_empty:
-                field_iter = self.fields_to_export
-            else:
-                field_iter = (x for x in self.fields_to_export if x in item)
+            field_iter = (x for x in self.fields_to_export if x in item)
 
         for field_name in field_iter:
             if isinstance(field_name, str):
@@ -224,7 +227,7 @@ class CsvItemExporter(BaseItemExporter):
         file: BytesIO,
         include_headers_line: bool = True,
         join_multivalued: str = ",",
-        errors: Optional[str] = None,
+        errors: str | None = None,
         **kwargs: Any,
     ):
         super().__init__(dont_fail=True, **kwargs)
@@ -244,7 +247,7 @@ class CsvItemExporter(BaseItemExporter):
         self._join_multivalued = join_multivalued
 
     def serialize_field(
-        self, field: Union[Mapping[str, Any], Field], name: str, value: Any
+        self, field: Mapping[str, Any] | Field, name: str, value: Any
     ) -> Any:
         serializer: Callable[[Any], Any] = field.get("serializer", self._join_if_needed)
         return serializer(value)
@@ -339,13 +342,13 @@ class PythonItemExporter(BaseItemExporter):
     .. _msgpack: https://pypi.org/project/msgpack/
     """
 
-    def _configure(self, options: Dict[str, Any], dont_fail: bool = False) -> None:
+    def _configure(self, options: dict[str, Any], dont_fail: bool = False) -> None:
         super()._configure(options, dont_fail)
         if not self.encoding:
             self.encoding = "utf-8"
 
     def serialize_field(
-        self, field: Union[Mapping[str, Any], Field], name: str, value: Any
+        self, field: Mapping[str, Any] | Field, name: str, value: Any
     ) -> Any:
         serializer: Callable[[Any], Any] = field.get(
             "serializer", self._serialize_value
@@ -355,18 +358,18 @@ class PythonItemExporter(BaseItemExporter):
     def _serialize_value(self, value: Any) -> Any:
         if isinstance(value, Item):
             return self.export_item(value)
+        if isinstance(value, (str, bytes)):
+            return to_unicode(value, encoding=self.encoding)
         if is_item(value):
             return dict(self._serialize_item(value))
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        if isinstance(value, (str, bytes)):
-            return to_unicode(value, encoding=self.encoding)
         return value
 
-    def _serialize_item(self, item: Any) -> Iterable[Tuple[Union[str, bytes], Any]]:
+    def _serialize_item(self, item: Any) -> Iterable[tuple[str | bytes, Any]]:
         for key, value in ItemAdapter(item).items():
             yield key, self._serialize_value(value)
 
-    def export_item(self, item: Any) -> Dict[Union[str, bytes], Any]:  # type: ignore[override]
-        result: Dict[Union[str, bytes], Any] = dict(self._get_serialized_fields(item))
+    def export_item(self, item: Any) -> dict[str | bytes, Any]:  # type: ignore[override]
+        result: dict[str | bytes, Any] = dict(self._get_serialized_fields(item))
         return result

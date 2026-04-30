@@ -2,7 +2,7 @@
 from collections import deque
 from time import time
 
-from twisted.internet import reactor
+from twisted.internet import reactor  # noqa: TID253
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET, Site
 

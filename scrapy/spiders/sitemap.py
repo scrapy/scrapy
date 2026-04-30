@@ -2,18 +2,10 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    cast,
-)
+
+# Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
+from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
@@ -33,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 class SitemapSpider(Spider):
     sitemap_urls: Sequence[str] = ()
-    sitemap_rules: Sequence[
-        Tuple[Union[re.Pattern[str], str], Union[str, CallbackT]]
-    ] = [("", "parse")]
-    sitemap_follow: Sequence[Union[re.Pattern[str], str]] = [""]
+    sitemap_rules: Sequence[tuple[re.Pattern[str] | str, str | CallbackT]] = [
+        ("", "parse")
+    ]
+    sitemap_follow: Sequence[re.Pattern[str] | str] = [""]
     sitemap_alternate_links: bool = False
     _max_size: int
     _warn_size: int
@@ -54,20 +46,24 @@ class SitemapSpider(Spider):
 
     def __init__(self, *a: Any, **kw: Any):
         super().__init__(*a, **kw)
-        self._cbs: List[Tuple[re.Pattern[str], CallbackT]] = []
+        self._cbs: list[tuple[re.Pattern[str], CallbackT]] = []
         for r, c in self.sitemap_rules:
             if isinstance(c, str):
-                c = cast("CallbackT", getattr(self, c))
+                c = cast("CallbackT", getattr(self, c))  # noqa: PLW2901
             self._cbs.append((regex(r), c))
-        self._follow: List[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
+        self._follow: list[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
+
+    async def start(self) -> AsyncIterator[Any]:
+        for item_or_request in self.start_requests():
+            yield item_or_request
 
     def start_requests(self) -> Iterable[Request]:
         for url in self.sitemap_urls:
             yield Request(url, self._parse_sitemap)
 
     def sitemap_filter(
-        self, entries: Iterable[Dict[str, Any]]
-    ) -> Iterable[Dict[str, Any]]:
+        self, entries: Iterable[dict[str, Any]]
+    ) -> Iterable[dict[str, Any]]:
         """This method can be used to filter sitemap entries by their
         attributes, for example, you can filter locs with lastmod greater
         than a given date (see docs).
@@ -76,33 +72,55 @@ class SitemapSpider(Spider):
 
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
-            for url in sitemap_urls_from_robots(response.text, base_url=response.url):
-                yield Request(url, callback=self._parse_sitemap)
-        else:
-            body = self._get_sitemap_body(response)
-            if body is None:
-                logger.warning(
-                    "Ignoring invalid sitemap: %(response)s",
-                    {"response": response},
-                    extra={"spider": self},
-                )
-                return
+            urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
+            return (Request(url, callback=self._parse_sitemap) for url in urls)
 
-            s = Sitemap(body)
-            it = self.sitemap_filter(s)
+        body = self._get_sitemap_body(response)
+        if not body:
+            logger.warning(
+                "Ignoring invalid sitemap: %(response)s",
+                {"response": response},
+                extra={"spider": self},
+            )
+            return ()
 
-            if s.type == "sitemapindex":
-                for loc in iterloc(it, self.sitemap_alternate_links):
-                    if any(x.search(loc) for x in self._follow):
-                        yield Request(loc, callback=self._parse_sitemap)
-            elif s.type == "urlset":
-                for loc in iterloc(it, self.sitemap_alternate_links):
-                    for r, c in self._cbs:
-                        if r.search(loc):
-                            yield Request(loc, callback=c)
-                            break
+        s = Sitemap(body)
 
-    def _get_sitemap_body(self, response: Response) -> Optional[bytes]:
+        if s.type == "sitemapindex":
+            urls = list(self._get_urls_from_sitemapindex(self.sitemap_filter(s)))
+            return (Request(loc, callback=self._parse_sitemap) for loc in urls)
+
+        if s.type == "urlset":
+            url_callback_pairs = list(
+                self._get_urls_and_callbacks_from_urlset(self.sitemap_filter(s))
+            )
+            return (Request(loc, callback=c) for loc, c in url_callback_pairs)
+
+        logger.warning(
+            "Ignoring invalid sitemap: %(response)s",
+            {"response": response},
+            extra={"spider": self},
+        )
+
+        return ()
+
+    def _get_urls_from_sitemapindex(
+        self, it: Iterable[dict[str, Any]]
+    ) -> Iterable[str]:
+        for loc in iterloc(it, self.sitemap_alternate_links):
+            if any(x.search(loc) for x in self._follow):
+                yield loc
+
+    def _get_urls_and_callbacks_from_urlset(
+        self, it: Iterable[dict[str, Any]]
+    ) -> Iterable[tuple[str, CallbackT]]:
+        for loc in iterloc(it, self.sitemap_alternate_links):
+            for r, c in self._cbs:
+                if r.search(loc):
+                    yield loc, c
+                    break
+
+    def _get_sitemap_body(self, response: Response) -> bytes | None:
         """Return the sitemap body contained in the given response,
         or None if the response is not a sitemap.
         """
@@ -136,16 +154,17 @@ class SitemapSpider(Spider):
         return None
 
 
-def regex(x: Union[re.Pattern[str], str]) -> re.Pattern[str]:
+def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
     if isinstance(x, str):
         return re.compile(x)
     return x
 
 
-def iterloc(it: Iterable[Dict[str, Any]], alt: bool = False) -> Iterable[str]:
+def iterloc(it: Iterable[dict[str, Any]], alt: bool = False) -> Iterable[str]:
     for d in it:
-        yield d["loc"]
+        if loc := d["loc"]:
+            yield loc
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
-        if alt and "alternate" in d:
-            yield from d["alternate"]
+        if alt and (alt_list := d.get("alternate")):
+            yield from alt_list

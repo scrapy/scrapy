@@ -1,28 +1,35 @@
+from __future__ import annotations
+
+import code
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, Iterable, Optional
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 EmbedFuncT = Callable[..., None]
-KnownShellsT = Dict[str, Callable[..., EmbedFuncT]]
+KnownShellsT = dict[str, Callable[..., EmbedFuncT]]
 
 
 def _embed_ipython_shell(
-    namespace: Dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start an IPython Shell"""
     try:
-        from IPython.terminal.embed import InteractiveShellEmbed  # noqa: T100
-        from IPython.terminal.ipapp import load_default_config
+        from IPython.terminal.embed import InteractiveShellEmbed  # noqa: T100,PLC0415
+        from IPython.terminal.ipapp import load_default_config  # noqa: PLC0415
     except ImportError:
-        from IPython.frontend.terminal.embed import (  # type: ignore[no-redef]  # noqa: T100
+        from IPython.frontend.terminal.embed import (  # type: ignore[import-not-found,no-redef]  # noqa: T100,PLC0415
             InteractiveShellEmbed,
         )
-        from IPython.frontend.terminal.ipapp import (  # type: ignore[no-redef]
+        from IPython.frontend.terminal.ipapp import (  # type: ignore[import-not-found,no-redef]  # noqa: PLC0415
             load_default_config,
         )
 
     @wraps(_embed_ipython_shell)
-    def wrapper(namespace: Dict[str, Any] = namespace, banner: str = "") -> None:
-        config = load_default_config()
+    def wrapper(namespace: dict[str, Any] = namespace or {}, banner: str = "") -> None:
+        config = load_default_config()  # type: ignore[no-untyped-call]
         # Always use .instance() to ensure _instance propagation to all parents
         # this is needed for <TAB> completion works well for new imports
         # and clear the instance to always have the fresh env
@@ -37,26 +44,26 @@ def _embed_ipython_shell(
 
 
 def _embed_bpython_shell(
-    namespace: Dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a bpython shell"""
-    import bpython
+    import bpython  # noqa: PLC0415
 
     @wraps(_embed_bpython_shell)
-    def wrapper(namespace: Dict[str, Any] = namespace, banner: str = "") -> None:
+    def wrapper(namespace: dict[str, Any] = namespace or {}, banner: str = "") -> None:
         bpython.embed(locals_=namespace, banner=banner)
 
     return wrapper
 
 
 def _embed_ptpython_shell(
-    namespace: Dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a ptpython shell"""
-    import ptpython.repl
+    import ptpython.repl  # noqa: PLC0415  # pylint: disable=import-error
 
     @wraps(_embed_ptpython_shell)
-    def wrapper(namespace: Dict[str, Any] = namespace, banner: str = "") -> None:
+    def wrapper(namespace: dict[str, Any] = namespace or {}, banner: str = "") -> None:
         print(banner)
         ptpython.repl.embed(locals=namespace)
 
@@ -64,22 +71,20 @@ def _embed_ptpython_shell(
 
 
 def _embed_standard_shell(
-    namespace: Dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a standard python shell"""
-    import code
-
     try:  # readline module is only available on unix systems
-        import readline
+        import readline  # noqa: PLC0415
     except ImportError:
         pass
     else:
-        import rlcompleter  # noqa: F401
+        import rlcompleter  # noqa: F401,PLC0415
 
-        readline.parse_and_bind("tab:complete")
+        readline.parse_and_bind("tab:complete")  # type: ignore[attr-defined,unused-ignore]
 
     @wraps(_embed_standard_shell)
-    def wrapper(namespace: Dict[str, Any] = namespace, banner: str = "") -> None:
+    def wrapper(namespace: dict[str, Any] = namespace or {}, banner: str = "") -> None:
         code.interact(banner=banner, local=namespace)
 
     return wrapper
@@ -94,8 +99,8 @@ DEFAULT_PYTHON_SHELLS: KnownShellsT = {
 
 
 def get_shell_embed_func(
-    shells: Optional[Iterable[str]] = None, known_shells: Optional[KnownShellsT] = None
-) -> Any:
+    shells: Iterable[str] | None = None, known_shells: KnownShellsT | None = None
+) -> EmbedFuncT | None:
     """Return the first acceptable shell-embed function
     from a given list of shell names.
     """
@@ -111,12 +116,13 @@ def get_shell_embed_func(
                 return known_shells[shell]()
             except ImportError:
                 continue
+    return None
 
 
 def start_python_console(
-    namespace: Optional[Dict[str, Any]] = None,
+    namespace: dict[str, Any] | None = None,
     banner: str = "",
-    shells: Optional[Iterable[str]] = None,
+    shells: Iterable[str] | None = None,
 ) -> None:
     """Start Python console bound to the given namespace.
     Readline support and tab completion will be used on Unix, if available.

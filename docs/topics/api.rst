@@ -12,10 +12,11 @@ extensions and middlewares.
 Crawler API
 ===========
 
-The main entry point to Scrapy API is the :class:`~scrapy.crawler.Crawler`
-object, passed to extensions through the ``from_crawler`` class method. This
-object provides access to all Scrapy core components, and it's the only way for
-extensions to access them and hook their functionality into Scrapy.
+The main entry point to the Scrapy API is the :class:`~scrapy.crawler.Crawler`
+object, which :ref:`components <topics-components>` can :ref:`get for
+initialization <from-crawler>`. It provides access to all Scrapy core
+components, and it is the only way for components to access them and hook their
+functionality into Scrapy.
 
 .. module:: scrapy.crawler
    :synopsis: The Scrapy crawler
@@ -26,7 +27,9 @@ contains a dictionary of all available extensions and their order similar to
 how you :ref:`configure the downloader middlewares
 <topics-downloader-middleware-setting>`.
 
-.. class:: Crawler(spidercls, settings)
+.. autoclass:: Crawler
+    :members: get_addon, get_downloader_middleware, get_extension,
+        get_item_pipeline, get_spider_middleware
 
     The Crawler object must be instantiated with a
     :class:`scrapy.Spider` subclass and a
@@ -86,7 +89,7 @@ how you :ref:`configure the downloader middlewares
         The execution engine, which coordinates the core crawling logic
         between the scheduler, downloader and spiders.
 
-        Some extension may want to access the Scrapy engine, to inspect  or 
+        Some extension may want to access the Scrapy engine, to inspect  or
         modify the downloader and scheduler behaviour, although this is an
         advanced use and this API is not yet stable.
 
@@ -96,18 +99,24 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(*args, **kwargs)
+    .. automethod:: crawl_async
 
-        Starts the crawler by instantiating its spider class with the given
-        ``args`` and ``kwargs`` arguments, while setting the execution engine in
-        motion. Should be called only once.
+    .. automethod:: crawl
 
-        Returns a deferred that is fired when the crawl is finished.
+    .. automethod:: stop_async
 
     .. automethod:: stop
 
+.. autoclass:: AsyncCrawlerRunner
+   :members:
+
 .. autoclass:: CrawlerRunner
    :members:
+
+.. autoclass:: AsyncCrawlerProcess
+   :show-inheritance:
+   :members:
+   :inherited-members:
 
 .. autoclass:: CrawlerProcess
    :show-inheritance:
@@ -204,6 +213,8 @@ SpiderLoader API
        :param request: queried request
        :type request: :class:`~scrapy.Request` instance
 
+.. autoclass:: DummySpiderLoader
+
 .. _topics-api-signals:
 
 Signals API
@@ -269,11 +280,17 @@ class (which they all inherit from).
     The following methods are not part of the stats collection api but instead
     used when implementing custom stats collectors:
 
-    .. method:: open_spider(spider)
+    .. method:: open_spider()
 
-        Open the given spider for stats collection.
+        Open the spider for stats collection.
 
-    .. method:: close_spider(spider)
+    .. method:: close_spider()
 
-        Close the given spider. After this is called, no more specific stats
+        Close the spider. After this is called, no more specific stats
         can be accessed or collected.
+
+Engine API
+==========
+
+.. autoclass:: scrapy.core.engine.ExecutionEngine()
+   :members: needs_backout

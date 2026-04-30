@@ -4,34 +4,21 @@
 Extensions
 ==========
 
-The extensions framework provides a mechanism for inserting your own
-custom functionality into Scrapy.
+Extensions are :ref:`components <topics-components>` that allow inserting your
+own custom functionality into Scrapy.
 
-Extensions are just regular classes.
+Unlike other components, extensions do not have a specific role in Scrapy. They
+are “wildcard” components that can be used for anything that does not fit the
+role of any other type of component.
 
-Extension settings
-==================
+Loading and activating extensions
+=================================
 
-Extensions use the :ref:`Scrapy settings <topics-settings>` to manage their
-settings, just like any other Scrapy code.
+Extensions are loaded at startup by creating a single instance of the extension
+class per spider being run.
 
-It is customary for extensions to prefix their settings with their own name, to
-avoid collision with existing (and future) extensions. For example, a
-hypothetical extension to handle `Google Sitemaps`_ would use settings like
-``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
-
-.. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
-
-Loading & activating extensions
-===============================
-
-Extensions are loaded and activated at startup by instantiating a single
-instance of the extension class per spider being run. All the extension
-initialization code must be performed in the class ``__init__`` method.
-
-To make an extension available, add it to the :setting:`EXTENSIONS` setting in
-your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
-by a string: the full Python path to the extension's class name. For example:
+To enable an extension, add it to the :setting:`EXTENSIONS` setting. For
+example:
 
 .. code-block:: python
 
@@ -40,54 +27,23 @@ by a string: the full Python path to the extension's class name. For example:
         "scrapy.extensions.telnet.TelnetConsole": 500,
     }
 
-
-As you can see, the :setting:`EXTENSIONS` setting is a dict where the keys are
-the extension paths, and their values are the orders, which define the
-extension *loading* order. The :setting:`EXTENSIONS` setting is merged with the
-:setting:`EXTENSIONS_BASE` setting defined in Scrapy (and not meant to be
-overridden) and then sorted by order to get the final sorted list of enabled
-extensions.
+:setting:`EXTENSIONS` is merged with :setting:`EXTENSIONS_BASE` (not meant to
+be overridden), and the priorities in the resulting value determine the
+*loading* order.
 
 As extensions typically do not depend on each other, their loading order is
 irrelevant in most cases. This is why the :setting:`EXTENSIONS_BASE` setting
-defines all extensions with the same order (``0``). However, this feature can
-be exploited if you need to add an extension which depends on other extensions
-already loaded.
-
-Available, enabled and disabled extensions
-==========================================
-
-Not all available extensions will be enabled. Some of them usually depend on a
-particular setting. For example, the HTTP Cache extension is available by default
-but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
-
-Disabling an extension
-======================
-
-In order to disable an extension that comes enabled by default (i.e. those
-included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
-``None``. For example:
-
-.. code-block:: python
-
-    EXTENSIONS = {
-        "scrapy.extensions.corestats.CoreStats": None,
-    }
+defines all extensions with the same order (``0``). However, you may need to
+carefully use priorities if you add an extension that depends on other
+extensions being already loaded.
 
 Writing your own extension
 ==========================
 
-Each extension is a Python class. The main entry point for a Scrapy extension
-(this also includes middlewares and pipelines) is the ``from_crawler``
-class method which receives a ``Crawler`` instance. Through the Crawler object
-you can access settings, signals, stats, and also control the crawling behaviour.
+Each extension is a :ref:`component <topics-components>`.
 
 Typically, extensions connect to :ref:`signals <topics-signals>` and perform
 tasks triggered by them.
-
-Finally, if the ``from_crawler`` method raises the
-:exc:`~scrapy.exceptions.NotConfigured` exception, the extension will be
-disabled. Otherwise, the extension will be enabled.
 
 Sample extension
 ----------------
@@ -182,6 +138,14 @@ enabled (see :ref:`topics-stats`).
 
 .. _topics-extensions-ref-telnetconsole:
 
+Log Count extension
+~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.logcount
+   :synopsis: Basic stats logging
+
+.. autoclass:: LogCount
+
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -211,20 +175,16 @@ Memory usage extension
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 
-1. sends a notification e-mail when it exceeds a certain value
-2. closes the spider when it exceeds a certain value
-
-The notification e-mails can be triggered when a certain warning value is
-reached (:setting:`MEMUSAGE_WARNING_MB`) and when the maximum value is reached
-(:setting:`MEMUSAGE_LIMIT_MB`) which will also cause the spider to be closed
-and the Scrapy process to be terminated.
+1. sends a :signal:`memusage_warning_reached` signal when it exceeds
+   :setting:`MEMUSAGE_WARNING_MB`
+2. closes the spider with the `"memusage_exceeded"` reason when it exceeds
+   :setting:`MEMUSAGE_LIMIT_MB`
 
 This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
 can be configured with the following settings:
 
 * :setting:`MEMUSAGE_LIMIT_MB`
 * :setting:`MEMUSAGE_WARNING_MB`
-* :setting:`MEMUSAGE_NOTIFY_MAIL`
 * :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
 
 Memory debugger extension
@@ -242,6 +202,32 @@ An extension for debugging memory usage. It collects information about:
 
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
 info will be stored in the stats.
+
+.. _topics-extensions-ref-spiderstate:
+
+Spider state extension
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.spiderstate
+   :synopsis: Spider state extension
+
+.. class:: SpiderState
+
+Manages spider state data by loading it before a crawl and saving it after.
+
+Give a value to the :setting:`JOBDIR` setting to enable this extension.
+When enabled, this extension manages the :attr:`~scrapy.Spider.state`
+attribute of your :class:`~scrapy.Spider` instance:
+
+-   When your spider closes (:signal:`spider_closed`), the contents of its
+    :attr:`~scrapy.Spider.state` attribute are serialized into a file named
+    ``spider.state`` in the :setting:`JOBDIR` folder.
+-   When your spider opens (:signal:`spider_opened`), if a previously-generated
+    ``spider.state`` file exists in the :setting:`JOBDIR` folder, it is loaded
+    into the :attr:`~scrapy.Spider.state` attribute.
+
+
+For an example, see :ref:`topics-keeping-persistent-state-between-batches`.
 
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -265,8 +251,8 @@ settings:
 
 .. note::
 
-   When a certain closing condition is met, requests which are 
-   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS` 
+   When a certain closing condition is met, requests which are
+   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS`
    requests) are still processed.
 
 .. setting:: CLOSESPIDER_TIMEOUT
@@ -277,7 +263,7 @@ CLOSESPIDER_TIMEOUT
 Default: ``0``
 
 An integer which specifies a number of seconds. If the spider remains open for
-more than that number of second, it will be automatically closed with the
+more than that number of seconds, it will be automatically closed with the
 reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
 timeout.
 
@@ -341,24 +327,6 @@ An integer which specifies the maximum number of errors to receive before
 closing the spider. If the spider generates more than that number of errors,
 it will be closed with the reason ``closespider_errorcount``. If zero (or non
 set), spiders won't be closed by number of errors.
-
-StatsMailer extension
-~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.extensions.statsmailer
-   :synopsis: StatsMailer extension
-
-.. class:: StatsMailer
-
-This simple extension can be used to send a notification e-mail every time a
-domain has finished scraping, including the Scrapy stats collected. The email
-will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
-setting.
-
-Emails can be sent using the :class:`~scrapy.mail.MailSender` class. To see a
-full list of parameters, including examples on how to instantiate
-:class:`~scrapy.mail.MailSender` and use mail settings, see
-:ref:`topics-email`.
 
 .. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy
@@ -520,8 +488,4 @@ Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process w
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
-For more info see `Debugging in Python`_.
-
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
-
-.. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/

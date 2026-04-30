@@ -6,11 +6,12 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from w3lib.http import basic_auth_header
 
 from scrapy import Request, Spider, signals
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
@@ -38,11 +39,15 @@ class HttpAuthMiddleware:
             self.auth = basic_auth_header(usr, pwd)
             self.domain = spider.http_auth_domain  # type: ignore[attr-defined]
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+        self, request: Request, spider: Spider | None = None
+    ) -> Request | Response | None:
         auth = getattr(self, "auth", None)
-        if auth and b"Authorization" not in request.headers:
-            if not self.domain or url_is_from_any_domain(request.url, [self.domain]):
-                request.headers[b"Authorization"] = auth
+        if (
+            auth
+            and b"Authorization" not in request.headers
+            and (not self.domain or url_is_from_any_domain(request.url, [self.domain]))
+        ):
+            request.headers[b"Authorization"] = auth
         return None

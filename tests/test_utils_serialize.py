@@ -1,21 +1,22 @@
 import dataclasses
 import datetime
 import json
-import unittest
 from decimal import Decimal
 
 import attr
+import pytest
 from twisted.internet import defer
 
 from scrapy.http import Request, Response
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
-class JsonEncoderTestCase(unittest.TestCase):
-    def setUp(self):
-        self.encoder = ScrapyJSONEncoder(sort_keys=True)
+class TestJsonEncoder:
+    @pytest.fixture
+    def encoder(self) -> ScrapyJSONEncoder:
+        return ScrapyJSONEncoder(sort_keys=True)
 
-    def test_encode_decode(self):
+    def test_encode_decode(self, encoder: ScrapyJSONEncoder) -> None:
         dt = datetime.datetime(2010, 1, 2, 10, 11, 12)
         dts = "2010-01-02 10:11:12"
         d = datetime.date(2010, 1, 2)
@@ -29,7 +30,7 @@ class JsonEncoderTestCase(unittest.TestCase):
         dt_set = {dt}
         dt_sets = [dts]
 
-        for input, output in [
+        for input_, output in [
             ("foo", "foo"),
             (d, ds),
             (t, ts),
@@ -39,26 +40,24 @@ class JsonEncoderTestCase(unittest.TestCase):
             (s, ss),
             (dt_set, dt_sets),
         ]:
-            self.assertEqual(
-                self.encoder.encode(input), json.dumps(output, sort_keys=True)
-            )
+            assert encoder.encode(input_) == json.dumps(output, sort_keys=True)
 
-    def test_encode_deferred(self):
-        self.assertIn("Deferred", self.encoder.encode(defer.Deferred()))
+    def test_encode_deferred(self, encoder: ScrapyJSONEncoder) -> None:
+        assert "Deferred" in encoder.encode(defer.Deferred())
 
-    def test_encode_request(self):
+    def test_encode_request(self, encoder: ScrapyJSONEncoder) -> None:
         r = Request("http://www.example.com/lala")
-        rs = self.encoder.encode(r)
-        self.assertIn(r.method, rs)
-        self.assertIn(r.url, rs)
+        rs = encoder.encode(r)
+        assert r.method in rs
+        assert r.url in rs
 
-    def test_encode_response(self):
+    def test_encode_response(self, encoder: ScrapyJSONEncoder) -> None:
         r = Response("http://www.example.com/lala")
-        rs = self.encoder.encode(r)
-        self.assertIn(r.url, rs)
-        self.assertIn(str(r.status), rs)
+        rs = encoder.encode(r)
+        assert r.url in rs
+        assert str(r.status) in rs
 
-    def test_encode_dataclass_item(self) -> None:
+    def test_encode_dataclass_item(self, encoder: ScrapyJSONEncoder) -> None:
         @dataclasses.dataclass
         class TestDataClass:
             name: str
@@ -66,12 +65,10 @@ class JsonEncoderTestCase(unittest.TestCase):
             price: int
 
         item = TestDataClass(name="Product", url="http://product.org", price=1)
-        encoded = self.encoder.encode(item)
-        self.assertEqual(
-            encoded, '{"name": "Product", "price": 1, "url": "http://product.org"}'
-        )
+        encoded = encoder.encode(item)
+        assert encoded == '{"name": "Product", "price": 1, "url": "http://product.org"}'
 
-    def test_encode_attrs_item(self):
+    def test_encode_attrs_item(self, encoder: ScrapyJSONEncoder) -> None:
         @attr.s
         class AttrsItem:
             name = attr.ib(type=str)
@@ -79,7 +76,5 @@ class JsonEncoderTestCase(unittest.TestCase):
             price = attr.ib(type=int)
 
         item = AttrsItem(name="Product", url="http://product.org", price=1)
-        encoded = self.encoder.encode(item)
-        self.assertEqual(
-            encoded, '{"name": "Product", "price": 1, "url": "http://product.org"}'
-        )
+        encoded = encoder.encode(item)
+        assert encoded == '{"name": "Product", "price": 1, "url": "http://product.org"}'

@@ -6,8 +6,13 @@ This package contains a collection of Link Extractors.
 For more info see docs/topics/link-extractors.rst
 """
 
-import re
-from typing import Iterable, Pattern
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from re import Pattern
 
 # common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
@@ -121,3 +126,8 @@ def _is_valid_url(url: str) -> bool:
 
 # Top-level imports
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor as LinkExtractor
+
+__all__ = [
+    "IGNORED_EXTENSIONS",
+    "LinkExtractor",
+]

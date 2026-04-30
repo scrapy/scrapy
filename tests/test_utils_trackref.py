@@ -1,11 +1,11 @@
-import unittest
+import sys
 from io import StringIO
-from time import sleep, time
 from unittest import mock
 
-from twisted.trial.unittest import SkipTest
+import pytest
 
 from scrapy.utils import trackref
+from scrapy.utils.python import garbage_collect
 
 
 class Foo(trackref.object_ref):
@@ -16,74 +16,109 @@ class Bar(trackref.object_ref):
     pass
 
 
-class TrackrefTestCase(unittest.TestCase):
-    def setUp(self):
-        trackref.live_refs.clear()
+@pytest.fixture(autouse=True)
+def clear_refs() -> None:
+    trackref.live_refs.clear()
 
-    def test_format_live_refs(self):
-        o1 = Foo()  # NOQA
-        o2 = Bar()  # NOQA
-        o3 = Foo()  # NOQA
-        self.assertEqual(
-            trackref.format_live_refs(),
-            """\
+
+def test_format_live_refs():
+    o1 = Foo()  # noqa: F841
+    o2 = Bar()  # noqa: F841
+    o3 = Foo()  # noqa: F841
+    assert (
+        trackref.format_live_refs()
+        == """\
 Live References
 
 Bar                                 1   oldest: 0s ago
 Foo                                 2   oldest: 0s ago
-""",
-        )
+"""
+    )
 
-        self.assertEqual(
-            trackref.format_live_refs(ignore=Foo),
-            """\
+    assert (
+        trackref.format_live_refs(ignore=Foo)
+        == """\
 Live References
 
 Bar                                 1   oldest: 0s ago
-""",
-        )
+"""
+    )
 
-    @mock.patch("sys.stdout", new_callable=StringIO)
-    def test_print_live_refs_empty(self, stdout):
-        trackref.print_live_refs()
-        self.assertEqual(stdout.getvalue(), "Live References\n\n\n")
 
-    @mock.patch("sys.stdout", new_callable=StringIO)
-    def test_print_live_refs_with_objects(self, stdout):
-        o1 = Foo()  # NOQA
-        trackref.print_live_refs()
-        self.assertEqual(
-            stdout.getvalue(),
-            """\
+@mock.patch("sys.stdout", new_callable=StringIO)
+def test_print_live_refs_empty(stdout):
+    trackref.print_live_refs()
+    assert stdout.getvalue() == "Live References\n\n\n"
+
+
+@mock.patch("sys.stdout", new_callable=StringIO)
+def test_print_live_refs_with_objects(stdout):
+    o1 = Foo()  # noqa: F841
+    trackref.print_live_refs()
+    assert (
+        stdout.getvalue()
+        == """\
 Live References
 
-Foo                                 1   oldest: 0s ago\n\n""",
-        )
+Foo                                 1   oldest: 0s ago\n\n"""
+    )
 
-    def test_get_oldest(self):
-        o1 = Foo()  # NOQA
 
-        o1_time = time()
+_IS_PYPY = "PyPy" in sys.version
 
-        o2 = Bar()  # NOQA
 
-        o3_time = time()
-        if o3_time <= o1_time:
-            sleep(0.01)
-            o3_time = time()
-        if o3_time <= o1_time:
-            raise SkipTest("time.time is not precise enough")
+def test_get_oldest():
+    """
+    Verify that `get_oldest` returns the oldest live instance of a class.
 
-        o3 = Foo()  # NOQA
-        self.assertIs(trackref.get_oldest("Foo"), o1)
-        self.assertIs(trackref.get_oldest("Bar"), o2)
-        self.assertIsNone(trackref.get_oldest("XXX"))
+    The test runs in two passes to expose differences between:
+    - CPython (reference counting, immediate destruction)
+    - PyPy (tracing GC, delayed destruction)
 
-    def test_iter_all(self):
-        o1 = Foo()  # NOQA
-        o2 = Bar()  # NOQA
-        o3 = Foo()  # NOQA
-        self.assertEqual(
-            set(trackref.iter_all("Foo")),
-            {o1, o3},
-        )
+    Since `trackref` relies on weak references, delayed GC on PyPy can leave
+    stale entries in `live_refs`, affecting results unless explicitly cleared.
+    """
+
+    def _delete_o1():
+        """Delete `o1` and ensure it is actually collected on PyPy."""
+        nonlocal o1
+        del o1
+
+        if _IS_PYPY:
+            # On PyPy, `del` only removes the local reference. The object may
+            # still exist until the GC runs, so we force a collection cycle.
+            garbage_collect()
+
+    def _do_asserts():
+        assert trackref.get_oldest("Foo") is o1
+        assert trackref.get_oldest("Bar") is o2
+        # Ensure the newer Foo is not incorrectly considered the oldest
+        assert trackref.get_oldest("Foo") is not o3
+        assert trackref.get_oldest("XXX") is None
+
+    o1, o2, o3 = Foo(), Bar(), Foo()
+
+    _do_asserts()
+
+    # Remove the oldest Foo instance; o3 should now become the oldest
+    _delete_o1()
+    assert trackref.get_oldest("Foo") is o3
+
+    # PyPy-specific behavior where stale references may persist
+    # unless the registry is explicitly cleared.
+    if _IS_PYPY:
+        trackref.live_refs.clear()
+
+    o1, o2, o3 = Foo(), Bar(), Foo()
+
+    _do_asserts()
+
+    _delete_o1()
+    assert trackref.get_oldest("Foo") is o3
+
+
+def test_iter_all():
+    o1 = Foo()
+    o2 = Bar()  # noqa: F841
+    o3 = Foo()
+    assert set(trackref.iter_all("Foo")) == {o1, o3}

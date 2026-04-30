@@ -15,7 +15,7 @@ class Root(Resource):
     def render(self, request: Request) -> bytes:
         total = _getarg(request, b"total", 100, int)
         show = _getarg(request, b"show", 10, int)
-        nlist = [random.randint(1, total) for _ in range(show)]  # nosec
+        nlist = [random.randint(1, total) for _ in range(show)]  # noqa: S311
         request.write(b"<html><head></head><body>")
         assert request.args is not None
         args = request.args.copy()
@@ -27,14 +27,16 @@ class Root(Resource):
         return b""
 
 
-def _getarg(request, name: bytes, default: Any = None, type=str):
-    return type(request.args[name][0]) if name in request.args else default
+def _getarg(
+    request: Request, name: bytes, default: Any = None, type_: type = str
+) -> Any:
+    return type_(request.args[name][0]) if name in request.args else default  # type: ignore[index,operator]
 
 
 if __name__ == "__main__":
     from twisted.internet import reactor
 
-    root = Root()
+    root = Root()  # type: ignore[no-untyped-call]
     factory = Site(root)
     httpPort = reactor.listenTCP(8998, Site(root))
 

@@ -67,7 +67,7 @@ value of one of their fields:
                 self.year_to_exporter[year] = (exporter, xml_file)
             return self.year_to_exporter[year][0]
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             exporter = self._exporter_for_item(item)
             exporter.export_item(item)
             return item
@@ -116,10 +116,10 @@ Example:
 2. Overriding the serialize_field() method
 ------------------------------------------
 
-You can also override the :meth:`~BaseItemExporter.serialize_field()` method to
+You can also override the :meth:`~BaseItemExporter.serialize_field` method to
 customize how your field value will be exported.
 
-Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
+Make sure you call the base class :meth:`~BaseItemExporter.serialize_field` method
 after your custom code.
 
 Example:
@@ -162,9 +162,6 @@ BaseItemExporter
    These features can be configured through the ``__init__`` method arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
-
-   .. versionadded:: 2.0
-      The *dont_fail* parameter.
 
    .. method:: export_item(item)
 
@@ -224,7 +221,7 @@ BaseItemExporter
       .. [1] Not all exporters respect the specified field order.
       .. [2] When using :ref:`item objects <item-types>` that do not expose
              all their possible fields, exporters that do not support exporting
-             a different subset of fields per item will only export the fields 
+             a different subset of fields per item will only export the fields
              found in the first item exported.
 
    .. attribute:: export_empty_fields

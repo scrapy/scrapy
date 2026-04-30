@@ -30,3 +30,16 @@ with catch_warnings():
         subclass_warn_message="{cls} inherits from deprecated class {old}, use the form2request library instead.",
         instance_warn_message="{cls} is deprecated, use the form2request library instead.",
     )
+
+__all__ = [
+    "FormRequest",
+    "Headers",
+    "HtmlResponse",
+    "JsonRequest",
+    "JsonResponse",
+    "Request",
+    "Response",
+    "TextResponse",
+    "XmlResponse",
+    "XmlRpcRequest",
+]

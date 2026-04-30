@@ -33,7 +33,7 @@ Having trouble? We'd like to help!
 .. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
-.. _Scrapy Discord: https://discord.gg/mv3yErfpvq
+.. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
 
 
 First steps
@@ -128,17 +128,13 @@ Built-in services
 
    topics/logging
    topics/stats
-   topics/email
    topics/telnetconsole
 
 :doc:`topics/logging`
-    Learn how to use Python's builtin logging on Scrapy.
+    Learn how to use Python's built-in logging on Scrapy.
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
-
-:doc:`topics/email`
-    Send email notifications when certain events occur.
 
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
@@ -229,6 +225,7 @@ Extending Scrapy
    topics/signals
    topics/scheduler
    topics/exporters
+   topics/download-handlers
    topics/components
    topics/api
 
@@ -256,6 +253,9 @@ Extending Scrapy
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
+
+:doc:`topics/download-handlers`
+    Customize how requests are downloaded or add support for new URL schemes.
 
 :doc:`topics/components`
     Learn the common API and some good practices when building custom Scrapy

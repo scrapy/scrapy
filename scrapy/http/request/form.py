@@ -7,25 +7,12 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 from warnings import warn
 
-from lxml.html import FormElement  # nosec
-from lxml.html import InputElement  # nosec
-from lxml.html import MultipleSelectOptions  # nosec
-from lxml.html import SelectElement  # nosec
-from lxml.html import TextareaElement  # nosec
+from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -34,6 +21,13 @@ from scrapy.utils.python import is_listlike, to_bytes
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
+    from lxml.html import (
+        FormElement,
+        InputElement,
+        MultipleSelectOptions,
+        SelectElement,
+        TextareaElement,
+    )
     from typing_extensions import Self
 
     from scrapy.http.response.text import TextResponse
@@ -45,13 +39,15 @@ warn(
     stacklevel=2,
 )
 
-FormdataVType = Union[str, Iterable[str]]
-FormdataKVType = Tuple[str, FormdataVType]
-FormdataType = Optional[Union[Dict[str, FormdataVType], List[FormdataKVType]]]
+FormdataVType: TypeAlias = str | Iterable[str]
+FormdataKVType: TypeAlias = tuple[str, FormdataVType]
+FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
 
 
 class FormRequest(Request):
-    valid_form_methods = ["GET", "POST"]
+    __slots__ = ()
+
+    valid_form_methods: ClassVar[list[str]] = ["GET", "POST"]
 
     def __init__(
         self, *args: Any, formdata: FormdataType = None, **kwargs: Any
@@ -78,21 +74,19 @@ class FormRequest(Request):
     def from_response(
         cls,
         response: TextResponse,
-        formname: Optional[str] = None,
-        formid: Optional[str] = None,
+        formname: str | None = None,
+        formid: str | None = None,
         formnumber: int = 0,
         formdata: FormdataType = None,
-        clickdata: Optional[Dict[str, Union[str, int]]] = None,
+        clickdata: dict[str, str | int] | None = None,
         dont_click: bool = False,
-        formxpath: Optional[str] = None,
-        formcss: Optional[str] = None,
+        formxpath: str | None = None,
+        formcss: str | None = None,
         **kwargs: Any,
     ) -> Self:
         kwargs.setdefault("encoding", response.encoding)
 
         if formcss is not None:
-            from parsel.csstranslator import HTMLTranslator
-
             formxpath = HTMLTranslator().css_to_xpath(formcss)
 
         form = _get_form(response, formname, formid, formnumber, formxpath)
@@ -108,7 +102,7 @@ class FormRequest(Request):
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
-def _get_form_url(form: FormElement, url: Optional[str]) -> str:
+def _get_form_url(form: FormElement, url: str | None) -> str:
     assert form.base_url is not None  # typing
     if url is None:
         action = form.get("action")
@@ -122,17 +116,17 @@ def _urlencode(seq: Iterable[FormdataKVType], enc: str) -> str:
     values = [
         (to_bytes(k, enc), to_bytes(v, enc))
         for k, vs in seq
-        for v in (cast(Iterable[str], vs) if is_listlike(vs) else [cast(str, vs)])
+        for v in (vs if is_listlike(vs) else [cast("str", vs)])
     ]
     return urlencode(values, doseq=True)
 
 
 def _get_form(
     response: TextResponse,
-    formname: Optional[str],
-    formid: Optional[str],
+    formname: str | None,
+    formid: str | None,
     formnumber: int,
-    formxpath: Optional[str],
+    formxpath: str | None,
 ) -> FormElement:
     """Find the wanted form element within the given response."""
     root = response.selector.root
@@ -143,12 +137,12 @@ def _get_form(
     if formname is not None:
         f = root.xpath(f'//form[@name="{formname}"]')
         if f:
-            return cast(FormElement, f[0])
+            return cast("FormElement", f[0])
 
     if formid is not None:
         f = root.xpath(f'//form[@id="{formid}"]')
         if f:
-            return cast(FormElement, f[0])
+            return cast("FormElement", f[0])
 
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
@@ -157,7 +151,7 @@ def _get_form(
             el = nodes[0]
             while True:
                 if el.tag == "form":
-                    return cast(FormElement, el)
+                    return cast("FormElement", el)
                 el = el.getparent()
                 if el is None:
                     break
@@ -167,22 +161,21 @@ def _get_form(
     try:
         form = forms[formnumber]
     except IndexError:
-        raise IndexError(f"Form number {formnumber} not found in {response}")
-    else:
-        return cast(FormElement, form)
+        raise IndexError(f"Form number {formnumber} not found in {response}") from None
+    return cast("FormElement", form)
 
 
 def _get_inputs(
     form: FormElement,
     formdata: FormdataType,
     dont_click: bool,
-    clickdata: Optional[Dict[str, Union[str, int]]],
-) -> List[FormdataKVType]:
+    clickdata: dict[str, str | int] | None,
+) -> list[FormdataKVType]:
     """Return a list of key-value pairs for the inputs found in the given form."""
     try:
         formdata_keys = dict(formdata or ()).keys()
     except (ValueError, TypeError):
-        raise ValueError("formdata should be a dict or iterable of tuples")
+        raise ValueError("formdata should be a dict or iterable of tuples") from None
 
     if not formdata:
         formdata = []
@@ -195,7 +188,7 @@ def _get_inputs(
         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
         namespaces={"re": "http://exslt.org/regular-expressions"},
     )
-    values: List[FormdataKVType] = [
+    values: list[FormdataKVType] = [
         (k, "" if v is None else v)
         for k, v in (_value(e) for e in inputs)
         if k and k not in formdata_keys
@@ -203,7 +196,7 @@ def _get_inputs(
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
-        if clickable and clickable[0] not in formdata and not clickable[0] is None:
+        if clickable and clickable[0] not in formdata and clickable[0] is not None:
             values.append(clickable)
 
     formdata_items = formdata.items() if isinstance(formdata, dict) else formdata
@@ -212,18 +205,18 @@ def _get_inputs(
 
 
 def _value(
-    ele: Union[InputElement, SelectElement, TextareaElement]
-) -> Tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
+    ele: InputElement | SelectElement | TextareaElement,
+) -> tuple[str | None, str | MultipleSelectOptions | None]:
     n = ele.name
     v = ele.value
     if ele.tag == "select":
-        return _select_value(cast(SelectElement, ele), n, v)
+        return _select_value(cast("SelectElement", ele), n, v)
     return n, v
 
 
 def _select_value(
-    ele: SelectElement, n: Optional[str], v: Union[None, str, MultipleSelectOptions]
-) -> Tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
+    ele: SelectElement, n: str | None, v: str | MultipleSelectOptions | None
+) -> tuple[str | None, str | MultipleSelectOptions | None]:
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
@@ -234,8 +227,8 @@ def _select_value(
 
 
 def _get_clickable(
-    clickdata: Optional[Dict[str, Union[str, int]]], form: FormElement
-) -> Optional[Tuple[str, str]]:
+    clickdata: dict[str, str | int] | None, form: FormElement
+) -> tuple[str, str] | None:
     """
     Returns the clickable element specified in clickdata,
     if the latter is given. If not, it returns the first
@@ -267,7 +260,7 @@ def _get_clickable(
         except IndexError:
             pass
         else:
-            return (el.get("name"), el.get("value") or "")
+            return (cast("str", el.get("name")), el.get("value") or "")
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
@@ -280,5 +273,4 @@ def _get_clickable(
             f"Multiple elements found ({el!r}) matching the "
             f"criteria in clickdata: {clickdata!r}"
         )
-    else:
-        raise ValueError(f"No clickable element matching clickdata: {clickdata!r}")
+    raise ValueError(f"No clickable element matching clickdata: {clickdata!r}")

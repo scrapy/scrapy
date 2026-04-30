@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import argparse
 import warnings
 from http.cookies import SimpleCookie
 from shlex import split
-from typing import Any, Dict, List, NoReturn, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import urlparse
 
 from w3lib.http import basic_auth_header
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class DataAction(argparse.Action):
@@ -13,12 +18,11 @@ class DataAction(argparse.Action):
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: Union[str, Sequence[Any], None],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
         value = str(values)
-        if value.startswith("$"):
-            value = value[1:]
+        value = value.removeprefix("$")
         setattr(namespace, self.dest, value)
 
 
@@ -32,6 +36,7 @@ curl_parser = CurlParser()
 curl_parser.add_argument("url")
 curl_parser.add_argument("-H", "--header", dest="headers", action="append")
 curl_parser.add_argument("-X", "--request", dest="method")
+curl_parser.add_argument("-b", "--cookie", dest="cookies", action="append")
 curl_parser.add_argument("-d", "--data", "--data-raw", dest="data", action=DataAction)
 curl_parser.add_argument("-u", "--user", dest="auth")
 
@@ -51,9 +56,9 @@ for argument in safe_to_ignore_arguments:
 
 def _parse_headers_and_cookies(
     parsed_args: argparse.Namespace,
-) -> Tuple[List[Tuple[str, bytes]], Dict[str, str]]:
-    headers: List[Tuple[str, bytes]] = []
-    cookies: Dict[str, str] = {}
+) -> tuple[list[tuple[str, bytes]], dict[str, str]]:
+    headers: list[tuple[str, bytes]] = []
+    cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
         name, val = header.split(":", 1)
         name = name.strip()
@@ -64,6 +69,14 @@ def _parse_headers_and_cookies(
         else:
             headers.append((name, val))
 
+    for cookie_param in parsed_args.cookies or ():
+        # curl can treat this parameter as either "key=value; key2=value2" pairs, or a filename.
+        # Scrapy will only support key-value pairs.
+        if "=" not in cookie_param:
+            continue
+        for name, morsel in SimpleCookie(cookie_param).items():
+            cookies[name] = morsel.value
+
     if parsed_args.auth:
         user, password = parsed_args.auth.split(":", 1)
         headers.append(("Authorization", basic_auth_header(user, password)))
@@ -73,7 +86,7 @@ def _parse_headers_and_cookies(
 
 def curl_to_request_kwargs(
     curl_command: str, ignore_unknown_options: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Convert a cURL command syntax to Request kwargs.
 
     :param str curl_command: string containing the curl command
@@ -91,9 +104,9 @@ def curl_to_request_kwargs(
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])
 
     if argv:
-        msg = f'Unrecognized options: {", ".join(argv)}'
+        msg = f"Unrecognized options: {', '.join(argv)}"
         if ignore_unknown_options:
-            warnings.warn(msg)
+            warnings.warn(msg, stacklevel=2)
         else:
             raise ValueError(msg)
 
@@ -107,7 +120,7 @@ def curl_to_request_kwargs(
 
     method = parsed_args.method or "GET"
 
-    result: Dict[str, Any] = {"method": method.upper(), "url": url}
+    result: dict[str, Any] = {"method": method.upper(), "url": url}
 
     headers, cookies = _parse_headers_and_cookies(parsed_args)
 

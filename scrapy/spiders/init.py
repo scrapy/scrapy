@@ -1,23 +1,48 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Optional, cast
+import warnings
+from typing import TYPE_CHECKING, Any, cast
 
-from scrapy import Request
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterable
+
+    from scrapy import Request
     from scrapy.http import Response
 
 
 class InitSpider(Spider):
-    """Base Spider with initialization facilities"""
+    """Base Spider with initialization facilities
+
+    .. warning:: This class is deprecated. Copy its code into your project if needed.
+    It will be removed in a future Scrapy version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        warnings.warn(
+            "InitSpider is deprecated. Copy its code from Scrapy's source if needed. "
+            "Will be removed in a future version.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
+    async def start(self) -> AsyncIterator[Any]:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", category=ScrapyDeprecationWarning, module=r"^scrapy\.spiders$"
+            )
+            for item_or_request in self.start_requests():
+                yield item_or_request
 
     def start_requests(self) -> Iterable[Request]:
         self._postinit_reqs: Iterable[Request] = super().start_requests()
-        return cast(Iterable[Request], iterate_spider_output(self.init_request()))
+        return cast("Iterable[Request]", iterate_spider_output(self.init_request()))
 
-    def initialized(self, response: Optional[Response] = None) -> Any:
+    def initialized(self, response: Response | None = None) -> Any:
         """This method must be set as the callback of your last initialization
         request. See self.init_request() docstring for more info.
         """

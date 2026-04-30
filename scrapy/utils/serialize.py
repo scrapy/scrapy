@@ -26,14 +26,10 @@ class ScrapyJSONEncoder(json.JSONEncoder):
             return str(o)
         if isinstance(o, defer.Deferred):
             return str(o)
-        if is_item(o):
-            return ItemAdapter(o).asdict()
         if isinstance(o, Request):
             return f"<{type(o).__name__} {o.method} {o.url}>"
         if isinstance(o, Response):
             return f"<{type(o).__name__} {o.status} {o.url}>"
+        if is_item(o):
+            return ItemAdapter(o).asdict()
         return super().default(o)
-
-
-class ScrapyJSONDecoder(json.JSONDecoder):
-    pass

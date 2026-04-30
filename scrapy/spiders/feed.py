@@ -5,7 +5,9 @@ for scraping from an XML feed.
 See documentation in docs/topics/spiders.rst
 """
 
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.http import Response, TextResponse
@@ -13,6 +15,9 @@ from scrapy.selector import Selector
 from scrapy.spiders import Spider
 from scrapy.utils.iterators import csviter, xmliter_lxml
 from scrapy.utils.spider import iterate_spider_output
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
 
 
 class XMLFeedSpider(Spider):
@@ -27,7 +32,7 @@ class XMLFeedSpider(Spider):
 
     iterator: str = "iternodes"
     itertag: str = "item"
-    namespaces: Sequence[Tuple[str, str]] = ()
+    namespaces: Sequence[tuple[str, str]] = ()
 
     def process_results(
         self, response: Response, results: Iterable[Any]
@@ -112,13 +117,13 @@ class CSVFeedSpider(Spider):
     and the file's headers.
     """
 
-    delimiter: Optional[str] = (
+    delimiter: str | None = (
         None  # When this is None, python's csv module's default delimiter is used
     )
-    quotechar: Optional[str] = (
+    quotechar: str | None = (
         None  # When this is None, python's csv module's default quotechar is used
     )
-    headers: Optional[List[str]] = None
+    headers: list[str] | None = None
 
     def process_results(
         self, response: Response, results: Iterable[Any]
@@ -130,7 +135,7 @@ class CSVFeedSpider(Spider):
         """This method has the same purpose as the one in XMLFeedSpider"""
         return response
 
-    def parse_row(self, response: Response, row: Dict[str, str]) -> Any:
+    def parse_row(self, response: Response, row: dict[str, str]) -> Any:
         """This method must be overridden with your custom spider functionality"""
         raise NotImplementedError
 

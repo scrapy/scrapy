@@ -1,26 +1,27 @@
 from __future__ import annotations
 
-import argparse
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
+from scrapy.spiderloader import DummySpiderLoader
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
+    import argparse
     from os import PathLike
     from types import ModuleType
 
 
-def _import_file(filepath: Union[str, PathLike[str]]) -> ModuleType:
+def _import_file(filepath: str | PathLike[str]) -> ModuleType:
     abspath = Path(filepath).resolve()
-    if abspath.suffix not in (".py", ".pyw"):
+    if abspath.suffix not in {".py", ".pyw"}:
         raise ValueError(f"Not a Python source file: {abspath}")
     dirname = str(abspath.parent)
-    sys.path = [dirname] + sys.path
+    sys.path = [dirname, *sys.path]
     try:
         module = import_module(abspath.stem)
     finally:
@@ -29,8 +30,9 @@ def _import_file(filepath: Union[str, PathLike[str]]) -> ModuleType:
 
 
 class Command(BaseRunSpiderCommand):
-    requires_project = False
-    default_settings = {"SPIDER_LOADER_WARN_ONLY": True}
+    default_settings: ClassVar[dict[str, Any]] = {
+        "SPIDER_LOADER_CLASS": DummySpiderLoader
+    }
 
     def syntax(self) -> str:
         return "[options] <spider_file>"
@@ -41,16 +43,16 @@ class Command(BaseRunSpiderCommand):
     def long_desc(self) -> str:
         return "Run the spider defined in the given file"
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
-            raise UsageError()
+            raise UsageError
         filename = Path(args[0])
         if not filename.exists():
             raise UsageError(f"File not found: {filename}\n")
         try:
             module = _import_file(filename)
         except (ImportError, ValueError) as e:
-            raise UsageError(f"Unable to load {str(filename)!r}: {e}\n")
+            raise UsageError(f"Unable to load {str(filename)!r}: {e}\n") from e
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
             raise UsageError(f"No spider found in file: {filename}\n")

@@ -7,55 +7,47 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable
+from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Request, Response
+from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
-    from scrapy.settings import BaseSettings
+    from scrapy.crawler import Crawler
+    from scrapy.http import Request, Response
 
 
 logger = logging.getLogger(__name__)
 
 
-class UrlLengthMiddleware:
-    def __init__(self, maxlength: int):
+class UrlLengthMiddleware(BaseSpiderMiddleware):
+    crawler: Crawler
+
+    def __init__(self, maxlength: int):  # pylint: disable=super-init-not-called
         self.maxlength: int = maxlength
 
     @classmethod
-    def from_settings(cls, settings: BaseSettings) -> Self:
-        maxlength = settings.getint("URLLENGTH_LIMIT")
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        maxlength = crawler.settings.getint("URLLENGTH_LIMIT")
         if not maxlength:
             raise NotConfigured
-        return cls(maxlength)
+        o = cls(maxlength)
+        o.crawler = crawler
+        return o
 
-    def process_spider_output(
-        self, response: Response, result: Iterable[Any], spider: Spider
-    ) -> Iterable[Any]:
-        return (r for r in result if self._filter(r, spider))
-
-    async def process_spider_output_async(
-        self, response: Response, result: AsyncIterable[Any], spider: Spider
-    ) -> AsyncIterable[Any]:
-        async for r in result:
-            if self._filter(r, spider):
-                yield r
-
-    def _filter(self, request: Any, spider: Spider) -> bool:
-        if isinstance(request, Request) and len(request.url) > self.maxlength:
-            logger.info(
-                "Ignoring link (url length > %(maxlength)d): %(url)s ",
-                {"maxlength": self.maxlength, "url": request.url},
-                extra={"spider": spider},
-            )
-            assert spider.crawler.stats
-            spider.crawler.stats.inc_value(
-                "urllength/request_ignored_count", spider=spider
-            )
-            return False
-        return True
+    def get_processed_request(
+        self, request: Request, response: Response | None
+    ) -> Request | None:
+        if len(request.url) <= self.maxlength:
+            return request
+        logger.info(
+            "Ignoring link (url length > %(maxlength)d): %(url)s ",
+            {"maxlength": self.maxlength, "url": request.url},
+            extra={"spider": self.crawler.spider},
+        )
+        assert self.crawler.stats
+        self.crawler.stats.inc_value("urllength/request_ignored_count")
+        return None

@@ -1,36 +1,29 @@
+from __future__ import annotations
+
 import numbers
 import os
 import sys
-import warnings
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Collection,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, cast
 
-from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
+
 
 def build_component_list(
     compdict: MutableMapping[Any, Any],
-    custom: Any = None,
+    *,
     convert: Callable[[Any], Any] = update_classpath,
-) -> List[Any]:
-    """Compose a component list from a { class: order } dictionary."""
+) -> list[Any]:
+    """Compose a component list from a :ref:`component priority dictionary
+    <component-priority-dictionaries>`."""
 
     def _check_components(complist: Collection[Any]) -> None:
         if len({convert(c) for c in complist}) != len(complist):
@@ -39,7 +32,7 @@ def build_component_list(
                 "please update your settings"
             )
 
-    def _map_keys(compdict: Mapping[Any, Any]) -> Union[BaseSettings, Dict[Any, Any]]:
+    def _map_keys(compdict: Mapping[Any, Any]) -> BaseSettings | dict[Any, Any]:
         if isinstance(compdict, BaseSettings):
             compbs = BaseSettings()
             for k, v in compdict.items():
@@ -51,8 +44,7 @@ def build_component_list(
                         "convert to the same "
                         "object, please update your settings"
                     )
-                else:
-                    compbs.set(convert(k), v, priority=prio)
+                compbs.set(convert(k), v, priority=prio)
             return compbs
         _check_components(compdict)
         return {convert(k): v for k, v in compdict.items()}
@@ -66,25 +58,12 @@ def build_component_list(
                     "please provide a real number or None instead"
                 )
 
-    if custom is not None:
-        warnings.warn(
-            "The 'custom' attribute of build_component_list() is deprecated. "
-            "Please merge its value into 'compdict' manually or change your "
-            "code to use Settings.getwithbase().",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        if isinstance(custom, (list, tuple)):
-            _check_components(custom)
-            return type(custom)(convert(c) for c in custom)  # type: ignore[return-value]
-        compdict.update(custom)
-
     _validate_values(compdict)
     compdict = without_none_values(_map_keys(compdict))
     return [k for k, v in sorted(compdict.items(), key=itemgetter(1))]
 
 
-def arglist_to_dict(arglist: List[str]) -> Dict[str, str]:
+def arglist_to_dict(arglist: list[str]) -> dict[str, str]:
     """Convert a list of arguments like ['arg1=val1', 'arg2=val2', ...] to a
     dict
     """
@@ -92,8 +71,8 @@ def arglist_to_dict(arglist: List[str]) -> Dict[str, str]:
 
 
 def closest_scrapy_cfg(
-    path: Union[str, os.PathLike] = ".",
-    prevpath: Optional[Union[str, os.PathLike]] = None,
+    path: str | os.PathLike = ".",
+    prevpath: str | os.PathLike | None = None,
 ) -> str:
     """Return the path to the closest scrapy.cfg file by traversing the current
     directory and its parents
@@ -130,7 +109,7 @@ def get_config(use_closest: bool = True) -> ConfigParser:
     return cfg
 
 
-def get_sources(use_closest: bool = True) -> List[str]:
+def get_sources(use_closest: bool = True) -> list[str]:
     xdg_config_home = (
         os.environ.get("XDG_CONFIG_HOME") or Path("~/.config").expanduser()
     )
@@ -146,8 +125,8 @@ def get_sources(use_closest: bool = True) -> List[str]:
 
 
 def feed_complete_default_values_from_settings(
-    feed: Dict[str, Any], settings: BaseSettings
-) -> Dict[str, Any]:
+    feed: dict[str, Any], settings: BaseSettings
+) -> dict[str, Any]:
     out = feed.copy()
     out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
@@ -164,17 +143,17 @@ def feed_complete_default_values_from_settings(
 
 def feed_process_params_from_cli(
     settings: BaseSettings,
-    output: List[str],
-    output_format: Optional[str] = None,
-    overwrite_output: Optional[List[str]] = None,
-) -> Dict[str, Dict[str, Any]]:
+    output: list[str],
+    *,
+    overwrite_output: list[str] | None = None,
+) -> dict[str, dict[str, Any]]:
     """
     Receives feed export params (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
     suitable to be used as the FEEDS setting.
     """
     valid_output_formats: Iterable[str] = without_none_values(
-        cast(Dict[str, str], settings.getwithbase("FEED_EXPORTERS"))
+        cast("dict[str, str]", settings.getwithbase("FEED_EXPORTERS"))
     ).keys()
 
     def check_valid_format(output_format: str) -> None:
@@ -192,38 +171,10 @@ def feed_process_params_from_cli(
             raise UsageError(
                 "Please use only one of -o/--output and -O/--overwrite-output"
             )
-        if output_format:
-            raise UsageError(
-                "-t/--output-format is a deprecated command line option"
-                " and does not work in combination with -O/--overwrite-output."
-                " To specify a format please specify it after a colon at the end of the"
-                " output URI (i.e. -O <URI>:<FORMAT>)."
-                " Example working in the tutorial: "
-                "scrapy crawl quotes -O quotes.json:json"
-            )
         output = overwrite_output
         overwrite = True
 
-    if output_format:
-        if len(output) == 1:
-            check_valid_format(output_format)
-            message = (
-                "The -t/--output-format command line option is deprecated in favor of "
-                "specifying the output format within the output URI using the -o/--output or the"
-                " -O/--overwrite-output option (i.e. -o/-O <URI>:<FORMAT>). See the documentation"
-                " of the -o or -O option or the following examples for more information. "
-                "Examples working in the tutorial: "
-                "scrapy crawl quotes -o quotes.csv:csv   or   "
-                "scrapy crawl quotes -O quotes.json:json"
-            )
-            warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
-            return {output[0]: {"format": output_format}}
-        raise UsageError(
-            "The -t command-line option cannot be used if multiple output "
-            "URIs are specified"
-        )
-
-    result: Dict[str, Dict[str, Any]] = {}
+    result: dict[str, dict[str, Any]] = {}
     for element in output:
         try:
             feed_uri, feed_format = element.rsplit(":", 1)

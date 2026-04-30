@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING, Deque, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
@@ -14,7 +14,7 @@ from twisted.web.client import (
 )
 from twisted.web.error import SchemeNotSupported
 
-from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory
+from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFactory
 from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
-ConnectionKeyT = Tuple[bytes, bytes, int]
+ConnectionKeyT = tuple[bytes, bytes, int]
 
 
 class H2ConnectionPool:
@@ -36,12 +36,16 @@ class H2ConnectionPool:
 
         # Store a dictionary which is used to get the respective
         # H2ClientProtocolInstance using the  key as Tuple(scheme, hostname, port)
-        self._connections: Dict[ConnectionKeyT, H2ClientProtocol] = {}
+        self._connections: dict[ConnectionKeyT, H2ClientProtocol] = {}
 
         # Save all requests that arrive before the connection is established
-        self._pending_requests: Dict[
-            ConnectionKeyT, Deque[Deferred[H2ClientProtocol]]
+        self._pending_requests: dict[
+            ConnectionKeyT, deque[Deferred[H2ClientProtocol]]
         ] = {}
+
+        self._tls_verbose_logging: bool = settings.getbool(
+            "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
+        )
 
     def get_connection(
         self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
@@ -68,10 +72,15 @@ class H2ConnectionPool:
     ) -> Deferred[H2ClientProtocol]:
         self._pending_requests[key] = deque()
 
-        conn_lost_deferred: Deferred[List[BaseException]] = Deferred()
+        conn_lost_deferred: Deferred[list[BaseException]] = Deferred()
         conn_lost_deferred.addCallback(self._remove_connection, key)
 
-        factory = H2ClientFactory(uri, self.settings, conn_lost_deferred)
+        factory = H2ClientFactory(
+            uri,
+            self.settings,
+            conn_lost_deferred,
+            tls_verbose_logging=self._tls_verbose_logging,
+        )
         conn_d = endpoint.connect(factory)
         conn_d.addCallback(self.put_connection, key)
 
@@ -94,7 +103,7 @@ class H2ConnectionPool:
         return conn
 
     def _remove_connection(
-        self, errors: List[BaseException], key: ConnectionKeyT
+        self, errors: list[BaseException], key: ConnectionKeyT
     ) -> None:
         self._connections.pop(key)
 
@@ -120,13 +129,13 @@ class H2Agent:
         self,
         reactor: ReactorBase,
         pool: H2ConnectionPool,
-        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
-        connect_timeout: Optional[float] = None,
-        bind_address: Optional[bytes] = None,
+        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
+        connect_timeout: float | None = None,
+        bind_address: tuple[str, int] | None = None,
     ) -> None:
         self._reactor = reactor
         self._pool = pool
-        self._context_factory = AcceptableProtocolsContextFactory(
+        self._context_factory = _AcceptableProtocolsContextFactory(
             context_factory, acceptable_protocols=[b"h2"]
         )
         self.endpoint_factory = _StandardEndpointFactory(
@@ -164,9 +173,9 @@ class ScrapyProxyH2Agent(H2Agent):
         reactor: ReactorBase,
         proxy_uri: URI,
         pool: H2ConnectionPool,
-        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
-        connect_timeout: Optional[float] = None,
-        bind_address: Optional[bytes] = None,
+        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
+        connect_timeout: float | None = None,
+        bind_address: tuple[str, int] | None = None,
     ) -> None:
         super().__init__(
             reactor=reactor,

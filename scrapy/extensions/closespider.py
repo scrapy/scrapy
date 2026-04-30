@@ -8,12 +8,20 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, DefaultDict, Dict
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.asyncio import (
+    AsyncioLoopingCall,
+    CallLaterResult,
+    call_later,
+    create_looping_call,
+)
+from scrapy.utils.defer import _schedule_coro
 
 if TYPE_CHECKING:
+    from twisted.internet.task import LoopingCall
     from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
@@ -30,7 +38,13 @@ class CloseSpider:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
 
-        self.close_on: Dict[str, Any] = {
+        # for CLOSESPIDER_TIMEOUT
+        self.task: CallLaterResult | None = None
+
+        # for CLOSESPIDER_TIMEOUT_NO_ITEM
+        self.task_no_item: AsyncioLoopingCall | LoopingCall | None = None
+
+        self.close_on: dict[str, Any] = {
             "timeout": crawler.settings.getfloat("CLOSESPIDER_TIMEOUT"),
             "itemcount": crawler.settings.getint("CLOSESPIDER_ITEMCOUNT"),
             "pagecount": crawler.settings.getint("CLOSESPIDER_PAGECOUNT"),
@@ -44,7 +58,7 @@ class CloseSpider:
         if not any(self.close_on.values()):
             raise NotConfigured
 
-        self.counter: DefaultDict[str, int] = defaultdict(int)
+        self.counter: defaultdict[str, int] = defaultdict(int)
 
         if self.close_on.get("errorcount"):
             crawler.signals.connect(self.error_count, signal=signals.spider_error)
@@ -73,54 +87,44 @@ class CloseSpider:
     def error_count(self, failure: Failure, response: Response, spider: Spider) -> None:
         self.counter["errorcount"] += 1
         if self.counter["errorcount"] == self.close_on["errorcount"]:
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_errorcount")
+            self._close_spider("closespider_errorcount")
 
     def page_count(self, response: Response, request: Request, spider: Spider) -> None:
         self.counter["pagecount"] += 1
         self.counter["pagecount_since_last_item"] += 1
         if self.counter["pagecount"] == self.close_on["pagecount"]:
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_pagecount")
+            self._close_spider("closespider_pagecount")
             return
         if self.close_on["pagecount_no_item"] and (
             self.counter["pagecount_since_last_item"]
             >= self.close_on["pagecount_no_item"]
         ):
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_pagecount_no_item")
+            self._close_spider("closespider_pagecount_no_item")
 
     def spider_opened(self, spider: Spider) -> None:
-        from twisted.internet import reactor
-
         assert self.crawler.engine
-        self.task = reactor.callLater(
-            self.close_on["timeout"],
-            self.crawler.engine.close_spider,
-            spider,
-            reason="closespider_timeout",
+        self.task = call_later(
+            self.close_on["timeout"], self._close_spider, "closespider_timeout"
         )
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
         self.counter["itemcount"] += 1
         self.counter["pagecount_since_last_item"] = 0
         if self.counter["itemcount"] == self.close_on["itemcount"]:
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_itemcount")
+            self._close_spider("closespider_itemcount")
 
     def spider_closed(self, spider: Spider) -> None:
-        task = getattr(self, "task", None)
-        if task and task.active():
-            task.cancel()
+        if self.task:
+            self.task.cancel()
+            self.task = None
 
-        task_no_item = getattr(self, "task_no_item", None)
-        if task_no_item and task_no_item.running:
-            task_no_item.stop()
+        if self.task_no_item:
+            if self.task_no_item.running:
+                self.task_no_item.stop()
+            self.task_no_item = None
 
     def spider_opened_no_item(self, spider: Spider) -> None:
-        from twisted.internet import task
-
-        self.task_no_item = task.LoopingCall(self._count_items_produced, spider)
+        self.task_no_item = create_looping_call(self._count_items_produced)
         self.task_no_item.start(self.timeout_no_item, now=False)
 
         logger.info(
@@ -131,7 +135,7 @@ class CloseSpider:
     def item_scraped_no_item(self, item: Any, spider: Spider) -> None:
         self.items_in_period += 1
 
-    def _count_items_produced(self, spider: Spider) -> None:
+    def _count_items_produced(self) -> None:
         if self.items_in_period >= 1:
             self.items_in_period = 0
         else:
@@ -139,5 +143,8 @@ class CloseSpider:
                 f"Closing spider since no items were produced in the last "
                 f"{self.timeout_no_item} seconds."
             )
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_timeout_no_item")
+            self._close_spider("closespider_timeout_no_item")
+
+    def _close_spider(self, reason: str) -> None:
+        assert self.crawler.engine
+        _schedule_coro(self.crawler.engine.close_spider_async(reason=reason))

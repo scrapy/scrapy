@@ -8,25 +8,18 @@ This module must not depend on any module outside the Standard Library.
 from __future__ import annotations
 
 import collections
+import contextlib
 import warnings
 import weakref
+from collections import OrderedDict
 from collections.abc import Mapping
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AnyStr,
-    Iterable,
-    Optional,
-    OrderedDict,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, AnyStr, TypeVar
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -39,7 +32,8 @@ class CaselessDict(dict):
     __slots__ = ()
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
-        from scrapy.http.headers import Headers
+        # circular import
+        from scrapy.http.headers import Headers  # noqa: PLC0415
 
         if issubclass(cls, CaselessDict) and not issubclass(cls, Headers):
             warnings.warn(
@@ -52,7 +46,7 @@ class CaselessDict(dict):
 
     def __init__(
         self,
-        seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
     ):
         super().__init__()
         if seq:
@@ -89,10 +83,10 @@ class CaselessDict(dict):
         return dict.get(self, self.normkey(key), self.normvalue(def_val))
 
     def setdefault(self, key: AnyStr, def_val: Any = None) -> Any:
-        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))  # type: ignore[arg-type]
+        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
 
     # doesn't fully implement MutableMapping.update()
-    def update(self, seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]]]) -> None:  # type: ignore[override]
+    def update(self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]) -> None:  # type: ignore[override]
         seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
         super().update(iseq)
@@ -153,9 +147,9 @@ class LocalCache(OrderedDict[_KT, _VT]):
     Older items expires first.
     """
 
-    def __init__(self, limit: Optional[int] = None):
+    def __init__(self, limit: int | None = None):
         super().__init__()
-        self.limit: Optional[int] = limit
+        self.limit: int | None = limit
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
         if self.limit:
@@ -176,17 +170,16 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
     it cannot be instantiated with an initial dictionary.
     """
 
-    def __init__(self, limit: Optional[int] = None):
+    def __init__(self, limit: int | None = None):
         super().__init__()
         self.data: LocalCache = LocalCache(limit=limit)
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
-        try:
+        # if raised, key is not weak-referenceable, skip caching
+        with contextlib.suppress(TypeError):
             super().__setitem__(key, value)
-        except TypeError:
-            pass  # key is not weak-referenceable, skip caching
 
-    def __getitem__(self, key: _KT) -> Optional[_VT]:  # type: ignore[override]
+    def __getitem__(self, key: _KT) -> _VT | None:
         try:
             return super().__getitem__(key)
         except (TypeError, KeyError):

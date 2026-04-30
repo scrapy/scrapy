@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from json import JSONEncoder
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
-
-from twisted.internet import task
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from json import JSONEncoder
+
+    from twisted.internet.task import LoopingCall
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -29,21 +32,29 @@ class PeriodicLog:
         self,
         stats: StatsCollector,
         interval: float = 60.0,
-        ext_stats: Dict[str, Any] = {},
-        ext_delta: Dict[str, Any] = {},
+        ext_stats: dict[str, Any] | None = None,
+        ext_delta: dict[str, Any] | None = None,
         ext_timing_enabled: bool = False,
     ):
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self.multiplier: float = 60.0 / self.interval
-        self.task: Optional[task.LoopingCall] = None
+        self.task: AsyncioLoopingCall | LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
-        self.ext_stats_include: List[str] = ext_stats.get("include", [])
-        self.ext_stats_exclude: List[str] = ext_stats.get("exclude", [])
+        self.ext_stats_include: Sequence[str] = (
+            ext_stats.get("include", ()) if ext_stats else ()
+        )
+        self.ext_stats_exclude: Sequence[str] = (
+            ext_stats.get("exclude", ()) if ext_stats else ()
+        )
         self.ext_delta_enabled: bool = bool(ext_delta)
-        self.ext_delta_include: List[str] = ext_delta.get("include", [])
-        self.ext_delta_exclude: List[str] = ext_delta.get("exclude", [])
+        self.ext_delta_include: Sequence[str] = (
+            ext_delta.get("include", ()) if ext_delta else ()
+        )
+        self.ext_delta_exclude: Sequence[str] = (
+            ext_delta.get("exclude", ()) if ext_delta else ()
+        )
         self.ext_timing_enabled: bool = ext_timing_enabled
 
     @classmethod
@@ -52,7 +63,7 @@ class PeriodicLog:
         if not interval:
             raise NotConfigured
         try:
-            ext_stats: Optional[Dict[str, Any]] = crawler.settings.getdict(
+            ext_stats: dict[str, Any] | None = crawler.settings.getdict(
                 "PERIODIC_LOG_STATS"
             )
         except (TypeError, ValueError):
@@ -62,7 +73,7 @@ class PeriodicLog:
                 else None
             )
         try:
-            ext_delta: Optional[Dict[str, Any]] = crawler.settings.getdict(
+            ext_delta: dict[str, Any] | None = crawler.settings.getdict(
                 "PERIODIC_LOG_DELTA"
             )
         except (TypeError, ValueError):
@@ -73,7 +84,7 @@ class PeriodicLog:
             )
 
         ext_timing_enabled: bool = crawler.settings.getbool(
-            "PERIODIC_LOG_TIMING_ENABLED", False
+            "PERIODIC_LOG_TIMING_ENABLED"
         )
         if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured
@@ -93,14 +104,14 @@ class PeriodicLog:
 
     def spider_opened(self, spider: Spider) -> None:
         self.time_prev: datetime = datetime.now(tz=timezone.utc)
-        self.delta_prev: Dict[str, Union[int, float]] = {}
-        self.stats_prev: Dict[str, Union[int, float]] = {}
+        self.delta_prev: dict[str, int | float] = {}
+        self.stats_prev: dict[str, int | float] = {}
 
-        self.task = task.LoopingCall(self.log)
+        self.task = create_looping_call(self.log)
         self.task.start(self.interval)
 
     def log(self) -> None:
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         if self.ext_timing_enabled:
             data.update(self.log_timing())
         if self.ext_delta_enabled:
@@ -109,8 +120,8 @@ class PeriodicLog:
             data.update(self.log_crawler_stats())
         logger.info(self.encoder.encode(data))
 
-    def log_delta(self) -> Dict[str, Any]:
-        num_stats: Dict[str, Union[int, float]] = {
+    def log_delta(self) -> dict[str, Any]:
+        num_stats: dict[str, int | float] = {
             k: v
             for k, v in self.stats._stats.items()
             if isinstance(v, (int, float))
@@ -120,7 +131,7 @@ class PeriodicLog:
         self.delta_prev = num_stats
         return {"delta": delta}
 
-    def log_timing(self) -> Dict[str, Any]:
+    def log_timing(self) -> dict[str, Any]:
         now = datetime.now(tz=timezone.utc)
         time = {
             "log_interval": self.interval,
@@ -132,7 +143,7 @@ class PeriodicLog:
         self.time_prev = now
         return {"time": time}
 
-    def log_crawler_stats(self) -> Dict[str, Any]:
+    def log_crawler_stats(self) -> dict[str, Any]:
         stats = {
             k: v
             for k, v in self.stats._stats.items()
@@ -141,7 +152,7 @@ class PeriodicLog:
         return {"stats": stats}
 
     def param_allowed(
-        self, stat_name: str, include: List[str], exclude: List[str]
+        self, stat_name: str, include: Sequence[str], exclude: Sequence[str]
     ) -> bool:
         if not include and not exclude:
             return True
@@ -150,10 +161,7 @@ class PeriodicLog:
                 return False
         if exclude and not include:
             return True
-        for p in include:
-            if p in stat_name:
-                return True
-        return False
+        return any(p in stat_name for p in include)
 
     def spider_closed(self, spider: Spider, reason: str) -> None:
         self.log()
