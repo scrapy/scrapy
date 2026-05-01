@@ -66,6 +66,7 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 
     class SignalSpider(scrapy.Spider):
         name = "signals"
+        allowed_domains = ["quotes.toscrape.com"]
         start_urls = ["https://quotes.toscrape.com/page/1/"]
 
         @classmethod
