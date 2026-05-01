@@ -40,6 +40,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet :: WWW/HTTP",
@@ -466,4 +467,4 @@ split-on-trailing-comma = false
 convention = "pep257"
 
 [tool.sphinx-scrapy]
-python-version = "3.13"  # Keep in sync with .github/workflows/checks.yml.
+python-version = "3.14"  # Keep in sync with .github/workflows/checks.yml.
