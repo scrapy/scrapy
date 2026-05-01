@@ -53,6 +53,8 @@ directory where you'd like to store your code and run::
 
     scrapy startproject tutorial
 
+.. include:: windows-path-env-var-note.rst
+
 This will create a ``tutorial`` directory with the following contents::
 
     tutorial/
