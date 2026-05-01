@@ -1,4 +1,4 @@
-The guidelines for contributing are available here:
+The full guidelines for contributing to Scrapy are available here:
 https://docs.scrapy.org/en/master/contributing.html
 
 Please do not abuse the issue tracker for support questions.
