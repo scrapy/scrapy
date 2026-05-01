@@ -184,10 +184,6 @@ class Crawler:
             )
         self.crawling = self._started = True
 
-        def _log_crawl_error(failure):
-            logger.error("error in crawler.crawl", 
-                         exc_info= (type(failure.value), failure.value, failure.getTracebackObject()),)
-            return failure
 
         try:
             self.spider = self._create_spider(*args, **kwargs)
@@ -468,7 +464,10 @@ class CrawlerRunner(CrawlerRunnerBase):
     
 
     def _log_crawl_error(self,failure: Failure) -> Failure:
-        logger.error("error during crawl",exc_info=failure)
+        logger.error(
+            "error during crawl",exc_info=(type(failure.value),failure.value,
+                                            failure.getTracebackObject()),
+                     )
         return failure
 
     @inlineCallbacks
@@ -477,18 +476,13 @@ class CrawlerRunner(CrawlerRunnerBase):
     ) -> Generator[Deferred[Any], Any, None]:
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
+        d.addErrback(self._log_crawl_error)
         self._active.add(d)
         failed = False
         try:
             yield d
         except Exception as exc:
             failed = True
-            logger.error(
-                "error while crawling %(spider)s",{
-                    "spider": crawler.spidercls.name
-                },
-                exc_info=exc
-            )
         finally:
             self.crawlers.discard(crawler)
             self._active.discard(d)
