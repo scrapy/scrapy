@@ -12,13 +12,13 @@ Key takeaways:
 > Note: What follows is based on
 > https://raw.githubusercontent.com/jackyzha0/quartz/acfaa472253a432d350e9b6904c0cde14f8c487f/.github/pull_request_template.md
 
-We more than welcome contributions, and are OK with the use of LLMs tools. How
+We more than welcome contributions, and are OK with the use of LLM tools. How
 you use those tools depends on whether or not they make you more productive.
 
 But one thing that bugs us a lot are PRs that are made entirely with these
 tools, without any revision or any effort trying to refine their output
 whatsoever. This is just pure laziness, and unacceptable. Doing so will just
-end up wasting everyone time (ours and yours).
+end up wasting everyone's time (ours and yours).
 
 So to be the most productive for all parties, we would encourage any
 contributors to, at the very least, pay attention to what the model is doing,
