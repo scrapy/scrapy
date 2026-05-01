@@ -33,7 +33,9 @@ class ItemPipelineManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
-        return build_component_list(settings.getwithbase("ITEM_PIPELINES"))
+        return build_component_list(
+            settings.get_component_priority_dict_with_base("ITEM_PIPELINES")
+        )
 
     def _add_middleware(self, pipe: Any) -> None:
         if hasattr(pipe, "open_spider"):

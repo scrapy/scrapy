@@ -73,7 +73,9 @@ class Command(ScrapyCommand):
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts
         assert self.settings is not None
-        contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
+        contracts = build_component_list(
+            self.settings.get_component_priority_dict_with_base("SPIDER_CONTRACTS")
+        )
         conman = ContractsManager(load_object(c) for c in contracts)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)

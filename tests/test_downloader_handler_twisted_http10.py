@@ -34,9 +34,7 @@ class TestHttp10(HTTP10DownloadHandlerMixin, TestHttpBase):
 
     @deferred_f_from_coro_f
     async def test_protocol(self, mockserver: MockServer) -> None:
-        request = Request(
-            mockserver.url("/host", is_secure=self.is_secure), method="GET"
-        )
+        request = Request(mockserver.url("/host", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.protocol == "HTTP/1.0"
