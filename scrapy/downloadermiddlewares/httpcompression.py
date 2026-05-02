@@ -73,10 +73,14 @@ class HttpCompressionMiddleware:
             self.stats = stats
             self._max_size = 1073741824
             self._warn_size = 33554432
+            self._keep_encoding_header = False
             return
         self.stats = crawler.stats
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+        self._keep_encoding_header = crawler.settings.getbool(
+            "HTTPCOMPRESSION_KEEP_ENCODING_HEADER"
+        )
         crawler.signals.connect(self.open_spider, signals.spider_opened)
 
     @classmethod
@@ -111,6 +115,7 @@ class HttpCompressionMiddleware:
         if isinstance(response, Response):
             content_encoding = response.headers.getlist("Content-Encoding")
             if content_encoding:
+                original_content_encoding = content_encoding
                 max_size = request.meta.get("download_maxsize", self._max_size)
                 warn_size = request.meta.get("download_warnsize", self._warn_size)
                 try:
@@ -132,7 +137,8 @@ class HttpCompressionMiddleware:
                     )
                 if content_encoding:
                     self._warn_unknown_encoding(response, content_encoding)
-                response.headers["Content-Encoding"] = content_encoding
+                if not self._keep_encoding_header:
+                    response.headers["Content-Encoding"] = content_encoding
                 if self.stats:
                     self.stats.inc_value(
                         "httpcompression/response_bytes",
@@ -148,7 +154,9 @@ class HttpCompressionMiddleware:
                     # responsetypes guessing is reliable
                     kwargs["encoding"] = None
                 response = response.replace(cls=respcls, **kwargs)
-                if not content_encoding:
+                if self._keep_encoding_header:
+                    response.headers["Content-Encoding"] = original_content_encoding
+                elif not content_encoding:
                     del response.headers["Content-Encoding"]
 
         return response
