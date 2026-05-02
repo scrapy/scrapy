@@ -63,6 +63,22 @@ class TestGenspiderCommand(TestProjectBase):
         assert call("genspider", "--dump=basic", cwd=proj_path) == 0
         assert call("genspider", "-d", "basic", cwd=proj_path) == 0
 
+    def test_edit(self, proj_path: Path) -> None:
+        spider_file = proj_path / self.project_name / "spiders" / "test_edit.py"
+        assert (
+            call(
+                "genspider",
+                "-s",
+                "EDITOR=echo",
+                "--edit",
+                "test_edit",
+                "example.com",
+                cwd=proj_path,
+            )
+            == 0
+        )
+        assert spider_file.exists()
+
     def test_same_name_as_project(self, proj_path: Path) -> None:
         assert call("genspider", self.project_name, cwd=proj_path) == 2
         assert not (
@@ -167,6 +183,22 @@ class TestGenspiderStandaloneCommand:
     def test_generate_standalone_spider(self, tmp_path: Path) -> None:
         call("genspider", "example", "example.com", cwd=tmp_path)
         assert Path(tmp_path, "example.py").exists()
+
+    def test_edit(self, tmp_path: Path) -> None:
+        spider_file = tmp_path / "test_edit.py"
+        assert (
+            call(
+                "genspider",
+                "-s",
+                "EDITOR=echo",
+                "--edit",
+                "test_edit",
+                "example.com",
+                cwd=tmp_path,
+            )
+            == 0
+        )
+        assert spider_file.exists()
 
     @pytest.mark.parametrize("force", [True, False])
     def test_same_name_as_existing_file(self, force: bool, tmp_path: Path) -> None:
