@@ -127,7 +127,6 @@ ignore_errors = true
 module = [
     "scrapy.core.downloader.webclient",
     "scrapy.spiders.init",
-    "scrapy.utils.testsite",
     "tests.test_webclient",
 ]
 allow_any_generics = true
