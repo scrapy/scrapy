@@ -125,10 +125,8 @@ ignore_errors = true
 # deprecated modules
 [[tool.mypy.overrides]]
 module = [
-    "scrapy.core.downloader.webclient",
     "scrapy.spiders.init",
     "scrapy.utils.testsite",
-    "tests.test_webclient",
 ]
 allow_any_generics = true
 allow_untyped_calls = true

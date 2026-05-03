@@ -55,9 +55,17 @@ if TYPE_CHECKING:
 
 
 class TestHttpBase(ABC):
-    is_secure = False
+    is_secure: bool = False
+    http2: bool = False
     # whether the handler supports per-request bindaddress
-    handler_supports_bindaddress_meta = True
+    handler_supports_bindaddress_meta: bool = True
+    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
+    # stream error (of type PROTOCOL_ERROR) so the client will send
+    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
+    # connection (see handling of ProtocolError in
+    # h2.connection.H2Connection.receive_data()), thus closing all streams that
+    # were using it, and we handle this as a normal exception.
+    handler_supports_http2_dataloss: bool = True
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
 
@@ -519,17 +527,6 @@ class TestHttpBase(ABC):
         else:
             assert latency > 0
 
-
-class TestHttp11Base(TestHttpBase):
-    http2: bool = False
-    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
-    # stream error (of type PROTOCOL_ERROR) so the client will send
-    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
-    # connection (see handling of ProtocolError in
-    # h2.connection.H2Connection.receive_data()), thus closing all streams that
-    # were using it, and we handle this as a normal exception.
-    handler_supports_http2_dataloss: bool = True
-
     @coroutine_test
     async def test_download_without_maxsize_limit(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
@@ -803,7 +800,7 @@ class TestHttp11Base(TestHttpBase):
             )
 
 
-class TestHttps11Base(TestHttp11Base):
+class TestHttpsBase(TestHttpBase):
     is_secure = True
 
     tls_log_message = (
