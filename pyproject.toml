@@ -126,7 +126,6 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = [
     "scrapy.core.downloader.webclient",
-    "scrapy.spiders.init",
     "tests.test_webclient",
 ]
 allow_any_generics = true
@@ -138,7 +137,6 @@ warn_return_any = false
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
-#    "IPython.*",
     "bpython",
     "brotli",
     "brotlicffi",
