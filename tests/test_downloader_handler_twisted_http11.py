@@ -11,9 +11,9 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from tests.test_downloader_handlers_http_base import (
-    TestHttp11Base,
+    TestHttpBase,
     TestHttpProxyBase,
-    TestHttps11Base,
+    TestHttpsBase,
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
@@ -41,11 +41,11 @@ def test_not_configured_without_reactor() -> None:
         HTTP11DownloadHandler.from_crawler(crawler)
 
 
-class TestHttp11(HTTP11DownloadHandlerMixin, TestHttp11Base):
+class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):
     pass
 
 
-class TestHttps11(HTTP11DownloadHandlerMixin, TestHttps11Base):
+class TestHttps(HTTP11DownloadHandlerMixin, TestHttpsBase):
     pass
 
 
@@ -53,25 +53,25 @@ class TestSimpleHttps(HTTP11DownloadHandlerMixin, TestSimpleHttpsBase):
     pass
 
 
-class TestHttps11WrongHostname(HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase):
+class TestHttpsWrongHostname(HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase):
     pass
 
 
-class TestHttps11InvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+class TestHttpsInvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
     pass
 
 
-class TestHttps11InvalidDNSPattern(
+class TestHttpsInvalidDNSPattern(
     HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
 ):
     pass
 
 
-class TestHttps11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+class TestHttpsCustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
     pass
 
 
-class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
+class TestHttpWithCrawler(TestHttpWithCrawlerBase):
     @property
     def settings_dict(self) -> dict[str, Any] | None:
         return {
@@ -82,9 +82,9 @@ class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
         }
 
 
-class TestHttps11WithCrawler(TestHttp11WithCrawler):
+class TestHttpsWithCrawler(TestHttpWithCrawler):
     is_secure = True
 
 
-class TestHttp11Proxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
+class TestHttpProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
     pass

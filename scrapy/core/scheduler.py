@@ -5,16 +5,13 @@ import logging
 from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from warnings import warn
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     # requires queuelib >= 1.6.2
@@ -450,28 +447,13 @@ class Scheduler(BaseScheduler):
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
-        try:
-            return build_from_crawler(
-                self.pqclass,
-                self.crawler,
-                downstream_queue_cls=self.mqclass,
-                key="",
-                start_queue_cls=self._smqclass,
-            )
-        except TypeError:  # pragma: no cover
-            warn(
-                f"The __init__ method of {global_object_name(self.pqclass)} "
-                "does not support a `start_queue_cls` keyword-only "
-                "parameter.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            return build_from_crawler(
-                self.pqclass,
-                self.crawler,
-                downstream_queue_cls=self.mqclass,
-                key="",
-            )
+        return build_from_crawler(
+            self.pqclass,
+            self.crawler,
+            downstream_queue_cls=self.mqclass,
+            key="",
+            start_queue_cls=self._smqclass,
+        )
 
     def _dq(self) -> ScrapyPriorityQueue:
         """Create a new priority queue instance, with disk storage"""
@@ -479,30 +461,14 @@ class Scheduler(BaseScheduler):
         assert self.dqdir
         assert self.pqclass
         state = self._read_dqs_state(self.dqdir)
-        try:
-            q = build_from_crawler(
-                self.pqclass,
-                self.crawler,
-                downstream_queue_cls=self.dqclass,
-                key=self.dqdir,
-                startprios=state,
-                start_queue_cls=self._sdqclass,
-            )
-        except TypeError:  # pragma: no cover
-            warn(
-                f"The __init__ method of {global_object_name(self.pqclass)} "
-                "does not support a `start_queue_cls` keyword-only "
-                "parameter.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            q = build_from_crawler(
-                self.pqclass,
-                self.crawler,
-                downstream_queue_cls=self.dqclass,
-                key=self.dqdir,
-                startprios=state,
-            )
+        q = build_from_crawler(
+            self.pqclass,
+            self.crawler,
+            downstream_queue_cls=self.dqclass,
+            key=self.dqdir,
+            startprios=state,
+            start_queue_cls=self._sdqclass,
+        )
         if q:
             logger.info(
                 "Resuming crawl (%(queuesize)d requests scheduled)",
