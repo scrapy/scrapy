@@ -122,24 +122,9 @@ implicit_reexport = true
 module = "scrapy.settings.default_settings"
 ignore_errors = true
 
-# deprecated modules
-[[tool.mypy.overrides]]
-module = [
-    "scrapy.core.downloader.webclient",
-    "scrapy.spiders.init",
-    "scrapy.utils.testsite",
-    "tests.test_webclient",
-]
-allow_any_generics = true
-allow_untyped_calls = true
-allow_untyped_defs = true
-check_untyped_defs = false
-warn_return_any = false
-
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
-#    "IPython.*",
     "bpython",
     "brotli",
     "brotlicffi",
@@ -154,7 +139,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.14.2"
+current_version = "2.15.2"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -463,3 +448,6 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[tool.sphinx-scrapy]
+python-version = "3.13"  # Keep in sync with .github/workflows/checks.yml.

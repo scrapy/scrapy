@@ -4,7 +4,6 @@ from asyncio import sleep
 import pytest
 
 from scrapy import Spider, signals
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.test_spider_start import SLEEP_SECONDS
@@ -38,15 +37,6 @@ class TwistedSleepSpiderMiddleware:
             yield item_or_request
 
 
-class UniversalSpiderMiddleware:
-    async def process_start(self, start):
-        async for item_or_request in start:
-            yield item_or_request
-
-    def process_start_requests(self, start_requests, spider):
-        raise NotImplementedError
-
-
 # Spiders and spider middlewares for TestMain._test_wrap
 
 
@@ -61,48 +51,11 @@ class ModernWrapSpiderSubclass(ModernWrapSpider):
     name = "test"
 
 
-class UniversalWrapSpider(Spider):
-    name = "test"
-
-    async def start(self):
-        yield ITEM_B
-
-    def start_requests(self):
-        yield ITEM_D
-
-
-class DeprecatedWrapSpider(Spider):
-    name = "test"
-
-    def start_requests(self):
-        yield ITEM_B
-
-
 class ModernWrapSpiderMiddleware:
     async def process_start(self, start):
         yield ITEM_A
         async for item_or_request in start:
             yield item_or_request
-        yield ITEM_C
-
-
-class UniversalWrapSpiderMiddleware:
-    async def process_start(self, start):
-        yield ITEM_A
-        async for item_or_request in start:
-            yield item_or_request
-        yield ITEM_C
-
-    def process_start_requests(self, start, spider):
-        yield ITEM_A
-        yield from start
-        yield ITEM_C
-
-
-class DeprecatedWrapSpiderMiddleware:
-    def process_start_requests(self, start, spider):
-        yield ITEM_A
-        yield from start
         yield ITEM_C
 
 
@@ -135,195 +88,6 @@ class TestMain:
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
-
-    @coroutine_test
-    async def test_modern_mw_universal_spider(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_wrap(ModernWrapSpiderMiddleware, UniversalWrapSpider)
-
-    @coroutine_test
-    async def test_modern_mw_deprecated_spider(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning, match=r"deprecated start_requests\(\)"
-        ):
-            await self._test_wrap(ModernWrapSpiderMiddleware, DeprecatedWrapSpider)
-
-    @coroutine_test
-    async def test_universal_mw_modern_spider(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_wrap(UniversalWrapSpiderMiddleware, ModernWrapSpider)
-
-    @coroutine_test
-    async def test_universal_mw_universal_spider(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_wrap(UniversalWrapSpiderMiddleware, UniversalWrapSpider)
-
-    @coroutine_test
-    async def test_universal_mw_deprecated_spider(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning, match=r"deprecated start_requests\(\)"
-        ):
-            await self._test_wrap(UniversalWrapSpiderMiddleware, DeprecatedWrapSpider)
-
-    @coroutine_test
-    async def test_deprecated_mw_modern_spider(self):
-        with (
-            pytest.warns(
-                ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
-            ),
-            pytest.raises(
-                ValueError, match=r"only compatible with \(deprecated\) spiders"
-            ),
-        ):
-            await self._test_wrap(DeprecatedWrapSpiderMiddleware, ModernWrapSpider)
-
-    @coroutine_test
-    async def test_deprecated_mw_modern_spider_subclass(self):
-        with (
-            pytest.warns(
-                ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
-            ),
-            pytest.raises(
-                ValueError,
-                match=r"^\S+?\.ModernWrapSpider \(inherited by \S+?.ModernWrapSpiderSubclass\) .*? only compatible with \(deprecated\) spiders",
-            ),
-        ):
-            await self._test_wrap(
-                DeprecatedWrapSpiderMiddleware, ModernWrapSpiderSubclass
-            )
-
-    @coroutine_test
-    async def test_deprecated_mw_universal_spider(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
-        ):
-            await self._test_wrap(
-                DeprecatedWrapSpiderMiddleware,
-                UniversalWrapSpider,
-                [ITEM_A, ITEM_D, ITEM_C],
-            )
-
-    @coroutine_test
-    async def test_deprecated_mw_deprecated_spider(self):
-        with (
-            pytest.warns(
-                ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
-            ),
-            pytest.warns(
-                ScrapyDeprecationWarning, match=r"deprecated start_requests\(\)"
-            ),
-        ):
-            await self._test_wrap(DeprecatedWrapSpiderMiddleware, DeprecatedWrapSpider)
-
-    @coroutine_test
-    async def test_modern_mw_universal_mw_modern_spider(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_douple_wrap(
-                ModernWrapSpiderMiddleware,
-                UniversalWrapSpiderMiddleware,
-                ModernWrapSpider,
-            )
-
-    @coroutine_test
-    async def test_modern_mw_deprecated_mw_modern_spider(self):
-        with pytest.raises(ValueError, match=r"trying to combine spider middlewares"):
-            await self._test_douple_wrap(
-                ModernWrapSpiderMiddleware,
-                DeprecatedWrapSpiderMiddleware,
-                ModernWrapSpider,
-            )
-
-    @coroutine_test
-    async def test_universal_mw_deprecated_mw_modern_spider(self):
-        with (
-            pytest.warns(
-                ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
-            ),
-            pytest.raises(
-                ValueError, match=r"only compatible with \(deprecated\) spiders"
-            ),
-        ):
-            await self._test_douple_wrap(
-                UniversalWrapSpiderMiddleware,
-                DeprecatedWrapSpiderMiddleware,
-                ModernWrapSpider,
-            )
-
-    @coroutine_test
-    async def test_modern_mw_universal_mw_universal_spider(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_douple_wrap(
-                ModernWrapSpiderMiddleware,
-                UniversalWrapSpiderMiddleware,
-                UniversalWrapSpider,
-            )
-
-    @coroutine_test
-    async def test_modern_mw_deprecated_mw_universal_spider(self):
-        with pytest.raises(ValueError, match=r"trying to combine spider middlewares"):
-            await self._test_douple_wrap(
-                ModernWrapSpiderMiddleware,
-                DeprecatedWrapSpiderMiddleware,
-                UniversalWrapSpider,
-            )
-
-    @coroutine_test
-    async def test_universal_mw_deprecated_mw_universal_spider(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
-        ):
-            await self._test_douple_wrap(
-                UniversalWrapSpiderMiddleware,
-                DeprecatedWrapSpiderMiddleware,
-                UniversalWrapSpider,
-                [ITEM_A, ITEM_A, ITEM_D, ITEM_C, ITEM_C],
-            )
-
-    @coroutine_test
-    async def test_modern_mw_universal_mw_deprecated_spider(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning, match=r"deprecated start_requests\(\)"
-        ):
-            await self._test_douple_wrap(
-                ModernWrapSpiderMiddleware,
-                UniversalWrapSpiderMiddleware,
-                DeprecatedWrapSpider,
-            )
-
-    @coroutine_test
-    async def test_modern_mw_deprecated_mw_deprecated_spider(self):
-        with pytest.raises(ValueError, match=r"trying to combine spider middlewares"):
-            await self._test_douple_wrap(
-                ModernWrapSpiderMiddleware,
-                DeprecatedWrapSpiderMiddleware,
-                DeprecatedWrapSpider,
-            )
-
-    @coroutine_test
-    async def test_universal_mw_deprecated_mw_deprecated_spider(self):
-        with (
-            pytest.warns(
-                ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
-            ),
-            pytest.warns(
-                ScrapyDeprecationWarning, match=r"deprecated start_requests\(\)"
-            ),
-        ):
-            await self._test_douple_wrap(
-                UniversalWrapSpiderMiddleware,
-                DeprecatedWrapSpiderMiddleware,
-                DeprecatedWrapSpider,
-            )
-
-    @coroutine_test
-    async def test_universal_mw_uses_process_start(self):
-        """Test that process_start_requests() isn't used when process_start() exists."""
-        await self._test([UniversalSpiderMiddleware], ModernWrapSpider, [ITEM_B])
 
     async def _test_sleep(self, spider_middlewares):
         class TestSpider(Spider):

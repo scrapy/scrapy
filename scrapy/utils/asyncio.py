@@ -65,7 +65,7 @@ def is_asyncio_available() -> bool:
         calling it from code such as spiders and Scrapy components, if Scrapy
         is run using one of the supported ways).
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.15.0
         This function now also returns ``True`` if there is a running asyncio
         loop, even if no Twisted reactor is installed.
     """
@@ -172,7 +172,7 @@ class AsyncioLoopingCall:
             raise ValueError("Interval must be greater than 0")
 
         self.interval = interval
-        self._start_time = time.time()
+        self._start_time = time.monotonic()
         if now:
             self._call()
         loop = asyncio.get_event_loop()
@@ -182,7 +182,7 @@ class AsyncioLoopingCall:
         """Return the time to sleep until the next call."""
         assert self.interval is not None
         assert self._start_time is not None
-        now = time.time()
+        now = time.monotonic()
         running_for = now - self._start_time
         return self.interval - (running_for % self.interval)
 
@@ -302,7 +302,7 @@ async def run_in_thread(
     :func:`twisted.internet.threads.deferToThread`, depending on whether
     asyncio support is available.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.15.0
     """
     if is_asyncio_available():
         return await asyncio.to_thread(func, *args, **kwargs)

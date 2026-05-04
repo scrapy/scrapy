@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import re
 import warnings
 from asyncio import sleep
 from typing import Any
 
 import pytest
-from testfixtures import LogCapture
 
 from scrapy import Spider, signals
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
@@ -77,81 +74,6 @@ class TestMain:
             warnings.simplefilter("error")
             await self._test_spider(TestSpider, [ITEM_A])
 
-    @coroutine_test
-    async def test_deprecated(self):
-        class TestSpider(Spider):
-            name = "test"
-
-            def start_requests(self):
-                yield ITEM_A
-
-        with pytest.warns(ScrapyDeprecationWarning):
-            await self._test_spider(TestSpider, [ITEM_A])
-
-    @coroutine_test
-    async def test_deprecated_subclass(self):
-        class BaseSpider(Spider):
-            def start_requests(self):
-                yield ITEM_A
-
-        class TestSpider(BaseSpider):
-            name = "test"
-
-        # The warning must be about the base class and not the subclass.
-        with pytest.warns(ScrapyDeprecationWarning, match="BaseSpider"):
-            await self._test_spider(TestSpider, [ITEM_A])
-
-    @coroutine_test
-    async def test_universal(self):
-        class TestSpider(Spider):
-            name = "test"
-
-            async def start(self):
-                yield ITEM_A
-
-            def start_requests(self):
-                yield ITEM_B
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_spider(TestSpider, [ITEM_A])
-
-    @coroutine_test
-    async def test_universal_subclass(self):
-        class BaseSpider(Spider):
-            async def start(self):
-                yield ITEM_A
-
-            def start_requests(self):
-                yield ITEM_B
-
-        class TestSpider(BaseSpider):
-            name = "test"
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_spider(TestSpider, [ITEM_A])
-
-    @coroutine_test
-    async def test_start_deprecated_super(self):
-        class TestSpider(Spider):
-            name = "test"
-
-            async def start(self):
-                for item_or_request in super().start_requests():
-                    yield item_or_request
-
-        msg = "use Spider.start() instead"
-        with pytest.warns(ScrapyDeprecationWarning, match=re.escape(msg)) as ws:
-            await self._test_spider(TestSpider, [])
-
-        for w in ws:
-            if isinstance(w.message, ScrapyDeprecationWarning) and msg in str(
-                w.message
-            ):
-                assert w.filename.endswith("test_spider_start.py")
-                break
-
     async def _test_start(self, start_, expected_items=None):
         class TestSpider(Spider):
             name = "test"
@@ -176,24 +98,3 @@ class TestMain:
             yield ITEM_A
 
         await self._test_start(start, [ITEM_A])
-
-    # Exceptions
-
-    @coroutine_test
-    async def test_deprecated_non_generator_exception(self):
-        class TestSpider(Spider):
-            name = "test"
-
-            def start_requests(self):
-                raise RuntimeError
-
-        with (
-            LogCapture() as log,
-            pytest.warns(
-                ScrapyDeprecationWarning,
-                match=r"defines the deprecated start_requests\(\) method",
-            ),
-        ):
-            await self._test_spider(TestSpider, [])
-
-        assert "in start_requests\n    raise RuntimeError" in str(log)

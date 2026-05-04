@@ -36,7 +36,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
-        return build_component_list(settings.getwithbase("DOWNLOADER_MIDDLEWARES"))
+        return build_component_list(
+            settings.get_component_priority_dict_with_base("DOWNLOADER_MIDDLEWARES")
+        )
 
     def _add_middleware(self, mw: Any) -> None:
         if hasattr(mw, "process_request"):

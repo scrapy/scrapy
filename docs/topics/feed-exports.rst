@@ -246,7 +246,7 @@ The feeds are stored on `Google Cloud Storage`_.
 
 -   Required external libraries: `google-cloud-storage`_.
 
-For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication>`_.
+For more information about authentication, please refer to `Google Cloud documentation <https://docs.cloud.google.com/docs/authentication>`_.
 
 You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
 
@@ -261,7 +261,7 @@ storage backend is: ``True``.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
-.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+.. _google-cloud-storage: https://docs.cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
 
 .. _topics-feed-storage-stdout:

@@ -20,4 +20,6 @@ class ExtensionManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
-        return build_component_list(settings.getwithbase("EXTENSIONS"))
+        return build_component_list(
+            settings.get_component_priority_dict_with_base("EXTENSIONS")
+        )

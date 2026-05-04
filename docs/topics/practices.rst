@@ -417,7 +417,7 @@ If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
 
 .. _Tor project: https://www.torproject.org/
-.. _commercial support: https://scrapy.org/support/
+.. _commercial support: https://www.scrapy.org/companies
 .. _ProxyMesh: https://proxymesh.com/
 .. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders

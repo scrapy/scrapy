@@ -229,7 +229,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         headings = [
             i for i in range(len(part_strings)) if part_strings[i].endswith(":\n")
         ]
-        for index in headings[::-1]:
+        for index in reversed(headings):
             char = "-" if "Global Options" in part_strings[index] else "="
             part_strings[index] = part_strings[index][:-2].title()
             underline = "".join(["\n", (char * len(part_strings[index])), "\n"])

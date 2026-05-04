@@ -48,14 +48,12 @@ __all__ = [
     "DEPTH_STATS_VERBOSE",
     "DNSCACHE_ENABLED",
     "DNSCACHE_SIZE",
-    "DNS_RESOLVER",
     "DNS_TIMEOUT",
     "DOWNLOADER",
     "DOWNLOADER_CLIENTCONTEXTFACTORY",
     "DOWNLOADER_CLIENT_TLS_CIPHERS",
     "DOWNLOADER_CLIENT_TLS_METHOD",
     "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING",
-    "DOWNLOADER_HTTPCLIENTFACTORY",
     "DOWNLOADER_MIDDLEWARES",
     "DOWNLOADER_MIDDLEWARES_BASE",
     "DOWNLOADER_STATS",
@@ -185,6 +183,7 @@ __all__ = [
     "TELNETCONSOLE_PORT",
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
+    "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
     "URLLENGTH_LIMIT",
@@ -275,10 +274,6 @@ DOWNLOADER_CLIENT_TLS_CIPHERS = "DEFAULT"
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
-DOWNLOADER_HTTPCLIENTFACTORY = (
-    "scrapy.core.downloader.webclient.ScrapyHTTPClientFactory"
-)
-
 DOWNLOADER_MIDDLEWARES = {}
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
@@ -289,7 +284,6 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
-    "scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware": 560,
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -525,6 +519,8 @@ TELNETCONSOLE_USERNAME = "scrapy"
 TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
+
+TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
