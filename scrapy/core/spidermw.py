@@ -112,40 +112,59 @@ class SpiderMiddlewareManager(MiddlewareManager):
         exception_processor_index: int,
         recover_to: MutableChain[_T] | MutableAsyncChain[_T],
     ) -> Iterable[_T] | AsyncIterator[_T]:
-        def process_sync(iterable: Iterable[_T]) -> Iterable[_T]:
-            try:
-                yield from iterable
-            except Exception as ex:
-                exception_result = cast(
-                    "Failure | MutableChain[_T]",
-                    self._process_spider_exception(
-                        response, ex, exception_processor_index
-                    ),
-                )
-                if isinstance(exception_result, Failure):
-                    raise
-                assert isinstance(recover_to, MutableChain)
-                recover_to.extend(exception_result)
-
-        async def process_async(iterable: AsyncIterator[_T]) -> AsyncIterator[_T]:
-            try:
-                async for r in iterable:
-                    yield r
-            except Exception as ex:
-                exception_result = cast(
-                    "Failure | MutableAsyncChain[_T]",
-                    self._process_spider_exception(
-                        response, ex, exception_processor_index
-                    ),
-                )
-                if isinstance(exception_result, Failure):
-                    raise
-                assert isinstance(recover_to, MutableAsyncChain)
-                recover_to.extend(exception_result)
 
         if isinstance(iterable, AsyncIterator):
-            return process_async(iterable)
-        return process_sync(iterable)
+            return self._process_async(
+                response,
+                iterable,
+                exception_processor_index,
+                cast("MutableAsyncChain[_T]", recover_to),
+            )
+        return self._process_sync(
+            response,
+            iterable,
+            exception_processor_index,
+            cast("MutableChain[_T]", recover_to),
+        )
+
+    def _process_sync(
+        self,
+        response: Response,
+        iterable: Iterable[_T],
+        exception_processor_index: int,
+        recover_to: MutableChain[_T],
+    ) -> Iterable[_T]:
+        try:
+            yield from iterable
+        except Exception as ex:
+            exception_result = cast(
+                "Failure | MutableChain[_T]",
+                self._process_spider_exception(response, ex, exception_processor_index),
+            )
+            if isinstance(exception_result, Failure):
+                raise
+            assert isinstance(recover_to, MutableChain)
+            recover_to.extend(exception_result)
+
+    async def _process_async(
+        self,
+        response: Response,
+        iterable: AsyncIterator[_T],
+        exception_processor_index: int,
+        recover_to: MutableAsyncChain[_T],
+    ) -> AsyncIterator[_T]:
+        try:
+            async for r in iterable:
+                yield r
+        except Exception as ex:
+            exception_result = cast(
+                "Failure | MutableAsyncChain[_T]",
+                self._process_spider_exception(response, ex, exception_processor_index),
+            )
+            if isinstance(exception_result, Failure):
+                raise
+            assert isinstance(recover_to, MutableAsyncChain)
+            recover_to.extend(exception_result)
 
     def _process_spider_exception(
         self,
@@ -350,25 +369,14 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 "scrape_response_async() called on a SpiderMiddlewareManager"
                 " instance created without a crawler."
             )
-
-        async def process_callback_output(
-            result: Iterable[_T] | AsyncIterator[_T],
-        ) -> MutableChain[_T] | MutableAsyncChain[_T]:
-            return await self._process_callback_output(response, result)
-
-        def process_spider_exception(
-            exception: Exception,
-        ) -> MutableChain[_T] | MutableAsyncChain[_T]:
-            return self._process_spider_exception(response, exception)
-
         try:
             it: Iterable[_T] | AsyncIterator[_T] = await self._process_spider_input(
                 scrape_func, response, request
             )
-            return await process_callback_output(it)
+            return await self._process_callback_output(response, it)
         except Exception as ex:
             await _defer_sleep_async()
-            return process_spider_exception(ex)
+            return self._process_spider_exception(response, ex)
 
     async def process_start(
         self, spider: Spider | None = None

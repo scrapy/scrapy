@@ -155,16 +155,16 @@ class Stream:
             "status": None,
         }
 
-        def _cancel(_: Any) -> None:
-            # Close this stream as gracefully as possible
-            # If the associated request is initiated we reset this stream
-            # else we directly call close() method
-            if self.metadata["request_sent"]:
-                self.reset_stream(StreamCloseReason.CANCELLED)
-            else:
-                self.close(StreamCloseReason.CANCELLED)
+        self._deferred_response: Deferred[Response] = Deferred(self._cancel)
 
-        self._deferred_response: Deferred[Response] = Deferred(_cancel)
+    def _cancel(self, _: Any) -> None:
+        # Close this stream as gracefully as possible
+        # If the associated request is initiated we reset this stream
+        # else we directly call close() method
+        if self.metadata["request_sent"]:
+            self.reset_stream(StreamCloseReason.CANCELLED)
+        else:
+            self.close(StreamCloseReason.CANCELLED)
 
     def __repr__(self) -> str:
         return f"Stream(id={self.stream_id!r})"
