@@ -114,10 +114,10 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 acceptableCiphers=self.tls_ciphers,
             )
 
-    # kept for old-style HTTP/1.0 downloader context twisted calls,
-    # e.g. connectSSL()
     # should be removed together with ScrapyClientContextFactory
-    def getContext(self, hostname: Any = None, port: Any = None) -> SSL.Context:
+    def getContext(
+        self, hostname: Any = None, port: Any = None
+    ) -> SSL.Context:  # pragma: no cover
         return self._get_context()
 
     def _get_context(self) -> SSL.Context:

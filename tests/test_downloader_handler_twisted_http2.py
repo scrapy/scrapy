@@ -19,7 +19,7 @@ from scrapy.http import Request
 from scrapy.utils.defer import maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
     TestHttpProxyBase,
-    TestHttps11Base,
+    TestHttpsBase,
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
@@ -61,7 +61,7 @@ def test_not_configured_without_reactor() -> None:
         H2DownloadHandler.from_crawler(crawler)
 
 
-class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
+class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
     http2 = True
     handler_supports_http2_dataloss = False
 
@@ -149,27 +149,25 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
                 await download_handler.download_request(request)
 
 
-class TestHttps2WrongHostname(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
+class TestHttp2WrongHostname(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
     pass
 
 
-class TestHttps2InvalidDNSId(H2DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+class TestHttp2InvalidDNSId(H2DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
     pass
 
 
-class TestHttps2InvalidDNSPattern(
+class TestHttp2InvalidDNSPattern(
     H2DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
 ):
     pass
 
 
-class TestHttps2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+class TestHttp2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase):
     pass
 
 
 class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
-    """HTTP 2.0 test case with MockServer"""
-
     @property
     def settings_dict(self) -> dict[str, Any] | None:
         return {
@@ -194,7 +192,7 @@ class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
         pytest.skip("headers_received support is not implemented")
 
 
-class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
+class TestHttp2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
     expected_http_proxy_request_body = b"/"
 

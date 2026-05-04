@@ -9,9 +9,9 @@ import pytest
 
 from scrapy import Request
 from tests.test_downloader_handlers_http_base import (
-    TestHttp11Base,
+    TestHttpBase,
     TestHttpProxyBase,
-    TestHttps11Base,
+    TestHttpsBase,
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
@@ -42,7 +42,7 @@ class HttpxDownloadHandlerMixin:
         return HttpxDownloadHandler
 
 
-class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
+class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
     handler_supports_bindaddress_meta = False
 
     @pytest.mark.skipif(
@@ -77,7 +77,7 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
         )
 
 
-class TestHttps11(HttpxDownloadHandlerMixin, TestHttps11Base):
+class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
     handler_supports_bindaddress_meta = False
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
@@ -90,25 +90,25 @@ class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):
     pass
 
 
-class TestHttps11WrongHostname(HttpxDownloadHandlerMixin, TestHttpsWrongHostnameBase):
+class TestHttpsWrongHostname(HttpxDownloadHandlerMixin, TestHttpsWrongHostnameBase):
     pass
 
 
-class TestHttps11InvalidDNSId(HttpxDownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+class TestHttpsInvalidDNSId(HttpxDownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
     pass
 
 
-class TestHttps11InvalidDNSPattern(
+class TestHttpsInvalidDNSPattern(
     HttpxDownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
 ):
     pass
 
 
-class TestHttps11CustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBase):
+class TestHttpsCustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBase):
     pass
 
 
-class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
+class TestHttpWithCrawler(TestHttpWithCrawlerBase):
     @property
     def settings_dict(self) -> dict[str, Any] | None:
         return {
@@ -119,7 +119,7 @@ class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
         }
 
 
-class TestHttps11WithCrawler(TestHttp11WithCrawler):
+class TestHttpsWithCrawler(TestHttpWithCrawler):
     is_secure = True
 
     @pytest.mark.skip(reason="response.certificate is not implemented")
@@ -129,10 +129,10 @@ class TestHttps11WithCrawler(TestHttp11WithCrawler):
 
 
 @pytest.mark.skip(reason="Proxy support is not implemented yet")
-class TestHttp11Proxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
+class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
     pass
 
 
 @pytest.mark.skip(reason="Proxy support is not implemented yet")
-class TestHttps11Proxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
+class TestHttpsProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
