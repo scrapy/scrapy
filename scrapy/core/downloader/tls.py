@@ -125,7 +125,7 @@ class _ScrapyClientTLSOptions26(ClientTLSOptions):
         self, tlsProtocol: TLSMemoryBIOProtocol
     ) -> SSL.Connection:
         """This method is needed to override the verify callback."""
-        conn = super().clientConnectionForTLS(tlsProtocol)  # type: ignore[no-untyped-call]
+        conn: SSL.Connection = super().clientConnectionForTLS(tlsProtocol)  # type: ignore[no-untyped-call]
         callback = self._verifyCB(
             self._hostnameIsDnsName, self._hostnameASCII, self.verbose_logging
         )

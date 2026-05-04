@@ -132,7 +132,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             # Our options class is needed to skip verification errors
             if TWISTED_TLS_NEW_IMPL:
                 return _ScrapyClientTLSOptions26(
-                    self._get_cert_options()._makeTLSConnection,
+                    self._get_cert_options()._makeTLSConnection,  # type: ignore[attr-defined]
                     hostname.decode("ascii"),
                     verbose_logging=self.tls_verbose_logging,
                 )
