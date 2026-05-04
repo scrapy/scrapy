@@ -271,6 +271,94 @@ Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
     [...]
 
 
+.. _cookiejars:
+
+Direct access to cookiejars from spider
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In some cases it is required to directly set specific values in an existing :class:`scrapy.http.cookies.CookieJar` object where :class:`http.cookiejar.CookieJar` from python standard library used here)
+
+.. skip: start
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import CrawlerProcess
+
+
+    class Quotes(scrapy.Spider):
+        name = "quotes"
+        custom_settings = {"DOWNLOAD_DELAY": 1}
+
+        def start_requests(self):
+            yield scrapy.Request(
+                url="https://quotes.toscrape.com/login", callback=self.login
+            )
+
+        def login(self, response):
+            self.logger.info(self.cookie_jars[None])  # scrapy.http.cookies.CookieJar object
+            self.logger.info(self.cookie_jars[None].jar)  # http.cookiejar.CookieJar object
+
+            locale_cookie = (
+                self.cookie_jars[None]._cookies["quotes.toscrape.com"]["/"].get("session")
+            )
+            locale_cookie.value = locale_cookie.value.upper()
+            self.logger.info(self.cookie_jars[None].jar)
+
+
+    if __name__ == "__main__":
+        p = CrawlerProcess()
+        p.crawl(Quotes)
+        p.start()
+
+.. skip: end
+
+.. note::
+
+   If :reqmeta:`cookiejar` didn't specified in request meta, middleware will read this as ``None``, as result of this middleware will create cookiejar object under dict key ``None``.
+
+
+Log output::
+
+    2024-02-23 10:51:27 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://quotes.toscrape.com/login> (referer: None)
+    2024-02-23 10:51:27 [quotes] INFO: <scrapy.http.cookies.CookieJar object at 0x00000217DB719B40>
+    2024-02-23 10:51:27 [quotes] INFO: <CookieJar[<Cookie session=eyJjc3JmX3Rva2VuIjoiSnFQQU9GTGt1amZzZ3J3UVdHeGV6WFR2UnBpY0Job1NWS3liWmxhblVISXROREVtQ2RZTSJ9.Zdhqng.8uQzjuvDfOcNJHV7luY5Na6C1N0 for quotes.toscrape.com/>]>
+    2024-02-23 10:51:27 [quotes] INFO: <CookieJar[<Cookie session=EYJJC3JMX3RVA2VUIJOISNFQQU9GTGT1AMZZZ3J3UVDHEGV6WFR2UNBPY0JOB1NWS3LIWMXHBLVISXROREVTQ2RZTSJ9.ZDHQNG.8UQZJUVDFOCNJHV7LUY5NA6C1N0 for quotes.toscrape.com/>]>
+    2024-02-23 10:51:27 [scrapy.core.engine] INFO: Closing spider (finished)
+
+
+If cookie middleware is enabled, ``get_cookiejar(response_or_request)`` method added to spider:
+
+.. class:: scrapy.Spider
+
+    ...
+
+    .. method:: get_cookiejar(spider, response_or_request)
+
+      Returns ``scrapy.http.cookies.CookieJar`` cookiejar object based on  :reqmeta:`cookiejar` value of ``response_or_request`` argument
+
+      :param response_or_request: request or response object where target session/cookiejar object used or planned to use
+      :type response_or_request: :class:`~scrapy.Request` or :class:`~scrapy.Response` object
+
+      Technically this is short cut to ``request.meta.get('cookiejar')`` or ``response.request.meta.get('cookiejar')`` if ``response_or_request`` is :class:`~scrapy.Response`
+
+      It allows a bit easier access to cookiejar object:
+
+
+      .. code-block:: none
+
+          self.logger.info(self.get_cookiejar(response))  # scrapy.http.cookies.CookieJar object
+          self.logger.info(self.get_cookiejar(response).jar)  # http.cookiejar.CookieJar object
+          locale_cookie = (
+              self.get_cookiejar(response).jar._cookies["quotes.toscrape.com"]["/"].get("session")
+          )
+
+Known use cases where direct access to cookiejar objects can be useful:
+
+1. Modifying specific cookie value (as provided on example code sample above).
+2. Delete cookiejar. On some cases this can re-initialise session.
+
+.. warning:: ``http.cookiejar.CookieJar`` object from python standard lib https://docs.python.org/3/library/http.cookies.html doesn't provide option to individually access/modify specific cookie values. It is possible to change it only using it's private attributes as provided on code sample above.
+
 DefaultHeadersMiddleware
 ------------------------
 
