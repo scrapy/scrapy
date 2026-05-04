@@ -82,7 +82,7 @@ alias to the :func:`~scrapy.utils.trackref.print_live_refs` function:
     ExampleSpider                       1   oldest: 15s ago
     HtmlResponse                       10   oldest: 1s ago
     Selector                            2   oldest: 0s ago
-    FormRequest                       878   oldest: 7s ago
+    Request                           878   oldest: 7s ago
 
 As you can see, that report also shows the "age" of the oldest object in each
 class. If you're running multiple spiders per process chances are you can
