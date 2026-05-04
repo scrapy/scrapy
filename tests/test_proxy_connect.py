@@ -20,7 +20,7 @@ class MitmProxy:
     auth_user = "scrapy"
     auth_pass = "scrapy"
 
-    def start(self):
+    def start(self) -> str:
         script = """
 import sys
 from mitmproxy.tools.main import mitmdump
@@ -28,34 +28,42 @@ sys.argv[0] = "mitmdump"
 sys.exit(mitmdump())
         """
         cert_path = Path(__file__).parent.resolve() / "keys"
+        args = [
+            "--listen-host",
+            "127.0.0.1",
+            "--listen-port",
+            "0",
+            "--proxyauth",
+            f"{self.auth_user}:{self.auth_pass}",
+            "--set",
+            f"confdir={cert_path}",
+            "--ssl-insecure",
+        ]
         self.proc = Popen(
             [
                 sys.executable,
                 "-u",
                 "-c",
                 script,
-                "--listen-host",
-                "127.0.0.1",
-                "--listen-port",
-                "0",
-                "--proxyauth",
-                f"{self.auth_user}:{self.auth_pass}",
-                "--set",
-                f"confdir={cert_path}",
-                "--ssl-insecure",
+                *args,
             ],
             stdout=PIPE,
+            text=True,
         )
-        line = self.proc.stdout.readline().decode("utf-8")
-        host_port = re.search(r"listening at (?:http://)?([^:]+:\d+)", line).group(1)
+        assert self.proc.stdout is not None
+        line = self.proc.stdout.readline()
+        m = re.search(r"listening at (?:http://)?([^:]+:\d+)", line)
+        if not m:
+            raise RuntimeError(f"Failed to parse mitmdump output: {line}")
+        host_port = m.group(1)
         return f"http://{self.auth_user}:{self.auth_pass}@{host_port}"
 
-    def stop(self):
+    def stop(self) -> None:
         self.proc.kill()
         self.proc.communicate()
 
 
-def _wrong_credentials(proxy_url):
+def _wrong_credentials(proxy_url: str) -> str:
     bad_auth_proxy = list(urlsplit(proxy_url))
     bad_auth_proxy[1] = bad_auth_proxy[1].replace("scrapy:scrapy@", "wrong:wronger@")
     return urlunsplit(bad_auth_proxy)

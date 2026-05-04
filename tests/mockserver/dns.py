@@ -35,11 +35,10 @@ class MockDNSServer:
             [sys.executable, "-u", "-m", "tests.mockserver.dns"],
             stdout=PIPE,
             env=get_script_run_env(),
+            text=True,
         )
         self.host = "127.0.0.1"
-        self.port = int(
-            self.proc.stdout.readline().strip().decode("ascii").split(":")[1]
-        )
+        self.port = int(self.proc.stdout.readline().strip().split(":")[1])
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):

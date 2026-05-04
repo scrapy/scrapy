@@ -239,7 +239,7 @@ class ArbitraryLengthPayloadResource(LeafResource):
 
 class NoMetaRefreshRedirect(Redirect):
     def render(self, request: server.Request) -> bytes:
-        content = Redirect.render(self, request)
+        content: bytes = Redirect.render(self, request)
         return content.replace(
             b'http-equiv="refresh"', b'http-no-equiv="do-not-refresh-me"'
         )
@@ -348,7 +348,7 @@ class ResponseHeadersResource(resource.Resource):
     def render(self, request):
         body = json.loads(request.content.read().decode())
         for header_name, header_value in body.items():
-            request.responseHeaders.addRawHeader(header_name, header_value)
+            request.responseHeaders.setRawHeaders(header_name, [header_value])
         return json.dumps(body).encode("utf-8")
 
 

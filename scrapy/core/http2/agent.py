@@ -143,7 +143,7 @@ class H2Agent:
         )
 
     def get_endpoint(self, uri: URI) -> HostnameEndpoint:
-        return self.endpoint_factory.endpointForURI(uri)
+        return self.endpoint_factory.endpointForURI(uri)  # type: ignore[no-any-return]
 
     def get_key(self, uri: URI) -> ConnectionKeyT:
         """
@@ -187,7 +187,7 @@ class ScrapyProxyH2Agent(H2Agent):
         self._proxy_uri = proxy_uri
 
     def get_endpoint(self, uri: URI) -> HostnameEndpoint:
-        return self.endpoint_factory.endpointForURI(self._proxy_uri)
+        return self.endpoint_factory.endpointForURI(self._proxy_uri)  # type: ignore[no-any-return]
 
     def get_key(self, uri: URI) -> ConnectionKeyT:
         """We use the proxy uri instead of uri obtained from request url"""

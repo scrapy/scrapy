@@ -7,20 +7,14 @@ from __future__ import annotations
 import asyncio
 import os
 import warnings
-from ftplib import FTP
 from importlib import import_module
 from pathlib import Path
-from posixpath import split
 from typing import TYPE_CHECKING, Any, TypeVar, cast
-from unittest import mock
 
-from twisted.trial.unittest import SkipTest
 from twisted.web.client import Agent
 
 from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner, CrawlerRunnerBase
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.boto import is_botocore_available
-from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
@@ -35,80 +29,6 @@ if TYPE_CHECKING:
 
 
 _T = TypeVar("_T")
-
-
-def assert_gcs_environ() -> None:  # pragma: no cover
-    warnings.warn(
-        "The assert_gcs_environ() function is deprecated and will be removed in a future version of Scrapy."
-        " Check GCS_PROJECT_ID directly.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    if "GCS_PROJECT_ID" not in os.environ:
-        raise SkipTest("GCS_PROJECT_ID not found")
-
-
-def skip_if_no_boto() -> None:  # pragma: no cover
-    warnings.warn(
-        "The skip_if_no_boto() function is deprecated and will be removed in a future version of Scrapy."
-        " Check scrapy.utils.boto.is_botocore_available() directly.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    if not is_botocore_available():
-        raise SkipTest("missing botocore library")
-
-
-def get_gcs_content_and_delete(
-    bucket: Any, path: str
-) -> tuple[bytes, list[dict[str, str]], Any]:  # pragma: no cover
-    from google.cloud import storage  # noqa: PLC0415
-
-    warnings.warn(
-        "The get_gcs_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
-    bucket = client.get_bucket(bucket)
-    blob = bucket.get_blob(path)
-    content = blob.download_as_string()
-    acl = list(blob.acl)  # loads acl before it will be deleted
-    bucket.delete_blob(path)
-    return content, acl, blob
-
-
-def get_ftp_content_and_delete(
-    path: str,
-    host: str,
-    port: int,
-    username: str,
-    password: str,
-    use_active_mode: bool = False,
-) -> bytes:  # pragma: no cover
-    warnings.warn(
-        "The get_ftp_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    ftp = FTP()
-    ftp.connect(host, port)
-    ftp.login(username, password)
-    if use_active_mode:
-        ftp.set_pasv(False)
-    ftp_data: list[bytes] = []
-
-    def buffer_data(data: bytes) -> None:
-        ftp_data.append(data)
-
-    ftp.retrbinary(f"RETR {path}", buffer_data)
-    dirname, filename = split(path)
-    ftp.cwd(dirname)
-    ftp.delete(filename)
-    return b"".join(ftp_data)
-
-
-TestSpider = create_deprecated_class("TestSpider", DefaultSpider)
 
 
 def get_reactor_settings() -> dict[str, Any]:
@@ -183,29 +103,6 @@ def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
     getter = q.get()
     q.put_nowait(value)
     return getter
-
-
-def mock_google_cloud_storage() -> tuple[Any, Any, Any]:  # pragma: no cover
-    """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
-    classes and set their proper return values.
-    """
-    from google.cloud.storage import Blob, Bucket, Client  # noqa: PLC0415
-
-    warnings.warn(
-        "The mock_google_cloud_storage() function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-
-    client_mock = mock.create_autospec(Client)
-
-    bucket_mock = mock.create_autospec(Bucket)
-    client_mock.get_bucket.return_value = bucket_mock
-
-    blob_mock = mock.create_autospec(Blob)
-    bucket_mock.blob.return_value = blob_mock
-
-    return (client_mock, bucket_mock, blob_mock)
 
 
 def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:  # pragma: no cover

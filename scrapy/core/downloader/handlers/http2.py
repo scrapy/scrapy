@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from time import time
+from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
@@ -113,7 +113,7 @@ class ScrapyH2Agent:
         timeout = request.meta.get("download_timeout") or self._connect_timeout
         agent = self._get_agent(request, timeout)
 
-        start_time = time()
+        start_time = monotonic()
         d = agent.request(request, spider)
         d.addCallback(self._cb_latency, request, start_time)
 
@@ -125,7 +125,7 @@ class ScrapyH2Agent:
     def _cb_latency(
         response: Response, request: Request, start_time: float
     ) -> Response:
-        request.meta["download_latency"] = time() - start_time
+        request.meta["download_latency"] = monotonic() - start_time
         return response
 
     @staticmethod

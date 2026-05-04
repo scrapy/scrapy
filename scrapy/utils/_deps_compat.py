@@ -12,5 +12,7 @@ TWISTED_TLS_NEW_IMPL = TWISTED_VERSION > TxVersion("twisted", 25, 5, 0)
 TWISTED_LOOP_314_CHANGES = TWISTED_VERSION > TxVersion("twisted", 25, 5, 0)
 
 PYOPENSSL_VERSION = Version(PYOPENSSL_VERSION_STRING)
-# SSL.Context.use_certificate wants an X509 object, SSL.Context.use_privatekey wants a PKey object
+# SSL.Context.use_certificate() wants an X509 object, SSL.Context.use_privatekey() wants a PKey object
 PYOPENSSL_WANTS_X509_PKEY = PYOPENSSL_VERSION < Version("24.3.0")
+# SSL.Context.set_cipher_list() creates a temporary connection, making the context immutable
+PYOPENSSL_SET_CIPHER_LIST_TMP_CONN = PYOPENSSL_VERSION < Version("25.2.0")

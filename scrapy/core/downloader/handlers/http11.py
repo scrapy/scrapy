@@ -6,8 +6,9 @@ import ipaddress
 import logging
 import re
 from contextlib import suppress
+from functools import partial
 from io import BytesIO
-from time import time
+from time import monotonic
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
@@ -460,7 +461,7 @@ class ScrapyAgent:
         if isinstance(agent, self._TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
-        start_time = time()
+        start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
             to_bytes(url, encoding="ascii"),
@@ -489,7 +490,7 @@ class ScrapyAgent:
         raise DownloadTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
-        request.meta["download_latency"] = time() - start_time
+        request.meta["download_latency"] = monotonic() - start_time
         return result
 
     @staticmethod
@@ -547,11 +548,7 @@ class ScrapyAgent:
                 get_warnsize_msg(expected_size, warnsize, request, expected=True)
             )
 
-        def _cancel(_: Any) -> None:
-            # Abort connection immediately.
-            txresponse._transport._producer.abortConnection()
-
-        d: Deferred[_ResultT] = Deferred(_cancel)
+        d: Deferred[_ResultT] = Deferred(partial(self._cancel, txresponse=txresponse))
         txresponse.deliverBody(
             _ResponseReader(
                 finished=d,
@@ -569,6 +566,11 @@ class ScrapyAgent:
         self._txresponse = txresponse
 
         return d
+
+    @staticmethod
+    def _cancel(_: Any, txresponse: TxResponse) -> None:
+        # Abort connection immediately.
+        txresponse._transport._producer.abortConnection()
 
     def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
@@ -667,17 +669,17 @@ class _ResponseReader(Protocol):
             assert hostname is not None
             _log_ssl_conn_debug_info(hostname, connection)
 
-    def dataReceived(self, bodyBytes: bytes) -> None:
+    def dataReceived(self, data: bytes) -> None:
         # This maybe called several times after cancel was called with buffered data.
         if self._finished.called:
             return
 
         assert self.transport
-        self._bodybuf.write(bodyBytes)
-        self._bytes_received += len(bodyBytes)
+        self._bodybuf.write(data)
+        self._bytes_received += len(data)
 
         if stop_download := check_stop_download(
-            signals.bytes_received, self._crawler, self._request, data=bodyBytes
+            signals.bytes_received, self._crawler, self._request, data=data
         ):
             self.transport.stopProducing()
             self.transport.loseConnection()

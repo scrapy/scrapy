@@ -23,9 +23,6 @@ def _py_files(folder):
 collect_ignore = [
     # may need extra deps
     "docs/_ext",
-    # not a test, but looks like a test
-    "scrapy/utils/testproc.py",
-    "scrapy/utils/testsite.py",
     # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerProcessSubprocess
     *_py_files("tests/AsyncCrawlerProcess"),
     # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerRunnerSubprocess

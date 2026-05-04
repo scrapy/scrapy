@@ -262,7 +262,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = deferred_from_coro(self.aiterator.__anext__())
+        self.anext_deferred = deferred_from_coro(anext(self.aiterator))
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred[Any]:
@@ -370,10 +370,10 @@ async def aiter_errback(
     """Wrap an async iterable calling an errback if an error is caught while
     iterating it. Similar to :func:`scrapy.utils.defer.iter_errback`.
     """
-    it = aiterable.__aiter__()
+    it = aiter(aiterable)
     while True:
         try:
-            yield await it.__anext__()
+            yield await anext(it)
         except StopAsyncIteration:
             break
         except Exception:

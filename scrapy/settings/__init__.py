@@ -143,7 +143,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
             raise ValueError(f"{item!r} not found in the {name} setting ({value!r}).")
         self.set(name, [v for v in value if v != item], self.getpriority(name) or 0)
 
-    def get(self, name: _SettingsKey, default: Any = None) -> Any:
+    def get(self, name: _SettingsKey, default: Any = None) -> Any:  # pylint: disable=arguments-renamed
         """
         Get a setting value without affecting its original type.
 
@@ -323,10 +323,32 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         return copy.deepcopy(value)
 
     def getwithbase(self, name: _SettingsKey) -> BaseSettings:
-        """Get a composition of a dictionary-like setting and its `_BASE`
+        """Get a composition of a dictionary-like setting and its ``_BASE``
         counterpart.
 
+        Use
+        :meth:`~scrapy.settings.BaseSettings.get_component_priority_dict_with_base`
+        instead if the setting is a :ref:`component priority dictionary
+        <component-priority-dictionaries>`.
+
         :param name: name of the dictionary-like setting
+        :type name: str
+        """
+        if not isinstance(name, str):
+            raise ValueError(f"Base setting key must be a string, got {name}")
+        compbs = BaseSettings()
+        compbs.update(self[name + "_BASE"])
+        compbs.update(self[name])
+        return compbs
+
+    def get_component_priority_dict_with_base(self, name: _SettingsKey) -> BaseSettings:
+        """Get a composition of a component priority dictionary setting and
+        its ``_BASE`` counterpart.
+
+        Keys are resolved to their import path for deduplication and then
+        restored to their latest input representation.
+
+        :param name: name of the component priority dictionary setting
         :type name: str
         """
         if not isinstance(name, str):
@@ -345,10 +367,10 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
                 f"be kept."
             )
 
-        def normalize_key(key: Any) -> str:
+        def normalize_key(key: Any) -> Any:
             try:
                 loaded_key = load_object(key)
-            except (AttributeError, TypeError, ValueError):
+            except (NameError, TypeError, ValueError):
                 loaded_key = key
             else:
                 import_path = global_object_name(loaded_key)
@@ -488,7 +510,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         component_priority_dict[cls] = priority
         self.set(name, component_priority_dict, self.getpriority(name) or 0)
 
-    def setdefault(
+    def setdefault(  # pylint: disable=arguments-renamed
         self,
         name: _SettingsKey,
         default: Any = None,
@@ -669,14 +691,14 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         else:
             p.text(pformat(self.copy_to_dict()))
 
-    def pop(self, name: _SettingsKey, default: Any = __default) -> Any:
+    def pop(self, name: _SettingsKey, default: Any = __default) -> Any:  # pylint: disable=arguments-renamed
         try:
             value = self.attributes[name].value
         except KeyError:
             if default is self.__default:
                 raise
             return default
-        self.__delitem__(name)
+        del self[name]
         return value
 
 
