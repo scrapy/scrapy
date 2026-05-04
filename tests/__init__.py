@@ -8,6 +8,8 @@ import os
 import socket
 from pathlib import Path
 
+import pytest
+
 # ignore system-wide proxies for tests
 # which would send requests to a totally unsuspecting server
 # (e.g. because urllib does not fully understand the proxy spec)
@@ -30,3 +32,8 @@ except socket.gaierror:
 def get_testdata(*paths: str) -> bytes:
     """Return test data"""
     return Path(tests_datadir, *paths).read_bytes()
+
+
+@pytest.fixture
+def fake_filesystem(fs):
+    return fs
