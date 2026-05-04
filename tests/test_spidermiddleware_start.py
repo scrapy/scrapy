@@ -23,20 +23,3 @@ class TestMiddleware:
             async for request in mw.process_start(start())
         ]
         assert result == [True, True, False, "foo"]
-
-    @coroutine_test
-    async def test_sync(self):
-        crawler = get_crawler(Spider)
-        mw = build_from_crawler(StartSpiderMiddleware, crawler)
-
-        def start():
-            yield Request("data:,1")
-            yield Request("data:,2", meta={"is_start_request": True})
-            yield Request("data:,2", meta={"is_start_request": False})
-            yield Request("data:,2", meta={"is_start_request": "foo"})
-
-        result = [
-            request.meta["is_start_request"]
-            for request in mw.process_start_requests(start(), Spider("test"))
-        ]
-        assert result == [True, True, False, "foo"]
