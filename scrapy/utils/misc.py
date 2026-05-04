@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from typing import IO, TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, overload
+from typing import IO, TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, cast, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
@@ -51,7 +51,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     if arg is None:
         return ()
     if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
-        return arg
+        return cast("Iterable[Any]", arg)
     return [arg]
 
 

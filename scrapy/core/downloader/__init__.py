@@ -128,11 +128,12 @@ class Downloader:
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
         try:
-            return (
-                yield deferred_from_coro(
+            result: Response | Request = yield (
+                deferred_from_coro(
                     self.middleware.download_async(self._enqueue_request, request)
                 )
             )
+            return result
         finally:
             self.active.remove(request)
 
@@ -163,7 +164,8 @@ class Downloader:
         return key, self.slots[key]
 
     def get_slot_key(self, request: Request) -> str:
-        if (meta_slot := request.meta.get(self.DOWNLOAD_SLOT)) is not None:
+        meta_slot: str | None = request.meta.get(self.DOWNLOAD_SLOT)
+        if meta_slot is not None:
             return meta_slot
 
         key = urlparse_cached(request).hostname or ""

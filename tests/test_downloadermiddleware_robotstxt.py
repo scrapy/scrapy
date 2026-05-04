@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 
 
 class TestRobotsTxtMiddleware:
-    def setup_method(self):
-        self.crawler = mock.MagicMock()
+    def setup_method(self) -> None:
+        self.crawler: mock.MagicMock = mock.MagicMock()
         self.crawler.settings = Settings()
         self.crawler.engine.download_async = mock.AsyncMock()
 

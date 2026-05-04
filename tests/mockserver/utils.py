@@ -1,22 +1,26 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import SSL
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate, load_privatekey
-from twisted.internet.ssl import CertificateOptions, ContextFactory
+from twisted.internet.ssl import CertificateOptions
 
 from scrapy.utils._deps_compat import PYOPENSSL_WANTS_X509_PKEY
 from scrapy.utils.python import to_bytes
+
+if TYPE_CHECKING:
+    from twisted.internet.interfaces import IOpenSSLContextFactory
 
 
 def ssl_context_factory(
     keyfile: str = "keys/localhost.key",
     certfile: str = "keys/localhost.crt",
     cipher_string: str | None = None,
-) -> ContextFactory:
+) -> IOpenSSLContextFactory:
     keyfile_path = Path(__file__).parent.parent / keyfile
     certfile_path = Path(__file__).parent.parent / certfile
 
@@ -27,7 +31,7 @@ def ssl_context_factory(
         cert = load_certificate(FILETYPE_PEM, certfile_path.read_bytes())  # type: ignore[assignment]
         key = load_privatekey(FILETYPE_PEM, keyfile_path.read_bytes())  # type: ignore[assignment]
 
-    factory = CertificateOptions(
+    factory: CertificateOptions = CertificateOptions(
         privateKey=key,
         certificate=cert,
     )

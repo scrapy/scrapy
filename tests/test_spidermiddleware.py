@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterable
 from inspect import isasyncgen
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from unittest import mock
 
 import pytest
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 class TestSpiderMiddleware:
-    def setup_method(self):
+    def setup_method(self) -> None:
         self.request = Request("http://example.com/index.html")
         self.response = Response(self.request.url, request=self.request)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES_BASE": {}})
@@ -39,11 +39,10 @@ class TestSpiderMiddleware:
         Raise exception in case of failure.
         """
 
-        def scrape_func(
+        async def scrape_func(
             response: Response | Failure, request: Request
-        ) -> defer.Deferred[Iterable[Any]]:
-            it = mock.MagicMock()
-            return defer.succeed(it)
+        ) -> Iterable[Any]:
+            return mock.MagicMock()
 
         return await self.mwman.scrape_response_async(
             scrape_func, self.response, self.request
@@ -141,7 +140,7 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     async def _scrape_func(
         self, response: Response | Failure, request: Request
     ) -> Iterable[Any] | AsyncIterator[Any]:
-        return self._callback()
+        return cast("Iterable[Any] | AsyncIterator[Any]", self._callback())
 
     async def _get_middleware_result(
         self, *mw_classes: type[Any], start_index: int | None = None

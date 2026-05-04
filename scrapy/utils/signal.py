@@ -7,6 +7,7 @@ import logging
 import warnings
 from collections.abc import Awaitable, Callable, Generator, Sequence
 from typing import Any as TypingAny
+from typing import cast
 
 from pydispatch.dispatcher import (
     Anonymous,
@@ -185,7 +186,7 @@ async def _send_catch_log_asyncio(
     handlers: list[Awaitable[TypingAny]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
 
-        async def handler(receiver: Callable) -> TypingAny:
+        async def handler(receiver: Callable) -> tuple[Callable, TypingAny]:
             result: TypingAny
             try:
                 result = await ensure_awaitable(
@@ -208,7 +209,10 @@ async def _send_catch_log_asyncio(
 
         handlers.append(handler(receiver))
 
-    return await asyncio.gather(*handlers, return_exceptions=True)
+    return cast(
+        "list[tuple[TypingAny, TypingAny]]",
+        await asyncio.gather(*handlers, return_exceptions=True),
+    )
 
 
 def disconnect_all(signal: TypingAny = Any, sender: TypingAny = Any) -> None:

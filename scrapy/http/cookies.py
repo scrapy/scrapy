@@ -74,7 +74,7 @@ class CookieJar:
 
     @property
     def _cookies(self) -> dict[str, dict[str, dict[str, Cookie]]]:
-        return self.jar._cookies  # type: ignore[attr-defined]
+        return self.jar._cookies  # type: ignore[attr-defined,no-any-return]
 
     def clear_session_cookies(self) -> None:
         return self.jar.clear_session_cookies()
