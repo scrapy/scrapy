@@ -30,7 +30,7 @@ class Root(Resource):
 def _getarg(
     request: Request, name: bytes, default: Any = None, type_: type = str
 ) -> Any:
-    return type_(request.args[name][0]) if name in request.args else default  # type: ignore[index,operator]
+    return type_(request.args[name][0]) if name in request.args else default
 
 
 if __name__ == "__main__":

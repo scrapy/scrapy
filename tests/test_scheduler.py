@@ -4,7 +4,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections import deque
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 from unittest.mock import Mock
 
 import pytest
@@ -29,9 +29,9 @@ if TYPE_CHECKING:
 class MemoryScheduler(BaseScheduler):
     paused = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.queue = deque(
+        self.queue: deque[Request] = deque(
             Request(value) if isinstance(value, str) else value
             for value in getattr(self, "queue", [])
         )
@@ -68,7 +68,7 @@ class MockDownloader:
 
     def get_slot_key(self, request: Request) -> str:
         if Downloader.DOWNLOAD_SLOT in request.meta:
-            return request.meta[Downloader.DOWNLOAD_SLOT]
+            return cast("str", request.meta[Downloader.DOWNLOAD_SLOT])
 
         return urlparse_cached(request).hostname or ""
 

@@ -91,7 +91,6 @@ extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",
 ]
-warn_return_any = false # 37 errors
 
 [[tool.mypy.overrides]]
 module = "tests.*"

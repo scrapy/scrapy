@@ -144,17 +144,16 @@ class Command(BaseRunSpiderCommand):
     def iterate_spider_output(self, result: _T) -> Iterable[Any]: ...
 
     def iterate_spider_output(self, result: Any) -> Iterable[Any] | Deferred[Any]:
+        d: Deferred[Any]
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
                 collect_asyncgen(aiter_errback(result, self.handle_exception))
             )
-            d.addCallback(self.iterate_spider_output)
-            return d
+            return d.addCallback(self.iterate_spider_output)
+        d = deferred_from_coro(result)
         if inspect.iscoroutine(result):
-            d = deferred_from_coro(result)
-            d.addCallback(self.iterate_spider_output)
-            return d
-        return arg_to_iter(deferred_from_coro(result))
+            return d.addCallback(self.iterate_spider_output)
+        return arg_to_iter(d)
 
     def add_items(self, lvl: int, new_items: list[Any]) -> None:
         old_items = self.items.get(lvl, [])

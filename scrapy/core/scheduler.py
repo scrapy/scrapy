@@ -4,7 +4,7 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
@@ -334,7 +334,7 @@ class Scheduler(BaseScheduler):
         cls = crawler.settings[f"SCHEDULER_START_{queue}_QUEUE"]
         if not cls:
             return None
-        return load_object(cls)
+        return cast("type[BaseQueue]", load_object(cls))
 
     def has_pending_requests(self) -> bool:
         return len(self) > 0

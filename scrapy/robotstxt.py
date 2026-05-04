@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import sys
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from urllib.robotparser import RobotFileParser
 
 from protego import Protego
@@ -103,7 +103,7 @@ class RerpRobotParser(RobotParser):
     def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
         user_agent = to_unicode(user_agent)
         url = to_unicode(url)
-        return self.rp.is_allowed(user_agent, url)
+        return cast("bool", self.rp.is_allowed(user_agent, url))
 
 
 class ProtegoRobotParser(RobotParser):

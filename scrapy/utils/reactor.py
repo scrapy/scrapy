@@ -33,12 +33,12 @@ def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
     if len(portrange) > 2:
         raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
-        return reactor.listenTCP(0, factory, interface=host)
+        return reactor.listenTCP(0, factory, interface=host)  # type: ignore[no-any-return]
     if len(portrange) == 1:
-        return reactor.listenTCP(portrange[0], factory, interface=host)
+        return reactor.listenTCP(portrange[0], factory, interface=host)  # type: ignore[no-any-return]
     for x in range(portrange[0], portrange[1] + 1):
         try:
-            return reactor.listenTCP(x, factory, interface=host)
+            return reactor.listenTCP(x, factory, interface=host)  # type: ignore[no-any-return]
         except error.CannotListenError:
             if x == portrange[1]:
                 raise

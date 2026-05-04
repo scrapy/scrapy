@@ -108,7 +108,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def _get_cert_options(self) -> CertificateOptions:
         with _filter_method_warning():
-            return CertificateOptions(
+            return CertificateOptions(  # type: ignore[no-any-return]
                 method=self._ssl_method,
                 fixBrokenPeers=True,
                 acceptableCiphers=self.tls_ciphers,
@@ -122,7 +122,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def _get_context(self) -> SSL.Context:
         cert_options = self._get_cert_options()
-        ctx = cert_options.getContext()
+        ctx: SSL.Context = cert_options.getContext()
         ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
         return ctx
 
@@ -135,7 +135,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         # Otherwise use the normal Twisted function.
         # Note that this doesn't use self._get_context().
         with _filter_method_warning():
-            return optionsForClientTLS(
+            return optionsForClientTLS(  # type: ignore[no-any-return]
                 hostname=hostname.decode("ascii"),
                 extraCertificateOptions={
                     "method": self._ssl_method,
@@ -186,7 +186,7 @@ class BrowserLikeContextFactory(_ScrapyClientContextFactory):
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         with _filter_method_warning():
-            return optionsForClientTLS(
+            return optionsForClientTLS(  # type: ignore[no-any-return]
                 hostname=hostname.decode("ascii"),
                 extraCertificateOptions={"method": self._ssl_method},
             )

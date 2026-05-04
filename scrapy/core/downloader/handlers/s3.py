@@ -39,7 +39,7 @@ class S3DownloadHandler(BaseDownloadHandler):
                 )
             )
 
-        _http_handler = build_from_crawler(
+        _http_handler: BaseDownloadHandler = build_from_crawler(
             load_object(crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"]),
             crawler,
         )

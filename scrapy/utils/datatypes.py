@@ -13,7 +13,7 @@ import warnings
 import weakref
 from collections import OrderedDict
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, AnyStr, TypeVar
+from typing import TYPE_CHECKING, Any, AnyStr, TypeVar, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -181,7 +181,7 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
 
     def __getitem__(self, key: _KT) -> _VT | None:
         try:
-            return super().__getitem__(key)
+            return cast("_VT", super().__getitem__(key))
         except (TypeError, KeyError):
             return None  # key is either not weak-referenceable or not cached
 

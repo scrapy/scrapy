@@ -323,9 +323,10 @@ class GCSFilesStore:
     ) -> Deferred[StatInfo]:
 
         blob_path = self._get_blob_path(path)
-        return deferred_from_coro(
+        d: Deferred[Any] = deferred_from_coro(
             run_in_thread(self.bucket.get_blob, blob_path)
-        ).addCallback(self._onsuccess)
+        )
+        return d.addCallback(self._onsuccess)
 
     def _get_content_type(self, headers: dict[str, str] | None) -> str:
         if headers and "Content-Type" in headers:
