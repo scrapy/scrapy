@@ -26,6 +26,7 @@ def _qs(req, encoding="utf-8", to_unicode=False):
     return parse_qs(uqs, True)
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestFormRequest(TestRequest):
     request_class = FormRequest  # type: ignore[assignment]
 
