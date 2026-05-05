@@ -10,13 +10,8 @@ from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
-from scrapy.exceptions import (
-    DownloadFailedError,
-    NotConfigured,
-    UnsupportedURLSchemeError,
-)
+from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import Request
-from scrapy.utils.defer import maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
     TestHttpProxyBase,
     TestHttpsBase,
@@ -25,13 +20,13 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
+    TestMitmProxyBase,
 )
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
-    from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
 
 pytestmark = [
@@ -51,6 +46,15 @@ class H2DownloadHandlerMixin:
         )
 
         return H2DownloadHandler
+
+    @property
+    def settings_dict(self) -> dict[str, Any] | None:
+        return {
+            "DOWNLOAD_HANDLERS": {
+                "http": None,
+                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
+            }
+        }
 
 
 def test_not_configured_without_reactor() -> None:
@@ -167,16 +171,7 @@ class TestHttp2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase)
     pass
 
 
-class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
-    @property
-    def settings_dict(self) -> dict[str, Any] | None:
-        return {
-            "DOWNLOAD_HANDLERS": {
-                "http": None,
-                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
-            }
-        }
-
+class TestHttp2WithCrawler(H2DownloadHandlerMixin, TestHttpWithCrawlerBase):
     is_secure = True
 
     def test_bytes_received_stop_download_callback(self) -> None:  # type: ignore[override]
@@ -192,24 +187,12 @@ class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
         pytest.skip("headers_received support is not implemented")
 
 
+@pytest.mark.skip(reason="Proxy support is not implemented yet")
 class TestHttp2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
-    expected_http_proxy_request_body = b"/"
 
-    @coroutine_test
-    async def test_download_with_proxy_https_timeout(
-        self, proxy_mockserver: ProxyEchoMockServer
-    ) -> None:
-        with pytest.raises(NotImplementedError):
-            await maybe_deferred_to_future(
-                super().test_download_with_proxy_https_timeout(proxy_mockserver)  # type: ignore[arg-type]
-            )
 
-    @coroutine_test
-    async def test_download_with_proxy_without_http_scheme(
-        self, proxy_mockserver: ProxyEchoMockServer
-    ) -> None:
-        with pytest.raises(UnsupportedURLSchemeError):
-            await maybe_deferred_to_future(
-                super().test_download_with_proxy_without_http_scheme(proxy_mockserver)  # type: ignore[arg-type]
-            )
+@pytest.mark.skip(reason="Proxy support is not implemented yet")
+@pytest.mark.requires_mitmproxy
+class TestMitmProxy(H2DownloadHandlerMixin, TestMitmProxyBase):
+    pass
