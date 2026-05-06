@@ -17,6 +17,7 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
+    TestMitmProxyBase,
     TestSimpleHttpsBase,
 )
 from tests.utils.decorators import coroutine_test
@@ -40,6 +41,15 @@ class HttpxDownloadHandlerMixin:
         )
 
         return HttpxDownloadHandler
+
+    @property
+    def settings_dict(self) -> dict[str, Any] | None:
+        return {
+            "DOWNLOAD_HANDLERS": {
+                "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+                "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+            }
+        }
 
 
 class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
@@ -108,15 +118,8 @@ class TestHttpsCustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBa
     pass
 
 
-class TestHttpWithCrawler(TestHttpWithCrawlerBase):
-    @property
-    def settings_dict(self) -> dict[str, Any] | None:
-        return {
-            "DOWNLOAD_HANDLERS": {
-                "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-                "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-            }
-        }
+class TestHttpWithCrawler(HttpxDownloadHandlerMixin, TestHttpWithCrawlerBase):
+    pass
 
 
 class TestHttpsWithCrawler(TestHttpWithCrawler):
@@ -136,3 +139,9 @@ class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
 @pytest.mark.skip(reason="Proxy support is not implemented yet")
 class TestHttpsProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
+
+
+@pytest.mark.skip(reason="Proxy support is not implemented yet")
+@pytest.mark.requires_mitmproxy
+class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
+    pass

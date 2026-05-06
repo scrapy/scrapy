@@ -25,6 +25,7 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
+    TestMitmProxyBase,
 )
 from tests.utils.decorators import coroutine_test
 
@@ -51,6 +52,15 @@ class H2DownloadHandlerMixin:
         )
 
         return H2DownloadHandler
+
+    @property
+    def settings_dict(self) -> dict[str, Any] | None:
+        return {
+            "DOWNLOAD_HANDLERS": {
+                "http": None,
+                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
+            }
+        }
 
 
 def test_not_configured_without_reactor() -> None:
@@ -167,16 +177,7 @@ class TestHttp2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase)
     pass
 
 
-class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
-    @property
-    def settings_dict(self) -> dict[str, Any] | None:
-        return {
-            "DOWNLOAD_HANDLERS": {
-                "http": None,
-                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
-            }
-        }
-
+class TestHttp2WithCrawler(H2DownloadHandlerMixin, TestHttpWithCrawlerBase):
     is_secure = True
 
     def test_bytes_received_stop_download_callback(self) -> None:  # type: ignore[override]
@@ -213,3 +214,11 @@ class TestHttp2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
             await maybe_deferred_to_future(
                 super().test_download_with_proxy_without_http_scheme(proxy_mockserver)  # type: ignore[arg-type]
             )
+
+
+@pytest.mark.skip(reason="Proxy support is not implemented yet")
+@pytest.mark.requires_mitmproxy
+class TestMitmProxy(H2DownloadHandlerMixin, TestMitmProxyBase):
+    handler_supports_http = False
+    # not implemented
+    handler_supports_tls_in_tls = False
