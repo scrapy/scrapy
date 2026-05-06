@@ -138,6 +138,7 @@ class Request(object_ref):
     ) -> None:
         self._encoding: str = encoding  # this one has to be set first
         self.method: str = str(method).upper()
+        self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._set_url(url)
         self._set_body(body)
         if not isinstance(priority, int):
@@ -232,7 +233,6 @@ class Request(object_ref):
         #: default. See :meth:`~scrapy.Spider.start`.
         self.dont_filter: bool = dont_filter
 
-        self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._cb_kwargs: dict[str, Any] | None = dict(cb_kwargs) if cb_kwargs else None
         self._flags: list[str] | None = list(flags) if flags else None
 
@@ -252,11 +252,17 @@ class Request(object_ref):
     def url(self) -> str:
         return self._url
 
+    def _url_is_verbatim(self) -> bool:
+        return bool(self._meta and self._meta.get("verbatim_url"))
+
     def _set_url(self, url: str) -> None:
         if not isinstance(url, str):
             raise TypeError(f"Request url must be str, got {type(url).__name__}")
 
-        self._url = safe_url_string(url, self.encoding)
+        if self._url_is_verbatim():
+            self._url = url
+        else:
+            self._url = safe_url_string(url, self.encoding)
 
         if (
             "://" not in self._url

@@ -195,6 +195,8 @@ class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
 class TestHttp2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
     expected_http_proxy_request_body = b"/"
+    expected_http_proxy_quoted_request_body = b"/list?%5B0%5D=a"
+    expected_http_proxy_verbatim_request_body = b"/list?[0]=a"
 
     @coroutine_test
     async def test_download_with_proxy_https_timeout(
