@@ -479,10 +479,12 @@ class FeedExporter:
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for settings_uri, feed_options in self.settings.getdict("FEEDS").items():
             # handle pathlib.Path objects
+            # Use str() to preserve %-format characters (e.g. %(time)s)
+            # that as_uri() would URL-encode and break
             uri = (
                 str(settings_uri)
                 if not isinstance(settings_uri, Path)
-                else settings_uri.absolute().as_uri()
+                else str(settings_uri.absolute())
             )
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
