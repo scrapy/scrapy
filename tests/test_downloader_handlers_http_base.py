@@ -1152,6 +1152,8 @@ class TestHttpProxyBase(ABC):
 class TestMitmProxyBase(ABC):
     # whether the handler supports HTTPS proxies with HTTPS destinations
     handler_supports_tls_in_tls: bool = True
+    # whether the handler supports HTTP destinations
+    handler_supports_http: bool = True
 
     @property
     @abstractmethod
@@ -1170,6 +1172,8 @@ class TestMitmProxyBase(ABC):
         https_dest: bool,
     ) -> None:
         """HTTP proxy, HTTP or HTTPS destination."""
+        if not https_dest and not self.handler_supports_http:
+            pytest.skip("HTTP destinations are not supported")
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
@@ -1191,6 +1195,8 @@ class TestMitmProxyBase(ABC):
         https_dest: bool,
     ) -> None:
         """HTTPS proxy, HTTP or HTTPS destination."""
+        if not https_dest and not self.handler_supports_http:
+            pytest.skip("HTTP destinations are not supported")
         if https_dest and not self.handler_supports_tls_in_tls:
             pytest.skip("HTTPS proxy to HTTPS destination is not supported")
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
@@ -1215,6 +1221,8 @@ class TestMitmProxyBase(ABC):
         https_dest: bool,
     ) -> None:
         """HTTP proxy, HTTP or HTTPS destination, wrong proxy creds."""
+        if not https_dest and not self.handler_supports_http:
+            pytest.skip("HTTP destinations are not supported")
         envvar = "https_proxy" if https_dest else "http_proxy"
         monkeypatch.setenv(envvar, wrong_credentials(os.environ[envvar]))
         crawler = get_crawler(SimpleSpider, self.settings_dict)
@@ -1239,6 +1247,8 @@ class TestMitmProxyBase(ABC):
     ) -> None:
         """HTTP proxy, HTTP or HTTPS destination. Check that the auth header
         is not sent to the destination."""
+        if not https_dest and not self.handler_supports_http:
+            pytest.skip("HTTP destinations are not supported")
         request = Request(mockserver.url("/echo", is_secure=https_dest))
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         with caplog.at_level(logging.DEBUG):
