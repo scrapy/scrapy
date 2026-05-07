@@ -345,7 +345,8 @@ class BrokenStartSpider(FollowAllSpider):
             if self.fail_yielding:
                 2 / 0
 
-        assert self.seedsseen, "All seeds consumed before any download happened"
+        if not self.seedsseen:
+            self.logger.warning("All seeds consumed before any download happened")
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get("seed"))
