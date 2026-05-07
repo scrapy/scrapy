@@ -208,14 +208,27 @@ def build_from_crawler(
     Raises ``TypeError`` if the resulting instance is ``None``.
     """
     if hasattr(objcls, "from_crawler"):
+        raise TypeError()
         instance = objcls.from_crawler(crawler, *args, **kwargs)
         method_name = "from_crawler"
     else:
+        #before instantiating the object, inspect the arguments of the constructor
+        if _is_crawler_required_to_construct(objcls):
+            raise TypeError(f"{objcls.__qualname__} constructor requires a crawler but no \"from_crawler\" classmethod is implemented for it. We suggest you implement it")
         instance = objcls(*args, **kwargs)
+        # NOTE: in most download handlers the __init__ seems to be used instead of __new__
         method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
+
+
+def _is_crawler_required_to_construct(objcls: Any) -> bool:
+    """Returns True in case a crawler object is required by the class' constructor    
+    """
+    # the codeline below assumes that the constructor will be invoked using __init__, also a check on __new__ would be necessary
+    fargs = inspect.getfullargspec(objcls.__init__)
+    return "crawler" in fargs.args
 
 
 @contextmanager
