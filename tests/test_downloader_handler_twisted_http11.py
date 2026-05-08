@@ -93,6 +93,10 @@ class TestHttpProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
     pass
 
 
+class TestHttpsProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
+    is_secure = True
+
+
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HTTP11DownloadHandlerMixin, TestMitmProxyBase):
     # not implemented
