@@ -343,12 +343,14 @@ class ScrapyProxyAgent(Agent):
         self,
         reactor: ReactorBase,
         proxyURI: bytes,
+        contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(  # type: ignore[no-untyped-call]
             reactor=reactor,
+            contextFactory=contextFactory,
             connectTimeout=connectTimeout,
             bindAddress=bindAddress,
             pool=pool,
@@ -435,6 +437,7 @@ class ScrapyAgent:
             return self._ProxyAgent(
                 reactor=reactor,
                 proxyURI=to_bytes(proxy, encoding="ascii"),
+                contextFactory=self._contextFactory,
                 connectTimeout=timeout,
                 bindAddress=bindaddress,
                 pool=self._pool,
