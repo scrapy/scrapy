@@ -1192,7 +1192,7 @@ class TestMitmProxyBase(ABC):
     ) -> None:
         """HTTPS proxy, HTTP or HTTPS destination."""
         if https_dest and not self.handler_supports_tls_in_tls:
-            pytest.skip("HTTPS proxies for HTTPS destination are not supported")
+            pytest.skip("HTTPS proxies for HTTPS destinations are not supported")
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
