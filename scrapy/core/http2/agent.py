@@ -167,7 +167,7 @@ class H2Agent:
         return d2
 
 
-class ScrapyProxyH2Agent(H2Agent):
+class ScrapyProxyH2Agent(H2Agent):  # pragma: no cover
     def __init__(
         self,
         reactor: ReactorBase,

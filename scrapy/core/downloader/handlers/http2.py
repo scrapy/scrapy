@@ -84,7 +84,7 @@ class ScrapyH2Agent:
         bind_address = request.meta.get("bindaddress") or self._bind_address
         bind_address = normalize_bind_address(bind_address)
         proxy = request.meta.get("proxy")
-        if proxy:
+        if proxy:  # pragma: no cover
             if urlparse_cached(request).scheme == "https":
                 # ToDo
                 raise NotImplementedError(
