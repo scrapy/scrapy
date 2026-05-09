@@ -423,6 +423,10 @@ class ScrapyAgent:
             if not proxy_port:
                 proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
+                if proxy_parsed.scheme == "https":
+                    raise NotImplementedError(
+                        "HTTPS proxies for HTTPS destinations are not supported"
+                    )
                 assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
                 proxyConf = (proxy_host, proxy_port, proxyAuth)

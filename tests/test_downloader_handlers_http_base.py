@@ -1076,6 +1076,8 @@ class TestHttpWithCrawlerBase(ABC):
 class TestHttpProxyBase(ABC):
     is_secure = False
     expected_http_proxy_request_body = b"http://example.com"
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    handler_supports_tls_in_tls: bool = True
 
     @property
     @abstractmethod
@@ -1128,6 +1130,8 @@ class TestHttpProxyBase(ABC):
     ) -> None:
         if NON_EXISTING_RESOLVABLE:
             pytest.skip("Non-existing hosts are resolvable")
+        if self.is_secure and not self.handler_supports_tls_in_tls:
+            pytest.skip("HTTPS proxies for HTTPS destinations are not supported")
         http_proxy = proxy_mockserver.url("", is_secure=self.is_secure)
         domain = "https://no-such-domain.nosuch"
         request = Request(domain, meta={"proxy": http_proxy, "download_timeout": 0.2})
