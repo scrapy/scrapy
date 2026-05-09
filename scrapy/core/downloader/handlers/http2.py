@@ -45,7 +45,7 @@ class H2DownloadHandler(BaseDownloadHandler):
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:
-        if urlparse_cached(request).scheme == "http":
+        if urlparse_cached(request).scheme == "http":  # pragma: no cover
             raise UnsupportedURLSchemeError(
                 f"{type(self).__name__} doesn't support plain HTTP."
             )
