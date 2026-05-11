@@ -6,6 +6,10 @@ from typing import TYPE_CHECKING, cast
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
+from twisted.internet.protocol import Factory
+from twisted.internet.protocol import Protocol as TxProtocol
+from twisted.internet.ssl import optionsForClientTLS
+from twisted.protocols.tls import TLSMemoryBIOFactory
 from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
@@ -17,7 +21,10 @@ from scrapy.core.downloader.contextfactory import (
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
+from scrapy.utils._deps_compat import (
+    PYOPENSSL_SET_CIPHER_LIST_TMP_CONN,
+    TWISTED_TLS_NEW_IMPL,
+)
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
@@ -108,6 +115,10 @@ class TestContextFactory(TestContextFactoryBase):
         )
         assert body == to_bytes(s)
 
+    @pytest.mark.skipif(
+        TWISTED_TLS_NEW_IMPL,
+        reason="The context is not stored on this Twisted version",
+    )
     def test_no_context_sharing(self) -> None:
         """Every call to creatorForNetloc() should give a fresh context."""
         crawler = get_crawler()
@@ -119,6 +130,27 @@ class TestContextFactory(TestContextFactoryBase):
         creator2 = client_context_factory.creatorForNetloc(b"website2.tld", 443)
         assert creator2._hostnameBytes == b"website2.tld"
         assert creator1._ctx is not creator2._ctx  # type: ignore[attr-defined]
+
+    def test_no_context_sharing_with_conn(self) -> None:
+        """Like test_no_context_sharing() but get the context from a connection."""
+        crawler = get_crawler()
+        client_context_factory: _ScrapyClientContextFactory = (
+            _load_context_factory_from_settings(crawler)
+        )
+        # from Twisted src/twisted/web/test/test_agent.py::dummyTLSProtocol()
+        bio_factory = TLSMemoryBIOFactory(
+            optionsForClientTLS("example.com"), True, Factory.forProtocol(TxProtocol)
+        )
+
+        creator1 = client_context_factory.creatorForNetloc(b"website1.tld", 443)
+        assert creator1._hostnameBytes == b"website1.tld"
+        conn1 = creator1.clientConnectionForTLS(bio_factory.buildProtocol(None))
+
+        creator2 = client_context_factory.creatorForNetloc(b"website2.tld", 443)
+        assert creator2._hostnameBytes == b"website2.tld"
+        conn2 = creator2.clientConnectionForTLS(bio_factory.buildProtocol(None))
+
+        assert conn1.get_context() is not conn2.get_context()
 
     @pytest.mark.skipif(
         PYOPENSSL_SET_CIPHER_LIST_TMP_CONN,
