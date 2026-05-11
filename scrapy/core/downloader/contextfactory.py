@@ -211,7 +211,7 @@ class _AcceptableProtocolsContextFactory:
     returned by it. It's only needed because we support custom factories via
     :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
 
-    It's a no-op on Twisted newer than 25.5.0, though using it with custom
+    It's a no-op on Twisted 26.4.0+, though using it with custom
     factories on those Twisted versions may be not enough for HTTP/2 support.
     """
 

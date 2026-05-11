@@ -59,7 +59,7 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
     Instances of this class are returned from
     :class:`._ScrapyClientContextFactory`.
 
-    This class is used on Twisted 25.5.0 and older.
+    This class is used on Twisted older than 26.4.0.
     """
 
     def _identityVerifyingInfoCallback(
@@ -109,7 +109,7 @@ class _ScrapyClientTLSOptions26(ClientTLSOptions):
     Instances of this class are returned from
     :class:`.ScrapyClientContextFactory`.
 
-    This class is used on Twisted newer than 25.5.0.
+    This class is used on Twisted 26.4.0 and newer.
     """
 
     def __init__(
