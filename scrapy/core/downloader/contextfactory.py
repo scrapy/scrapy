@@ -233,7 +233,7 @@ class _AcceptableProtocolsContextFactory:
             hostname, port
         )
         if not TWISTED_TLS_NEW_IMPL:
-            from twisted.internet._sslverify import (  # type: ignore[attr-defined]  # noqa: PLC0415
+            from twisted.internet._sslverify import (  # type: ignore[attr-defined]  # noqa: PLC0415  # pylint: disable=no-name-in-module
                 _setAcceptableProtocols,
             )
 
