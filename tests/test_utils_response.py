@@ -15,7 +15,7 @@ from scrapy.utils.response import (
 )
 
 
-def _read_brower_output(burl):
+def _read_brower_output(burl: str):
     path = urlparse(burl).path
     if not path or not Path(path).exists():
         path = burl.replace("file://", "")
