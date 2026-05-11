@@ -9,7 +9,7 @@ from pytest_twisted import async_yield_fixture
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol as TxProtocol
 from twisted.internet.ssl import optionsForClientTLS
-from twisted.protocols.tls import TLSMemoryBIOFactory
+from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
 from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
@@ -105,50 +105,50 @@ class TestContextFactoryBase:
 
 
 class TestContextFactory(TestContextFactoryBase):
-    @coroutine_test
-    async def test_payload(self, server_url: str) -> None:
-        s = "0123456789" * 10
+    @pytest.fixture
+    def factory(self) -> _ScrapyClientContextFactory:
         crawler = get_crawler()
-        client_context_factory = _load_context_factory_from_settings(crawler)
-        body = await self.get_page(
-            server_url + "payload", client_context_factory, body=s
+        return _load_context_factory_from_settings(crawler)
+
+    @staticmethod
+    def _get_dummy_protocol() -> TLSMemoryBIOProtocol:
+        # from Twisted src/twisted/web/test/test_agent.py::dummyTLSProtocol()
+        factory = TLSMemoryBIOFactory(
+            optionsForClientTLS("example.com"), True, Factory.forProtocol(TxProtocol)
         )
+        return factory.buildProtocol(None)
+
+    @coroutine_test
+    async def test_payload(
+        self, factory: _ScrapyClientContextFactory, server_url: str
+    ) -> None:
+        s = "0123456789" * 10
+        body = await self.get_page(server_url + "payload", factory, body=s)
         assert body == to_bytes(s)
 
     @pytest.mark.skipif(
         TWISTED_TLS_NEW_IMPL,
         reason="The context is not stored on this Twisted version",
     )
-    def test_no_context_sharing(self) -> None:
+    def test_no_context_sharing(self, factory: _ScrapyClientContextFactory) -> None:
         """Every call to creatorForNetloc() should give a fresh context."""
-        crawler = get_crawler()
-        client_context_factory: _ScrapyClientContextFactory = (
-            _load_context_factory_from_settings(crawler)
-        )
-        creator1 = client_context_factory.creatorForNetloc(b"website1.tld", 443)
+        creator1 = factory.creatorForNetloc(b"website1.tld", 443)
         assert creator1._hostnameBytes == b"website1.tld"
-        creator2 = client_context_factory.creatorForNetloc(b"website2.tld", 443)
+        creator2 = factory.creatorForNetloc(b"website2.tld", 443)
         assert creator2._hostnameBytes == b"website2.tld"
         assert creator1._ctx is not creator2._ctx  # type: ignore[attr-defined]
 
-    def test_no_context_sharing_with_conn(self) -> None:
+    def test_no_context_sharing_with_conn(
+        self, factory: _ScrapyClientContextFactory
+    ) -> None:
         """Like test_no_context_sharing() but get the context from a connection."""
-        crawler = get_crawler()
-        client_context_factory: _ScrapyClientContextFactory = (
-            _load_context_factory_from_settings(crawler)
-        )
-        # from Twisted src/twisted/web/test/test_agent.py::dummyTLSProtocol()
-        bio_factory = TLSMemoryBIOFactory(
-            optionsForClientTLS("example.com"), True, Factory.forProtocol(TxProtocol)
-        )
-
-        creator1 = client_context_factory.creatorForNetloc(b"website1.tld", 443)
+        creator1 = factory.creatorForNetloc(b"website1.tld", 443)
         assert creator1._hostnameBytes == b"website1.tld"
-        conn1 = creator1.clientConnectionForTLS(bio_factory.buildProtocol(None))
+        conn1 = creator1.clientConnectionForTLS(self._get_dummy_protocol())
 
-        creator2 = client_context_factory.creatorForNetloc(b"website2.tld", 443)
+        creator2 = factory.creatorForNetloc(b"website2.tld", 443)
         assert creator2._hostnameBytes == b"website2.tld"
-        conn2 = creator2.clientConnectionForTLS(bio_factory.buildProtocol(None))
+        conn2 = creator2.clientConnectionForTLS(self._get_dummy_protocol())
 
         assert conn1.get_context() is not conn2.get_context()
 
@@ -156,24 +156,22 @@ class TestContextFactory(TestContextFactoryBase):
         PYOPENSSL_SET_CIPHER_LIST_TMP_CONN,
         reason="Fails or doesn't make sense on this pyOpenSSL version",
     )
-    def test_no_immutable_ctx_warning(self) -> None:
+    def test_no_immutable_ctx_warning(
+        self, factory: _ScrapyClientContextFactory
+    ) -> None:
         """There should be no pyOpenSSL context modification warning.
 
         pyOpenSSL < 25.1.0 doesn't produce this warning, and on 25.1.0 it's
         always produced due to
         https://github.com/scrapy/scrapy/issues/6859#issuecomment-4294917851.
         """
-        crawler = get_crawler()
-        client_context_factory: _ScrapyClientContextFactory = (
-            _load_context_factory_from_settings(crawler)
-        )
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "error",
                 category=DeprecationWarning,
                 message="Attempting to mutate a Context after a Connection was created",
             )
-            client_context_factory.creatorForNetloc(b"website.tld", 443)
+            factory.creatorForNetloc(b"website.tld", 443)
 
 
 class TestContextFactoryTLSMethod(TestContextFactoryBase):
