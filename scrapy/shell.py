@@ -241,7 +241,10 @@ class Shell:
 
             with contextlib.suppress(IgnoreRequest):
                 response = threads.blockingCallFromThread(
-                    reactor, deferred_f_from_coro_f(self._schedule), request, spider
+                    reactor,
+                    deferred_f_from_coro_f(self._schedule),  # type: ignore[arg-type]
+                    request,
+                    spider,
                 )
         else:
             assert self._loop
