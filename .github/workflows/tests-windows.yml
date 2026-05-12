@@ -34,6 +34,7 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: py
+            PYTEST_ADDOPTS: -vv -n 0
         - python-version: "3.14"
           env:
             TOXENV: default-reactor
