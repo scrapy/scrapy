@@ -216,12 +216,18 @@ class _AcceptableProtocolsContextFactory:
     """
 
     # Something needs to call set_alpn_protos() for ALPN to work.
-    # Twisted < 26.4.0 does it in _setAcceptableProtocols(), called from
-    # OpenSSLCertificateOptions._makeContext() which we don't use so we call
-    # _setAcceptableProtocols() here instead. We could move it to
-    # _ScrapyClientContextFactory if it was mandatory to use that class.
-    # Newer Twisted does it in OpenSSLCertificateOptions._makeTLSConnection()
-    # which is always called on that version (via _ScrapyClientTLSOptions26).
+    #
+    # Twisted < 26.4.0 does it in OpenSSLCertificateOptions._makeContext()
+    # (requires passing acceptableProtocols from the factory to
+    # OpenSSLCertificateOptions) and in TLSMemoryBIOFactory._createConnection()
+    # based on H2ClientFactory.acceptableProtocols (too late, it seems).
+    #
+    # Newer Twisted does it in OpenSSLCertificateOptions._makeContext() as
+    # well, and in OpenSSLCertificateOptions._makeTLSConnection() based on
+    # H2ClientFactory.acceptableProtocols (which now works).
+    #
+    # When we drop DOWNLOADER_CLIENTCONTEXTFACTORY it looks like we can replace
+    # all of this with _ScrapyClientContextFactory.acceptableProtocols.
 
     def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
         verifyObject(IPolicyForHTTPS, context_factory)
