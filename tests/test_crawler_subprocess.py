@@ -14,7 +14,6 @@ from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
 from w3lib import __version__ as w3lib_version
 
-from scrapy.utils._deps_compat import TWISTED_LOOP_314_CHANGES
 from tests.utils import async_sleep, get_script_run_env
 from tests.utils.decorators import coroutine_test
 
@@ -172,9 +171,6 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Using asyncio event loop: uvloop.Loop" in log
         assert "async pipeline opened!" in log
 
-    @pytest.mark.xfail(
-        TWISTED_LOOP_314_CHANGES, reason="Breaks with Twisted changes for Python 3.14"
-    )
     @pytest.mark.requires_uvloop
     def test_asyncio_enabled_reactor_same_loop(self):
         log = self.run_script("asyncio_enabled_reactor_same_loop.py")
