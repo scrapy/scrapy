@@ -111,7 +111,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
                 "download_warnsize", "DOWNLOAD_WARNSIZE"
             )
 
-        agent = ScrapyAgent(
+        agent = _ScrapyAgent(
             contextFactory=self._contextFactory,
             bindAddress=self._bind_address,
             pool=self._pool,
@@ -161,7 +161,7 @@ class TunnelError(Exception):
     """An HTTP CONNECT tunnel could not be established by the proxy."""
 
 
-class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
+class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     """An endpoint that tunnels through proxies to allow HTTPS downloads. To
     accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
     The HTTP CONNECT is always sent when using this endpoint, I think this could
@@ -197,7 +197,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     def requestTunnel(self, protocol: Protocol) -> Protocol:
         """Asks the proxy to open a tunnel."""
         assert protocol.transport
-        tunnelReq = tunnel_request_data(
+        tunnelReq = _tunnel_request_data(
             self._tunneledHost, self._tunneledPort, self._proxyAuthHeader
         )
         protocol.transport.write(tunnelReq)
@@ -221,7 +221,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         if b"\r\n\r\n" not in self._connectBuffer:
             return
         self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
-        respm = TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
+        respm = _TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
@@ -258,18 +258,18 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         return self._tunnelReadyDeferred
 
 
-def tunnel_request_data(
+def _tunnel_request_data(
     host: str, port: int, proxy_auth_header: bytes | None = None
 ) -> bytes:
     r"""
     Return binary content of a CONNECT request.
 
     >>> from scrapy.utils.python import to_unicode as s
-    >>> s(tunnel_request_data("example.com", 8080))
+    >>> s(_tunnel_request_data("example.com", 8080))
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
-    >>> s(tunnel_request_data("example.com", 8080, b"123"))
+    >>> s(_tunnel_request_data("example.com", 8080, b"123"))
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\nProxy-Authorization: 123\r\n\r\n'
-    >>> s(tunnel_request_data(b"example.com", "8090"))
+    >>> s(_tunnel_request_data(b"example.com", "8090"))
     'CONNECT example.com:8090 HTTP/1.1\r\nHost: example.com:8090\r\n\r\n'
     """
     host_value = to_bytes(host, encoding="ascii") + b":" + to_bytes(str(port))
@@ -281,7 +281,7 @@ def tunnel_request_data(
     return tunnel_req
 
 
-class TunnelingAgent(Agent):
+class _TunnelingAgent(Agent):
     """An agent that uses a L{TunnelingTCP4ClientEndpoint} to make HTTPS
     downloads. It may look strange that we have chosen to subclass Agent and not
     ProxyAgent but consider that after the tunnel is opened the proxy is
@@ -303,8 +303,8 @@ class TunnelingAgent(Agent):
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
-    def _getEndpoint(self, uri: URI) -> TunnelingTCP4ClientEndpoint:
-        return TunnelingTCP4ClientEndpoint(
+    def _getEndpoint(self, uri: URI) -> _TunnelingTCP4ClientEndpoint:
+        return _TunnelingTCP4ClientEndpoint(
             reactor=self._reactor,
             host=uri.host,
             port=uri.port,
@@ -381,10 +381,7 @@ class _ScrapyProxyAgent(Agent):
         )
 
 
-class ScrapyAgent:
-    _Agent = Agent
-    _TunnelingAgent = TunnelingAgent
-
+class _ScrapyAgent:
     def __init__(
         self,
         *,
@@ -430,7 +427,7 @@ class ScrapyAgent:
                 assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
                 proxyConf = (proxy_host, proxy_port, proxyAuth)
-                return self._TunnelingAgent(
+                return _TunnelingAgent(
                     reactor=reactor,
                     proxyConf=proxyConf,
                     contextFactory=self._contextFactory,
@@ -447,7 +444,7 @@ class ScrapyAgent:
                 pool=self._pool,
             )
 
-        return self._Agent(  # type: ignore[no-untyped-call]
+        return Agent(
             reactor=reactor,
             contextFactory=self._contextFactory,
             connectTimeout=timeout,
@@ -465,7 +462,7 @@ class ScrapyAgent:
         url = urldefrag(request.url)[0]
         method = to_bytes(request.method)
         headers = TxHeaders(request.headers)
-        if isinstance(agent, self._TunnelingAgent):
+        if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
         start_time = monotonic()

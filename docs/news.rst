@@ -9,10 +9,24 @@ Scrapy VERSION (unreleased)
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   ``scrapy.core.downloader.handlers.http11.ScrapyProxyAgent`` has been made
-    private as it's an implementation detail of
-    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`.
-    (:issue:`7496`)
+-   The following classes and functions, intended for internal use by
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
+    and :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`, have
+    been made private:
+
+    - ``scrapy.core.downloader.handlers.http11.ScrapyAgent``
+
+    - ``scrapy.core.downloader.handlers.http11.ScrapyProxyAgent``
+
+    - ``scrapy.core.downloader.handlers.http11.TunnelingAgent``
+
+    - ``scrapy.core.downloader.handlers.http11.TunnelingTCP4ClientEndpoint``
+
+    - ``scrapy.core.downloader.handlers.http11.tunnel_request_data()``
+
+    - ``scrapy.core.downloader.handlers.http2.ScrapyH2Agent``
+
+    (:issue:`7496`, #TBD)
 
 .. _release-2.15.2:
 
