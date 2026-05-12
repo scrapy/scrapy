@@ -165,30 +165,3 @@ class H2Agent:
             lambda conn: conn.request(request, spider)
         )
         return d2
-
-
-class ScrapyProxyH2Agent(H2Agent):
-    def __init__(
-        self,
-        reactor: ReactorBase,
-        proxy_uri: URI,
-        pool: H2ConnectionPool,
-        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
-        connect_timeout: float | None = None,
-        bind_address: tuple[str, int] | None = None,
-    ) -> None:
-        super().__init__(
-            reactor=reactor,
-            pool=pool,
-            context_factory=context_factory,
-            connect_timeout=connect_timeout,
-            bind_address=bind_address,
-        )
-        self._proxy_uri = proxy_uri
-
-    def get_endpoint(self, uri: URI) -> HostnameEndpoint:
-        return self.endpoint_factory.endpointForURI(self._proxy_uri)  # type: ignore[no-any-return]
-
-    def get_key(self, uri: URI) -> ConnectionKeyT:
-        """We use the proxy uri instead of uri obtained from request url"""
-        return b"http-proxy", self._proxy_uri.host, self._proxy_uri.port
