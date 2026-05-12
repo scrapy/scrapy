@@ -173,6 +173,15 @@ class TestContextFactory(TestContextFactoryBase):
             )
             factory.creatorForNetloc(b"website.tld", 443)
 
+    def test_ctx_flags(self, factory: _ScrapyClientContextFactory) -> None:
+        """The context should have the expected flags set."""
+        creator = factory.creatorForNetloc(b"website.tld", 443)
+        conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
+        ctx = conn.get_context()
+        # fragile but pyOpenSSL doesn't have Context.get_options()
+        options = OpenSSL.SSL._lib.SSL_CTX_get_options(ctx._context)  # type: ignore[attr-defined]
+        assert options & 0x4  # OP_LEGACY_SERVER_CONNECT
+
 
 class TestContextFactoryTLSMethod(TestContextFactoryBase):
     async def _assert_factory_works(

@@ -109,7 +109,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def _get_cert_options(self) -> CertificateOptions:
         with _filter_method_warning():
-            return CertificateOptions(
+            return _ScrapyCertificateOptions(
                 method=self._ssl_method,
                 fixBrokenPeers=True,
                 acceptableCiphers=self.tls_ciphers,
@@ -122,10 +122,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         return self._get_context()
 
     def _get_context(self) -> SSL.Context:
-        cert_options = self._get_cert_options()
-        ctx: SSL.Context = cert_options.getContext()
-        ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
-        return ctx
+        return self._get_cert_options().getContext()
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         if not self._verify_certificates:
@@ -253,6 +250,18 @@ AcceptableProtocolsContextFactory = create_deprecated_class(
     subclass_warn_message="{old} is deprecated.",
     instance_warn_message="{cls} is deprecated.",
 )
+
+
+class _ScrapyCertificateOptions(CertificateOptions):
+    """A wrapper needed to add flags to the SSL context before it's used."""
+
+    def _makeContext(self, skipCiphers: bool = False) -> SSL.Context:
+        if TWISTED_TLS_NEW_IMPL:
+            ctx = super()._makeContext(skipCiphers)
+        else:
+            ctx = super()._makeContext()
+        ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
+        return ctx
 
 
 def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
