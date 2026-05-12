@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import gzip
 import json
+import logging
+import os
 import platform
 import re
 import sys
@@ -36,6 +38,7 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
+from tests.mockserver.mitm_proxy import MitmProxy, wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import (
@@ -43,6 +46,7 @@ from tests.spiders import (
     BytesReceivedErrbackSpider,
     HeadersReceivedCallbackSpider,
     HeadersReceivedErrbackSpider,
+    SimpleSpider,
     SingleRequestSpider,
 )
 from tests.utils.decorators import coroutine_test
@@ -55,9 +59,17 @@ if TYPE_CHECKING:
 
 
 class TestHttpBase(ABC):
-    is_secure = False
+    is_secure: bool = False
+    http2: bool = False
     # whether the handler supports per-request bindaddress
-    handler_supports_bindaddress_meta = True
+    handler_supports_bindaddress_meta: bool = True
+    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
+    # stream error (of type PROTOCOL_ERROR) so the client will send
+    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
+    # connection (see handling of ProtocolError in
+    # h2.connection.H2Connection.receive_data()), thus closing all streams that
+    # were using it, and we handle this as a normal exception.
+    handler_supports_http2_dataloss: bool = True
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
 
@@ -519,10 +531,6 @@ class TestHttpBase(ABC):
         else:
             assert latency > 0
 
-
-class TestHttp11Base(TestHttpBase):
-    """HTTP 1.1 test case"""
-
     @coroutine_test
     async def test_download_without_maxsize_limit(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
@@ -638,12 +646,11 @@ class TestHttp11Base(TestHttpBase):
             response = await download_handler.download_request(request)
         assert response.body == b"chunked content\n"
 
-    @pytest.mark.parametrize("url", ["broken", "broken-chunked"])
     @coroutine_test
-    async def test_download_cause_data_loss(
-        self, url: str, mockserver: MockServer
-    ) -> None:
-        request = Request(mockserver.url(f"/{url}", is_secure=self.is_secure))
+    async def test_download_cause_data_loss(self, mockserver: MockServer) -> None:
+        if self.http2 and not self.handler_supports_http2_dataloss:
+            pytest.skip("This handler doesn't support dataloss on HTTP/2")
+        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
                 await download_handler.download_request(request)
@@ -652,6 +659,8 @@ class TestHttp11Base(TestHttpBase):
     async def test_download_cause_data_loss_double_warning(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
+        if self.http2 and not self.handler_supports_http2_dataloss:
+            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -663,25 +672,43 @@ class TestHttp11Base(TestHttpBase):
             # no repeated warning
             assert "Got data loss" not in caplog.text
 
-    @pytest.mark.parametrize("url", ["broken", "broken-chunked"])
     @coroutine_test
-    async def test_download_allow_data_loss(
-        self, url: str, mockserver: MockServer
+    async def test_download_allow_data_loss_broken(
+        self, mockserver: MockServer
     ) -> None:
+        if self.http2 and not self.handler_supports_http2_dataloss:
+            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(
-            mockserver.url(f"/{url}", is_secure=self.is_secure),
+            mockserver.url("/broken", is_secure=self.is_secure),
             meta={"download_fail_on_dataloss": False},
         )
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.flags == ["dataloss"]
+        assert response.text == "partial"
 
-    @pytest.mark.parametrize("url", ["broken", "broken-chunked"])
+    @coroutine_test
+    async def test_download_allow_data_loss_broken_chunked(
+        self, mockserver: MockServer
+    ) -> None:
+        if self.http2:
+            pytest.skip("Chunked encoding is specific to HTTP/1.1")
+        request = Request(
+            mockserver.url("/broken-chunked", is_secure=self.is_secure),
+            meta={"download_fail_on_dataloss": False},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.flags == ["dataloss"]
+        assert response.text == "chunked content\n"
+
     @coroutine_test
     async def test_download_allow_data_loss_via_setting(
-        self, url: str, mockserver: MockServer
+        self, mockserver: MockServer
     ) -> None:
-        request = Request(mockserver.url(f"/{url}", is_secure=self.is_secure))
+        if self.http2 and not self.handler_supports_http2_dataloss:
+            pytest.skip("This handler doesn't support dataloss on HTTP/2")
+        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh(
             {"DOWNLOAD_FAIL_ON_DATALOSS": False}
         ) as download_handler:
@@ -708,6 +735,12 @@ class TestHttp11Base(TestHttpBase):
     @coroutine_test
     async def test_download_conn_aborted(self, mockserver: MockServer) -> None:
         # copy of TestCrawl.test_retry_conn_aborted()
+        if self.http2:
+            # it may be possible to write a separate resource that does something
+            # suitable on HTTP/2 without sending Content-Length
+            pytest.skip(
+                "On HTTP/2 this triggers a Content-Length mismatch error instead."
+            )
         request = Request(mockserver.url("/drop?abort=1", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(DownloadFailedError):
@@ -771,7 +804,7 @@ class TestHttp11Base(TestHttpBase):
             )
 
 
-class TestHttps11Base(TestHttp11Base):
+class TestHttpsBase(TestHttpBase):
     is_secure = True
 
     tls_log_message = (
@@ -1043,6 +1076,8 @@ class TestHttpWithCrawlerBase(ABC):
 class TestHttpProxyBase(ABC):
     is_secure = False
     expected_http_proxy_request_body = b"http://example.com"
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    handler_supports_tls_in_tls: bool = True
 
     @property
     @abstractmethod
@@ -1095,6 +1130,8 @@ class TestHttpProxyBase(ABC):
     ) -> None:
         if NON_EXISTING_RESOLVABLE:
             pytest.skip("Non-existing hosts are resolvable")
+        if self.is_secure and not self.handler_supports_tls_in_tls:
+            pytest.skip("HTTPS proxies for HTTPS destinations are not supported")
         http_proxy = proxy_mockserver.url("", is_secure=self.is_secure)
         domain = "https://no-such-domain.nosuch"
         request = Request(domain, meta={"proxy": http_proxy, "download_timeout": 0.2})
@@ -1114,3 +1151,118 @@ class TestHttpProxyBase(ABC):
         assert response.status == 200
         assert response.url == request.url
         assert response.body == self.expected_http_proxy_request_body
+
+
+class TestMitmProxyBase(ABC):
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    handler_supports_tls_in_tls: bool = True
+
+    @property
+    @abstractmethod
+    def settings_dict(self) -> dict[str, Any] | None:
+        raise NotImplementedError
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_http_proxy(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        mitm_proxy_server: MitmProxy,
+        https_dest: bool,
+    ) -> None:
+        """HTTP proxy, HTTP or HTTPS destination."""
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_https_proxy(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        mitm_proxy_server_https: MitmProxy,
+        https_dest: bool,
+    ) -> None:
+        """HTTPS proxy, HTTP or HTTPS destination."""
+        if https_dest and not self.handler_supports_tls_in_tls:
+            pytest.skip("HTTPS proxies for HTTPS destinations are not supported")
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_http_proxy_auth_error(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+        mockserver: MockServer,
+        mitm_proxy_server: MitmProxy,
+        https_dest: bool,
+    ) -> None:
+        """HTTP proxy, HTTP or HTTPS destination, wrong proxy creds."""
+        envvar = "https_proxy" if https_dest else "http_proxy"
+        monkeypatch.setenv(envvar, wrong_credentials(os.environ[envvar]))
+        crawler = get_crawler(SimpleSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        # The proxy returns a 407 error code but it does not reach the client;
+        # it just sees an exception.
+        self._assert_got_auth_exception(caplog.text)
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_dont_leak_proxy_authorization_header(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        mitm_proxy_server: MitmProxy,
+        https_dest: bool,
+    ) -> None:
+        """HTTP proxy, HTTP or HTTPS destination. Check that the auth header
+        is not sent to the destination."""
+        request = Request(mockserver.url("/echo", is_secure=https_dest))
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(seed=request)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
+        echo = json.loads(crawler.spider.meta["responses"][0].text)
+        assert "Proxy-Authorization" not in echo["headers"]
+
+    @staticmethod
+    def _assert_headers(headers: Headers, https_dest: bool) -> None:
+        assert b"X-Via-Mitmproxy" in headers
+        if https_dest:
+            assert b"X-Via-Mitmproxy-TLS" in headers
+
+    @staticmethod
+    def _assert_got_response_code(code: int, log: str) -> None:
+        assert str(log).count(f"Crawled ({code})") == 1
+
+    @staticmethod
+    def _assert_got_auth_exception(log: str) -> None:
+        assert "Proxy Authentication Required" in log or "407" in log

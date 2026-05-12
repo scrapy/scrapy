@@ -13,7 +13,7 @@ class Root(resource.Resource):
         resource.Resource.__init__(self)
         self.putChild(b"file", Data(b"0123456789", "text/plain"))
 
-    def getChild(self, name, request):
+    def getChild(self, path, request):
         return self
 
 

@@ -11,14 +11,15 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from tests.test_downloader_handlers_http_base import (
-    TestHttp11Base,
+    TestHttpBase,
     TestHttpProxyBase,
-    TestHttps11Base,
+    TestHttpsBase,
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
+    TestMitmProxyBase,
     TestSimpleHttpsBase,
 )
 
@@ -34,44 +35,6 @@ class HTTP11DownloadHandlerMixin:
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP11DownloadHandler
 
-
-def test_not_configured_without_reactor() -> None:
-    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
-    with pytest.raises(NotConfigured):
-        HTTP11DownloadHandler.from_crawler(crawler)
-
-
-class TestHttp11(HTTP11DownloadHandlerMixin, TestHttp11Base):
-    pass
-
-
-class TestHttps11(HTTP11DownloadHandlerMixin, TestHttps11Base):
-    pass
-
-
-class TestSimpleHttps(HTTP11DownloadHandlerMixin, TestSimpleHttpsBase):
-    pass
-
-
-class TestHttps11WrongHostname(HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase):
-    pass
-
-
-class TestHttps11InvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
-    pass
-
-
-class TestHttps11InvalidDNSPattern(
-    HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
-):
-    pass
-
-
-class TestHttps11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
-    pass
-
-
-class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
     @property
     def settings_dict(self) -> dict[str, Any] | None:
         return {
@@ -82,9 +45,61 @@ class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
         }
 
 
-class TestHttps11WithCrawler(TestHttp11WithCrawler):
+def test_not_configured_without_reactor() -> None:
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        HTTP11DownloadHandler.from_crawler(crawler)
+
+
+class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):
+    pass
+
+
+class TestHttps(HTTP11DownloadHandlerMixin, TestHttpsBase):
+    pass
+
+
+class TestSimpleHttps(HTTP11DownloadHandlerMixin, TestSimpleHttpsBase):
+    pass
+
+
+class TestHttpsWrongHostname(HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase):
+    pass
+
+
+class TestHttpsInvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+    pass
+
+
+class TestHttpsInvalidDNSPattern(
+    HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
+):
+    pass
+
+
+class TestHttpsCustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+    pass
+
+
+class TestHttpWithCrawler(HTTP11DownloadHandlerMixin, TestHttpWithCrawlerBase):
+    pass
+
+
+class TestHttpsWithCrawler(TestHttpWithCrawler):
     is_secure = True
 
 
-class TestHttp11Proxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
+class TestHttpProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
     pass
+
+
+class TestHttpsProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
+    is_secure = True
+    # not implemented
+    handler_supports_tls_in_tls = False
+
+
+@pytest.mark.requires_mitmproxy
+class TestMitmProxy(HTTP11DownloadHandlerMixin, TestMitmProxyBase):
+    # not implemented
+    handler_supports_tls_in_tls = False

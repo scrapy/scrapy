@@ -9,7 +9,7 @@ from twisted.web.server import Request, Site
 class Root(Resource):
     isLeaf = True
 
-    def getChild(self, name: str, request: Request) -> Resource:
+    def getChild(self, path: str, request: Request) -> Resource:
         return self
 
     def render(self, request: Request) -> bytes:
@@ -30,7 +30,7 @@ class Root(Resource):
 def _getarg(
     request: Request, name: bytes, default: Any = None, type_: type = str
 ) -> Any:
-    return type_(request.args[name][0]) if name in request.args else default  # type: ignore[index,operator]
+    return type_(request.args[name][0]) if name in request.args else default
 
 
 if __name__ == "__main__":

@@ -1,13 +1,9 @@
-import warnings
-from importlib import import_module
-
 import pytest
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
-from scrapy.utils.url import (  # type: ignore[attr-defined]
+from scrapy.utils.url import (
     _is_filesystem_path,
-    _public_w3lib_objects,
     add_http_if_no_scheme,
     guess_scheme,
     strip_url,
@@ -446,23 +442,3 @@ class TestStripUrl:
 )
 def test__is_filesystem_path(path: str, expected: bool) -> None:
     assert _is_filesystem_path(path) == expected
-
-
-@pytest.mark.parametrize(
-    "obj_name",
-    [
-        "_unquotepath",
-        "_safe_chars",
-        "parse_url",
-        *_public_w3lib_objects,
-    ],
-)
-def test_deprecated_imports_from_w3lib(obj_name: str) -> None:
-    with warnings.catch_warnings(record=True) as warns:
-        obj_type = "attribute" if obj_name == "_safe_chars" else "function"
-        message = f"The scrapy.utils.url.{obj_name} {obj_type} is deprecated, use w3lib.url.{obj_name} instead."
-
-        getattr(import_module("scrapy.utils.url"), obj_name)
-
-        assert isinstance(warns[0].message, Warning)
-        assert message in warns[0].message.args

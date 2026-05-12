@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from typing import IO, TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, overload
+from typing import IO, TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, cast, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
@@ -51,7 +51,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     if arg is None:
         return ()
     if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
-        return arg
+        return cast("Iterable[Any]", arg)
     return [arg]
 
 
@@ -255,6 +255,11 @@ def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
+def _returns_none(return_node: ast.Return) -> bool:
+    value = return_node.value
+    return value is None or (isinstance(value, ast.Constant) and value.value is None)
+
+
 def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noqa: A002
     """
     Returns True if a callable is a generator function which includes a
@@ -262,12 +267,6 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noq
     """
     if callable in _generator_callbacks_cache:
         return bool(_generator_callbacks_cache[callable])
-
-    def returns_none(return_node: ast.Return) -> bool:
-        value = return_node.value
-        return value is None or (
-            isinstance(value, ast.Constant) and value.value is None
-        )
 
     if inspect.isgeneratorfunction(callable):
         func = callable
@@ -284,7 +283,7 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noq
 
         tree = ast.parse(code)
         for node in walk_callable(tree):
-            if isinstance(node, ast.Return) and not returns_none(node):
+            if isinstance(node, ast.Return) and not _returns_none(node):
                 _generator_callbacks_cache[callable] = True
                 return bool(_generator_callbacks_cache[callable])
 

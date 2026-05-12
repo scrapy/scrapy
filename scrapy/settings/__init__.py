@@ -143,7 +143,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
             raise ValueError(f"{item!r} not found in the {name} setting ({value!r}).")
         self.set(name, [v for v in value if v != item], self.getpriority(name) or 0)
 
-    def get(self, name: _SettingsKey, default: Any = None) -> Any:
+    def get(self, name: _SettingsKey, default: Any = None) -> Any:  # pylint: disable=arguments-renamed
         """
         Get a setting value without affecting its original type.
 
@@ -510,7 +510,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         component_priority_dict[cls] = priority
         self.set(name, component_priority_dict, self.getpriority(name) or 0)
 
-    def setdefault(
+    def setdefault(  # pylint: disable=arguments-renamed
         self,
         name: _SettingsKey,
         default: Any = None,
@@ -691,14 +691,14 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         else:
             p.text(pformat(self.copy_to_dict()))
 
-    def pop(self, name: _SettingsKey, default: Any = __default) -> Any:
+    def pop(self, name: _SettingsKey, default: Any = __default) -> Any:  # pylint: disable=arguments-renamed
         try:
             value = self.attributes[name].value
         except KeyError:
             if default is self.__default:
                 raise
             return default
-        self.__delitem__(name)
+        del self[name]
         return value
 
 

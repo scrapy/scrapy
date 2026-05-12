@@ -6,8 +6,9 @@ import ipaddress
 import logging
 import re
 from contextlib import suppress
+from functools import partial
 from io import BytesIO
-from time import time
+from time import monotonic
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
@@ -224,7 +225,8 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-                self._tunneledHost, self._tunneledPort
+                self._tunneledHost,  # type: ignore[arg-type]
+                self._tunneledPort,
             )
             self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
@@ -337,17 +339,19 @@ class TunnelingAgent(Agent):
         )
 
 
-class ScrapyProxyAgent(Agent):
+class _ScrapyProxyAgent(Agent):
     def __init__(
         self,
         reactor: ReactorBase,
         proxyURI: bytes,
+        contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(  # type: ignore[no-untyped-call]
             reactor=reactor,
+            contextFactory=contextFactory,
             connectTimeout=connectTimeout,
             bindAddress=bindAddress,
             pool=pool,
@@ -379,7 +383,6 @@ class ScrapyProxyAgent(Agent):
 
 class ScrapyAgent:
     _Agent = Agent
-    _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent
 
     def __init__(
@@ -420,6 +423,10 @@ class ScrapyAgent:
             if not proxy_port:
                 proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
+                if proxy_parsed.scheme == "https":  # pragma: no cover
+                    raise NotImplementedError(
+                        "HTTPS proxies for HTTPS destinations are not supported"
+                    )
                 assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
                 proxyConf = (proxy_host, proxy_port, proxyAuth)
@@ -431,9 +438,10 @@ class ScrapyAgent:
                     bindAddress=bindaddress,
                     pool=self._pool,
                 )
-            return self._ProxyAgent(
+            return _ScrapyProxyAgent(
                 reactor=reactor,
                 proxyURI=to_bytes(proxy, encoding="ascii"),
+                contextFactory=self._contextFactory,
                 connectTimeout=timeout,
                 bindAddress=bindaddress,
                 pool=self._pool,
@@ -460,7 +468,7 @@ class ScrapyAgent:
         if isinstance(agent, self._TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
-        start_time = time()
+        start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
             to_bytes(url, encoding="ascii"),
@@ -489,7 +497,7 @@ class ScrapyAgent:
         raise DownloadTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
-        request.meta["download_latency"] = time() - start_time
+        request.meta["download_latency"] = monotonic() - start_time
         return result
 
     @staticmethod
@@ -547,11 +555,7 @@ class ScrapyAgent:
                 get_warnsize_msg(expected_size, warnsize, request, expected=True)
             )
 
-        def _cancel(_: Any) -> None:
-            # Abort connection immediately.
-            txresponse._transport._producer.abortConnection()
-
-        d: Deferred[_ResultT] = Deferred(_cancel)
+        d: Deferred[_ResultT] = Deferred(partial(self._cancel, txresponse=txresponse))
         txresponse.deliverBody(
             _ResponseReader(
                 finished=d,
@@ -569,6 +573,11 @@ class ScrapyAgent:
         self._txresponse = txresponse
 
         return d
+
+    @staticmethod
+    def _cancel(_: Any, txresponse: TxResponse) -> None:
+        # Abort connection immediately.
+        txresponse._transport._producer.abortConnection()
 
     def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
@@ -667,17 +676,17 @@ class _ResponseReader(Protocol):
             assert hostname is not None
             _log_ssl_conn_debug_info(hostname, connection)
 
-    def dataReceived(self, bodyBytes: bytes) -> None:
+    def dataReceived(self, data: bytes) -> None:
         # This maybe called several times after cancel was called with buffered data.
         if self._finished.called:
             return
 
         assert self.transport
-        self._bodybuf.write(bodyBytes)
-        self._bytes_received += len(bodyBytes)
+        self._bodybuf.write(data)
+        self._bytes_received += len(data)
 
         if stop_download := check_stop_download(
-            signals.bytes_received, self._crawler, self._request, data=bodyBytes
+            signals.bytes_received, self._crawler, self._request, data=data
         ):
             self.transport.stopProducing()
             self.transport.loseConnection()
