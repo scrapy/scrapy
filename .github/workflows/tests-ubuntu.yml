@@ -84,13 +84,13 @@ jobs:
             TOXENV: mitmproxy
 
         # 3.15 pre-release
-        - python-version: "3.15-beta.1"
+        - python-version: "3.15.0-beta.1"
           env:
             TOXENV: py
-        - python-version: "3.15-beta.1"
+        - python-version: "3.15.0-beta.1"
           env:
             TOXENV: default-reactor
-        - python-version: "3.15-beta.1"
+        - python-version: "3.15.0-beta.1"
           env:
             TOXENV: no-reactor
 
