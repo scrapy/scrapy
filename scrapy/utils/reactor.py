@@ -105,7 +105,7 @@ def set_asyncio_event_loop_policy() -> None:
         )
         policy = asyncio.get_event_loop_policy()
         if not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy):
-            policy = asyncio.WindowsSelectorEventLoopPolicy()
+            policy = asyncio.WindowsSelectorEventLoopPolicy()  # pylint: disable=deprecated-class
             asyncio.set_event_loop_policy(policy)
 
 
