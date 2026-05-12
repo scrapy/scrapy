@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
 
 from OpenSSL import SSL
-from twisted.internet._sslverify import _setAcceptableProtocols
 from twisted.internet.ssl import (
     AcceptableCiphers,
     CertificateOptions,
@@ -19,9 +18,11 @@ from zope.interface.verify import verifyObject
 from scrapy.core.downloader.tls import (
     DEFAULT_CIPHERS,
     _ScrapyClientTLSOptions,
+    _ScrapyClientTLSOptions26,
     openssl_methods,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import build_from_crawler, load_object
 
@@ -108,7 +109,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def _get_cert_options(self) -> CertificateOptions:
         with _filter_method_warning():
-            return CertificateOptions(  # type: ignore[no-any-return]
+            return _ScrapyCertificateOptions(
                 method=self._ssl_method,
                 fixBrokenPeers=True,
                 acceptableCiphers=self.tls_ciphers,
@@ -121,17 +122,21 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         return self._get_context()
 
     def _get_context(self) -> SSL.Context:
-        cert_options = self._get_cert_options()
-        ctx: SSL.Context = cert_options.getContext()
-        ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
-        return ctx
+        return self._get_cert_options().getContext()
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         if not self._verify_certificates:
-            # _ScrapyClientTLSOptions is needed to skip verification errors
+            # Our options class is needed to skip verification errors
+            if TWISTED_TLS_NEW_IMPL:
+                return _ScrapyClientTLSOptions26(
+                    self._get_cert_options()._makeTLSConnection,
+                    hostname.decode("ascii"),
+                    verbose_logging=self.tls_verbose_logging,
+                )
             return _ScrapyClientTLSOptions(
-                hostname.decode("ascii"), self._get_context()
-            )  # type: ignore[no-untyped-call]
+                hostname.decode("ascii"),  # type: ignore[arg-type]
+                self._get_context(),  # type: ignore[arg-type]
+            )
         # Otherwise use the normal Twisted function.
         # Note that this doesn't use self._get_context().
         with _filter_method_warning():
@@ -202,7 +207,24 @@ class _AcceptableProtocolsContextFactory:
     the acceptable protocols on the :class:`.ClientTLSOptions` instance
     returned by it. It's only needed because we support custom factories via
     :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
+
+    It's a no-op on Twisted 26.4.0+, though using it with custom
+    factories on those Twisted versions may be not enough for HTTP/2 support.
     """
+
+    # Something needs to call set_alpn_protos() for ALPN to work.
+    #
+    # Twisted < 26.4.0 does it in OpenSSLCertificateOptions._makeContext()
+    # (requires passing acceptableProtocols from the factory to
+    # OpenSSLCertificateOptions) and in TLSMemoryBIOFactory._createConnection()
+    # based on H2ClientFactory.acceptableProtocols (too late, it seems).
+    #
+    # Newer Twisted does it in OpenSSLCertificateOptions._makeContext() as
+    # well, and in OpenSSLCertificateOptions._makeTLSConnection() based on
+    # H2ClientFactory.acceptableProtocols (which now works).
+    #
+    # When we drop DOWNLOADER_CLIENTCONTEXTFACTORY it looks like we can replace
+    # all of this with _ScrapyClientContextFactory.acceptableProtocols.
 
     def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
         verifyObject(IPolicyForHTTPS, context_factory)
@@ -213,7 +235,12 @@ class _AcceptableProtocolsContextFactory:
         options: ClientTLSOptions = self._wrapped_context_factory.creatorForNetloc(
             hostname, port
         )
-        _setAcceptableProtocols(options._ctx, self._acceptable_protocols)
+        if not TWISTED_TLS_NEW_IMPL:
+            from twisted.internet._sslverify import (  # type: ignore[attr-defined]  # noqa: PLC0415  # pylint: disable=no-name-in-module
+                _setAcceptableProtocols,
+            )
+
+            _setAcceptableProtocols(options._ctx, self._acceptable_protocols)  # type: ignore[attr-defined]
         return options
 
 
@@ -223,6 +250,18 @@ AcceptableProtocolsContextFactory = create_deprecated_class(
     subclass_warn_message="{old} is deprecated.",
     instance_warn_message="{cls} is deprecated.",
 )
+
+
+class _ScrapyCertificateOptions(CertificateOptions):
+    """A wrapper needed to add flags to the SSL context before it's used."""
+
+    def _makeContext(self, skipCiphers: bool = False) -> SSL.Context:
+        if TWISTED_TLS_NEW_IMPL:
+            ctx = super()._makeContext(skipCiphers)
+        else:
+            ctx = super()._makeContext()
+        ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
+        return ctx
 
 
 def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:

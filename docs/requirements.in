@@ -5,4 +5,4 @@ sphinx
 sphinx-notfound-page
 sphinx-rtd-theme
 sphinx-rtd-dark-mode
-sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@0.8.5
+sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@0.8.6

@@ -225,7 +225,8 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-                self._tunneledHost, self._tunneledPort
+                self._tunneledHost,  # type: ignore[arg-type]
+                self._tunneledPort,
             )
             self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
@@ -338,17 +339,19 @@ class TunnelingAgent(Agent):
         )
 
 
-class ScrapyProxyAgent(Agent):
+class _ScrapyProxyAgent(Agent):
     def __init__(
         self,
         reactor: ReactorBase,
         proxyURI: bytes,
+        contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(  # type: ignore[no-untyped-call]
             reactor=reactor,
+            contextFactory=contextFactory,
             connectTimeout=connectTimeout,
             bindAddress=bindAddress,
             pool=pool,
@@ -380,7 +383,6 @@ class ScrapyProxyAgent(Agent):
 
 class ScrapyAgent:
     _Agent = Agent
-    _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent
 
     def __init__(
@@ -421,6 +423,10 @@ class ScrapyAgent:
             if not proxy_port:
                 proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
+                if proxy_parsed.scheme == "https":  # pragma: no cover
+                    raise NotImplementedError(
+                        "HTTPS proxies for HTTPS destinations are not supported"
+                    )
                 assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
                 proxyConf = (proxy_host, proxy_port, proxyAuth)
@@ -432,9 +438,10 @@ class ScrapyAgent:
                     bindAddress=bindaddress,
                     pool=self._pool,
                 )
-            return self._ProxyAgent(
+            return _ScrapyProxyAgent(
                 reactor=reactor,
                 proxyURI=to_bytes(proxy, encoding="ascii"),
+                contextFactory=self._contextFactory,
                 connectTimeout=timeout,
                 bindAddress=bindaddress,
                 pool=self._pool,

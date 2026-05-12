@@ -3,6 +3,17 @@
 Release notes
 =============
 
+Scrapy VERSION (unreleased)
+---------------------------
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   ``scrapy.core.downloader.handlers.http11.ScrapyProxyAgent`` has been made
+    private as it's an implementation detail of
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`.
+    (:issue:`7496`)
+
 .. _release-2.15.2:
 
 Scrapy 2.15.2 (2026-04-28)

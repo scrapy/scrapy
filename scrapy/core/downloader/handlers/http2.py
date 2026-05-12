@@ -4,19 +4,20 @@ from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
-from twisted.web.client import URI
-
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
-from scrapy.exceptions import DownloadTimeoutError, NotConfigured
+from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
+from scrapy.exceptions import (
+    DownloadTimeoutError,
+    NotConfigured,
+    UnsupportedURLSchemeError,
+)
 from scrapy.utils._download_handlers import (
     normalize_bind_address,
     wrap_twisted_exceptions,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
@@ -44,6 +45,10 @@ class H2DownloadHandler(BaseDownloadHandler):
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:
+        if urlparse_cached(request).scheme == "http":  # pragma: no cover
+            raise UnsupportedURLSchemeError(
+                f"{type(self).__name__} doesn't support plain HTTP."
+            )
         agent = ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
@@ -62,7 +67,6 @@ class H2DownloadHandler(BaseDownloadHandler):
 
 class ScrapyH2Agent:
     _Agent = H2Agent
-    _ProxyAgent = ScrapyProxyH2Agent
 
     def __init__(
         self,
@@ -81,24 +85,10 @@ class ScrapyH2Agent:
     def _get_agent(self, request: Request, timeout: float | None) -> H2Agent:
         from twisted.internet import reactor
 
+        if request.meta.get("proxy"):  # pragma: no cover
+            raise NotImplementedError(f"{type(self).__name__} doesn't support proxies.")
         bind_address = request.meta.get("bindaddress") or self._bind_address
         bind_address = normalize_bind_address(bind_address)
-        proxy = request.meta.get("proxy")
-        if proxy:
-            if urlparse_cached(request).scheme == "https":
-                # ToDo
-                raise NotImplementedError(
-                    "Tunneling via CONNECT method using HTTP/2.0 is not yet supported"
-                )
-            return self._ProxyAgent(
-                reactor=reactor,
-                context_factory=self._context_factory,
-                proxy_uri=URI.fromBytes(to_bytes(proxy, encoding="ascii")),
-                connect_timeout=timeout,
-                bind_address=bind_address,
-                pool=self._pool,
-            )
-
         return self._Agent(
             reactor=reactor,
             context_factory=self._context_factory,
