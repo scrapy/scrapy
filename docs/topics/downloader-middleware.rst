@@ -1152,9 +1152,9 @@ Based on :class:`~urllib.robotparser.RobotFileParser`:
 * is compliant with `Martijn Koster's 1996 draft specification
   <https://www.robotstxt.org/norobots-rfc.txt>`_
 
-* lacks support for wildcard matching
+* lacks support for wildcard matching (before Python 3.14.5)
 
-* doesn't use the length based rule
+* doesn't use the length based rule (before Python 3.14.5)
 
 It is faster than Protego and backward-compatible with versions of Scrapy before 1.8.0.
 
