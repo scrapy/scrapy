@@ -338,7 +338,7 @@ class TunnelingAgent(Agent):
         )
 
 
-class ScrapyProxyAgent(Agent):
+class _ScrapyProxyAgent(Agent):
     def __init__(
         self,
         reactor: ReactorBase,
@@ -382,7 +382,6 @@ class ScrapyProxyAgent(Agent):
 
 class ScrapyAgent:
     _Agent = Agent
-    _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent
 
     def __init__(
@@ -438,7 +437,7 @@ class ScrapyAgent:
                     bindAddress=bindaddress,
                     pool=self._pool,
                 )
-            return self._ProxyAgent(
+            return _ScrapyProxyAgent(
                 reactor=reactor,
                 proxyURI=to_bytes(proxy, encoding="ascii"),
                 contextFactory=self._contextFactory,
