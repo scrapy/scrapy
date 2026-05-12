@@ -203,6 +203,8 @@ rotate log files automatically, but you can use Python's standard
 
 For example, to rotate the log file every day:
 
+.. skip: next
+
 .. code-block:: python
 
     import logging
