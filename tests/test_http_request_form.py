@@ -602,10 +602,8 @@ class TestFormRequest(TestRequest):
             <input type="hidden" name="two" value="2">
             </form>"""
         )
-        r1 = self.request_class.from_response(response, formname="form3")
-        assert r1.method == "POST"
-        fs = _qs(r1)
-        assert fs == {b"one": [b"1"]}
+        with pytest.raises(ValueError, match='No <form> with name "form3"'):
+            self.request_class.from_response(response, formname="form3")
 
     def test_from_response_formname_errors_formnumber(self):
         response = _buildresponse(
@@ -616,7 +614,7 @@ class TestFormRequest(TestRequest):
             <input type="hidden" name="two" value="2">
             </form>"""
         )
-        with pytest.raises(IndexError):
+        with pytest.raises(ValueError, match='No <form> with name "form3"'):
             self.request_class.from_response(response, formname="form3", formnumber=2)
 
     def test_from_response_formid_exists(self):
@@ -646,12 +644,10 @@ class TestFormRequest(TestRequest):
             <input type="hidden" name="four" value="4">
             </form>"""
         )
-        r1 = self.request_class.from_response(
-            response, formname="form3", formid="form2"
-        )
-        assert r1.method == "POST"
-        fs = _qs(r1)
-        assert fs == {b"four": [b"4"], b"three": [b"3"]}
+        with pytest.raises(ValueError, match='No <form> with name "form3"'):
+            self.request_class.from_response(
+                response, formname="form3", formid="form2"
+            )
 
     def test_from_response_formid_nonexistent(self):
         response = _buildresponse(
@@ -662,10 +658,8 @@ class TestFormRequest(TestRequest):
             <input type="hidden" name="two" value="2">
             </form>"""
         )
-        r1 = self.request_class.from_response(response, formid="form3")
-        assert r1.method == "POST"
-        fs = _qs(r1)
-        assert fs == {b"one": [b"1"]}
+        with pytest.raises(ValueError, match='No <form> with id "form3"'):
+            self.request_class.from_response(response, formid="form3")
 
     def test_from_response_formid_errors_formnumber(self):
         response = _buildresponse(
@@ -676,7 +670,7 @@ class TestFormRequest(TestRequest):
             <input type="hidden" name="two" value="2">
             </form>"""
         )
-        with pytest.raises(IndexError):
+        with pytest.raises(ValueError, match='No <form> with id "form3"'):
             self.request_class.from_response(response, formid="form3", formnumber=2)
 
     def test_from_response_select(self):
