@@ -461,7 +461,7 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
 class TestDeprecatedSpiderArg(TestSpiderMiddleware):
     @coroutine_test
     async def test_deprecated_mw_spider_arg(self):
-        class DeprecatedSpiderArgMiddleware:
+        class DeprecatedSpiderArgMiddleware1:
             def process_spider_input(self, response, spider):
                 return None
 
@@ -469,9 +469,15 @@ class TestDeprecatedSpiderArg(TestSpiderMiddleware):
                 1 / 0
                 yield
 
+        class DeprecatedSpiderArgMiddleware2:
             def process_spider_exception(self, response, exception, spider):
                 return []
 
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"process_spider_exception\(\) requires a spider argument",
+        ):
+            self.mwman._add_middleware(DeprecatedSpiderArgMiddleware2())
         with (
             pytest.warns(
                 ScrapyDeprecationWarning,
@@ -481,13 +487,10 @@ class TestDeprecatedSpiderArg(TestSpiderMiddleware):
                 ScrapyDeprecationWarning,
                 match=r"process_spider_output\(\) requires a spider argument",
             ),
-            pytest.warns(
-                ScrapyDeprecationWarning,
-                match=r"process_spider_exception\(\) requires a spider argument",
-            ),
         ):
-            self.mwman._add_middleware(DeprecatedSpiderArgMiddleware())
-        await self._scrape_response()
+            self.mwman._add_middleware(DeprecatedSpiderArgMiddleware1())
+        it = await self._scrape_response()
+        await collect_asyncgen(it)
 
     @coroutine_test
     async def test_deprecated_mwman_spider_arg(self):
