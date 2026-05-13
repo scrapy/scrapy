@@ -138,11 +138,13 @@ def _get_form(
         f = root.xpath(f'//form[@name="{formname}"]')
         if f:
             return cast("FormElement", f[0])
+        raise ValueError(f'No <form> with name "{formname}" found in {response}')
 
     if formid is not None:
         f = root.xpath(f'//form[@id="{formid}"]')
         if f:
             return cast("FormElement", f[0])
+        raise ValueError(f'No <form> with id "{formid}" found in {response}')
 
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
