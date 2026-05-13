@@ -256,7 +256,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 raise TypeError(
                     f"Middleware {global_object_name(mw.__class__)} doesn't support"
                     f" asynchronous spider output. Its process_spider_output() method"
-                    f" should be an async generator function or it should additionaly"
+                    f" should be an async generator function or it should additionally"
                     f" define a process_spider_output_async() method."
                 )
             return normal_method

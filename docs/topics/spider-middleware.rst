@@ -126,9 +126,9 @@ one or more of these methods:
         <topics-items>`.
 
         If this method is synchronous, it will be ignored and the middleware
-        needs to define an asynchronous ``process_spider_output_async()``
+        is required to define an asynchronous ``process_spider_output_async()``
         method that will be called instead. This is a temporary measure for
-        supporting  middlewares that support Scrapy versions earlier than
+        supporting middlewares that support Scrapy versions earlier than
         Scrapy 2.7, see :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
