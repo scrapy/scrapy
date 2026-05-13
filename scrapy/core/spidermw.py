@@ -165,20 +165,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
         for method_index, method in enumerate(method_list, start=start_index):
             if method is None:
                 continue
-            try:
-                if method in self._mw_methods_requiring_spider:
-                    result = method(
-                        response=response, result=result, spider=self._spider
-                    )
-                else:
-                    result = method(response=response, result=result)
-            except Exception as ex:
-                exception_result: Failure | MutableAsyncChain[_T] = (
-                    self._process_spider_exception(response, ex, method_index + 1)
-                )
-                if isinstance(exception_result, Failure):
-                    raise
-                return exception_result
+            if method in self._mw_methods_requiring_spider:
+                result = method(response=response, result=result, spider=self._spider)
+            else:
+                result = method(response=response, result=result)
             result = self._evaluate_iterable(
                 response, result, method_index + 1, recovered
             )
