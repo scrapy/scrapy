@@ -64,7 +64,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
         process_spider_output = self._get_process_spider_output(mw)
         self.methods["process_spider_output"].appendleft(process_spider_output)
-        if callable(process_spider_output):
+        if process_spider_output is not None:
             self._check_mw_method_spider_arg(process_spider_output)
 
         process_spider_exception = getattr(mw, "process_spider_exception", None)
