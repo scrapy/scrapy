@@ -108,12 +108,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
             async for r in iterable:
                 yield r
         except Exception as ex:
-            exception_result = cast(
-                "Failure | MutableAsyncChain[_T]",
-                self._process_spider_exception(response, ex, exception_processor_index),
+            exception_result = self._process_spider_exception(
+                response, ex, exception_processor_index
             )
-            if isinstance(exception_result, Failure):
-                raise
             recover_to.extend(exception_result)
 
     def _process_spider_exception(
