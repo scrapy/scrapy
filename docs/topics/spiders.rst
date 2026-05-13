@@ -457,13 +457,14 @@ with a ``TestItem`` declared in a ``myproject.items`` module:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass
 
 
-    class TestItem(scrapy.Item):
-        id = scrapy.Field()
-        name = scrapy.Field()
-        description = scrapy.Field()
+    @dataclass
+    class TestItem:
+        id: str = ""
+        name: str = ""
+        description: str = ""
 
 
 .. currentmodule:: scrapy.spiders
@@ -556,7 +557,6 @@ Let's now take a look at an example CrawlSpider with rules:
 
 .. code-block:: python
 
-    import scrapy
     from scrapy.spiders import CrawlSpider, Rule
     from scrapy.linkextractors import LinkExtractor
 
@@ -576,7 +576,7 @@ Let's now take a look at an example CrawlSpider with rules:
 
         def parse_item(self, response):
             self.logger.info("Hi, this is an item page! %s", response.url)
-            item = scrapy.Item()
+            item = {}
             item["id"] = response.xpath('//td[@id="item_id"]/text()').re(r"ID: (\d+)")
             item["name"] = response.xpath('//td[@id="item_name"]/text()').get()
             item["description"] = response.xpath(

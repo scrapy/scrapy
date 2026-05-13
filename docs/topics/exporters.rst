@@ -93,7 +93,8 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-If you use :class:`~scrapy.Item` you can declare a serializer in the
+If you use :ref:`Item objects <item-objects>` or :ref:`dataclass objects
+<dataclass-items>` you can declare a serializer in the
 :ref:`field metadata <topics-items-fields>`. The serializer must be
 a callable which receives a value and returns its serialized form.
 
@@ -101,16 +102,17 @@ Example:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
 
 
     def serialize_price(value):
         return f"$ {str(value)}"
 
 
-    class Product(scrapy.Item):
-        name = scrapy.Field()
-        price = scrapy.Field(serializer=serialize_price)
+    @dataclass
+    class Product:
+        name: str
+        price: float = field(metadata={"serializer": serialize_price})
 
 
 2. Overriding the serialize_field() method

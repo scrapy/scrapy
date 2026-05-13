@@ -228,7 +228,9 @@ metadata. Here is an example:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
+    from typing import Optional
+
     from itemloaders.processors import Join, MapCompose, TakeFirst
     from w3lib.html import remove_tags
 
@@ -238,14 +240,21 @@ metadata. Here is an example:
             return value
 
 
-    class Product(scrapy.Item):
-        name = scrapy.Field(
-            input_processor=MapCompose(remove_tags),
-            output_processor=Join(),
+    @dataclass
+    class Product:
+        name: Optional[str] = field(
+            default=None,
+            metadata={
+                "input_processor": MapCompose(remove_tags),
+                "output_processor": Join(),
+            },
         )
-        price = scrapy.Field(
-            input_processor=MapCompose(remove_tags, filter_price),
-            output_processor=TakeFirst(),
+        price: Optional[str] = field(
+            default=None,
+            metadata={
+                "input_processor": MapCompose(remove_tags, filter_price),
+                "output_processor": TakeFirst(),
+            },
         )
 
 
