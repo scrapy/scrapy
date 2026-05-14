@@ -1366,8 +1366,8 @@ Highlights:
 
 -   Added the :reqmeta:`allow_offsite` request meta key
 
--   :ref:`Spider middlewares that don't support asynchronous spider output
-    <sync-async-spider-middleware>` are deprecated
+-   Spider middlewares that don't support asynchronous spider output are
+    deprecated.
 
 -   Added a base class for :ref:`universal spider middlewares
     <universal-spider-middleware>`
@@ -1505,13 +1505,11 @@ Deprecations
     ``start_queue_cls`` parameter.
     (:issue:`6752`)
 
--   :ref:`Spider middlewares that don't support asynchronous spider output
-    <sync-async-spider-middleware>` are deprecated. The async iterable
-    downgrading feature, needed for using such middlewares with asynchronous
-    callbacks and with other spider middlewares that produce asynchronous
-    iterables, is also deprecated. Please update all such middlewares to
-    support asynchronous spider output.
-    (:issue:`6664`)
+-   Spider middlewares that don't support asynchronous spider output are
+    deprecated. The async iterable downgrading feature, needed for using such
+    middlewares with asynchronous callbacks and with other spider middlewares
+    that produce asynchronous iterables, is also deprecated. Please update all
+    such middlewares to support asynchronous spider output. (:issue:`6664`)
 
 -   Functions that were imported from :mod:`w3lib.url` and re-exported in
     :mod:`scrapy.utils.url` are now deprecated, you should import them from
@@ -1770,9 +1768,8 @@ Documentation
 -   Documented the setting values set in the default project template.
     (:issue:`6762`, :issue:`6775`)
 
--   Improved the :ref:`docs <sync-async-spider-middleware>` about asynchronous
-    iterable support in spider middlewares.
-    (:issue:`6688`)
+-   Improved the docs about asynchronous iterable support in spider
+    middlewares. (:issue:`6688`)
 
 -   Improved the :ref:`docs <coroutine-deferred-apis>` about using
     :class:`~twisted.internet.defer.Deferred`-based APIs in coroutine-based
