@@ -114,7 +114,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 method=self._ssl_method,
                 fixBrokenPeers=True,
                 acceptableCiphers=self.tls_ciphers,
-                trustRoot=platformTrust(),
+                trustRoot=platformTrust() if TWISTED_TLS_NEW_IMPL else None,
             )
 
     # should be removed together with ScrapyClientContextFactory
