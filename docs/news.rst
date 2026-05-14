@@ -1367,7 +1367,7 @@ Highlights:
 -   Added the :reqmeta:`allow_offsite` request meta key
 
 -   Spider middlewares that don't support asynchronous spider output are
-    deprecated.
+    deprecated
 
 -   Added a base class for :ref:`universal spider middlewares
     <universal-spider-middleware>`
