@@ -9,6 +9,7 @@ from twisted.internet.ssl import (
     AcceptableCiphers,
     CertificateOptions,
     optionsForClientTLS,
+    platformTrust,
 )
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
@@ -113,6 +114,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 method=self._ssl_method,
                 fixBrokenPeers=True,
                 acceptableCiphers=self.tls_ciphers,
+                trustRoot=platformTrust(),
             )
 
     # should be removed together with ScrapyClientContextFactory
