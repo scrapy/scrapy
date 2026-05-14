@@ -20,6 +20,7 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
     TestMitmProxyBase,
+    TestRealWebsiteBase,
     TestSimpleHttpsBase,
 )
 
@@ -103,3 +104,8 @@ class TestHttpsProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
 class TestMitmProxy(HTTP11DownloadHandlerMixin, TestMitmProxyBase):
     # not implemented
     handler_supports_tls_in_tls = False
+
+
+@pytest.mark.requires_internet
+class TestRealWebsite(HTTP11DownloadHandlerMixin, TestRealWebsiteBase):
+    pass

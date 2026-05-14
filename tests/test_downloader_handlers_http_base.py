@@ -1266,3 +1266,47 @@ class TestMitmProxyBase(ABC):
     @staticmethod
     def _assert_got_auth_exception(log: str) -> None:
         assert "Proxy Authentication Required" in log or "407" in log
+
+
+class TestRealWebsiteBase(ABC):
+    @property
+    @abstractmethod
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def settings_dict(self) -> dict[str, Any] | None:
+        raise NotImplementedError
+
+    @asynccontextmanager
+    async def get_dh(
+        self, settings_dict: dict[str, Any] | None = None
+    ) -> AsyncGenerator[DownloadHandlerProtocol]:
+        crawler = get_crawler(DefaultSpider, settings_dict)
+        crawler.spider = crawler._create_spider()
+        dh = build_from_crawler(self.download_handler_cls, crawler)
+        try:
+            yield dh
+        finally:
+            await dh.close()
+
+    @coroutine_test
+    async def test_download(self) -> None:
+        request = Request("https://books.toscrape.com/")
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert "All products | Books to Scrape - Sandbox" in response.text
+
+    @coroutine_test
+    async def test_download_with_spider(self) -> None:
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        await maybe_deferred_to_future(
+            crawler.crawl(seed=Request("https://books.toscrape.com/"))
+        )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        failure = crawler.spider.meta.get("failure")
+        assert failure is None
+        reason = crawler.spider.meta["close_reason"]
+        assert reason == "finished"

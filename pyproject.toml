@@ -267,6 +267,7 @@ markers = [
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_mitmproxy: marks tests that need mitmproxy",
+    "requires_internet: marks tests that need real Internet access",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",

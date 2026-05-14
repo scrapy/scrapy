@@ -21,6 +21,7 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
     TestMitmProxyBase,
+    TestRealWebsiteBase,
 )
 from tests.utils.decorators import coroutine_test
 
@@ -195,4 +196,9 @@ class TestHttp2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
 @pytest.mark.skip(reason="Proxy support is not implemented yet")
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(H2DownloadHandlerMixin, TestMitmProxyBase):
+    pass
+
+
+@pytest.mark.requires_internet
+class TestRealWebsite(H2DownloadHandlerMixin, TestRealWebsiteBase):
     pass
