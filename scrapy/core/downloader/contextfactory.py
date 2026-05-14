@@ -131,7 +131,6 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 return _ScrapyClientTLSOptions26(
                     self._get_cert_options()._makeTLSConnection,
                     hostname.decode("ascii"),
-                    verbose_logging=self.tls_verbose_logging,
                 )
             return _ScrapyClientTLSOptions(
                 hostname.decode("ascii"),  # type: ignore[arg-type]

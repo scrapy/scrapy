@@ -107,34 +107,23 @@ class _ScrapyClientTLSOptions26(ClientTLSOptions):
     logging warnings.
 
     Instances of this class are returned from
-    :class:`.ScrapyClientContextFactory`.
+    :class:`._ScrapyClientContextFactory`.
 
     This class is used on Twisted 26.4.0 and newer.
     """
-
-    def __init__(
-        self,
-        createConnection: Callable[[TLSMemoryBIOProtocol], SSL.Connection],
-        hostname: str,
-        verbose_logging: bool = False,
-    ):
-        super().__init__(createConnection, hostname)
-        self.verbose_logging: bool = verbose_logging
 
     def clientConnectionForTLS(
         self, tlsProtocol: TLSMemoryBIOProtocol
     ) -> SSL.Connection:
         """This method is needed to override the verify callback."""
         conn = super().clientConnectionForTLS(tlsProtocol)
-        callback = self._verifyCB(
-            self._hostnameIsDnsName, self._hostnameASCII, self.verbose_logging
-        )
+        callback = self._verifyCB(self._hostnameIsDnsName, self._hostnameASCII)
         conn.set_verify(SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT, callback)
         return conn
 
     @staticmethod
     def _verifyCB(
-        hostIsDNS: bool, hostnameASCII: str, verbose_logging: bool
+        hostIsDNS: bool, hostnameASCII: str
     ) -> Callable[[SSL.Connection, X509, int, int, int], bool]:
         svcid: ServiceID = (
             DNS_ID(hostnameASCII) if hostIsDNS else IPAddress_ID(hostnameASCII)
