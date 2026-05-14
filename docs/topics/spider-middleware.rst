@@ -177,7 +177,7 @@ generator.
 To support those versions and higher Scrapy versions in the same middleware,
 rename your asynchronous :method:`~SpiderMiddleware.process_spider_output()`
 method to :method:`~SpiderMiddleware.process_spider_output_async()`, and define
-a synchronous ``process_spider_output()`` method to be used by the older
+a synchronous ``process_spider_output()`` method to be used by 2.6.3 and lower
 versions.
 
 For example:
