@@ -1310,3 +1310,13 @@ class TestRealWebsiteBase(ABC):
         assert failure is None
         reason = crawler.spider.meta["close_reason"]
         assert reason == "finished"
+
+    @coroutine_test
+    async def test_verify_certs(self) -> None:
+        request = Request("https://books.toscrape.com/")
+        async with self.get_dh(
+            {"DOWNLOAD_VERIFY_CERTIFICATES": True}
+        ) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert "All products | Books to Scrape - Sandbox" in response.text
