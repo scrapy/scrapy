@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -201,4 +202,6 @@ class TestMitmProxy(H2DownloadHandlerMixin, TestMitmProxyBase):
 
 @pytest.mark.requires_internet
 class TestRealWebsite(H2DownloadHandlerMixin, TestRealWebsiteBase):
-    pass
+    @property
+    def platform_cert_store_works(self) -> bool:
+        return sys.platform != "win32"

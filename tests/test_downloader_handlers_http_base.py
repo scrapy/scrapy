@@ -6,7 +6,6 @@ import gzip
 import json
 import logging
 import os
-import platform
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -524,7 +523,7 @@ class TestHttpBase(ABC):
             await download_handler.download_request(request)
         assert "download_latency" in request.meta
         latency = request.meta["download_latency"]
-        if sys.version_info < (3, 13) and platform.system() == "Windows":
+        if sys.version_info < (3, 13) and sys.platform == "win32":
             # time.monotonic() resolution is too low here:
             # https://docs.python.org/3/whatsnew/3.13.html#time
             assert latency >= 0
@@ -1279,6 +1278,16 @@ class TestRealWebsiteBase(ABC):
     def settings_dict(self) -> dict[str, Any] | None:
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def platform_cert_store_works(self) -> bool:
+        """Whether valid certificates can be verified.
+
+        Twisted on Windows cannot do that out of the box, see e.g.
+        https://github.com/twisted/twisted/issues/6371.
+        """
+        return True
+
     @asynccontextmanager
     async def get_dh(
         self, settings_dict: dict[str, Any] | None = None
@@ -1313,6 +1322,8 @@ class TestRealWebsiteBase(ABC):
 
     @coroutine_test
     async def test_verify_certs(self) -> None:
+        if not self.platform_cert_store_works:
+            pytest.skip("Cannot verify certificates")
         request = Request("https://books.toscrape.com/")
         async with self.get_dh(
             {"DOWNLOAD_VERIFY_CERTIFICATES": True}
