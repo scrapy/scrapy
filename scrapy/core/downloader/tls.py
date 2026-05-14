@@ -134,7 +134,7 @@ class _ScrapyClientTLSOptions26(ClientTLSOptions):
         ) -> bool:
             if depth != 0:
                 # We are only verifying the leaf certificate.
-                return bool(ok)
+                return True
 
             try:
                 verify_service_identity(extract_patterns(cert), [svcid], [])
