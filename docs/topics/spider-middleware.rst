@@ -130,8 +130,8 @@ one or more of these methods:
 
         :param result: the results from the spider
         :type result: an :term:`asynchronous iterable` of
-        :class:`~scrapy.Request` objects and :ref:`item objects
-        <topics-items>`
+          :class:`~scrapy.Request` objects and :ref:`item objects
+          <topics-items>`
 
     .. method:: process_spider_output_async(response, result)
         :async:
