@@ -137,7 +137,7 @@ one or more of these methods:
         :async:
 
         Alternative name for :meth:`process_spider_output` used when
-        implementing :ref:`universal spider middlewares
+        implementing a :ref:`universal spider middleware
         <universal-spider-middleware>`.
 
     .. method:: process_spider_exception(response, exception)
@@ -174,7 +174,7 @@ Universal spider middlewares
 In Scrapy 2.6.3 and lower, ``process_spider_output()`` must be a *synchronous*
 generator.
 
-To support those versions and current Scrapy versions in the same middleware,
+To support those versions and higher Scrapy versions in the same middleware,
 rename your asynchronous :method:`~SpiderMiddleware.process_spider_output()`
 method to :method:`~SpiderMiddleware.process_spider_output_async()`, and define
 a synchronous ``process_spider_output()`` method to be used by the older
