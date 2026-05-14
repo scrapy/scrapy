@@ -412,7 +412,7 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * for HTTPS websites, if blocking appears related to TLS behavior, consider
   adjusting the :setting:`DOWNLOADER_CLIENT_TLS_METHOD` setting, since some
   websites may respond differently depending on the TLS method used by the
-  client
+  client.
 * use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
   plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
   features, like `AI web scraping <https://www.zyte.com/ai-web-scraping/>`__
