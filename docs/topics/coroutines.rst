@@ -23,9 +23,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
 -   :class:`~scrapy.Request` callbacks.
 
-    If you are using any custom or third-party :ref:`spider middleware
-    <topics-spider-middleware>`, see :ref:`sync-async-spider-middleware`.
-
 -   The :meth:`process_item` method of
     :ref:`item pipelines <topics-item-pipeline>`.
 
@@ -39,13 +36,9 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
 -   The
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
-    method of :ref:`spider middlewares <topics-spider-middleware>`.
-
-    If defined as a coroutine, it must be an :term:`asynchronous generator`.
-    The input ``result`` parameter is an :term:`asynchronous iterable`.
-
-    See also :ref:`sync-async-spider-middleware` and
-    :ref:`universal-spider-middleware`.
+    method of :ref:`spider middlewares <topics-spider-middleware>`, which
+    *must* be defined as an :term:`asynchronous generator` except in
+    :ref:`universal spider middlewares <universal-spider-middleware>`.
 
 -   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` method
     of :ref:`spider middlewares <custom-spider-middleware>`, which *must* be
@@ -277,48 +270,3 @@ You can also send multiple requests in parallel:
                 "price": responses[0][1].css(".price::text").get(),
                 "price2": responses[1][1].css(".color::text").get(),
             }
-
-
-.. _universal-spider-middleware:
-
-Universal spider middlewares
-============================
-
-To allow writing a spider middleware that supports asynchronous execution of
-its ``process_spider_output()`` method in Scrapy 2.7 and later
-while maintaining support for older Scrapy versions, you may define
-``process_spider_output()`` as a synchronous method and define an
-:term:`asynchronous generator` version of that method with an alternative name:
-``process_spider_output_async()``.
-
-For example:
-
-.. code-block:: python
-
-    class UniversalSpiderMiddleware:
-        def process_spider_output(self, response, result):
-            for r in result:
-                # ... do something with r
-                yield r
-
-        async def process_spider_output_async(self, response, result):
-            async for r in result:
-                # ... do something with r
-                yield r
-
-.. note:: This is an interim measure to allow, for a time, to write code that
-          works in Scrapy 2.7 and later without requiring
-          asynchronous-to-synchronous conversions, and works in earlier Scrapy
-          versions as well.
-
-          In some future version of Scrapy, however, this feature will be
-          deprecated and, eventually, in a later version of Scrapy, this
-          feature will be removed, and all spider middlewares will be expected
-          to define their ``process_spider_output`` method as an asynchronous
-          generator.
-
-Since 2.13.0, Scrapy provides a base class,
-:class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware`, which implements
-the ``process_spider_output()`` and ``process_spider_output_async()`` methods,
-so instead of duplicating the processing code you can override the
-``get_processed_request()`` and/or the ``get_processed_item()`` method.
