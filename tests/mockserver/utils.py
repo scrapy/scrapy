@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import SSL
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate, load_privatekey
-from twisted.internet.ssl import CertificateOptions
+from twisted.internet.ssl import CertificateOptions, ContextFactory
 
 from scrapy.utils._deps_compat import PYOPENSSL_WANTS_X509_PKEY
 from scrapy.utils.python import to_bytes
@@ -31,13 +31,14 @@ def ssl_context_factory(
         cert = load_certificate(FILETYPE_PEM, certfile_path.read_bytes())  # type: ignore[assignment]
         key = load_privatekey(FILETYPE_PEM, keyfile_path.read_bytes())  # type: ignore[assignment]
 
+    # https://github.com/twisted/twisted/issues/12638
     factory: CertificateOptions = CertificateOptions(
-        privateKey=key,
-        certificate=cert,
+        privateKey=key,  # type: ignore[arg-type]
+        certificate=cert,  # type: ignore[arg-type]
     )
     if cipher_string:
         ctx = factory.getContext()
         # disabling TLS1.3 because it unconditionally enables some strong ciphers
         ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_3)
         ctx.set_cipher_list(to_bytes(cipher_string))
-    return factory
+    return cast("ContextFactory", factory)

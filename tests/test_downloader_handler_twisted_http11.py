@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -19,6 +20,8 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
+    TestMitmProxyBase,
+    TestRealWebsiteBase,
     TestSimpleHttpsBase,
 )
 
@@ -33,6 +36,15 @@ class HTTP11DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP11DownloadHandler
+
+    @property
+    def settings_dict(self) -> dict[str, Any] | None:
+        return {
+            "DOWNLOAD_HANDLERS": {
+                "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+                "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+            }
+        }
 
 
 def test_not_configured_without_reactor() -> None:
@@ -71,15 +83,8 @@ class TestHttpsCustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersB
     pass
 
 
-class TestHttpWithCrawler(TestHttpWithCrawlerBase):
-    @property
-    def settings_dict(self) -> dict[str, Any] | None:
-        return {
-            "DOWNLOAD_HANDLERS": {
-                "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
-                "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
-            }
-        }
+class TestHttpWithCrawler(HTTP11DownloadHandlerMixin, TestHttpWithCrawlerBase):
+    pass
 
 
 class TestHttpsWithCrawler(TestHttpWithCrawler):
@@ -88,3 +93,22 @@ class TestHttpsWithCrawler(TestHttpWithCrawler):
 
 class TestHttpProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
     pass
+
+
+class TestHttpsProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
+    is_secure = True
+    # not implemented
+    handler_supports_tls_in_tls = False
+
+
+@pytest.mark.requires_mitmproxy
+class TestMitmProxy(HTTP11DownloadHandlerMixin, TestMitmProxyBase):
+    # not implemented
+    handler_supports_tls_in_tls = False
+
+
+@pytest.mark.requires_internet
+class TestRealWebsite(HTTP11DownloadHandlerMixin, TestRealWebsiteBase):
+    @property
+    def platform_cert_store_works(self) -> bool:
+        return sys.platform != "win32"
