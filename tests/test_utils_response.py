@@ -15,7 +15,7 @@ from scrapy.utils.response import (
 )
 
 
-def _read_brower_output(burl: str):
+def _read_browser_output(burl: str):
     path = urlparse(burl).path
     if not path or not Path(path).exists():
         path = burl.replace("file://", "")
@@ -29,7 +29,7 @@ def test_open_in_browser():
     )
 
     def browser_open(burl: str) -> bool:
-        bbody = _read_brower_output(burl)
+        bbody = _read_browser_output(burl)
         assert b'<base href="' + to_bytes(url) + b'">' in bbody
         return True
 
@@ -173,7 +173,7 @@ def test_inject_base_url(body: bytes) -> None:
     url = "http://www.example.com"
 
     def check_base_url(burl):
-        bbody = _read_brower_output(burl)
+        bbody = _read_browser_output(burl)
         assert bbody.count(b'><base href="' + to_bytes(url) + b'">') == 1
         assert b"<head" in bbody
         return True
@@ -239,7 +239,7 @@ def test_open_in_browser_preserves_html_comments():
     )
 
     def check(burl):
-        bbody = _read_brower_output(burl)
+        bbody = _read_browser_output(burl)
         assert b"<!-- preserved comment -->" in bbody
         return True
 
@@ -257,7 +257,7 @@ def test_open_in_browser_does_not_inject_base_when_present():
     )
 
     def check(burl):
-        bbody = _read_brower_output(burl)
+        bbody = _read_browser_output(burl)
         assert b'<base href="' + to_bytes(url) + b'">' not in bbody
         assert b'<base href="http://real.com">' in bbody
         return True
@@ -277,7 +277,7 @@ def test_open_in_browser_injects_base_when_only_in_comment():
     )
 
     def check(burl):
-        bbody = _read_brower_output(burl)
+        bbody = _read_browser_output(burl)
         assert b'<base href="' + to_bytes(url) + b'">' in bbody
         return True
 
@@ -296,7 +296,7 @@ def test_open_in_browser_injects_base_at_real_head_not_commented_head():
     )
 
     def check(burl):
-        bbody = _read_brower_output(burl)
+        bbody = _read_browser_output(burl)
         assert bbody.count(b'<base href="' + to_bytes(url) + b'">') == 1
         base_pos = bbody.find(b'<base href="' + to_bytes(url) + b'">')
         title_pos = bbody.find(b"<title>Actual</title>")
