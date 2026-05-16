@@ -36,7 +36,6 @@ pytest.importorskip("httpx")
 class HttpxDownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        # the import will fail if httpx is not installed
         from scrapy.core.downloader.handlers._httpx import (  # noqa: PLC0415
             HttpxDownloadHandler,
         )
@@ -73,27 +72,13 @@ class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
         assert "DOWNLOAD_BIND_ADDRESS specifies a port (12345)" in caplog.text
         assert "Ignoring the port" in caplog.text
 
-    @coroutine_test
-    async def test_unsupported_proxy(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        meta = {"proxy": "127.0.0.2"}
-        request = Request(mockserver.url("/text"), meta=meta)
-        async with self.get_dh() as download_handler:
-            response = await download_handler.download_request(request)
-        assert response.body == b"Works"
-        assert (
-            "The 'proxy' request meta key is not supported by HttpxDownloadHandler"
-            in caplog.text
-        )
-
 
 class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
     handler_supports_bindaddress_meta = False
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
     @pytest.mark.skip(reason="The check is Twisted-specific")
-    def test_verify_certs_deprecated(self):
+    def test_verify_certs_deprecated(self) -> None:  # type: ignore[override]
         pass
 
 
@@ -126,23 +111,15 @@ class TestHttpWithCrawler(HttpxDownloadHandlerMixin, TestHttpWithCrawlerBase):
 class TestHttpsWithCrawler(TestHttpWithCrawler):
     is_secure = True
 
-    @pytest.mark.skip(reason="response.certificate is not implemented")
-    @coroutine_test
-    async def test_response_ssl_certificate(self, mockserver: MockServer) -> None:
-        pass
 
-
-@pytest.mark.skip(reason="Proxy support is not implemented yet")
 class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
-    pass
+    expected_http_proxy_request_body = b"http://example.com/"
 
 
-@pytest.mark.skip(reason="Proxy support is not implemented yet")
-class TestHttpsProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
+class TestHttpsProxy(TestHttpProxy):
     is_secure = True
 
 
-@pytest.mark.skip(reason="Proxy support is not implemented yet")
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
     pass

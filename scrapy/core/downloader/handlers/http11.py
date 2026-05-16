@@ -41,7 +41,6 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Headers, Response
 from scrapy.utils._download_handlers import (
-    BaseHttpDownloadHandler,
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
@@ -56,6 +55,8 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.ssl import _log_ssl_conn_debug_info
 from scrapy.utils.url import add_http_if_no_scheme
+
+from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase

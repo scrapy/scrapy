@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import urlparse
 
 import pytest
+from cryptography.x509 import load_der_x509_certificate
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
@@ -981,15 +982,19 @@ class TestHttpWithCrawlerBase(ABC):
         if not self.is_secure:
             pytest.skip("Only applies to HTTPS")
         # copy of TestCrawl.test_response_ssl_certificate()
-        # the current test implementation can only work for Twisted-based download handlers
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
         await crawler.crawl_async(seed=url, mockserver=mockserver)
         assert isinstance(crawler.spider, SingleRequestSpider)
         cert = crawler.spider.meta["responses"][0].certificate
-        assert isinstance(cert, Certificate)
-        assert cert.getSubject().commonName == b"localhost"
-        assert cert.getIssuer().commonName == b"localhost"
+        assert cert is not None
+        if isinstance(cert, Certificate):  # Twisted
+            assert cert.getSubject().commonName == b"localhost"
+            assert cert.getIssuer().commonName == b"localhost"
+        elif isinstance(cert, bytes):  # DER bytes
+            cert_x509 = load_der_x509_certificate(cert)
+            assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
+            assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer) -> None:
