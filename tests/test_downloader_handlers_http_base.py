@@ -1284,7 +1284,6 @@ class TestRealWebsiteBase(ABC):
         raise NotImplementedError
 
     @property
-    @abstractmethod
     def platform_cert_store_works(self) -> bool:
         """Whether valid certificates can be verified.
 
