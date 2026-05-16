@@ -1336,3 +1336,22 @@ class TestRealWebsiteBase(ABC):
             response = await download_handler.download_request(request)
         assert response.status == 200
         assert "All products | Books to Scrape - Sandbox" in response.text
+
+    @pytest.mark.parametrize("verify_certs", [True, False])
+    @coroutine_test
+    async def test_tls_logging(
+        self, caplog: pytest.LogCaptureFixture, verify_certs: bool
+    ) -> None:
+        if verify_certs and not self.platform_cert_store_works:
+            pytest.skip("Cannot verify certificates")
+        request = Request("https://books.toscrape.com/")
+        async with self.get_dh(
+            {
+                "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING": True,
+                "DOWNLOAD_VERIFY_CERTIFICATES": verify_certs,
+            }
+        ) as download_handler:
+            with caplog.at_level("DEBUG"):
+                response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert "SSL connection to books.toscrape.com using protocol" in caplog.text
