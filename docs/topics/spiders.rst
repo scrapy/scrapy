@@ -467,17 +467,15 @@ with a ``TestItem`` declared in a ``myproject.items`` module:
 
 
 .. currentmodule:: scrapy.spiders
-
 CrawlSpider
 -----------
 
 .. class:: CrawlSpider
 
-    This spider provides a convenient mechanism for following links by defining a
-    set of rules. It can be useful for basic crawling scenarios, but a regular
-    :class:`Spider` is often a better fit when you need custom control flow or
-    behavior that does not map cleanly to crawl rules.
-
+   This spider provides a convenient mechanism for following links by defining a
+   set of rules. It can be useful for basic crawling scenarios, but a regular
+   :class:`Spider` is often a better fit when you need custom control flow or
+   behavior that does not map cleanly to crawl rules.
 
    Apart from the attributes inherited from Spider (that you must
    specify), this class supports a new attribute:
@@ -490,7 +488,6 @@ CrawlSpider
        will be used, according to the order they're defined in this attribute.
 
    This spider also exposes an overridable method:
-
    .. method:: parse_start_url(response, **kwargs)
 
       This method is called for each response produced for the URLs in
