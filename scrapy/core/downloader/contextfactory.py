@@ -16,7 +16,6 @@ from zope.interface.declarations import implementer
 from zope.interface.verify import verifyObject
 
 from scrapy.core.downloader.tls import (
-    DEFAULT_CIPHERS,
     _ScrapyClientTLSOptions,
     _ScrapyClientTLSOptions26,
     openssl_methods,
@@ -74,11 +73,12 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         super().__init__(*args, **kwargs)  # type: ignore[no-untyped-call]
         self._ssl_method: int = method
         self.tls_verbose_logging: bool = tls_verbose_logging  # unused
-        self.tls_ciphers: AcceptableCiphers
-        if tls_ciphers:
-            self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
-        else:
-            self.tls_ciphers = DEFAULT_CIPHERS
+        self.tls_ciphers: AcceptableCiphers | None
+        self.tls_ciphers = (
+            AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
+            if tls_ciphers is not None
+            else None
+        )
         self._verify_certificates = verify_certificates
 
     @classmethod

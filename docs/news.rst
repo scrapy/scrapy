@@ -28,6 +28,14 @@ Backward-incompatible changes
 
     (:issue:`7496`, #TBD)
 
+Bug fixes
+~~~~~~~~~
+
+-   Setting :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` to ``None`` now makes
+    Twisted-based download handlers use Twisted's default cipher list instead
+    of ``'DEFAULT'``.
+    (:issue:`7499`, #TBD)
+
 .. _release-2.15.2:
 
 Scrapy 2.15.2 (2026-04-28)

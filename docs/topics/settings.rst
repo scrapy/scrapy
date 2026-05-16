@@ -727,6 +727,12 @@ these ciphers will be used as client ciphers. Changing this setting may be
 necessary to access certain HTTPS websites: for example, you may need to use
 ``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
 specific cipher that is not included in ``DEFAULT`` if a website requires it.
+Set this setting to ``None`` to use the default cipher list of the TLS library.
+
+.. versionchanged:: VERSION
+
+    Setting this to ``None`` now makes the Twisted-based download handlers use
+    Twisted's default cipher list. Previously, they used ``'DEFAULT'`` instead.
 
 .. _OpenSSL cipher list format: https://docs.openssl.org/master/man1/openssl-ciphers/#cipher-list-format
 

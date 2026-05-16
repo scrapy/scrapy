@@ -6,9 +6,10 @@ from typing import TYPE_CHECKING, cast
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
+from twisted.internet._sslverify import defaultCiphers
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol as TxProtocol
-from twisted.internet.ssl import optionsForClientTLS
+from twisted.internet.ssl import CertificateOptions, optionsForClientTLS
 from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
 from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
@@ -232,6 +233,20 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         client_context_factory = _ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
+
+
+class TestContextFactoryTLSCiphers:
+    def test_setting_none_uses_twisted_default_ciphers(self) -> None:
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": None})
+        client_context_factory = _load_context_factory_from_settings(crawler)
+        expected_cipher_string = CertificateOptions(
+            acceptableCiphers=defaultCiphers
+        )._cipherString
+
+        assert (
+            client_context_factory._get_cert_options()._cipherString
+            == expected_cipher_string
+        )
 
 
 @coroutine_test
