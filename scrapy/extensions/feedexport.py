@@ -50,6 +50,12 @@ logger = logging.getLogger(__name__)
 UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
 ]
+_FEED_URI_LITERAL_PERCENT = re.compile(r"(?<!%)%(?!\(|%)")
+
+
+def _format_feed_uri(uri: str, uri_params: dict[str, Any]) -> str:
+    # Keep mapping placeholders and explicit %% escapes while preserving encoded URIs.
+    return _FEED_URI_LITERAL_PERCENT.sub("%%", uri) % uri_params
 
 
 class ItemFilter:
@@ -509,7 +515,7 @@ class FeedExporter:
             self.slots.append(
                 self._start_new_batch(
                     batch_id=1,
-                    uri=uri % uri_params,
+                    uri=_format_feed_uri(uri, uri_params),
                     feed_options=feed_options,
                     spider=spider,
                     uri_template=uri,
@@ -634,7 +640,7 @@ class FeedExporter:
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,
-                        uri=slot.uri_template % uri_params,
+                        uri=_format_feed_uri(slot.uri_template, uri_params),
                         feed_options=self.feeds[slot.uri_template],
                         spider=spider,
                         uri_template=slot.uri_template,

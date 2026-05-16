@@ -95,6 +95,37 @@ class TestURIParams(ABC):
 
         assert feed_exporter.slots[0].uri == f"file:///tmp/{self.spider_name}"
 
+    def test_percent_encoded_uri(self):
+        settings = self.build_settings(
+            uri="file:///tmp/path%20with%20spaces/%(name)s.jl",
+        )
+        crawler, feed_exporter = self._crawler_feed_exporter(settings)
+        spider = scrapy.Spider(self.spider_name)
+        spider.crawler = crawler
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            feed_exporter.open_spider(spider)
+
+        assert (
+            feed_exporter.slots[0].uri
+            == f"file:///tmp/path%20with%20spaces/{self.spider_name}.jl"
+        )
+
+    def test_literal_percent_escape(self):
+        settings = self.build_settings(
+            uri="file:///tmp/%(name)s/100%%.jl",
+        )
+        crawler, feed_exporter = self._crawler_feed_exporter(settings)
+        spider = scrapy.Spider(self.spider_name)
+        spider.crawler = crawler
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            feed_exporter.open_spider(spider)
+
+        assert feed_exporter.slots[0].uri == f"file:///tmp/{self.spider_name}/100%.jl"
+
     def test_custom_param(self):
         def uri_params(params, spider):
             return {**params, "foo": self.spider_name}

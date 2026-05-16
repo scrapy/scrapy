@@ -28,6 +28,13 @@ Backward-incompatible changes
 
     (:issue:`7496`, #TBD)
 
+Bug fixes
+~~~~~~~~~
+
+-   Feed export URI parameter substitution now preserves percent-encoded URI
+    sequences, such as ``%20``, when expanding placeholders.
+    (:issue:`6425`, #TBD)
+
 .. _release-2.15.2:
 
 Scrapy 2.15.2 (2026-04-28)

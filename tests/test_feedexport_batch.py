@@ -343,6 +343,38 @@ class TestBatchDeliveries(TestFeedExportBase):
                 assert got_batch == expected_batch
 
     @coroutine_test
+    async def test_percent_encoded_batch_uri(self):
+        output_dir = self._random_temp_filename() / "path with spaces"
+        uri = build_url(output_dir / "%(batch_id)02d.jl").replace(" ", "%20")
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+            start_urls = [self.mockserver.url("/")]
+
+            def parse(self, response):
+                yield {"foo": "FOO"}
+                yield {"foo": "FOO1"}
+
+        settings = {
+            "FEEDS": {
+                uri: {
+                    "format": "jl",
+                    "encoding": "utf-8",
+                },
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        files = sorted(output_dir.iterdir())
+        assert [file.name for file in files] == ["01.jl", "02.jl"]
+        assert [json.loads(file.read_text()) for file in files] == [
+            {"foo": "FOO"},
+            {"foo": "FOO1"},
+        ]
+
+    @coroutine_test
     async def test_batch_path_differ(self):
         """
         Test that the name of all batch files differ from each other.
