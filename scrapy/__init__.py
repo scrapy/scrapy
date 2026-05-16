@@ -25,7 +25,7 @@ __all__ = [
 
 
 # Scrapy and Twisted versions
-__version__ = (pkgutil.get_data(__package__, "VERSION") or b"").decode("ascii").strip()
+__version__ = (pkgutil.get_data("scrapy", "VERSION") or b"").decode("ascii").strip()
 version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."))
 
 

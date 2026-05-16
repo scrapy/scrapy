@@ -1,8 +1,17 @@
+import runpy
+from pathlib import Path
+
 import scrapy
 
 
 def test_version():
     assert isinstance(scrapy.__version__, str)
+
+
+def test_version_without_package_context():
+    module_globals = runpy.run_path(str(Path(scrapy.__file__)))
+
+    assert module_globals["__version__"] == scrapy.__version__
 
 
 def test_version_info():
