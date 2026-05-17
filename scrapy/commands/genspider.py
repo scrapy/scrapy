@@ -118,9 +118,13 @@ class Command(ScrapyCommand):
 
         template_file = self._find_template(opts.template)
         if template_file:
-            self._genspider(module, name, url, opts.template, template_file)
+            spider_file = self._genspider(
+                module, name, url, opts.template, template_file
+            )
             if opts.edit:
-                self.exitcode = os.system(f'scrapy edit "{name}"')  # noqa: S605
+                self.exitcode = os.system(  # noqa: S605
+                    f'{self.settings["EDITOR"]} "{spider_file}"'
+                )
 
     def _generate_template_variables(
         self,
@@ -148,7 +152,7 @@ class Command(ScrapyCommand):
         url: str,
         template_name: str,
         template_file: str | os.PathLike,
-    ) -> None:
+    ) -> Path:
         """Generate the spider module, based on the given template"""
         assert self.settings is not None
         tvars = self._generate_template_variables(module, name, url, template_name)
@@ -159,7 +163,7 @@ class Command(ScrapyCommand):
         else:
             spiders_module = None
             spiders_dir = Path()
-        spider_file = f"{spiders_dir / module}.py"
+        spider_file = spiders_dir / f"{module}.py"
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
         print(
@@ -168,6 +172,7 @@ class Command(ScrapyCommand):
         )
         if spiders_module:
             print(f"in module:\n  {spiders_module.__name__}.{module}")
+        return spider_file
 
     def _find_template(self, template: str) -> Path | None:
         template_file = Path(self.templates_dir, f"{template}.tmpl")

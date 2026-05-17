@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import argparse
 import re
 from pathlib import Path
 
 import pytest
 
+from scrapy.commands.genspider import Command
+from scrapy.settings import Settings
 from tests.test_commands import TestProjectBase
 from tests.utils.cmdline import call, proc
 
@@ -58,6 +61,51 @@ class TestGenspiderCommand(TestProjectBase):
 
     def test_list(self, proj_path: Path) -> None:
         assert call("genspider", "--list", cwd=proj_path) == 0
+
+    def test_edit_opens_created_spider_directly(
+        self, monkeypatch: pytest.MonkeyPatch, proj_path: Path
+    ) -> None:
+        command = Command()
+        command.settings = Settings(
+            {
+                "BOT_NAME": self.project_name,
+                "EDITOR": "test-editor",
+                "NEWSPIDER_MODULE": f"{self.project_name}.spiders",
+                "TEMPLATES_DIR": "",
+            }
+        )
+        opts = argparse.Namespace(
+            dump=None,
+            edit=True,
+            force=False,
+            list=False,
+            template="basic",
+        )
+        editor_calls = []
+        monkeypatch.syspath_prepend(str(proj_path))
+        monkeypatch.setattr(
+            "scrapy.commands.genspider.os.system",
+            lambda command: editor_calls.append(command) or 0,
+        )
+
+        command.run(["edited", "example.com"], opts)
+
+        spider_path = proj_path / self.project_name / "spiders" / "edited.py"
+        assert spider_path.exists()
+        assert editor_calls == [f'test-editor "{spider_path.resolve()}"']
+
+    def test_edit_command_does_not_reimport_project(
+        self, monkeypatch: pytest.MonkeyPatch, proj_path: Path
+    ) -> None:
+        monkeypatch.setenv("EDITOR", "true")
+
+        returncode, _, stderr = proc(
+            "genspider", "--edit", "edited", "example.com", cwd=proj_path
+        )
+
+        assert returncode == 0
+        assert "ModuleNotFoundError" not in stderr
+        assert (proj_path / self.project_name / "spiders" / "edited.py").exists()
 
     def test_dump(self, proj_path: Path) -> None:
         assert call("genspider", "--dump=basic", cwd=proj_path) == 0
