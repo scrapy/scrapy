@@ -28,6 +28,13 @@ Backward-incompatible changes
 
     (:issue:`7496`, #TBD)
 
+Bug fixes
+~~~~~~~~~
+
+-   Added a missing ``/`` path to HTTP and HTTPS request URLs that include a
+    query string or fragment but no path, e.g. ``http://example.com?x=1``.
+    (:issue:`6574`, #TBD)
+
 .. _release-2.15.2:
 
 Scrapy 2.15.2 (2026-04-28)

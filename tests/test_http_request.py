@@ -97,6 +97,16 @@ class TestRequest:
         r = self.request_class(url="http://www.scrapy.org/path")
         assert r.url == "http://www.scrapy.org/path"
 
+    def test_url_adds_slash_before_query_without_path(self):
+        r = self.request_class(url="http://127.0.0.1:9000?url=www.example.com")
+        assert r.url == "http://127.0.0.1:9000/?url=www.example.com"
+
+        r = self.request_class(url="https://www.example.com?x=1#frag")
+        assert r.url == "https://www.example.com/?x=1#frag"
+
+        r = self.request_class(url="ftp://www.example.com?x=1")
+        assert r.url == "ftp://www.example.com?x=1"
+
     def test_url_quoting(self):
         r = self.request_class(url="http://www.scrapy.org/blank%20space")
         assert r.url == "http://www.scrapy.org/blank%20space"

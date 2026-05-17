@@ -19,6 +19,7 @@ from typing import (
     TypeVar,
     overload,
 )
+from urllib.parse import urlsplit, urlunsplit
 
 from w3lib.url import safe_url_string
 
@@ -55,6 +56,18 @@ CookiesT: TypeAlias = dict[str, str] | list[VerboseCookie]
 
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
+
+
+def _normalize_empty_path(url: str) -> str:
+    parsed = urlsplit(url)
+    if (
+        parsed.scheme in {"http", "https"}
+        and parsed.netloc
+        and not parsed.path
+        and (parsed.query or parsed.fragment)
+    ):
+        return urlunsplit(parsed._replace(path="/"))
+    return url
 
 
 def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
@@ -256,7 +269,7 @@ class Request(object_ref):
         if not isinstance(url, str):
             raise TypeError(f"Request url must be str, got {type(url).__name__}")
 
-        self._url = safe_url_string(url, self.encoding)
+        self._url = _normalize_empty_path(safe_url_string(url, self.encoding))
 
         if (
             "://" not in self._url

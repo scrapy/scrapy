@@ -11,6 +11,8 @@ from scrapy import Spider
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
+from scrapy.http import Request
+from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.test_downloader_handlers_http_base import (
     TestHttpBase,
     TestHttpProxyBase,
@@ -24,6 +26,7 @@ from tests.test_downloader_handlers_http_base import (
     TestRealWebsiteBase,
     TestSimpleHttpsBase,
 )
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
@@ -54,7 +57,15 @@ def test_not_configured_without_reactor() -> None:
 
 
 class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):
-    pass
+    @coroutine_test
+    async def test_download_query_without_path(self) -> None:
+        with ProxyEchoMockServer() as server:
+            request = Request(
+                f"http://{server.host}:{server.port()}?url=www.example.com"
+            )
+            async with self.get_dh() as download_handler:
+                response = await download_handler.download_request(request)
+        assert response.body == b"/?url=www.example.com"
 
 
 class TestHttps(HTTP11DownloadHandlerMixin, TestHttpsBase):
