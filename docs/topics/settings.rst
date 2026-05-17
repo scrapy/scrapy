@@ -332,7 +332,7 @@ These settings are:
 -   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
     :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
--   :setting:`DNS_RESOLVER` and settings used by the corresponding
+-   :setting:`TWISTED_DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
     and :setting:`DNS_TIMEOUT` for the default one.
 
@@ -671,10 +671,10 @@ Default: ``10000``
 
 DNS in-memory cache size, see :setting:`DNSCACHE_ENABLED`.
 
-.. setting:: DNS_RESOLVER
+.. setting:: TWISTED_DNS_RESOLVER
 
-DNS_RESOLVER
-------------
+TWISTED_DNS_RESOLVER
+--------------------
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
@@ -787,7 +787,7 @@ the TLS-related libraries.
 DOWNLOADER_MIDDLEWARES
 ----------------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing the downloader middlewares enabled in your project, and their
 orders. For more info see :ref:`topics-downloader-middleware-setting`.
@@ -809,7 +809,6 @@ Default:
         "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
         "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
         "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
-        "scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware": 560,
         "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
         "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -1239,7 +1238,7 @@ command will prefer it over the default setting.
 EXTENSIONS
 ----------
 
-Default:: ``{}``
+Default: ``{}``
 
 :ref:`Component priority dictionary <component-priority-dictionaries>` of
 enabled extensions. See :ref:`topics-extensions`.
@@ -1287,7 +1286,7 @@ FEED_STORAGE_GCS_ACL
 --------------------
 
 The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
-For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
+For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://docs.cloud.google.com/storage/docs/access-control/lists>`_.
 
 .. setting:: FORCE_CRAWLER_PROCESS
 
@@ -1861,7 +1860,7 @@ Scrapy does not process new requests.
 SPIDER_CONTRACTS
 ----------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing the spider contracts enabled in your project, used for
 testing spiders. For more info see :ref:`topics-contracts`.
@@ -1922,7 +1921,7 @@ warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
 SPIDER_MIDDLEWARES
 ------------------
 
-Default:: ``{}``
+Default: ``{}``
 
 A dict containing the spider middlewares enabled in your project, and their
 orders. For more info see :ref:`topics-spider-middleware-setting`.
@@ -2162,7 +2161,7 @@ Use ``0`` to allow URLs of any length.
 The default value is copied from the `Microsoft Internet Explorer maximum URL
 length`_, even though this setting exists for different reasons.
 
-.. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
+.. _Microsoft Internet Explorer maximum URL length: https://web.archive.org/web/20250206050143/https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
 
 .. setting:: USER_AGENT
 
@@ -2201,6 +2200,4 @@ case to see how to enable and use them.
 .. settingslist::
 
 .. _Amazon web services: https://aws.amazon.com/
-.. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search
-.. _depth-first order: https://en.wikipedia.org/wiki/Depth-first_search
 .. _Google Cloud Storage: https://cloud.google.com/storage/

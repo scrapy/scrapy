@@ -33,7 +33,7 @@ from __future__ import annotations
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, ClassVar
 from urllib.parse import unquote
 
 from twisted.internet.protocol import ClientCreator, Protocol
@@ -79,7 +79,7 @@ _CODE_RE = re.compile(r"\d+")
 
 
 class FTPDownloadHandler(BaseDownloadHandler):
-    CODE_MAPPING: dict[str, int] = {
+    CODE_MAPPING: ClassVar[dict[str, int]] = {
         "550": 404,
         "default": 503,
     }

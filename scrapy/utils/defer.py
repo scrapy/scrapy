@@ -8,6 +8,7 @@ import asyncio
 import inspect
 import warnings
 from asyncio import Future
+from collections import deque
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
 from typing import (
@@ -230,7 +231,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
         self.callable_args: tuple[Any, ...] = callable_args
         self.callable_kwargs: dict[str, Any] = callable_kwargs
         self.finished: bool = False
-        self.waiting_deferreds: list[Deferred[Any]] = []
+        self.waiting_deferreds: deque[Deferred[Any]] = deque()
         self.anext_deferred: Deferred[_T] | None = None
 
     def _callback(self, result: _T) -> None:
@@ -241,7 +242,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
         callable_result = self.callable(
             result, *self.callable_args, **self.callable_kwargs
         )
-        d = self.waiting_deferreds.pop(0)
+        d = self.waiting_deferreds.popleft()
         if isinstance(callable_result, Deferred):
             callable_result.chainDeferred(d)
         else:
@@ -261,7 +262,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = deferred_from_coro(self.aiterator.__anext__())
+        self.anext_deferred = deferred_from_coro(anext(self.aiterator))
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred[Any]:
@@ -369,10 +370,10 @@ async def aiter_errback(
     """Wrap an async iterable calling an errback if an error is caught while
     iterating it. Similar to :func:`scrapy.utils.defer.iter_errback`.
     """
-    it = aiterable.__aiter__()
+    it = aiter(aiterable)
     while True:
         try:
-            yield await it.__anext__()
+            yield await anext(it)
         except StopAsyncIteration:
             break
         except Exception:

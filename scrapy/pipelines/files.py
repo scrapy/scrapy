@@ -18,7 +18,7 @@ from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
+from typing import IO, TYPE_CHECKING, Any, ClassVar, NoReturn, Protocol, TypedDict, cast
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -33,6 +33,7 @@ from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
@@ -161,7 +162,7 @@ class S3FilesStore:
     AWS_VERIFY = None
 
     POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
-    HEADERS = {
+    HEADERS: ClassVar[dict[str, str]] = {
         "Cache-Control": "max-age=172800",
     }
 
@@ -185,16 +186,18 @@ class S3FilesStore:
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split("/", 1)
 
+    @staticmethod
+    def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
+        checksum = boto_key["ETag"].strip('"')
+        last_modified = boto_key["LastModified"]
+        modified_stamp = time.mktime(last_modified.timetuple())
+        return {"checksum": checksum, "last_modified": modified_stamp}
+
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
-        def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
-            checksum = boto_key["ETag"].strip('"')
-            last_modified = boto_key["LastModified"]
-            modified_stamp = time.mktime(last_modified.timetuple())
-            return {"checksum": checksum, "last_modified": modified_stamp}
 
-        return self._get_boto_key(path).addCallback(_onsuccess)
+        return self._get_boto_key(path).addCallback(self._onsuccess)
 
     def _get_boto_key(self, path: str) -> Deferred[dict[str, Any]]:
         key_name = f"{self.prefix}{path}"
@@ -226,7 +229,7 @@ class S3FilesStore:
                 Bucket=self.bucket,
                 Key=key_name,
                 Body=buf,
-                Metadata={k: str(v) for k, v in (meta or {}).items()},
+                Metadata={k: str(v) for k, v in meta.items()} if meta else {},
                 ACL=self.POLICY,
                 **extra,
             )
@@ -269,7 +272,9 @@ class S3FilesStore:
             try:
                 kwarg = mapping[key]
             except KeyError:
-                raise TypeError(f'Header "{key}" is not supported by botocore')
+                raise TypeError(
+                    f'Header "{key}" is not supported by botocore'
+                ) from None
             extra[kwarg] = value
         return extra
 
@@ -305,20 +310,23 @@ class GCSFilesStore:
                 {"bucket": bucket},
             )
 
+    @staticmethod
+    def _onsuccess(blob: Any) -> StatInfo:
+        if blob:
+            checksum = base64.b64decode(blob.md5_hash).hex()
+            last_modified = time.mktime(blob.updated.timetuple())
+            return {"checksum": checksum, "last_modified": last_modified}
+        return {}
+
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
-        def _onsuccess(blob: Any) -> StatInfo:
-            if blob:
-                checksum = base64.b64decode(blob.md5_hash).hex()
-                last_modified = time.mktime(blob.updated.timetuple())
-                return {"checksum": checksum, "last_modified": last_modified}
-            return {}
 
         blob_path = self._get_blob_path(path)
-        return deferred_from_coro(
+        d: Deferred[Any] = deferred_from_coro(
             run_in_thread(self.bucket.get_blob, blob_path)
-        ).addCallback(_onsuccess)
+        )
+        return d.addCallback(self._onsuccess)
 
     def _get_content_type(self, headers: dict[str, str] | None) -> str:
         if headers and "Content-Type" in headers:
@@ -339,7 +347,7 @@ class GCSFilesStore:
         blob_path = self._get_blob_path(path)
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
-        blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
+        blob.metadata = {k: str(v) for k, v in meta.items()} if meta else {}
         return deferred_from_coro(
             run_in_thread(
                 blob.upload_from_string,
@@ -392,26 +400,26 @@ class FTPFilesStore:
             )
         )
 
+    def _stat_file(self, path: str) -> StatInfo:
+        try:
+            with FTP() as ftp:
+                ftp.connect(self.host, self.port)
+                ftp.login(self.username, self.password)
+                if self.USE_ACTIVE_MODE:
+                    ftp.set_pasv(False)
+                file_path = f"{self.basedir}/{path}"
+                last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
+                m = hashlib.md5()  # noqa: S324
+                ftp.retrbinary(f"RETR {file_path}", m.update)
+            return {"last_modified": last_modified, "checksum": m.hexdigest()}
+        # The file doesn't exist
+        except Exception:
+            return {}
+
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
-        def _stat_file(path: str) -> StatInfo:
-            try:
-                with FTP() as ftp:
-                    ftp.connect(self.host, self.port)
-                    ftp.login(self.username, self.password)
-                    if self.USE_ACTIVE_MODE:
-                        ftp.set_pasv(False)
-                    file_path = f"{self.basedir}/{path}"
-                    last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
-                    m = hashlib.md5()  # noqa: S324
-                    ftp.retrbinary(f"RETR {file_path}", m.update)
-                return {"last_modified": last_modified, "checksum": m.hexdigest()}
-            # The file doesn't exist
-            except Exception:
-                return {}
-
-        return deferred_from_coro(run_in_thread(_stat_file, path))
+        return deferred_from_coro(run_in_thread(self._stat_file, path))
 
 
 class FilesPipeline(MediaPipeline):
@@ -435,7 +443,7 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME: str = "file"
     EXPIRES: int = 90
-    STORE_SCHEMES: dict[str, type[FilesStoreProtocol]] = {
+    STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]] = {
         "": FSFilesStore,
         "file": FSFilesStore,
         "s3": S3FilesStore,
@@ -531,43 +539,51 @@ class FilesPipeline(MediaPipeline):
         store_cls = self.STORE_SCHEMES[scheme]
         return store_cls(uri)
 
+    def _onsuccess(
+        self,
+        result: StatInfo,
+        request: Request,
+        info: MediaPipeline.SpiderInfo,
+        path: str,
+    ) -> FileInfo | None:
+        if not result:
+            return None  # returning None force download
+
+        last_modified = result.get("last_modified", None)
+        if not last_modified:
+            return None  # returning None force download
+
+        age_seconds = time.time() - last_modified
+        age_days = age_seconds / 60 / 60 / 24
+        if age_days > self.expires:
+            return None  # returning None force download
+
+        referer = referer_str(request)
+        logger.debug(
+            "File (uptodate): Downloaded %(medianame)s from %(request)s "
+            "referred in <%(referer)s>",
+            {"medianame": self.MEDIA_NAME, "request": request, "referer": referer},
+            extra={"spider": info.spider},
+        )
+        self.inc_stats("uptodate")
+
+        checksum = result.get("checksum", None)
+        return {
+            "url": request.url,
+            "path": path,
+            "checksum": checksum,
+            "status": "uptodate",
+        }
+
     def media_to_download(
         self, request: Request, info: MediaPipeline.SpiderInfo, *, item: Any = None
     ) -> Deferred[FileInfo | None] | None:
-        def _onsuccess(result: StatInfo) -> FileInfo | None:
-            if not result:
-                return None  # returning None force download
-
-            last_modified = result.get("last_modified", None)
-            if not last_modified:
-                return None  # returning None force download
-
-            age_seconds = time.time() - last_modified
-            age_days = age_seconds / 60 / 60 / 24
-            if age_days > self.expires:
-                return None  # returning None force download
-
-            referer = referer_str(request)
-            logger.debug(
-                "File (uptodate): Downloaded %(medianame)s from %(request)s "
-                "referred in <%(referer)s>",
-                {"medianame": self.MEDIA_NAME, "request": request, "referer": referer},
-                extra={"spider": info.spider},
-            )
-            self.inc_stats("uptodate")
-
-            checksum = result.get("checksum", None)
-            return {
-                "url": request.url,
-                "path": path,
-                "checksum": checksum,
-                "status": "uptodate",
-            }
-
         path = self.file_path(request, info=info, item=item)
         # maybeDeferred() overloads don't seem to support a Union[_T, Deferred[_T]] return type
         dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[call-overload]
-        dfd2: Deferred[FileInfo | None] = dfd.addCallback(_onsuccess)
+        dfd2: Deferred[FileInfo | None] = dfd.addCallback(
+            functools.partial(self._onsuccess, request=request, info=info, path=path)
+        )
         dfd2.addErrback(lambda _: None)
         dfd2.addErrback(
             lambda f: logger.error(
@@ -656,7 +672,7 @@ class FilesPipeline(MediaPipeline):
                 exc_info=True,
                 extra={"spider": info.spider},
             )
-            raise FileException(str(exc))
+            raise FileException(str(exc)) from exc
 
         return {
             "url": request.url,
@@ -722,7 +738,15 @@ class FilesPipeline(MediaPipeline):
         item: Any = None,
     ) -> str:
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
-        media_ext = Path(request.url).suffix
+
+        # clean it up and look at the path first
+        parsed_url = urlparse_cached(request)
+        media_ext = Path(parsed_url.path).suffix
+
+        # if path has no extension look at the raw  URL
+        if media_ext not in mimetypes.types_map:
+            media_ext = Path(request.url).suffix
+
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise
         if media_ext not in mimetypes.types_map:

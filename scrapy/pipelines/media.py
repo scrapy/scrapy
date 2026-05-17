@@ -29,9 +29,9 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Callable
 
+    # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy import Spider
@@ -153,7 +153,7 @@ class MediaPipeline(ABC):
     ) -> FileInfo:
         fp = self._fingerprinter.fingerprint(request)
 
-        eb = request.errback
+        eb: Callable[[Failure], FileInfo] | None = request.errback
         request.callback = NO_CALLBACK
         request.errback = None
 
@@ -230,9 +230,9 @@ class MediaPipeline(ABC):
         if isinstance(result, Failure):
             # minimize cached information for failure
             result.cleanFailure()
-            result.frames = []
+            result.frames.clear()
             if TWISTED_FAILURE_HAS_STACK:
-                result.stack = []  # type: ignore[method-assign]
+                result.stack.clear()
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
             #

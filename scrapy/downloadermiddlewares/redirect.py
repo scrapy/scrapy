@@ -71,7 +71,7 @@ class BaseRedirectMiddleware:
             return
         redirect_cls = global_object_name(self.__class__)
         referer_cls = global_object_name(RefererMiddleware)
-        if self.__class__ in (RedirectMiddleware, MetaRefreshMiddleware):
+        if self.__class__ in {RedirectMiddleware, MetaRefreshMiddleware}:
             replacement = (
                 f"replace {redirect_cls} with a subclass that overrides the "
                 f"handle_referer() method"
@@ -208,14 +208,19 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if (
             request.meta.get("dont_redirect", False)
             or response.status
-            in getattr(self.crawler.spider, "handle_httpstatus_list", [])
-            or response.status in request.meta.get("handle_httpstatus_list", [])
+            in getattr(self.crawler.spider, "handle_httpstatus_list", ())
+            or response.status in request.meta.get("handle_httpstatus_list", ())
             or request.meta.get("handle_httpstatus_all", False)
         ):
             return response
 
-        allowed_status = (301, 302, 303, 307, 308)
-        if "Location" not in response.headers or response.status not in allowed_status:
+        if "Location" not in response.headers or response.status not in {
+            301,
+            302,
+            303,
+            307,
+            308,
+        }:
             return response
 
         assert response.headers["Location"] is not None
@@ -235,8 +240,8 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if urlparse_cached(redirected).scheme not in {"http", "https"}:
             return response
 
-        if (response.status in (301, 302) and request.method == "POST") or (
-            response.status == 303 and request.method not in ("GET", "HEAD")
+        if (response.status in {301, 302} and request.method == "POST") or (
+            response.status == 303 and request.method not in {"GET", "HEAD"}
         ):
             redirected = self._redirect_request_using_get(
                 request, response, redirected_url

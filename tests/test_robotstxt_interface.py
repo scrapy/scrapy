@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 from scrapy.robotstxt import (
@@ -137,16 +139,32 @@ class TestDecodeRobotsTxt:
 
 
 class TestPythonRobotParser(BaseRobotParserTest):
+    # https://github.com/python/cpython/pull/149374 improves it
+    IMPROVED_ROBOTFILEPARSER = sys.version_info >= (3, 14, 5)
+
     def setup_method(self):
         super()._setUp(PythonRobotParser)
 
+    @pytest.mark.skipif(
+        not IMPROVED_ROBOTFILEPARSER,
+        reason="RobotFileParser from this Python version does not support length based directives precedence.",
+    )
     def test_length_based_precedence(self):
-        pytest.skip(
-            "RobotFileParser does not support length based directives precedence."
-        )
+        super().test_length_based_precedence()
 
+    @pytest.mark.skipif(
+        IMPROVED_ROBOTFILEPARSER,
+        reason="RobotFileParser from this Python version does not support order based directives precedence.",
+    )
+    def test_order_based_precedence(self):
+        super().test_order_based_precedence()
+
+    @pytest.mark.skipif(
+        not IMPROVED_ROBOTFILEPARSER,
+        reason="RobotFileParser from this Python version does not support wildcards.",
+    )
     def test_allowed_wildcards(self):
-        pytest.skip("RobotFileParser does not support wildcards.")
+        super().test_allowed_wildcards()
 
 
 @pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")

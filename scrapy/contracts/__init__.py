@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator, Iterable
 from functools import wraps
 from inspect import getmembers
 from types import CoroutineType
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 from unittest import TestCase, TestResult
 
 from scrapy.http import Request, Response
@@ -90,7 +90,7 @@ class Contract:
 
 
 class ContractsManager:
-    contracts: dict[str, type[Contract]] = {}
+    contracts: ClassVar[dict[str, type[Contract]]] = {}
 
     def __init__(self, contracts: Iterable[type[Contract]]):
         for contract in contracts:
@@ -108,8 +108,8 @@ class ContractsManager:
     def extract_contracts(self, method: Callable) -> list[Contract]:
         contracts: list[Contract] = []
         assert method.__doc__ is not None
-        for line in method.__doc__.split("\n"):
-            line = line.strip()
+        for line_ in method.__doc__.split("\n"):
+            line = line_.strip()
 
             if line.startswith("@"):
                 m = re.match(r"@(\w+)\s*(.*)", line)
@@ -125,7 +125,7 @@ class ContractsManager:
     def from_spider(self, spider: Spider, results: TestResult) -> list[Request | None]:
         requests: list[Request | None] = []
         for method in self.tested_methods_from_spidercls(type(spider)):
-            bound_method = spider.__getattribute__(method)
+            bound_method = getattr(spider, method)
             try:
                 requests.append(self.from_method(bound_method, results))
             except Exception:

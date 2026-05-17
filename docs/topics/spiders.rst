@@ -198,7 +198,7 @@ scrapy.Spider
 
        The ``parse`` method is in charge of processing the response and returning
        scraped data and/or more URLs to follow. Other Requests callbacks have
-       the same requirements as the :class:`Spider` class.
+       the same requirements as the :class:`~scrapy.Spider` class.
 
        This method, as well as any other Request callback, must return a
        :class:`~scrapy.Request` object, an :ref:`item object <topics-items>`, an

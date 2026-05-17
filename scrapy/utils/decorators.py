@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import warnings
 from functools import wraps
-from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, cast, overload
 
 from twisted.internet.defer import Deferred, maybeDeferred
 
@@ -62,7 +62,7 @@ def inthread(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
     """Decorator to call a function in a thread and return a deferred with the
     result.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.15.0
         Now uses :func:`asyncio.to_thread` if the asyncio support is available.
     """
 
@@ -115,7 +115,7 @@ def _warn_spider_arg(
         @wraps(func)
         async def async_inner(*args: _P.args, **kwargs: _P.kwargs) -> _T:
             check_args(*args, **kwargs)
-            return await func(*args, **kwargs)
+            return cast("_T", await func(*args, **kwargs))
 
         return async_inner
 

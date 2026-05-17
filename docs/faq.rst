@@ -360,7 +360,7 @@ method for this purpose. For example:
 Does Scrapy support IPv6 addresses?
 -----------------------------------
 
-Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Yes, by setting :setting:`TWISTED_DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
 Note that by doing so, you lose the ability to set a specific timeout for DNS requests
 (the value of the :setting:`DNS_TIMEOUT` setting is ignored).
 
@@ -418,4 +418,3 @@ See :issue:`2680`.
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
-.. _user agents: https://en.wikipedia.org/wiki/User_agent

@@ -284,7 +284,7 @@ class Request(object_ref):
 
     @flags.setter
     def flags(self, value: list[str] | None) -> None:
-        self._flags = value or None
+        self._flags = value
 
     @property
     def cookies(self) -> CookiesT:
@@ -294,7 +294,7 @@ class Request(object_ref):
 
     @cookies.setter
     def cookies(self, value: CookiesT | None) -> None:
-        self._cookies = value or None
+        self._cookies = value
 
     @property
     def headers(self) -> Headers:
@@ -309,7 +309,9 @@ class Request(object_ref):
         if isinstance(value, Headers):
             self._headers = value
         else:
-            self._headers = Headers(value, encoding=self.encoding) if value else None
+            self._headers = (
+                Headers(value, encoding=self.encoding) if value is not None else None
+            )
 
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"

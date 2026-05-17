@@ -290,7 +290,7 @@ Google Cloud Storage
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud Storage
 bucket. Scrapy will automatically upload the files to the bucket. (requires `google-cloud-storage`_ )
 
-.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+.. _google-cloud-storage: https://docs.cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
 For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings:
 
@@ -301,7 +301,7 @@ For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_I
 
 For information about authentication, see this `documentation`_.
 
-.. _documentation: https://cloud.google.com/docs/authentication
+.. _documentation: https://docs.cloud.google.com/docs/authentication
 
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_GCS_ACL` and
@@ -316,7 +316,7 @@ policy:
 
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
-.. _Predefined ACLs: https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
+.. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
 
 Usage example
 =============

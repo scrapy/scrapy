@@ -167,7 +167,7 @@ class StdoutFeedStorage:
 @implementer(IFeedStorage)
 class FileFeedStorage:
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
-        self.path: str = file_uri_to_path(uri) if uri.startswith("file://") else uri
+        self.path: str = file_uri_to_path(uri) if uri.startswith("file:") else uri
         feed_options = feed_options or {}
         self.write_mode: OpenBinaryMode = (
             "wb" if feed_options.get("overwrite", False) else "ab"
@@ -200,7 +200,7 @@ class S3FeedStorage(BlockingFeedStorage):
         try:
             import boto3.session  # noqa: PLC0415
         except ImportError:
-            raise NotConfigured("missing boto3 library")
+            raise NotConfigured("missing boto3 library") from None
         u = urlparse(uri)
         assert u.hostname
         self.bucketname: str = u.hostname
@@ -250,10 +250,19 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        kwargs: dict[str, Any] = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
-        self.s3_client.upload_fileobj(
-            Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
-        )
+        if self.acl:
+            self.s3_client.upload_fileobj(
+                Bucket=self.bucketname,
+                Key=self.keyname,
+                Fileobj=file,
+                ExtraArgs={"ACL": self.acl},
+            )
+        else:
+            self.s3_client.upload_fileobj(
+                Bucket=self.bucketname,
+                Key=self.keyname,
+                Fileobj=file,
+            )
         file.close()
 
 
@@ -468,9 +477,13 @@ class FeedExporter:
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
-        for uri, feed_options in self.settings.getdict("FEEDS").items():
+        for settings_uri, feed_options in self.settings.getdict("FEEDS").items():
             # handle pathlib.Path objects
-            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
+            uri = (
+                str(settings_uri)
+                if not isinstance(settings_uri, Path)
+                else settings_uri.absolute().as_uri()
+            )
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )
@@ -521,13 +534,15 @@ class FeedExporter:
         # Send FEED_EXPORTER_CLOSED signal
         await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
 
+    @staticmethod
+    def _get_file(slot_: FeedSlot) -> IO[bytes]:
+        assert slot_.file
+        if isinstance(slot_.file, PostProcessingManager):
+            slot_.file.close()
+            return slot_.file.file
+        return slot_.file
+
     async def _close_slot(self, slot: FeedSlot, spider: Spider) -> None:
-        def get_file(slot_: FeedSlot) -> IO[bytes]:
-            assert slot_.file
-            if isinstance(slot_.file, PostProcessingManager):
-                slot_.file.close()
-                return slot_.file.file
-            return slot_.file
 
         if slot.itemcount:
             # Normal case
@@ -544,7 +559,7 @@ class FeedExporter:
         slot_type = type(slot.storage).__name__
         assert self.crawler.stats
         try:
-            await ensure_awaitable(slot.storage.store(get_file(slot)))
+            await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:
             logger.error(
                 "Error storing %s",
@@ -692,9 +707,7 @@ class FeedExporter:
         uri_params_function: str | UriParamsCallableT | None,
         slot: FeedSlot | None = None,
     ) -> dict[str, Any]:
-        params = {}
-        for k in dir(spider):
-            params[k] = getattr(spider, k)
+        params = {k: getattr(spider, k) for k in dir(spider)}
         utc_now = datetime.now(tz=timezone.utc)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")

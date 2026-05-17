@@ -88,5 +88,5 @@ class HttpErrorMiddleware:
                 {"response": response},
                 extra={"spider": self.crawler.spider},
             )
-            return []
+            return ()
         return None

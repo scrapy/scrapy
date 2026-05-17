@@ -349,6 +349,7 @@ class TestRequest:
         assert request._flags == []
         original_flags = request.flags
         request.flags = None
+        assert request._flags is None
         assert request.flags == []
         assert request.flags is not original_flags
 
@@ -358,6 +359,7 @@ class TestRequest:
         assert request._cookies == {}
         original_cookies = request.cookies
         request.cookies = None
+        assert request._cookies is None
         assert request.cookies == {}
         assert request.cookies is not original_cookies
 
@@ -373,7 +375,9 @@ class TestRequest:
         assert isinstance(request._headers, Headers)
         original_headers = request.headers
         request.headers = None
+        assert request._headers is None
         assert request.headers == {}
+        assert request._headers == {}
         assert request.headers is not original_headers
 
     def test_no_callback(self):

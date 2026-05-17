@@ -86,13 +86,13 @@ class OffsiteMiddleware:
                     "allowed_domains accepts only domains, not URLs. "
                     f"Ignoring URL entry {domain} in allowed_domains."
                 )
-                warnings.warn(message)
+                warnings.warn(message, stacklevel=2)
             elif port_pattern.search(domain):
                 message = (
                     "allowed_domains accepts only domains without ports. "
                     f"Ignoring entry {domain} in allowed_domains."
                 )
-                warnings.warn(message)
+                warnings.warn(message, stacklevel=2)
             else:
                 domains.append(re.escape(domain))
         regex = rf"^(.*\.)?({'|'.join(domains)})$"

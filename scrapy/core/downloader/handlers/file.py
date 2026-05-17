@@ -7,6 +7,7 @@ from w3lib.url import file_uri_to_path
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.asyncio import run_in_thread
 
 if TYPE_CHECKING:
     from scrapy import Request
@@ -16,6 +17,6 @@ if TYPE_CHECKING:
 class FileDownloadHandler(BaseDownloadHandler):
     async def download_request(self, request: Request) -> Response:
         filepath = file_uri_to_path(request.url)
-        body = Path(filepath).read_bytes()  # noqa: ASYNC240
+        body = await run_in_thread(Path(filepath).read_bytes)
         respcls = responsetypes.from_args(filename=filepath, body=body)
         return respcls(url=request.url, body=body)

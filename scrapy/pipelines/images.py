@@ -11,7 +11,7 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from itemadapter import ItemAdapter
 
@@ -49,7 +49,7 @@ class ImagesPipeline(FilesPipeline):
     MIN_WIDTH: int = 0
     MIN_HEIGHT: int = 0
     EXPIRES: int = 90
-    THUMBS: dict[str, tuple[int, int]] = {}
+    THUMBS: ClassVar[dict[str, tuple[int, int]]] = {}
     DEFAULT_IMAGES_URLS_FIELD = "image_urls"
     DEFAULT_IMAGES_RESULT_FIELD = "images"
 
@@ -76,7 +76,7 @@ class ImagesPipeline(FilesPipeline):
         except ImportError:
             raise NotConfigured(
                 "ImagesPipeline requires installing Pillow 8.3.2 or later"
-            )
+            ) from None
 
         super().__init__(store_uri, crawler=crawler)
 
@@ -191,7 +191,7 @@ class ImagesPipeline(FilesPipeline):
         *,
         response_body: BytesIO,
     ) -> tuple[Image.Image, BytesIO]:
-        if image.format in ("PNG", "WEBP") and image.mode == "RGBA":
+        if image.format in {"PNG", "WEBP"} and image.mode == "RGBA":
             background = self._Image.new("RGBA", image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert("RGB")

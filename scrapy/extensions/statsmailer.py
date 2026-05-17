@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 warnings.warn(
     "The scrapy.extensions.statsmailer module is deprecated and will be "
     "removed in a future release.",
+    stacklevel=2,
     category=ScrapyDeprecationWarning,
 )
 

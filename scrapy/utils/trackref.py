@@ -7,13 +7,19 @@ subclass from object_ref (instead of object).
 About performance: This library has a minimal performance impact when enabled,
 and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
+
+.. note:: PyPy uses a tracing garbage collector, so objects may
+    remain in the ``live_refs`` longer than expected, even after they
+    go out of scope. If deterministic behavior is required, you may need
+    to explicitly trigger garbage collection or call ``trackref.live_refs.clear()``.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
 from operator import itemgetter
-from time import time
+from time import monotonic_ns
+from types import NoneType
 from typing import TYPE_CHECKING, Any
 from weakref import WeakKeyDictionary
 
@@ -24,7 +30,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-NoneType = type(None)
 live_refs: defaultdict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
 
 
@@ -35,7 +40,7 @@ class object_ref:
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         obj = object.__new__(cls)
-        live_refs[cls][obj] = time()
+        live_refs[cls][obj] = monotonic_ns()
         return obj
 
 
@@ -43,14 +48,14 @@ class object_ref:
 def format_live_refs(ignore: Any = NoneType) -> str:
     """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
-    now = time()
+    now_ns = monotonic_ns()
     for cls, wdict in sorted(live_refs.items(), key=lambda x: x[0].__name__):
         if not wdict:
             continue
         if issubclass(cls, ignore):
             continue
-        oldest = min(wdict.values())
-        s += f"{cls.__name__:<30} {len(wdict):6}   oldest: {int(now - oldest)}s ago\n"
+        oldest_ns = min(wdict.values())
+        s += f"{cls.__name__:<30} {len(wdict):6}   oldest: {int((now_ns - oldest_ns) // 1e9)}s ago\n"
     return s
 
 
@@ -74,4 +79,4 @@ def iter_all(class_name: str) -> Iterable[Any]:
     for cls, wdict in live_refs.items():
         if cls.__name__ == class_name:
             return wdict.keys()
-    return []
+    return ()

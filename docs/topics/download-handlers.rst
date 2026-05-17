@@ -102,6 +102,32 @@ An optional base class for custom handlers is provided:
     :undoc-members:
     :member-order: bysource
 
+.. _download-handlers-exceptions:
+
+Exceptions raised by download handlers
+======================================
+
+.. versionadded:: 2.15.0
+
+The built-in download handlers raise Scrapy-specific exceptions instead of
+implementation-specific ones, so that code that handles these exceptions can be
+written in a generic way. We recommend custom download handlers to also use
+these exceptions.
+
+.. autoexception:: scrapy.exceptions.CannotResolveHostError
+
+.. autoexception:: scrapy.exceptions.DownloadCancelledError
+
+.. autoexception:: scrapy.exceptions.DownloadConnectionRefusedError
+
+.. autoexception:: scrapy.exceptions.DownloadFailedError
+
+.. autoexception:: scrapy.exceptions.DownloadTimeoutError
+
+.. autoexception:: scrapy.exceptions.ResponseDataLossError
+
+.. autoexception:: scrapy.exceptions.UnsupportedURLSchemeError
+
 .. _download-handlers-ref:
 
 Built-in download handlers reference
@@ -179,6 +205,8 @@ If you want to use this handler you need to replace the default one for the
 .. note::
 
     Known limitations of the HTTP/2 implementation in this handler include:
+
+    -   No support for proxies.
 
     -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
         HTTP/2 unencrypted (refer `http2 faq`_).

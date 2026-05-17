@@ -8,7 +8,7 @@ from __future__ import annotations
 from io import StringIO
 from mimetypes import MimeTypes
 from pkgutil import get_data
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class ResponseTypes:
-    CLASSES = {
+    CLASSES: ClassVar[dict[str, str]] = {
         "text/html": "scrapy.http.HtmlResponse",
         "application/atom+xml": "scrapy.http.XmlResponse",
         "application/rdf+xml": "scrapy.http.XmlResponse",

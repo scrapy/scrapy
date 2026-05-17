@@ -2,7 +2,7 @@ import argparse
 import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, ClassVar
 from unittest import TextTestResult as _TextTestResult
 from unittest import TextTestRunner
 
@@ -44,7 +44,7 @@ class TextTestResult(_TextTestResult):
 
 class Command(ScrapyCommand):
     requires_project = True
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[options] <spider>"
@@ -73,7 +73,9 @@ class Command(ScrapyCommand):
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts
         assert self.settings is not None
-        contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
+        contracts = build_component_list(
+            self.settings.get_component_priority_dict_with_base("SPIDER_CONTRACTS")
+        )
         conman = ContractsManager(load_object(c) for c in contracts)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
@@ -102,16 +104,18 @@ class Command(ScrapyCommand):
 
             # start checks
             if opts.list:
-                for spider, methods in sorted(contract_reqs.items()):
-                    if not methods and not opts.verbose:
-                        continue
-                    print(spider)
-                    for method in sorted(methods):
-                        print(f"  * {method}")
+                print(
+                    "\n".join(
+                        f"{spider}\n"
+                        + "\n".join(f"  * {method}" for method in sorted(methods))
+                        for spider, methods in sorted(contract_reqs.items())
+                        if methods or opts.verbose
+                    )
+                )
             else:
-                start_time = time.time()
+                start_time = time.monotonic()
                 self.crawler_process.start()
-                stop = time.time()
+                stop = time.monotonic()
 
                 result.printErrors()
                 result.printSummary(start_time, stop)

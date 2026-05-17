@@ -5,7 +5,7 @@ import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -47,7 +47,7 @@ def verify_url_scheme(url: str) -> str:
 
 class Command(ScrapyCommand):
     requires_crawler_process = False
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[options] <name> <domain>"
@@ -173,15 +173,21 @@ class Command(ScrapyCommand):
         template_file = Path(self.templates_dir, f"{template}.tmpl")
         if template_file.exists():
             return template_file
-        print(f"Unable to find template: {template}\n")
-        print('Use "scrapy genspider --list" to see all available templates.')
+        print(
+            f"Unable to find template: {template}\n",
+            'Use "scrapy genspider --list" to see all available templates.',
+        )
         return None
 
     def _list_templates(self) -> None:
-        print("Available templates:")
-        for file in sorted(Path(self.templates_dir).iterdir()):
-            if file.suffix == ".tmpl":
-                print(f"  {file.stem}")
+        print(
+            "Available templates:\n",
+            "\n".join(
+                f"  {file.stem}"
+                for file in sorted(Path(self.templates_dir).iterdir())
+                if file.suffix == ".tmpl"
+            ),
+        )
 
     def _spider_exists(self, name: str) -> bool:
         assert self.settings is not None
@@ -200,8 +206,10 @@ class Command(ScrapyCommand):
             pass
         else:
             # if spider with same name exists
-            print(f"Spider {name!r} already exists in module:")
-            print(f"  {spidercls.__module__}")
+            print(
+                f"Spider {name!r} already exists in module:\n",
+                f"  {spidercls.__module__}",
+            )
             return True
 
         # a file with the same name exists in the target directory

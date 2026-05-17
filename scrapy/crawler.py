@@ -7,6 +7,7 @@ import pprint
 import signal
 import warnings
 from abc import ABC, abstractmethod
+from functools import partial
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
@@ -16,7 +17,7 @@ from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
-from scrapy.settings import Settings, overridden_settings
+from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils.defer import deferred_from_coro
@@ -568,28 +569,30 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
+    async def _crawl_and_track(
+        self, crawler: Crawler, *args: Any, **kwargs: Any
+    ) -> None:
+        try:
+            await crawler.crawl_async(*args, **kwargs)
+        except Exception:
+            self.bootstrap_failed = True
+            raise  # re-raise so asyncio still logs it to stderr naturally
+
+    def _done(self, task: asyncio.Task[None], crawler: Crawler) -> None:
+        self._active.discard(task)
+        self.crawlers.discard(crawler)
+        self.bootstrap_failed |= not getattr(crawler, "spider", None)
+
     def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
         # At this point the asyncio loop has been installed either by the user
         # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
         loop = asyncio.get_event_loop()
         self.crawlers.add(crawler)
 
-        async def _crawl_and_track() -> None:
-            try:
-                await crawler.crawl_async(*args, **kwargs)
-            except Exception:
-                self.bootstrap_failed = True
-                raise  # re-raise so asyncio still logs it to stderr naturally
-
-        task = loop.create_task(_crawl_and_track())
+        task = loop.create_task(self._crawl_and_track(crawler, *args, **kwargs))
         self._active.add(task)
+        task.add_done_callback(partial(self._done, crawler=crawler))
 
-        def _done(_: asyncio.Task[None]) -> None:
-            self.crawlers.discard(crawler)
-            self._active.discard(task)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
-
-        task.add_done_callback(_done)
         return task
 
     async def stop(self) -> None:
@@ -660,10 +663,32 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
 
-        resolver_class = load_object(self.settings["DNS_RESOLVER"])
+        dns_priority = self.settings.getpriority("DNS_RESOLVER") or 0
+        default_priority = SETTINGS_PRIORITIES["default"]
+
+        if dns_priority > default_priority:
+            warnings.warn(
+                "The DNS_RESOLVER setting is deprecated, please use "
+                "TWISTED_DNS_RESOLVER instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
+            twisted_dns_priority = (
+                self.settings.getpriority("TWISTED_DNS_RESOLVER") or 0
+            )
+            if twisted_dns_priority > dns_priority:
+                resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+            else:
+                resolver_cls_path = self.settings["DNS_RESOLVER"]
+        else:
+            resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+
+        resolver_class = load_object(resolver_cls_path)
+
         # We pass self, which is CrawlerProcess, instead of Crawler here,
         # which works because the default resolvers only use crawler.settings.
-        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]
+        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[call-overload]
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
@@ -985,14 +1010,15 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         if (loop := self._reactorless_loop) is None:
             return
 
-        def _create_shutdown_task() -> None:
-            coro = self._shutdown_graceful_reactorless()
-            try:
-                loop.create_task(coro)
-            except RuntimeError:
-                coro.close()
+        loop.call_soon_threadsafe(self._create_shutdown_task)
 
-        loop.call_soon_threadsafe(_create_shutdown_task)
+    def _create_shutdown_task(self) -> None:
+        assert self._reactorless_loop
+        coro = self._shutdown_graceful_reactorless()
+        try:
+            self._reactorless_loop.create_task(coro)
+        except RuntimeError:
+            coro.close()
 
     async def _shutdown_graceful_reactorless(self) -> None:
         await self.stop()

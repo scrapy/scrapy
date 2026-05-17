@@ -10,7 +10,7 @@ import os
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from twisted.python import failure
 
@@ -30,7 +30,7 @@ class ScrapyCommand(ABC):
     crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
 
     # default settings to be used for this command instead of global defaults
-    default_settings: dict[str, Any] = {}
+    default_settings: ClassVar[dict[str, Any]] = {}
 
     exitcode: int = 0
 
@@ -115,7 +115,9 @@ class ScrapyCommand(ABC):
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
         except ValueError:
-            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
+            raise UsageError(
+                "Invalid -s value, use -s NAME=VALUE", print_help=False
+            ) from None
 
         if opts.logfile:
             self.settings.set("LOG_ENABLED", True, priority="cmdline")
@@ -181,7 +183,9 @@ class BaseRunSpiderCommand(ScrapyCommand):
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
+            raise UsageError(
+                "Invalid -a value, use -a NAME=VALUE", print_help=False
+            ) from None
         if opts.output or opts.overwrite_output:
             assert self.settings is not None
             feeds = feed_process_params_from_cli(
@@ -225,7 +229,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         headings = [
             i for i in range(len(part_strings)) if part_strings[i].endswith(":\n")
         ]
-        for index in headings[::-1]:
+        for index in reversed(headings):
             char = "-" if "Global Options" in part_strings[index] else "="
             part_strings[index] = part_strings[index][:-2].title()
             underline = "".join(["\n", (char * len(part_strings[index])), "\n"])

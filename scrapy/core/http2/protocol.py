@@ -40,7 +40,6 @@ from scrapy.utils.ssl import _log_ssl_conn_debug_info
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
 
-    from hpack import HeaderTuple
     from twisted.internet.defer import Deferred
     from twisted.python.failure import Failure
     from twisted.web.client import URI
@@ -265,7 +264,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
     def _lose_connection_with_error(self, errors: list[BaseException]) -> None:
         """Helper function to lose the connection with the error sent as a
         reason"""
-        self._conn_lost_errors += errors
+        self._conn_lost_errors.extend(errors)
         assert self.transport is not None  # typing
         self.transport.loseConnection()
 
@@ -310,7 +309,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             if isinstance(e, FrameTooLargeError):
                 # hyper-h2 does not drop the connection in this scenario, we
                 # need to abort the connection manually.
-                self._conn_lost_errors += [e]
+                self._conn_lost_errors.append(e)
                 assert self.transport is not None  # typing
                 self.transport.abortConnection()
                 return
@@ -419,7 +418,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         except KeyError:
             pass  # We ignore server-initiated events
         else:
-            stream.receive_headers(cast("list[HeaderTuple]", event.headers))
+            stream.receive_headers(cast("list[tuple[str, str]]", event.headers))
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata["settings_acknowledged"] = True

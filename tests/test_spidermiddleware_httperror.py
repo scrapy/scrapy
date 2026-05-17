@@ -88,7 +88,7 @@ class TestHttpErrorMiddleware:
     def test_process_spider_exception(
         self, mw: HttpErrorMiddleware, res404: Response
     ) -> None:
-        assert mw.process_spider_exception(res404, HttpError(res404)) == []
+        assert mw.process_spider_exception(res404, HttpError(res404)) == ()
         assert mw.process_spider_exception(res404, Exception()) is None
 
     def test_handle_httpstatus_list(

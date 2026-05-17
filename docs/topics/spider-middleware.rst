@@ -117,36 +117,28 @@ one or more of these methods:
         :type response: :class:`~scrapy.http.Response` object
 
     .. method:: process_spider_output(response, result)
+        :async:
 
-        This method is called with the results returned from the Spider, after
-        it has processed the response.
+        This method is an :term:`asynchronous generator` called with the
+        results from the spider after the spider has processed the response.
 
-        :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.Request` objects and :ref:`item objects
-        <topics-items>`.
-
-        Consider defining this method as an :term:`asynchronous generator`,
-        which will be a requirement in a future version of Scrapy. However, if
-        you plan on sharing your spider middleware with other people, consider
-        either :ref:`enforcing Scrapy 2.7 <enforce-component-requirements>`
-        as a minimum requirement of your spider middleware, or :ref:`making
-        your spider middleware universal <universal-spider-middleware>` so that
-        it works with Scrapy versions earlier than Scrapy 2.7.
+        .. seealso:: :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
-        :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.Request` objects and
-          :ref:`item objects <topics-items>`
+        :param result: the results from the spider
+        :type result: an :term:`asynchronous iterable` of
+          :class:`~scrapy.Request` objects and :ref:`item objects
+          <topics-items>`
 
     .. method:: process_spider_output_async(response, result)
         :async:
 
-        If defined, this method must be an :term:`asynchronous generator`,
-        which will be called instead of :meth:`process_spider_output` if
-        ``result`` is an :term:`asynchronous iterable`.
+        Alternative name for :meth:`process_spider_output` used when
+        implementing a :ref:`universal spider middleware
+        <universal-spider-middleware>`.
 
     .. method:: process_spider_exception(response, exception)
 
@@ -174,13 +166,40 @@ one or more of these methods:
         :type exception: :exc:`Exception` object
 
 
+.. _universal-spider-middleware:
+
+Universal spider middlewares
+----------------------------
+
+In Scrapy 2.6.3 and lower, ``process_spider_output()`` must be a *synchronous*
+generator.
+
+To support those versions and higher Scrapy versions in the same middleware,
+rename your asynchronous :method:`~SpiderMiddleware.process_spider_output()`
+method to :method:`~SpiderMiddleware.process_spider_output_async()`, and define
+a synchronous ``process_spider_output()`` method to be used by 2.6.3 and lower
+versions.
+
+For example:
+
+.. code-block:: python
+
+    class UniversalSpiderMiddleware:
+        async def process_spider_output_async(self, response, result):
+            async for r in result:
+                # ... do something with r
+                yield r
+
+        def process_spider_output(self, response, result):
+            for r in result:
+                # ... do something with r
+                yield r
+
 Base class for custom spider middlewares
 ----------------------------------------
 
 Scrapy provides a base class for custom spider middlewares. It's not required
-to use it but it can help with simplifying middleware implementations and
-reducing the amount of boilerplate code in :ref:`universal middlewares
-<universal-spider-middleware>`.
+to use it but it can help with simplifying middleware implementations.
 
 .. module:: scrapy.spidermiddlewares.base
 

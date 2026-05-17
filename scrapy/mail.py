@@ -55,6 +55,7 @@ def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
 warnings.warn(
     "The scrapy.mail module is deprecated and will be removed in a future release. "
     "Please use a dedicated Python mail library instead.",
+    stacklevel=2,
     category=ScrapyDeprecationWarning,
 )
 
