@@ -104,6 +104,9 @@ class TestRequest:
         r = self.request_class(url="https://www.example.com?x=1#frag")
         assert r.url == "https://www.example.com/?x=1#frag"
 
+        r = self.request_class(url="http://www.example.com#frag")
+        assert r.url == "http://www.example.com/#frag"
+
         r = self.request_class(url="ftp://www.example.com?x=1")
         assert r.url == "ftp://www.example.com?x=1"
 
