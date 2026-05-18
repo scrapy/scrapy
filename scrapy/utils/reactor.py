@@ -55,7 +55,7 @@ class CallLaterOnce(Generic[_T]):
         self._a: tuple[Any, ...] = a
         self._kw: dict[str, Any] = kw
         self._call: CallLaterResult | None = None
-        self._deferreds: list[Deferred] = []
+        self._deferreds: list[Deferred[None]] = []
 
     def schedule(self, delay: float = 0) -> None:
         # circular import

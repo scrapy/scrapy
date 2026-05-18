@@ -9,7 +9,7 @@ from tests.test_commands import TestProjectBase
 from tests.utils.cmdline import call, proc
 
 
-def find_in_file(filename: Path, regex: str) -> re.Match | None:
+def find_in_file(filename: Path, regex: str) -> re.Match[str] | None:
     """Find first pattern occurrence in file"""
     pattern = re.compile(regex)
     with filename.open("r", encoding="utf-8") as f:

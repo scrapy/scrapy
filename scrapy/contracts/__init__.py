@@ -27,7 +27,7 @@ class Contract:
     request_cls: type[Request] | None = None
     name: str
 
-    def __init__(self, method: Callable, *args: Any):
+    def __init__(self, method: Callable[..., Any], *args: Any):
         self.testcase_pre = _create_testcase(method, f"@{self.name} pre-hook")
         self.testcase_post = _create_testcase(method, f"@{self.name} post-hook")
         self.args: tuple[Any, ...] = args
@@ -105,7 +105,7 @@ class ContractsManager:
 
         return methods
 
-    def extract_contracts(self, method: Callable) -> list[Contract]:
+    def extract_contracts(self, method: Callable[..., Any]) -> list[Contract]:
         contracts: list[Contract] = []
         assert method.__doc__ is not None
         for line_ in method.__doc__.split("\n"):
@@ -134,7 +134,9 @@ class ContractsManager:
 
         return requests
 
-    def from_method(self, method: Callable, results: TestResult) -> Request | None:
+    def from_method(
+        self, method: Callable[..., Any], results: TestResult
+    ) -> Request | None:
         contracts = self.extract_contracts(method)
         if contracts:
             request_cls = Request
@@ -170,7 +172,7 @@ class ContractsManager:
         return None
 
     def _clean_req(
-        self, request: Request, method: Callable, results: TestResult
+        self, request: Request, method: Callable[..., Any], results: TestResult
     ) -> None:
         """stop the request from returning objects and records any errors"""
 
@@ -195,7 +197,7 @@ class ContractsManager:
         request.errback = eb_wrapper
 
 
-def _create_testcase(method: Callable, desc: str) -> TestCase:
+def _create_testcase(method: Callable[..., Any], desc: str) -> TestCase:
     spider = method.__self__.name  # type: ignore[attr-defined]
 
     class ContractTestCase(TestCase):
