@@ -3,8 +3,31 @@
 Release notes
 =============
 
-Scrapy VERSION (unreleased)
----------------------------
+.. _release-2.16.0:
+
+Scrapy 2.16.0 (unreleased)
+--------------------------
+
+Highlights:
+
+-   Official support for Python 3.14
+
+-   Support for Twisted 26.4.0+
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Increased the minimum versions of the following dependencies:
+
+    - service_identity_: 18.1.0 → 23.1.0
+
+    (:issue:`7347`)
+
+-   Added support for Twisted 26.4.0+.
+    (:issue:`7347`, :issue:`7505`, :issue:`7520`)
+
+-   Added support for Python 3.14.
+    (:issue:`6604`, :issue:`7460`)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,7 +49,237 @@ Backward-incompatible changes
 
     - ``scrapy.core.downloader.handlers.http2.ScrapyH2Agent``
 
-    (:issue:`7496`, #TBD)
+    (:issue:`7496`, :issue:`7510`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   ``scrapy.FormRequest`` is deprecated. You can use the :doc:`form2request
+    <form2request:index>` library instead, see :ref:`form`.
+    (:issue:`6438`)
+
+-   ``scrapy.utils.python.MutableChain`` is deprecated.
+    (:issue:`7504`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   The ``start_requests()`` method of :class:`~scrapy.Spider`, deprecated in
+    2.13.0, is removed and no longer called. Use :meth:`~scrapy.Spider.start`
+    instead, or both to maintain support for lower Scrapy versions.
+    (:issue:`7490`)
+
+-   Support for ``process_start_requests()`` methods of :ref:`spider middlewares
+    <topics-spider-middleware>`, deprecated in 2.13.0, is removed. Use
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` instead,
+    or both to maintain support for lower Scrapy versions.
+    (:issue:`7490`)
+
+-   Support for synchronous ``process_spider_output()`` methods of spider
+    middlewares, deprecated in Scrapy 2.13.0, is removed. You should upgrade
+    the affected middlewares to have asynchronous ``process_spider_output()``
+    methods.
+    (:issue:`7504`)
+
+-   The ``spider`` arguments of the following methods of
+    :class:`~scrapy.core.scraper.Scraper`, deprecated in Scrapy 2.13.0, are
+    removed:
+
+    - ``close_spider()``
+
+    - ``enqueue_scrape()``
+
+    - ``handle_spider_error()``
+
+    - ``handle_spider_output()``
+
+    (:issue:`7487`)
+
+-   HTTP/1.0 support code, deprecated in Scrapy 2.13.0, is removed. This
+    includes:
+
+    - ``scrapy.core.downloader.handlers.http10.HTTP10DownloadHandler``
+
+    - The ``scrapy.core.downloader.webclient`` module.
+
+    - The ``DOWNLOADER_HTTPCLIENTFACTORY`` setting.
+
+    (:issue:`7486`)
+
+-   The following functions, deprecated in Scrapy 2.13.0, are removed, you
+    should import them from :mod:`w3lib.url` directly instead:
+
+    - ``scrapy.utils.url.add_or_replace_parameter()``
+
+    - ``scrapy.utils.url.add_or_replace_parameters()``
+
+    - ``scrapy.utils.url.any_to_uri()``
+
+    - ``scrapy.utils.url.canonicalize_url()``
+
+    - ``scrapy.utils.url.file_uri_to_path()``
+
+    - ``scrapy.utils.url.is_url()``
+
+    - ``scrapy.utils.url.parse_data_uri()``
+
+    - ``scrapy.utils.url.parse_url()``
+
+    - ``scrapy.utils.url.path_to_file_uri()``
+
+    - ``scrapy.utils.url.safe_download_url()``
+
+    - ``scrapy.utils.url.safe_url_string()``
+
+    - ``scrapy.utils.url.url_query_cleaner()``
+
+    - ``scrapy.utils.url.url_query_parameter()``
+
+    (:issue:`7487`)
+
+-   The following test-related code, deprecated in Scrapy 2.13.0, is removed:
+
+    - the ``scrapy.utils.testproc`` module
+
+    - the ``scrapy.utils.testsite`` module
+
+    - ``scrapy.utils.test.assert_gcs_environ()``
+
+    - ``scrapy.utils.test.get_ftp_content_and_delete()``
+
+    - ``scrapy.utils.test.get_gcs_content_and_delete()``
+
+    - ``scrapy.utils.test.mock_google_cloud_storage()``
+
+    - ``scrapy.utils.test.skip_if_no_boto()``
+
+    - ``scrapy.utils.test.TestSpider``
+
+    (:issue:`7487`)
+
+-   ``scrapy.utils.versions.scrapy_components_versions()``, deprecated in
+    Scrapy 2.13.0, is removed, you can use
+    :func:`scrapy.utils.versions.get_versions` instead.
+    (:issue:`7487`)
+
+-   ``scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware`` and
+    ``scrapy.utils.url.escape_ajax()``, deprecated in Scrapy 2.13.0, are
+    removed.
+    (:issue:`7487`)
+
+-   The ``__init__()`` method of priority queue classes (see
+    :setting:`SCHEDULER_PRIORITY_QUEUE`) now needs to support a keyword-only
+    ``start_queue_cls`` parameter, not supporting it was deprecated in Scrapy
+    2.13.0.
+    (:issue:`7487`)
+
+-   ``scrapy.spiders.init.InitSpider``, deprecated in Scrapy 2.13.0, is
+    removed.
+    (:issue:`7487`)
+
+New features
+~~~~~~~~~~~~
+
+-   New features and improvements for
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`:
+
+    - Support for proxies.
+
+    - Support for the :reqmeta:`download_latency` meta key.
+
+    - Support for :attr:`Response.certificate
+      <scrapy.http.Response.certificate>`.
+
+    - Default headers set by the ``httpx`` library are no longer added to
+      requests.
+
+    (:issue:`7441`, :issue:`7524`)
+
+-   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` now
+    skips HTTPS proxy certificate verification when the
+    :setting:`DOWNLOAD_VERIFY_CERTIFICATES` setting is set to ``False``.
+    (:issue:`7496`)
+
+Improvements
+~~~~~~~~~~~~
+
+-   :func:`time.monotonic` is used instead of :func:`time.time` to calculate
+    elapsed time in various places.
+    (:issue:`7377`)
+
+-   Improved extraction of the file extension from the URL in
+    :class:`~scrapy.pipelines.files.FilesPipeline`.
+    (:issue:`4225`, :issue:`7414`)
+
+-   Other code refactoring and improvements.
+    (:issue:`7401`)
+
+Bug fixes
+~~~~~~~~~
+
+-   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` now
+    raises an exception when a request has an ``https://`` destination and an
+    ``https://`` proxy, which is not supported by this handler. Previously it
+    tried to connect to the proxy via HTTP in this case.
+    (:issue:`7496`)
+
+-   :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` now
+    raises an exception for requests with ``http://`` URLs instead of trying to
+    connect, which is not supported by this handler.
+    (:issue:`7496`)
+
+-   :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` no longer
+    adds the ``:status`` pseudo-header to :attr:`Response.headers
+    <scrapy.http.Response.headers>`.
+    (:issue:`7441`)
+
+-   Fixed :func:`scrapy.utils.response.open_in_browser` removing the ``<head>``
+    tag when adding the ``<base>`` tag.
+    (:issue:`7459`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Documented that
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
+    doesn't support HTTPS proxies for HTTPS destinations and that
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` doesn't
+    support proxies at all.
+    (:issue:`7496`)
+
+-   Added an example of using
+    :class:`logging.handlers.TimedRotatingFileHandler` to rotate Scrapy logs.
+    (:issue:`3628`, :issue:`7501`)
+
+-   Added a ``CITATION.cff`` file.
+    (:issue:`7502`, :issue:`7519`)
+
+-   Mentioned :setting:`DOWNLOADER_CLIENT_TLS_METHOD` in :ref:`bans`.
+    (:issue:`5232`, :issue:`7518`)
+
+-   Other documentation improvements and fixes.
+    (:issue:`7417`,
+    :issue:`7463`,
+    :issue:`7472`,
+    :issue:`7480`,
+    :issue:`7489`,
+    :issue:`7503`,
+    :issue:`7507`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added tests that connect to https://books.toscrape.com/ to test the
+    behavior with a real website. These tests are marked with the
+    ``requires_internet`` pytest mark and can be skipped with e.g.
+    ``-m 'not requires_internet'`` if you cannot or don't want to run them.
+    (:issue:`7520`)
+
+-   Type hints improvements and fixes.
+    (:issue:`7492`, :issue:`7532`)
+
+-   CI and test improvements and fixes.
+    (:issue:`7441`, :issue:`7466`, :issue:`7491`, :issue:`7496`)
 
 .. _release-2.15.2:
 
