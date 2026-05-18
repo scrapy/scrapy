@@ -93,10 +93,9 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-If you use :ref:`Item objects <item-objects>` or :ref:`dataclass objects
-<dataclass-items>` you can declare a serializer in the
-:ref:`field metadata <topics-items-fields>`. The serializer must be
-a callable which receives a value and returns its serialized form.
+Every :ref:`item type <item-types>` except :class:`dict` lets you declare a
+serializer in the :ref:`field metadata <topics-items-fields>`. The serializer
+must be a callable which receives a value and returns its serialized form.
 
 Example:
 
