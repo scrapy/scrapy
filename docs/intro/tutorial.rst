@@ -53,6 +53,14 @@ directory where you'd like to store your code and run::
 
     scrapy startproject tutorial
 
+.. note::
+
+   On Windows, if you run the command and get an error saying ``'scrapy' is not
+   recognized as an internal or external command``, you can run the command
+   using the ``python -m scrapy`` alternative::
+
+       python -m scrapy startproject tutorial
+
 This will create a ``tutorial`` directory with the following contents::
 
     tutorial/
