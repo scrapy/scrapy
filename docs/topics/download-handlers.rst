@@ -279,14 +279,11 @@ If you want to use this handler you need to replace the default ones for the
     some websites may be different. Additionally, these are the Scrapy features
     that are explicitly not supported when using it:
 
-    - Proxy support (the :reqmeta:`proxy` meta key).
-
     - Per-request bind address support (the :reqmeta:`bindaddress` meta key).
       The global :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported but the
       port number, if specified, will be ignored.
 
-    - The :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` and
-      :setting:`DOWNLOADER_CLIENT_TLS_METHOD` settings.
+    - The :setting:`DOWNLOADER_CLIENT_TLS_METHOD` setting.
 
     - Settings specific to the Twisted networking or HTTP implementation, like
       :setting:`DNS_RESOLVER`.

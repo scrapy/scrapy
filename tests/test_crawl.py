@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urlparse
 
 import pytest
+from cryptography.x509 import load_der_x509_certificate
 from testfixtures import LogCapture
 from twisted.internet.defer import succeed
 from twisted.internet.ssl import Certificate
@@ -641,11 +642,6 @@ class TestCrawlSpider:
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         assert crawler.spider.meta["responses"][0].certificate is None
 
-    @pytest.mark.xfail(
-        'config.getoption("--reactor") == "none"',
-        reason="Not implemented in HttpxDownloadHandler",
-        strict=True,
-    )
     @pytest.mark.parametrize(
         "url",
         [
@@ -669,9 +665,14 @@ class TestCrawlSpider:
         await crawler.crawl_async(seed=url, mockserver=mockserver)
         assert isinstance(crawler.spider, SingleRequestSpider)
         cert = crawler.spider.meta["responses"][0].certificate
-        assert isinstance(cert, Certificate)
-        assert cert.getSubject().commonName == b"localhost"
-        assert cert.getIssuer().commonName == b"localhost"
+        assert cert is not None
+        if isinstance(cert, Certificate):  # Twisted
+            assert cert.getSubject().commonName == b"localhost"
+            assert cert.getIssuer().commonName == b"localhost"
+        elif isinstance(cert, bytes):  # DER bytes
+            cert_x509 = load_der_x509_certificate(cert)
+            assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
+            assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
     @pytest.mark.parametrize(
         "url",
