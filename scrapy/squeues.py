@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 def _with_mkdir(queue_class: type[queue.BaseQueue]) -> type[queue.BaseQueue]:
     class DirectoriesCreated(queue_class):  # type: ignore[valid-type,misc]
-        def __init__(self, path: str | PathLike, *args: Any, **kwargs: Any):
+        def __init__(self, path: str | PathLike[str], *args: Any, **kwargs: Any):
             dirname = Path(path).parent
             if not dirname.exists():
                 dirname.mkdir(parents=True, exist_ok=True)

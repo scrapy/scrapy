@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import NotConfigured
@@ -9,6 +9,8 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from scrapy import Request
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -39,7 +41,7 @@ class S3DownloadHandler(BaseDownloadHandler):
                 )
             )
 
-        _http_handler = build_from_crawler(
+        _http_handler: BaseDownloadHandler = build_from_crawler(
             load_object(crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"]),
             crawler,
         )
@@ -59,7 +61,7 @@ class S3DownloadHandler(BaseDownloadHandler):
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,
                 url=f"{scheme}://s3.amazonaws.com/{bucket}{path}",
-                headers=request.headers.to_unicode_dict(),
+                headers=cast("Mapping[str, Any]", request.headers.to_unicode_dict()),
                 data=request.body,
             )
             assert self._signer

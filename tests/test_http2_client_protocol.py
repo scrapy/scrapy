@@ -61,7 +61,7 @@ def make_html_body(val: str) -> bytes:
 
 class DummySpider(Spider):
     name = "dummy"
-    start_urls: list = []
+    start_urls = []
 
     def parse(self, response):
         print(response)
@@ -234,7 +234,7 @@ class TestHttps2ClientProtocol:
         pem = self.key_file.read_text(
             encoding="utf-8"
         ) + self.certificate_file.read_text(encoding="utf-8")
-        return PrivateCertificate.loadPEM(pem)
+        return PrivateCertificate.loadPEM(pem)  # type: ignore[no-any-return]
 
     @async_yield_fixture  # type: ignore[untyped-decorator]
     async def client(

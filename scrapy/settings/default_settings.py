@@ -54,7 +54,6 @@ __all__ = [
     "DOWNLOADER_CLIENT_TLS_CIPHERS",
     "DOWNLOADER_CLIENT_TLS_METHOD",
     "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING",
-    "DOWNLOADER_HTTPCLIENTFACTORY",
     "DOWNLOADER_MIDDLEWARES",
     "DOWNLOADER_MIDDLEWARES_BASE",
     "DOWNLOADER_STATS",
@@ -275,10 +274,6 @@ DOWNLOADER_CLIENT_TLS_CIPHERS = "DEFAULT"
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
-DOWNLOADER_HTTPCLIENTFACTORY = (
-    "scrapy.core.downloader.webclient.ScrapyHTTPClientFactory"
-)
-
 DOWNLOADER_MIDDLEWARES = {}
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
@@ -289,7 +284,6 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
-    "scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware": 560,
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,

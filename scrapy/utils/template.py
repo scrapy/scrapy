@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from os import PathLike
 
 
-def render_templatefile(path: str | PathLike, **kwargs: Any) -> None:
+def render_templatefile(path: str | PathLike[str], **kwargs: Any) -> None:
     path_obj = Path(path)
     raw = path_obj.read_text("utf8")
 

@@ -314,11 +314,11 @@ class TestImagesPipelineFieldsItem(TestImagesPipelineFieldsMixin):
 class ImagesPipelineTestDataClass:
     name: str
     # default fields
-    image_urls: list = dataclasses.field(default_factory=list)
-    images: list = dataclasses.field(default_factory=list)
+    image_urls: list[str] = dataclasses.field(default_factory=list)
+    images: list[dict[str, str]] = dataclasses.field(default_factory=list)
     # overridden fields
-    custom_image_urls: list = dataclasses.field(default_factory=list)
-    custom_images: list = dataclasses.field(default_factory=list)
+    custom_image_urls: list[str] = dataclasses.field(default_factory=list)
+    custom_images: list[dict[str, str]] = dataclasses.field(default_factory=list)
 
 
 class TestImagesPipelineFieldsDataClass(TestImagesPipelineFieldsMixin):

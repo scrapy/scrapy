@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from os import PathLike
 
 
-def build_url(path: str | PathLike) -> str:
+def build_url(path: str | PathLike[str]) -> str:
     path_str = str(path)
     if path_str[0] != "/":
         path_str = "/" + path_str

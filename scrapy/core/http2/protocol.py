@@ -40,7 +40,6 @@ from scrapy.utils.ssl import _log_ssl_conn_debug_info
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
 
-    from hpack import HeaderTuple
     from twisted.internet.defer import Deferred
     from twisted.python.failure import Failure
     from twisted.web.client import URI
@@ -419,7 +418,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         except KeyError:
             pass  # We ignore server-initiated events
         else:
-            stream.receive_headers(cast("list[HeaderTuple]", event.headers))
+            stream.receive_headers(cast("list[tuple[str, str]]", event.headers))
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata["settings_acknowledged"] = True

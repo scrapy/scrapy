@@ -99,7 +99,7 @@ def open_in_browser(
     if isinstance(response, HtmlResponse):
         if b"<base" not in body:
             _remove_html_comments(body)
-            repl = rf'\0<base href="{response.url}">'
+            repl = rf'\g<0><base href="{response.url}">'
             body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
         ext = ".html"
     elif isinstance(response, TextResponse):
