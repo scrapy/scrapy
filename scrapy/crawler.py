@@ -363,7 +363,8 @@ class CrawlerRunnerBase(ABC):
         """
         Return a :class:`~scrapy.crawler.Crawler` object.
 
-        * If ``crawler_or_spidercls`` is a Crawler, it is returned as-is.
+        * If ``crawler_or_spidercls`` is a Crawler, this runner's settings are
+          merged into it as defaults before it is returned.
         * If ``crawler_or_spidercls`` is a Spider subclass, a new Crawler
           is constructed for it.
         * If ``crawler_or_spidercls`` is a string, this function finds
@@ -376,8 +377,22 @@ class CrawlerRunnerBase(ABC):
                 "it must be a spider class (or a Crawler object)"
             )
         if isinstance(crawler_or_spidercls, Crawler):
+            self._apply_settings_to_crawler(crawler_or_spidercls)
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
+
+    def _apply_settings_to_crawler(self, crawler: Crawler) -> None:
+        if crawler.settings.frozen:
+            return
+
+        for name, value in self.settings.items():
+            runner_priority = self.settings.getpriority(name)
+            crawler_priority = crawler.settings.getpriority(name)
+            if runner_priority is not None and (
+                crawler_priority is None or runner_priority > crawler_priority
+            ):
+                crawler.settings.set(name, value, runner_priority)
+        crawler._update_root_log_handler()
 
     def _create_crawler(self, spidercls: str | type[Spider]) -> Crawler:
         if isinstance(spidercls, str):

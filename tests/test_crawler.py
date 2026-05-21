@@ -633,6 +633,36 @@ class TestCrawlerProcess(TestBaseCrawler):
         runner = CrawlerProcess(install_root_handler=False)
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
+    def test_crawler_process_settings_are_crawler_defaults(self):
+        class CustomSettingsSpider(DefaultSpider):
+            custom_settings = {
+                "PROCESS_AND_SPIDER": "spider",
+            }
+
+        crawler = Crawler(
+            CustomSettingsSpider,
+            {
+                "PROCESS_AND_CRAWLER": "crawler",
+            },
+        )
+        runner = CrawlerProcess(
+            {
+                "LOG_ENABLED": False,
+                "PROCESS_ONLY": "process",
+                "PROCESS_AND_CRAWLER": "process",
+                "PROCESS_AND_SPIDER": "process",
+            },
+            install_root_handler=False,
+        )
+
+        result = runner.create_crawler(crawler)
+
+        assert result is crawler
+        assert crawler.settings["LOG_ENABLED"] is False
+        assert crawler.settings["PROCESS_ONLY"] == "process"
+        assert crawler.settings["PROCESS_AND_CRAWLER"] == "crawler"
+        assert crawler.settings["PROCESS_AND_SPIDER"] == "spider"
+
 
 @pytest.mark.only_asyncio
 class TestAsyncCrawlerProcess(TestBaseCrawler):
