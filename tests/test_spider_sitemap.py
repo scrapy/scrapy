@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 from testfixtures import LogCapture
 
+from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import SitemapSpider
 from scrapy.utils.test import get_crawler
@@ -436,5 +437,29 @@ Sitemap: /sitemap-relative-url.xml
         assert len(requests) == 1
         request = requests[0]
         assert request.url == "https://toscrape.com/sitemap.xml"
-        assert request.dont_filter is False
+        assert request.dont_filter is True
         assert request.callback == spider._parse_sitemap
+
+    @coroutine_test
+    async def test_sitemap_urls_not_filtered(self):
+        # Requests for sitemap_urls are start requests and must not be dropped
+        # by the dupefilter, otherwise resuming a job (JOBDIR) where the start
+        # request has already been seen would stop the spider immediately.
+        # See https://github.com/scrapy/scrapy/issues/4479.
+        class TestSpider(self.spider_class):
+            name = "test"
+            sitemap_urls = ["https://toscrape.com/robots.txt"]
+
+        crawler = get_crawler(TestSpider)
+        spider = TestSpider.from_crawler(crawler)
+        requests = [request async for request in spider.start()]
+
+        dupefilter = RFPDupeFilter()
+        for request in requests:
+            # The request was already seen in a previous run, as it would be
+            # when resuming with JOBDIR.
+            dupefilter.request_seen(request)
+            # The scheduler only drops a request when it is both already seen
+            # and does not have dont_filter set (see Scheduler.enqueue_request),
+            # so dont_filter must be set for start requests to survive a resume.
+            assert not (not request.dont_filter and dupefilter.request_seen(request))

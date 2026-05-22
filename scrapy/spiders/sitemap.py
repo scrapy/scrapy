@@ -55,7 +55,7 @@ class SitemapSpider(Spider):
 
     async def start(self) -> AsyncIterator[Any]:
         for url in self.sitemap_urls:
-            yield Request(url, self._parse_sitemap)
+            yield Request(url, self._parse_sitemap, dont_filter=True)
 
     def sitemap_filter(
         self, entries: Iterable[dict[str, Any]]
