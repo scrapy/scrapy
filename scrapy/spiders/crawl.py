@@ -46,7 +46,9 @@ def _identity_process_request(request: Request, response: Response) -> Request |
     return request
 
 
-def _get_method(method: Callable | str | None, spider: Spider) -> Callable | None:
+def _get_method(
+    method: Callable[..., Any] | str | None, spider: Spider
+) -> Callable[..., Any] | None:
     if callable(method):
         return method
     if isinstance(method, str):

@@ -50,8 +50,8 @@ class MiddlewareManager(ABC):
             )
         self.middlewares: tuple[Any, ...] = middlewares
         # Only process_spider_output and process_spider_exception can be None.
-        self.methods: dict[str, deque[Callable | None]] = defaultdict(deque)
-        self._mw_methods_requiring_spider: set[Callable] = set()
+        self.methods: dict[str, deque[Callable[..., Any] | None]] = defaultdict(deque)
+        self._mw_methods_requiring_spider: set[Callable[..., Any]] = set()
         for mw in middlewares:
             self._add_middleware(mw)
 
@@ -116,7 +116,7 @@ class MiddlewareManager(ABC):
     def _add_middleware(self, mw: Any) -> None:  # noqa: B027
         pass
 
-    def _check_mw_method_spider_arg(self, method: Callable) -> None:
+    def _check_mw_method_spider_arg(self, method: Callable[..., Any]) -> None:
         if argument_is_required(method, "spider"):
             warnings.warn(
                 f"{method.__qualname__}() requires a spider argument,"

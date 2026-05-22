@@ -61,7 +61,7 @@ def make_html_body(val: str) -> bytes:
 
 class DummySpider(Spider):
     name = "dummy"
-    start_urls: list = []
+    start_urls = []
 
     def parse(self, response):
         print(response)

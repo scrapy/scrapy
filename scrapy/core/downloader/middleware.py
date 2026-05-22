@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import warnings
 from functools import wraps
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
@@ -87,7 +87,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             result = await self._process_exception(ex, request)
         return await self._process_response(result, request)
 
-    def _handle_mw_method(self, method: Callable, **kwargs: Any) -> Any:
+    def _handle_mw_method(self, method: Callable[..., Any], **kwargs: Any) -> Any:
         if method in self._mw_methods_requiring_spider:
             kwargs["spider"] = self._spider
 
@@ -99,7 +99,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         download_func: Callable[[Request], Coroutine[Any, Any, Response]],
     ) -> Response | Request:
         for method in self.methods["process_request"]:
-            method = cast("Callable", method)
+            assert method is not None
             response = await ensure_awaitable(
                 self._handle_mw_method(method, request=request),
                 _warn=global_object_name(method),
@@ -122,7 +122,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             return response
 
         for method in self.methods["process_response"]:
-            method = cast("Callable", method)
+            assert method is not None
             response = await ensure_awaitable(
                 self._handle_mw_method(method, request=request, response=response),
                 _warn=global_object_name(method),
@@ -141,7 +141,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         self, exception: Exception, request: Request | Response
     ) -> Response | Request:
         for method in self.methods["process_exception"]:
-            method = cast("Callable", method)
+            assert method is not None
             response = await ensure_awaitable(
                 self._handle_mw_method(method, request=request, exception=exception),
                 _warn=global_object_name(method),

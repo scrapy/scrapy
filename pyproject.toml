@@ -86,7 +86,6 @@ pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
 strict = true
-allow_any_generics = true # 67 errors
 extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",
@@ -138,7 +137,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.15.2"
+current_version = "2.16.0"
 commit = true
 tag = true
 tag_name = "{new_version}"

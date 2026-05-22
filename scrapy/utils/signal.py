@@ -186,7 +186,9 @@ async def _send_catch_log_asyncio(
     handlers: list[Awaitable[TypingAny]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
 
-        async def handler(receiver: Callable) -> tuple[Callable, TypingAny]:
+        async def handler(
+            receiver: Callable[..., Any],
+        ) -> tuple[Callable[..., Any], TypingAny]:
             result: TypingAny
             try:
                 result = await ensure_awaitable(

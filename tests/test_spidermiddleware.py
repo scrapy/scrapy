@@ -110,7 +110,7 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     Should work for process_spider_output and, when it's supported, process_start.
     """
 
-    ITEM_TYPE: type | tuple
+    ITEM_TYPE: type | tuple[type, ...]
     RESULT_COUNT = 3  # to simplify checks, let everything return 3 objects
 
     @staticmethod

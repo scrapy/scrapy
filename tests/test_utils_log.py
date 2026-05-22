@@ -144,7 +144,9 @@ class TestStreamLogger:
     ],
 )
 def test_spider_logger_adapter_process(
-    base_extra: Mapping[str, Any], log_extra: MutableMapping, expected_extra: dict
+    base_extra: Mapping[str, Any],
+    log_extra: MutableMapping[str, Any],
+    expected_extra: dict[str, Any],
 ) -> None:
     logger = logging.getLogger("test")
     spider_logger_adapter = SpiderLoggerAdapter(logger, base_extra)

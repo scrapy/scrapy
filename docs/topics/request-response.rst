@@ -917,7 +917,7 @@ Response objects
     :type request: scrapy.Request
 
     :param certificate: an object representing the server's SSL certificate.
-    :type certificate: twisted.internet.ssl.Certificate
+    :type certificate: typing.Any
 
     :param ip_address: The IP address of the server from which the Response originated.
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
@@ -1009,8 +1009,8 @@ Response objects
 
     .. attribute:: Response.certificate
 
-        A :class:`twisted.internet.ssl.Certificate` object representing
-        the server's SSL certificate.
+        An object representing the server's SSL certificate. Its type and
+        contents depend on the download handler that produced the response.
 
         Only populated for ``https`` responses, ``None`` otherwise.
 

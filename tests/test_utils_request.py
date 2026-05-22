@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from hashlib import sha1
+from typing import Any
 from weakref import WeakKeyDictionary
 
 import pytest
@@ -56,13 +57,13 @@ def test_request_httprepr_for_non_http_request(r: Request) -> None:
 
 
 class TestFingerprint:
-    function: staticmethod = staticmethod(fingerprint)
+    function: staticmethod[[Request], bytes] = staticmethod(fingerprint)
     cache: (
         WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]]
         | WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], str]]
     ) = _fingerprint_cache
     default_cache_key = (None, False)
-    known_hashes: tuple[tuple[Request, bytes | str, dict], ...] = (
+    known_hashes: tuple[tuple[Request, bytes | str, dict[str, Any]], ...] = (
         (
             Request("http://example.org"),
             b"xs\xd7\x0c3uj\x15\xfe\xd7d\x9b\xa9\t\xe0d\xbf\x9cXD",
