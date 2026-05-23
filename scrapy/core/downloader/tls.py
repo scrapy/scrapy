@@ -18,7 +18,7 @@ from service_identity.pyopenssl import (
     verify_ip_address,
 )
 from twisted.internet._sslverify import ClientTLSOptions
-from twisted.internet.ssl import AcceptableCiphers
+from twisted.internet.ssl import AcceptableCiphers, TLSVersion
 
 from scrapy.utils.deprecate import create_deprecated_class
 
@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# TODO: deprecate METHOD_* and openssl_methods
 METHOD_TLS = "TLS"
 METHOD_TLSv10 = "TLSv1.0"
 METHOD_TLSv11 = "TLSv1.1"
@@ -43,6 +44,13 @@ openssl_methods: dict[str, int] = {
     METHOD_TLSv10: SSL.TLSv1_METHOD,  # TLS 1.0 only
     METHOD_TLSv11: SSL.TLSv1_1_METHOD,  # TLS 1.1 only
     METHOD_TLSv12: SSL.TLSv1_2_METHOD,  # TLS 1.2 only
+}
+
+_TWISTED_VERSION_MAP: dict[str, TLSVersion] = {
+    "TLSv1.0": TLSVersion.TLSv1_0,
+    "TLSv1.1": TLSVersion.TLSv1_1,
+    "TLSv1.2": TLSVersion.TLSv1_2,
+    "TLSv1.3": TLSVersion.TLSv1_3,
 }
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import ssl
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import OpenSSL._util as pyOpenSSLutil
 import OpenSSL.SSL
@@ -11,21 +11,48 @@ import OpenSSL.version
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from OpenSSL.crypto import X509Name
 
     from scrapy.settings import BaseSettings
 
 logger = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
+
+
+# common
+
+
+def _get_tls_version_limit(
+    settings: BaseSettings, setting_name: str, converter: Callable[[str], _T]
+) -> _T | None:
+    setting: str | None = settings[setting_name]
+    if setting is None:
+        return None
+    try:
+        return converter(setting)
+    except Exception as ex:
+        raise ValueError(f"Unknown {setting_name} value: {setting}") from ex
+
+
+def _get_tls_version_limits(
+    settings: BaseSettings, converter: Callable[[str], _T]
+) -> tuple[_T | None, _T | None]:
+    return (
+        _get_tls_version_limit(settings, "DOWNLOAD_TLS_MIN_VERSION", converter),
+        _get_tls_version_limit(settings, "DOWNLOAD_TLS_MAX_VERSION", converter),
+    )
+
 
 # stdlib ssl module utils
 
-# possible documented values for DOWNLOADER_CLIENT_TLS_METHOD
-_STDLIB_PROTOCOL_MAP = {
-    "TLS": ssl.PROTOCOL_TLS_CLIENT,
-    "TLSv1.0": ssl.PROTOCOL_TLSv1,
-    "TLSv1.1": ssl.PROTOCOL_TLSv1_1,
-    "TLSv1.2": ssl.PROTOCOL_TLSv1_2,
+_STDLIB_VERSION_MAP: dict[str, ssl.TLSVersion] = {
+    "TLSv1.0": ssl.TLSVersion.TLSv1,
+    "TLSv1.1": ssl.TLSVersion.TLSv1_1,
+    "TLSv1.2": ssl.TLSVersion.TLSv1_2,
+    "TLSv1.3": ssl.TLSVersion.TLSv1_3,
 }
 
 
@@ -35,13 +62,13 @@ def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
     It's intended to be used in an HTTPS download handler.
     """
 
-    method_setting: str = settings["DOWNLOADER_CLIENT_TLS_METHOD"]
-    if method_setting not in _STDLIB_PROTOCOL_MAP:
-        raise ValueError(f"Unsupported TLS method: {method_setting}")
+    tls_min_ver, tls_max_ver = _get_tls_version_limits(
+        settings, _STDLIB_VERSION_MAP.get
+    )
     ciphers_setting: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
     verify_setting = settings.getbool("DOWNLOAD_VERIFY_CERTIFICATES")
 
-    ctx = ssl.SSLContext(_STDLIB_PROTOCOL_MAP[method_setting])
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     if verify_setting:
         ctx.check_hostname = True
         ctx.verify_mode = ssl.CERT_REQUIRED
@@ -49,6 +76,10 @@ def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
     else:
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
+    if tls_min_ver is not None:
+        ctx.minimum_version = tls_min_ver
+    if tls_max_ver is not None:
+        ctx.maximum_version = tls_max_ver
     if ciphers_setting:
         ctx.set_ciphers(ciphers_setting)
     return ctx

@@ -254,7 +254,7 @@ Documentation
 -   Added a ``CITATION.cff`` file.
     (:issue:`7502`, :issue:`7519`)
 
--   Mentioned :setting:`DOWNLOADER_CLIENT_TLS_METHOD` in :ref:`bans`.
+-   Mentioned ``DOWNLOADER_CLIENT_TLS_METHOD`` in :ref:`bans`.
     (:issue:`5232`, :issue:`7518`)
 
 -   Other documentation improvements and fixes.
@@ -7464,7 +7464,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
     selectors engine without needing to upgrade Scrapy.
   - HTTPS downloader now does TLS protocol negotiation by default,
     instead of forcing TLS 1.0. You can also set the SSL/TLS method
-    using the new :setting:`DOWNLOADER_CLIENT_TLS_METHOD`.
+    using the new ``DOWNLOADER_CLIENT_TLS_METHOD`` setting.
 
 - These bug fixes may require your attention:
 
