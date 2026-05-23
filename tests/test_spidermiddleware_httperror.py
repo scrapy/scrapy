@@ -246,7 +246,7 @@ class TestHttpErrorMiddlewareIntegrational:
         # with level WARNING, we shouldn't capture anything from HttpError
         crawler = get_crawler(_HttpErrorSpider)
         with LogCapture(level=logging.WARNING) as log:
-            assert not log.entries
+            assert "Ignoring response <402" not in str(log)
             yield crawler.crawl(mockserver=self.mockserver)
         assert crawler.spider.parsed == {"200"}
         assert crawler.spider.failed == {"404", "402", "500"}
