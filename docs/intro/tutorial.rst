@@ -136,6 +136,10 @@ How to run our spider
 To put our spider to work, go to the project's top level directory and run::
 
    scrapy crawl quotes
+   .. note::
+
+   On Windows, you can also use ``python -m scrapy crawl quotes``
+   if the ``scrapy`` command is not found in your PATH.
 
 This command runs the spider named ``quotes`` that we've just added, that
 will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
