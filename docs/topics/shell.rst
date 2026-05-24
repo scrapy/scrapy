@@ -139,6 +139,25 @@ Those objects are:
 
 -   ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
 
+Customizing shell variables
+---------------------------
+
+If you want to make project-specific helpers, imports, or objects available
+whenever the Scrapy shell starts, you can create a custom shell command and
+override its ``update_vars`` method. See :ref:`topics-commands` for more
+information about creating custom Scrapy commands.
+
+For example, if your project defines a custom ``shell`` command, you can update
+the shell namespace like this::
+
+    from scrapy.commands.shell import Command as ShellCommand
+
+
+    class Command(ShellCommand):
+        def update_vars(self, vars):
+            super().update_vars(vars)
+            vars["parse_title"] = lambda response: response.css("title::text").get()
+
 Example of shell session
 ========================
 
