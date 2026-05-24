@@ -213,12 +213,13 @@ def build_from_crawler(
     # before instantiating the object, inspect the arguments of the constructor,
     # in case the crawler is required but no from_crawler method is implemented
     # then an exception shall be raised
-    elif "crawler" in inspect.getfullargspec(objcls.__init__):
+    elif "crawler" in inspect.getfullargspec(objcls.__init__).args:
         raise TypeError(
             f'{objcls.__qualname__} constructor requires a crawler but no "from_crawler" classmethod is implemented for it. We suggest you implement it'
         )
-    instance = objcls(*args, **kwargs)
-    method_name = "__new__"
+    else:
+        instance = objcls(*args, **kwargs)
+        method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
