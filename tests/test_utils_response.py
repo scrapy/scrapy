@@ -174,6 +174,7 @@ def test_inject_base_url(body: bytes) -> None:
             path = burl.replace("file://", "")
         bbody = Path(path).read_bytes()
         assert bbody.count(b'><base href="' + to_bytes(url) + b'">') == 1
+        assert b"<!-- <head><base " not in bbody
         assert b"<head" in bbody
         return True
 

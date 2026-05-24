@@ -6,6 +6,21 @@ Release notes
 Scrapy VERSION (unreleased)
 ---------------------------
 
+Bug fixes
+~~~~~~~~~
+
+-   Fixed :meth:`scrapy.Request.copy` sharing cookies between the original
+    and copied requests. (#TBD)
+
+-   Fixed :func:`scrapy.utils.url.strip_url` corrupting credentials when
+    stripping default ports from URLs that keep credentials. (#TBD)
+
+-   Fixed :func:`scrapy.utils.request.request_to_curl` generating shell-unsafe
+    commands for some requests and dropping repeated header values. (#TBD)
+
+-   Fixed :func:`scrapy.utils.response.open_in_browser` injecting a ``base``
+    element into an HTML comment instead of the actual ``head`` element. (#TBD)
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

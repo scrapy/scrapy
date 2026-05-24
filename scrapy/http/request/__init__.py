@@ -200,7 +200,12 @@ class Request(object_ref):
         #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
-        self._cookies: CookiesT | None = cookies or None
+        if isinstance(cookies, dict):
+            self._cookies = dict(cookies) or None
+        elif isinstance(cookies, list):
+            self._cookies = [dict(cookie) for cookie in cookies] or None
+        else:
+            self._cookies = None
         self._headers: Headers | None = (
             Headers(headers, encoding=encoding) if headers else None
         )

@@ -346,6 +346,14 @@ class TestStripUrl:
                 "ftp://username:password@www.example.com:221/file.txt",
                 "ftp://username:password@www.example.com:221/file.txt",
             ),
+            (
+                "http://user:80pass@www.example.com:80/index.html",
+                "http://user:80pass@www.example.com/index.html",
+            ),
+            (
+                "http://user:80pass@[::1]:80/index.html",
+                "http://user:80pass@[::1]/index.html",
+            ),
         ],
     )
     def test_default_ports(self, url: str, expected: str) -> None:

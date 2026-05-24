@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shlex
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
@@ -179,26 +180,28 @@ def request_to_curl(request: Request) -> str:
     :param :class:`~scrapy.Request`: Request object to be converted
     :return: string containing the curl command
     """
-    method = request.method
+    command = ["curl", "-X", request.method, request.url]
 
-    data = f"--data-raw '{request.body.decode('utf-8')}'" if request.body else ""
+    if request.body:
+        command.extend(["--data-raw", request.body.decode("utf-8")])
 
-    headers = " ".join(
-        f"-H '{k.decode()}: {v[0].decode()}'" for k, v in request.headers.items()
-    )
+    for key, values in request.headers.items():
+        for value in values:
+            command.extend(["-H", f"{key.decode()}: {value.decode()}"])
 
-    url = request.url
-    cookies = ""
     if request.cookies:
         if isinstance(request.cookies, dict):
             cookie = "; ".join(f"{k}={v}" for k, v in request.cookies.items())
-            cookies = f"--cookie '{cookie}'"
+            command.extend(["--cookie", cookie])
         elif isinstance(request.cookies, list):
             cookie = "; ".join(
-                f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                (
+                    f"{c['name']}={c['value']}"
+                    if "name" in c and "value" in c
+                    else f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                )
                 for c in request.cookies
             )
-            cookies = f"--cookie '{cookie}'"
+            command.extend(["--cookie", cookie])
 
-    curl_cmd = f"curl -X {method} {url} {data} {headers} {cookies}".strip()
-    return " ".join(curl_cmd.split())
+    return " ".join(shlex.quote(argument) for argument in command)

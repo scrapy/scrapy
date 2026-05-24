@@ -228,6 +228,28 @@ class TestRequest:
 
         # Request.body can be identical since it's an immutable object (str)
 
+        # make sure cookies are shallow copied
+        r1 = self.request_class("http://www.example.com", cookies={"a": "b"})
+        r2 = r1.copy()
+        assert r1.cookies is not r2.cookies, (
+            "cookies must be a shallow copy, not identical"
+        )
+        assert r1.cookies == r2.cookies
+        r2.cookies["c"] = "d"
+        assert r1.cookies == {"a": "b"}
+
+        # Verbose cookies are mutable and may be modified by middleware.
+        r1 = self.request_class(
+            "http://www.example.com",
+            cookies=[{"name": "a", "value": "b"}],
+        )
+        r2 = r1.copy()
+        assert r1.cookies is not r2.cookies, (
+            "cookies must be a shallow copy, not identical"
+        )
+        assert r1.cookies[0] is not r2.cookies[0]
+        assert r1.cookies == r2.cookies
+
     def test_copy_inherited_classes(self):
         """Test Request children copies preserve their class"""
 

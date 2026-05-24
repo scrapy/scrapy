@@ -71,6 +71,23 @@ def _remove_html_comments(body: bytes) -> bytes:
     return body
 
 
+def _find_html_head_end(body: bytes) -> int | None:
+    pos = 0
+    while pos < len(body):
+        comment_start = body.find(b"<!--", pos)
+        search_end = len(body) if comment_start == -1 else comment_start
+        match = re.search(rb"<head(?:[^<>]*?>)", body[pos:search_end])
+        if match:
+            return pos + match.end()
+        if comment_start == -1:
+            return None
+        comment_end = body.find(b"-->", comment_start + 4)
+        if comment_end == -1:
+            return None
+        pos = comment_end + 3
+    return None
+
+
 def open_in_browser(
     response: TextResponse,
     _openfunc: Callable[[str], Any] = webbrowser.open,
@@ -97,10 +114,9 @@ def open_in_browser(
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
-        if b"<base" not in body:
-            _remove_html_comments(body)
-            repl = rf'\g<0><base href="{response.url}">'
-            body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
+        if b"<base" not in body and (pos := _find_html_head_end(body)) is not None:
+            base = to_bytes(f'<base href="{response.url}">')
+            body = body[:pos] + base + body[pos:]
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"
