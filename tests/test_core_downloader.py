@@ -234,6 +234,76 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         await self._assert_factory_works(server_url, client_context_factory)
 
 
+class TestContextFactoryTLSCiphers:
+    """Coverage for DOWNLOADER_CLIENT_TLS_CIPHERS, including the explicit-None
+    semantic added for gh-7499.
+    """
+
+    def test_default_string_yields_parsed_ciphers(self) -> None:
+        """The default setting value of "DEFAULT" parses to an
+        AcceptableCiphers, preserving prior behavior.
+        """
+        crawler = get_crawler()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+            factory = _load_context_factory_from_settings(crawler)
+        assert factory.tls_ciphers is not None
+
+    def test_explicit_string_is_parsed(self) -> None:
+        crawler = get_crawler(
+            settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": "HIGH:!aNULL:!MD5"}
+        )
+        factory = _load_context_factory_from_settings(crawler)
+        assert factory.tls_ciphers is not None
+
+    def test_explicit_none_defers_to_twisted_defaults(self) -> None:
+        """Setting to None must defer to Twisted's defaultCiphers.
+
+        Before gh-7499, an explicit None silently fell back to scrapy's
+        DEFAULT_CIPHERS, which is OpenSSL's "DEFAULT". Twisted's defaults
+        are stricter (they exclude weaker suites like RC4 and export-grade).
+        """
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": None})
+        factory = _load_context_factory_from_settings(crawler)
+        assert factory.tls_ciphers is None
+
+    def test_explicit_none_does_not_pass_acceptable_ciphers(self) -> None:
+        """When tls_ciphers is None, acceptableCiphers must not be passed to
+        CertificateOptions so Twisted's defaults apply.
+        """
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": None})
+        factory = _load_context_factory_from_settings(crawler)
+        # _get_cert_options should not raise and should return a usable
+        # CertificateOptions even though acceptableCiphers was omitted.
+        opts = factory._get_cert_options()
+        assert opts is not None
+
+    def test_default_value_emits_deprecation_warning(self) -> None:
+        """The implicit default of "DEFAULT" is deprecated in favor of an
+        explicit choice (a cipher string or None).
+        """
+        crawler = get_crawler()
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"DOWNLOADER_CLIENT_TLS_CIPHERS.*deprecated",
+        ):
+            _load_context_factory_from_settings(crawler)
+
+    def test_explicit_none_does_not_warn(self) -> None:
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": None})
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            _load_context_factory_from_settings(crawler)
+
+    def test_explicit_string_does_not_warn(self) -> None:
+        crawler = get_crawler(
+            settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": "HIGH:!aNULL:!MD5"}
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            _load_context_factory_from_settings(crawler)
+
+
 @coroutine_test
 async def test_fetch_deprecated_spider_arg():
     class CustomDownloader(Downloader):

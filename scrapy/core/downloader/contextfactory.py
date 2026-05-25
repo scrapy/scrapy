@@ -74,8 +74,15 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         super().__init__(*args, **kwargs)  # type: ignore[no-untyped-call]
         self._ssl_method: int = method
         self.tls_verbose_logging: bool = tls_verbose_logging  # unused
-        self.tls_ciphers: AcceptableCiphers
-        if tls_ciphers:
+        self.tls_ciphers: AcceptableCiphers | None
+        if tls_ciphers is None:
+            # Explicit None means: defer to Twisted's defaults. The
+            # acceptableCiphers kwarg will be omitted entirely when building
+            # CertificateOptions, so twisted.internet._sslverify.defaultCiphers
+            # applies. Twisted's defaults exclude weaker suites that
+            # OpenSSL's "DEFAULT" still permits.
+            self.tls_ciphers = None
+        elif tls_ciphers:
             self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
         else:
             self.tls_ciphers = DEFAULT_CIPHERS
@@ -93,6 +100,23 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
         tls_ciphers: str | None = crawler.settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+        if tls_ciphers == "DEFAULT":
+            # See gh-7499. The implicit default of "DEFAULT" hides Twisted's
+            # stricter defaultCiphers (which excludes weak suites that
+            # OpenSSL's "DEFAULT" still permits). Users should explicitly
+            # choose either a cipher string or None to opt into Twisted's
+            # defaults. In a future major, the implicit default is intended
+            # to become None.
+            warnings.warn(
+                'The implicit default of DOWNLOADER_CLIENT_TLS_CIPHERS="DEFAULT" '
+                "is deprecated and will change to None in a future Scrapy release, "
+                "which will defer to Twisted's stricter defaultCiphers. Set "
+                "DOWNLOADER_CLIENT_TLS_CIPHERS explicitly to either a cipher "
+                "string (to preserve current behavior) or None (to opt in to "
+                "Twisted's defaults now).",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         verify_certificates = crawler.settings.getbool("DOWNLOAD_VERIFY_CERTIFICATES")
         return cls(  # type: ignore[misc]
             *args,
@@ -109,11 +133,13 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def _get_cert_options(self) -> CertificateOptions:
         with _filter_method_warning():
-            return _ScrapyCertificateOptions(
-                method=self._ssl_method,
-                fixBrokenPeers=True,
-                acceptableCiphers=self.tls_ciphers,
-            )
+            kwargs: dict[str, Any] = {
+                "method": self._ssl_method,
+                "fixBrokenPeers": True,
+            }
+            if self.tls_ciphers is not None:
+                kwargs["acceptableCiphers"] = self.tls_ciphers
+            return _ScrapyCertificateOptions(**kwargs)
 
     # should be removed together with ScrapyClientContextFactory
     def getContext(
@@ -139,12 +165,12 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         # Otherwise use the normal Twisted function.
         # Note that this doesn't use self._get_context().
         with _filter_method_warning():
+            extra: dict[str, Any] = {"method": self._ssl_method}
+            if self.tls_ciphers is not None:
+                extra["acceptableCiphers"] = self.tls_ciphers
             return optionsForClientTLS(  # type: ignore[no-any-return]
                 hostname=hostname.decode("ascii"),
-                extraCertificateOptions={
-                    "method": self._ssl_method,
-                    "acceptableCiphers": self.tls_ciphers,
-                },
+                extraCertificateOptions=extra,
             )
 
 
