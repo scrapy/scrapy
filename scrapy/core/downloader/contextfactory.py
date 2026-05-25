@@ -27,7 +27,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.ssl import _get_tls_version_limits
+from scrapy.utils.ssl import _get_cert_options_version_kwargs, _get_tls_version_limits
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
@@ -123,17 +123,11 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             "acceptableCiphers": self.tls_ciphers,
         }
         if self.tls_min_version or self.tls_max_version:
-            # TODO handle off-by-1 in older Twisted
-            if self.tls_max_version:
-                kwargs["lowerMaximumSecurityTo"] = self.tls_max_version
-            if self.tls_min_version:
-                # we cannot pass both insecurelyLowerMinimumTo and raiseMinimumTo,
-                # so we need to know the direction
-                default_min = CertificateOptions._defaultMinimumTLSVersion
-                if self.tls_min_version < default_min:
-                    kwargs["insecurelyLowerMinimumTo"] = self.tls_min_version
-                elif self.tls_min_version > default_min:
-                    kwargs["raiseMinimumTo"] = self.tls_min_version
+            kwargs.update(
+                _get_cert_options_version_kwargs(
+                    self.tls_min_version, self.tls_max_version
+                )
+            )
         # when ScrapyClientContextFactory is removed self._ssl_method can just be None by default
         elif self._ssl_method != SSL.SSLv23_METHOD:
             kwargs["method"] = self._ssl_method

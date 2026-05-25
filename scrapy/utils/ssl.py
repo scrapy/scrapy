@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import logging
 import ssl
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
 
 import OpenSSL._util as pyOpenSSLutil
 import OpenSSL.SSL
 import OpenSSL.version
+from twisted.internet.ssl import CertificateOptions, TLSVersion
 
+from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
@@ -185,3 +187,42 @@ def _log_ssl_conn_debug_info(hostname: str, connection: OpenSSL.SSL.Connection) 
     key_info = get_temp_key_info(connection._ssl)
     if key_info:
         logger.debug("SSL temp key: %s", key_info)
+
+
+# Twisted-specific
+
+
+class _CertificateOptionsVersionKwargs(TypedDict, total=False):
+    lowerMaximumSecurityTo: TLSVersion
+    insecurelyLowerMinimumTo: TLSVersion
+    raiseMinimumTo: TLSVersion
+
+
+def _get_cert_options_version_kwargs(
+    min_version: TLSVersion | None, max_version: TLSVersion | None
+) -> _CertificateOptionsVersionKwargs:
+    """Get TLS version kwargs for
+    :class:`~twisted.internet.ssl.CertificateOptions` for the given limits."""
+    result: _CertificateOptionsVersionKwargs = {}
+    if max_version:
+        if TWISTED_TLS_LIMITS_OFFBY1:
+            # lowerMaximumSecurityTo is treated as 1 version lower than the passed one
+            versions = list(TLSVersion.iterconstants())
+            max_index = versions.index(max_version)
+            if max_index + 1 >= len(versions):
+                raise ValueError(
+                    f"Due to an error in Twisted < 26.4.0 cannot set the maximum TLS version to {max_version.name}"
+                )
+            max_version = versions[max_index + 1]
+        result["lowerMaximumSecurityTo"] = max_version
+    if min_version:
+        # We cannot pass both insecurelyLowerMinimumTo and raiseMinimumTo,
+        # so we need to know the direction.
+
+        # 1.0 in Twisted 22.8.0 and older, 1.2 in Twisted 22.10.0 and newer
+        default_min = CertificateOptions._defaultMinimumTLSVersion
+        if min_version < default_min:
+            result["insecurelyLowerMinimumTo"] = min_version
+        elif min_version > default_min:
+            result["raiseMinimumTo"] = min_version
+    return result
