@@ -228,7 +228,14 @@ class ImagesPipeline(FilesPipeline):
             raise TypeError(
                 f"{self.images_urls_field} must be a list of URLs, got {type(urls).__name__}. "
             )
-        return [Request(u, callback=NO_CALLBACK) for u in urls]
+        return [
+            Request(
+                u,
+                callback=NO_CALLBACK,
+                meta={"allow_offsite": True},
+            )
+            for u in urls
+        ]
 
     def item_completed(
         self, results: list[FileInfoOrError], item: Any, info: MediaPipeline.SpiderInfo

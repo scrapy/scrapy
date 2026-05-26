@@ -270,6 +270,17 @@ class TestImagesPipelineFieldsMixin(ABC):
         assert images == [results[0][1]]
         assert isinstance(item, self.item_class)
 
+
+    def test_media_request_allow_offsite(self, tmp_path):
+        url = "http://www.example.com/images/1.jpg"
+        item = self.item_class(name="item1", image_urls=[url])
+        pipeline = ImagesPipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
+        )
+        requests = list(pipeline.get_media_requests(item, None))
+        assert requests[0].url == url
+        assert requests[0].meta.get("allow_offsite") is True
+
     def test_item_fields_override_settings(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", custom_image_urls=[url])
