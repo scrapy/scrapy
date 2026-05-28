@@ -148,7 +148,9 @@ override its ``update_vars`` method. See :ref:`topics-commands` for more
 information about creating custom Scrapy commands.
 
 For example, if your project defines a custom ``shell`` command, you can update
-the shell namespace like this::
+the shell namespace like this:
+
+.. code-block:: python
 
     from scrapy.commands.shell import Command as ShellCommand
 
