@@ -1404,3 +1404,33 @@ class TestFeedExportInit:
         crawler = get_crawler(settings_dict=settings)
         exporter = FeedExporter.from_crawler(crawler)
         assert isinstance(exporter, FeedExporter)
+
+    def test_pathlib_with_uri_format_specifiers(self):
+        """Path objects with %-format specifiers must not be URL-encoded.
+
+        as_uri() encodes '%' as '%25', which breaks the ``uri % uri_params``
+        interpolation in open_spider() with a TypeError/KeyError.  The fix is
+        to use str(path.absolute()) instead of path.absolute().as_uri().
+        See https://github.com/scrapy/scrapy/issues/6425
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            feed_path = Path(tmpdir) / "%(name)s.json"
+            settings = {
+                "FEEDS": {
+                    feed_path: {
+                        "format": "json",
+                    },
+                },
+            }
+            crawler = get_crawler(settings_dict=settings)
+            exporter = FeedExporter.from_crawler(crawler)
+            assert isinstance(exporter, FeedExporter)
+
+            spider = scrapy.Spider("myspider")
+            spider.crawler = crawler
+            # This must not raise TypeError/KeyError from broken %-formatting
+            exporter.open_spider(spider)
+
+            assert len(exporter.slots) == 1
+            expected_uri = str(feed_path.absolute()).replace("%(name)s", "myspider")
+            assert exporter.slots[0].uri == expected_uri
