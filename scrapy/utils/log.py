@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import pprint
 import sys
@@ -7,6 +8,7 @@ from collections.abc import MutableMapping
 from logging.config import dictConfig
 from typing import TYPE_CHECKING, Any, cast
 
+from loguru import logger as loguru_logger
 from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
@@ -135,6 +137,8 @@ def configure_logging(
 
 
 _scrapy_root_handler: logging.Handler | None = None
+_loguru_sink_ids: dict[str, int] = {}  # Tracks one sink per log file
+_loguru_default_sink_removed: bool = False
 
 
 def install_scrapy_root_handler(settings: Settings) -> None:
@@ -153,6 +157,13 @@ def _uninstall_scrapy_root_handler() -> None:
         _scrapy_root_handler is not None
         and _scrapy_root_handler in logging.root.handlers
     ):
+        # If this is a loguru-backed handler, clean up its sink too
+        if isinstance(_scrapy_root_handler, LoguruHandler):
+            filename = _scrapy_root_handler.filename
+            if filename and filename in _loguru_sink_ids:
+                with contextlib.suppress(ValueError):
+                    loguru_logger.remove(_loguru_sink_ids[filename])
+                del _loguru_sink_ids[filename]
         logging.root.removeHandler(_scrapy_root_handler)
     _scrapy_root_handler = None
 
@@ -161,14 +172,78 @@ def get_scrapy_root_handler() -> logging.Handler | None:
     return _scrapy_root_handler
 
 
+class LoguruHandler(logging.Handler):
+    """A logging handler that forwards records to loguru, enabling
+    features like log rotation via loguru's sink system."""
+
+    def __init__(self, filename: str, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.filename = filename  # needed for cleanup on uninstall
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            level = loguru_logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+        loguru_logger.opt(exception=record.exc_info).log(level, self.format(record))
+
+
+def _install_loguru_sink(settings: Settings) -> None:
+    """Safely install a loguru sink for log rotation.
+
+    Tracks one sink per log file path so that multiple crawlers running
+    simultaneously in the same process do not overwrite each other's sinks.
+    Uses enqueue=True to serialize writes through a queue, making the sink
+    thread-safe across concurrent crawlers.
+    """
+    global _loguru_default_sink_removed  # noqa: PLW0603
+
+    filename = settings.get("LOG_FILE")
+
+    # Remove only the sink previously installed for this specific file.
+    # Other files' sinks and any user-configured sinks are left untouched.
+    if filename in _loguru_sink_ids:
+        with contextlib.suppress(ValueError):
+            loguru_logger.remove(
+                _loguru_sink_ids[filename]
+            )  # sink was already removed externally, that's fine
+        del _loguru_sink_ids[filename]
+
+    # Remove only the default stderr sink (always ID 0 in loguru).
+    # We do this specifically to prevent duplicate output to the terminal.
+    # We only attempt this once — if it's already gone, we move on.
+    if not _loguru_default_sink_removed:
+        with contextlib.suppress(ValueError):
+            loguru_logger.remove(0)  # default sink was already removed, nothing to do
+        _loguru_default_sink_removed = True
+
+    # enqueue=True serializes all log writes through a queue and a background
+    # thread, making this sink safe for use across multiple concurrent crawlers
+    # running in the same process on Twisted's event loop.
+    _loguru_sink_ids[filename] = loguru_logger.add(
+        filename,
+        rotation=settings.get("LOG_FILE_ROTATE"),
+        retention=settings.get("LOG_FILE_ROTATE_RETENTION", None),
+        compression=settings.get("LOG_FILE_ROTATE_COMPRESSION", None),
+        encoding=settings.get("LOG_ENCODING"),
+        format="{message}",  # formatting is handled upstream by Python logging
+        enqueue=True,  # thread-safe writes via background queue
+    )
+
+
 def _get_handler(settings: Settings) -> logging.Handler:
     """Return a log handler object according to settings"""
     filename = settings.get("LOG_FILE")
     handler: logging.Handler
     if filename:
-        mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
+        rotation = settings.get("LOG_FILE_ROTATE", None)
         encoding = settings.get("LOG_ENCODING")
-        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
+        if rotation:
+            _install_loguru_sink(settings)
+            handler = LoguruHandler(filename)  # pass filename for cleanup tracking
+        else:
+            mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
+            handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool("LOG_ENABLED"):
         handler = logging.StreamHandler()
     else:
