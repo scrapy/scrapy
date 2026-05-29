@@ -84,6 +84,17 @@ Get all stats:
 
 .. skip: end
 
+Timing
+------
+
+'time_start'
+    A date and time object used for recording when the crawl starts.
+
+'time_finish'
+    A date and time object used for recording when crwal finishes. 
+
+
+
 Available Stats Collectors
 ==========================
 
