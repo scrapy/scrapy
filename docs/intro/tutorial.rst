@@ -831,5 +831,11 @@ You can continue from the section :ref:`section-basics` to know more about the
 command-line tool, spiders, selectors and other things the tutorial hasn't covered like
 modeling the scraped data. If you'd prefer to play with an example project, check
 the :ref:`intro-examples` section.
+.. note::
+
+   **Windows users:** If the ``scrapy`` command is not recognized as an internal
+   or external command, you can use ``python -m scrapy`` as an alternative.
+   For example: ``python -m scrapy startproject tutorial``. This typically
+   happens when the Python ``Scripts`` folder is not added to your PATH.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON
