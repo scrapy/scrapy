@@ -130,7 +130,14 @@ def configure_logging(
     if settings.getbool("LOG_STDOUT"):
         sys.stdout = StreamLogger(logging.getLogger("stdout"))
 
-    if install_root_handler:
+    logging_from_settings = settings.getdict('LOGGING')
+
+    if logging_from_settings:
+        LOGGING = DEFAULT_LOGGING.copy()
+        LOGGING.update(logging_from_settings)
+        dictConfig(LOGGING)
+
+    elif install_root_handler:
         install_scrapy_root_handler(settings)
 
 
