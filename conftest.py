@@ -99,6 +99,19 @@ def mitm_proxy_server_https(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmPr
         proxy.stop()
 
 
+@pytest.fixture  # function scope because it modifies os.environ
+def socks5_proxy_server(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
+    proxy = MitmProxy(mode="socks5")
+    url = proxy.start()
+    monkeypatch.setenv("http_proxy", url)
+    monkeypatch.setenv("https_proxy", url)
+
+    try:
+        yield proxy
+    finally:
+        proxy.stop()
+
+
 @pytest.fixture(scope="session")
 def reactor_pytest(request) -> str:
     return request.config.getoption("--reactor")
