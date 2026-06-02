@@ -143,6 +143,16 @@ Here are some examples to illustrate:
 .. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
           they can also be used as storage URI parameters.
 
+Because storage URI parameters use
+:ref:`printf-style string formatting <python:old-string-formatting>`, literal
+``%`` characters in a string feed URI, such as percent-encoded characters like
+``%20``, need to be escaped as ``%%``.
+
+Use a string feed URI, instead of a :class:`pathlib.Path` object, when using
+storage URI parameters. :class:`pathlib.Path` objects are converted to file URIs
+before parameters are expanded, which makes them suitable for literal local
+output paths only.
+
 
 .. _topics-feed-storage-backends:
 
@@ -428,6 +438,9 @@ parameters for the specific feed.
 This setting is required for enabling the feed export feature.
 
 See :ref:`topics-feed-storage-backends` for supported URI schemes.
+See :ref:`topics-feed-uri-params` before using storage URI parameters in
+:setting:`FEEDS` keys, especially when using :class:`pathlib.Path` objects or
+literal ``%`` characters.
 
 For instance::
 
