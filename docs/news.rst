@@ -2200,7 +2200,7 @@ Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -   User-defined cookies for HTTPS requests will have the ``secure`` flag set
-    to ``True`` unless it's set to ``False`` explictly. This is important when
+    to ``True`` unless it's set to ``False`` explicitly. This is important when
     these cookies are reused in HTTP requests, e.g. after a redirect to an HTTP
     URL.
     (:issue:`6357`)
@@ -2235,7 +2235,7 @@ Backward-incompatible changes
       ``crawler.settings`` instead. When they call ``__init__()`` of the base
       class they should pass the ``crawler`` argument to it too.
     - A ``from_settings()`` method shouldn't be defined. Class-specific
-      initialization code should go into either an overriden ``from_crawler()``
+      initialization code should go into either an overridden ``from_crawler()``
       method or into ``__init__()``.
     - It's now possible to override ``from_crawler()`` and it's not necessary
       to call ``MediaPipeline.from_crawler()`` in it if other recommendations

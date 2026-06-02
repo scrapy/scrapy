@@ -26,7 +26,7 @@ def test_stderr_log_handler() -> None:
 
     It's added in ``configure_logging()``, called by ``{Async,}CrawlerProcess``
     (without ``install_root_handler=False``). It can be removed with
-    ``_uninstall_scrapy_root_handler()`` if installing it was really neeeded.
+    ``_uninstall_scrapy_root_handler()`` if installing it was really needed.
     """
     c = sum(1 for h in logging.root.handlers if type(h) is logging.StreamHandler)  # pylint: disable=unidiomatic-typecheck
     assert c == 0
