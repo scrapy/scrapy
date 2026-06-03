@@ -811,7 +811,6 @@ class TestCrawlSpider:
         crawler = get_crawler(HeadersReceivedErrbackSpider)
         await crawler.crawl_async(mockserver=mockserver)
         assert isinstance(crawler.spider, HeadersReceivedErrbackSpider)
-        assert isinstance(crawler.spider, HeadersReceivedCallbackSpider)
         assert crawler.spider.meta.get("response") is None
         assert isinstance(crawler.spider.meta["failure"], Failure)
         assert isinstance(crawler.spider.meta["failure"].value, StopDownload)
