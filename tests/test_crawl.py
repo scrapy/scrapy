@@ -412,6 +412,23 @@ with multiples lines
         assert not crawler.crawling
 
     @coroutine_test
+    async def test_open_spider_error_on_faulty_pipeline_crawl(
+        self, mockserver: MockServer
+    ) -> None:
+        # cover the except block in Crawler.crawl()
+        settings = {
+            "ITEM_PIPELINES": {
+                "tests.pipelines.ZeroDivisionErrorPipeline": 300,
+            }
+        }
+        crawler = get_crawler(SimpleSpider, settings)
+        with pytest.raises(ZeroDivisionError):
+            await maybe_deferred_to_future(
+                crawler.crawl(mockserver.url("/status?n=200"), mockserver=mockserver)
+            )
+        assert not crawler.crawling
+
+    @coroutine_test
     async def test_crawlerrunner_accepts_crawler(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
