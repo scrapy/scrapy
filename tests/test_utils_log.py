@@ -42,33 +42,29 @@ class TestFailureToExcInfo:
 
 
 class TestTopLevelFormatter:
-    def setup_method(self):
-        self.handler = LogCapture()
-        self.handler.addFilter(TopLevelFormatter(["test"]))
-
-    def test_top_level_logger(self):
+    def test_top_level_logger(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.handler.addFilter(TopLevelFormatter(["test"]))
         logger = logging.getLogger("test")
-        with self.handler as log:
-            logger.warning("test log msg")
-        log.check(("test", "WARNING", "test log msg"))
+        logger.warning("test log msg")
+        assert ("test", logging.WARNING, "test log msg") in caplog.record_tuples
 
-    def test_children_logger(self):
+    def test_children_logger(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.handler.addFilter(TopLevelFormatter(["test"]))
         logger = logging.getLogger("test.test1")
-        with self.handler as log:
-            logger.warning("test log msg")
-        log.check(("test", "WARNING", "test log msg"))
+        logger.warning("test log msg")
+        assert ("test", logging.WARNING, "test log msg") in caplog.record_tuples
 
-    def test_overlapping_name_logger(self):
+    def test_overlapping_name_logger(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.handler.addFilter(TopLevelFormatter(["test"]))
         logger = logging.getLogger("test2")
-        with self.handler as log:
-            logger.warning("test log msg")
-        log.check(("test2", "WARNING", "test log msg"))
+        logger.warning("test log msg")
+        assert ("test2", logging.WARNING, "test log msg") in caplog.record_tuples
 
-    def test_different_name_logger(self):
+    def test_different_name_logger(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.handler.addFilter(TopLevelFormatter(["test"]))
         logger = logging.getLogger("different")
-        with self.handler as log:
-            logger.warning("test log msg")
-        log.check(("different", "WARNING", "test log msg"))
+        logger.warning("test log msg")
+        assert ("different", logging.WARNING, "test log msg") in caplog.record_tuples
 
 
 class TestLogCounterHandler:
