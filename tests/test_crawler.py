@@ -100,9 +100,9 @@ class TestCrawler(TestBaseCrawler):
     @coroutine_test
     async def test_crawler_crawl_twice_seq_unsupported(self) -> None:
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
-        await crawler.crawl_async()
+        await maybe_deferred_to_future(crawler.crawl())
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
-            await crawler.crawl_async()
+            await maybe_deferred_to_future(crawler.crawl())
 
     @coroutine_test
     async def test_crawler_crawl_async_twice_seq_unsupported(self) -> None:
