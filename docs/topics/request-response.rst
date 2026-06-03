@@ -700,6 +700,7 @@ Those are:
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
+* :reqmeta:`give_up_log_level`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * :reqmeta:`handle_httpstatus_all`
@@ -785,6 +786,16 @@ max_retry_times
 The meta key is used set retry times per request. When initialized, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: give_up_log_level
+
+give_up_log_level
+-----------------
+
+Sets, per request, the :ref:`logging level <levels>` used for the message
+logged when the request exhausts its retries. It may be a level name (e.g.
+``"WARNING"``) or a level number (e.g. ``logging.WARNING``). When set, this meta
+key takes precedence over the :setting:`RETRY_GIVE_UP_LOG_LEVEL` setting.
 
 
 .. _topics-stop-response-download:

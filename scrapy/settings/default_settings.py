@@ -153,6 +153,7 @@ __all__ = [
     "REQUEST_FINGERPRINTER_CLASS",
     "RETRY_ENABLED",
     "RETRY_EXCEPTIONS",
+    "RETRY_GIVE_UP_LOG_LEVEL",
     "RETRY_HTTP_CODES",
     "RETRY_PRIORITY_ADJUST",
     "RETRY_TIMES",
@@ -464,6 +465,7 @@ RETRY_EXCEPTIONS = [
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]
+RETRY_GIVE_UP_LOG_LEVEL = "ERROR"
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
