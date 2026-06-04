@@ -148,8 +148,11 @@ class HttpCompressionMiddleware:
                     # responsetypes guessing is reliable
                     kwargs["encoding"] = None
                 response = response.replace(cls=respcls, **kwargs)
+                # Preserve the original Content-Encoding header so spiders
+                # can inspect the original response encoding.
                 if not content_encoding:
-                    del response.headers["Content-Encoding"]
+                    if "Content-Encoding" in response.headers:
+                        response.flags.add("body-decoded")
 
         return response
 
