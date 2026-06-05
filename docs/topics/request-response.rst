@@ -188,6 +188,13 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
+        .. note:: When :setting:`JOBDIR` is set, requests are serialized to disk
+            with :mod:`pickle` (see :ref:`request-serialization`). As a result,
+            the callback receives a deep copy of any object stored in
+            ``cb_kwargs``, so mutating such an object in the callback does not
+            affect the original. Avoid relying on shared mutable state passed
+            through ``cb_kwargs`` in that case.
+
     .. attribute:: Request.meta
        :value: {}
 
