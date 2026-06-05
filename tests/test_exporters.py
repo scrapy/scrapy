@@ -382,6 +382,69 @@ class TestCsvItemExporter(TestBaseItemExporter):
         )
 
 
+    def test_warn_on_dropped_field(self):
+        """A warning is emitted once when a subsequent item introduces a field
+        that was absent from the first item (issue #4002)."""
+        import logging
+
+        class _Capture(logging.Handler):
+            def __init__(self):
+                super().__init__()
+                self.records: list = []
+
+            def emit(self, record):
+                self.records.append(record)
+
+        output = BytesIO()
+        ie = CsvItemExporter(output)
+        ie.start_exporting()
+        ie.export_item({"name": "Alice"})
+
+        handler = _Capture()
+        exporter_log = logging.getLogger("scrapy.exporters")
+        exporter_log.addHandler(handler)
+        try:
+            ie.export_item({"name": "Bob", "age": 30})
+            # Third item has the same extra field — must NOT emit a second warning.
+            ie.export_item({"name": "Carol", "age": 25})
+        finally:
+            exporter_log.removeHandler(handler)
+
+        ie.finish_exporting()
+        # Exactly one warning for the single dropped field.
+        assert len(handler.records) == 1
+        assert handler.records[0].levelno == logging.WARNING
+        assert "age" in handler.records[0].getMessage()
+
+    def test_no_warn_when_fields_match(self):
+        """No warning is emitted when every exported item has the same fields."""
+        import logging
+
+        class _Capture(logging.Handler):
+            def __init__(self):
+                super().__init__()
+                self.records: list = []
+
+            def emit(self, record):
+                self.records.append(record)
+
+        output = BytesIO()
+        ie = CsvItemExporter(output)
+        ie.start_exporting()
+
+        handler = _Capture()
+        exporter_log = logging.getLogger("scrapy.exporters")
+        exporter_log.addHandler(handler)
+        try:
+            ie.export_item({"name": "Alice", "age": 22})
+            ie.export_item({"name": "Bob", "age": 30})
+        finally:
+            exporter_log.removeHandler(handler)
+
+        ie.finish_exporting()
+        assert len(handler.records) == 0
+
+
 class TestCsvItemExporterDataclass(TestCsvItemExporter):
     item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass

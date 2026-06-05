@@ -5,6 +5,7 @@ Item Exporters are used to export/serialize items into different formats.
 from __future__ import annotations
 
 import csv
+import logging
 import marshal
 import pickle
 import pprint
@@ -14,6 +15,8 @@ from io import BytesIO, TextIOWrapper
 from typing import TYPE_CHECKING, Any
 from xml.sax.saxutils import XMLGenerator
 from xml.sax.xmlreader import AttributesImpl
+
+logger = logging.getLogger(__name__)
 
 from itemadapter import ItemAdapter, is_item
 
@@ -245,6 +248,8 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
+        # Track field names we have already warned about to emit each warning once.
+        self._fields_warned: set[str] = set()
 
     def serialize_field(
         self, field: Mapping[str, Any] | Field, name: str, value: Any
@@ -264,6 +269,26 @@ class CsvItemExporter(BaseItemExporter):
         if self._headers_not_written:
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
+
+        # Warn once per field name that is present in the item but absent from
+        # fields_to_export (which was fixed from the first item).  Without this
+        # warning the data is silently lost, which is very hard to debug.
+        if self.fields_to_export is not None:
+            if isinstance(self.fields_to_export, Mapping):
+                exported_fields = set(self.fields_to_export.keys())
+            else:
+                exported_fields = set(self.fields_to_export)
+            item_fields = set(ItemAdapter(item).field_names())
+            newly_dropped = item_fields - exported_fields - self._fields_warned
+            if newly_dropped:
+                logger.warning(
+                    "CsvItemExporter is dropping field(s) %s because they "
+                    "were not present in the first exported item. "
+                    "Use the fields_to_export option to make the column set "
+                    "explicit and avoid silent data loss.",
+                    sorted(newly_dropped),
+                )
+                self._fields_warned.update(newly_dropped)
 
         fields = self._get_serialized_fields(item, default_value="", include_empty=True)
         values = list(self._build_row(x for _, x in fields))
