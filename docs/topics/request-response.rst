@@ -791,24 +791,22 @@ download_fail_on_dataloss
 Whether or not to fail on broken responses. See:
 :setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
 
-.. reqmeta:: max_retry_times
-
-max_retry_times
----------------
-
-The meta key is used set retry times per request. When initialized, the
-:reqmeta:`max_retry_times` meta key takes higher precedence over the
-:setting:`RETRY_TIMES` setting.
-
 .. reqmeta:: give_up_log_level
 
 give_up_log_level
 -----------------
 
-Sets, per request, the :ref:`logging level <levels>` used for the message
-logged when the request exhausts its retries. It may be a level name (e.g.
-``"WARNING"``) or a level number (e.g. ``logging.WARNING``). When set, this meta
-key takes precedence over the :setting:`RETRY_GIVE_UP_LOG_LEVEL` setting.
+The :ref:`logging level <levels>` to use for the message logged when the
+request exhausts its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
+.. reqmeta:: max_retry_times
+
+max_retry_times
+---------------
+
+The meta key is used set retry times per request. When set, the
+:reqmeta:`max_retry_times` meta key takes higher precedence over the
+:setting:`RETRY_TIMES` setting.
 
 .. reqmeta:: verbatim_url
 
