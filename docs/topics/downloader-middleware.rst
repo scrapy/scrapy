@@ -1063,7 +1063,7 @@ Default: ``"ERROR"``
 :ref:`Logging level <levels>` used for the "gave up retrying" log message.
 Can be a level name (e.g. ``"WARNING"``) or a number (e.g. ``logging.WARNING``).
 
-For details, see :reqmeta:`give_up_log_level`.
+See also :reqmeta:`give_up_log_level`.
 
 .. setting:: RETRY_PRIORITY_ADJUST
 

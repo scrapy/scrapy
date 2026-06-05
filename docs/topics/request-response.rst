@@ -712,9 +712,9 @@ Those are:
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
-* :reqmeta:`give_up_log_level`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
 * :reqmeta:`is_start_request`
@@ -797,7 +797,7 @@ give_up_log_level
 -----------------
 
 The :ref:`logging level <levels>` to use for the message logged when the
-request exhausts its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+request exceeds its retries. See also :setting:`RETRY_GIVE_UP_LOG_LEVEL`.
 
 .. reqmeta:: max_retry_times
 

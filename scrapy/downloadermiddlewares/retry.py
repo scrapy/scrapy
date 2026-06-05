@@ -83,11 +83,8 @@ def get_retry_request(
 
     *logger* is the logging.Logger object to be used when logging messages
 
-    *give_up_log_level* is the :ref:`logging level <levels>` used for the
-    message logged when retries are exhausted. It can be a level number (e.g.
-    ``logging.WARNING``) or its name (e.g. ``"WARNING"``). If not specified or
-    ``None``, the value is read from the :setting:`RETRY_GIVE_UP_LOG_LEVEL`
-    setting.
+    *give_up_log_level* is the :ref:`logging level <levels>` to use for the
+    "gave up retrying" message. See :setting:`RETRY_GIVE_UP_LOG_LEVEL`.
 
     *stats_base_key* is a string to be used as the base key for the
     retry-related job stats

@@ -91,8 +91,8 @@ class TestRetry:
         crawler.spider = crawler._create_spider()
         mw = RetryMiddleware.from_crawler(crawler)
         mw.max_retry_times = 0
-        req = Request("http://www.scrapytest.org/503")
-        rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
+        req = Request("http://example.com/503")
+        rsp = Response("http://example.com/503", body=b"", status=503)
         with LogCapture() as log:
             assert mw.process_response(req, rsp) is rsp
         log.check_present(
@@ -105,10 +105,8 @@ class TestRetry:
 
     def test_give_up_log_level_meta(self):
         self.mw.max_retry_times = 0
-        req = Request(
-            "http://www.scrapytest.org/503", meta={"give_up_log_level": "WARNING"}
-        )
-        rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
+        req = Request("http://example.com/503", meta={"give_up_log_level": "WARNING"})
+        rsp = Response("http://example.com/503", body=b"", status=503)
         with LogCapture() as log:
             assert self.mw.process_response(req, rsp) is rsp
         log.check_present(
