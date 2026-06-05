@@ -130,44 +130,31 @@ these exceptions.
 
 .. _download-handlers-ref:
 
-Built-in download handlers reference
-====================================
+Built-in HTTP download handlers reference
+=========================================
 
-DataURIDownloadHandler
-----------------------
+Scrapy ships several handlers for HTTP and HTTPS requests. While all of them
+support basic features, they may differ in support of specific Scrapy features
+and settings and HTTP protocol features. See the documentation of specific
+handlers and specific settings for more information. Additionally, as the
+underlying HTTP client implementations differ between handlers, the behavior of
+specific websites may be different when doing the same Scrapy requests but
+using different handlers.
 
-.. autoclass:: scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler
+Here is a comparison of some features of the built-in HTTP handlers, see the
+individual handler docs for more differences:
 
-| Supported scheme: ``data``.
-| Lazy: no.
-
-This handler supports RFC 2397 ``data:content/type;base64,`` data URIs.
-
-FileDownloadHandler
--------------------
-
-.. autoclass:: scrapy.core.downloader.handlers.file.FileDownloadHandler
-
-| Supported scheme: ``file``.
-| Lazy: no.
-
-This handler supports ``file:///path`` local file URIs. It doesn't
-support remote files.
-
-FTPDownloadHandler
-------------------
-
-.. autoclass:: scrapy.core.downloader.handlers.ftp.FTPDownloadHandler
-
-| Supported scheme: ``ftp``.
-| Lazy: no.
-
-This handler supports ``ftp://host/path`` FTP URIs.
-
-It's implemented using :mod:`twisted.protocols.ftp`.
-
-.. note::
-    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
+================== ================= ===================== ====================
+Feature            H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
+================== ================= ===================== ====================
+Requires asyncio   No                No                    Yes
+Requires a reactor Yes               Yes                   No
+HTTP/1.1           No                Yes                   Yes
+HTTP/2             Yes               No                    Yes
+TLS implementation ``cryptography``  ``cryptography``      Stdlib ``ssl``
+HTTP proxies       No                Yes                   Yes
+SOCKS proxies      No                No                    Yes
+================== ================= ===================== ====================
 
 .. _twisted-http2-handler:
 
@@ -178,6 +165,8 @@ H2DownloadHandler
 
 | Supported scheme: ``https``.
 | Lazy: yes.
+| Requires asyncio support: no.
+| Requires a Twisted reactor: yes.
 
 This handler supports ``https://host/path`` URLs and uses the HTTP/2 protocol
 for them.
@@ -196,36 +185,48 @@ If you want to use this handler you need to replace the default one for the
         "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
     }
 
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. warning::
 
     This handler is experimental, and not yet recommended for production
     environments. Future Scrapy versions may introduce related changes without
     a deprecation period or warning.
 
-.. note::
+============================== ======================================================
+HTTP proxies                   No (not implemented)
+SOCKS proxies                  No (not supported by the library)
+HTTP/2                         Yes
+``response.certificate``       :class:`twisted.internet.ssl.Certificate` object
+Per-request ``bindaddress``    Yes
+TLS version limits             Yes
+TLS implementation             ``pyOpenSSL``/``cryptography``
+============================== ======================================================
 
-    Known limitations of the HTTP/2 implementation in this handler include:
+Other limitations:
 
-    -   No support for proxies.
+-   No support for HTTP/1.1.
 
-    -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
-        HTTP/2 unencrypted (refer `http2 faq`_).
+-   IPv6 support requires setting :setting:`TWISTED_DNS_RESOLVER`
+    to ``scrapy.resolver.CachingHostnameResolver``.
 
-    -   No setting to specify a maximum `frame size`_ larger than the default
-        value, 16384. Connections to servers that send a larger frame will
-        fail.
+-   No support for the :signal:`bytes_received` and :signal:`headers_received`
+    signals.
 
-    -   No support for `server pushes`_, which are ignored.
+Known limitations of the HTTP/2 support:
 
-    -   No support for the :signal:`bytes_received` and
-        :signal:`headers_received` signals.
+-   No support for HTTP/2 Cleartext (h2c), since no major browser supports
+    HTTP/2 unencrypted (refer `http2 faq`_).
+
+-   No setting to specify a maximum `frame size`_ larger than the default
+    value, 16384. Connections to servers that send a larger frame will fail.
+
+-   No support for `server pushes`_, which are ignored.
 
 .. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
-
-.. note::
-    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 HTTP11DownloadHandler
 ---------------------
@@ -234,25 +235,48 @@ HTTP11DownloadHandler
 
 | Supported schemes: ``http``, ``https``.
 | Lazy: no.
+| Requires asyncio support: no.
+| Requires a Twisted reactor: yes.
 
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 protocol for them.
 
 It's implemented using :mod:`twisted.web.client`.
 
-.. note::
-    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+============================== ======================================================
+HTTP proxies                   Yes
+SOCKS proxies                  No (not supported by the library)
+HTTP/2                         No (implemented as a separate handler)
+``response.certificate``       :class:`twisted.internet.ssl.Certificate` object
+Per-request ``bindaddress``    Yes
+TLS version limits             Yes
+TLS implementation             ``pyOpenSSL``/``cryptography``
+============================== ======================================================
+
+Other limitations:
+
+-   IPv6 support requires setting :setting:`TWISTED_DNS_RESOLVER`
+    to ``scrapy.resolver.CachingHostnameResolver``.
+
+-   HTTPS proxies to HTTPS destinations are not supported.
 
 HttpxDownloadHandler
 --------------------
+
+.. versionadded:: 2.15.0
 
 .. autoclass:: scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler
 
 | Supported schemes: ``http``, ``https``.
 | Lazy: no.
+| Requires asyncio support: yes.
+| Requires a Twisted reactor: no.
 
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
-uses the HTTP/1.1 protocol for them.
+uses the HTTP/1.1 or HTTP/2 protocol for them.
 
 It's implemented using the ``httpx`` library and needs it to be installed.
 
@@ -266,30 +290,87 @@ If you want to use this handler you need to replace the default ones for the
         "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
     }
 
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. warning::
 
     This handler is experimental, and not yet recommended for production
     environments. Future Scrapy versions may introduce related changes without
-    a deprecation period or warning or even remove it altogether.
+    a deprecation period or warning.
+
+============================== =======================================
+HTTP proxies                   Yes
+SOCKS proxies                  Yes (SOCKS5; requires ``httpx[socks]``)
+HTTP/2                         Yes (requires ``httpx[http2]``)
+``response.certificate``       DER bytes
+Per-request ``bindaddress``    No (not supported by the library)
+TLS version limits             No (not implemented)
+TLS implementation             Standard library ``ssl``
+============================== =======================================
+
+Other limitations:
+
+-   The handler creates a separate connection pool for each proxy URL (due to
+    limitations of ``httpx``) which may lead to higher resource usage when
+    using proxy rotation.
+
+.. setting:: HTTPX_HTTP2_ENABLED
+
+HTTPX_HTTP2_ENABLED
+^^^^^^^^^^^^^^^^^^^
+
+Default: ``False``
+
+Whether to enable HTTP/2 support in this handler. The ``httpx[http2]`` extra
+needs to be installed if you want to enable this setting.
+
+.. versionadded:: VERSION
+
+Built-in non-HTTP download handlers reference
+=============================================
+
+DataURIDownloadHandler
+----------------------
+
+.. autoclass:: scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler
+
+| Supported scheme: ``data``.
+| Lazy: no.
+| Requires asyncio support: no.
+| Requires a Twisted reactor: no.
+
+This handler supports RFC 2397 ``data:content/type;base64,`` data URIs.
+
+FileDownloadHandler
+-------------------
+
+.. autoclass:: scrapy.core.downloader.handlers.file.FileDownloadHandler
+
+| Supported scheme: ``file``.
+| Lazy: no.
+| Requires asyncio support: no.
+| Requires a Twisted reactor: no.
+
+This handler supports ``file:///path`` local file URIs. It doesn't
+support remote files.
+
+FTPDownloadHandler
+------------------
+
+.. autoclass:: scrapy.core.downloader.handlers.ftp.FTPDownloadHandler
+
+| Supported scheme: ``ftp``.
+| Lazy: no.
+| Requires asyncio support: no.
+| Requires a Twisted reactor: yes.
+
+This handler supports ``ftp://host/path`` FTP URIs.
+
+It's implemented using :mod:`twisted.protocols.ftp`.
 
 .. note::
-
-    As this handler is based on a different HTTP client implementation compared
-    to :class:`~.HTTP11DownloadHandler`, it's expected that its behavior on
-    some websites may be different. Additionally, these are the Scrapy features
-    that are explicitly not supported when using it:
-
-    - Per-request bind address support (the :reqmeta:`bindaddress` meta key).
-      The global :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported but the
-      port number, if specified, will be ignored.
-
-    - The :setting:`DOWNLOADER_CLIENT_TLS_METHOD` setting.
-
-    - Settings specific to the Twisted networking or HTTP implementation, like
-      :setting:`DNS_RESOLVER`.
-
-    - Using :ref:`non-asyncio reactors <disable-asyncio>` (``httpx`` requires
-      ``asyncio``).
+    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 S3DownloadHandler
 -----------------
@@ -298,6 +379,8 @@ S3DownloadHandler
 
 | Supported scheme: ``s3``.
 | Lazy: yes.
+| Requires asyncio support: no.
+| Requires a Twisted reactor: yes.
 
 This handler supports ``s3://bucket/path`` S3 URIs.
 

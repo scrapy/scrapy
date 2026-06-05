@@ -745,8 +745,7 @@ HttpProxyMiddleware
     Handling of this meta key needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers. It's currently unsupported by
-    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` and
-    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`.
 
 .. note::
 
@@ -757,6 +756,13 @@ HttpProxyMiddleware
     partially unsupported by a given download handler. Currently,
     :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
     supports HTTPS proxies only for HTTP destinations.
+
+.. note::
+
+    If the download handler supports it, you can use a SOCKS proxy URL (e.g.
+    ``socks5://username:password@some_proxy_server:port``).
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
+    supports SOCKS proxies while other built-in handlers don't.
 
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
