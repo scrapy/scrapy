@@ -157,6 +157,8 @@ parse = """(?P<major>0|[1-9]\\d*)\\.(?P<minor>0|[1-9]\\d*)"""
 serialize = ["{major}.{minor}"]
 
 [tool.coverage.run]
+# sysmon, default on 3.14, is too slow: https://github.com/coveragepy/coveragepy/issues/2172
+core = "ctrace"
 branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
