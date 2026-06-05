@@ -60,6 +60,14 @@ class TestSitemapSpider(TestSpider):
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=self.BODY)
         self.assertSitemapBody(r, self.BODY)
 
+    @pytest.mark.parametrize("url", [
+        "http://www.example.com/sitemap.xml?from=1&to=2",
+        "http://www.example.com/sitemap.xml.gz?from=1&to=2",
+    ])
+    def test_get_sitemap_body_xml_url_with_query(self, url: str):
+        r = TextResponse(url=url, body=self.BODY)
+        self.assertSitemapBody(r, self.BODY)
+
     def test_get_sitemap_body_xml_url_compressed(self):
         r = Response(
             url="http://www.example.com/sitemap.xml.gz",

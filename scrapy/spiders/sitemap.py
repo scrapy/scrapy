@@ -6,6 +6,7 @@ import re
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
+from urllib.parse import urlparse
 
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
@@ -145,7 +146,8 @@ class SitemapSpider(Spider):
         # without actually being a .xml.gz file in the first place,
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
-        if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
+        sitemap_path = urlparse(response.url).path
+        if sitemap_path.endswith((".xml", ".xml.gz")):
             return response.body
         return None
 
