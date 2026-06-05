@@ -194,15 +194,15 @@ Features and limitations
     environments. Future Scrapy versions may introduce related changes without
     a deprecation period or warning.
 
-============================== ======================================================
-HTTP proxies                   No (not implemented)
-SOCKS proxies                  No (not supported by the library)
-HTTP/2                         Yes
-``response.certificate``       :class:`twisted.internet.ssl.Certificate` object
-Per-request ``bindaddress``    Yes
-TLS version limits             Yes
-TLS implementation             ``pyOpenSSL``/``cryptography``
-============================== ======================================================
+=========================== ================================================
+HTTP proxies                No (not implemented)
+SOCKS proxies               No (not supported by the library)
+HTTP/2                      Yes
+``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
+Per-request ``bindaddress`` Yes
+TLS version limits          Yes
+TLS implementation          ``pyOpenSSL``/``cryptography``
+=========================== ================================================
 
 Other limitations:
 
@@ -246,15 +246,15 @@ It's implemented using :mod:`twisted.web.client`.
 Features and limitations
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-============================== ======================================================
-HTTP proxies                   Yes
-SOCKS proxies                  No (not supported by the library)
-HTTP/2                         No (implemented as a separate handler)
-``response.certificate``       :class:`twisted.internet.ssl.Certificate` object
-Per-request ``bindaddress``    Yes
-TLS version limits             Yes
-TLS implementation             ``pyOpenSSL``/``cryptography``
-============================== ======================================================
+=========================== ================================================
+HTTP proxies                Yes
+SOCKS proxies               No (not supported by the library)
+HTTP/2                      No (implemented as a separate handler)
+``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
+Per-request ``bindaddress`` Yes
+TLS version limits          Yes
+TLS implementation          ``pyOpenSSL``/``cryptography``
+=========================== ================================================
 
 Other limitations:
 
@@ -299,15 +299,15 @@ Features and limitations
     environments. Future Scrapy versions may introduce related changes without
     a deprecation period or warning.
 
-============================== =======================================
-HTTP proxies                   Yes
-SOCKS proxies                  Yes (SOCKS5; requires ``httpx[socks]``)
-HTTP/2                         Yes (requires ``httpx[http2]``)
-``response.certificate``       DER bytes
-Per-request ``bindaddress``    No (not supported by the library)
-TLS version limits             No (not implemented)
-TLS implementation             Standard library ``ssl``
-============================== =======================================
+=========================== =======================================
+HTTP proxies                Yes
+SOCKS proxies               Yes (SOCKS5; requires ``httpx[socks]``)
+HTTP/2                      Yes (requires ``httpx[http2]``)
+``response.certificate``    DER bytes
+Per-request ``bindaddress`` No (not supported by the library)
+TLS version limits          No (not implemented)
+TLS implementation          Standard library ``ssl``
+=========================== =======================================
 
 Other limitations:
 
