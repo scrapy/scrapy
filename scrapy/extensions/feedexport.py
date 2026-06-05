@@ -34,6 +34,10 @@ from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
+_FEED_URI_PARAM_RE = re.compile(
+    r"%25%28(?P<key>[A-Za-z_][A-Za-z0-9_]*)%29(?P<format>[-+#0-9 .hlL]*[diouxXeEfFgGcrs])"
+)
+
 if TYPE_CHECKING:
     from _typeshed import OpenBinaryMode
 
@@ -46,6 +50,21 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _path_to_feed_uri_template(path: Path) -> str:
+    uri = path.absolute().as_uri()
+    placeholders: list[str] = []
+
+    def replace_placeholder(match: re.Match[str]) -> str:
+        placeholders.append(f"%({match['key']}){match['format']}")
+        return f"__scrapy_feed_uri_param_{len(placeholders) - 1}__"
+
+    uri = _FEED_URI_PARAM_RE.sub(replace_placeholder, uri)
+    uri = uri.replace("%", "%%")
+    for index, placeholder in enumerate(placeholders):
+        uri = uri.replace(f"__scrapy_feed_uri_param_{index}__", placeholder)
+    return uri
 
 UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
@@ -471,7 +490,9 @@ class FeedExporter:
             )
             uri = self.settings["FEED_URI"]
             # handle pathlib.Path objects
-            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
+            uri = (
+                str(uri) if not isinstance(uri, Path) else _path_to_feed_uri_template(uri)
+            )
             feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -485,7 +506,7 @@ class FeedExporter:
             uri = (
                 str(settings_uri)
                 if not isinstance(settings_uri, Path)
-                else settings_uri.absolute().as_uri()
+                else _path_to_feed_uri_template(settings_uri)
             )
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings

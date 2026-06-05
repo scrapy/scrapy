@@ -1404,3 +1404,21 @@ class TestFeedExportInit:
         crawler = get_crawler(settings_dict=settings)
         exporter = FeedExporter.from_crawler(crawler)
         assert isinstance(exporter, FeedExporter)
+
+    def test_pathlib_uri_params(self, tmp_path: Path):
+        feed_uri = tmp_path / "output dir" / "%(name)s.json"
+        settings = {
+            "FEEDS": {
+                feed_uri: {
+                    "format": "json",
+                },
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter.from_crawler(crawler)
+        spider = Spider("example")
+        spider.crawler = crawler
+
+        exporter.open_spider(spider)
+
+        assert exporter.slots[0].uri.endswith("/output%20dir/example.json")
