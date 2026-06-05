@@ -20,7 +20,8 @@ class TestStartprojectCommand:
 
     @staticmethod
     def _assert_files_exist(project_dir: Path, project_name: str) -> None:
-        assert (project_dir / "scrapy.cfg").exists()
+        assert (project_dir / "pyproject.toml").exists()
+        assert not (project_dir / "scrapy.cfg").exists()
         assert (project_dir / project_name).exists()
         assert (project_dir / project_name / "__init__.py").exists()
         assert (project_dir / project_name / "items.py").exists()
@@ -76,6 +77,20 @@ class TestStartprojectCommand:
 
         assert call("startproject", project_name, cwd=tmp_path) == 0
         self._assert_files_exist(project_path, project_name)
+
+    def test_startproject_with_existing_pyproject_toml(self, tmp_path: Path) -> None:
+        # startproject should fail if a pyproject.toml with [tool.scrapy] already exists
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.scrapy.settings]\ndefault = 'myproject.settings'\n"
+        )
+        assert call("startproject", self.project_name, cwd=tmp_path) == 1
+
+    def test_startproject_with_unrelated_pyproject_toml(self, tmp_path: Path) -> None:
+        # a pyproject.toml without [tool.scrapy] should not block startproject
+        (tmp_path / "pyproject.toml").write_text("[tool.black]\nline-length = 88\n")
+        project_dir = tmp_path / self.project_name
+        assert call("startproject", self.project_name, cwd=tmp_path) == 0
+        self._assert_files_exist(project_dir, self.project_name)
 
 
 def get_permissions_dict(
