@@ -239,7 +239,7 @@ class ArbitraryLengthPayloadResource(LeafResource):
 
 class NoMetaRefreshRedirect(Redirect):
     def render(self, request: server.Request) -> bytes:
-        content = Redirect.render(self, request)
+        content: bytes = Redirect.render(self, request)
         return content.replace(
             b'http-equiv="refresh"', b'http-no-equiv="do-not-refresh-me"'
         )

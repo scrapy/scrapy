@@ -745,7 +745,18 @@ HttpProxyMiddleware
     Handling of this meta key needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers. It's currently unsupported by
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` and
     :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+
+.. note::
+
+    Usually a proxy URL uses the ``http://`` scheme. More rarely, it uses the
+    ``https://`` one. While both kinds of proxy URLs can be used with both HTTP
+    and HTTPS destination URLs, the specifics of the network exchange are
+    different for all 4 cases and it's possible that HTTPS proxies are fully or
+    partially unsupported by a given download handler. Currently,
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
+    supports HTTPS proxies only for HTTP destinations.
 
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1141,9 +1152,9 @@ Based on :class:`~urllib.robotparser.RobotFileParser`:
 * is compliant with `Martijn Koster's 1996 draft specification
   <https://www.robotstxt.org/norobots-rfc.txt>`_
 
-* lacks support for wildcard matching
+* lacks support for wildcard matching (before Python 3.14.5)
 
-* doesn't use the length based rule
+* doesn't use the length based rule (before Python 3.14.5)
 
 It is faster than Protego and backward-compatible with versions of Scrapy before 1.8.0.
 

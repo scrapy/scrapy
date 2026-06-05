@@ -306,12 +306,15 @@ class GCSFeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        from google.cloud.storage import Client  # noqa: PLC0415
+        try:
+            from google.cloud.storage import Client  # noqa: PLC0415
 
-        client = Client(project=self.project_id)
-        bucket = client.get_bucket(self.bucket_name)
-        blob = bucket.blob(self.blob_name)
-        blob.upload_from_file(file, predefined_acl=self.acl)
+            client = Client(project=self.project_id)
+            bucket = client.get_bucket(self.bucket_name)
+            blob = bucket.blob(self.blob_name)
+            blob.upload_from_file(file, predefined_acl=self.acl)
+        finally:
+            file.close()
 
 
 class FTPFeedStorage(BlockingFeedStorage):
@@ -534,13 +537,15 @@ class FeedExporter:
         # Send FEED_EXPORTER_CLOSED signal
         await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
 
+    @staticmethod
+    def _get_file(slot_: FeedSlot) -> IO[bytes]:
+        assert slot_.file
+        if isinstance(slot_.file, PostProcessingManager):
+            slot_.file.close()
+            return slot_.file.file
+        return slot_.file
+
     async def _close_slot(self, slot: FeedSlot, spider: Spider) -> None:
-        def get_file(slot_: FeedSlot) -> IO[bytes]:
-            assert slot_.file
-            if isinstance(slot_.file, PostProcessingManager):
-                slot_.file.close()
-                return slot_.file.file
-            return slot_.file
 
         if slot.itemcount:
             # Normal case
@@ -557,7 +562,7 @@ class FeedExporter:
         slot_type = type(slot.storage).__name__
         assert self.crawler.stats
         try:
-            await ensure_awaitable(slot.storage.store(get_file(slot)))
+            await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:
             logger.error(
                 "Error storing %s",

@@ -52,7 +52,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     with the same file names and expectations.
     """
 
-    def test_simple(self):
+    def test_simple(self) -> None:
         log = self.run_script("simple.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -61,7 +61,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         )
         assert "is_reactorless(): False" in log
 
-    def test_multi(self):
+    def test_multi(self) -> None:
         log = self.run_script("multi.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -70,7 +70,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         )
         assert "ReactorAlreadyInstalledError" not in log
 
-    def test_reactor_default(self):
+    def test_reactor_default(self) -> None:
         log = self.run_script("reactor_default.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -78,7 +78,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             "(twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
         ) in log
 
-    def test_asyncio_enabled_no_reactor(self):
+    def test_asyncio_enabled_no_reactor(self) -> None:
         log = self.run_script("asyncio_enabled_no_reactor.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -87,7 +87,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         )
         assert "RuntimeError" not in log
 
-    def test_asyncio_enabled_reactor(self):
+    def test_asyncio_enabled_reactor(self) -> None:
         log = self.run_script("asyncio_enabled_reactor.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -100,7 +100,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         parse_version(w3lib_version) >= parse_version("2.0.0"),
         reason="w3lib 2.0.0 and later do not allow invalid domains.",
     )
-    def test_ipv6_default_name_resolver(self):
+    def test_ipv6_default_name_resolver(self) -> None:
         log = self.run_script("default_name_resolver.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -112,7 +112,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             in log
         )
 
-    def test_caching_hostname_resolver_ipv6(self):
+    def test_caching_hostname_resolver_ipv6(self) -> None:
         log = self.run_script("caching_hostname_resolver_ipv6.py")
         assert "Spider closed (finished)" in log
         assert "scrapy.exceptions.CannotResolveHostError" not in log
@@ -126,7 +126,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "TimeoutError" not in log
         assert "scrapy.exceptions.CannotResolveHostError" not in log
 
-    def test_twisted_reactor_asyncio(self):
+    def test_twisted_reactor_asyncio(self) -> None:
         log = self.run_script("twisted_reactor_asyncio.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -134,7 +134,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             in log
         )
 
-    def test_twisted_reactor_asyncio_custom_settings(self):
+    def test_twisted_reactor_asyncio_custom_settings(self) -> None:
         log = self.run_script("twisted_reactor_custom_settings.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -142,7 +142,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             in log
         )
 
-    def test_twisted_reactor_asyncio_custom_settings_same(self):
+    def test_twisted_reactor_asyncio_custom_settings_same(self) -> None:
         log = self.run_script("twisted_reactor_custom_settings_same.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -151,7 +151,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         )
 
     @pytest.mark.requires_uvloop
-    def test_custom_loop_asyncio(self):
+    def test_custom_loop_asyncio(self) -> None:
         log = self.run_script("asyncio_custom_loop.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -161,7 +161,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Using asyncio event loop: uvloop.Loop" in log
 
     @pytest.mark.requires_uvloop
-    def test_custom_loop_asyncio_deferred_signal(self):
+    def test_custom_loop_asyncio_deferred_signal(self) -> None:
         log = self.run_script("asyncio_deferred_signal.py", "uvloop.Loop")
         assert "Spider closed (finished)" in log
         assert (
@@ -172,7 +172,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "async pipeline opened!" in log
 
     @pytest.mark.requires_uvloop
-    def test_asyncio_enabled_reactor_same_loop(self):
+    def test_asyncio_enabled_reactor_same_loop(self) -> None:
         log = self.run_script("asyncio_enabled_reactor_same_loop.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -182,7 +182,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Using asyncio event loop: uvloop.Loop" in log
 
     @pytest.mark.requires_uvloop
-    def test_asyncio_enabled_reactor_different_loop(self):
+    def test_asyncio_enabled_reactor_different_loop(self) -> None:
         log = self.run_script("asyncio_enabled_reactor_different_loop.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -190,7 +190,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             "setting (uvloop.Loop)"
         ) in log
 
-    def test_default_loop_asyncio_deferred_signal(self):
+    def test_default_loop_asyncio_deferred_signal(self) -> None:
         log = self.run_script("asyncio_deferred_signal.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -200,7 +200,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Using asyncio event loop: uvloop.Loop" not in log
         assert "async pipeline opened!" in log
 
-    def test_args_change_settings(self):
+    def test_args_change_settings(self) -> None:
         log = self.run_script("args_settings.py")
         assert "Spider closed (finished)" in log
         assert "The value of FOO is 42" in log
@@ -243,7 +243,7 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def script_dir(self) -> Path:
         return self.get_script_dir("CrawlerProcess")
 
-    def test_reactor_default_twisted_reactor_select(self):
+    def test_reactor_default_twisted_reactor_select(self) -> None:
         log = self.run_script("reactor_default_twisted_reactor_select.py")
         if platform.system() in ["Windows", "Darwin"]:
             # The goal of this test function is to test that, when a reactor is
@@ -264,7 +264,7 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
                 "(twisted.internet.selectreactor.SelectReactor)"
             ) in log
 
-    def test_reactor_select(self):
+    def test_reactor_select(self) -> None:
         log = self.run_script("reactor_select.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -272,12 +272,12 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "(twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
         ) in log
 
-    def test_reactor_select_twisted_reactor_select(self):
+    def test_reactor_select_twisted_reactor_select(self) -> None:
         log = self.run_script("reactor_select_twisted_reactor_select.py")
         assert "Spider closed (finished)" in log
         assert "ReactorAlreadyInstalledError" not in log
 
-    def test_reactor_select_subclass_twisted_reactor_select(self):
+    def test_reactor_select_subclass_twisted_reactor_select(self) -> None:
         log = self.run_script("reactor_select_subclass_twisted_reactor_select.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -285,7 +285,7 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "(twisted.internet.selectreactor.SelectReactor)"
         ) in log
 
-    def test_twisted_reactor_select(self):
+    def test_twisted_reactor_select(self) -> None:
         log = self.run_script("twisted_reactor_select.py")
         assert "Spider closed (finished)" in log
         assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
@@ -293,12 +293,12 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     @pytest.mark.skipif(
         platform.system() == "Windows", reason="PollReactor is not supported on Windows"
     )
-    def test_twisted_reactor_poll(self):
+    def test_twisted_reactor_poll(self) -> None:
         log = self.run_script("twisted_reactor_poll.py")
         assert "Spider closed (finished)" in log
         assert "Using reactor: twisted.internet.pollreactor.PollReactor" in log
 
-    def test_twisted_reactor_asyncio_custom_settings_conflict(self):
+    def test_twisted_reactor_asyncio_custom_settings_conflict(self) -> None:
         log = self.run_script("twisted_reactor_custom_settings_conflict.py")
         assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
         assert (
@@ -306,7 +306,7 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
-    def test_reactorless(self):
+    def test_reactorless(self) -> None:
         log = self.run_script("reactorless.py")
         assert (
             "RuntimeError: CrawlerProcess doesn't support TWISTED_REACTOR_ENABLED=False"
@@ -319,7 +319,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def script_dir(self) -> Path:
         return self.get_script_dir("AsyncCrawlerProcess")
 
-    def test_twisted_reactor_custom_settings_select(self):
+    def test_twisted_reactor_custom_settings_select(self) -> None:
         log = self.run_script("twisted_reactor_custom_settings_select.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -329,7 +329,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         ) in log
 
     @pytest.mark.requires_uvloop
-    def test_asyncio_enabled_reactor_same_loop(self):
+    def test_asyncio_enabled_reactor_same_loop(self) -> None:
         log = self.run_script("asyncio_custom_loop_custom_settings_same.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -339,7 +339,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Using asyncio event loop: uvloop.Loop" in log
 
     @pytest.mark.requires_uvloop
-    def test_asyncio_enabled_reactor_different_loop(self):
+    def test_asyncio_enabled_reactor_different_loop(self) -> None:
         log = self.run_script("asyncio_custom_loop_custom_settings_different.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -347,7 +347,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "setting (uvloop.Loop)"
         ) in log
 
-    def test_reactorless_simple(self):
+    def test_reactorless_simple(self) -> None:
         log = self.run_script("reactorless_simple.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
@@ -356,7 +356,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
         assert log.count("WARNING: ") == 2
 
-    def test_reactorless_custom_settings(self):
+    def test_reactorless_custom_settings(self) -> None:
         """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
         currently supported, AsyncCrawlerProcess will install a reactor in this
         case.
@@ -368,7 +368,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
-    def test_reactorless_datauri(self):
+    def test_reactorless_datauri(self) -> None:
         log = self.run_script("reactorless_datauri.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
@@ -378,13 +378,13 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
         assert log.count("WARNING: ") == 2
 
-    def test_reactorless_import_hook(self):
+    def test_reactorless_import_hook(self) -> None:
         log = self.run_script("reactorless_import_hook.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
         assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
 
-    def test_reactorless_telnetconsole_default(self):
+    def test_reactorless_telnetconsole_default(self) -> None:
         """By default TWISTED_REACTOR_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
         log = self.run_script("reactorless_simple.py")  # no need for a separate script
         assert "Not using a Twisted reactor" in log
@@ -392,7 +392,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "The TelnetConsole extension requires a Twisted reactor" not in log
         assert "scrapy.extensions.telnet.TelnetConsole" not in log
 
-    def test_reactorless_telnetconsole_disabled(self):
+    def test_reactorless_telnetconsole_disabled(self) -> None:
         """Explicit TELNETCONSOLE_ENABLED=False, there are no warnings."""
         log = self.run_script("reactorless_telnetconsole_disabled.py")
         assert "Not using a Twisted reactor" in log
@@ -400,14 +400,14 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "The TelnetConsole extension requires a Twisted reactor" not in log
         assert "scrapy.extensions.telnet.TelnetConsole" not in log
 
-    def test_reactorless_telnetconsole_enabled(self):
+    def test_reactorless_telnetconsole_enabled(self) -> None:
         """Explicit TELNETCONSOLE_ENABLED=True, the user gets a warning."""
         log = self.run_script("reactorless_telnetconsole_enabled.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
         assert "The TelnetConsole extension requires a Twisted reactor" in log
 
-    def test_reactorless_reactor(self):
+    def test_reactorless_reactor(self) -> None:
         log = self.run_script("reactorless_reactor.py")
         assert (
             "RuntimeError: TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed"
@@ -427,7 +427,7 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
     with the same file names and expectations.
     """
 
-    def test_simple(self):
+    def test_simple(self) -> None:
         log = self.run_script("simple.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -436,7 +436,7 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
         )
         assert "is_reactorless(): False" in log
 
-    def test_multi_parallel(self):
+    def test_multi_parallel(self) -> None:
         log = self.run_script("multi_parallel.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -449,7 +449,7 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
             re.DOTALL,
         )
 
-    def test_multi_seq(self):
+    def test_multi_seq(self) -> None:
         log = self.run_script("multi_seq.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -463,7 +463,7 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
         )
 
     @pytest.mark.requires_uvloop
-    def test_custom_loop_same(self):
+    def test_custom_loop_same(self) -> None:
         log = self.run_script("custom_loop_same.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -473,7 +473,7 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
         assert "Using asyncio event loop: uvloop.Loop" in log
 
     @pytest.mark.requires_uvloop
-    def test_custom_loop_different(self):
+    def test_custom_loop_different(self) -> None:
         log = self.run_script("custom_loop_different.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -481,7 +481,7 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
             "setting (uvloop.Loop)"
         ) in log
 
-    def test_no_reactor(self):
+    def test_no_reactor(self) -> None:
         log = self.run_script("no_reactor.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -495,7 +495,7 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     def script_dir(self) -> Path:
         return self.get_script_dir("CrawlerRunner")
 
-    def test_explicit_default_reactor(self):
+    def test_explicit_default_reactor(self) -> None:
         log = self.run_script("explicit_default_reactor.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -503,14 +503,14 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
             not in log
         )
 
-    def test_response_ip_address(self):
+    def test_response_ip_address(self) -> None:
         log = self.run_script("ip_address.py")
         assert "INFO: Spider closed (finished)" in log
         assert "INFO: Host: not.a.real.domain" in log
         assert "INFO: Type: <class 'ipaddress.IPv4Address'>" in log
         assert "INFO: IP address: 127.0.0.1" in log
 
-    def test_change_default_reactor(self):
+    def test_change_default_reactor(self) -> None:
         log = self.run_script("change_reactor.py")
         assert (
             "DEBUG: Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
@@ -518,7 +518,7 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         )
         assert "DEBUG: Using asyncio event loop" in log
 
-    def test_reactorless(self):
+    def test_reactorless(self) -> None:
         log = self.run_script("reactorless.py")
         assert (
             "RuntimeError: CrawlerRunner doesn't support TWISTED_REACTOR_ENABLED=False"
@@ -531,7 +531,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     def script_dir(self) -> Path:
         return self.get_script_dir("AsyncCrawlerRunner")
 
-    def test_simple_default_reactor(self):
+    def test_simple_default_reactor(self) -> None:
         log = self.run_script("simple_default_reactor.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -539,7 +539,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
             "AsyncCrawlerRunner requires that the installed Twisted reactor"
         ) in log
 
-    def test_reactorless_simple(self):
+    def test_reactorless_simple(self) -> None:
         log = self.run_script("reactorless_simple.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
@@ -548,7 +548,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
         assert log.count("WARNING: ") == 2
 
-    def test_reactorless_custom_settings(self):
+    def test_reactorless_custom_settings(self) -> None:
         """Setting TWISTED_REACTOR_ENABLED=False in spider settings is not
         currently supported, AsyncCrawlerRunner will expect a reactor installed
         by the user.
@@ -557,7 +557,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "Spider closed (finished)" not in log
         assert "We expected a Twisted reactor to be installed but it isn't." in log
 
-    def test_reactorless_datauri(self):
+    def test_reactorless_datauri(self) -> None:
         log = self.run_script("reactorless_datauri.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
@@ -567,7 +567,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert log.count("WARNING: HttpxDownloadHandler is experimental") == 2
         assert log.count("WARNING: ") == 2
 
-    def test_reactorless_reactor(self):
+    def test_reactorless_reactor(self) -> None:
         log = self.run_script("reactorless_reactor.py")
         assert (
             "RuntimeError: TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed"

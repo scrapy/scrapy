@@ -260,7 +260,8 @@ def logformatter_adapter(
     return (level, message, args)
 
 
-class SpiderLoggerAdapter(logging.LoggerAdapter):
+# LoggerAdapter is only parameterized since Python 3.11
+class SpiderLoggerAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
     def process(
         self, msg: str, kwargs: MutableMapping[str, Any]
     ) -> tuple[str, MutableMapping[str, Any]]:

@@ -194,6 +194,48 @@ If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
 
+Rotating log files
+------------------
+
+Scrapy's :setting:`LOG_FILE` setting writes logs to a single file. It does not
+rotate log files automatically, but you can use Python's standard
+:mod:`logging.handlers` module when running Scrapy from a script.
+
+For example, to rotate the log file every day:
+
+.. skip: next
+
+.. code-block:: python
+
+    import logging
+    from logging.handlers import TimedRotatingFileHandler
+
+    from scrapy.crawler import CrawlerProcess
+    from scrapy.utils.project import get_project_settings
+
+    from myproject.spiders.myspider import MySpider
+
+    settings = get_project_settings()
+    process = CrawlerProcess(settings, install_root_handler=False)
+
+    handler = TimedRotatingFileHandler(
+        "scrapy.log",
+        when="midnight",
+        backupCount=7,
+        encoding=settings.get("LOG_ENCODING"),
+    )
+    handler.setFormatter(
+        logging.Formatter(settings.get("LOG_FORMAT"), settings.get("LOG_DATEFORMAT"))
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(settings.get("LOG_LEVEL"))
+    root_logger.addHandler(handler)
+
+    process.crawl(MySpider)
+    process.start()
+
+
 Command-line options
 --------------------
 
