@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 _fingerprint_cache: WeakKeyDictionary[
-    Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]
+    Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
 ] = WeakKeyDictionary()
 
 
@@ -71,8 +71,10 @@ def fingerprint(
         processed_include_headers = tuple(
             to_bytes(h.lower()) for h in sorted(include_headers)
         )
+    verbatim_url = bool(request.meta.get("verbatim_url"))
+    effective_keep_fragments = keep_fragments and not verbatim_url
     cache = _fingerprint_cache.setdefault(request, {})
-    cache_key = (processed_include_headers, keep_fragments)
+    cache_key = (processed_include_headers, effective_keep_fragments, verbatim_url)
     if cache_key not in cache:
         # To decode bytes reliably (JSON does not support bytes), regardless of
         # character encoding, we use bytes.hex()
@@ -84,9 +86,13 @@ def fingerprint(
                         header_value.hex()
                         for header_value in request.headers.getlist(header)
                     ]
+        if verbatim_url:
+            url = request.url
+        else:
+            url = canonicalize_url(request.url, keep_fragments=keep_fragments)
         fingerprint_data = {
             "method": to_unicode(request.method),
-            "url": canonicalize_url(request.url, keep_fragments=keep_fragments),
+            "url": url,
             "body": (request.body or b"").hex(),
             "headers": headers,
         }
@@ -108,8 +114,9 @@ class RequestFingerprinter:
     (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url
     <scrapy.Request.url>` and the values of :attr:`request.method
     <scrapy.Request.method>` and :attr:`request.body
-    <scrapy.Request.body>`. It then generates an `SHA1
-    <https://en.wikipedia.org/wiki/SHA-1>`_ hash.
+    <scrapy.Request.body>`, unless :reqmeta:`verbatim_url` is true for that
+    request. It then generates an `SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_
+    hash.
     """
 
     @classmethod

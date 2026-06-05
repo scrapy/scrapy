@@ -1,13 +1,13 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 import re
 import warnings
-from collections.abc import Generator
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, ClassVar
 
 import pytest
-from twisted.internet.defer import Deferred
 from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
@@ -22,8 +22,8 @@ from scrapy.crawler import (
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
-from scrapy.settings import Settings, default_settings
-from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.settings import Settings, _SettingsKey, default_settings
+from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
 from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
     configure_logging,
@@ -31,12 +31,14 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
-from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.decorators import coroutine_test
 
 BASE_SETTINGS: dict[str, Any] = {}
 
 
-def get_raw_crawler(spidercls=None, settings_dict=None):
+def get_raw_crawler(
+    spidercls: type[Spider] | None = None, settings_dict: dict[str, Any] | None = None
+) -> Crawler:
     """get_crawler alternative that only calls the __init__ method of the
     crawler."""
     settings = Settings()
@@ -46,14 +48,18 @@ def get_raw_crawler(spidercls=None, settings_dict=None):
 
 
 class TestBaseCrawler:
-    def assertOptionIsDefault(self, settings: Settings, key: str) -> None:
+    @staticmethod
+    def assertOptionIsDefault(settings: Settings, key: str) -> None:
         assert isinstance(settings, Settings)
         assert settings[key] == getattr(default_settings, key)
 
 
 class TestCrawler(TestBaseCrawler):
-    def test_populate_spidercls_settings(self):
-        spider_settings = {"TEST1": "spider", "TEST2": "spider"}
+    def test_populate_spidercls_settings(self) -> None:
+        spider_settings: dict[_SettingsKey, Any] = {
+            "TEST1": "spider",
+            "TEST2": "spider",
+        }
         project_settings = {
             **BASE_SETTINGS,
             "TEST1": "project",
@@ -76,47 +82,47 @@ class TestCrawler(TestBaseCrawler):
         assert not settings.frozen
         assert crawler.settings.frozen
 
-    def test_crawler_accepts_dict(self):
+    def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         assert crawler.settings["foo"] == "bar"
         self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
 
-    def test_crawler_accepts_None(self):
+    def test_crawler_accepts_None(self) -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ScrapyDeprecationWarning)
             crawler = Crawler(DefaultSpider)
         self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
 
-    def test_crawler_rejects_spider_objects(self):
+    def test_crawler_rejects_spider_objects(self) -> None:
         with pytest.raises(ValueError, match="spidercls argument must be a class"):
-            Crawler(DefaultSpider())
-
-    @inline_callbacks_test
-    def test_crawler_crawl_twice_seq_unsupported(self):
-        crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
-        yield crawler.crawl()
-        with pytest.raises(RuntimeError, match="more than once on the same instance"):
-            yield crawler.crawl()
+            Crawler(DefaultSpider())  # type: ignore[arg-type]
 
     @coroutine_test
-    async def test_crawler_crawl_async_twice_seq_unsupported(self):
+    async def test_crawler_crawl_twice_seq_unsupported(self) -> None:
+        crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
+        await maybe_deferred_to_future(crawler.crawl())
+        with pytest.raises(RuntimeError, match="more than once on the same instance"):
+            await maybe_deferred_to_future(crawler.crawl())
+
+    @coroutine_test
+    async def test_crawler_crawl_async_twice_seq_unsupported(self) -> None:
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         await crawler.crawl_async()
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
             await crawler.crawl_async()
 
-    @inline_callbacks_test
-    def test_crawler_crawl_twice_parallel_unsupported(self):
+    @coroutine_test
+    async def test_crawler_crawl_twice_parallel_unsupported(self) -> None:
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         d1 = crawler.crawl()
         d2 = crawler.crawl()
-        yield d1
+        await maybe_deferred_to_future(d1)
         with pytest.raises(RuntimeError, match="Crawling already taking place"):
-            yield d2
+            await maybe_deferred_to_future(d2)
 
     @pytest.mark.only_asyncio
     @coroutine_test
-    async def test_crawler_crawl_async_twice_parallel_unsupported(self):
+    async def test_crawler_crawl_async_twice_parallel_unsupported(self) -> None:
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         t1 = asyncio.create_task(crawler.crawl_async())
         t2 = asyncio.create_task(crawler.crawl_async())
@@ -124,12 +130,12 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError, match="Crawling already taking place"):
             await t2
 
-    def test_get_addon(self):
+    def test_get_addon(self) -> None:
         class ParentAddon:
             pass
 
         class TrackingAddon(ParentAddon):
-            instances = []
+            instances: ClassVar[list[TrackingAddon]] = []
 
             def __init__(self):
                 TrackingAddon.instances.append(self)
@@ -150,7 +156,7 @@ class TestCrawler(TestBaseCrawler):
         addon = crawler.get_addon(TrackingAddon)
         assert addon == expected
 
-        addon = crawler.get_addon(DefaultSpider)
+        addon = crawler.get_addon(DefaultSpider)  # type: ignore[assignment]
         assert addon is None
 
         addon = crawler.get_addon(ParentAddon)
@@ -162,19 +168,21 @@ class TestCrawler(TestBaseCrawler):
         addon = crawler.get_addon(ChildAddon)
         assert addon is None
 
-    @inline_callbacks_test
-    def test_get_downloader_middleware(self):
+    @coroutine_test
+    async def test_get_downloader_middleware(self) -> None:
         class ParentDownloaderMiddleware:
             pass
 
         class TrackingDownloaderMiddleware(ParentDownloaderMiddleware):
-            instances = []
+            instances: ClassVar[list[TrackingDownloaderMiddleware]] = []
 
             def __init__(self):
                 TrackingDownloaderMiddleware.instances.append(self)
 
         class MySpider(Spider):
             name = "myspider"
+            cls: ClassVar[type[Any]]
+            result: ClassVar[Any]
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -198,18 +206,18 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = TrackingDownloaderMiddleware
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert len(TrackingDownloaderMiddleware.instances) == 1
         assert MySpider.result == TrackingDownloaderMiddleware.instances[-1]
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = DefaultSpider
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result is None
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ParentDownloaderMiddleware
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result == TrackingDownloaderMiddleware.instances[-1]
 
         class ChildDownloaderMiddleware(TrackingDownloaderMiddleware):
@@ -217,16 +225,16 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ChildDownloaderMiddleware
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result is None
 
-    def test_get_downloader_middleware_not_crawling(self):
+    def test_get_downloader_middleware_not_crawling(self) -> None:
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
         with pytest.raises(RuntimeError):
             crawler.get_downloader_middleware(DefaultSpider)
 
-    @inline_callbacks_test
-    def test_get_downloader_middleware_no_engine(self):
+    @coroutine_test
+    async def test_get_downloader_middleware_no_engine(self) -> None:
         class MySpider(Spider):
             name = "myspider"
 
@@ -240,21 +248,23 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
         with pytest.raises(RuntimeError):
-            yield crawler.crawl()
+            await crawler.crawl_async()
 
-    @inline_callbacks_test
-    def test_get_extension(self):
+    @coroutine_test
+    async def test_get_extension(self) -> None:
         class ParentExtension:
             pass
 
         class TrackingExtension(ParentExtension):
-            instances = []
+            instances: ClassVar[list[TrackingExtension]] = []
 
             def __init__(self):
                 TrackingExtension.instances.append(self)
 
         class MySpider(Spider):
             name = "myspider"
+            cls: ClassVar[type[Any]]
+            result: ClassVar[Any]
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -278,18 +288,18 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = TrackingExtension
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert len(TrackingExtension.instances) == 1
         assert MySpider.result == TrackingExtension.instances[-1]
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = DefaultSpider
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result is None
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ParentExtension
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result == TrackingExtension.instances[-1]
 
         class ChildExtension(TrackingExtension):
@@ -297,16 +307,16 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ChildExtension
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result is None
 
-    def test_get_extension_not_crawling(self):
+    def test_get_extension_not_crawling(self) -> None:
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
         with pytest.raises(RuntimeError):
             crawler.get_extension(DefaultSpider)
 
-    @inline_callbacks_test
-    def test_get_extension_no_engine(self):
+    @coroutine_test
+    async def test_get_extension_no_engine(self) -> None:
         class MySpider(Spider):
             name = "myspider"
 
@@ -320,21 +330,23 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
         with pytest.raises(RuntimeError):
-            yield crawler.crawl()
+            await crawler.crawl_async()
 
-    @inline_callbacks_test
-    def test_get_item_pipeline(self):
+    @coroutine_test
+    async def test_get_item_pipeline(self) -> None:
         class ParentItemPipeline:
             pass
 
         class TrackingItemPipeline(ParentItemPipeline):
-            instances = []
+            instances: ClassVar[list[TrackingItemPipeline]] = []
 
             def __init__(self):
                 TrackingItemPipeline.instances.append(self)
 
         class MySpider(Spider):
             name = "myspider"
+            cls: ClassVar[type[Any]]
+            result: ClassVar[Any]
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -358,18 +370,18 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = TrackingItemPipeline
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert len(TrackingItemPipeline.instances) == 1
         assert MySpider.result == TrackingItemPipeline.instances[-1]
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = DefaultSpider
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result is None
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ParentItemPipeline
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result == TrackingItemPipeline.instances[-1]
 
         class ChildItemPipeline(TrackingItemPipeline):
@@ -377,16 +389,16 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ChildItemPipeline
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result is None
 
-    def test_get_item_pipeline_not_crawling(self):
+    def test_get_item_pipeline_not_crawling(self) -> None:
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
         with pytest.raises(RuntimeError):
             crawler.get_item_pipeline(DefaultSpider)
 
-    @inline_callbacks_test
-    def test_get_item_pipeline_no_engine(self):
+    @coroutine_test
+    async def test_get_item_pipeline_no_engine(self) -> None:
         class MySpider(Spider):
             name = "myspider"
 
@@ -400,21 +412,23 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
         with pytest.raises(RuntimeError):
-            yield crawler.crawl()
+            await crawler.crawl_async()
 
-    @inline_callbacks_test
-    def test_get_spider_middleware(self):
+    @coroutine_test
+    async def test_get_spider_middleware(self) -> None:
         class ParentSpiderMiddleware:
             pass
 
         class TrackingSpiderMiddleware(ParentSpiderMiddleware):
-            instances = []
+            instances: ClassVar[list[TrackingSpiderMiddleware]] = []
 
             def __init__(self):
                 TrackingSpiderMiddleware.instances.append(self)
 
         class MySpider(Spider):
             name = "myspider"
+            cls: ClassVar[type[Any]]
+            result: ClassVar[Any]
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -438,18 +452,18 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = TrackingSpiderMiddleware
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert len(TrackingSpiderMiddleware.instances) == 1
         assert MySpider.result == TrackingSpiderMiddleware.instances[-1]
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = DefaultSpider
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result is None
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ParentSpiderMiddleware
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result == TrackingSpiderMiddleware.instances[-1]
 
         class ChildSpiderMiddleware(TrackingSpiderMiddleware):
@@ -457,16 +471,16 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ChildSpiderMiddleware
-        yield crawler.crawl()
+        await crawler.crawl_async()
         assert MySpider.result is None
 
-    def test_get_spider_middleware_not_crawling(self):
+    def test_get_spider_middleware_not_crawling(self) -> None:
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
         with pytest.raises(RuntimeError):
             crawler.get_spider_middleware(DefaultSpider)
 
-    @inline_callbacks_test
-    def test_get_spider_middleware_no_engine(self):
+    @coroutine_test
+    async def test_get_spider_middleware_no_engine(self) -> None:
         class MySpider(Spider):
             name = "myspider"
 
@@ -480,22 +494,23 @@ class TestCrawler(TestBaseCrawler):
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
         with pytest.raises(RuntimeError):
-            yield crawler.crawl()
+            await crawler.crawl_async()
 
 
 class TestSpiderSettings:
-    def test_spider_custom_settings(self):
+    def test_spider_custom_settings(self) -> None:
         class MySpider(scrapy.Spider):
             name = "spider"
             custom_settings = {"AUTOTHROTTLE_ENABLED": True}
 
         crawler = get_crawler(MySpider)
+        assert crawler.extensions
         enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
         assert AutoThrottle in enabled_exts
 
 
 class TestCrawlerLogging:
-    def test_no_root_handler_installed(self):
+    def test_no_root_handler_installed(self) -> None:
         handler = get_scrapy_root_handler()
         if handler is not None:
             logging.root.removeHandler(handler)
@@ -507,7 +522,7 @@ class TestCrawlerLogging:
         assert get_scrapy_root_handler() is None
 
     @coroutine_test
-    async def test_spider_custom_settings_log_level(self, tmp_path):
+    async def test_spider_custom_settings_log_level(self, tmp_path: Path) -> None:
         log_file = Path(tmp_path, "log.txt")
         log_file.write_text("previous message\n", encoding="utf-8")
 
@@ -535,9 +550,13 @@ class TestCrawlerLogging:
 
         try:
             configure_logging()
-            assert get_scrapy_root_handler().level == logging.DEBUG
+            handler = get_scrapy_root_handler()
+            assert handler is not None
+            assert handler.level == logging.DEBUG
             crawler = get_crawler(MySpider)
-            assert get_scrapy_root_handler().level == logging.INFO
+            handler = get_scrapy_root_handler()
+            assert handler is not None
+            assert handler.level == logging.INFO
             await crawler.crawl_async()
         finally:
             _uninstall_scrapy_root_handler()
@@ -549,12 +568,13 @@ class TestCrawlerLogging:
         assert "info message" in logged
         assert "warning message" in logged
         assert "error message" in logged
+        assert crawler.stats
         assert crawler.stats.get_value("log_count/ERROR") == 1
         assert crawler.stats.get_value("log_count/WARNING") == 1
         assert info_count == 1
         assert crawler.stats.get_value("log_count/DEBUG", 0) == 0
 
-    def test_spider_custom_settings_log_append(self, tmp_path):
+    def test_spider_custom_settings_log_append(self, tmp_path: Path) -> None:
         log_file = Path(tmp_path, "log.txt")
         log_file.write_text("previous message\n", encoding="utf-8")
 
@@ -579,12 +599,12 @@ class TestCrawlerLogging:
 
 
 class SpiderLoaderWithWrongInterface:
-    def unneeded_method(self):
+    def unneeded_method(self) -> None:
         pass
 
 
 class TestCrawlerRunner(TestBaseCrawler):
-    def test_spider_manager_verify_interface(self):
+    def test_spider_manager_verify_interface(self) -> None:
         settings = Settings(
             {
                 "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
@@ -593,18 +613,18 @@ class TestCrawlerRunner(TestBaseCrawler):
         with pytest.raises(MultipleInvalid):
             CrawlerRunner(settings)
 
-    def test_crawler_runner_accepts_dict(self):
+    def test_crawler_runner_accepts_dict(self) -> None:
         runner = CrawlerRunner({"foo": "bar"})
         assert runner.settings["foo"] == "bar"
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
-    def test_crawler_runner_accepts_None(self):
+    def test_crawler_runner_accepts_None(self) -> None:
         runner = CrawlerRunner()
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
 
 class TestAsyncCrawlerRunner(TestBaseCrawler):
-    def test_spider_manager_verify_interface(self):
+    def test_spider_manager_verify_interface(self) -> None:
         settings = Settings(
             {
                 "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
@@ -613,23 +633,23 @@ class TestAsyncCrawlerRunner(TestBaseCrawler):
         with pytest.raises(MultipleInvalid):
             AsyncCrawlerRunner(settings)
 
-    def test_crawler_runner_accepts_dict(self):
+    def test_crawler_runner_accepts_dict(self) -> None:
         runner = AsyncCrawlerRunner({"foo": "bar"})
         assert runner.settings["foo"] == "bar"
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
-    def test_crawler_runner_accepts_None(self):
+    def test_crawler_runner_accepts_None(self) -> None:
         runner = AsyncCrawlerRunner()
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
 
 class TestCrawlerProcess(TestBaseCrawler):
-    def test_crawler_process_accepts_dict(self):
+    def test_crawler_process_accepts_dict(self) -> None:
         runner = CrawlerProcess({"foo": "bar"}, install_root_handler=False)
         assert runner.settings["foo"] == "bar"
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
-    def test_crawler_process_accepts_None(self):
+    def test_crawler_process_accepts_None(self) -> None:
         runner = CrawlerProcess(install_root_handler=False)
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
@@ -668,33 +688,35 @@ class NoRequestsSpider(scrapy.Spider):
 
 @pytest.mark.requires_reactor  # CrawlerRunner requires a reactor
 class TestCrawlerRunnerHasSpider:
-    @staticmethod
-    def _runner() -> CrawlerRunnerBase:
+    @pytest.fixture
+    def runner(self) -> CrawlerRunnerBase:
         return CrawlerRunner(get_reactor_settings())
 
     @staticmethod
-    def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> Deferred[None]:
-        return cast("Deferred[None]", runner.crawl(spider))
+    async def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> None:
+        await ensure_awaitable(runner.crawl(spider))
 
-    @inline_callbacks_test
-    def test_crawler_runner_bootstrap_successful(self):
-        runner = self._runner()
-        yield self._crawl(runner, NoRequestsSpider)
+    @coroutine_test
+    async def test_crawler_runner_bootstrap_successful(
+        self, runner: CrawlerRunnerBase
+    ) -> None:
+        await self._crawl(runner, NoRequestsSpider)
         assert not runner.bootstrap_failed
 
-    @inline_callbacks_test
-    def test_crawler_runner_bootstrap_successful_for_several(self):
-        runner = self._runner()
-        yield self._crawl(runner, NoRequestsSpider)
-        yield self._crawl(runner, NoRequestsSpider)
+    @coroutine_test
+    async def test_crawler_runner_bootstrap_successful_for_several(
+        self, runner: CrawlerRunnerBase
+    ) -> None:
+        await self._crawl(runner, NoRequestsSpider)
+        await self._crawl(runner, NoRequestsSpider)
         assert not runner.bootstrap_failed
 
-    @inline_callbacks_test
-    def test_crawler_runner_bootstrap_failed(self):
-        runner = self._runner()
-
+    @coroutine_test
+    async def test_crawler_runner_bootstrap_failed(
+        self, runner: CrawlerRunnerBase
+    ) -> None:
         try:
-            yield self._crawl(runner, ExceptionSpider)
+            await self._crawl(runner, ExceptionSpider)
         except ValueError:
             pass
         else:
@@ -702,25 +724,25 @@ class TestCrawlerRunnerHasSpider:
 
         assert runner.bootstrap_failed
 
-    @inline_callbacks_test
-    def test_crawler_runner_bootstrap_failed_for_several(self):
-        runner = self._runner()
-
+    @coroutine_test
+    async def test_crawler_runner_bootstrap_failed_for_several(
+        self, runner: CrawlerRunnerBase
+    ) -> None:
         try:
-            yield self._crawl(runner, ExceptionSpider)
+            await self._crawl(runner, ExceptionSpider)
         except ValueError:
             pass
         else:
             pytest.fail("Exception should be raised from spider")
 
-        yield self._crawl(runner, NoRequestsSpider)
+        await self._crawl(runner, NoRequestsSpider)
 
         assert runner.bootstrap_failed
 
-    @inline_callbacks_test
-    def test_crawler_runner_asyncio_enabled_true(
+    @coroutine_test
+    async def test_crawler_runner_asyncio_enabled_true(
         self, reactor_pytest: str
-    ) -> Generator[Deferred[Any], Any, None]:
+    ) -> None:
         if reactor_pytest != "asyncio":
             runner = CrawlerRunner(
                 settings={
@@ -731,7 +753,7 @@ class TestCrawlerRunnerHasSpider:
                 Exception,
                 match=r"The installed reactor \(.*?\) does not match the requested one \(.*?\)",
             ):
-                yield self._crawl(runner, NoRequestsSpider)
+                await self._crawl(runner, NoRequestsSpider)
         else:
             CrawlerRunner(
                 settings={
@@ -746,11 +768,7 @@ class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
     def _runner() -> CrawlerRunnerBase:
         return AsyncCrawlerRunner(get_reactor_settings())
 
-    @staticmethod
-    def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> Deferred[None]:
-        return deferred_from_coro(runner.crawl(spider))
-
-    def test_crawler_runner_asyncio_enabled_true(self):
+    def test_crawler_runner_asyncio_enabled_true(self) -> None:  # type: ignore[override]
         pytest.skip("This test is only for CrawlerRunner")
 
 
@@ -762,7 +780,9 @@ class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
         ({"LOG_VERSIONS": []}, None),
     ],
 )
-def test_log_scrapy_info(settings, items, caplog):
+def test_log_scrapy_info(
+    settings: dict[str, Any], items: list[str] | None, caplog: pytest.LogCaptureFixture
+) -> None:
     with caplog.at_level("INFO"):
         CrawlerProcess(settings, install_root_handler=False)
     assert (

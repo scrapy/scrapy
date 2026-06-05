@@ -162,6 +162,19 @@ class TestRequest:
         r4 = self.request_class(url="http://www.example.org/r%E9sum%E9.html")
         assert r4.url == "http://www.example.org/r%E9sum%E9.html"
 
+    def test_url_verbatim(self):
+        r = self.request_class(
+            url="http://www.scrapy.org/price/£",
+            meta={"verbatim_url": True},
+        )
+        assert r.url == "http://www.scrapy.org/price/£"
+
+        r = self.request_class(
+            url="http://www.scrapy.org/blank space",
+            meta={"verbatim_url": True},
+        )
+        assert r.url == "http://www.scrapy.org/blank space"
+
     def test_body(self):
         r1 = self.request_class(url="http://www.example.com/")
         assert r1.body == b""
