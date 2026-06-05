@@ -803,6 +803,25 @@ class TestHttpBase(ABC):
                 "The 'bindaddress' request meta key is not supported by" in caplog.text
             )
 
+    @coroutine_test
+    async def test_verbatim_url(self, mockserver: MockServer) -> None:
+        # Square brackets are encoded by safe_url_string (w3lib).
+        path = "/uri/items?data[0]=a"
+        url = mockserver.url(path, is_secure=self.is_secure)
+
+        # Without verbatim_url, the brackets are percent-encoded before the
+        # request reaches the server.
+        request = Request(url)
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"/uri/items?data%5B0%5D=a"
+
+        # With verbatim_url=True the URL is sent to the server as-is.
+        request = Request(url, meta={"verbatim_url": True})
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == path.encode()
+
 
 class TestHttpsBase(TestHttpBase):
     is_secure = True
