@@ -714,9 +714,9 @@ These spiders are pretty easy to use, let's have a look at one example:
             )
 
             item = TestItem()
-            item["id"] = node.xpath("@id").get()
-            item["name"] = node.xpath("name").get()
-            item["description"] = node.xpath("description").get()
+            item.id = node.xpath("@id").get()
+            item.name = node.xpath("name").get()
+            item.description = node.xpath("description").get()
             return item
 
 Basically what we did up there was to create a spider that downloads a feed from
@@ -778,9 +778,9 @@ Let's see an example similar to the previous one, but using a
             self.logger.info("Hi, this is a row!: %r", row)
 
             item = TestItem()
-            item["id"] = row["id"]
-            item["name"] = row["name"]
-            item["description"] = row["description"]
+            item.id = row["id"]
+            item.name = row["name"]
+            item.description = row["description"]
             return item
 
 
