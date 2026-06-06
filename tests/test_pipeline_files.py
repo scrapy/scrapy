@@ -25,6 +25,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
+    FileException,
     FilesPipeline,
     FSFilesStore,
     FTPFilesStore,
@@ -281,6 +282,46 @@ class TestFilesPipeline:
         path = Path(self.tempdir) / result["files"][0]["path"]
         assert path.exists()
         assert path.read_bytes() == b"data"
+
+    @pytest.mark.parametrize("status", [201, 206])
+    @coroutine_test
+    async def test_media_downloaded_accepts_successful_status(
+        self, status: int
+    ) -> None:
+        item_url = f"http://example.com/file-{status}.pdf"
+        request = _prepare_request_object(item_url)
+        response = Response(item_url, status=status, body=b"data")
+
+        result = await self.pipeline.media_downloaded(
+            response, request, self.pipeline.spiderinfo
+        )
+
+        assert result["status"] == "downloaded"
+        path = Path(self.tempdir) / result["path"]
+        assert path.exists()
+        assert path.read_bytes() == b"data"
+
+    @coroutine_test
+    async def test_media_downloaded_rejects_empty_successful_status(self) -> None:
+        item_url = "http://example.com/empty.pdf"
+        request = _prepare_request_object(item_url)
+        response = Response(item_url, status=204, body=b"")
+
+        with pytest.raises(FileException, match="empty-content"):
+            await self.pipeline.media_downloaded(
+                response, request, self.pipeline.spiderinfo
+            )
+
+    @coroutine_test
+    async def test_media_downloaded_rejects_redirect_status(self) -> None:
+        item_url = "http://example.com/redirect.pdf"
+        request = _prepare_request_object(item_url)
+        response = Response(item_url, status=302, body=b"data")
+
+        with pytest.raises(FileException, match="download-error"):
+            await self.pipeline.media_downloaded(
+                response, request, self.pipeline.spiderinfo
+            )
 
     def test_file_path_from_item(self):
         """
