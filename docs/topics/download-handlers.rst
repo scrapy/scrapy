@@ -297,7 +297,7 @@ Features and limitations
 
     This handler is experimental, and not yet recommended for production
     environments. Future Scrapy versions may introduce related changes without
-    a deprecation period or warning.
+    a deprecation period or warning or even remove it altogether.
 
 =========================== =======================================
 HTTP proxies                Yes
