@@ -364,6 +364,61 @@ class TestBatchDeliveries(TestFeedExportBase):
         data = await self.exported_data(items, settings)
         assert len(items) == len(data["json"])
 
+    @coroutine_test
+    async def test_batch_id_resumes_from_jobdir_state(self):
+        feed_dir = Path(self.temp_dir, "feed")
+        job_dir = Path(self.temp_dir, "job")
+
+        def settings():
+            return {
+                "FEEDS": {
+                    feed_dir / "%(batch_id)d.jl": {
+                        "format": "jl",
+                    },
+                },
+                "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+                "JOBDIR": str(job_dir),
+            }
+
+        await self.exported_data([{"foo": "first"}], settings())
+        await self.exported_data([{"foo": "second"}], settings())
+
+        exported_files = sorted(feed_dir.iterdir())
+        assert [path.name for path in exported_files] == ["1.jl", "2.jl"]
+        assert [json.loads(path.read_text()) for path in exported_files] == [
+            {"foo": "first"},
+            {"foo": "second"},
+        ]
+
+    @coroutine_test
+    async def test_batch_id_state_keeps_active_batch_until_item_limit(self):
+        feed_dir = Path(self.temp_dir, "feed")
+        job_dir = Path(self.temp_dir, "job")
+
+        def settings():
+            return {
+                "FEEDS": {
+                    feed_dir / "%(batch_id)d.jl": {
+                        "format": "jl",
+                    },
+                },
+                "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+                "JOBDIR": str(job_dir),
+            }
+
+        await self.exported_data([{"foo": "first"}, {"foo": "second"}], settings())
+        await self.exported_data([{"foo": "third"}], settings())
+
+        exported_files = sorted(feed_dir.iterdir())
+        assert [path.name for path in exported_files] == ["1.jl", "2.jl"]
+        assert [
+            json.loads(line) for line in exported_files[0].read_text().splitlines()
+        ] == [
+            {"foo": "first"},
+            {"foo": "second"},
+        ]
+        assert json.loads(exported_files[1].read_text()) == {"foo": "third"}
+
     @inline_callbacks_test
     def test_stats_batch_file_success(self):
         settings = {

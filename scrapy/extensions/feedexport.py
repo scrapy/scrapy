@@ -50,6 +50,7 @@ logger = logging.getLogger(__name__)
 UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
 ]
+_FEEDEXPORT_BATCH_ID_STATE_KEY = "_scrapy_feedexport_batch_ids"
 
 
 class ItemFilter:
@@ -508,10 +509,13 @@ class FeedExporter:
 
     def open_spider(self, spider: Spider) -> None:
         for uri, feed_options in self.feeds.items():
-            uri_params = self._get_uri_params(spider, feed_options["uri_params"])
+            batch_id = self._get_start_batch_id(spider, uri)
+            uri_params = self._get_uri_params(
+                spider, feed_options["uri_params"], batch_id=batch_id
+            )
             self.slots.append(
                 self._start_new_batch(
-                    batch_id=1,
+                    batch_id=batch_id,
                     uri=uri % uri_params,
                     feed_options=feed_options,
                     spider=spider,
@@ -621,30 +625,37 @@ class FeedExporter:
                 )  # if slot doesn't accept item, continue with next slot
                 continue
 
-            slot.start_exporting()
-            assert slot.exporter
-            slot.exporter.export_item(item)
-            slot.itemcount += 1
+            active_slot = self._sync_slot_batch_id_from_state(slot, spider)
+            active_slot.start_exporting()
+            assert active_slot.exporter
+            active_slot.exporter.export_item(item)
+            active_slot.itemcount += 1
+            self._store_batch_id_in_state(
+                spider, active_slot.uri_template, active_slot.batch_id
+            )
             # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
             if (
-                self.feeds[slot.uri_template]["batch_item_count"]
-                and slot.itemcount >= self.feeds[slot.uri_template]["batch_item_count"]
+                self.feeds[active_slot.uri_template]["batch_item_count"]
+                and active_slot.itemcount
+                >= self.feeds[active_slot.uri_template]["batch_item_count"]
             ):
                 uri_params = self._get_uri_params(
-                    spider, self.feeds[slot.uri_template]["uri_params"], slot
+                    spider,
+                    self.feeds[active_slot.uri_template]["uri_params"],
+                    active_slot,
                 )
-                self._pending_close_coros.append(self._close_slot(slot, spider))
+                self._pending_close_coros.append(self._close_slot(active_slot, spider))
                 slots.append(
                     self._start_new_batch(
-                        batch_id=slot.batch_id + 1,
-                        uri=slot.uri_template % uri_params,
-                        feed_options=self.feeds[slot.uri_template],
+                        batch_id=active_slot.batch_id + 1,
+                        uri=active_slot.uri_template % uri_params,
+                        feed_options=self.feeds[active_slot.uri_template],
                         spider=spider,
-                        uri_template=slot.uri_template,
+                        uri_template=active_slot.uri_template,
                     )
                 )
             else:
-                slots.append(slot)
+                slots.append(active_slot)
         self.slots = slots
 
     def _load_components(self, setting_prefix: str) -> dict[str, Any]:
@@ -709,12 +720,19 @@ class FeedExporter:
         spider: Spider,
         uri_params_function: str | UriParamsCallableT | None,
         slot: FeedSlot | None = None,
+        batch_id: int | None = None,
     ) -> dict[str, Any]:
         params = {k: getattr(spider, k) for k in dir(spider)}
         utc_now = datetime.now(tz=timezone.utc)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")
-        params["batch_id"] = slot.batch_id + 1 if slot is not None else 1
+        params["batch_id"] = (
+            batch_id
+            if batch_id is not None
+            else slot.batch_id + 1
+            if slot is not None
+            else 1
+        )
         uripar_function: UriParamsCallableT = (
             load_object(uri_params_function)
             if uri_params_function
@@ -722,6 +740,62 @@ class FeedExporter:
         )
         new_params = uripar_function(params, spider)
         return new_params if new_params is not None else params
+
+    @staticmethod
+    def _get_batch_id_state(spider: Spider) -> dict[str, int] | None:
+        state = getattr(spider, "state", None)
+        if not isinstance(state, dict):
+            return None
+
+        batch_ids = state.get(_FEEDEXPORT_BATCH_ID_STATE_KEY)
+        if not isinstance(batch_ids, dict):
+            batch_ids = {}
+            state[_FEEDEXPORT_BATCH_ID_STATE_KEY] = batch_ids
+        return cast("dict[str, int]", batch_ids)
+
+    def _get_start_batch_id(self, spider: Spider, uri_template: str) -> int:
+        batch_ids = self._get_batch_id_state(spider)
+        if batch_ids is None:
+            return 1
+
+        previous_batch_id = batch_ids.get(uri_template)
+        if type(previous_batch_id) is not int or previous_batch_id < 1:
+            return 1
+        return previous_batch_id + 1
+
+    def _sync_slot_batch_id_from_state(
+        self, slot: FeedSlot, spider: Spider
+    ) -> FeedSlot:
+        if slot.itemcount or slot._fileloaded:
+            return slot
+
+        batch_id = self._get_start_batch_id(spider, slot.uri_template)
+        if batch_id <= slot.batch_id:
+            return slot
+
+        uri_params = self._get_uri_params(
+            spider,
+            self.feeds[slot.uri_template]["uri_params"],
+            batch_id=batch_id,
+        )
+        return self._start_new_batch(
+            batch_id=batch_id,
+            uri=slot.uri_template % uri_params,
+            feed_options=self.feeds[slot.uri_template],
+            spider=spider,
+            uri_template=slot.uri_template,
+        )
+
+    def _store_batch_id_in_state(
+        self, spider: Spider, uri_template: str, batch_id: int
+    ) -> None:
+        batch_ids = self._get_batch_id_state(spider)
+        if batch_ids is None:
+            return
+
+        previous_batch_id = batch_ids.get(uri_template, 0)
+        if type(previous_batch_id) is not int or batch_id > previous_batch_id:
+            batch_ids[uri_template] = batch_id
 
     def _load_filter(self, feed_options: dict[str, Any]) -> ItemFilter:
         # load the item filter if declared else load the default filter class
