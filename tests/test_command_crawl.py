@@ -143,3 +143,34 @@ class MySpider(scrapy.Spider):
         assert "[myspider] DEBUG: It works!" in log
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
+
+    def test_middleware_bootstrap_failure_exit_code(self, proj_path: Path) -> None:
+        (proj_path / self.project_name / "middlewares.py").write_text(
+            """
+class BrokenMiddleware:
+    def __init__(self):
+        raise RuntimeError("broken middleware")
+            """,
+            encoding="utf-8",
+        )
+        spider_code = f"""
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    custom_settings = {{
+        "SPIDER_MIDDLEWARES": {{
+            "{self.project_name}.middlewares.BrokenMiddleware": 100,
+        }},
+    }}
+
+    async def start(self):
+        return
+        yield
+"""
+
+        for args in ((), ("-s", "TWISTED_REACTOR=")):
+            returncode, _, stderr = self.crawl(spider_code, proj_path, args=args)
+
+            assert returncode == 1
+            assert "broken middleware" in stderr

@@ -14,7 +14,9 @@ from scrapy.utils.misc import load_object, set_environ
 
 
 class TextTestResult(_TextTestResult):
-    def printSummary(self, start: float, stop: float) -> None:
+    def printSummary(
+        self, start: float, stop: float, *, bootstrap_failed: bool = False
+    ) -> None:
         write = self.stream.write
         writeln = self.stream.writeln
 
@@ -26,13 +28,15 @@ class TextTestResult(_TextTestResult):
         writeln()
 
         infos = []
-        if not self.wasSuccessful():
+        if not self.wasSuccessful() or bootstrap_failed:
             write("FAILED")
             failed, errored = map(len, (self.failures, self.errors))
             if failed:
                 infos.append(f"failures={failed}")
             if errored:
                 infos.append(f"errors={errored}")
+            if bootstrap_failed:
+                infos.append("bootstrap errors")
         else:
             write("OK")
 
@@ -116,7 +120,12 @@ class Command(ScrapyCommand):
                 start_time = time.monotonic()
                 self.crawler_process.start()
                 stop = time.monotonic()
+                bootstrap_failed = self.crawler_process.bootstrap_failed is True
 
                 result.printErrors()
-                result.printSummary(start_time, stop)
-                self.exitcode = int(not result.wasSuccessful())
+                result.printSummary(
+                    start_time,
+                    stop,
+                    bootstrap_failed=bootstrap_failed,
+                )
+                self.exitcode = int(bootstrap_failed or not result.wasSuccessful())

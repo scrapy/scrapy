@@ -130,6 +130,52 @@ class CheckSpider(scrapy.Spider):
         """
         self._test_contract(proj_path, parse_def=parse_def)
 
+    def test_check_returns_error_code_on_bootstrap_failure(
+        self, proj_path: Path
+    ) -> None:
+        (proj_path / self.project_name / "middlewares.py").write_text(
+            """
+class BrokenMiddleware:
+    def __init__(self):
+        raise RuntimeError("broken middleware")
+            """,
+            encoding="utf-8",
+        )
+        spider = proj_path / self.project_name / "spiders" / "checkspider.py"
+        spider.write_text(
+            f"""
+import scrapy
+
+class CheckSpider(scrapy.Spider):
+    name = '{self.spider_name}'
+    start_urls = ['data:,']
+
+    custom_settings = {{
+        "DOWNLOAD_DELAY": 0,
+        "SPIDER_MIDDLEWARES": {{
+            "{self.project_name}.middlewares.BrokenMiddleware": 100,
+        }},
+    }}
+
+    def parse(self, response, **cb_kwargs):
+        \"\"\"
+        @url data:,
+        @returns items 0 0
+        \"\"\"
+        return
+        yield
+            """,
+            encoding="utf-8",
+        )
+
+        for args in ((), ("-s", "TWISTED_REACTOR=")):
+            returncode, _, stderr = proc(
+                "check", self.spider_name, *args, cwd=proj_path
+            )
+
+            assert returncode == 1
+            assert "FAILED (bootstrap errors)" in stderr
+
     def test_printSummary_with_unsuccessful_test_result_without_errors_and_without_failures(
         self,
     ) -> None:
@@ -143,6 +189,17 @@ class CheckSpider(scrapy.Spider):
         with patch.object(result.stream, "write") as mock_write:
             result.printSummary(start_time, stop_time)
             mock_write.assert_has_calls([call("FAILED"), call("\n")])
+
+    def test_printSummary_with_bootstrap_failure(self) -> None:
+        result = TextTestResult(MagicMock(), descriptions=False, verbosity=1)
+        start_time = 1.0
+        stop_time = 2.0
+        result.testsRun = 0
+        result.failures = []
+        result.errors = []
+        with patch.object(result.stream, "writeln") as mock_write:
+            result.printSummary(start_time, stop_time, bootstrap_failed=True)
+            mock_write.assert_called_with(" (bootstrap errors)")
 
     def test_printSummary_with_unsuccessful_test_result_with_only_failures(
         self,
