@@ -984,7 +984,6 @@ class TestHttpsTLSVersionBase(ABC):
         finally:
             await dh.close()
 
-    # currently only 1.2 and 1.3 can be expected to be supported in most environments
     @pytest.mark.parametrize(
         (
             "server_tls_min",
