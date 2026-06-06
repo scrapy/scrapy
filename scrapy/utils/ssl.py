@@ -35,7 +35,7 @@ def _get_tls_version_limit(
         return None
     try:
         return converter(setting)
-    except Exception as ex:
+    except Exception as ex:  # pragma: no cover
         raise ValueError(f"Unknown {setting_name} value: {setting}") from ex
 
 
