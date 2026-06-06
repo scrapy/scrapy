@@ -263,7 +263,7 @@ class TestRequestSendOrder:
     @coroutine_test
     async def test_shared_queues(self):
         """If SCHEDULER_START_*_QUEUE is falsy, start requests and other
-        requests share the same queue, i.e. start requests are not priorized
+        requests share the same queue, i.e. start requests are not prioritized
         over other requests if their priority matches."""
         nums = list(range(1, 14))
         response_seconds = 0
