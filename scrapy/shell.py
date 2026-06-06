@@ -29,7 +29,6 @@ from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import (
-    _schedule_coro,
     deferred_f_from_coro_f,
     maybe_deferred_to_future,
 )
@@ -214,7 +213,6 @@ class Shell:
         self.crawler.spider = spider
         assert self.crawler.engine
         await self.crawler.engine.open_spider_async(close_if_idle=False)
-        _schedule_coro(self.crawler.engine._start_request_processing())
         self.spider = spider
 
     def fetch(
