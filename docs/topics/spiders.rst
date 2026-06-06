@@ -462,9 +462,9 @@ with a ``TestItem`` declared in a ``myproject.items`` module:
 
     @dataclass
     class TestItem:
-        id: str = ""
-        name: str = ""
-        description: str = ""
+        id: str | None = None
+        name: str | None = None
+        description: str | None = None
 
 
 .. currentmodule:: scrapy.spiders

@@ -102,14 +102,13 @@ One approach to overcome this is to define items using the
 .. code-block:: python
 
     from dataclasses import dataclass, field
-    from typing import Optional
 
 
     @dataclass
     class InventoryItem:
-        name: Optional[str] = field(default=None)
-        price: Optional[float] = field(default=None)
-        stock: Optional[int] = field(default=None)
+        name: str | None = field(default=None)
+        price: float | None = field(default=None)
+        stock: int | None = field(default=None)
 
 
 .. _topics-loaders-processors:
@@ -229,7 +228,6 @@ metadata. Here is an example:
 .. code-block:: python
 
     from dataclasses import dataclass, field
-    from typing import Optional
 
     from itemloaders.processors import Join, MapCompose, TakeFirst
     from w3lib.html import remove_tags
@@ -242,14 +240,14 @@ metadata. Here is an example:
 
     @dataclass
     class Product:
-        name: Optional[str] = field(
+        name: str | None = field(
             default=None,
             metadata={
                 "input_processor": MapCompose(remove_tags),
                 "output_processor": Join(),
             },
         )
-        price: Optional[str] = field(
+        price: str | None = field(
             default=None,
             metadata={
                 "input_processor": MapCompose(remove_tags, filter_price),
