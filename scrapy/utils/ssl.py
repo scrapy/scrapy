@@ -35,7 +35,7 @@ def _get_tls_version_limit(
         return None
     try:
         return converter(setting)
-    except Exception as ex:  # pragma: no cover
+    except Exception as ex:
         raise ValueError(f"Unknown {setting_name} value: {setting}") from ex
 
 
@@ -65,7 +65,7 @@ def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
     """
 
     tls_min_ver, tls_max_ver = _get_tls_version_limits(
-        settings, _STDLIB_VERSION_MAP.get
+        settings, _STDLIB_VERSION_MAP.__getitem__
     )
     ciphers_setting: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
     verify_setting = settings.getbool("DOWNLOAD_VERIFY_CERTIFICATES")

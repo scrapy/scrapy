@@ -1079,6 +1079,22 @@ class TestHttpsTLSVersionBase(ABC):
                     ):
                         await dh.download_request(request)
 
+    @coroutine_test
+    async def test_invalid_min_version_setting(self) -> None:
+        with pytest.raises(
+            ValueError, match="Unknown DOWNLOAD_TLS_MIN_VERSION value: invalid"
+        ):
+            async with self.get_dh(client_tls_min="invalid", client_tls_max=None):
+                pass
+
+    @coroutine_test
+    async def test_invalid_max_version_setting(self) -> None:
+        with pytest.raises(
+            ValueError, match="Unknown DOWNLOAD_TLS_MAX_VERSION value: invalid"
+        ):
+            async with self.get_dh(client_tls_min=None, client_tls_max="invalid"):
+                pass
+
 
 class TestHttpWithCrawlerBase(ABC):
     @property

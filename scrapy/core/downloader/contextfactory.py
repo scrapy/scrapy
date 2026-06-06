@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import warnings
 from typing import TYPE_CHECKING, Any, cast
 
@@ -37,9 +36,6 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
-
-
-logger = logging.getLogger(__name__)
 
 
 @implementer(IPolicyForHTTPS)
@@ -94,7 +90,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         # DOWNLOADER_CLIENT_TLS_METHOD reading and handling should be also moved here
         # when the deprecated load_context_factory_from_settings() is removed
         tls_min_ver, tls_max_ver = _get_tls_version_limits(
-            crawler.settings, _TWISTED_VERSION_MAP.get
+            crawler.settings, _TWISTED_VERSION_MAP.__getitem__
         )
         if tls_min_ver or tls_max_ver:
             method = None

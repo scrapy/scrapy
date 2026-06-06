@@ -411,7 +411,7 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
   super proxy that you can attach your own proxies to.
 * for HTTPS websites, if blocking appears related to TLS behavior, consider
   adjusting the :setting:`DOWNLOAD_TLS_MIN_VERSION` and
-  :setting:`DOWNLOAD_TLS_MAX_VERSION` setting, since some websites may respond
+  :setting:`DOWNLOAD_TLS_MAX_VERSION` settings, since some websites may respond
   differently depending on the TLS method used by the client.
 * use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
   plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
