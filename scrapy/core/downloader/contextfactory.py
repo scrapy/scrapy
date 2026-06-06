@@ -18,9 +18,9 @@ from zope.interface.verify import verifyObject
 from scrapy.core.downloader.tls import (
     _TWISTED_VERSION_MAP,
     DEFAULT_CIPHERS,
+    _openssl_methods,
     _ScrapyClientTLSOptions,
     _ScrapyClientTLSOptions26,
-    openssl_methods,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
@@ -279,7 +279,7 @@ def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-    tls_method = openssl_methods[tls_method_setting]
+    tls_method = _openssl_methods[tls_method_setting]
     if crawler.settings["DOWNLOADER_CLIENTCONTEXTFACTORY"] == "SENTINEL":
         context_factory_cls = _ScrapyClientContextFactory
     else:  # pragma: no cover

@@ -14,7 +14,7 @@ from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
-from scrapy.core.downloader import Downloader, Slot
+from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
@@ -268,3 +268,16 @@ async def test_fetch_deprecated_spider_arg():
         match=r"The fetch\(\) method of .+\.CustomDownloader requires a spider argument",
     ):
         await crawler.crawl_async()
+
+
+def test_deprecated_tls_module_names() -> None:
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="scrapy.core.downloader.tls.METHOD_TLS is deprecated",
+    ):
+        assert tls.METHOD_TLS == "TLS"
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="scrapy.core.downloader.tls.openssl_methods is deprecated",
+    ):
+        assert isinstance(tls.openssl_methods, dict)

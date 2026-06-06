@@ -16,6 +16,7 @@ Scrapy developers, if you add a setting here remember to:
 import sys
 from importlib import import_module
 from pathlib import Path
+from typing import Any
 
 __all__ = [
     "ADDONS",
@@ -536,7 +537,7 @@ USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org
 WARN_ON_GENERATOR_RETURN_VALUE = True
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     if name == "CONCURRENT_REQUESTS_PER_IP":
         import warnings  # noqa: PLC0415
 
@@ -549,4 +550,4 @@ def __getattr__(name: str):
         )
         return 0
 
-    raise AttributeError
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
