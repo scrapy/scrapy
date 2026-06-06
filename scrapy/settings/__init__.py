@@ -16,9 +16,9 @@ from scrapy.utils.python import global_object_name
 
 logger = getLogger(__name__)
 
-# The key types are restricted in BaseSettings._get_key() to ones supported by JSON,
-# see https://github.com/scrapy/scrapy/issues/5383.
-_SettingsKey: TypeAlias = bool | float | int | str | None
+# Setting names are always uppercase strings; non-uppercase module-level
+# variables are ignored when loading settings.
+_SettingsKey: TypeAlias = str
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -657,16 +657,9 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
 
     def _to_dict(self) -> dict[_SettingsKey, Any]:
         return {
-            self._get_key(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
+            str(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
             for k, v in self.items()
         }
-
-    def _get_key(self, key_value: Any) -> _SettingsKey:
-        return (
-            key_value
-            if isinstance(key_value, (bool, float, int, str, type(None)))
-            else str(key_value)
-        )
 
     def copy_to_dict(self) -> dict[_SettingsKey, Any]:
         """

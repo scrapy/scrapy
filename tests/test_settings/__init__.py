@@ -384,15 +384,15 @@ class TestBaseSettings:
                 "TEST_STRING": "a string",
                 "TEST_LIST": [1, 2],
                 "TEST_BOOLEAN": False,
-                "TEST_BASE": BaseSettings({1: 1, 2: 2}, "project"),
-                "TEST": BaseSettings({1: 10, 3: 30}, "default"),
-                "HASNOBASE": BaseSettings({3: 3000}, "default"),
+                "TEST_BASE": BaseSettings({"A": 1, "B": 2}, "project"),
+                "TEST": BaseSettings({"A": 10, "C": 30}, "default"),
+                "HASNOBASE": BaseSettings({"C": 3000}, "default"),
             }
         )
         assert s.copy_to_dict() == {
-            "HASNOBASE": {3: 3000},
-            "TEST": {1: 10, 3: 30},
-            "TEST_BASE": {1: 1, 2: 2},
+            "HASNOBASE": {"C": 3000},
+            "TEST": {"A": 10, "C": 30},
+            "TEST_BASE": {"A": 1, "B": 2},
             "TEST_LIST": [1, 2],
             "TEST_BOOLEAN": False,
             "TEST_STRING": "a string",
