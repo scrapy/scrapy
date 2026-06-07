@@ -19,6 +19,7 @@ from typing import (
     TypeVar,
     overload,
 )
+from urllib.parse import urlsplit, urlunsplit
 
 from w3lib.url import safe_url_string
 
@@ -263,6 +264,18 @@ class Request(object_ref):
             self._url = url
         else:
             self._url = safe_url_string(url, self.encoding)
+            # an http(s) url with a host and a query or fragment but no path
+            # ends up with an empty path, which makes the request line start
+            # with "?..." and breaks servers that expect "/?...". put the "/"
+            # back, same as w3lib's safe_download_url does. see #6574.
+            parts = urlsplit(self._url)
+            if (
+                parts.scheme in ("http", "https")
+                and parts.netloc
+                and not parts.path
+                and (parts.query or parts.fragment)
+            ):
+                self._url = urlunsplit(parts._replace(path="/"))
 
         if (
             "://" not in self._url

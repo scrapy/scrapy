@@ -822,6 +822,25 @@ class TestHttpBase(ABC):
             response = await download_handler.download_request(request)
         assert response.body == path.encode()
 
+    @coroutine_test
+    async def test_empty_path_with_query(self, mockserver: MockServer) -> None:
+        # #6574: a url with a query but no path used to produce a request line
+        # of "?url=x" which servers reject with a 400. it should be "/?url=x".
+        base = mockserver.url("", is_secure=self.is_secure)
+        request = Request(base + "/uri?url=x")
+        assert request.url == base + "/uri?url=x"
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"/uri?url=x"
+
+        # the host-only-with-query case the issue is about: the server must see
+        # a leading slash in the request line.
+        request = Request(base + "?url=x")
+        assert request.url == base + "/?url=x"
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+
 
 class TestHttpsBase(TestHttpBase):
     is_secure = True

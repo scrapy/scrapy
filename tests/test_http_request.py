@@ -97,6 +97,17 @@ class TestRequest:
         r = self.request_class(url="http://www.scrapy.org/path")
         assert r.url == "http://www.scrapy.org/path"
 
+    def test_url_empty_path_with_query(self):
+        # #6574: a host with a query but no path should keep a "/" so the
+        # request line is "/?..." and not "?...".
+        r = self.request_class(url="http://127.0.0.1:9000?url=x")
+        assert r.url == "http://127.0.0.1:9000/?url=x"
+        r = self.request_class(url="http://example.com#frag")
+        assert r.url == "http://example.com/#frag"
+        # no query or fragment, leave it alone
+        r = self.request_class(url="http://example.com")
+        assert r.url == "http://example.com"
+
     def test_url_quoting(self):
         r = self.request_class(url="http://www.scrapy.org/blank%20space")
         assert r.url == "http://www.scrapy.org/blank%20space"

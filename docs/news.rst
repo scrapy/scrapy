@@ -3,6 +3,14 @@
 Release notes
 =============
 
+Unreleased
+----------
+
+-   A :class:`~scrapy.Request` URL with a host and a query or fragment but no
+    path now keeps a ``/`` before the query, so the request line sent to the
+    server is ``/?...`` instead of ``?...``. Some servers reject the latter
+    with a 400. (:issue:`6574`)
+
 .. _release-2.16.0:
 
 Scrapy 2.16.0 (2026-05-19)
