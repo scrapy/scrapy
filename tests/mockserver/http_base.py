@@ -106,6 +106,16 @@ def main_factory(
                 default=None,
                 help="SSL cipher string (optional)",
             )
+            parser.add_argument(
+                "--tls-min-version",
+                default=None,
+                help="Minimum accepted TLS version (optional)",
+            )
+            parser.add_argument(
+                "--tls-max-version",
+                default=None,
+                help="Maximum accepted TLS version (optional)",
+            )
             args = parser.parse_args()
             context_factory_kw = {}
             if args.keyfile:
@@ -114,6 +124,10 @@ def main_factory(
                 context_factory_kw["certfile"] = args.certfile
             if args.cipher_string:
                 context_factory_kw["cipher_string"] = args.cipher_string
+            if args.tls_min_version:
+                context_factory_kw["tls_min_version"] = args.tls_min_version
+            if args.tls_max_version:
+                context_factory_kw["tls_max_version"] = args.tls_max_version
             context_factory = ssl_context_factory(**context_factory_kw)
             https_port = reactor.listenSSL(0, factory, context_factory)
 

@@ -33,6 +33,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
+from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
@@ -894,7 +895,7 @@ class TestSimpleHttpsBase(ABC):
     @pytest.fixture(scope="class")
     def simple_mockserver(self) -> Generator[SimpleMockServer]:
         with SimpleMockServer(
-            self.keyfile, self.certfile, self.cipher_string
+            self.keyfile, self.certfile, cipher_string=self.cipher_string
         ) as simple_mockserver:
             yield simple_mockserver
 
@@ -955,6 +956,143 @@ class TestHttpsInvalidDNSPatternBase(TestSimpleHttpsBase):
 
 class TestHttpsCustomCiphersBase(TestSimpleHttpsBase):
     cipher_string = "CAMELLIA256-SHA"
+
+
+class TestHttpsTLSVersionBase(ABC):
+    keyfile = "keys/localhost.key"
+    certfile = "keys/localhost.crt"
+
+    @property
+    @abstractmethod
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        raise NotImplementedError
+
+    @asynccontextmanager
+    async def get_dh(
+        self, client_tls_min: str | None, client_tls_max: str | None
+    ) -> AsyncGenerator[DownloadHandlerProtocol]:
+        settings = {}
+        if client_tls_min is not None:
+            settings["DOWNLOAD_TLS_MIN_VERSION"] = client_tls_min
+        if client_tls_max is not None:
+            settings["DOWNLOAD_TLS_MAX_VERSION"] = client_tls_max
+        crawler = get_crawler(DefaultSpider, settings_dict=settings)
+        crawler.spider = crawler._create_spider()
+        dh = build_from_crawler(self.download_handler_cls, crawler)
+        try:
+            yield dh
+        finally:
+            await dh.close()
+
+    @pytest.mark.parametrize(
+        (
+            "server_tls_min",
+            "server_tls_max",
+            "client_tls_min",
+            "client_tls_max",
+            "expect_success",
+        ),
+        [
+            pytest.param(None, None, None, None, True, id="no-limits"),
+            pytest.param(None, None, None, "TLSv1.2", True, id="client-max-tls1.2"),
+            pytest.param(None, None, "TLSv1.3", None, True, id="client-min-tls1.3"),
+            pytest.param(
+                "TLSv1.3",
+                None,
+                None,
+                "TLSv1.2",
+                False,
+                id="client-max-below-server-min",
+            ),
+            pytest.param(
+                None,
+                "TLSv1.2",
+                "TLSv1.3",
+                None,
+                False,
+                id="client-min-above-server-max",
+            ),
+            pytest.param(None, "TLSv1.2", None, "TLSv1.2", True, id="both-tls1.2"),
+            pytest.param("TLSv1.3", None, "TLSv1.3", None, True, id="both-tls1.3"),
+            pytest.param(
+                None,
+                None,
+                "TLSv1.0",
+                None,
+                True,
+                id="client-min-tls1.0",
+                marks=pytest.mark.filterwarnings(
+                    r"ignore:ssl\.TLSVersion\.TLSv1 is deprecated:DeprecationWarning"
+                ),
+            ),
+            pytest.param(
+                "TLSv1.0",
+                None,
+                "TLSv1.0",
+                None,
+                True,
+                id="both-min-tls1.0",
+                marks=pytest.mark.filterwarnings(
+                    r"ignore:ssl\.TLSVersion\.TLSv1 is deprecated:DeprecationWarning"
+                ),
+            ),
+            pytest.param(
+                "TLSv1.2",
+                "TLSv1.3",
+                "TLSv1.2",
+                "TLSv1.3",
+                True,
+                id="both-tls1.2-1.3",
+                marks=pytest.mark.xfail(
+                    TWISTED_TLS_LIMITS_OFFBY1,
+                    reason="Can't set max to 1.3 on this Twisted version",
+                    strict=True,
+                ),
+            ),
+        ],
+    )
+    @coroutine_test
+    async def test_download(
+        self,
+        server_tls_min: str | None,
+        server_tls_max: str | None,
+        client_tls_min: str | None,
+        client_tls_max: str | None,
+        expect_success: bool,
+    ) -> None:
+        with SimpleMockServer(
+            self.keyfile,
+            self.certfile,
+            tls_min_version=server_tls_min,
+            tls_max_version=server_tls_max,
+        ) as simple_mockserver:
+            url = f"https://localhost:{simple_mockserver.port(is_secure=True)}/file"
+            request = Request(url)
+            async with self.get_dh(client_tls_min, client_tls_max) as dh:
+                if expect_success:
+                    response = await dh.download_request(request)
+                    assert response.body == b"0123456789"
+                else:
+                    with pytest.raises(
+                        (DownloadConnectionRefusedError, DownloadFailedError)
+                    ):
+                        await dh.download_request(request)
+
+    @coroutine_test
+    async def test_invalid_min_version_setting(self) -> None:
+        with pytest.raises(
+            ValueError, match="Unknown DOWNLOAD_TLS_MIN_VERSION value: invalid"
+        ):
+            async with self.get_dh(client_tls_min="invalid", client_tls_max=None):
+                pass
+
+    @coroutine_test
+    async def test_invalid_max_version_setting(self) -> None:
+        with pytest.raises(
+            ValueError, match="Unknown DOWNLOAD_TLS_MAX_VERSION value: invalid"
+        ):
+            async with self.get_dh(client_tls_min=None, client_tls_max="invalid"):
+                pass
 
 
 class TestHttpWithCrawlerBase(ABC):

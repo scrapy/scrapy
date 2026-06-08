@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import warnings
-from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
 
 from OpenSSL import SSL
 from twisted.internet.ssl import (
     AcceptableCiphers,
     CertificateOptions,
+    TLSVersion,
     optionsForClientTLS,
 )
 from twisted.web.client import BrowserLikePolicyForHTTPS
@@ -16,19 +16,19 @@ from zope.interface.declarations import implementer
 from zope.interface.verify import verifyObject
 
 from scrapy.core.downloader.tls import (
+    _TWISTED_VERSION_MAP,
     DEFAULT_CIPHERS,
+    _openssl_methods,
     _ScrapyClientTLSOptions,
     _ScrapyClientTLSOptions26,
-    openssl_methods,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.ssl import _get_cert_options_version_kwargs, _get_tls_version_limits
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-
     from twisted.internet._sslverify import ClientTLSOptions
 
     # typing.Self requires Python 3.11
@@ -38,24 +38,14 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
 
 
-@contextmanager
-def _filter_method_warning() -> Generator[None]:
-    with warnings.catch_warnings():
-        # Twisted deprecation, https://github.com/scrapy/scrapy/issues/3288
-        warnings.filterwarnings(
-            "ignore",
-            message=r"Passing method to twisted\.internet\.ssl\.CertificateOptions",
-            category=DeprecationWarning,
-        )
-        yield
-
-
 @implementer(IPolicyForHTTPS)
 class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     """Non-peer-certificate verifying HTTPS context factory.
 
-    Default OpenSSL method is ``TLS_METHOD`` (also called ``SSLv23_METHOD``)
-    which allows TLS protocol negotiation.
+    Uses :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`,
+    :setting:`DOWNLOAD_TLS_MIN_VERSION` and :setting:`DOWNLOAD_TLS_MAX_VERSION`
+    to configure the :class:`~twisted.internet.ssl.CertificateOptions`
+    instance.
 
     The purpose of this custom class is to provide a ``creatorForNetloc()``
     method that returns a ``_ScrapyClientTLSOptions`` instance configured based
@@ -64,15 +54,19 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def __init__(
         self,
-        method: int = SSL.SSLv23_METHOD,  # noqa: S503
+        method: int | None = SSL.SSLv23_METHOD,  # noqa: S503
         tls_verbose_logging: bool = False,
         tls_ciphers: str | None = None,
         *args: Any,
         verify_certificates: bool = False,
+        tls_min_version: TLSVersion | None = None,
+        tls_max_version: TLSVersion | None = None,
         **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)  # type: ignore[no-untyped-call]
-        self._ssl_method: int = method
+        self._ssl_method: int | None = method
+        self.tls_min_version: TLSVersion | None = tls_min_version
+        self.tls_max_version: TLSVersion | None = tls_max_version
         self.tls_verbose_logging: bool = tls_verbose_logging  # unused
         self.tls_ciphers: AcceptableCiphers
         if tls_ciphers:
@@ -85,7 +79,7 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def from_crawler(
         cls,
         crawler: Crawler,
-        method: int = SSL.SSLv23_METHOD,  # noqa: S503
+        method: int | None = SSL.SSLv23_METHOD,  # noqa: S503
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -93,12 +87,21 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
         tls_ciphers: str | None = crawler.settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+        # DOWNLOADER_CLIENT_TLS_METHOD reading and handling should be also moved here
+        # when the deprecated load_context_factory_from_settings() is removed
+        tls_min_ver, tls_max_ver = _get_tls_version_limits(
+            crawler.settings, _TWISTED_VERSION_MAP.__getitem__
+        )
+        if tls_min_ver or tls_max_ver:
+            method = None
         verify_certificates = crawler.settings.getbool("DOWNLOAD_VERIFY_CERTIFICATES")
         return cls(  # type: ignore[misc]
             *args,
             method=method,
             tls_verbose_logging=tls_verbose_logging,
             tls_ciphers=tls_ciphers,
+            tls_min_version=tls_min_ver,
+            tls_max_version=tls_max_ver,
             verify_certificates=verify_certificates,
             **kwargs,
         )
@@ -108,12 +111,23 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         return self._get_cert_options()
 
     def _get_cert_options(self) -> CertificateOptions:
-        with _filter_method_warning():
-            return _ScrapyCertificateOptions(
-                method=self._ssl_method,
-                fixBrokenPeers=True,
-                acceptableCiphers=self.tls_ciphers,
+        return _ScrapyCertificateOptions(**self._get_cert_options_kwargs())
+
+    def _get_cert_options_kwargs(self) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {
+            "fixBrokenPeers": True,
+            "acceptableCiphers": self.tls_ciphers,
+        }
+        if self.tls_min_version or self.tls_max_version:
+            kwargs.update(
+                _get_cert_options_version_kwargs(
+                    self.tls_min_version, self.tls_max_version
+                )
             )
+        # when ScrapyClientContextFactory is removed self._ssl_method can just be None by default
+        elif self._ssl_method != SSL.SSLv23_METHOD:
+            kwargs["method"] = self._ssl_method
+        return kwargs
 
     # should be removed together with ScrapyClientContextFactory
     def getContext(
@@ -137,15 +151,10 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 self._get_context(),  # type: ignore[arg-type]
             )
         # Otherwise use the normal Twisted function.
-        # Note that this doesn't use self._get_context().
-        with _filter_method_warning():
-            return optionsForClientTLS(  # type: ignore[no-any-return]
-                hostname=hostname.decode("ascii"),
-                extraCertificateOptions={
-                    "method": self._ssl_method,
-                    "acceptableCiphers": self.tls_ciphers,
-                },
-            )
+        return optionsForClientTLS(  # type: ignore[no-any-return]
+            hostname=hostname.decode("ascii"),
+            extraCertificateOptions=self._get_cert_options_kwargs(),
+        )
 
 
 ScrapyClientContextFactory = create_deprecated_class(
@@ -170,12 +179,6 @@ class BrowserLikeContextFactory(_ScrapyClientContextFactory):
     :meth:`creatorForNetloc` is the same as
     :class:`~twisted.web.client.BrowserLikePolicyForHTTPS` except this context
     factory allows setting the TLS/SSL method to use.
-
-    The default OpenSSL method is ``TLS_METHOD`` (also called
-    ``SSLv23_METHOD``) which allows TLS protocol negotiation.
-
-    As this overrides the parent ``creatorForNetloc()`` method, only
-    ``self._ssl_method`` is used from the parent class.
     """
 
     def __init__(self, *args: Any, **kwargs: Any):
@@ -189,11 +192,10 @@ class BrowserLikeContextFactory(_ScrapyClientContextFactory):
         super().__init__(*args, **kwargs)
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
-        with _filter_method_warning():
-            return optionsForClientTLS(  # type: ignore[no-any-return]
-                hostname=hostname.decode("ascii"),
-                extraCertificateOptions={"method": self._ssl_method},
-            )
+        return optionsForClientTLS(  # type: ignore[no-any-return]
+            hostname=hostname.decode("ascii"),
+            extraCertificateOptions=self._get_cert_options_kwargs(),
+        )
 
 
 @implementer(IPolicyForHTTPS)
@@ -268,6 +270,16 @@ def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
 
     Also passes values of other relevant settings to the factory class.
     """
+    tls_method_setting: str = crawler.settings["DOWNLOADER_CLIENT_TLS_METHOD"]
+    if tls_method_setting != "TLS":
+        warnings.warn(
+            "Setting DOWNLOADER_CLIENT_TLS_METHOD to a non-default value is"
+            " deprecated, please use DOWNLOAD_TLS_MIN_VERSION and/or"
+            " DOWNLOAD_TLS_MAX_VERSION instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+    tls_method = _openssl_methods[tls_method_setting]
     if crawler.settings["DOWNLOADER_CLIENTCONTEXTFACTORY"] == "SENTINEL":
         context_factory_cls = _ScrapyClientContextFactory
     else:  # pragma: no cover
@@ -279,13 +291,12 @@ def _load_context_factory_from_settings(crawler: Crawler) -> IPolicyForHTTPS:
         context_factory_cls = load_object(
             crawler.settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
         )
-    ssl_method = openssl_methods[crawler.settings.get("DOWNLOADER_CLIENT_TLS_METHOD")]
     return cast(
         "IPolicyForHTTPS",
         build_from_crawler(
             context_factory_cls,
             crawler,
-            method=ssl_method,
+            method=tls_method,
         ),
     )
 

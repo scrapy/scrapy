@@ -283,8 +283,6 @@ If you want to use this handler you need to replace the default ones for the
       The global :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported but the
       port number, if specified, will be ignored.
 
-    - The :setting:`DOWNLOADER_CLIENT_TLS_METHOD` setting.
-
     - Settings specific to the Twisted networking or HTTP implementation, like
       :setting:`DNS_RESOLVER`.
 

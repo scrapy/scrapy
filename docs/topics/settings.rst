@@ -737,32 +737,50 @@ specific cipher that is not included in ``DEFAULT`` if a website requires it.
     by all 3rd-party handlers. It's currently unsupported by
     :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
 
-.. setting:: DOWNLOADER_CLIENT_TLS_METHOD
+.. setting:: DOWNLOAD_TLS_MAX_VERSION
 
-DOWNLOADER_CLIENT_TLS_METHOD
-----------------------------
+DOWNLOAD_TLS_MAX_VERSION
+------------------------
 
-Default: ``'TLS'``
+Default: ``None``
 
-Use this setting to customize the TLS/SSL method used by the HTTPS download
-handler.
+Use this setting to change the maximum version of the TLS protocol allowed to
+be used by Scrapy.
 
-This setting must be one of these string values:
+This setting must be either ``None``, in which case it doesn't affect the
+version selection, or one of these string values:
 
-- ``'TLS'``: maps to OpenSSL's ``TLS_method()`` (a.k.a ``SSLv23_method()``),
-  which allows protocol negotiation, starting from the highest supported
-  by the platform; **default, recommended**
-- ``'TLSv1.0'``: this value forces HTTPS connections to use TLS version 1.0 ;
-  set this if you want the behavior of Scrapy<1.1
-- ``'TLSv1.1'``: forces TLS version 1.1
-- ``'TLSv1.2'``: forces TLS version 1.2
+- ``'TLSv1.0'``
+- ``'TLSv1.1'``
+- ``'TLSv1.2'``
+- ``'TLSv1.3'``
+
+The range of allowed TLS versions advertised by Scrapy when making TLS
+connections will depend on the TLS implementation defaults and the values of
+:setting:`DOWNLOAD_TLS_MIN_VERSION` and :setting:`DOWNLOAD_TLS_MAX_VERSION`.
+It's possible to re-enable versions that are supported by the TLS
+implementation but disabled by default by adjusting these settings, but it's
+impossible to enable unsupported ones, such as any versions below 1.2 in many
+modern environments.
 
 .. note::
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. It's currently unsupported by
-    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    by all 3rd-party handlers. Additionally, the set of supported TLS versions
+    depends on the TLS implementation being used by the handler.
+
+.. setting:: DOWNLOAD_TLS_MIN_VERSION
+
+DOWNLOAD_TLS_MIN_VERSION
+------------------------
+
+Default: ``None``
+
+Use this setting to change the minimum version of the TLS protocol allowed to
+be used by Scrapy.
+
+See :setting:`DOWNLOAD_TLS_MAX_VERSION` for the details and limitations.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
