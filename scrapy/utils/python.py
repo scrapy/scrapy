@@ -359,3 +359,13 @@ def _looks_like_import_path(value: str) -> bool:
     if any(part == "" for part in parts):
         return False
     return all(part.isidentifier() for part in parts)
+
+
+def _iter_exc_causes(exc: BaseException) -> Iterable[BaseException]:
+    """Iterate over the exception causes/contexts."""
+    seen: set[int] = set()
+    cur: BaseException | None = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        yield cur
+        cur = cur.__cause__ or cur.__context__

@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import pytest
 
 from scrapy import Request
+from scrapy.core.downloader.handlers._httpx import (
+    HAS_HTTP2,
+    HAS_SOCKS,
+    HttpxDownloadHandler,
+)
+from scrapy.exceptions import DownloadFailedError
 from tests.test_downloader_handlers_http_base import (
     TestHttpBase,
     TestHttpProxyBase,
@@ -37,10 +43,6 @@ pytest.importorskip("httpx")
 class HttpxDownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        from scrapy.core.downloader.handlers._httpx import (  # noqa: PLC0415
-            HttpxDownloadHandler,
-        )
-
         return HttpxDownloadHandler
 
     @property
@@ -81,6 +83,30 @@ class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
     @pytest.mark.skip(reason="The check is Twisted-specific")
     def test_verify_certs_deprecated(self) -> None:  # type: ignore[override]
         pass
+
+
+@pytest.mark.skipif(not HAS_HTTP2, reason="No HTTP/2 support in HttpxDownloadHandler")
+class TestHttp2(TestHttps):
+    http2 = True
+    handler_supports_http2_dataloss = False
+
+    default_handler_settings: ClassVar[dict[str, Any]] = {
+        "HTTPX_HTTP2_ENABLED": True,
+    }
+
+    @coroutine_test
+    async def test_protocol(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/host", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.protocol == "HTTP/2"
+
+    @coroutine_test
+    async def test_data_loss_handling(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
 
 
 class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):
@@ -127,7 +153,7 @@ class TestHttpsProxy(TestHttpProxy):
 
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
-    pass
+    handler_supports_socks = HAS_SOCKS
 
 
 @pytest.mark.requires_internet
