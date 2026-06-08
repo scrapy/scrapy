@@ -714,6 +714,7 @@ Those are:
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
 * :reqmeta:`is_start_request`
@@ -790,12 +791,20 @@ download_fail_on_dataloss
 Whether or not to fail on broken responses. See:
 :setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
 
+.. reqmeta:: give_up_log_level
+
+give_up_log_level
+-----------------
+
+:ref:`Logging level <levels>` used for the message logged when a request
+exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
 .. reqmeta:: max_retry_times
 
 max_retry_times
 ---------------
 
-The meta key is used set retry times per request. When initialized, the
+The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
 
