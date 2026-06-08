@@ -99,6 +99,38 @@ class TestLogCounterHandler:
         assert crawler.stats
         assert crawler.stats.get_value("log_count/ERROR") == 1
 
+    def test_accepted_current_crawler(
+        self, crawler: Crawler, logger: logging.Logger
+    ) -> None:
+        logger.error("test log msg", extra={"crawler": crawler})
+        assert crawler.stats
+        assert crawler.stats.get_value("log_count/ERROR") == 1
+
+    def test_ignored_other_crawler(
+        self, crawler: Crawler, logger: logging.Logger
+    ) -> None:
+        other_crawler = get_crawler(settings_dict={"LOG_LEVEL": "WARNING"})
+        logger.error("test log msg", extra={"crawler": other_crawler})
+        assert crawler.stats
+        assert crawler.stats.get_value("log_count/ERROR") is None
+
+    def test_accepted_current_spider(
+        self, crawler: Crawler, logger: logging.Logger
+    ) -> None:
+        spider = crawler._create_spider()
+        logger.error("test log msg", extra={"spider": spider})
+        assert crawler.stats
+        assert crawler.stats.get_value("log_count/ERROR") == 1
+
+    def test_ignored_other_spider(
+        self, crawler: Crawler, logger: logging.Logger
+    ) -> None:
+        other_crawler = get_crawler(settings_dict={"LOG_LEVEL": "WARNING"})
+        other_spider = other_crawler._create_spider()
+        logger.error("test log msg", extra={"spider": other_spider})
+        assert crawler.stats
+        assert crawler.stats.get_value("log_count/ERROR") is None
+
     def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.debug("test log msg")
         assert crawler.stats

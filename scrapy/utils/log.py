@@ -237,9 +237,25 @@ class LogCounterHandler(logging.Handler):
         self.crawler: Crawler = crawler
 
     def emit(self, record: logging.LogRecord) -> None:
+        if not self._record_is_from_crawler(record):
+            return
         sname = f"log_count/{record.levelname}"
         assert self.crawler.stats
         self.crawler.stats.inc_value(sname)
+
+    def _record_is_from_crawler(self, record: logging.LogRecord) -> bool:
+        record_crawler = getattr(record, "crawler", None)
+        if record_crawler is not None:
+            return record_crawler is self.crawler
+
+        record_spider = getattr(record, "spider", None)
+        if record_spider is not None:
+            return (
+                getattr(record_spider, "crawler", None) is self.crawler
+                or record_spider is self.crawler.spider
+            )
+
+        return True
 
 
 def logformatter_adapter(
