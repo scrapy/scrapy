@@ -1056,7 +1056,7 @@ exception propagation, see
 .. setting:: RETRY_GIVE_UP_LOG_LEVEL
 
 RETRY_GIVE_UP_LOG_LEVEL
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Default: ``"ERROR"``
 
