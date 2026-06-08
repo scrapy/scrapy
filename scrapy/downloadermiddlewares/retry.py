@@ -52,13 +52,18 @@ def get_retry_request(
     exhausted.
 
     For example, in a :class:`~scrapy.Spider` callback, you could use it as
-    follows::
+    follows:
+
+    .. code-block:: python
 
         def parse(self, response):
             if not response.text:
                 new_request_or_none = get_retry_request(
-                    response.request, spider=self, reason='empty',
-                ) return new_request_or_none
+                    response.request,
+                    spider=self,
+                    reason="empty",
+                )
+                return new_request_or_none
 
     *spider* is the :class:`~scrapy.Spider` instance which is asking for the
     retry request. It is used to access the :ref:`settings <topics-settings>`
