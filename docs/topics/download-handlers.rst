@@ -156,6 +156,14 @@ HTTP proxies       No                Yes                   Yes
 SOCKS proxies      No                No                    Yes
 ================== ================= ===================== ====================
 
+You can find additional HTTP download handlers in the
+scrapy-download-handlers-incubator_ package. This package is made by the Scrapy
+developers and contains experimental handlers that may be included in some
+later Scrapy version but can already be used. Please refer to the documentation
+of this package for more information.
+
+.. _scrapy-download-handlers-incubator: https://github.com/scrapy-plugins/scrapy-download-handlers-incubator
+
 .. _twisted-http2-handler:
 
 H2DownloadHandler
@@ -164,9 +172,9 @@ H2DownloadHandler
 .. autoclass:: scrapy.core.downloader.handlers.http2.H2DownloadHandler
 
 | Supported scheme: ``https``.
-| Lazy: yes.
-| Requires asyncio support: no.
-| Requires a Twisted reactor: yes.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: yes.
 
 This handler supports ``https://host/path`` URLs and uses the HTTP/2 protocol
 for them.
@@ -200,7 +208,6 @@ SOCKS proxies               No (not supported by the library)
 HTTP/2                      Yes
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
-TLS version limits          Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
@@ -234,9 +241,9 @@ HTTP11DownloadHandler
 .. autoclass:: scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler
 
 | Supported schemes: ``http``, ``https``.
-| Lazy: no.
-| Requires asyncio support: no.
-| Requires a Twisted reactor: yes.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: yes.
 
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 protocol for them.
@@ -252,7 +259,6 @@ SOCKS proxies               No (not supported by the library)
 HTTP/2                      No (implemented as a separate handler)
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
-TLS version limits          Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
@@ -271,9 +277,9 @@ HttpxDownloadHandler
 .. autoclass:: scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler
 
 | Supported schemes: ``http``, ``https``.
-| Lazy: no.
-| Requires asyncio support: yes.
-| Requires a Twisted reactor: no.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: yes.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 or HTTP/2 protocol for them.
@@ -305,7 +311,6 @@ SOCKS proxies               Yes (SOCKS5; requires ``httpx[socks]``)
 HTTP/2                      Yes (requires ``httpx[http2]``)
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
-TLS version limits          No (not implemented)
 TLS implementation          Standard library ``ssl``
 =========================== =======================================
 
@@ -336,9 +341,9 @@ DataURIDownloadHandler
 .. autoclass:: scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler
 
 | Supported scheme: ``data``.
-| Lazy: no.
-| Requires asyncio support: no.
-| Requires a Twisted reactor: no.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
 This handler supports RFC 2397 ``data:content/type;base64,`` data URIs.
 
@@ -348,9 +353,9 @@ FileDownloadHandler
 .. autoclass:: scrapy.core.downloader.handlers.file.FileDownloadHandler
 
 | Supported scheme: ``file``.
-| Lazy: no.
-| Requires asyncio support: no.
-| Requires a Twisted reactor: no.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
 This handler supports ``file:///path`` local file URIs. It doesn't
 support remote files.
@@ -361,9 +366,9 @@ FTPDownloadHandler
 .. autoclass:: scrapy.core.downloader.handlers.ftp.FTPDownloadHandler
 
 | Supported scheme: ``ftp``.
-| Lazy: no.
-| Requires asyncio support: no.
-| Requires a Twisted reactor: yes.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: yes.
 
 This handler supports ``ftp://host/path`` FTP URIs.
 
@@ -375,9 +380,9 @@ S3DownloadHandler
 .. autoclass:: scrapy.core.downloader.handlers.s3.S3DownloadHandler
 
 | Supported scheme: ``s3``.
-| Lazy: yes.
-| Requires asyncio support: no.
-| Requires a Twisted reactor: yes.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
 This handler supports ``s3://bucket/path`` S3 URIs.
 
