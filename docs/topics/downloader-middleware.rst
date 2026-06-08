@@ -1060,10 +1060,13 @@ RETRY_GIVE_UP_LOG_LEVEL
 
 Default: ``"ERROR"``
 
-:ref:`Logging level <levels>` used for the "gave up retrying" log message.
-Can be a level name (e.g. ``"WARNING"``) or a number (e.g. ``logging.WARNING``).
+:ref:`Logging level <levels>` used for the message logged when a request
+exceeds its retries.
 
-See also :reqmeta:`give_up_log_level`.
+Can be a level name (e.g. ``"WARNING"``) or a number (e.g. ``logging.WARNING``
+or ``30``).
+
+See also: :reqmeta:`give_up_log_level`, :func:`get_retry_request`.
 
 .. setting:: RETRY_PRIORITY_ADJUST
 

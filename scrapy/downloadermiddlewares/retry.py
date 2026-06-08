@@ -57,11 +57,8 @@ def get_retry_request(
         def parse(self, response):
             if not response.text:
                 new_request_or_none = get_retry_request(
-                    response.request,
-                    spider=self,
-                    reason='empty',
-                )
-                return new_request_or_none
+                    response.request, spider=self, reason='empty',
+                ) return new_request_or_none
 
     *spider* is the :class:`~scrapy.Spider` instance which is asking for the
     retry request. It is used to access the :ref:`settings <topics-settings>`
@@ -83,8 +80,9 @@ def get_retry_request(
 
     *logger* is the logging.Logger object to be used when logging messages
 
-    *give_up_log_level* is the :ref:`logging level <levels>` to use for the
-    "gave up retrying" message. See :setting:`RETRY_GIVE_UP_LOG_LEVEL`.
+    *give_up_log_level* is the :ref:`logging level <levels>` used for the
+    message logged when a request exceeds its retries. See
+    :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
 
     *stats_base_key* is a string to be used as the base key for the
     retry-related job stats
@@ -119,7 +117,7 @@ def get_retry_request(
         stats.inc_value(f"{stats_base_key}/reason_count/{reason}")
         return new_request
     if give_up_log_level is None:
-        give_up_log_level = settings.get("RETRY_GIVE_UP_LOG_LEVEL")
+        give_up_log_level = settings["RETRY_GIVE_UP_LOG_LEVEL"]
     if isinstance(give_up_log_level, str):
         level = getLevelName(give_up_log_level)
         if not isinstance(level, int):
@@ -144,7 +142,7 @@ class RetryMiddleware:
         self.max_retry_times = settings.getint("RETRY_TIMES")
         self.retry_http_codes = {int(x) for x in settings.getlist("RETRY_HTTP_CODES")}
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
-        self.give_up_log_level = settings.get("RETRY_GIVE_UP_LOG_LEVEL")
+        self.give_up_log_level = settings["RETRY_GIVE_UP_LOG_LEVEL"]
         self.exceptions_to_retry = tuple(
             load_object(x) if isinstance(x, str) else x
             for x in settings.getlist("RETRY_EXCEPTIONS")

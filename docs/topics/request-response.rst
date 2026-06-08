@@ -796,8 +796,8 @@ Whether or not to fail on broken responses. See:
 give_up_log_level
 -----------------
 
-The :ref:`logging level <levels>` to use for the message logged when the
-request exceeds its retries. See also :setting:`RETRY_GIVE_UP_LOG_LEVEL`.
+:ref:`Logging level <levels>` used for the message logged when a request
+exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
 
 .. reqmeta:: max_retry_times
 
