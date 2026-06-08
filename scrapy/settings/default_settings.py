@@ -16,6 +16,7 @@ Scrapy developers, if you add a setting here remember to:
 import sys
 from importlib import import_module
 from pathlib import Path
+from typing import Any
 
 __all__ = [
     "ADDONS",
@@ -64,6 +65,8 @@ __all__ = [
     "DOWNLOAD_HANDLERS_BASE",
     "DOWNLOAD_MAXSIZE",
     "DOWNLOAD_TIMEOUT",
+    "DOWNLOAD_TLS_MAX_VERSION",
+    "DOWNLOAD_TLS_MIN_VERSION",
     "DOWNLOAD_WARNSIZE",
     "DUPEFILTER_CLASS",
     "EDITOR",
@@ -154,6 +157,7 @@ __all__ = [
     "REQUEST_FINGERPRINTER_CLASS",
     "RETRY_ENABLED",
     "RETRY_EXCEPTIONS",
+    "RETRY_GIVE_UP_LOG_LEVEL",
     "RETRY_HTTP_CODES",
     "RETRY_PRIORITY_ADJUST",
     "RETRY_TIMES",
@@ -265,13 +269,15 @@ DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
 
 DOWNLOAD_TIMEOUT = 180  # 3mins
 
+DOWNLOAD_TLS_MAX_VERSION = None
+DOWNLOAD_TLS_MIN_VERSION = None
+
 DOWNLOAD_VERIFY_CERTIFICATES = False
 
 DOWNLOADER = "scrapy.core.downloader.Downloader"
 
 DOWNLOADER_CLIENTCONTEXTFACTORY = "SENTINEL"
 DOWNLOADER_CLIENT_TLS_CIPHERS = "DEFAULT"
-# Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
@@ -467,6 +473,7 @@ RETRY_EXCEPTIONS = [
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]
+RETRY_GIVE_UP_LOG_LEVEL = "ERROR"
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
@@ -535,7 +542,7 @@ USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org
 WARN_ON_GENERATOR_RETURN_VALUE = True
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     if name == "CONCURRENT_REQUESTS_PER_IP":
         import warnings  # noqa: PLC0415
 
@@ -548,4 +555,4 @@ def __getattr__(name: str):
         )
         return 0
 
-    raise AttributeError
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

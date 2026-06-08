@@ -1059,6 +1059,21 @@ has been exceeded (see :setting:`RETRY_TIMES`). To learn about uncaught
 exception propagation, see
 :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`.
 
+.. setting:: RETRY_GIVE_UP_LOG_LEVEL
+
+RETRY_GIVE_UP_LOG_LEVEL
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``"ERROR"``
+
+:ref:`Logging level <levels>` used for the message logged when a request
+exceeds its retries.
+
+Can be a level name (e.g. ``"WARNING"``) or a number (e.g. ``logging.WARNING``
+or ``30``).
+
+See also: :reqmeta:`give_up_log_level`, :func:`get_retry_request`.
+
 .. setting:: RETRY_PRIORITY_ADJUST
 
 RETRY_PRIORITY_ADJUST

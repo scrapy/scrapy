@@ -84,6 +84,39 @@ class TestRetry:
         )
         assert self.crawler.stats.get_value("retry/count") == 2
 
+    def test_give_up_log_level_setting(self):
+        crawler = get_crawler(
+            DefaultSpider, settings_dict={"RETRY_GIVE_UP_LOG_LEVEL": "WARNING"}
+        )
+        crawler.spider = crawler._create_spider()
+        mw = RetryMiddleware.from_crawler(crawler)
+        mw.max_retry_times = 0
+        req = Request("http://example.com/503")
+        rsp = Response("http://example.com/503", body=b"", status=503)
+        with LogCapture() as log:
+            assert mw.process_response(req, rsp) is rsp
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.retry",
+                "WARNING",
+                f"Gave up retrying {req} (failed 1 times): 503 Service Unavailable",
+            )
+        )
+
+    def test_give_up_log_level_meta(self):
+        self.mw.max_retry_times = 0
+        req = Request("http://example.com/503", meta={"give_up_log_level": "WARNING"})
+        rsp = Response("http://example.com/503", body=b"", status=503)
+        with LogCapture() as log:
+            assert self.mw.process_response(req, rsp) is rsp
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.retry",
+                "WARNING",
+                f"Gave up retrying {req} (failed 1 times): 503 Service Unavailable",
+            )
+        )
+
     def test_twistederrors(self):
         exceptions = [
             ConnectError,
@@ -611,6 +644,87 @@ class TestGetRetryRequest:
                 f"Retrying {request} (failed 1 times): {expected_reason}",
             )
         )
+
+    def test_give_up_log_level_default(self):
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        with LogCapture() as log:
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+            )
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.retry",
+                "ERROR",
+                f"Gave up retrying {request} (failed 1 times): unspecified",
+            )
+        )
+
+    def test_give_up_log_level_argument_name(self):
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        with LogCapture() as log:
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+                give_up_log_level="WARNING",
+            )
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.retry",
+                "WARNING",
+                f"Gave up retrying {request} (failed 1 times): unspecified",
+            )
+        )
+
+    def test_give_up_log_level_argument_number(self):
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        with LogCapture() as log:
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+                give_up_log_level=logging.WARNING,
+            )
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.retry",
+                "WARNING",
+                f"Gave up retrying {request} (failed 1 times): unspecified",
+            )
+        )
+
+    def test_give_up_log_level_setting(self):
+        request = Request("https://example.com")
+        spider = self.get_spider({"RETRY_GIVE_UP_LOG_LEVEL": "WARNING"})
+        with LogCapture() as log:
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+            )
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.retry",
+                "WARNING",
+                f"Gave up retrying {request} (failed 1 times): unspecified",
+            )
+        )
+
+    def test_give_up_log_level_invalid(self):
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        with pytest.raises(ValueError, match="Invalid give-up log level"):
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+                give_up_log_level="NOT_A_LEVEL",
+            )
 
     def test_custom_stats_key(self):
         request = Request("https://example.com")

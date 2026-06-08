@@ -21,11 +21,21 @@ class SimpleMockServer(BaseMockServer):
     listen_http = False
     module_name = "tests.mockserver.simple_https"
 
-    def __init__(self, keyfile: str, certfile: str, cipher_string: str | None):
+    def __init__(
+        self,
+        keyfile: str,
+        certfile: str,
+        *,
+        cipher_string: str | None = None,
+        tls_min_version: str | None = None,
+        tls_max_version: str | None = None,
+    ):
         super().__init__()
         self.keyfile = keyfile
         self.certfile = certfile
         self.cipher_string = cipher_string or ""
+        self.tls_min_version = tls_min_version
+        self.tls_max_version = tls_max_version
 
     def get_additional_args(self) -> list[str]:
         args = [
@@ -36,6 +46,10 @@ class SimpleMockServer(BaseMockServer):
         ]
         if self.cipher_string is not None:
             args.extend(["--cipher-string", self.cipher_string])
+        if self.tls_min_version is not None:
+            args.extend(["--tls-min-version", self.tls_min_version])
+        if self.tls_max_version is not None:
+            args.extend(["--tls-max-version", self.tls_max_version])
         return args
 
 

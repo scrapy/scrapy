@@ -369,9 +369,6 @@ This handler supports ``ftp://host/path`` FTP URIs.
 
 It's implemented using :mod:`twisted.protocols.ftp`.
 
-.. note::
-    This handler is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
-
 S3DownloadHandler
 -----------------
 
