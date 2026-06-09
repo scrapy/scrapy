@@ -369,7 +369,7 @@ HttpCacheMiddleware
         * :ref:`httpcache-policy-dummy`
 
     You can change the HTTP cache policy with the :setting:`HTTPCACHE_POLICY`
-    setting. Or you can also implement your own policy.
+    setting. Or you can also :ref:`implement your own policy <httpcache-policy-custom>`.
 
     .. reqmeta:: dont_cache
 
@@ -439,6 +439,40 @@ RFC2616 policy
     * ``Vary`` header support https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
     * Invalidation after updates or deletes https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
     * ... probably others ..
+
+
+.. _httpcache-policy-custom:
+
+Writing your own policy
+~~~~~~~~~~~~~~~~~~~~~~~
+
+You can implement a cache policy by creating a class that
+defines the methods described below.
+
+.. module:: scrapy.extensions.httpcache
+
+.. class:: CachePolicy
+
+    .. method:: should_cache_request(request)
+
+      Return True if the :class:`~scrapy.http.Request` is cacheable otherwise False
+
+    .. method:: should_cache_response(response, request)
+
+      Return True if :class:`~scrapy.http.Response` should be cached otherwise False
+
+    .. method:: is_cached_response_fresh(cachedresponse, request)
+
+      Return True if cached :class:`~scrapy.http.Response` has expired otherwise False
+
+    .. method:: is_cached_response_valid(cachedresponse, response, request)
+
+      Return True if cached :class:`~scrapy.http.Response` is valid otherwise False
+
+
+In order to use this policy, set:
+
+* :setting:`HTTPCACHE_POLICY` to the Python import path of your custom policy class.
 
 
 .. _httpcache-storage-fs:
