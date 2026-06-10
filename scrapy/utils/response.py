@@ -2,6 +2,9 @@
 This module provides some useful functions for working with
 scrapy.http.Response objects
 """
+
+from __future__ import annotations
+
 import os
 import re
 import tempfile
@@ -9,7 +12,7 @@ import webbrowser
 from io import StringIO
 from mimetypes import MimeTypes
 from pkgutil import get_data
-from typing import Any, Callable, Iterable, Optional, Sequence, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 from warnings import warn
 from weakref import WeakKeyDictionary
@@ -25,7 +28,6 @@ from xtractmime.mimegroups import (
     is_xml_mime_type,
 )
 
-import scrapy
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import (
     Headers,
@@ -36,6 +38,9 @@ from scrapy.http import (
     XmlResponse,
 )
 from scrapy.utils.python import to_bytes, to_unicode
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Sequence
 
 _ENCODING_MIME_TYPE_MAP = {
     b"br": b"application/brotli",
@@ -49,12 +54,16 @@ _MIME_TYPES = MimeTypes()
 _mime_overrides = get_data("scrapy", "mime.types") or b""
 _MIME_TYPES.readfp(StringIO(_mime_overrides.decode()))
 
+_metaref_cache: WeakKeyDictionary[Response, tuple[None, None] | tuple[float, str]] = (
+    WeakKeyDictionary()
+)
 
-def _is_compressed_mime_type(mime_type):
+
+def _is_compressed_mime_type(mime_type: bytes) -> bool:
     return mime_type in _ENCODING_MIME_TYPES
 
 
-def _is_other_text_mime_type(mime_type):
+def _is_other_text_mime_type(mime_type: bytes) -> bool:
     return (
         mime_type.startswith(b"text/")
         or mime_type == b"application/x-javascript"
@@ -64,7 +73,7 @@ def _is_other_text_mime_type(mime_type):
 
 def _get_encoding_or_mime_type_from_headers(
     headers: Headers,
-) -> Tuple[Optional[bytes], Optional[bytes]]:
+) -> tuple[bytes | None, bytes | None]:
     if b"Content-Encoding" in headers:
         encodings = [
             item.strip()
@@ -84,7 +93,7 @@ def _get_encoding_or_mime_type_from_headers(
         )
     ):
         return None, headers[b"Content-Type"]
-    if b"Content-Disposition" in headers and headers[b"Content-Disposition"]:
+    if headers.get(b"Content-Disposition"):
         path = (
             headers[b"Content-Disposition"]
             .split(b";")[-1]
@@ -99,11 +108,13 @@ def _get_encoding_or_mime_type_from_headers(
     return None, None
 
 
-def _get_mime_type_from_encoding(encoding):
-    return _ENCODING_MIME_TYPE_MAP.get(encoding, None) or b"application/" + encoding
+def _get_mime_type_from_encoding(encoding: bytes) -> bytes:
+    return _ENCODING_MIME_TYPE_MAP.get(encoding) or b"application/" + encoding
 
 
-def _get_encoding_or_mime_type_from_path(path):
+def _get_encoding_or_mime_type_from_path(
+    path: str,
+) -> tuple[bytes | None, bytes | None]:
     mimetype, encoding = _MIME_TYPES.guess_type(path, strict=False)
     if encoding:
         return encoding.encode(), None
@@ -112,7 +123,7 @@ def _get_encoding_or_mime_type_from_path(path):
     return None, None
 
 
-def _get_response_class_from_mime_type(mime_type):
+def _get_response_class_from_mime_type(mime_type: bytes | None) -> type[Response]:
     if not mime_type:
         return Response
     if is_html_mime_type(mime_type):
@@ -145,31 +156,26 @@ def get_base_url(response: TextResponse) -> str:
     return response.base_url
 
 
-_metaref_cache: "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[float, str]]]" = (
-    WeakKeyDictionary()
-)
-
-
 def get_meta_refresh(
-    response: "scrapy.http.response.text.TextResponse",
+    response: TextResponse,
     ignore_tags: Iterable[str] = ("script", "noscript"),
-) -> Union[Tuple[None, None], Tuple[float, str]]:
+) -> tuple[None, None] | tuple[float, str]:
     """Parse the http-equiv refresh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(
-            text, response.url, response.encoding, ignore_tags=ignore_tags
+            text, response.base_url, response.encoding, ignore_tags=ignore_tags
         )
     return _metaref_cache[response]
 
 
 def get_response_class(
     *,
-    url: Optional[str] = None,
-    body: Optional[bytes] = None,
-    declared_mime_types: Optional[Sequence[bytes]] = None,
-    http_headers: Optional[Headers] = None,
-) -> Type[Response]:
+    url: str | None = None,
+    body: bytes | None = None,
+    declared_mime_types: Sequence[bytes] | None = None,
+    http_headers: Headers | None = None,
+) -> type[Response]:
     """Guess the most appropriate Response class based on the given
     arguments."""
     mime_type = next(iter(declared_mime_types or []), None)
@@ -217,37 +223,58 @@ def get_response_class(
     return _get_response_class_from_mime_type(mime_type)
 
 
-def response_status_message(status: Union[bytes, float, int, str]) -> str:
+def response_status_message(status: bytes | float | str) -> str:
     """Return status code plus status text descriptive message"""
     status_int = int(status)
     message = http.RESPONSES.get(status_int, "Unknown Status")
     return f"{status_int} {to_unicode(message)}"
 
 
+def _remove_html_comments(body: bytes) -> bytes:
+    start = body.find(b"<!--")
+    while start != -1:
+        end = body.find(b"-->", start + 1)
+        if end == -1:
+            return body[:start]
+        body = body[:start] + body[end + 3 :]
+        start = body.find(b"<!--")
+    return body
+
+
 def open_in_browser(
-    response: Union[
-        "scrapy.http.response.html.HtmlResponse",
-        "scrapy.http.response.text.TextResponse",
-    ],
+    response: TextResponse,
     _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
-    """Open the given response in a local web browser, populating the <base>
-    tag for external links to work
+    """Open *response* in a local web browser, adjusting the `base tag`_ for
+    external links to work, e.g. so that images and styles are displayed.
+
+    .. _base tag: https://www.w3schools.com/tags/tag_base.asp
+
+    For example:
+
+    .. code-block:: python
+
+        from scrapy.utils.response import open_in_browser
+
+
+        def parse_details(self, response):
+            if "item name" not in response.body:
+                open_in_browser(response)
     """
-    from scrapy.http import HtmlResponse, TextResponse
+    # circular imports
+    from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
 
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
-        if b"<base" not in body:
-            repl = rf'\1<base href="{response.url}">'
-            body = re.sub(b"<!--.*?-->", b"", body, flags=re.DOTALL)
-            body = re.sub(rb"(<head(?:>|\s.*?>))", to_bytes(repl), body)
+        if b"<base" not in _remove_html_comments(body):
+            repl = rf'\g<0><base href="{response.url}">'
+            body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"
     else:
-        raise TypeError("Unsupported response type: " f"{response.__class__.__name__}")
+        raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

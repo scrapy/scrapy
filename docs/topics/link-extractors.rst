@@ -76,16 +76,12 @@ LxmlLinkExtractor
         If not given, it will default to
         :data:`scrapy.linkextractors.IGNORED_EXTENSIONS`.
 
-        .. versionchanged:: 2.0
-           :data:`~scrapy.linkextractors.IGNORED_EXTENSIONS` now includes
-           ``7z``, ``7zip``, ``apk``, ``bz2``, ``cdr``, ``dmg``, ``ico``,
-           ``iso``, ``tar``, ``tar.gz``, ``webm``, and ``xz``.
     :type deny_extensions: list
 
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines
         regions inside the response where links should be extracted from.
         If given, only the text selected by those XPath will be scanned for
-        links. See examples below.
+        links.
     :type restrict_xpaths: str or list
 
     :param restrict_css: a CSS selector (or list of selectors) which defines
@@ -163,5 +159,3 @@ Link
    :synopsis: Link from link extractors
 
 .. autoclass:: Link
-
-.. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

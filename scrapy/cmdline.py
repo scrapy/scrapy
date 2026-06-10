@@ -1,44 +1,58 @@
+from __future__ import annotations
+
 import argparse
 import cProfile
 import inspect
 import os
 import sys
 from importlib.metadata import entry_points
+from typing import TYPE_CHECKING, ParamSpec
 
 import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
 from scrapy.exceptions import UsageError
-from scrapy.utils.misc import walk_modules
+from scrapy.utils.misc import walk_modules_iter
 from scrapy.utils.project import get_project_settings, inside_project
 from scrapy.utils.python import garbage_collect
+from scrapy.utils.reactor import _asyncio_reactor_path
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+    from scrapy.settings import BaseSettings, Settings
+
+_P = ParamSpec("_P")
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
-    def _parse_optional(self, arg_string):
-        # if starts with -: it means that is a parameter not a argument
-        if arg_string[:2] == "-:":
+    def _parse_optional(
+        self, arg_string: str
+    ) -> tuple[argparse.Action | None, str, str | None] | None:
+        # Support something like ‘-o -:json’, where ‘-:json’ is a value for
+        # ‘-o’, not another parameter.
+        if arg_string.startswith("-:"):
             return None
 
         return super()._parse_optional(arg_string)
 
 
-def _iter_command_classes(module_name):
+def _iter_command_classes(module_name: str) -> Iterable[type[ScrapyCommand]]:
     # TODO: add `name` attribute to commands and merge this function with
     # scrapy.utils.spider.iter_spider_classes
-    for module in walk_modules(module_name):
+    for module in walk_modules_iter(module_name):
         for obj in vars(module).values():
             if (
                 inspect.isclass(obj)
                 and issubclass(obj, ScrapyCommand)
                 and obj.__module__ == module.__name__
-                and obj not in (ScrapyCommand, BaseRunSpiderCommand)
+                and obj not in {ScrapyCommand, BaseRunSpiderCommand}
             ):
                 yield obj
 
 
-def _get_commands_from_module(module, inproject):
-    d = {}
+def _get_commands_from_module(module: str, inproject: bool) -> dict[str, ScrapyCommand]:
+    d: dict[str, ScrapyCommand] = {}
     for cmd in _iter_command_classes(module):
         if inproject or not cmd.requires_project:
             cmdname = cmd.__module__.split(".")[-1]
@@ -46,22 +60,22 @@ def _get_commands_from_module(module, inproject):
     return d
 
 
-def _get_commands_from_entry_points(inproject, group="scrapy.commands"):
-    cmds = {}
-    if sys.version_info >= (3, 10):
-        eps = entry_points(group=group)
-    else:
-        eps = entry_points().get(group, ())
-    for entry_point in eps:
+def _get_commands_from_entry_points(
+    inproject: bool, group: str = "scrapy.commands"
+) -> dict[str, ScrapyCommand]:
+    cmds: dict[str, ScrapyCommand] = {}
+    for entry_point in entry_points(group=group):
         obj = entry_point.load()
         if inspect.isclass(obj):
             cmds[entry_point.name] = obj()
         else:
-            raise Exception(f"Invalid entry point {entry_point.name}")
+            raise ValueError(f"Invalid entry point {entry_point.name}")
     return cmds
 
 
-def _get_commands_dict(settings, inproject):
+def _get_commands_dict(
+    settings: BaseSettings, inproject: bool
+) -> dict[str, ScrapyCommand]:
     cmds = _get_commands_from_module("scrapy.commands", inproject)
     cmds.update(_get_commands_from_entry_points(inproject))
     cmds_module = settings["COMMANDS_MODULE"]
@@ -70,16 +84,20 @@ def _get_commands_dict(settings, inproject):
     return cmds
 
 
-def _pop_command_name(argv):
-    i = 0
-    for arg in argv[1:]:
-        if not arg.startswith("-"):
-            del argv[i]
-            return arg
-        i += 1
+def _get_project_only_cmds(settings: BaseSettings) -> set[str]:
+    return set(_get_commands_dict(settings, inproject=True)) - set(
+        _get_commands_dict(settings, inproject=False)
+    )
 
 
-def _print_header(settings, inproject):
+def _pop_command_name(argv: list[str]) -> str | None:
+    for i in range(1, len(argv)):
+        if not argv[i].startswith("-"):
+            return argv.pop(i)
+    return None
+
+
+def _print_header(settings: BaseSettings, inproject: bool) -> None:
     version = scrapy.__version__
     if inproject:
         print(f"Scrapy {version} - active project: {settings['BOT_NAME']}\n")
@@ -88,28 +106,56 @@ def _print_header(settings, inproject):
         print(f"Scrapy {version} - no active project\n")
 
 
-def _print_commands(settings, inproject):
+def _print_commands(settings: BaseSettings, inproject: bool) -> None:
     _print_header(settings, inproject)
-    print("Usage:")
-    print("  scrapy <command> [options] [args]\n")
-    print("Available commands:")
+    print(
+        "Usage:\n",
+        "  scrapy <command> [options] [args]\n",
+        "Available commands:\n",
+    )
     cmds = _get_commands_dict(settings, inproject)
-    for cmdname, cmdclass in sorted(cmds.items()):
-        print(f"  {cmdname:<13} {cmdclass.short_desc()}")
+    print(
+        "\n".join(
+            f"  {cmdname:<13} {cmdclass.short_desc()}"
+            for cmdname, cmdclass in sorted(cmds.items())
+        )
+    )
     if not inproject:
-        print()
-        print("  [ more ]      More commands available when run from project directory")
-    print()
-    print('Use "scrapy <command> -h" to see more info about a command')
+        print(
+            "\n",
+            "  [ more ]      More commands available when run from project directory",
+        )
+    print("\n", 'Use "scrapy <command> -h" to see more info about a command')
 
 
-def _print_unknown_command(settings, cmdname, inproject):
+def _print_unknown_command_msg(
+    settings: BaseSettings, cmdname: str, inproject: bool
+) -> None:
+    proj_only_cmds = _get_project_only_cmds(settings)
+    if cmdname in proj_only_cmds and not inproject:
+        cmd_list = ", ".join(sorted(proj_only_cmds))
+        print(
+            f"The {cmdname} command is not available from this location.\n"
+            f"These commands are only available from within a project: {cmd_list}.\n"
+        )
+    else:
+        print(f"Unknown command: {cmdname}\n")
+
+
+def _print_unknown_command(
+    settings: BaseSettings, cmdname: str, inproject: bool
+) -> None:
     _print_header(settings, inproject)
-    print(f"Unknown command: {cmdname}\n")
+    _print_unknown_command_msg(settings, cmdname, inproject)
     print('Use "scrapy" to see available commands')
 
 
-def _run_print_help(parser, func, *a, **kw):
+def _run_print_help(
+    parser: argparse.ArgumentParser,
+    func: Callable[_P, None],
+    *a: _P.args,
+    **kw: _P.kwargs,
+) -> None:
     try:
         func(*a, **kw)
     except UsageError as e:
@@ -120,7 +166,7 @@ def _run_print_help(parser, func, *a, **kw):
         sys.exit(2)
 
 
-def execute(argv=None, settings=None):
+def execute(argv: list[str] | None = None, settings: Settings | None = None) -> None:
     if argv is None:
         argv = sys.argv
 
@@ -157,19 +203,28 @@ def execute(argv=None, settings=None):
     opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
-    cmd.crawler_process = CrawlerProcess(settings)
+    if cmd.requires_crawler_process:
+        if (
+            settings["TWISTED_REACTOR"] == _asyncio_reactor_path
+            and not settings.getbool("FORCE_CRAWLER_PROCESS")
+        ) or not settings.getbool("TWISTED_REACTOR_ENABLED"):
+            cmd.crawler_process = AsyncCrawlerProcess(settings)
+        else:
+            cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 
 
-def _run_command(cmd, args, opts):
+def _run_command(cmd: ScrapyCommand, args: list[str], opts: argparse.Namespace) -> None:
     if opts.profile:
         _run_command_profiled(cmd, args, opts)
     else:
         cmd.run(args, opts)
 
 
-def _run_command_profiled(cmd, args, opts):
+def _run_command_profiled(
+    cmd: ScrapyCommand, args: list[str], opts: argparse.Namespace
+) -> None:
     if opts.profile:
         sys.stderr.write(f"scrapy: writing cProfile stats to {opts.profile!r}\n")
     loc = locals()

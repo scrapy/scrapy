@@ -21,7 +21,7 @@ def ftp_makedirs_cwd(ftp: FTP, path: str, first_call: bool = True) -> None:
 def ftp_store_file(
     *,
     path: str,
-    file: IO,
+    file: IO[bytes],
     host: str,
     port: int,
     username: str,

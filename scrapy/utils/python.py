@@ -1,67 +1,35 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import collections.abc
+
+from __future__ import annotations
+
 import gc
 import inspect
 import re
 import sys
+import warnings
 import weakref
+from collections.abc import AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
-from typing import (
-    Any,
-    AsyncGenerator,
-    AsyncIterable,
-    AsyncIterator,
-    Callable,
-    Dict,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Pattern,
-    Tuple,
-    Union,
-    overload,
-)
-from warnings import warn
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+    from re import Pattern
 
-def flatten(x: Iterable) -> list:
-    """flatten(sequence) -> list
-
-    Returns a single, flat list which contains all elements retrieved
-    from the sequence and all recursively contained sub-sequences
-    (iterables).
-
-    Examples:
-    >>> [1, 2, [3,4], (5,6)]
-    [1, 2, [3, 4], (5, 6)]
-    >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, (8,9,10)])
-    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]
-    >>> flatten(["foo", "bar"])
-    ['foo', 'bar']
-    >>> flatten(["foo", ["baz", 42], "bar"])
-    ['foo', 'baz', 42, 'bar']
-    """
-    return list(iflatten(x))
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
-def iflatten(x: Iterable) -> Iterable:
-    """iflatten(sequence) -> iterator
-
-    Similar to ``.flatten()``, but returns iterator instead"""
-    for el in x:
-        if is_listlike(el):
-            yield from iflatten(el)
-        else:
-            yield el
+_T = TypeVar("_T")
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
+_P = ParamSpec("_P")
 
 
 def is_listlike(x: Any) -> bool:
@@ -88,10 +56,10 @@ def is_listlike(x: Any) -> bool:
     return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
-def unique(list_: Iterable, key: Callable[[Any], Any] = lambda x: x) -> list:
+def unique(list_: Iterable[_T], key: Callable[[_T], Any] = lambda x: x) -> list[_T]:
     """efficient function to uniquify a list preserving item order"""
     seen = set()
-    result = []
+    result: list[_T] = []
     for item in list_:
         seenkey = key(item)
         if seenkey in seen:
@@ -102,7 +70,7 @@ def unique(list_: Iterable, key: Callable[[Any], Any] = lambda x: x) -> list:
 
 
 def to_unicode(
-    text: Union[str, bytes], encoding: Optional[str] = None, errors: str = "strict"
+    text: str | bytes, encoding: str | None = None, errors: str = "strict"
 ) -> str:
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
@@ -110,8 +78,7 @@ def to_unicode(
         return text
     if not isinstance(text, (bytes, str)):
         raise TypeError(
-            "to_unicode must receive a bytes or str "
-            f"object, got {type(text).__name__}"
+            f"to_unicode must receive a bytes or str object, got {type(text).__name__}"
         )
     if encoding is None:
         encoding = "utf-8"
@@ -119,7 +86,7 @@ def to_unicode(
 
 
 def to_bytes(
-    text: Union[str, bytes], encoding: Optional[str] = None, errors: str = "strict"
+    text: str | bytes, encoding: str | None = None, errors: str = "strict"
 ) -> bytes:
     """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
@@ -127,16 +94,26 @@ def to_bytes(
         return text
     if not isinstance(text, str):
         raise TypeError(
-            "to_bytes must receive a str or bytes " f"object, got {type(text).__name__}"
+            f"to_bytes must receive a str or bytes object, got {type(text).__name__}"
         )
     if encoding is None:
         encoding = "utf-8"
     return text.encode(encoding, errors)
 
 
+def _chunk_iter(text: str, chunk_size: int) -> Iterable[tuple[str, int]]:
+    offset = len(text)
+    while True:
+        offset -= chunk_size * 1024
+        if offset <= 0:
+            break
+        yield (text[offset:], offset)
+    yield (text, 0)
+
+
 def re_rsearch(
-    pattern: Union[str, Pattern], text: str, chunk_size: int = 1024
-) -> Optional[Tuple[int, int]]:
+    pattern: str | Pattern[str], text: str, chunk_size: int = 1024
+) -> tuple[int, int] | None:
     """
     This function does a reverse search in a text using a regular expression
     given in the attribute 'pattern'.
@@ -150,34 +127,30 @@ def re_rsearch(
     the start position of the match, and the ending (regarding the entire text).
     """
 
-    def _chunk_iter() -> Generator[Tuple[str, int], Any, None]:
-        offset = len(text)
-        while True:
-            offset -= chunk_size * 1024
-            if offset <= 0:
-                break
-            yield (text[offset:], offset)
-        yield (text, 0)
-
     if isinstance(pattern, str):
         pattern = re.compile(pattern)
 
-    for chunk, offset in _chunk_iter():
-        matches = [match for match in pattern.finditer(chunk)]
+    for chunk, offset in _chunk_iter(text, chunk_size):
+        matches = list(pattern.finditer(chunk))
         if matches:
             start, end = matches[-1].span()
             return offset + start, offset + end
     return None
 
 
-def memoizemethod_noargs(method: Callable) -> Callable:
+_SelfT = TypeVar("_SelfT")
+
+
+def memoizemethod_noargs(
+    method: Callable[Concatenate[_SelfT, _P], _T],
+) -> Callable[Concatenate[_SelfT, _P], _T]:
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
     """
-    cache: weakref.WeakKeyDictionary[Any, Any] = weakref.WeakKeyDictionary()
+    cache: weakref.WeakKeyDictionary[_SelfT, _T] = weakref.WeakKeyDictionary()
 
     @wraps(method)
-    def new_method(self: Any, *args: Any, **kwargs: Any) -> Any:
+    def new_method(self: _SelfT, *args: _P.args, **kwargs: _P.kwargs) -> _T:
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
@@ -194,7 +167,7 @@ def binary_is_text(data: bytes) -> bool:
     """Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
     """
-    warn(
+    warnings.warn(
         (
             "scrapy.utils.python.binary_is_text is deprecated, use "
             "xtractmime.is_binary_data instead."
@@ -207,37 +180,47 @@ def binary_is_text(data: bytes) -> bool:
     return all(c not in _BINARYCHARS for c in data)
 
 
-def get_func_args(func: Callable, stripself: bool = False) -> List[str]:
-    """Return the argument name list of a callable object"""
+def get_func_args_dict(
+    func: Callable[..., Any], stripself: bool = False
+) -> Mapping[str, inspect.Parameter]:
+    """Return the argument dict of a callable object.
+
+    .. versionadded:: 2.14
+    """
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")
 
-    args: List[str] = []
+    args: Mapping[str, inspect.Parameter]
     try:
         sig = inspect.signature(func)
     except ValueError:
-        return args
+        return {}
 
     if isinstance(func, partial):
         partial_args = func.args
         partial_kw = func.keywords
 
+        args = {}
         for name, param in sig.parameters.items():
-            if param.name in partial_args:
+            if name in partial_args:
                 continue
-            if partial_kw and param.name in partial_kw:
+            if partial_kw and name in partial_kw:
                 continue
-            args.append(name)
+            args[name] = param
     else:
-        for name in sig.parameters.keys():
-            args.append(name)
+        args = sig.parameters
 
-    if stripself and args and args[0] == "self":
-        args = args[1:]
+    if stripself and args and "self" in args:
+        args = {k: v for k, v in args.items() if k != "self"}
     return args
 
 
-def get_spec(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
+def get_func_args(func: Callable[..., Any], stripself: bool = False) -> list[str]:
+    """Return the argument name list of a callable object"""
+    return list(get_func_args_dict(func, stripself=stripself))
+
+
+def get_spec(func: Callable[..., Any]) -> tuple[list[str], dict[str, Any]]:
     """Returns (args, kwargs) tuple for a function
     >>> import re
     >>> get_spec(re.match)
@@ -261,71 +244,51 @@ def get_spec(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
 
     if inspect.isfunction(func) or inspect.ismethod(func):
         spec = inspect.getfullargspec(func)
-    elif hasattr(func, "__call__"):
+    elif hasattr(func, "__call__"):  # noqa: B004
         spec = inspect.getfullargspec(func.__call__)
     else:
         raise TypeError(f"{type(func)} is not callable")
 
-    defaults: Tuple[Any, ...] = spec.defaults or ()
+    defaults: tuple[Any, ...] = spec.defaults or ()
 
     firstdefault = len(spec.args) - len(defaults)
     args = spec.args[:firstdefault]
-    kwargs = dict(zip(spec.args[firstdefault:], defaults))
+    kwargs = dict(zip(spec.args[firstdefault:], defaults, strict=False))
     return args, kwargs
 
 
-def equal_attributes(
-    obj1: Any, obj2: Any, attributes: Optional[List[Union[str, Callable]]]
-) -> bool:
-    """Compare two objects attributes"""
-    # not attributes given return False by default
-    if not attributes:
-        return False
-
-    temp1, temp2 = object(), object()
-    for attr in attributes:
-        # support callables like itemgetter
-        if callable(attr):
-            if attr(obj1) != attr(obj2):
-                return False
-        elif getattr(obj1, attr, temp1) != getattr(obj2, attr, temp2):
-            return False
-    # all attributes equal
-    return True
+@overload
+def without_none_values(iterable: Mapping[_KT, _VT]) -> dict[_KT, _VT]: ...
 
 
 @overload
-def without_none_values(iterable: Mapping) -> dict:
-    ...
+def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]: ...
 
 
-@overload
-def without_none_values(iterable: Iterable) -> Iterable:
-    ...
-
-
-def without_none_values(iterable: Union[Mapping, Iterable]) -> Union[dict, Iterable]:
+def without_none_values(
+    iterable: Mapping[_KT, _VT] | Iterable[_KT],
+) -> dict[_KT, _VT] | Iterable[_KT]:
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
     If ``iterable`` is a mapping, return a dictionary where all pairs that have
     value ``None`` have been removed.
     """
-    if isinstance(iterable, collections.abc.Mapping):
+    if isinstance(iterable, Mapping):
         return {k: v for k, v in iterable.items() if v is not None}
-    else:
-        # the iterable __init__ must take another iterable
-        return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
+    # the iterable __init__ must take another iterable
+    return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
 
 
 def global_object_name(obj: Any) -> str:
-    """
-    Return full name of a global object.
+    """Return the full import path of the given object.
 
     >>> from scrapy import Request
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
+    >>> global_object_name(Request.replace)
+    'scrapy.http.request.Request.replace'
     """
-    return f"{obj.__module__}.{obj.__name__}"
+    return f"{obj.__module__}.{obj.__qualname__}"
 
 
 if hasattr(sys, "pypy_version_info"):
@@ -341,43 +304,76 @@ else:
         gc.collect()
 
 
-class MutableChain(Iterable):
-    """
-    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
-    """
+class MutableChain(Iterable[_T]):  # pragma: no cover
+    def __init__(self, *args: Iterable[_T]):
+        warnings.warn(
+            "MutableChain is deprecated and will be removed in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        self.data: Iterator[_T] = chain.from_iterable(args)
 
-    def __init__(self, *args: Iterable):
-        self.data = chain.from_iterable(args)
-
-    def extend(self, *iterables: Iterable) -> None:
+    def extend(self, *iterables: Iterable[_T]) -> None:
         self.data = chain(self.data, chain.from_iterable(iterables))
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[_T]:
         return self
 
-    def __next__(self) -> Any:
+    def __next__(self) -> _T:
         return next(self.data)
 
 
-async def _async_chain(*iterables: Union[Iterable, AsyncIterable]) -> AsyncGenerator:
+async def _async_chain(
+    *iterables: Iterable[_T] | AsyncIterator[_T],
+) -> AsyncIterator[_T]:
     for it in iterables:
         async for o in as_async_generator(it):
             yield o
 
 
-class MutableAsyncChain(AsyncIterable):
+class MutableAsyncChain(AsyncIterator[_T]):
     """
     Similar to MutableChain but for async iterables
     """
 
-    def __init__(self, *args: Union[Iterable, AsyncIterable]):
-        self.data = _async_chain(*args)
+    def __init__(self, *args: Iterable[_T] | AsyncIterator[_T]):
+        self.data: AsyncIterator[_T] = _async_chain(*args)
 
-    def extend(self, *iterables: Union[Iterable, AsyncIterable]) -> None:
+    def extend(self, *iterables: Iterable[_T] | AsyncIterator[_T]) -> None:
         self.data = _async_chain(self.data, _async_chain(*iterables))
 
-    def __aiter__(self) -> AsyncIterator:
+    def __aiter__(self) -> Self:
         return self
 
-    async def __anext__(self) -> Any:
+    async def __anext__(self) -> _T:
         return await self.data.__anext__()
+
+
+def _looks_like_import_path(value: str) -> bool:
+    """Return True if **value** looks like a valid Python import path or False
+    otherwise."""
+    if not value:
+        return False
+    if any(c.isspace() for c in value):
+        return False
+    allowed_chars = set(
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_."
+    )
+    if any(c not in allowed_chars for c in value):
+        return False
+    if value[0] == "." or value[-1] == ".":
+        return False
+    parts = value.split(".")
+    if any(part == "" for part in parts):
+        return False
+    return all(part.isidentifier() for part in parts)
+
+
+def _iter_exc_causes(exc: BaseException) -> Iterable[BaseException]:
+    """Iterate over the exception causes/contexts."""
+    seen: set[int] = set()
+    cur: BaseException | None = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        yield cur
+        cur = cur.__cause__ or cur.__context__

@@ -1,6 +1,6 @@
-import unittest
 from itertools import chain
 from pathlib import Path
+from time import process_time
 from urllib.parse import urlparse
 
 import pytest
@@ -13,13 +13,20 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
     _get_encoding_or_mime_type_from_headers,
+    _remove_html_comments,
+    get_base_url,
     get_meta_refresh,
     get_response_class,
     open_in_browser,
     response_status_message,
 )
 
-__doctests__ = ["scrapy.utils.response"]
+
+def _read_browser_output(burl: str):
+    path = urlparse(burl).path
+    if not path or not Path(path).exists():
+        path = burl.replace("file://", "")
+    return Path(path).read_bytes()
 
 
 # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
@@ -53,7 +60,7 @@ NON_BINARY_ASCII_BYTES = (
 WHITESPACE_BYTES = (
     b"\t",
     b"\n",
-    b"\x0C",
+    b"\x0c",
     b"\r",
     b" ",
 )
@@ -702,11 +709,11 @@ POST_XTRACTMIME_SCENARIOS = (
 
 
 @pytest.mark.parametrize(
-    "kwargs,response_class",
-    (
+    ("kwargs", "response_class"),
+    [
         *PRE_XTRACTMIME_SCENARIOS,
         *POST_XTRACTMIME_SCENARIOS,
-    ),
+    ],
 )
 def test_get_response_class_http(kwargs, response_class):
     kwargs = dict(kwargs)
@@ -716,8 +723,8 @@ def test_get_response_class_http(kwargs, response_class):
 
 
 @pytest.mark.parametrize(
-    "headers,expected",
-    (
+    ("headers", "expected"),
+    [
         *(
             (
                 Headers({"Content-Encoding": content_encoding_header}),
@@ -729,143 +736,308 @@ def test_get_response_class_http(kwargs, response_class):
                 (["deflate, br"], b"br"),
             )
         ),
-    ),
+    ],
 )
 def test_get_encoding_or_mime_type_from_headers(headers, expected):
     assert _get_encoding_or_mime_type_from_headers(headers) == expected
 
 
-class ResponseUtilsTest(unittest.TestCase):
-    dummy_response = TextResponse(url="http://example.org/", body=b"dummy_response")
+def test_open_in_browser():
+    url = "http:///www.example.com/some/page.html"
+    body = (
+        b"<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
+    )
 
-    def test_open_in_browser(self):
-        url = "http:///www.example.com/some/page.html"
-        body = b"<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
+    def browser_open(burl: str) -> bool:
+        bbody = _read_browser_output(burl)
+        assert b'<base href="' + to_bytes(url) + b'">' in bbody
+        return True
 
-        def browser_open(burl):
-            path = urlparse(burl).path
-            if not path or not Path(path).exists():
-                path = burl.replace("file://", "")
-            bbody = Path(path).read_bytes()
-            self.assertIn(b'<base href="' + to_bytes(url) + b'">', bbody)
-            return True
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=browser_open), "Browser not called"
 
-        response = HtmlResponse(url, body=body)
-        assert open_in_browser(response, _openfunc=browser_open), "Browser not called"
+    resp = Response(url, body=body)
+    with pytest.raises(TypeError):
+        open_in_browser(resp, debug=True)  # pylint: disable=unexpected-keyword-arg
 
-        resp = Response(url, body=body)
-        self.assertRaises(TypeError, open_in_browser, resp, debug=True)
 
-    def test_get_meta_refresh(self):
-        r1 = HtmlResponse(
-            "http://www.example.com",
-            body=b"""
-        <html>
-        <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
-        <body>blahablsdfsal&amp;</body>
-        </html>""",
-        )
-        r2 = HtmlResponse(
-            "http://www.example.com",
-            body=b"""
-        <html>
-        <head><title>Dummy</title><noScript>
-        <meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
-        </noSCRIPT>
-        <body>blahablsdfsal&amp;</body>
-        </html>""",
-        )
-        r3 = HtmlResponse(
-            "http://www.example.com",
-            body=b"""
-    <noscript><meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage</noscript>
-    <script type="text/javascript">
-    if(!checkCookies()){
-        document.write('<meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage">');
-    }
-    </script>
-        """,
-        )
-        self.assertEqual(get_meta_refresh(r1), (5.0, "http://example.org/newpage"))
-        self.assertEqual(get_meta_refresh(r2), (None, None))
-        self.assertEqual(get_meta_refresh(r3), (None, None))
+def test_get_meta_refresh():
+    r1 = HtmlResponse(
+        "http://www.example.com",
+        body=b"""
+    <html>
+    <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
+    <body>blahablsdfsal&amp;</body>
+    </html>""",
+    )
+    r2 = HtmlResponse(
+        "http://www.example.com",
+        body=b"""
+    <html>
+    <head><title>Dummy</title><noScript>
+    <meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
+    </noSCRIPT>
+    <body>blahablsdfsal&amp;</body>
+    </html>""",
+    )
+    r3 = HtmlResponse(
+        "http://www.example.com",
+        body=b"""
+<noscript><meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage</noscript>
+<script type="text/javascript">
+if(!checkCookies()){
+    document.write('<meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage">');
+}
+</script>
+    """,
+    )
+    r4 = HtmlResponse(
+        "http://www.example.com",
+        body=b"""
+    <html>
+    <head><title>Dummy</title>
+    <base href="http://www.another-domain.com/base/path/">
+    <meta http-equiv="refresh" content="5;url=target.html"</head>
+    <body>blahablsdfsal&amp;</body>
+    </html>""",
+    )
+    assert get_meta_refresh(r1) == (5.0, "http://example.org/newpage")
+    assert get_meta_refresh(r2) == (None, None)
+    assert get_meta_refresh(r3) == (None, None)
+    assert get_meta_refresh(r4) == (
+        5.0,
+        "http://www.another-domain.com/base/path/target.html",
+    )
 
-    def test_response_status_message(self):
-        self.assertEqual(response_status_message(200), "200 OK")
-        self.assertEqual(response_status_message(404), "404 Not Found")
-        self.assertEqual(response_status_message(573), "573 Unknown Status")
 
-    def test_inject_base_url(self):
-        url = "http://www.example.com"
+def test_get_base_url():
+    resp = HtmlResponse(
+        "http://www.example.com",
+        body=b"""
+    <html>
+    <head><base href="http://www.example.com/img/" target="_blank"></head>
+    <body>blahablsdfsal&amp;</body>
+    </html>""",
+    )
+    assert get_base_url(resp) == "http://www.example.com/img/"
 
-        def check_base_url(burl):
-            path = urlparse(burl).path
-            if not path or not Path(path).exists():
-                path = burl.replace("file://", "")
-            bbody = Path(path).read_bytes()
-            self.assertEqual(bbody.count(b'<base href="' + to_bytes(url) + b'">'), 1)
-            return True
+    resp2 = HtmlResponse(
+        "http://www.example.com",
+        body=b"""
+    <html><body>blahablsdfsal&amp;</body></html>""",
+    )
+    assert get_base_url(resp2) == "http://www.example.com"
 
-        r1 = HtmlResponse(
-            url,
-            body=b"""
-        <html>
-            <head><title>Dummy</title></head>
-            <body><p>Hello world.</p></body>
-        </html>""",
-        )
-        r2 = HtmlResponse(
-            url,
-            body=b"""
-        <html>
-            <head id="foo"><title>Dummy</title></head>
-            <body>Hello world.</body>
-        </html>""",
-        )
-        r3 = HtmlResponse(
-            url,
-            body=b"""
-        <html>
-            <head><title>Dummy</title></head>
-            <body>
-                <header>Hello header</header>
-                <p>Hello world.</p>
-            </body>
-        </html>""",
-        )
-        r4 = HtmlResponse(
-            url,
-            body=b"""
-        <html>
-            <!-- <head>Dummy comment</head> -->
-            <head><title>Dummy</title></head>
-            <body><p>Hello world.</p></body>
-        </html>""",
-        )
-        r5 = HtmlResponse(
-            url,
-            body=b"""
-        <html>
-            <!--[if IE]>
-            <head><title>IE head</title></head>
-            <![endif]-->
-            <!--[if !IE]>-->
-            <head><title>Standard head</title></head>
-            <!--<![endif]-->
-            <body><p>Hello world.</p></body>
-        </html>""",
-        )
 
-        assert open_in_browser(r1, _openfunc=check_base_url), "Inject base url"
-        assert open_in_browser(
-            r2, _openfunc=check_base_url
-        ), "Inject base url with argumented head"
-        assert open_in_browser(
-            r3, _openfunc=check_base_url
-        ), "Inject unique base url with misleading tag"
-        assert open_in_browser(
-            r4, _openfunc=check_base_url
-        ), "Inject unique base url with misleading comment"
-        assert open_in_browser(
-            r5, _openfunc=check_base_url
-        ), "Inject unique base url with conditional comment"
+def test_response_status_message():
+    assert response_status_message(200) == "200 OK"
+    assert response_status_message(404) == "404 Not Found"
+    assert response_status_message(573) == "573 Unknown Status"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param(
+            b"""
+    <html>
+        <head><title>Dummy</title></head>
+        <body><p>Hello world.</p></body>
+    </html>""",
+            id="Simple",
+        ),
+        pytest.param(
+            b"""
+    <html>
+        <head id="foo"><title>Dummy</title></head>
+        <body>Hello world.</body>
+    </html>""",
+            id="<head> with attrs",
+        ),
+        pytest.param(
+            b"""
+    <html>
+        <head><title>Dummy</title></head>
+        <body>
+            <header>Hello header</header>
+            <p>Hello world.</p>
+        </body>
+    </html>""",
+            id="Misleading tag",
+        ),
+        pytest.param(
+            b"""
+    <html>
+        <!-- <head>Dummy comment</head> -->
+        <head><title>Dummy</title></head>
+        <body><p>Hello world.</p></body>
+    </html>""",
+            id="Misleading comment",
+        ),
+        pytest.param(
+            b"""
+    <html>
+        <!--[if IE]>
+        <head><title>IE head</title></head>
+        <![endif]-->
+        <!--[if !IE]>-->
+        <head><title>Standard head</title></head>
+        <!--<![endif]-->
+        <body><p>Hello world.</p></body>
+    </html>""",
+            id="Conditional comment",
+        ),
+    ],
+)
+def test_inject_base_url(body: bytes) -> None:
+    url = "http://www.example.com"
+
+    def check_base_url(burl):
+        bbody = _read_browser_output(burl)
+        assert bbody.count(b'><base href="' + to_bytes(url) + b'">') == 1
+        assert b"<head" in bbody
+        return True
+
+    resp = HtmlResponse(url, body=body)
+    assert open_in_browser(resp, _openfunc=check_base_url)
+
+
+def test_open_in_browser_redos_comment():
+    MAX_CPU_TIME = 0.02
+
+    # Exploit input from
+    # https://makenowjust-labs.github.io/recheck/playground/
+    # for /<!--.*?-->/ (old pattern to remove comments).
+    body = b"-><!--\x00" * 25_000 + b"->\n<!---->"
+    response = HtmlResponse("https://example.com", body=body)
+    start_time = process_time()
+    open_in_browser(response, lambda url: True)
+    end_time = process_time()
+    assert end_time - start_time < MAX_CPU_TIME
+
+
+def test_open_in_browser_redos_head():
+    MAX_CPU_TIME = 0.02
+
+    # Exploit input from
+    # https://makenowjust-labs.github.io/recheck/playground/
+    # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
+    body = b"<head\t" * 8_000
+    response = HtmlResponse("https://example.com", body=body)
+    start_time = process_time()
+    open_in_browser(response, lambda url: True)
+    end_time = process_time()
+    assert end_time - start_time < MAX_CPU_TIME
+
+
+@pytest.mark.parametrize(
+    ("input_body", "output_body"),
+    [
+        (b"a<!--", b"a"),
+        (b"a<!---->b", b"ab"),
+        (b"a<!--b-->c", b"ac"),
+        (b"a<!--b-->c<!--", b"ac"),
+        (b"a<!--b-->c<!--d", b"ac"),
+        (b"a<!--b-->c<!---->d", b"acd"),
+        (b"a<!--b--><!--c-->d", b"ad"),
+        (b"a<!-- <!-- inner --> -->b", b"a -->b"),
+        (b"<!-- <head>fake</head> --><head>real</head>", b"<head>real</head>"),
+    ],
+)
+def test_remove_html_comments(input_body, output_body):
+    assert _remove_html_comments(input_body) == output_body
+
+
+def test_open_in_browser_preserves_html_comments():
+    url = "http://www.example.com"
+    body = (
+        b"<html>"
+        b"<!-- preserved comment -->"
+        b"<head><title>Real</title></head>"
+        b"<body>content</body>"
+        b"</html>"
+    )
+
+    def check(burl):
+        bbody = _read_browser_output(burl)
+        assert b"<!-- preserved comment -->" in bbody
+        return True
+
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_does_not_inject_base_when_present():
+    url = "http://www.example.com"
+    body = (
+        b"<html>"
+        b'<head><base href="http://real.com"><title>T</title></head>'
+        b"<body>hi</body>"
+        b"</html>"
+    )
+
+    def check(burl):
+        bbody = _read_browser_output(burl)
+        assert b'<base href="' + to_bytes(url) + b'">' not in bbody
+        assert b'<base href="http://real.com">' in bbody
+        return True
+
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_injects_base_when_only_in_comment():
+    url = "http://www.example.com"
+    body = (
+        b"<html>"
+        b"<!-- <base href='http://other.com'> -->"
+        b"<head><title>Real</title></head>"
+        b"<body>content</body>"
+        b"</html>"
+    )
+
+    def check(burl):
+        bbody = _read_browser_output(burl)
+        assert b'<base href="' + to_bytes(url) + b'">' in bbody
+        return True
+
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_injects_base_at_real_head_not_commented_head():
+    url = "http://www.example.com"
+    body = (
+        b"<html>"
+        b"<!--<head>comment head</head>-->"
+        b"<head><title>Actual</title></head>"
+        b"<body>hello</body>"
+        b"</html>"
+    )
+
+    def check(burl):
+        bbody = _read_browser_output(burl)
+        assert bbody.count(b'<base href="' + to_bytes(url) + b'">') == 1
+        base_pos = bbody.find(b'<base href="' + to_bytes(url) + b'">')
+        title_pos = bbody.find(b"<title>Actual</title>")
+        assert base_pos < title_pos
+        return True
+
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_text_response_uses_txt_extension():
+    response = TextResponse("http://www.example.com", body=b"plain text content")
+
+    def check(burl):
+        assert burl.endswith(".txt")
+        return True
+
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_raises_for_unsupported_response_type():
+    response = Response("http://www.example.com", body=b"binary")
+    with pytest.raises(TypeError):
+        open_in_browser(response, _openfunc=lambda _: True)
