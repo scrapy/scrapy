@@ -81,9 +81,6 @@ thumbnailing and normalizing images to JPEG/RGB format.
 Enabling your Media Pipeline
 ============================
 
-.. setting:: IMAGES_STORE
-.. setting:: FILES_STORE
-
 To enable your media pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting.
 
@@ -102,6 +99,8 @@ For Files Pipeline, use:
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
+.. setting:: IMAGES_STORE
+.. setting:: FILES_STORE
 
 Then, configure the target storage setting to a valid value that will be used
 for storing the downloaded images. Otherwise the pipeline will remain disabled,
