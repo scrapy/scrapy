@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 import pytest
 
 from scrapy.http import (
@@ -13,7 +17,7 @@ from scrapy.responsetypes import responsetypes
 from .test_utils_response import POST_XTRACTMIME_SCENARIOS, PRE_XTRACTMIME_SCENARIOS
 
 
-def _unmark(item):
+def _unmark(item: Any) -> Any:
     return pytest.param(*item.values)
 
 

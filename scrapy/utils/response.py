@@ -94,13 +94,10 @@ def _get_encoding_or_mime_type_from_headers(
         )
     ):
         return None, headers[b"Content-Type"]
-    if headers.get(b"Content-Disposition"):
+    content_disposition = headers.get(b"Content-Disposition")
+    if content_disposition:
         path = (
-            headers[b"Content-Disposition"]
-            .split(b";")[-1]
-            .split(b"=")[-1]
-            .strip(b"\"'")
-            .decode()
+            content_disposition.split(b";")[-1].split(b"=")[-1].strip(b"\"'").decode()
         )
         encoding, mime_type = _get_encoding_or_mime_type_from_path(path)
         if encoding:
@@ -262,9 +259,6 @@ def open_in_browser(
             if "item name" not in response.body:
                 open_in_browser(response)
     """
-    # circular imports
-    from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
-
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):

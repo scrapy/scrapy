@@ -133,6 +133,8 @@ module = [
     "pytest_twisted",
     "robotexclusionrulesparser",
     "testfixtures",
+    "xtractmime",
+    "xtractmime.*",
     "zope.interface.*",
 ]
 ignore_missing_imports = true
