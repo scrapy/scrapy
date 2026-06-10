@@ -12,7 +12,7 @@ from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings, _SettingsKey
+from scrapy.settings import Settings
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
@@ -89,7 +89,7 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(
-    settings: Settings | dict[_SettingsKey, Any] | None = None,
+    settings: Settings | dict[str, Any] | None = None,
     install_root_handler: bool = True,
 ) -> None:
     """

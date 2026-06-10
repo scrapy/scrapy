@@ -22,7 +22,7 @@ from scrapy.crawler import (
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
-from scrapy.settings import Settings, _SettingsKey, default_settings
+from scrapy.settings import Settings, default_settings
 from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
 from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
@@ -56,7 +56,7 @@ class TestBaseCrawler:
 
 class TestCrawler(TestBaseCrawler):
     def test_populate_spidercls_settings(self) -> None:
-        spider_settings: dict[_SettingsKey, Any] = {
+        spider_settings: dict[str, Any] = {
             "TEST1": "spider",
             "TEST2": "spider",
         }
