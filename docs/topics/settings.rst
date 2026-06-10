@@ -236,6 +236,87 @@ The ``settings`` object can be used like a :class:`dict` (e.g.
 which may be passed from the command line as strings, it is recommended to use
 one of the methods provided by the :class:`~scrapy.settings.Settings` API.
 
+.. _secret-settings:
+
+Secret settings
+===============
+
+Some settings hold sensitive values such as API keys, passwords, or tokens.
+Scrapy reads those settings with
+:meth:`~scrapy.settings.BaseSettings.getsecret`, which supports a JSON
+reference syntax that lets you store the actual secret outside your settings
+file.
+
+Plain string values are returned as-is:
+
+.. code-block:: python
+
+    AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
+
+To read the secret from an environment variable instead, set the value to a
+JSON object with an ``"env"`` key:
+
+.. code-block:: python
+
+    AWS_ACCESS_KEY_ID = '{"env": "AWS_ACCESS_KEY_ID"}'
+
+If the environment variable is not set, ``getsecret()`` logs a warning and the
+default setting value is used instead.
+
+To read the secret from the system keyring (requires the keyring_ package),
+use a ``"keyring"`` key.  The value can be a username string — in which case
+the service name defaults to ``"scrapy"`` — or an object for full control:
+
+.. _keyring: https://pypi.org/project/keyring/
+
+.. code-block:: python
+
+    # short form — service name defaults to "scrapy"
+    AWS_ACCESS_KEY_ID = '{"keyring": "my-aws-account"}'
+
+    # long form
+    AWS_ACCESS_KEY_ID = '{"keyring": {"username": "my-aws-account", "service": "myapp", "backend": "onepassword_keyring.OnePasswordKeyring"}}'
+
+If the keyring entry does not exist, components that use the secret setting may
+treat the issue as a user error and e.g. disable themselves or even stop the
+spider.
+
+If a secret value is itself a JSON object (e.g. a GCP service-account blob),
+use the ``"raw"`` key to prevent the object from being misinterpreted as a
+source reference:
+
+.. code-block:: python
+
+    GCP_CREDENTIALS = (
+        '{"raw": {"type": "service_account", "project_id": "my-project", ...}}'
+    )
+
+The inner value is returned as-is if it is a string, or JSON-serialised
+otherwise.
+
+You can also combine the ``"env"`` syntax with a JSON secret: store the
+JSON-encoded blob in the environment variable and reference it with
+``{"env": "MY_VAR"}``.
+
+.. rubric:: Loading secrets from a :file:`.env` file
+
+Use :setting:`DOTENV_PATH` to automatically load a :file:`.env` file at the
+start of each crawl. This pairs naturally with the ``"env"`` reference syntax:
+
+.. code-block:: ini
+
+    # .env  (keep out of version control)
+    AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+    AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+.. code-block:: python
+
+    # settings.py
+    AWS_ACCESS_KEY_ID = '{"env": "AWS_ACCESS_KEY_ID"}'
+    AWS_SECRET_ACCESS_KEY = '{"env": "AWS_SECRET_ACCESS_KEY"}'
+
+Real environment variables always take precedence over :file:`.env` values
+(see :setting:`DOTENV_OVERRIDE`).
 
 .. _component-priority-dictionaries:
 
@@ -394,6 +475,8 @@ Default: ``None``
 The AWS access key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
+This is a :ref:`secret setting <secret-settings>`.
+
 .. setting:: AWS_SECRET_ACCESS_KEY
 
 AWS_SECRET_ACCESS_KEY
@@ -403,6 +486,8 @@ Default: ``None``
 
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
+
+This is a :ref:`secret setting <secret-settings>`.
 
 .. setting:: AWS_SESSION_TOKEN
 
@@ -414,6 +499,8 @@ Default: ``None``
 The AWS security token used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
 `temporary security credentials`_.
+
+This is a :ref:`secret setting <secret-settings>`.
 
 .. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
@@ -702,6 +789,46 @@ Timeout for processing of DNS queries in seconds. Float is supported.
     :class:`~scrapy.resolver.CachingThreadedResolver`. It has no effect when
     :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
     either when :setting:`DNS_RESOLVER` is set to a different resolver.
+
+.. setting:: DOTENV_OVERRIDE
+
+DOTENV_OVERRIDE
+---------------
+
+Default: ``False``
+
+If ``True``, variables loaded from the :setting:`DOTENV_PATH` file override
+existing environment variables. The default ``False`` ensures that real
+environment variables always take precedence over the file.
+
+.. setting:: DOTENV_PATH
+
+DOTENV_PATH
+-----------
+
+Default: ``".env"``
+
+Path to a :file:`.env` file that is loaded into the environment at the start of
+each crawl (via :class:`~scrapy.crawler.Crawler`). Relative paths are resolved
+from the current working directory. If the file does not exist the setting is
+silently ignored.
+
+Loading a :file:`.env` file requires the python-dotenv_ package::
+
+    pip install python-dotenv
+
+.. _python-dotenv: https://pypi.org/project/python-dotenv/
+
+Use this in combination with :meth:`~scrapy.settings.BaseSettings.getsecret`
+to keep secrets out of your settings files::
+
+    # settings.py
+    ZYTE_API_KEY = '{"env": "ZYTE_API_KEY"}'
+
+    # .env  (not committed to version control)
+    ZYTE_API_KEY=your-actual-key
+
+See also :setting:`DOTENV_OVERRIDE`.
 
 .. setting:: DOWNLOADER
 
@@ -1351,6 +1478,8 @@ Default: ``"guest"``
 
 The password to use for FTP connections when there is no ``"ftp_password"``
 in ``Request`` meta.
+
+This is a :ref:`secret setting <secret-settings>`.
 
 .. note::
     Paraphrasing `RFC 1635`_, although it is common to use either the password

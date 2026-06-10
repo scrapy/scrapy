@@ -40,6 +40,7 @@ from scrapy.utils.reactor import (
     verify_installed_reactor,
 )
 from scrapy.utils.reactorless import install_reactor_import_hook
+from scrapy.utils.secrets import _load_dotenv
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Generator, Iterable
@@ -70,6 +71,10 @@ class Crawler:
         self.spidercls: type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
+        _load_dotenv(
+            path=self.settings.get("DOTENV_PATH", ".env"),
+            override=self.settings.getbool("DOTENV_OVERRIDE", False),
+        )
         self._update_root_log_handler()
 
         self.addons: AddonManager = AddonManager(self)

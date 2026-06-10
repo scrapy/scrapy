@@ -13,6 +13,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
+from scrapy.utils.secrets import resolve_secret
 
 logger = getLogger(__name__)
 
@@ -85,7 +86,7 @@ class BaseSettings(MutableMapping[str, Any]):
     Key-value entries can be passed on initialization with the ``values``
     argument, and they would take the ``priority`` level (unless ``values`` is
     already an instance of :class:`~scrapy.settings.BaseSettings`, in which
-    case the existing priority levels will be kept).  If the ``priority``
+    case the existing priority levels will be kept). If the ``priority``
     argument is a string, the priority name will be looked up in
     :attr:`~scrapy.settings.SETTINGS_PRIORITIES`. Otherwise, a specific integer
     should be provided.
@@ -315,6 +316,19 @@ class BaseSettings(MutableMapping[str, Any]):
                 f"got {type(value).__name__}: {value!r}"
             )
         return copy.deepcopy(value)
+
+    def getsecret(self, name: str, default: str | None = None) -> str | None:
+        """Get a setting value as a secret string.
+
+        Looks up *name* and resolves its value via
+        :func:`~scrapy.utils.secrets.resolve_secret`. If the setting is not
+        defined or its value is ``None``, *default* is returned without calling
+        :func:`~scrapy.utils.secrets.resolve_secret`.
+        """
+        value = self.get(name)
+        if value is None:
+            return default
+        return resolve_secret(value, default)
 
     def getwithbase(self, name: str) -> BaseSettings:
         """Get a composition of a dictionary-like setting and its ``_BASE``

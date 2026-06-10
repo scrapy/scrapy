@@ -24,9 +24,9 @@ class S3DownloadHandler(BaseDownloadHandler):
             raise NotConfigured("missing botocore library")
 
         super().__init__(crawler)
-        aws_access_key_id = crawler.settings["AWS_ACCESS_KEY_ID"]
-        aws_secret_access_key = crawler.settings["AWS_SECRET_ACCESS_KEY"]
-        aws_session_token = crawler.settings["AWS_SESSION_TOKEN"]
+        aws_access_key_id = crawler.settings.getsecret("AWS_ACCESS_KEY_ID")
+        aws_secret_access_key = crawler.settings.getsecret("AWS_SECRET_ACCESS_KEY")
+        aws_session_token = crawler.settings.getsecret("AWS_SESSION_TOKEN")
         self.anon = not aws_access_key_id and not aws_secret_access_key
         self._signer = None
         if not self.anon:
