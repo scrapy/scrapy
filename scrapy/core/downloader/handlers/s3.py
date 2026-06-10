@@ -37,7 +37,9 @@ class S3DownloadHandler(BaseDownloadHandler):
             # botocore.auth.BaseSigner doesn't have an __init__() with args, only subclasses do
             self._signer = SignerCls(  # type: ignore[call-arg]
                 botocore.credentials.Credentials(
-                    aws_access_key_id, aws_secret_access_key, aws_session_token
+                    aws_access_key_id,
+                    aws_secret_access_key,
+                    aws_session_token,  # type: ignore[arg-type]
                 )
             )
 

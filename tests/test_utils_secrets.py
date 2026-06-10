@@ -230,8 +230,8 @@ class TestLoadDotenv:
         _load_dotenv(path=absent)
         assert dict(__import__("os").environ) == before
 
+    @pytest.mark.requires_dotenv
     def test_loads_variables(self, tmp_path):
-        pytest.importorskip("dotenv")
         dotenv_file = tmp_path / ".env"
         dotenv_file.write_text("SCRAPY_TEST_SECRET_VAR=hello\n")
         with mock.patch.dict("os.environ", {}, clear=False):
@@ -241,8 +241,8 @@ class TestLoadDotenv:
             assert __import__("os").environ.get("SCRAPY_TEST_SECRET_VAR") == "hello"
             __import__("os").environ.pop("SCRAPY_TEST_SECRET_VAR", None)
 
+    @pytest.mark.requires_dotenv
     def test_real_env_wins_over_dotenv(self, tmp_path):
-        pytest.importorskip("dotenv")
         dotenv_file = tmp_path / ".env"
         dotenv_file.write_text("SCRAPY_TEST_OVERRIDE_VAR=from-file\n")
         with mock.patch.dict(
@@ -251,8 +251,8 @@ class TestLoadDotenv:
             _load_dotenv(path=str(dotenv_file), override=False)
             assert __import__("os").environ["SCRAPY_TEST_OVERRIDE_VAR"] == "from-env"
 
+    @pytest.mark.requires_dotenv
     def test_override_true_replaces_env(self, tmp_path):
-        pytest.importorskip("dotenv")
         dotenv_file = tmp_path / ".env"
         dotenv_file.write_text("SCRAPY_TEST_OVERRIDE_VAR=from-file\n")
         with mock.patch.dict(
@@ -261,3 +261,47 @@ class TestLoadDotenv:
             _load_dotenv(path=str(dotenv_file), override=True)
             assert __import__("os").environ["SCRAPY_TEST_OVERRIDE_VAR"] == "from-file"
             __import__("os").environ.pop("SCRAPY_TEST_OVERRIDE_VAR", None)
+
+
+@pytest.mark.requires_keyring
+class TestResolveSecretKeyringIntegration:
+    """Integration tests that exercise the real keyring library."""
+
+    def test_get_password_returns_value(self):
+        import keyring  # noqa: PLC0415
+        import keyring.backend  # noqa: PLC0415
+        import keyring.backends.null  # noqa: PLC0415
+
+        class _InMemoryKeyring(keyring.backend.KeyringBackend):
+            priority = 1
+            _store: dict[tuple[str, str], str] = {}
+
+            def get_password(self, service, username):
+                return self._store.get((service, username))
+
+            def set_password(self, service, username, password):
+                self._store[(service, username)] = password
+
+            def delete_password(self, service, username):
+                self._store.pop((service, username), None)
+
+        backend = _InMemoryKeyring()
+        backend.set_password("scrapy", "my-account", "real-secret")
+        original = keyring.get_keyring()
+        try:
+            keyring.set_keyring(backend)
+            assert resolve_secret({"keyring": "my-account"}) == "real-secret"
+        finally:
+            keyring.set_keyring(original)
+
+    def test_missing_entry_raises_key_error(self):
+        import keyring  # noqa: PLC0415
+        import keyring.backends.null  # noqa: PLC0415
+
+        original = keyring.get_keyring()
+        try:
+            keyring.set_keyring(keyring.backends.null.Keyring())
+            with pytest.raises(KeyError):
+                resolve_secret({"keyring": "nonexistent"})
+        finally:
+            keyring.set_keyring(original)

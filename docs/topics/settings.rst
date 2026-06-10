@@ -263,7 +263,7 @@ JSON object with an ``"env"`` key:
 If the environment variable is not set, ``getsecret()`` logs a warning and the
 default setting value is used instead.
 
-To read the secret from the system keyring (requires the keyring_ package),
+To read the secret from the system keyring (requires keyring_ >= 21.7.0),
 use a ``"keyring"`` key.  The value can be a username string — in which case
 the service name defaults to ``"scrapy"`` — or an object for full control:
 
@@ -813,7 +813,7 @@ each crawl (via :class:`~scrapy.crawler.Crawler`). Relative paths are resolved
 from the current working directory. If the file does not exist the setting is
 silently ignored.
 
-Loading a :file:`.env` file requires the python-dotenv_ package::
+Loading a :file:`.env` file requires python-dotenv_ >= 0.10.2::
 
     pip install python-dotenv
 
