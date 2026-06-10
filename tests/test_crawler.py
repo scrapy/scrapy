@@ -764,8 +764,8 @@ class TestCrawlerRunnerHasSpider:
 
 @pytest.mark.only_asyncio
 class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
-    @staticmethod
-    def _runner() -> CrawlerRunnerBase:
+    @pytest.fixture
+    def runner(self) -> CrawlerRunnerBase:
         return AsyncCrawlerRunner(get_reactor_settings())
 
     def test_crawler_runner_asyncio_enabled_true(self) -> None:  # type: ignore[override]
