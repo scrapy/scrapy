@@ -92,21 +92,21 @@ class TestInternalKeysCheck:
         assert "https://source.example.com" in caplog.text
 
     def test_skip_keys_setting(self, caplog: pytest.LogCaptureFixture) -> None:
-        crawler = get_crawler(Spider, {"META_COPY_WARN_SKIP_KEYS": ["retry_times"]})
-        mw = MetaCopyDetectionMiddleware.from_crawler(crawler)
-        req = Request("https://example.com/1", meta={"retry_times": 1})
         with caplog.at_level(WARNING):
+            crawler = get_crawler(Spider, {"META_COPY_WARN_SKIP_KEYS": ["retry_times"]})
+            mw = MetaCopyDetectionMiddleware.from_crawler(crawler)
+            req = Request("https://example.com/1", meta={"retry_times": 1})
             process(mw, [req])
         assert not caplog.records
 
     def test_skip_keys_setting_partial(self, caplog: pytest.LogCaptureFixture) -> None:
-        crawler = get_crawler(Spider, {"META_COPY_WARN_SKIP_KEYS": ["retry_times"]})
-        mw = MetaCopyDetectionMiddleware.from_crawler(crawler)
-        req = Request(
-            "https://example.com/1",
-            meta={"retry_times": 1, "redirect_times": 2},
-        )
         with caplog.at_level(WARNING):
+            crawler = get_crawler(Spider, {"META_COPY_WARN_SKIP_KEYS": ["retry_times"]})
+            mw = MetaCopyDetectionMiddleware.from_crawler(crawler)
+            req = Request(
+                "https://example.com/1",
+                meta={"retry_times": 1, "redirect_times": 2},
+            )
             process(mw, [req])
         assert len(caplog.records) == 1
         assert "retry_times" not in caplog.text
