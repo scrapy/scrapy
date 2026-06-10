@@ -22,7 +22,6 @@ from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.test import get_from_asyncio_queue
 
 if TYPE_CHECKING:
-    from scrapy.settings import _SettingsKey
     from tests.mockserver.http import MockServer
 
 
@@ -418,7 +417,7 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     """
 
     name = "crawl_spider_with_parse_method"
-    custom_settings: dict[_SettingsKey, Any] = {
+    custom_settings: dict[str, Any] = {
         "RETRY_HTTP_CODES": [],  # no need to retry
     }
     rules = (Rule(LinkExtractor(), callback="parse", follow=True),)
