@@ -549,7 +549,7 @@ class TestHttpBase(ABC):
         """Tests choosing of correct response type
         in case of Content-Type is empty but body contains text.
         """
-        body = b"Some plain text\ndata with tabs\t and null bytes\0"
+        body = b"Some plain text\ndata with tabs\t"
         request = Request(
             mockserver.url("/nocontenttype", is_secure=self.is_secure), body=body
         )

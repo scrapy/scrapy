@@ -43,6 +43,7 @@ class TextResponse(Response):
 
     attributes: tuple[str, ...] = (*Response.attributes, "encoding")
     __slots__ = (
+        "_cached_base_url",
         "_cached_benc",
         "_cached_decoded_json",
         "_cached_selector",

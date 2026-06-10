@@ -78,6 +78,7 @@ def _get_encoding_or_mime_type_from_headers(
         encodings = [
             item.strip()
             for item in b",".join(headers.getlist(b"Content-Encoding")).split(b",")
+            if item.strip().lower() != b"identity"
         ]
         if encodings:
             return encodings[-1], None
