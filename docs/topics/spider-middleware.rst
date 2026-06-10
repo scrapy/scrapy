@@ -326,32 +326,9 @@ MetaCopyDetectionMiddleware
 
    Warns when a spider yields a request that contains internal meta keys which
    should not be copied from :attr:`response.meta <scrapy.http.Response.meta>`
-   into new requests, or when two requests share the same meta dict object.
+   into new requests. See :attr:`~scrapy.http.Request.meta` to learn why.
 
-   Each warning is emitted at most once per crawl to avoid noise, but includes
-   the source response and the target request so the issue is easy to locate.
-
-   .. _unsafe-meta-copy:
-
-   Why copying response.meta is unsafe
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-   :attr:`response.meta <scrapy.http.Response.meta>` is an alias for
-   :attr:`response.request.meta <scrapy.http.Request.meta>`, which is the meta
-   dict of the request that produced the response. That dict may contain keys
-   set by Scrapy's internal components — such as ``retry_times`` from
-   :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` — that are
-   specific to that one request and must not be forwarded to unrelated
-   requests. Copying the entire dict (e.g. ``meta={**response.meta}``) or
-   passing the dict object directly (e.g. ``meta=response.meta``) propagates
-   those internal keys and can cause subtle bugs. For example, forwarding
-   ``retry_times`` reduces the number of retries available for the new request.
-
-   To pass custom data between callbacks, prefer
-   :attr:`~scrapy.http.Request.cb_kwargs`. If you need to carry data through
-   :attr:`~scrapy.http.Request.meta`, copy only the specific keys your code
-   uses rather than the whole dict. See also `scrapy-sticky-meta-params
-   <https://pypi.org/project/scrapy-sticky-meta-params/>`_.
+   Only 1 warning is emitted per crawl.
 
    MetaCopyDetectionMiddleware settings
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
