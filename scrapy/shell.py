@@ -65,8 +65,8 @@ if TYPE_CHECKING:
 # 3. When fetch() is called, it prepares a request and calls Shell._schedule()
 # in the reactor thread (via threads.blockingCallFromThread()).
 # 4. Shell._schedule() calls Shell._open_spider() (on the first call).
-# 5. Shell._open_spider() calls engine.open_spider_async(close_if_idle=False)
-# and engine._start_request_processing().
+# 5. Shell._open_spider() calls
+# engine.open_spider_async(close_if_idle=False).
 # 6. Shell._schedule() calls engine.crawl(request), scheduling the request.
 # 7. Shell._schedule() via _request_deferred() waits until the request callback
 # is called. When it's called, the response becomes available.
