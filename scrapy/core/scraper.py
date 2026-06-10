@@ -125,7 +125,7 @@ class Scraper:
 
     def _check_deprecated_itemproc_method(self, method: str) -> None:
         itemproc_cls = type(self.itemproc)
-        if not hasattr(self.itemproc, f"{method}_async()"):
+        if not hasattr(self.itemproc, f"{method}_async"):
             warnings.warn(
                 f"{global_object_name(itemproc_cls)} doesn't define a {method}_async() method,"
                 f" this is deprecated and the method will be required in future Scrapy versions.",
