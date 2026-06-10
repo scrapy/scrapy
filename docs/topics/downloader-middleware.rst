@@ -336,14 +336,15 @@ HttpAuthMiddleware
 
     .. code-block:: python
 
-        yield Request(
-            "https://intranet.example.com/protected/",
-            meta={
-                "http_user": "someuser",
-                "http_pass": "somepass",
-                "http_auth_domain": "intranet.example.com",
-            },
-        )
+        async def start(self):
+            yield Request(
+                "https://intranet.example.com/protected/",
+                meta={
+                    "http_user": "someuser",
+                    "http_pass": "somepass",
+                    "http_auth_domain": "intranet.example.com",
+                },
+            )
 
 .. setting:: HTTPAUTH_USER
 
