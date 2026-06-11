@@ -33,6 +33,8 @@ def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
 
     if len(portrange) > 2:
         raise ValueError(f"invalid portrange: {portrange}")
+    if len(portrange) == 2 and portrange[0] > portrange[1]:
+        raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)  # type: ignore[no-any-return]
     if len(portrange) == 1:
