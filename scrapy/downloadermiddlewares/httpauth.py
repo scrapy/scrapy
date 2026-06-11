@@ -13,6 +13,7 @@ from w3lib.http import basic_auth_header
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.url import url_is_from_any_domain
 
@@ -37,6 +38,14 @@ class HttpAuthMiddleware:
         usr = crawler.settings.get("HTTPAUTH_USER", "")
         pwd = crawler.settings.get("HTTPAUTH_PASS", "")
         if usr or pwd:
+            domain_priority = crawler.settings.getpriority("HTTPAUTH_DOMAIN") or 0
+            if domain_priority <= SETTINGS_PRIORITIES["default"]:
+                raise ValueError(
+                    "HTTPAUTH_DOMAIN must be set when HTTPAUTH_USER or HTTPAUTH_PASS "
+                    "is configured. Set it to a domain (e.g. 'example.com') to restrict "
+                    "credentials to that domain, or set it to None to send credentials "
+                    "with all requests."
+                )
             o._auth = basic_auth_header(usr, pwd)
             o._domain = crawler.settings.get("HTTPAUTH_DOMAIN")
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)

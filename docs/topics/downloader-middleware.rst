@@ -376,6 +376,9 @@ The domain (and its subdomains) to which HTTP basic authentication credentials
 are sent. Set to ``None`` to send credentials with all requests, but be aware
 that this risks leaking credentials to unrelated domains.
 
+This setting must be explicitly configured whenever :setting:`HTTPAUTH_USER`
+or :setting:`HTTPAUTH_PASS` is set.
+
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
 

@@ -7,13 +7,16 @@ from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
+_DOMAIN_NOT_SET = object()
 
-def make_mw(user="", passwd="", domain=None):
-    settings = {
+
+def make_mw(user="", passwd="", domain=_DOMAIN_NOT_SET):
+    settings: dict = {
         "HTTPAUTH_USER": user,
         "HTTPAUTH_PASS": passwd,
-        "HTTPAUTH_DOMAIN": domain,
     }
+    if domain is not _DOMAIN_NOT_SET:
+        settings["HTTPAUTH_DOMAIN"] = domain
     return HttpAuthMiddleware.from_crawler(get_crawler(settings_dict=settings))
 
 
@@ -78,8 +81,12 @@ class TestHttpAuthMiddlewareSettings:
         mw.process_request(req)
         assert "Authorization" not in req.headers
 
+    def test_auth_without_domain_raises(self):
+        with pytest.raises(ValueError, match="HTTPAUTH_DOMAIN"):
+            make_mw(user="foo", passwd="bar")
+
     def test_auth_all_domains(self):
-        mw = make_mw(user="foo", passwd="bar")
+        mw = make_mw(user="foo", passwd="bar", domain=None)
         req = Request("http://example.com/")
         mw.process_request(req)
         assert req.headers["Authorization"] == basic_auth_header("foo", "bar")
