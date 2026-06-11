@@ -15,14 +15,14 @@ class TestScrapyUtils:
 
         See https://github.com/scrapy/scrapy/pull/4814#issuecomment-706230011
         """
-        if not os.environ.get("_SCRAPY_PINNED", None):
-            pytest.skip("Not in a pinned environment")
+        if not os.environ.get("_SCRAPY_MIN", None):
+            pytest.skip("Not in a min environment")
 
         tox_config_file_path = Path(__file__).parent / ".." / "tox.ini"
         config_parser = ConfigParser()
         config_parser.read(tox_config_file_path)
         pattern = r"Twisted==([\d.]+)"
-        match = re.search(pattern, config_parser["pinned"]["deps"])
+        match = re.search(pattern, config_parser["min"]["deps"])
         pinned_twisted_version_string = match[1]
 
         assert twisted_version.short() == pinned_twisted_version_string
