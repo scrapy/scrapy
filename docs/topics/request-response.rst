@@ -1003,7 +1003,7 @@ Response objects
 
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the response headers. Values can be accessed using
-        :meth:`~scrapy.http.headers.Headers.get` to return the first header value with
+        :meth:`~scrapy.http.headers.Headers.get` to return the last header value with
         the specified name or :meth:`~scrapy.http.headers.Headers.getlist` to return
         all header values with the specified name. For example, this call will give you
         all cookies in the headers::

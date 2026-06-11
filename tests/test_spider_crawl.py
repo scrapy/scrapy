@@ -4,6 +4,7 @@ import re
 import warnings
 from logging import ERROR
 
+import pytest
 from testfixtures import LogCapture
 from w3lib.url import safe_url_string
 
@@ -232,6 +233,7 @@ class TestCrawlSpider(TestSpider):
             "HtmlResponse",
         ]
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_follow_links_attribute_population(self):
         crawler = get_crawler()
         spider = self.spider_class.from_crawler(crawler, "example.com")

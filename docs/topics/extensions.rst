@@ -149,8 +149,6 @@ The following stats are collected:
   (e.g. ``item_dropped_reasons_count/DropItem``).
 * ``response_received_count``: total number of HTTP responses received.
 
-.. _topics-extensions-ref-telnetconsole:
-
 Log Count extension
 ~~~~~~~~~~~~~~~~~~~
 
@@ -158,6 +156,8 @@ Log Count extension
    :synopsis: Basic stats logging
 
 .. autoclass:: LogCount
+
+.. _topics-extensions-ref-telnetconsole:
 
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
