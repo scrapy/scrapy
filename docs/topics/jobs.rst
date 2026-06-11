@@ -104,6 +104,15 @@ If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
 
+.. note:: Because requests are serialized with :mod:`pickle`, the objects you
+    store on a request, such as the values of its
+    :attr:`~scrapy.Request.cb_kwargs` and :attr:`~scrapy.Request.meta`
+    dictionaries, are deep-copied when the request is written to and later read
+    back from the job directory. As a result, the callback receives a *copy* of
+    those objects rather than the original ones, and changes made to the copy are
+    not reflected in the original object. Keep this in mind if you rely on
+    sharing mutable state through ``cb_kwargs`` or ``meta``.
+
 .. _job-dir-contents:
 
 Job directory contents
