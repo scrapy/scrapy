@@ -45,26 +45,26 @@ jobs:
           env:
             TOXENV: pypy3
 
-        # pinned deps
+        # min deps
         - python-version: "3.10.19"
           env:
-            TOXENV: pinned
+            TOXENV: min
         - python-version: "3.10.19"
           env:
-            TOXENV: default-reactor-pinned
+            TOXENV: min-default-reactor
         - python-version: "3.10.19"
           env:
-            TOXENV: no-reactor-pinned
+            TOXENV: min-no-reactor
         # pinned due to https://github.com/pypy/pypy/issues/5388
         - python-version: pypy3.11-7.3.20
           env:
-            TOXENV: pypy3-pinned
+            TOXENV: min-pypy3
         - python-version: "3.10.19"
           env:
-            TOXENV: extra-deps-pinned
+            TOXENV: min-extra-deps
         - python-version: "3.10.19"
           env:
-            TOXENV: botocore-pinned
+            TOXENV: min-botocore
 
         - python-version: "3.14"
           env:
@@ -92,7 +92,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install system libraries
-      if: contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'pinned')
+      if: contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'min')
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
