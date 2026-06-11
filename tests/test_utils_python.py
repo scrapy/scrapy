@@ -12,7 +12,6 @@ from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
     MutableAsyncChain,
-    MutableChain,
     binary_is_text,
     get_func_args,
     memoizemethod_noargs,
@@ -28,16 +27,6 @@ if TYPE_CHECKING:
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
-
-
-def test_mutablechain():
-    m = MutableChain(range(2), [2, 3], (4, 5))
-    m.extend(range(6, 7))
-    m.extend([7, 8])
-    m.extend([9, 10], (11, 12))
-    assert next(m) == 0
-    assert m.__next__() == 1
-    assert list(m) == list(range(2, 13))
 
 
 class TestMutableAsyncChain:

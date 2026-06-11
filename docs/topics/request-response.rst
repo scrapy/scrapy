@@ -117,6 +117,9 @@ Request objects
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
        This encoding will be used to percent-encode the URL and to convert the
        body to bytes (if given as a string).
+
+       To disable URL percent-encoding for a request, use the
+       :reqmeta:`verbatim_url` request meta key.
     :type encoding: str
 
     :param priority: sets :attr:`priority`, defaults to ``0``.
@@ -136,9 +139,13 @@ Request objects
 
     .. attribute:: Request.url
 
-        A string containing the URL of this request. Keep in mind that this
-        attribute contains the escaped URL, so it can differ from the URL passed in
-        the ``__init__()`` method.
+        A string containing the URL of this request.
+
+        Keep in mind that this attribute contains the escaped URL, so it can
+        differ from the URL passed in the ``__init__()`` method.
+
+        If :reqmeta:`verbatim_url` is set to ``True``, the URL is kept as
+        passed to ``__init__()``.
 
         This attribute is read-only. To change the URL of a Request use
         :meth:`replace`.
@@ -541,6 +548,11 @@ in your :meth:`fingerprint` method implementation:
 
 .. autofunction:: scrapy.utils.request.fingerprint
 
+By default, request fingerprinting canonicalizes the request URL. If
+:reqmeta:`verbatim_url` is set to ``True``, fingerprinting does not
+canonicalize the URL, and the ``keep_fragments`` parameter is ignored (it is
+effectively true).
+
 For example, to take the value of a request header named ``X-ID`` into
 account:
 
@@ -702,6 +714,7 @@ Those are:
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
 * :reqmeta:`is_start_request`
@@ -710,6 +723,7 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`verbatim_url`
 
 .. reqmeta:: bindaddress
 
@@ -777,14 +791,37 @@ download_fail_on_dataloss
 Whether or not to fail on broken responses. See:
 :setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
 
+.. reqmeta:: give_up_log_level
+
+give_up_log_level
+-----------------
+
+:ref:`Logging level <levels>` used for the message logged when a request
+exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
 .. reqmeta:: max_retry_times
 
 max_retry_times
 ---------------
 
-The meta key is used set retry times per request. When initialized, the
+The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: verbatim_url
+
+verbatim_url
+------------
+
+Set this key to ``True`` to keep the request URL as passed to
+:class:`~scrapy.Request`, without URL percent-encoding.
+
+When this key is enabled, :func:`~scrapy.utils.request.fingerprint` does not
+canonicalize the request URL, so requests whose URLs differ only in
+characters that would otherwise be canonicalized get different fingerprints.
+
+In this mode, the ``keep_fragments`` parameter is ignored, and it is
+effectively true.
 
 
 .. _topics-stop-response-download:
@@ -917,7 +954,7 @@ Response objects
     :type request: scrapy.Request
 
     :param certificate: an object representing the server's SSL certificate.
-    :type certificate: twisted.internet.ssl.Certificate
+    :type certificate: typing.Any
 
     :param ip_address: The IP address of the server from which the Response originated.
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
@@ -1009,8 +1046,8 @@ Response objects
 
     .. attribute:: Response.certificate
 
-        A :class:`twisted.internet.ssl.Certificate` object representing
-        the server's SSL certificate.
+        An object representing the server's SSL certificate. Its type and
+        contents depend on the download handler that produced the response.
 
         Only populated for ``https`` responses, ``None`` otherwise.
 

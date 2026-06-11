@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -18,9 +19,11 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
+    TestHttpsTLSVersionBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
     TestMitmProxyBase,
+    TestRealWebsiteBase,
 )
 from tests.utils.decorators import coroutine_test
 
@@ -171,6 +174,10 @@ class TestHttp2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase)
     pass
 
 
+class TestHttp2TLSVersion(H2DownloadHandlerMixin, TestHttpsTLSVersionBase):
+    pass
+
+
 class TestHttp2WithCrawler(H2DownloadHandlerMixin, TestHttpWithCrawlerBase):
     is_secure = True
 
@@ -196,3 +203,10 @@ class TestHttp2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(H2DownloadHandlerMixin, TestMitmProxyBase):
     pass
+
+
+@pytest.mark.requires_internet
+class TestRealWebsite(H2DownloadHandlerMixin, TestRealWebsiteBase):
+    @property
+    def platform_cert_store_works(self) -> bool:
+        return sys.platform != "win32"

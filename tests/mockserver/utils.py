@@ -9,8 +9,10 @@ from OpenSSL import SSL
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate, load_privatekey
 from twisted.internet.ssl import CertificateOptions, ContextFactory
 
+from scrapy.core.downloader.tls import _TWISTED_VERSION_MAP
 from scrapy.utils._deps_compat import PYOPENSSL_WANTS_X509_PKEY
 from scrapy.utils.python import to_bytes
+from scrapy.utils.ssl import _get_cert_options_version_kwargs
 
 if TYPE_CHECKING:
     from twisted.internet.interfaces import IOpenSSLContextFactory
@@ -19,7 +21,10 @@ if TYPE_CHECKING:
 def ssl_context_factory(
     keyfile: str = "keys/localhost.key",
     certfile: str = "keys/localhost.crt",
+    *,
     cipher_string: str | None = None,
+    tls_min_version: str | None = None,
+    tls_max_version: str | None = None,
 ) -> IOpenSSLContextFactory:
     keyfile_path = Path(__file__).parent.parent / keyfile
     certfile_path = Path(__file__).parent.parent / certfile
@@ -31,10 +36,14 @@ def ssl_context_factory(
         cert = load_certificate(FILETYPE_PEM, certfile_path.read_bytes())  # type: ignore[assignment]
         key = load_privatekey(FILETYPE_PEM, keyfile_path.read_bytes())  # type: ignore[assignment]
 
+    tls_min = _TWISTED_VERSION_MAP.get(tls_min_version) if tls_min_version else None
+    tls_max = _TWISTED_VERSION_MAP.get(tls_max_version) if tls_max_version else None
+    tls_version_kwargs = _get_cert_options_version_kwargs(tls_min, tls_max)
     # https://github.com/twisted/twisted/issues/12638
     factory: CertificateOptions = CertificateOptions(
         privateKey=key,  # type: ignore[arg-type]
         certificate=cert,  # type: ignore[arg-type]
+        **tls_version_kwargs,
     )
     if cipher_string:
         ctx = factory.getContext()

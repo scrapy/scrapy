@@ -22,10 +22,10 @@ jobs:
             TOXENV: pylint
         - python-version: "3.10"
           env:
-            TOXENV: typing
+            TOXENV: mypy
         - python-version: "3.10"
           env:
-            TOXENV: typing-tests
+            TOXENV: mypy-tests
         # Keep in sync with pyproject.toml tool.sphinx-scrapy.python-version.
         - python-version: "3.14"
           env:

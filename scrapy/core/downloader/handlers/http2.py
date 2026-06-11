@@ -49,7 +49,7 @@ class H2DownloadHandler(BaseDownloadHandler):
             raise UnsupportedURLSchemeError(
                 f"{type(self).__name__} doesn't support plain HTTP."
             )
-        agent = ScrapyH2Agent(
+        agent = _ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
             bind_address=self._bind_address,
@@ -65,9 +65,7 @@ class H2DownloadHandler(BaseDownloadHandler):
         self._pool.close_connections()
 
 
-class ScrapyH2Agent:
-    _Agent = H2Agent
-
+class _ScrapyH2Agent:
     def __init__(
         self,
         context_factory: IPolicyForHTTPS,
@@ -89,7 +87,7 @@ class ScrapyH2Agent:
             raise NotImplementedError(f"{type(self).__name__} doesn't support proxies.")
         bind_address = request.meta.get("bindaddress") or self._bind_address
         bind_address = normalize_bind_address(bind_address)
-        return self._Agent(
+        return H2Agent(
             reactor=reactor,
             context_factory=self._context_factory,
             connect_timeout=timeout,

@@ -79,7 +79,7 @@ class TestStartprojectCommand:
 
 
 def get_permissions_dict(
-    path: str | os.PathLike, renamings=None, ignore=None
+    path: str | os.PathLike[str], renamings=None, ignore=None
 ) -> dict[str, str]:
     def get_permissions(path: Path) -> str:
         return oct(path.stat().st_mode)

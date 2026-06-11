@@ -30,7 +30,9 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-live_refs: defaultdict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
+live_refs: defaultdict[type, WeakKeyDictionary[object, float]] = defaultdict(
+    WeakKeyDictionary
+)
 
 
 class object_ref:

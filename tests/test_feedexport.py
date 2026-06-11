@@ -41,7 +41,7 @@ from tests.spiders import ItemSpider
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Awaitable, Callable, Iterable
 
 
 def path_to_url(path: str | Path) -> str:
@@ -1312,7 +1312,9 @@ class TestFeedExporterSignals:
         self.feed_slot_closed_received = True
 
     async def run_signaled_feed_exporter(
-        self, feed_exporter_signal_handler: Callable, feed_slot_signal_handler: Callable
+        self,
+        feed_exporter_signal_handler: Callable[[], Awaitable[None] | None],
+        feed_slot_signal_handler: Callable[[Any], Awaitable[None] | None],
     ) -> None:
         crawler = get_crawler(settings_dict=self.settings)
         feed_exporter = FeedExporter.from_crawler(crawler)

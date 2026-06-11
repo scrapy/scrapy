@@ -148,7 +148,7 @@ class AsyncioLoopingCall:
         self._func: Callable[_P, _T] = func
         self._args: tuple[Any, ...] = args
         self._kwargs: dict[str, Any] = kwargs
-        self._task: asyncio.Task | None = None
+        self._task: asyncio.Task[None] | None = None
         self.interval: float | None = None
         self._start_time: float | None = None
 

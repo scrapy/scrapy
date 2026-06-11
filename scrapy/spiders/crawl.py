@@ -12,6 +12,7 @@ import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
@@ -46,7 +47,9 @@ def _identity_process_request(request: Request, response: Response) -> Request |
     return request
 
 
-def _get_method(method: Callable | str | None, spider: Spider) -> Callable | None:
+def _get_method(
+    method: Callable[..., Any] | str | None, spider: Spider
+) -> Callable[..., Any] | None:
     if callable(method):
         return method
     if isinstance(method, str):
@@ -218,4 +221,11 @@ class CrawlSpider(Spider):
     def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider._follow_links = crawler.settings.getbool("CRAWLSPIDER_FOLLOW_LINKS")
+        if not spider._follow_links:
+            warnings.warn(
+                "The CRAWLSPIDER_FOLLOW_LINKS setting is deprecated."
+                " You can set follow=False in your rules to achieve the same effect.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return spider

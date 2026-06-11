@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -17,9 +18,11 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
+    TestHttpsTLSVersionBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
     TestMitmProxyBase,
+    TestRealWebsiteBase,
     TestSimpleHttpsBase,
 )
 
@@ -81,6 +84,10 @@ class TestHttpsCustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersB
     pass
 
 
+class TestHttpsTLSVersion(HTTP11DownloadHandlerMixin, TestHttpsTLSVersionBase):
+    pass
+
+
 class TestHttpWithCrawler(HTTP11DownloadHandlerMixin, TestHttpWithCrawlerBase):
     pass
 
@@ -103,3 +110,10 @@ class TestHttpsProxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
 class TestMitmProxy(HTTP11DownloadHandlerMixin, TestMitmProxyBase):
     # not implemented
     handler_supports_tls_in_tls = False
+
+
+@pytest.mark.requires_internet
+class TestRealWebsite(HTTP11DownloadHandlerMixin, TestRealWebsiteBase):
+    @property
+    def platform_cert_store_works(self) -> bool:
+        return sys.platform != "win32"

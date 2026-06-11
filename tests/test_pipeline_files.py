@@ -383,11 +383,11 @@ class TestFilesPipelineFieldsItem(TestFilesPipelineFieldsMixin):
 class FilesPipelineTestDataClass:
     name: str
     # default fields
-    file_urls: list = dataclasses.field(default_factory=list)
-    files: list = dataclasses.field(default_factory=list)
+    file_urls: list[str] = dataclasses.field(default_factory=list)
+    files: list[dict[str, str]] = dataclasses.field(default_factory=list)
     # overridden fields
-    custom_file_urls: list = dataclasses.field(default_factory=list)
-    custom_files: list = dataclasses.field(default_factory=list)
+    custom_file_urls: list[str] = dataclasses.field(default_factory=list)
+    custom_files: list[dict[str, str]] = dataclasses.field(default_factory=list)
 
 
 class TestFilesPipelineFieldsDataClass(TestFilesPipelineFieldsMixin):

@@ -8,12 +8,14 @@ import gc
 import inspect
 import re
 import sys
+import warnings
 import weakref
 from collections.abc import AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, overload
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
 
 if TYPE_CHECKING:
@@ -294,12 +296,13 @@ else:
         gc.collect()
 
 
-class MutableChain(Iterable[_T]):
-    """
-    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
-    """
-
+class MutableChain(Iterable[_T]):  # pragma: no cover
     def __init__(self, *args: Iterable[_T]):
+        warnings.warn(
+            "MutableChain is deprecated and will be removed in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self.data: Iterator[_T] = chain.from_iterable(args)
 
     def extend(self, *iterables: Iterable[_T]) -> None:
@@ -356,3 +359,13 @@ def _looks_like_import_path(value: str) -> bool:
     if any(part == "" for part in parts):
         return False
     return all(part.isidentifier() for part in parts)
+
+
+def _iter_exc_causes(exc: BaseException) -> Iterable[BaseException]:
+    """Iterate over the exception causes/contexts."""
+    seen: set[int] = set()
+    cur: BaseException | None = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        yield cur
+        cur = cur.__cause__ or cur.__context__

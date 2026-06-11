@@ -11,6 +11,9 @@ class MitmProxy:
     auth_user = "scrapy"
     auth_pass = "scrapy"
 
+    def __init__(self, mode: str | None = None) -> None:
+        self.mode = mode
+
     def start(self) -> str:
         script = """
 import sys
@@ -32,6 +35,8 @@ sys.exit(mitmdump())
             "-s",
             str(Path(__file__).with_name("mitm_proxy_addon.py")),
         ]
+        if self.mode:
+            args += ["--mode", self.mode]
         self.proc: Popen[str] = Popen(
             [
                 sys.executable,
@@ -44,12 +49,13 @@ sys.exit(mitmdump())
             text=True,
         )
         assert self.proc.stdout is not None
+        scheme = "socks5" if self.mode == "socks5" else "http"
         line = ""
         for line in self.proc.stdout:
-            m = re.search(r"listening at (?:http://)?([^:]+:\d+)", line)
+            m = re.search(r"listening at (?:\w+://)?([^:]+:\d+)", line)
             if m:
                 host_port = m.group(1)
-                return f"http://{self.auth_user}:{self.auth_pass}@{host_port}"
+                return f"{scheme}://{self.auth_user}:{self.auth_pass}@{host_port}"
         self.stop()
         raise RuntimeError(f"Failed to parse mitmdump output: {line}")
 
