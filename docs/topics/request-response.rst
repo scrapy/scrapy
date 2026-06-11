@@ -724,6 +724,9 @@ Those are:
 * :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`http_auth_domain`
+* :reqmeta:`http_pass`
+* :reqmeta:`http_user`
 * :reqmeta:`is_start_request`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
@@ -805,6 +808,27 @@ give_up_log_level
 
 :ref:`Logging level <levels>` used for the message logged when a request
 exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
+.. reqmeta:: http_auth_domain
+
+http_auth_domain
+----------------
+
+Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
+
+.. reqmeta:: http_pass
+
+http_pass
+---------
+
+Overrides :setting:`HTTPAUTH_PASS` for this request.
+
+.. reqmeta:: http_user
+
+http_user
+---------
+
+Overrides :setting:`HTTPAUTH_USER` for this request.
 
 .. reqmeta:: max_retry_times
 
