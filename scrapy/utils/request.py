@@ -202,7 +202,9 @@ def request_to_curl(request: Request) -> str:
             cookies = f"--cookie '{cookie}'"
         elif isinstance(request.cookies, list):
             cookie = "; ".join(
-                f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                f"{c['name']}={c['value']}"
+                if "name" in c and "value" in c
+                else f"{next(iter(c.keys()))}={next(iter(c.values()))}"
                 for c in request.cookies
             )
             cookies = f"--cookie '{cookie}'"

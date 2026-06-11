@@ -413,3 +413,24 @@ class TestRequestToCurl:
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
         )
         self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list_verbose(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[
+                {
+                    "name": "foo",
+                    "value": "bar",
+                    "domain": "example.com",
+                    "path": "/",
+                    "secure": True,
+                }
+            ],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
