@@ -60,6 +60,24 @@ Source = "https://github.com/scrapy/scrapy"
 Tracker = "https://github.com/scrapy/scrapy/issues"
 "Release notes" = "https://docs.scrapy.org/en/latest/news.html"
 
+[project.optional-dependencies]
+bpython = ["bpython>=0.7.1"]
+brotli = [
+    "brotli>=1.2.0; implementation_name != 'pypy'",
+    "brotlicffi>=1.2.0.0; implementation_name == 'pypy'",
+]
+gcs = ["google-cloud-storage>=1.29.0"]
+http2 = ["Twisted[http2]>=21.7.0"]
+httpx = ["httpx>=0.27.1"]
+images = ["Pillow>=8.3.2"]
+ipython = ["ipython>=7.1.0"]
+robotparser = ["robotexclusionrulesparser>=1.6.2"]
+s3 = ["boto3>=1.20.0"]
+uvloop = [
+    "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
+]
+zstd = ["zstandard>=0.16.0; implementation_name != 'pypy'"]
+
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
 

@@ -681,6 +681,8 @@ We assume that the spider will not issue Cache-Control directives
 in requests unless it actually needs them, so directives in requests are
 not filtered.
 
+.. _http-compression:
+
 HttpCompressionMiddleware
 -------------------------
 
@@ -692,14 +694,12 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
-   This middleware also supports decoding `brotli-compressed`_ as well as
-   `zstd-compressed`_ responses, provided that `brotli`_ or `zstandard`_ is
-   installed, respectively.
+   This middleware also supports decoding `brotli-compressed`_ responses with
+   the :ref:`brotli <extras>` extra, and `zstd-compressed`_
+   responses with the :ref:`zstd <extras>` extra.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotli: https://pypi.org/project/Brotli/
 .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
-.. _zstandard: https://pypi.org/project/zstandard/
 
 
 HttpCompressionMiddleware Settings
@@ -1201,8 +1201,7 @@ Based on `Robotexclusionrulesparser <https://pypi.org/project/robotexclusionrule
 
 In order to use this parser:
 
-* Install ``Robotexclusionrulesparser`` by running
-  ``pip install robotexclusionrulesparser``
+* Install the :ref:`robotparser <extras>` extra.
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.RerpRobotParser``

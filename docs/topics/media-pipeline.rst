@@ -61,6 +61,8 @@ this:
 Using the Images Pipeline
 =========================
 
+.. note:: Requires the :ref:`images <extras>` extra.
+
 Using the :class:`ImagesPipeline` is a lot like using the :class:`FilesPipeline`,
 except the default field names used are different: you use ``image_urls`` for
 the image URLs of an item and it will populate an ``images`` field for the information
@@ -69,12 +71,6 @@ about the downloaded images.
 The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
-
-The Images Pipeline requires Pillow_ 8.3.2 or greater. It is used for
-thumbnailing and normalizing images to JPEG/RGB format.
-
-.. _Pillow: https://github.com/python-pillow/Pillow
-
 
 .. _topics-media-pipeline-enabling:
 
@@ -232,12 +228,13 @@ set the :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 Amazon S3 storage
 -----------------
 
+.. note:: Requires the :ref:`s3 <extras>` extra.
+
 .. setting:: FILES_STORE_S3_ACL
 .. setting:: IMAGES_STORE_S3_ACL
 
-If botocore_ >= 1.13.45 is installed, :setting:`FILES_STORE` and
-:setting:`IMAGES_STORE` can represent an Amazon S3 bucket. Scrapy will
-automatically upload the files to the bucket.
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent an Amazon S3
+bucket. Scrapy will automatically upload the files to the bucket.
 
 For example, this is a valid :setting:`IMAGES_STORE` value:
 
@@ -272,7 +269,6 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
     AWS_USE_SSL = False  # or True (None by default)
     AWS_VERIFY = False  # or True (None by default)
 
-.. _botocore: https://github.com/boto/botocore
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/
@@ -283,13 +279,13 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
 Google Cloud Storage
 ---------------------
 
+.. note:: Requires the :ref:`gcs <extras>` extra.
+
 .. setting:: FILES_STORE_GCS_ACL
 .. setting:: IMAGES_STORE_GCS_ACL
 
-:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud Storage
-bucket. Scrapy will automatically upload the files to the bucket. (requires `google-cloud-storage`_ )
-
-.. _google-cloud-storage: https://docs.cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud
+Storage bucket. Scrapy will automatically upload the files to the bucket.
 
 For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings:
 
