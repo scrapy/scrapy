@@ -734,8 +734,7 @@ specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
-    by all 3rd-party handlers. It's currently unsupported by
-    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    by all 3rd-party handlers.
 
 .. setting:: DOWNLOAD_TLS_MAX_VERSION
 

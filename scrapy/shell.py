@@ -76,8 +76,8 @@ if TYPE_CHECKING:
 # running event loop.
 #
 # Side note: it should be possible to remove _request_deferred() by using
-# engine.download() instead of engine.schedule(), losing the usual stuff like
-# spider middlewares (none of which should be important).
+# engine.download_async() instead of engine.schedule(), losing the usual stuff
+# like spider middlewares (none of which should be important).
 #
 # Other architecture problems:
 # * scrapy.cmdline.execute() creates an AsyncCrawlerProcess instance which

@@ -187,7 +187,7 @@ def verify_installed_reactor(reactor_path: str) -> None:
 
 
 def verify_installed_asyncio_event_loop(loop_path: str) -> None:
-    """Raise :exc:`RuntimeError` if the even loop of the installed
+    """Raise :exc:`RuntimeError` if the event loop of the installed
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
     does not match the specified import path or if no reactor is installed."""
     if not is_reactor_installed():
