@@ -2,12 +2,12 @@
 # (too many false positives)
 
 import logging
-import warnings
 from unittest import mock
 
 import pytest
 
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import (
     SETTINGS_PRIORITIES,
     BaseSettings,
@@ -711,14 +711,12 @@ def test_remove_from_list(before, name, item, after):
 
 
 def test_deprecated_concurrent_requests_per_ip_setting():
-    with warnings.catch_warnings(record=True) as warns:
-        settings = Settings({"CONCURRENT_REQUESTS_PER_IP": 1})
+    settings = Settings({"CONCURRENT_REQUESTS_PER_IP": 1})
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
+    ):
         settings.get("CONCURRENT_REQUESTS_PER_IP")
-
-    assert (
-        str(warns[0].message)
-        == "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead."
-    )
 
 
 class Component1:
