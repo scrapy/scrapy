@@ -30,7 +30,6 @@ from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import load_object
-from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
 
 if TYPE_CHECKING:
@@ -191,10 +190,6 @@ class Shell:
 
         Runs in the reactor thread.
         """
-        if self._use_reactor and is_asyncio_reactor_installed():
-            # set the asyncio event loop for the current thread
-            event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
-            set_asyncio_event_loop(event_loop_path)
         if not self.spider:
             await self._open_spider(spider)
         assert self.crawler.engine is not None
