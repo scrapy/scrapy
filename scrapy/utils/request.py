@@ -180,9 +180,9 @@ def _get_method(obj: Any, name: Any) -> Any:
 
 
 def _cookie_value_to_unicode(value: str | bytes | float) -> str:
-    if isinstance(value, (bytes, str)):
-        return to_unicode(value)
-    return to_unicode(str(value))
+    if isinstance(value, bytes):
+        return value.decode()
+    return str(value)
 
 
 def request_to_curl(request: Request) -> str:
