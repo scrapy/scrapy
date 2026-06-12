@@ -11,14 +11,15 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from itemadapter import ItemAdapter
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
+from scrapy.pipelines.files import FileException, FilesPipeline, GCSFilesStore, S3FilesStore, _md5sum
+from scrapy.settings import BaseSettings
 from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
 
@@ -127,13 +128,15 @@ class ImagesPipeline(FilesPipeline):
         return await self.image_downloaded(response, request, info, item=item)
 
     @classmethod
-    def _update_stores(cls, settings):
-        super()._update_stores(settings)
-
-        s3store = cls.STORE_SCHEMES["s3"]
+    def _update_stores(cls, settings: BaseSettings) -> None:
+        s3store: type[S3FilesStore] = cast(
+            "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
+        )
         s3store.POLICY = settings["IMAGES_STORE_S3_ACL"]
 
-        gcs_store = cls.STORE_SCHEMES["gs"]
+        gcs_store: type[GCSFilesStore] = cast(
+            "type[GCSFilesStore]", cls.STORE_SCHEMES["gs"]
+        )
         gcs_store.POLICY = settings["IMAGES_STORE_GCS_ACL"] or None
 
     async def image_downloaded(

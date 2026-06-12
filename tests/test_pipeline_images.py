@@ -14,8 +14,8 @@ from itemadapter import ItemAdapter
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.pipelines.files import GCSFilesStore, S3FilesStore
+from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.test import get_crawler
 
 try:
