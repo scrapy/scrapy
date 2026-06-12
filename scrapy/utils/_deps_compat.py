@@ -1,8 +1,15 @@
+import sys
+
 from OpenSSL import __version__ as PYOPENSSL_VERSION_STRING
 from packaging.version import Version
 from twisted import version as TWISTED_VERSION
 from twisted.python.versions import Version as TxVersion
 from w3lib import __version__ as W3LIB_VERSION_STRING
+
+# improved urllib.robotparser, https://github.com/python/cpython/pull/149374
+STDLIB_IMPROVED_ROBOTFILEPARSER = sys.version_info >= (3, 14, 5) or (
+    (3, 13, 14) <= sys.version_info < (3, 14)
+)
 
 TWISTED_FAILURE_HAS_STACK = TWISTED_VERSION < TxVersion("twisted", 24, 10, 0)
 # changes to private _sslverify code, https://github.com/twisted/twisted/pull/12506
