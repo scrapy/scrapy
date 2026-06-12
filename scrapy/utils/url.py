@@ -140,10 +140,8 @@ def strip_url(
         }
     ):
         port_suffix = f":{parsed_url.port}"
-        userinfo, sep, host = netloc.rpartition("@")
-        if host.endswith(port_suffix):
-            host = host[: -len(port_suffix)]
-        netloc = f"{userinfo}{sep}{host}"
+        if netloc.endswith(port_suffix):
+            netloc = netloc[: -len(port_suffix)]
 
     return urlunparse(
         (
