@@ -308,11 +308,12 @@ class TestTextResponse(TestResponse):
             "http://example.com/sample3.html#foo",
             "http://www.google.com/something",
             "http://example.com/innertag.html",
+            "http://example.com/page%204.html",
         ]
 
         # select <a> elements
         for sellist in [resp.css("a"), resp.xpath("//a")]:
-            for sel, url in zip(sellist, urls, strict=False):
+            for sel, url in zip(sellist, urls, strict=True):
                 self._assert_followed_url(sel, url, response=resp)
 
         # select <link> elements
@@ -324,7 +325,7 @@ class TestTextResponse(TestResponse):
 
         # href attributes should work
         for sellist in [resp.css("a::attr(href)"), resp.xpath("//a/@href")]:
-            for sel, url in zip(sellist, urls, strict=False):
+            for sel, url in zip(sellist, urls, strict=True):
                 self._assert_followed_url(sel, url, response=resp)
 
         # non-a elements are not supported

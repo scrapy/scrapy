@@ -102,7 +102,7 @@ class TestLogCounterHandler:
     def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.debug("test log msg")
         assert crawler.stats
-        assert crawler.stats.get_value("log_count/INFO") is None
+        assert crawler.stats.get_value("log_count/DEBUG") is None
 
 
 class TestStreamLogger:

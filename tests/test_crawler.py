@@ -739,11 +739,12 @@ class TestCrawlerRunnerHasSpider:
             ):
                 await self._crawl(runner, NoRequestsSpider)
         else:
-            CrawlerRunner(
+            runner = CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 }
             )
+            await self._crawl(runner, NoRequestsSpider)
 
 
 @pytest.mark.only_asyncio

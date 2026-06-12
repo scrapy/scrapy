@@ -476,14 +476,14 @@ class TestContractsManager:
 
         # invalid regex
         request = self.conman.from_method(spider.invalid_regex, self.results)
-        self.should_succeed()
+        assert request is None
 
         # invalid regex with valid contract
         request = self.conman.from_method(
             spider.invalid_regex_with_valid_contract, self.results
         )
-        self.should_succeed()
         request.callback(response)
+        self.should_succeed()
 
     def test_custom_contracts(self):
         self.conman.from_spider(CustomContractSuccessSpider(), self.results)
@@ -578,7 +578,7 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPreProcess(spider.returns_request)
-        conman = ContractsManager([contract])
+        conman = ContractsManager([UrlContract, ReturnsContract, contract])
 
         request = conman.from_method(spider.returns_request, self.results)
         contract.add_pre_hook(request, self.results)
@@ -592,7 +592,7 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPostProcess(spider.returns_request)
-        conman = ContractsManager([contract])
+        conman = ContractsManager([UrlContract, ReturnsContract, contract])
 
         request = conman.from_method(spider.returns_request, self.results)
         contract.add_post_hook(request, self.results)

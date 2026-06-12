@@ -394,6 +394,7 @@ class TestEngine(TestEngineBase):
             self._assert_downloaded_responses(run, count=9)
             self._assert_scraped_items(run)
             self._assert_signals_caught(run)
+            self._assert_headers_received(run)
             self._assert_bytes_received(run)
 
     @coroutine_test
