@@ -18,14 +18,14 @@ from xml.sax.xmlreader import AttributesImpl
 
 from itemadapter import ItemAdapter, is_item
 
-logger = logging.getLogger(__name__)
-
 from scrapy.item import Field, Item
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
     from json import JSONEncoder
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "BaseItemExporter",
