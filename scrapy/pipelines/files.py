@@ -153,9 +153,9 @@ class FSFilesStore:
 
 
 class S3FilesStore:
-    AWS_ACCESS_KEY_ID = None
-    AWS_SECRET_ACCESS_KEY = None
-    AWS_SESSION_TOKEN = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_SESSION_TOKEN: str | None = None
     AWS_ENDPOINT_URL = None
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
@@ -511,9 +511,9 @@ class FilesPipeline(MediaPipeline):
         s3store: type[S3FilesStore] = cast(
             "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
         )
-        s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
-        s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
-        s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
+        s3store.AWS_ACCESS_KEY_ID = settings.getsecret("AWS_ACCESS_KEY_ID")
+        s3store.AWS_SECRET_ACCESS_KEY = settings.getsecret("AWS_SECRET_ACCESS_KEY")
+        s3store.AWS_SESSION_TOKEN = settings.getsecret("AWS_SESSION_TOKEN")
         s3store.AWS_ENDPOINT_URL = settings["AWS_ENDPOINT_URL"]
         s3store.AWS_REGION_NAME = settings["AWS_REGION_NAME"]
         s3store.AWS_USE_SSL = settings["AWS_USE_SSL"]
@@ -530,7 +530,7 @@ class FilesPipeline(MediaPipeline):
             "type[FTPFilesStore]", cls.STORE_SCHEMES["ftp"]
         )
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
-        ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
+        ftp_store.FTP_PASSWORD = settings.getsecret("FTP_PASSWORD")
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
