@@ -146,6 +146,53 @@ class TestHttpsWithCrawler(TestHttpWithCrawler):
 class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
     expected_http_proxy_request_body = b"http://example.com/"
 
+    @coroutine_test
+    async def test_proxy_auth_header_preserved_for_retries(self) -> None:
+        class Stream:
+            async def __aenter__(self) -> None:
+                return None
+
+            async def __aexit__(self, *args: object) -> None:
+                return None
+
+        class Client:
+            def __init__(self) -> None:
+                self.headers: list[tuple[str, str]] | None = None
+                self.proxy: str | None = None
+
+            def stream(self, *args: Any, **kwargs: Any) -> Stream:
+                self.headers = kwargs["headers"]
+                return Stream()
+
+        request = Request(
+            "http://example.com/",
+            headers={
+                "Proxy-Authorization": "Basic dXNlcjpwYXNz",
+                "X-Test": "test",
+            },
+            meta={"proxy": "http://proxy.example:3128"},
+        )
+        client = Client()
+        handler: Any = HttpxDownloadHandler.__new__(HttpxDownloadHandler)
+        handler._proxy_auth_encoding = "latin-1"
+
+        def get_client(proxy: str | None) -> Client:
+            client.proxy = proxy
+            return client
+
+        handler._get_client = get_client
+
+        async with handler._make_request(request, timeout=1.0):
+            pass
+
+        assert client.proxy == "http://user:pass@proxy.example:3128"
+        assert client.headers == [("X-Test", "test")]
+        assert request.headers[b"Proxy-Authorization"] == b"Basic dXNlcjpwYXNz"
+        assert (
+            handler._extract_proxy_url_with_creds(request)
+            == "http://user:pass@proxy.example:3128"
+        )
+
 
 class TestHttpsProxy(TestHttpProxy):
     is_secure = True

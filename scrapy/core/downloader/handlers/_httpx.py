@@ -152,13 +152,18 @@ class HttpxDownloadHandler(_Base):
                 f"SOCKS proxy support in {type(self).__name__} requires the 'httpx[socks]' extra to be installed."
             )
         client = self._get_client(proxy)
+        headers = request.headers.to_tuple_list()
+        if proxy:
+            request_headers = Headers(request.headers, encoding=request.headers.encoding)
+            request_headers.pop(b"Proxy-Authorization", None)
+            headers = request_headers.to_tuple_list()
 
         try:
             async with client.stream(
                 request.method,
                 request.url,
                 content=request.body,
-                headers=request.headers.to_tuple_list(),
+                headers=headers,
                 timeout=timeout,
             ) as response:
                 yield response
