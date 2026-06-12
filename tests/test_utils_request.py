@@ -420,8 +420,8 @@ class TestRequestToCurl:
             method="POST",
             cookies=[
                 {
-                    "name": "foo",
-                    "value": "bar",
+                    "name": b"foo",
+                    "value": b"bar",
                     "domain": "example.com",
                     "path": "/",
                     "secure": True,
