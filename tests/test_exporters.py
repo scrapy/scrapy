@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import logging
 import marshal
 import pickle
 import re
@@ -385,6 +386,58 @@ class TestCsvItemExporter(TestBaseItemExporter):
 class TestCsvItemExporterDataclass(TestCsvItemExporter):
     item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
+
+
+class TestCsvItemExporterDataLossWarning:
+    """Tests for the data-loss warning in CsvItemExporter (Issue #4002)."""
+
+    def test_warning_on_extra_fields(self, caplog):
+        """A warning must be logged when an item has fields not in the header."""
+        output = BytesIO()
+        ie = CsvItemExporter(output)
+        ie.start_exporting()
+        ie.export_item({"name": "John", "age": "22"})
+        with caplog.at_level(logging.WARNING, logger="scrapy.exporters"):
+            ie.export_item({"name": "Jane", "age": "25", "city": "NYC"})
+        ie.finish_exporting()
+        assert "Data loss detected" in caplog.text
+        assert "FEED_EXPORT_FIELDS" in caplog.text
+
+    def test_no_warning_on_subset_fields(self, caplog):
+        """No warning when an item has fewer fields than the header."""
+        output = BytesIO()
+        ie = CsvItemExporter(output)
+        ie.start_exporting()
+        ie.export_item({"name": "John", "age": "22"})
+        with caplog.at_level(logging.WARNING, logger="scrapy.exporters"):
+            ie.export_item({"name": "Jane"})
+        ie.finish_exporting()
+        assert "Data loss detected" not in caplog.text
+
+    def test_warning_only_once(self, caplog):
+        """The warning must only be emitted once per exporter instance."""
+        output = BytesIO()
+        ie = CsvItemExporter(output)
+        ie.start_exporting()
+        ie.export_item({"name": "John", "age": "22"})
+        with caplog.at_level(logging.WARNING, logger="scrapy.exporters"):
+            ie.export_item({"name": "Jane", "age": "25", "city": "NYC"})
+            ie.export_item({"name": "Bob", "age": "30", "country": "US"})
+        ie.finish_exporting()
+        assert caplog.text.count("Data loss detected") == 1
+
+    def test_no_warning_when_fields_to_export_covers_all(self, caplog):
+        """No warning when FEED_EXPORT_FIELDS is set and covers all item fields."""
+        output = BytesIO()
+        ie = CsvItemExporter(
+            output, fields_to_export=["name", "age", "city"]
+        )
+        ie.start_exporting()
+        with caplog.at_level(logging.WARNING, logger="scrapy.exporters"):
+            ie.export_item({"name": "John", "age": "22"})
+            ie.export_item({"name": "Jane", "age": "25", "city": "NYC"})
+        ie.finish_exporting()
+        assert "Data loss detected" not in caplog.text
 
 
 class TestXmlItemExporter(TestBaseItemExporter):
