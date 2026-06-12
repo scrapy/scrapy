@@ -84,6 +84,10 @@ class FTPDownloadHandler(BaseDownloadHandler):
         "default": 503,
     }
 
+    #: The FTP client of the most recent request, kept so the control
+    #: connection can be closed (see ``download_request``).
+    client: FTPClient
+
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
@@ -105,7 +109,7 @@ class FTPDownloadHandler(BaseDownloadHandler):
         creator = ClientCreator(
             reactor, FTPClient, user, password, passive=passive_mode
         )
-        client: FTPClient = await maybe_deferred_to_future(
+        self.client = client = await maybe_deferred_to_future(
             creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
         )
         filepath = unquote(parsed_url.path)
@@ -119,7 +123,12 @@ class FTPDownloadHandler(BaseDownloadHandler):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message.encode())
             raise
-        protocol.close()
+        finally:
+            # Always release the response buffer and the control connection,
+            # including on the CommandFailed/error paths above.
+            protocol.close()
+            if client.transport is not None:
+                client.transport.loseConnection()
         headers = {"local filename": protocol.filename or b"", "size": protocol.size}
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)

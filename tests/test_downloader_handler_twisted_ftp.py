@@ -6,13 +6,14 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import mkstemp
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
 import pytest
 from pytest_twisted import async_yield_fixture
 from twisted.cred import checkers, credentials, portal
 
 from scrapy import Spider
-from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
+from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler, ReceivedDataProtocol
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
@@ -108,6 +109,38 @@ class TestFTPBase(ABC):
         r = await dh.download_request(request)
         assert r.status == 404
         assert r.body == b"['550 nonexistent.txt: No such file or directory.']"
+
+    @deferred_f_from_coro_f
+    async def test_ftp_download_closes_connection(
+        self, server_url: str, dh: FTPDownloadHandler
+    ) -> None:
+        request = Request(url=server_url + "file.txt", meta=self.req_meta)
+        await dh.download_request(request)
+        # The control connection is released rather than left for the GC.
+        assert dh.client.transport is not None
+        assert dh.client.transport.disconnecting
+
+    @deferred_f_from_coro_f
+    async def test_ftp_download_closes_connection_on_error(
+        self, server_url: str, dh: FTPDownloadHandler
+    ) -> None:
+        request = Request(url=server_url + "nonexistent.txt", meta=self.req_meta)
+        r = await dh.download_request(request)
+        assert r.status == 404
+        # The connection is released on the error path too.
+        assert dh.client.transport is not None
+        assert dh.client.transport.disconnecting
+
+    @deferred_f_from_coro_f
+    async def test_ftp_download_closes_protocol_on_error(
+        self, server_url: str, dh: FTPDownloadHandler
+    ) -> None:
+        request = Request(url=server_url + "nonexistent.txt", meta=self.req_meta)
+        with patch.object(ReceivedDataProtocol, "close", autospec=True) as mock_close:
+            r = await dh.download_request(request)
+        assert r.status == 404
+        # The response buffer is closed even when the download fails.
+        mock_close.assert_called_once()
 
     @deferred_f_from_coro_f
     async def test_ftp_local_filename(
