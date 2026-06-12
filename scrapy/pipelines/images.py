@@ -126,6 +126,16 @@ class ImagesPipeline(FilesPipeline):
     ) -> str:
         return await self.image_downloaded(response, request, info, item=item)
 
+    @classmethod
+    def _update_stores(cls, settings):
+        super()._update_stores(settings)
+
+        s3store = cls.STORE_SCHEMES["s3"]
+        s3store.POLICY = settings["IMAGES_STORE_S3_ACL"]
+
+        gcs_store = cls.STORE_SCHEMES["gs"]
+        gcs_store.POLICY = settings["IMAGES_STORE_GCS_ACL"] or None
+
     async def image_downloaded(
         self,
         response: Response,
