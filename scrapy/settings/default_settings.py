@@ -556,6 +556,7 @@ SPIDER_MIDDLEWARES_BASE = {
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 1000,
     # Spider side
 }
 
