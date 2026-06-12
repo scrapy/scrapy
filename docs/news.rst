@@ -237,6 +237,10 @@ Bug fixes
     tag when adding the ``<base>`` tag.
     (:issue:`7459`)
 
+-   Fixed :func:`scrapy.utils.url.strip_url` removing default ports from
+    passwords when ``strip_credentials=False``.
+    (:issue:`7604`)
+
 Documentation
 ~~~~~~~~~~~~~
 
