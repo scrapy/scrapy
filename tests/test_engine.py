@@ -6,7 +6,6 @@ import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from logging import DEBUG
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import Mock, call
 from urllib.parse import urlparse
@@ -606,7 +605,7 @@ class TestEngineDownload(TestEngineDownloadAsync):
 
 
 @coroutine_test
-async def test_request_scheduled_signal(caplog):
+async def test_request_scheduled_signal():
     class TestScheduler(BaseScheduler):
         def __init__(self):
             self.enqueued = []
@@ -633,7 +632,6 @@ async def test_request_scheduled_signal(caplog):
     keep_request = Request("https://keep.example")
     engine._schedule_request(keep_request)
     drop_request = Request("https://drop.example")
-    caplog.set_level(DEBUG)
     engine._schedule_request(drop_request)
     assert scheduler.enqueued == [keep_request], (
         f"{scheduler.enqueued!r} != [{keep_request!r}]"

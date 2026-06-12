@@ -240,11 +240,7 @@ class TestCrawler(TestBaseCrawler):
 
             @classmethod
             def from_crawler(cls, crawler):
-                try:
-                    crawler.get_downloader_middleware(DefaultSpider)
-                except Exception as e:
-                    MySpider.result = e
-                    raise
+                crawler.get_downloader_middleware(DefaultSpider)
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
         with pytest.raises(RuntimeError):
@@ -322,11 +318,7 @@ class TestCrawler(TestBaseCrawler):
 
             @classmethod
             def from_crawler(cls, crawler):
-                try:
-                    crawler.get_extension(DefaultSpider)
-                except Exception as e:
-                    MySpider.result = e
-                    raise
+                crawler.get_extension(DefaultSpider)
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
         with pytest.raises(RuntimeError):
@@ -404,11 +396,7 @@ class TestCrawler(TestBaseCrawler):
 
             @classmethod
             def from_crawler(cls, crawler):
-                try:
-                    crawler.get_item_pipeline(DefaultSpider)
-                except Exception as e:
-                    MySpider.result = e
-                    raise
+                crawler.get_item_pipeline(DefaultSpider)
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
         with pytest.raises(RuntimeError):
@@ -486,11 +474,7 @@ class TestCrawler(TestBaseCrawler):
 
             @classmethod
             def from_crawler(cls, crawler):
-                try:
-                    crawler.get_spider_middleware(DefaultSpider)
-                except Exception as e:
-                    MySpider.result = e
-                    raise
+                crawler.get_spider_middleware(DefaultSpider)
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
         with pytest.raises(RuntimeError):
