@@ -252,3 +252,4 @@ def test_dummy_spider_loader(spider_loader_env):
     assert not spider_loader.list()
     with pytest.raises(KeyError):
         spider_loader.load("spider1")
+    assert spider_loader.find_by_request(Request("http://example.com")) == []
