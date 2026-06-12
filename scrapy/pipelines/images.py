@@ -18,8 +18,13 @@ from itemadapter import ItemAdapter
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FileException, FilesPipeline, GCSFilesStore, S3FilesStore, _md5sum
-from scrapy.settings import BaseSettings
+from scrapy.pipelines.files import (
+    FileException,
+    FilesPipeline,
+    GCSFilesStore,
+    S3FilesStore,
+    _md5sum,
+)
 from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
 
@@ -34,6 +39,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
+    from scrapy.settings import BaseSettings
 
 
 class ImageException(FileException):
