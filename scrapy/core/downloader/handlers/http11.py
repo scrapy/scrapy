@@ -221,16 +221,21 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         # see https://github.com/scrapy/scrapy/issues/2491
         if b"\r\n\r\n" not in self._connectBuffer:
             return
+        idx = self._connectBuffer.find(b"\r\n\r\n")
+        extra_data = self._connectBuffer[idx + 4 :]
         self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
         respm = _TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-                self._tunneledHost,  # type: ignore[arg-type]
+                self._tunneledHost,
                 self._tunneledPort,
             )
             self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
+            if extra_data:
+                # forward any coalesced data received with the connect response
+                self._protocolDataReceived(bytes(extra_data))
         else:
             extra: Any
             if respm:

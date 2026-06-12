@@ -4,11 +4,18 @@ from __future__ import annotations
 
 import sys
 from typing import TYPE_CHECKING, Any
+from unittest.mock import MagicMock
 
 import pytest
+from twisted.internet.protocol import Protocol
+from twisted.python.failure import Failure
 
 from scrapy import Spider
-from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
+from scrapy.core.downloader.handlers.http11 import (
+    HTTP11DownloadHandler,
+    TunnelError,
+    _TunnelingTCP4ClientEndpoint,
+)
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from tests.test_downloader_handlers_http_base import (
@@ -117,3 +124,69 @@ class TestRealWebsite(HTTP11DownloadHandlerMixin, TestRealWebsiteBase):
     @property
     def platform_cert_store_works(self) -> bool:
         return sys.platform != "win32"
+
+
+def test_tunneling_endpoint_coalesced_bytes() -> None:
+    reactor = MagicMock()
+    context_factory = MagicMock()
+    endpoint = _TunnelingTCP4ClientEndpoint(
+        reactor=reactor,
+        host="example.com",
+        port=443,
+        proxyConf=("proxy.example.com", 8080, None),
+        contextFactory=context_factory,
+    )
+    endpoint._protocolFactory = MagicMock()
+
+    protocol = Protocol()
+    transport = MagicMock()
+    protocol.transport = transport
+
+    received: list[bytes] = []
+
+    def mock_data_received(data: bytes) -> None:
+        received.append(data)
+
+    protocol.dataReceived = mock_data_received  # type: ignore[method-assign]
+
+    endpoint.requestTunnel(protocol)
+
+    coalesced_data = b"HTTP/1.1 200 Connection established\r\n\r\n\x16\x03\x01\x00\xfa"
+    protocol.dataReceived(coalesced_data)
+
+    assert received == [b"\x16\x03\x01\x00\xfa"]
+
+
+def test_tunneling_endpoint_non_200_response() -> None:
+    reactor = MagicMock()
+    context_factory = MagicMock()
+    endpoint = _TunnelingTCP4ClientEndpoint(
+        reactor=reactor,
+        host="example.com",
+        port=443,
+        proxyConf=("proxy.example.com", 8080, None),
+        contextFactory=context_factory,
+    )
+    endpoint._protocolFactory = MagicMock()
+
+    protocol = Protocol()
+    transport = MagicMock()
+    protocol.transport = transport
+
+    received: list[bytes] = []
+
+    def mock_data_received(data: bytes) -> None:
+        received.append(data)
+
+    protocol.dataReceived = mock_data_received  # type: ignore[method-assign]
+
+    endpoint.requestTunnel(protocol)
+
+    coalesced_data = b"HTTP/1.1 407 Proxy Authentication Required\r\n\r\n"
+    protocol.dataReceived(coalesced_data)
+
+    assert received == []
+    assert endpoint._tunnelReadyDeferred.called
+    failure = endpoint._tunnelReadyDeferred.result
+    assert isinstance(failure, Failure)
+    assert failure.check(TunnelError)
