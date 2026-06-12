@@ -179,7 +179,7 @@ def _get_method(obj: Any, name: Any) -> Any:
         raise ValueError(f"Method {name!r} not found in: {obj}") from None
 
 
-def _cookie_value_to_unicode(value: str | bytes | float | int) -> str:
+def _cookie_value_to_unicode(value: str | bytes | float) -> str:
     if isinstance(value, (bytes, str)):
         return to_unicode(value)
     return to_unicode(str(value))
