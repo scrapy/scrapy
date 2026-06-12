@@ -89,6 +89,54 @@ just like any other Python package.
 (See :ref:`platform-specific guides <intro-install-platform-notes>`
 below for non-Python dependencies that you may need to install beforehand).
 
+.. _extras:
+
+Optional extras
+===============
+
+Scrapy provides optional :ref:`extras <pypug:dependency-specifiers-extras>`
+that install additional dependencies to enable specific features. To install
+Scrapy with one or more extras, list them in square brackets:
+
+.. code-block:: console
+
+    pip install scrapy[s3,images]
+
+The following extras are available:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Extra
+     - Provides
+   * - ``bpython``
+     - :ref:`bpython shell <shell-config>`
+   * - ``brotli``
+     - :ref:`Brotli response decompression <http-compression>`
+   * - ``gcs``
+     - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
+       :ref:`feed exports <topics-feed-exports>` and
+       :ref:`media pipelines <media-pipeline-gcs>`
+   * - ``http2``
+     - :ref:`twisted-http2-handler`
+   * - ``httpx``
+     - :ref:`httpx-handler`
+   * - ``images``
+     - :ref:`Images pipeline <images-pipeline>`
+   * - ``ipython``
+     - :ref:`IPython shell <shell-config>`
+   * - ``robotparser``
+     - :ref:`Robotexclusionrulesparser robots.txt parsing <rerp-parser>`
+   * - ``s3``
+     - :ref:`Amazon S3 <topics-feed-storage-s3>` storage for
+       :ref:`feed exports <topics-feed-exports>`,
+       :ref:`media pipelines <media-pipelines-s3>`, and
+       :ref:`S3 downloads <s3-handler>`
+   * - ``uvloop``
+     - `uvloop <https://github.com/MagicStack/uvloop>`_ event loop
+   * - ``zstd``
+     - :ref:`Zstandard response decompression <http-compression>`
+
 
 .. _intro-install-platform-notes:
 

@@ -169,6 +169,8 @@ of this package for more information.
 H2DownloadHandler
 -----------------
 
+.. note:: Requires the :ref:`http2 <extras>` extra.
+
 .. autoclass:: scrapy.core.downloader.handlers.http2.H2DownloadHandler
 
 | Supported scheme: ``https``.
@@ -180,9 +182,6 @@ This handler supports ``https://host/path`` URLs and uses the HTTP/2 protocol
 for them.
 
 It's implemented using :mod:`twisted.web.client` and the ``h2`` library.
-
-For this handler to work you need to install the ``Twisted[http2]`` extra
-dependency.
 
 If you want to use this handler you need to replace the default one for the
 ``https`` scheme:
@@ -269,8 +268,12 @@ Other limitations:
 
 -   HTTPS proxies to HTTPS destinations are not supported.
 
+.. _httpx-handler:
+
 HttpxDownloadHandler
 --------------------
+
+.. note:: Requires the :ref:`httpx <extras>` extra.
 
 .. versionadded:: 2.15.0
 
@@ -283,8 +286,6 @@ HttpxDownloadHandler
 
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 or HTTP/2 protocol for them.
-
-It's implemented using the ``httpx`` library and needs it to be installed.
 
 If you want to use this handler you need to replace the default ones for the
 ``http`` and ``https`` schemes:
@@ -327,8 +328,8 @@ HTTPX_HTTP2_ENABLED
 
 Default: ``False``
 
-Whether to enable HTTP/2 support in this handler. The ``httpx[http2]`` extra
-needs to be installed if you want to enable this setting.
+Whether to enable HTTP/2 support in this handler. Requires installing
+``httpx[http2]``.
 
 .. versionadded:: VERSION
 
@@ -374,8 +375,12 @@ This handler supports ``ftp://host/path`` FTP URIs.
 
 It's implemented using :mod:`twisted.protocols.ftp`.
 
+.. _s3-handler:
+
 S3DownloadHandler
 -----------------
+
+.. note:: Requires the :ref:`s3 <extras>` extra.
 
 .. autoclass:: scrapy.core.downloader.handlers.s3.S3DownloadHandler
 
@@ -385,5 +390,3 @@ S3DownloadHandler
 | :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
 This handler supports ``s3://bucket/path`` S3 URIs.
-
-It's implemented using the ``botocore`` library and needs it to be installed.
