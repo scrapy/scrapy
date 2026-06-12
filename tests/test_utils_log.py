@@ -76,15 +76,16 @@ class TestLogCounterHandler:
     @pytest.fixture
     def logger(self, crawler: Crawler) -> Generator[logging.Logger]:
         logger = logging.getLogger("test")
-        logger.setLevel(logging.NOTSET)
+        logger.setLevel(logging.DEBUG)
         logger.propagate = False
-        handler = LogCounterHandler(crawler)
+        handler = LogCounterHandler(crawler, level=crawler.settings.get("LOG_LEVEL"))
         logger.addHandler(handler)
-
-        yield logger
-
-        logger.propagate = True
-        logger.removeHandler(handler)
+        try:
+            yield logger
+        finally:
+            logger.propagate = True
+            logger.setLevel(logging.NOTSET)
+            logger.removeHandler(handler)
 
     def test_init(self, crawler: Crawler, logger: logging.Logger) -> None:
         assert crawler.stats
