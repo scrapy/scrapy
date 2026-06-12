@@ -150,7 +150,7 @@ def test_startdelay_definition(min_spider, min_setting, start_setting, expected)
     at = build_from_crawler(AutoThrottle, crawler)
     spider = _TestSpider()
     at._spider_opened(spider)
-    assert spider.download_delay == expected
+    assert at._start_delay(spider) == expected
 
 
 @pytest.mark.parametrize(
