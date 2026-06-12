@@ -21,7 +21,6 @@ from scrapy.link import Link
 from scrapy.linkextractors import IGNORED_EXTENSIONS, _is_valid_url, _matches
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
-from scrapy.utils.response import get_base_url
 from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
 
 if TYPE_CHECKING:
@@ -139,9 +138,11 @@ class LxmlParserLinkExtractor:
         return self._deduplicate_if_needed(links)
 
     def extract_links(self, response: TextResponse) -> list[Link]:
-        base_url = get_base_url(response)
         return self._extract_links(
-            response.selector, response.url, response.encoding, base_url
+            response.selector,
+            response.url,
+            response.encoding,
+            response.base_url,
         )
 
     def _process_links(self, links: list[Link]) -> list[Link]:
@@ -268,7 +269,6 @@ class LxmlLinkExtractor:
         Duplicate links are omitted if the ``unique`` attribute is set to ``True``,
         otherwise they are returned.
         """
-        base_url = get_base_url(response)
         if self.restrict_xpaths:
             docs = [
                 subdoc for x in self.restrict_xpaths for subdoc in response.xpath(x)
@@ -277,7 +277,12 @@ class LxmlLinkExtractor:
             docs = [response.selector]
         all_links = []
         for doc in docs:
-            links = self._extract_links(doc, response.url, response.encoding, base_url)
+            links = self._extract_links(
+                doc,
+                response.url,
+                response.encoding,
+                response.base_url,
+            )
             all_links.extend(self._process_links(links))
         if self.link_extractor.unique:
             return unique_list(all_links, key=self.link_extractor.link_key)

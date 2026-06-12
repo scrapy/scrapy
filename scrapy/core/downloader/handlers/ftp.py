@@ -41,9 +41,9 @@ from twisted.internet.protocol import ClientCreator, Protocol
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
-from scrapy.responsetypes import responsetypes
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.response import get_response_class
 
 if TYPE_CHECKING:
     from twisted.protocols.ftp import FTPClient
@@ -122,6 +122,6 @@ class FTPDownloadHandler(BaseDownloadHandler):
         protocol.close()
         headers = {"local filename": protocol.filename or b"", "size": protocol.size}
         body = protocol.filename or protocol.body.read()
-        respcls = responsetypes.from_args(url=request.url, body=body)
+        respcls = get_response_class(url=request.url, body=body)
         # hints for Headers-related types may need to be fixed to not use AnyStr
         return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]

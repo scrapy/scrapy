@@ -20,11 +20,10 @@ from w3lib.encoding import (
     read_bom,
     resolve_encoding,
 )
-from w3lib.html import strip_html5_whitespace
+from w3lib.html import get_base_url, strip_html5_whitespace
 
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
-from scrapy.utils.response import get_base_url
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -44,6 +43,7 @@ class TextResponse(Response):
 
     attributes: tuple[str, ...] = (*Response.attributes, "encoding")
     __slots__ = (
+        "_cached_base_url",
         "_cached_benc",
         "_cached_decoded_json",
         "_cached_selector",
@@ -53,6 +53,7 @@ class TextResponse(Response):
 
     def __init__(self, *args: Any, **kwargs: Any):
         self._encoding: str | None = kwargs.pop("encoding", None)
+        self._cached_base_url: str | None = None
         self._cached_benc: str | None = None
         self._cached_ubody: str | None = None
         self._cached_selector: Selector | None = None
@@ -70,6 +71,7 @@ class TextResponse(Response):
             self._body = body.encode(self._encoding)
         else:
             super()._set_body(body)
+        self._cached_base_url = None
 
     @property
     def encoding(self) -> str:
@@ -100,10 +102,27 @@ class TextResponse(Response):
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
+    @property
+    def base_url(self) -> str:
+        """Base URL for any relative URL in the response.
+
+        It defaults to the response :attr:`~scrapy.http.Response.url`, but HTML
+        responses may include a `base element
+        <https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base>`_ with
+        a different base URL.
+        """
+        if self._cached_base_url is None:
+            self._cached_base_url = get_base_url(
+                self.text[:4096],
+                self.url,
+                self.encoding,
+            )
+        return self._cached_base_url
+
     def urljoin(self, url: str) -> str:
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""
-        return urljoin(get_base_url(self), url)
+        return urljoin(self.base_url, url)
 
     @memoizemethod_noargs
     def _headers_encoding(self) -> str | None:
