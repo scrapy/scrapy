@@ -218,6 +218,7 @@ Extending Scrapy
    :hidden:
 
    topics/architecture
+   topics/lifecycle
    topics/addons
    topics/downloader-middleware
    topics/spider-middleware
@@ -232,6 +233,9 @@ Extending Scrapy
 
 :doc:`topics/architecture`
     Understand the Scrapy architecture.
+
+:doc:`topics/lifecycle`
+    Follow a request from creation to response delivery.
 
 :doc:`topics/addons`
     Enable and configure third-party extensions.
