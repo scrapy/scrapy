@@ -57,6 +57,5 @@ class TestLink:
             Link(b"http://www.example.com/\xc2\xa3")
 
     def test_eq_non_link(self):
-        link = Link("http://www.example.com")
-        with pytest.raises(NotImplementedError):
-            link == "http://www.example.com"  # noqa: B015
+        url = "http://example.com"
+        assert Link(url) != url
