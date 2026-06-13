@@ -140,8 +140,7 @@ def strip_url(
         }
     ):
         port_suffix = f":{parsed_url.port}"
-        if netloc.endswith(port_suffix):
-            netloc = netloc[: -len(port_suffix)]
+        netloc = netloc.removesuffix(port_suffix)
 
     return urlunparse(
         (
