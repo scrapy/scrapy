@@ -153,12 +153,24 @@ class HttpxDownloadHandler(_Base):
             )
         client = self._get_client(proxy)
 
+        headers = request.headers.to_tuple_list()
+        if proxy is not None:
+            # The proxy credentials travel in the proxy URL, so keep the
+            # Proxy-Authorization header out of the request sent to the
+            # destination server. _extract_proxy() no longer pops it, so it
+            # survives on the request for retries and redirects.
+            headers = [
+                (name, value)
+                for name, value in headers
+                if name.lower() != "proxy-authorization"
+            ]
+
         try:
             async with client.stream(
                 request.method,
                 request.url,
                 content=request.body,
-                headers=request.headers.to_tuple_list(),
+                headers=headers,
                 timeout=timeout,
             ) as response:
                 yield response

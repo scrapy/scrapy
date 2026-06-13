@@ -151,6 +151,28 @@ class TestHttpsProxy(TestHttpProxy):
     is_secure = True
 
 
+class TestProxyAuthHeaderRetries:
+    """Regression test for #7601: extracting the proxy credentials must not
+    drop the Proxy-Authorization header from the request, otherwise retries
+    and redirects reuse the same request and fail to authenticate."""
+
+    def test_extract_proxy_does_not_mutate_request_headers(self) -> None:
+        request = Request(
+            "https://example.com",
+            meta={"proxy": "http://proxy.example:8080"},
+            headers={"Proxy-Authorization": "Basic dXNlcjpwYXNz"},
+        )
+        proxy, auth = HttpxDownloadHandler._extract_proxy(request)
+        assert proxy == "http://proxy.example:8080"
+        assert auth == "Basic dXNlcjpwYXNz"
+        # The header must remain so a retry can re-authenticate.
+        assert request.headers.getlist(b"Proxy-Authorization") == [
+            b"Basic dXNlcjpwYXNz"
+        ]
+        # A second extraction, as happens on a retry, still yields the creds.
+        assert HttpxDownloadHandler._extract_proxy(request) == (proxy, auth)
+
+
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
     handler_supports_socks = HAS_SOCKS
