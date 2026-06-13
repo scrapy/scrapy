@@ -23,7 +23,6 @@ class TestRequest:
         # url argument must be basestring
         with pytest.raises(TypeError):
             self.request_class(123)
-        r = self.request_class("http://www.example.com")
 
         r = self.request_class("http://www.example.com")
         assert isinstance(r.url, str)

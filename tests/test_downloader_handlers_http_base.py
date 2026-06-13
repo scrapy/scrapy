@@ -563,7 +563,7 @@ class TestHttpBase(ABC):
     ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
 
-        # 10 is minimal size for this request and the limit is only counted on
+        # 5 is minimal size for this request and the limit is only counted on
         # response body. (regardless of headers)
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 5}) as download_handler:
             response = await download_handler.download_request(request)

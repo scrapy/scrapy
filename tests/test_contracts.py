@@ -388,7 +388,7 @@ class TestContractsManager:
         request = self.conman.from_method(spider.returns_item_meta, self.results)
         assert request.meta["key"] == "example"
         response.meta = request.meta
-        request.callback(ResponseMetaMock)
+        request.callback(response)
         assert response.meta["key"] == "example"
         self.should_succeed()
 

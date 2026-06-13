@@ -59,7 +59,7 @@ class TestFTPBase(ABC):
         port = reactor.listenTCP(0, factory, interface="127.0.0.1")
         portno = port.getHost().port
 
-        yield f"https://127.0.0.1:{portno}/"
+        yield f"ftp://127.0.0.1:{portno}/"
 
         await port.stopListening()
 
