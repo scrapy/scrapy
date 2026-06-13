@@ -429,9 +429,7 @@ class TestCsvItemExporterDataLossWarning:
     def test_no_warning_when_fields_to_export_covers_all(self, caplog):
         """No warning when FEED_EXPORT_FIELDS is set and covers all item fields."""
         output = BytesIO()
-        ie = CsvItemExporter(
-            output, fields_to_export=["name", "age", "city"]
-        )
+        ie = CsvItemExporter(output, fields_to_export=["name", "age", "city"])
         ie.start_exporting()
         with caplog.at_level(logging.WARNING, logger="scrapy.exporters"):
             ie.export_item({"name": "John", "age": "22"})
