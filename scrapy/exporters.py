@@ -5,6 +5,7 @@ Item Exporters are used to export/serialize items into different formats.
 from __future__ import annotations
 
 import csv
+import logging
 import marshal
 import pickle
 import pprint
@@ -23,6 +24,8 @@ from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
     from json import JSONEncoder
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "BaseItemExporter",
@@ -245,6 +248,7 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
+        self._data_loss_warned = False
 
     def serialize_field(
         self, field: Mapping[str, Any] | Field, name: str, value: Any
@@ -264,6 +268,16 @@ class CsvItemExporter(BaseItemExporter):
         if self._headers_not_written:
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
+
+        if not self._data_loss_warned and self.fields_to_export is not None:
+            item_fields = set(ItemAdapter(item).field_names())
+            if not item_fields <= set(self.fields_to_export):
+                logger.warning(
+                    "Data loss detected when exporting items. "
+                    "To avoid this, explicitly set the FEED_EXPORT_FIELDS setting. "
+                    "This message won't be shown for further items."
+                )
+                self._data_loss_warned = True
 
         fields = self._get_serialized_fields(item, default_value="", include_empty=True)
         values = list(self._build_row(x for _, x in fields))
