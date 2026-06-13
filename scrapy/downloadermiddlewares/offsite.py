@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 import re
-import warnings
 from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -38,7 +38,23 @@ class OffsiteMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
+        try:
+            self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
+            self.disallowed_host_regex: re.Pattern[str] | None = (
+                self._get_disallowed_host_regex(spider)
+            )
+        except ValueError as exc:
+            logger.error(
+                "Invalid domain configuration: %(error)s",
+                {"error": exc},
+                extra={"spider": spider},
+            )
+            if self.crawler.engine:
+                _schedule_coro(
+                    self.crawler.engine.close_spider_async(
+                        reason="invalid_domain_configuration"
+                    )
+                )
 
     def request_scheduled(self, request: Request, spider: Spider) -> None:
         self.process_request(request)
@@ -65,35 +81,71 @@ class OffsiteMiddleware:
         raise IgnoreRequest
 
     def should_follow(self, request: Request, spider: Spider) -> bool:
-        regex = self.host_regex
         # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ""
-        return bool(regex.search(host))
+        # If the host matches a disallowed domain, we can reject it
+        if self.disallowed_host_regex and self.disallowed_host_regex.search(host):
+            return False
+        # Otherwise, check allowed domains
+        return bool(self.host_regex.search(host))
+
+    @staticmethod
+    def _process_domains(
+        domains_list: list[str | None],
+        domains_type: str,
+    ) -> list[str]:
+        """Process a domains list and return a list of valid, regex-escaped domains.
+
+        Raises ``ValueError`` on invalid entries (``None``, URLs, or
+        domains with ports) so that the spider fails fast on
+        misconfigured domains.
+        """
+        url_pattern = re.compile(r"^https?://.*$")
+        port_pattern = re.compile(r":\d+$")
+        valid_domains: list[str] = []
+
+        for domain in domains_list:
+            if domain is None:
+                raise ValueError(f"{domains_type} contains empty value.")
+            if url_pattern.match(domain):
+                raise ValueError(
+                    f"{domains_type} accepts only domains, not URLs. "
+                    f"Ignoring URL entry {domain} in {domains_type}."
+                )
+            if port_pattern.search(domain):
+                raise ValueError(
+                    f"{domains_type} accepts only domains without ports. "
+                    f"Ignoring entry {domain} in {domains_type}."
+                )
+            valid_domains.append(re.escape(domain))
+        return valid_domains
 
     def get_host_regex(self, spider: Spider) -> re.Pattern[str]:
-        """Override this method to implement a different offsite policy"""
+        """Override this method to implement a different offsite policy.
+
+        Returns a compiled regular expression object that matches the hosts
+        that are allowed to be crawled.
+        """
         allowed_domains = getattr(spider, "allowed_domains", None)
         if not allowed_domains:
             return re.compile("")  # allow all by default
-        url_pattern = re.compile(r"^https?://.*$")
-        port_pattern = re.compile(r":\d+$")
-        domains = []
-        for domain in allowed_domains:
-            if domain is None:
-                continue
-            if url_pattern.match(domain):
-                message = (
-                    "allowed_domains accepts only domains, not URLs. "
-                    f"Ignoring URL entry {domain} in allowed_domains."
-                )
-                warnings.warn(message, stacklevel=2)
-            elif port_pattern.search(domain):
-                message = (
-                    "allowed_domains accepts only domains without ports. "
-                    f"Ignoring entry {domain} in allowed_domains."
-                )
-                warnings.warn(message, stacklevel=2)
-            else:
-                domains.append(re.escape(domain))
-        regex = rf"^(.*\.)?({'|'.join(domains)})$"
-        return re.compile(regex)
+
+        domains = self._process_domains(allowed_domains, "allowed_domains")
+        if domains:
+            return re.compile(rf"^(.*\.)?({'|'.join(domains)})$")
+        return re.compile("")  # allow all if no valid domains remain
+
+    def _get_disallowed_host_regex(self, spider: Spider) -> re.Pattern[str] | None:
+        """Build a regex that positively matches disallowed hosts.
+
+        Returns ``None`` when there are no disallowed domains, meaning
+        nothing should be blocked via this mechanism.
+        """
+        disallowed_domains = getattr(spider, "disallowed_domains", None)
+        if not disallowed_domains:
+            return None
+
+        domains = self._process_domains(disallowed_domains, "disallowed_domains")
+        if domains:
+            return re.compile(rf"^(.*\.)?({'|'.join(domains)})$")
+        return None
