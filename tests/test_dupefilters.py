@@ -86,7 +86,7 @@ class TestRFPDupeFilter:
                 df.close("finished")
 
             df2 = _get_dupefilter(settings={"JOBDIR": path}, open_=False)
-            assert df != df2
+            assert df is not df2
             try:
                 df2.open()
                 assert df2.request_seen(r1)

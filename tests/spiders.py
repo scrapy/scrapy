@@ -222,7 +222,7 @@ class AsyncDefDeferredWrappedSpider(SimpleSpider):
 
 
 class AsyncDefDeferredMaybeWrappedSpider(SimpleSpider):
-    name = "asyncdef_deferred_wrapped"
+    name = "asyncdef_deferred_maybe_wrapped"
 
     async def parse(self, response):
         await maybe_deferred_to_future(defer.succeed(None))
