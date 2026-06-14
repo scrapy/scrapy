@@ -307,26 +307,15 @@ HttpAuthMiddleware
 
 .. class:: HttpAuthMiddleware
 
-    This middleware authenticates all requests generated from certain spiders
-    using `Basic access authentication`_ (aka. HTTP auth).
+    This middleware authenticates requests using `Basic access authentication`_
+    (aka. HTTP auth).
 
-    To enable HTTP authentication for a spider, set the ``http_user`` and
-    ``http_pass`` spider attributes to the authentication data and the
-    ``http_auth_domain`` spider attribute to the domain which requires this
-    authentication (its subdomains will be also handled in the same way).
-    You can set ``http_auth_domain`` to ``None`` to enable the
-    authentication for all requests but you risk leaking your authentication
-    credentials to unrelated domains.
+    Use the :setting:`HTTPAUTH_USER`, :setting:`HTTPAUTH_PASS`, and
+    :setting:`HTTPAUTH_DOMAIN` settings to configure it. You can also override
+    the credentials per request via :attr:`~scrapy.Request.meta` keys
+    :reqmeta:`http_user`, :reqmeta:`http_pass`, and :reqmeta:`http_auth_domain`.
 
-    .. warning::
-        In previous Scrapy versions HttpAuthMiddleware sent the authentication
-        data with all requests, which is a security problem if the spider
-        makes requests to several different domains. Currently if the
-        ``http_auth_domain`` attribute is not set, the middleware will use the
-        domain of the first request, which will work for some spiders but not
-        for others. In the future the middleware will produce an error instead.
-
-    Example:
+    Example using settings (e.g. in :attr:`~scrapy.Spider.custom_settings`):
 
     .. code-block:: python
 
@@ -334,12 +323,61 @@ HttpAuthMiddleware
 
 
         class SomeIntranetSiteSpider(CrawlSpider):
-            http_user = "someuser"
-            http_pass = "somepass"
-            http_auth_domain = "intranet.example.com"
             name = "intranet.example.com"
+            custom_settings = {
+                "HTTPAUTH_USER": "someuser",
+                "HTTPAUTH_PASS": "somepass",
+                "HTTPAUTH_DOMAIN": "intranet.example.com",
+            }
 
             # .. rest of the spider code omitted ...
+
+    Example using per-request meta:
+
+    .. code-block:: python
+
+        async def start(self):
+            yield Request(
+                "https://intranet.example.com/protected/",
+                meta={
+                    "http_user": "someuser",
+                    "http_pass": "somepass",
+                    "http_auth_domain": "intranet.example.com",
+                },
+            )
+
+.. setting:: HTTPAUTH_USER
+
+HTTPAUTH_USER
+~~~~~~~~~~~~~
+
+Default: ``""``
+
+The username to use for HTTP basic authentication, applied to all requests
+whose URL matches :setting:`HTTPAUTH_DOMAIN`.
+
+.. setting:: HTTPAUTH_PASS
+
+HTTPAUTH_PASS
+~~~~~~~~~~~~~
+
+Default: ``""``
+
+The password to use for HTTP basic authentication.
+
+.. setting:: HTTPAUTH_DOMAIN
+
+HTTPAUTH_DOMAIN
+~~~~~~~~~~~~~~~
+
+Default: ``None``
+
+The domain (and its subdomains) to which HTTP basic authentication credentials
+are sent. Set to ``None`` to send credentials with all requests, but be aware
+that this risks leaking credentials to unrelated domains.
+
+This setting must be explicitly configured whenever :setting:`HTTPAUTH_USER`
+or :setting:`HTTPAUTH_PASS` is set.
 
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 

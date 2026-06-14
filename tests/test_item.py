@@ -48,6 +48,18 @@ class TestItem:
         with pytest.raises(KeyError):
             i["field"]
 
+    def test_delitem(self):
+        class TestItem(Item):
+            name = Field()
+
+        i = TestItem(name="John")
+        del i["name"]
+        with pytest.raises(KeyError):
+            i["name"]
+
+        with pytest.raises(KeyError):
+            del i["name"]
+
     def test_repr(self):
         class TestItem(Item):
             name = Field()

@@ -4,19 +4,27 @@
 asyncio
 =======
 
-Scrapy has partial support for :mod:`asyncio`. After you :ref:`install the
-asyncio reactor <install-asyncio>`, you may use :mod:`asyncio` and
-:mod:`asyncio`-powered libraries in any :doc:`coroutine <coroutines>`.
+Scrapy supports :mod:`asyncio` natively. New projects created with
+:command:`scrapy startproject` have asyncio enabled by default, and you can use
+:mod:`asyncio` and :mod:`asyncio`-powered libraries in any :doc:`coroutine
+<coroutines>`.
+
+The rest of this page covers advanced topics. If you are starting a new project,
+no additional setup is needed.
 
 
 .. _install-asyncio:
 
-Installing the asyncio reactor
-==============================
+Configuring the asyncio reactor
+===============================
 
-To enable :mod:`asyncio` support, your :setting:`TWISTED_REACTOR` setting needs
-to be set to ``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``,
-which is the default value.
+New projects generated with :command:`scrapy startproject` have the asyncio
+reactor configured by default. No manual setup is needed.
+
+The :setting:`TWISTED_REACTOR` setting controls which Twisted reactor Scrapy
+uses. Its default value is
+``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``, which enables
+:mod:`asyncio` support.
 
 If you are using :class:`~scrapy.crawler.AsyncCrawlerRunner` or
 :class:`~scrapy.crawler.CrawlerRunner`, you also need to

@@ -39,7 +39,7 @@ class Link:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Link):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self.url == other.url
             and self.text == other.text

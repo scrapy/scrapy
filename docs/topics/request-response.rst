@@ -188,6 +188,13 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
+        .. note:: When :setting:`JOBDIR` is set, requests are serialized to disk
+            with :mod:`pickle` (see :ref:`request-serialization`). As a result,
+            the callback receives a deep copy of any object stored in
+            ``cb_kwargs``, so mutating such an object in the callback does not
+            affect the original. Avoid relying on shared mutable state passed
+            through ``cb_kwargs`` in that case.
+
     .. attribute:: Request.meta
        :value: {}
 
@@ -717,6 +724,9 @@ Those are:
 * :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`http_auth_domain`
+* :reqmeta:`http_pass`
+* :reqmeta:`http_user`
 * :reqmeta:`is_start_request`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
@@ -798,6 +808,27 @@ give_up_log_level
 
 :ref:`Logging level <levels>` used for the message logged when a request
 exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
+.. reqmeta:: http_auth_domain
+
+http_auth_domain
+----------------
+
+Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
+
+.. reqmeta:: http_pass
+
+http_pass
+---------
+
+Overrides :setting:`HTTPAUTH_PASS` for this request.
+
+.. reqmeta:: http_user
+
+http_user
+---------
+
+Overrides :setting:`HTTPAUTH_USER` for this request.
 
 .. reqmeta:: max_retry_times
 
@@ -979,7 +1010,7 @@ Response objects
 
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the response headers. Values can be accessed using
-        :meth:`~scrapy.http.headers.Headers.get` to return the first header value with
+        :meth:`~scrapy.http.headers.Headers.get` to return the last header value with
         the specified name or :meth:`~scrapy.http.headers.Headers.getlist` to return
         all header values with the specified name. For example, this call will give you
         all cookies in the headers::
