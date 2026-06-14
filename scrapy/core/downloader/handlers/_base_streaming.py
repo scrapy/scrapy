@@ -279,7 +279,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         if not proxy:
             return None, None
         proxy = add_http_if_no_scheme(proxy)
-        auth_header: list[bytes] | None = request.headers.pop(
+        auth_header: list[bytes] | None = request.headers.get(
             b"Proxy-Authorization", None
         )
         return proxy, auth_header[0].decode("ascii") if auth_header else None

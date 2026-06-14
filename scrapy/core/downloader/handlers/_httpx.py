@@ -158,7 +158,11 @@ class HttpxDownloadHandler(_Base):
                 request.method,
                 request.url,
                 content=request.body,
-                headers=request.headers.to_tuple_list(),
+                headers=[
+                    (k, v)
+                    for k, v in request.headers.to_tuple_list()
+                    if k.lower() != b"proxy-authorization"
+                ],
                 timeout=timeout,
             ) as response:
                 yield response
