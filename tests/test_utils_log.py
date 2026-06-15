@@ -76,15 +76,16 @@ class TestLogCounterHandler:
     @pytest.fixture
     def logger(self, crawler: Crawler) -> Generator[logging.Logger]:
         logger = logging.getLogger("test")
-        logger.setLevel(logging.NOTSET)
+        logger.setLevel(logging.DEBUG)
         logger.propagate = False
-        handler = LogCounterHandler(crawler)
+        handler = LogCounterHandler(crawler, level=crawler.settings.get("LOG_LEVEL"))
         logger.addHandler(handler)
-
-        yield logger
-
-        logger.propagate = True
-        logger.removeHandler(handler)
+        try:
+            yield logger
+        finally:
+            logger.propagate = True
+            logger.setLevel(logging.NOTSET)
+            logger.removeHandler(handler)
 
     def test_init(self, crawler: Crawler, logger: logging.Logger) -> None:
         assert crawler.stats
@@ -102,7 +103,7 @@ class TestLogCounterHandler:
     def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.debug("test log msg")
         assert crawler.stats
-        assert crawler.stats.get_value("log_count/INFO") is None
+        assert crawler.stats.get_value("log_count/DEBUG") is None
 
 
 class TestStreamLogger:

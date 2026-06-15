@@ -59,7 +59,7 @@ class TestFTPBase(ABC):
         port = reactor.listenTCP(0, factory, interface="127.0.0.1")
         portno = port.getHost().port
 
-        yield f"https://127.0.0.1:{portno}/"
+        yield f"ftp://127.0.0.1:{portno}/"
 
         await port.stopListening()
 
@@ -142,15 +142,11 @@ class TestFTPBase(ABC):
         server_url: str,
         dh: FTPDownloadHandler,
     ) -> None:
-        f, local_fname = mkstemp()
-        local_fname_path = Path(local_fname)
-        os.close(f)
         meta = {}
         meta.update(self.req_meta)
         request = Request(url=server_url + filename, meta=meta)
         r = await dh.download_request(request)
         assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
-        local_fname_path.unlink()
 
 
 class TestFTP(TestFTPBase):

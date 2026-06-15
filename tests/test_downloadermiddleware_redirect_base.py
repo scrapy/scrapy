@@ -122,7 +122,7 @@ class Base:
             req1 = Request("http://a.example/first")
             rsp1 = self.get_response(req1, "/redirected")
             req2 = self.mw.process_response(req1, rsp1)
-            rsp2 = self.get_response(req1, "/redirected2")
+            rsp2 = self.get_response(req2, "/redirected2")
             req3 = self.mw.process_response(req2, rsp2)
 
             assert req2.url == "http://a.example/redirected"

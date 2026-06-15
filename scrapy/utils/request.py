@@ -179,6 +179,12 @@ def _get_method(obj: Any, name: Any) -> Any:
         raise ValueError(f"Method {name!r} not found in: {obj}") from None
 
 
+def _cookie_value_to_unicode(value: str | bytes | float) -> str:
+    if isinstance(value, bytes):
+        return value.decode()
+    return str(value)
+
+
 def request_to_curl(request: Request) -> str:
     """
     Converts a :class:`~scrapy.Request` object to a curl command.
@@ -202,7 +208,9 @@ def request_to_curl(request: Request) -> str:
             cookies = f"--cookie '{cookie}'"
         elif isinstance(request.cookies, list):
             cookie = "; ".join(
-                f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                f"{_cookie_value_to_unicode(c['name'])}={_cookie_value_to_unicode(c['value'])}"
+                if "name" in c and "value" in c
+                else f"{next(iter(c.keys()))}={next(iter(c.values()))}"
                 for c in request.cookies
             )
             cookies = f"--cookie '{cookie}'"
