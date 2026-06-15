@@ -175,10 +175,6 @@ class MockedMediaPipeline(UserDefinedPipeline):
         super().__init__(*args, crawler=crawler, **kwargs)
         self._mockcalled = []
 
-    def download(self, request, info):
-        self._mockcalled.append("download")
-        return super().download(request, info)
-
     def media_to_download(self, request, info, *, item=None):
         self._mockcalled.append("media_to_download")
         if "result" in request.meta:

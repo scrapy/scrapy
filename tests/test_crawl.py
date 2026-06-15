@@ -342,7 +342,7 @@ with multiples lines
         assert "responses" in crawler.spider.meta
         assert "failures" not in crawler.spider.meta
         # start() doesn't set Referer header
-        echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][2].body))
+        echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][0].body))
         assert "Referer" not in echo0["headers"]
         # following request sets Referer to the source request url
         echo1 = json.loads(to_unicode(crawler.spider.meta["responses"][1].body))
@@ -390,7 +390,7 @@ with multiples lines
         est = [x for sublist in est for x in sublist]  # flatten
         est = [x.lstrip().rstrip() for x in est]
         it = iter(est)
-        s = dict(zip(it, it, strict=False))
+        s = dict(zip(it, it, strict=True))
 
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == "1"

@@ -36,7 +36,6 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
-    from twisted.internet.ssl import ContextFactory
     from twisted.web.iweb import IBodyProducer
 
 
@@ -48,8 +47,6 @@ class TestSlot:
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
 class TestContextFactoryBase:
-    context_factory: ContextFactory | None = None
-
     @async_yield_fixture
     async def server_url(self, tmp_path):
         (tmp_path / "file").write_bytes(b"0123456789")
@@ -69,7 +66,7 @@ class TestContextFactoryBase:
         return reactor.listenSSL(
             0,
             site,
-            contextFactory=self.context_factory or ssl_context_factory(),
+            contextFactory=ssl_context_factory(),
             interface="127.0.0.1",
         )
 

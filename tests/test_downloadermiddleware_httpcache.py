@@ -203,7 +203,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert mw.process_request(req) is None
 
         # s3 scheme response is cached by default
-        req, res = Request("s3://bucket/key"), Response("http://bucket/key")
+        req, res = Request("s3://bucket/key"), Response("s3://bucket/key")
         with self._middleware() as mw:
             assert mw.process_request(req) is None
             mw.process_response(req, res)
@@ -214,7 +214,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert "cached" in cached.flags
 
         # ignore s3 scheme
-        req, res = Request("s3://bucket/key2"), Response("http://bucket/key2")
+        req, res = Request("s3://bucket/key2"), Response("s3://bucket/key2")
         with self._middleware(HTTPCACHE_IGNORE_SCHEMES=["s3"]) as mw:
             assert mw.process_request(req) is None
             mw.process_response(req, res)

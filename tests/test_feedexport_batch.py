@@ -315,7 +315,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
                 assert got_batch == expected_batch
 
     @coroutine_test
@@ -339,7 +339,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
                 assert got_batch == expected_batch
 
     @coroutine_test
@@ -447,7 +447,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         yield crawler.crawl()
 
         assert len(CustomS3FeedStorage.stubs) == len(items)
-        for stub in CustomS3FeedStorage.stubs[:-1]:
+        for stub in CustomS3FeedStorage.stubs:
             stub.assert_no_pending_responses()
         assert (
             "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()

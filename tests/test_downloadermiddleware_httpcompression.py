@@ -361,7 +361,7 @@ class TestHttpCompression:
         zf.write(plainbody)
         zf.close()
         response = Response(
-            "http;//www.example.com/", headers=headers, body=f.getvalue()
+            "http://www.example.com/", headers=headers, body=f.getvalue()
         )
         request = Request("http://www.example.com/")
 
@@ -386,7 +386,7 @@ class TestHttpCompression:
         zf.write(plainbody)
         zf.close()
         response = HtmlResponse(
-            "http;//www.example.com/page.html", headers=headers, body=f.getvalue()
+            "http://www.example.com/page.html", headers=headers, body=f.getvalue()
         )
         request = Request("http://www.example.com/")
 
@@ -493,7 +493,7 @@ class TestHttpCompression:
         gz_resp.close()
 
         response = Response(
-            "http;//www.example.com/", headers=headers, body=r.getvalue()
+            "http://www.example.com/", headers=headers, body=r.getvalue()
         )
         request = Request("http://www.example.com/")
 

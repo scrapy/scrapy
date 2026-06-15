@@ -836,7 +836,7 @@ class TestRequestMetaSettingFallback:
             request_meta,
             policy_class,
             check_warning,
-        ) in self.params[3:]:
+        ) in self.params:
             mw = RefererMiddleware(Settings(settings))
 
             response = Response(origin, headers=response_headers)

@@ -191,17 +191,14 @@ class TestS3:
 
     @contextlib.contextmanager
     def _mocked_date(self, date):
-        try:
-            import botocore.auth  # noqa: F401,PLC0415
-        except ImportError:
+        import botocore.auth  # noqa: F401,PLC0415
+
+        # We need to mock botocore.auth.formatdate, because otherwise
+        # botocore overrides Date header with current date and time
+        # and Authorization header is different each time
+        with mock.patch("botocore.auth.formatdate") as mock_formatdate:
+            mock_formatdate.return_value = date
             yield
-        else:
-            # We need to mock botocore.auth.formatdate, because otherwise
-            # botocore overrides Date header with current date and time
-            # and Authorization header is different each time
-            with mock.patch("botocore.auth.formatdate") as mock_formatdate:
-                mock_formatdate.return_value = date
-                yield
 
     @coroutine_test
     async def test_request_signing1(self):
