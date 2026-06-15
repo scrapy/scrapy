@@ -2,7 +2,9 @@
 XPath selectors based on lxml
 """
 
-from typing import Any, Optional, Type, Union
+from __future__ import annotations
+
+from typing import Any
 
 from parsel import Selector as _ParselSelector
 
@@ -16,14 +18,14 @@ __all__ = ["Selector", "SelectorList"]
 _NOT_SET = object()
 
 
-def _st(response: Optional[TextResponse], st: Optional[str]) -> str:
+def _st(response: TextResponse | None, st: str | None) -> str:
     if st is None:
         return "xml" if isinstance(response, XmlResponse) else "html"
     return st
 
 
-def _response_from_text(text: Union[str, bytes], st: Optional[str]) -> TextResponse:
-    rt: Type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
+def _response_from_text(text: str | bytes, st: str | None) -> TextResponse:
+    rt: type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
     return rt(url="about:blank", encoding="utf-8", body=to_bytes(text, "utf-8"))
 
 
@@ -71,16 +73,15 @@ class Selector(_ParselSelector, object_ref):
 
     def __init__(
         self,
-        response: Optional[TextResponse] = None,
-        text: Optional[str] = None,
-        type: Optional[str] = None,
-        root: Optional[Any] = _NOT_SET,
+        response: TextResponse | None = None,
+        text: str | None = None,
+        type: str | None = None,  # noqa: A002
+        root: Any | None = _NOT_SET,
         **kwargs: Any,
     ):
         if response is not None and text is not None:
             raise ValueError(
-                f"{self.__class__.__name__}.__init__() received "
-                "both response and text"
+                f"{self.__class__.__name__}.__init__() received both response and text"
             )
 
         st = _st(response, type)

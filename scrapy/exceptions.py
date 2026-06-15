@@ -5,7 +5,12 @@ These exceptions are documented in docs/topics/exceptions.rst. Please don't add
 new exceptions here without documenting them there.
 """
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
 
 # Internal
 
@@ -13,16 +18,12 @@ from typing import Any
 class NotConfigured(Exception):
     """Indicates a missing configuration situation"""
 
-    pass
-
 
 class _InvalidOutput(TypeError):
     """
     Indicates an invalid value has been returned by a middleware's processing method.
     Internal and undocumented, it should not be raised or caught by user code.
     """
-
-    pass
 
 
 # HTTP and crawling
@@ -34,8 +35,6 @@ class IgnoreRequest(Exception):
 
 class DontCloseSpider(Exception):
     """Request the spider not to be closed yet"""
-
-    pass
 
 
 class CloseSpider(Exception):
@@ -53,9 +52,39 @@ class StopDownload(Exception):
     should be handled by the request errback. Note that 'fail' is a keyword-only argument.
     """
 
+    response: Response | None
+
     def __init__(self, *, fail: bool = True):
         super().__init__()
         self.fail = fail
+
+
+class DownloadConnectionRefusedError(Exception):
+    """Indicates that a connection was refused by the server."""
+
+
+class CannotResolveHostError(Exception):
+    """Indicates that the provided hostname cannot be resolved."""
+
+
+class DownloadTimeoutError(Exception):
+    """Indicates that a request download has timed out."""
+
+
+class DownloadCancelledError(Exception):
+    """Indicates that a request download was cancelled."""
+
+
+class DownloadFailedError(Exception):
+    """Indicates that a request download has failed."""
+
+
+class ResponseDataLossError(Exception):
+    """Indicates that Scrapy couldn't get a complete response."""
+
+
+class UnsupportedURLSchemeError(Exception):
+    """Indicates that the URL scheme is not supported."""
 
 
 # Items
@@ -64,13 +93,13 @@ class StopDownload(Exception):
 class DropItem(Exception):
     """Drop item from the item pipeline"""
 
-    pass
+    def __init__(self, message: str, log_level: str | None = None):
+        super().__init__(message)
+        self.log_level = log_level
 
 
 class NotSupported(Exception):
     """Indicates a feature or method is not supported"""
-
-    pass
 
 
 # Commands
@@ -89,10 +118,6 @@ class ScrapyDeprecationWarning(Warning):
     DeprecationWarning is silenced on Python 2.7+
     """
 
-    pass
-
 
 class ContractFail(AssertionError):
     """Error raised in case of a failing contract"""
-
-    pass

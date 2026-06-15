@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, Union
-
-from twisted.internet import task
+from typing import TYPE_CHECKING
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 
 if TYPE_CHECKING:
+    from twisted.internet.task import LoopingCall
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -29,7 +30,7 @@ class LogStats:
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self.multiplier: float = 60.0 / self.interval
-        self.task: Optional[task.LoopingCall] = None
+        self.task: AsyncioLoopingCall | LoopingCall | None = None
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -46,7 +47,7 @@ class LogStats:
         self.pagesprev: int = 0
         self.itemsprev: int = 0
 
-        self.task = task.LoopingCall(self.log, spider)
+        self.task = create_looping_call(self.log, spider)
         self.task.start(self.interval)
 
     def log(self, spider: Spider) -> None:
@@ -81,14 +82,17 @@ class LogStats:
 
     def calculate_final_stats(
         self, spider: Spider
-    ) -> Union[Tuple[None, None], Tuple[float, float]]:
+    ) -> tuple[None, None] | tuple[float, float]:
         start_time = self.stats.get_value("start_time")
-        finished_time = self.stats.get_value("finished_time")
+        finish_time = self.stats.get_value("finish_time")
 
-        if not start_time or not finished_time:
+        if not start_time or not finish_time:
             return None, None
 
-        mins_elapsed = (finished_time - start_time).seconds / 60
+        mins_elapsed = (finish_time - start_time).seconds / 60
+
+        if mins_elapsed == 0:
+            return None, None
 
         items = self.stats.get_value("item_scraped_count", 0)
         pages = self.stats.get_value("response_received_count", 0)

@@ -7,27 +7,21 @@ See documentation in docs/topics/item.rst
 from __future__ import annotations
 
 from abc import ABCMeta
+from collections.abc import MutableMapping
 from copy import deepcopy
 from pprint import pformat
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterator,
-    KeysView,
-    MutableMapping,
-    NoReturn,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, KeysView
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
 
-class Field(Dict[str, Any]):
+class Field(dict[str, Any]):
     """Container of field metadata"""
 
 
@@ -38,7 +32,7 @@ class ItemMeta(ABCMeta):
     """
 
     def __new__(
-        mcs, class_name: str, bases: Tuple[type, ...], attrs: Dict[str, Any]
+        mcs, class_name: str, bases: tuple[type, ...], attrs: dict[str, Any]
     ) -> ItemMeta:
         classcell = attrs.pop("__classcell__", None)
         new_bases = tuple(base._class for base in bases if hasattr(base, "_class"))
@@ -61,16 +55,13 @@ class ItemMeta(ABCMeta):
 
 
 class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
-    """
-    Base class for scraped items.
+    """Base class for scraped items.
 
-    In Scrapy, an object is considered an ``item`` if it is an instance of either
-    :class:`Item` or :class:`dict`, or any subclass. For example, when the output of a
-    spider callback is evaluated, only instances of :class:`Item` or
-    :class:`dict` are passed to :ref:`item pipelines <topics-item-pipeline>`.
-
-    If you need instances of a custom class to be considered items by Scrapy,
-    you must inherit from either :class:`Item` or :class:`dict`.
+    In Scrapy, an object is considered an ``item`` if it's supported by the
+    `itemadapter`_ library. For example, when the output of a spider callback
+    is evaluated, only such objects are passed to :ref:`item pipelines
+    <topics-item-pipeline>`. :class:`Item` is one of the classes supported by
+    `itemadapter`_ by default.
 
     Items must declare :class:`Field` attributes, which are processed and stored
     in the ``fields`` attribute. This restricts the set of allowed field names
@@ -81,12 +72,18 @@ class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
 
     Unlike instances of :class:`dict`, instances of :class:`Item` may be
     :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+
+    .. _itemadapter: https://github.com/scrapy/itemadapter
     """
 
-    fields: Dict[str, Field]
+    #: A dictionary containing *all declared fields* for this Item, not only
+    #: those populated. The keys are the field names and the values are the
+    #: :class:`Field` objects used in the :ref:`Item declaration
+    #: <topics-items-declaring>`.
+    fields: dict[str, Field]
 
     def __init__(self, *args: Any, **kwargs: Any):
-        self._values: Dict[str, Any] = {}
+        self._values: dict[str, Any] = {}
         if args or kwargs:  # avoid creating dict for most common case
             for k, v in dict(*args, **kwargs).items():
                 self[k] = v

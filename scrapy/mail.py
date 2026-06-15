@@ -7,6 +7,7 @@ See documentation in docs/topics/email.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from email import encoders as Encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -14,28 +15,19 @@ from email.mime.nonmultipart import MIMENonMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import IO, TYPE_CHECKING, Any
 
-from twisted import version as twisted_version
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred
-from twisted.python.versions import Version
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
+from scrapy.utils.reactorless import is_reactorless
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
     # imports twisted.internet.reactor
     from twisted.mail.smtp import ESMTPSenderFactory
     from twisted.python.failure import Failure
@@ -43,7 +35,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy.settings import BaseSettings
+    from scrapy.crawler import Crawler
 
 
 logger = logging.getLogger(__name__)
@@ -54,10 +46,18 @@ logger = logging.getLogger(__name__)
 COMMASPACE = ", "
 
 
-def _to_bytes_or_none(text: Union[str, bytes, None]) -> Optional[bytes]:
+def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
     if text is None:
         return None
     return to_bytes(text)
+
+
+warnings.warn(
+    "The scrapy.mail module is deprecated and will be removed in a future release. "
+    "Please use a dedicated Python mail library instead.",
+    stacklevel=2,
+    category=ScrapyDeprecationWarning,
+)
 
 
 class MailSender:
@@ -65,24 +65,27 @@ class MailSender:
         self,
         smtphost: str = "localhost",
         mailfrom: str = "scrapy@localhost",
-        smtpuser: Optional[str] = None,
-        smtppass: Optional[str] = None,
+        smtpuser: str | None = None,
+        smtppass: str | None = None,
         smtpport: int = 25,
         smtptls: bool = False,
         smtpssl: bool = False,
         debug: bool = False,
     ):
+        if is_reactorless():  # pragma: no cover
+            raise RuntimeError(f"{type(self).__name__} requires a Twisted reactor.")
         self.smtphost: str = smtphost
         self.smtpport: int = smtpport
-        self.smtpuser: Optional[bytes] = _to_bytes_or_none(smtpuser)
-        self.smtppass: Optional[bytes] = _to_bytes_or_none(smtppass)
+        self.smtpuser: bytes | None = _to_bytes_or_none(smtpuser)
+        self.smtppass: bytes | None = _to_bytes_or_none(smtppass)
         self.smtptls: bool = smtptls
         self.smtpssl: bool = smtpssl
         self.mailfrom: str = mailfrom
         self.debug: bool = debug
 
     @classmethod
-    def from_settings(cls, settings: BaseSettings) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:  # pragma: no cover
+        settings = crawler.settings
         return cls(
             smtphost=settings["MAIL_HOST"],
             mailfrom=settings["MAIL_FROM"],
@@ -95,22 +98,20 @@ class MailSender:
 
     def send(
         self,
-        to: Union[str, List[str]],
+        to: str | list[str],
         subject: str,
         body: str,
-        cc: Union[str, List[str], None] = None,
-        attachs: Sequence[Tuple[str, str, IO[Any]]] = (),
+        cc: str | list[str] | None = None,
+        attachs: Sequence[tuple[str, str, IO[Any]]] = (),
         mimetype: str = "text/plain",
-        charset: Optional[str] = None,
-        _callback: Optional[Callable[..., None]] = None,
-    ) -> Optional[Deferred[None]]:
+        charset: str | None = None,
+        _callback: Callable[..., None] | None = None,
+    ) -> Deferred[None] | None:
         from twisted.internet import reactor
 
-        msg: MIMEBase
-        if attachs:
-            msg = MIMEMultipart()
-        else:
-            msg = MIMENonMultipart(*mimetype.split("/", 1))
+        msg: MIMEBase = (
+            MIMEMultipart() if attachs else MIMENonMultipart(*mimetype.split("/", 1))
+        )
 
         to = list(arg_to_iter(to))
         cc = list(arg_to_iter(cc))
@@ -128,8 +129,8 @@ class MailSender:
             if charset:
                 msg.set_charset(charset)
             msg.attach(MIMEText(body, "plain", charset or "us-ascii"))
-            for attach_name, mimetype, f in attachs:
-                part = MIMEBase(*mimetype.split("/"))
+            for attach_name, attach_mimetype, f in attachs:
+                part = MIMEBase(*attach_mimetype.split("/"))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
                 part.add_header(
@@ -164,7 +165,7 @@ class MailSender:
         return dfd
 
     def _sent_ok(
-        self, result: Any, to: List[str], cc: List[str], subject: str, nattachs: int
+        self, result: Any, to: list[str], cc: list[str], subject: str, nattachs: int
     ) -> None:
         logger.info(
             "Mail sent OK: To=%(mailto)s Cc=%(mailcc)s "
@@ -180,8 +181,8 @@ class MailSender:
     def _sent_failed(
         self,
         failure: Failure,
-        to: List[str],
-        cc: List[str],
+        to: list[str],
+        cc: list[str],
         subject: str,
         nattachs: int,
     ) -> Failure:
@@ -200,7 +201,7 @@ class MailSender:
         )
         return failure
 
-    def _sendmail(self, to_addrs: List[str], msg: bytes) -> Deferred[Any]:
+    def _sendmail(self, to_addrs: list[str], msg: bytes) -> Deferred[Any]:
         from twisted.internet import reactor
 
         msg_io = BytesIO(msg)
@@ -218,19 +219,17 @@ class MailSender:
         return d
 
     def _create_sender_factory(
-        self, to_addrs: List[str], msg: IO[bytes], d: Deferred[Any]
+        self, to_addrs: list[str], msg: IO[bytes], d: Deferred[Any]
     ) -> ESMTPSenderFactory:
-        from twisted.mail.smtp import ESMTPSenderFactory
+        # imports twisted.internet.reactor
+        from twisted.mail.smtp import ESMTPSenderFactory  # noqa: PLC0415
 
-        factory_keywords: Dict[str, Any] = {
+        factory_keywords: dict[str, Any] = {
             "heloFallback": True,
             "requireAuthentication": False,
             "requireTransportSecurity": self.smtptls,
+            "hostname": self.smtphost,
         }
-
-        # Newer versions of twisted require the hostname to use STARTTLS
-        if twisted_version >= Version("twisted", 21, 2, 0):
-            factory_keywords["hostname"] = self.smtphost
 
         factory = ESMTPSenderFactory(
             self.smtpuser,

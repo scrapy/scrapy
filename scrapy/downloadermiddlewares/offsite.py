@@ -3,10 +3,11 @@ from __future__ import annotations
 import logging
 import re
 import warnings
-from typing import TYPE_CHECKING, Set
+from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -21,37 +22,46 @@ logger = logging.getLogger(__name__)
 
 
 class OffsiteMiddleware:
+    crawler: Crawler
+
+    def __init__(self, stats: StatsCollector):
+        self.stats = stats
+        self.domains_seen: set[str] = set()
+
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.stats
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.request_scheduled, signal=signals.request_scheduled)
+        o.crawler = crawler
         return o
-
-    def __init__(self, stats: StatsCollector):
-        self.stats = stats
-        self.domains_seen: Set[str] = set()
 
     def spider_opened(self, spider: Spider) -> None:
         self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
 
     def request_scheduled(self, request: Request, spider: Spider) -> None:
-        self.process_request(request, spider)
+        self.process_request(request)
 
-    def process_request(self, request: Request, spider: Spider) -> None:
-        if request.dont_filter or self.should_follow(request, spider):
-            return None
+    @_warn_spider_arg
+    def process_request(self, request: Request, spider: Spider | None = None) -> None:
+        assert self.crawler.spider
+        if (
+            request.dont_filter
+            or request.meta.get("allow_offsite")
+            or self.should_follow(request, self.crawler.spider)
+        ):
+            return
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:
             self.domains_seen.add(domain)
             logger.debug(
                 "Filtered offsite request to %(domain)r: %(request)s",
                 {"domain": domain, "request": request},
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
-            self.stats.inc_value("offsite/domains", spider=spider)
-        self.stats.inc_value("offsite/filtered", spider=spider)
+            self.stats.inc_value("offsite/domains")
+        self.stats.inc_value("offsite/filtered")
         raise IgnoreRequest
 
     def should_follow(self, request: Request, spider: Spider) -> bool:
@@ -76,14 +86,14 @@ class OffsiteMiddleware:
                     "allowed_domains accepts only domains, not URLs. "
                     f"Ignoring URL entry {domain} in allowed_domains."
                 )
-                warnings.warn(message)
+                warnings.warn(message, stacklevel=2)
             elif port_pattern.search(domain):
                 message = (
                     "allowed_domains accepts only domains without ports. "
                     f"Ignoring entry {domain} in allowed_domains."
                 )
-                warnings.warn(message)
+                warnings.warn(message, stacklevel=2)
             else:
                 domains.append(re.escape(domain))
-        regex = rf'^(.*\.)?({"|".join(domains)})$'
+        regex = rf"^(.*\.)?({'|'.join(domains)})$"
         return re.compile(regex)

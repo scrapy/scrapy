@@ -3,12 +3,13 @@ from __future__ import annotations
 import traceback
 import warnings
 from collections import defaultdict
-from typing import TYPE_CHECKING, DefaultDict, Dict, List, Tuple, Type
+from typing import TYPE_CHECKING, Protocol, cast
 
 from zope.interface import implementer
+from zope.interface.verify import verifyClass
 
 from scrapy.interfaces import ISpiderLoader
-from scrapy.utils.misc import walk_modules
+from scrapy.utils.misc import load_object, walk_modules_iter
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -21,6 +22,31 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
 
 
+def get_spider_loader(settings: BaseSettings) -> SpiderLoaderProtocol:
+    """Get SpiderLoader instance from settings"""
+    cls_path = settings.get("SPIDER_LOADER_CLASS")
+    loader_cls = load_object(cls_path)
+    verifyClass(ISpiderLoader, loader_cls)
+    return cast("SpiderLoaderProtocol", loader_cls.from_settings(settings.frozencopy()))
+
+
+class SpiderLoaderProtocol(Protocol):
+    @classmethod
+    def from_settings(cls, settings: BaseSettings) -> Self:
+        """Return an instance of the class for the given settings"""
+
+    def load(self, spider_name: str) -> type[Spider]:
+        """Return the Spider class for the given spider name. If the spider
+        name is not found, it must raise a KeyError."""
+
+    def list(self) -> list[str]:
+        """Return a list with the names of all spiders available in the
+        project"""
+
+    def find_by_request(self, request: Request) -> __builtins__.list[str]:
+        """Return the list of spiders names that can handle the given request"""
+
+
 @implementer(ISpiderLoader)
 class SpiderLoader:
     """
@@ -29,10 +55,10 @@ class SpiderLoader:
     """
 
     def __init__(self, settings: BaseSettings):
-        self.spider_modules: List[str] = settings.getlist("SPIDER_MODULES")
+        self.spider_modules: list[str] = settings.getlist("SPIDER_MODULES")
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
-        self._spiders: Dict[str, Type[Spider]] = {}
-        self._found: DefaultDict[str, List[Tuple[str, str]]] = defaultdict(list)
+        self._spiders: dict[str, type[Spider]] = {}
+        self._found: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
         self._load_all_spiders()
 
     def _check_name_duplicates(self) -> None:
@@ -51,6 +77,7 @@ class SpiderLoader:
             warnings.warn(
                 "There are several spiders with the same name:\n\n"
                 f"{dupes_string}\n\n  This can cause unexpected behavior.",
+                stacklevel=2,
                 category=UserWarning,
             )
 
@@ -62,14 +89,15 @@ class SpiderLoader:
     def _load_all_spiders(self) -> None:
         for name in self.spider_modules:
             try:
-                for module in walk_modules(name):
+                for module in walk_modules_iter(name):
                     self._load_spiders(module)
-            except ImportError:
+            except (ImportError, SyntaxError):
                 if self.warn_only:
                     warnings.warn(
                         f"\n{traceback.format_exc()}Could not load spiders "
                         f"from module '{name}'. "
                         "See above traceback for details.",
+                        stacklevel=2,
                         category=RuntimeWarning,
                     )
                 else:
@@ -80,7 +108,7 @@ class SpiderLoader:
     def from_settings(cls, settings: BaseSettings) -> Self:
         return cls(settings)
 
-    def load(self, spider_name: str) -> Type[Spider]:
+    def load(self, spider_name: str) -> type[Spider]:
         """
         Return the Spider class for the given spider name. If the spider
         name is not found, raise a KeyError.
@@ -88,9 +116,9 @@ class SpiderLoader:
         try:
             return self._spiders[spider_name]
         except KeyError:
-            raise KeyError(f"Spider not found: {spider_name}")
+            raise KeyError(f"Spider not found: {spider_name}") from None
 
-    def find_by_request(self, request: Request) -> List[str]:
+    def find_by_request(self, request: Request) -> list[str]:
         """
         Return the list of spider names that can handle the given request.
         """
@@ -98,8 +126,26 @@ class SpiderLoader:
             name for name, cls in self._spiders.items() if cls.handles_request(request)
         ]
 
-    def list(self) -> List[str]:
+    def list(self) -> list[str]:
         """
         Return a list with the names of all spiders available in the project.
         """
         return list(self._spiders.keys())
+
+
+@implementer(ISpiderLoader)
+class DummySpiderLoader:
+    """A dummy spider loader that does not load any spiders."""
+
+    @classmethod
+    def from_settings(cls, settings: BaseSettings) -> Self:
+        return cls()
+
+    def load(self, spider_name: str) -> type[Spider]:
+        raise KeyError("DummySpiderLoader doesn't load any spiders")
+
+    def list(self) -> list[str]:
+        return []
+
+    def find_by_request(self, request: Request) -> __builtins__.list[str]:
+        return []

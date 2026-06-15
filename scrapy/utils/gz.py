@@ -5,7 +5,7 @@ from gzip import GzipFile
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from ._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
+from ._compression import _CHUNK_SIZE, _check_max_size
 
 if TYPE_CHECKING:
     from scrapy.http import Response
@@ -31,15 +31,9 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
                 break
             raise
         decompressed_size += len(chunk)
-        if max_size and decompressed_size > max_size:
-            raise _DecompressionMaxSizeExceeded(
-                f"The number of bytes decompressed so far "
-                f"({decompressed_size} B) exceed the specified maximum "
-                f"({max_size} B)."
-            )
+        _check_max_size(decompressed_size, max_size)
         output_stream.write(chunk)
-    output_stream.seek(0)
-    return output_stream.read()
+    return output_stream.getvalue()
 
 
 def gzip_magic_number(response: Response) -> bool:

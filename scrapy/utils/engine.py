@@ -4,13 +4,13 @@ from __future__ import annotations
 
 # used in global tests code
 from time import time  # noqa: F401
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from scrapy.core.engine import ExecutionEngine
 
 
-def get_engine_status(engine: ExecutionEngine) -> List[Tuple[str, Any]]:
+def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, Any]]:
     """Return a report of the current engine status"""
     tests = [
         "time()-engine.start_time",
@@ -18,10 +18,10 @@ def get_engine_status(engine: ExecutionEngine) -> List[Tuple[str, Any]]:
         "engine.scraper.is_idle()",
         "engine.spider.name",
         "engine.spider_is_idle()",
-        "engine.slot.closing",
-        "len(engine.slot.inprogress)",
-        "len(engine.slot.scheduler.dqs or [])",
-        "len(engine.slot.scheduler.mqs)",
+        "engine._slot.closing",
+        "len(engine._slot.inprogress)",
+        "len(engine._slot.scheduler.dqs or [])",
+        "len(engine._slot.scheduler.mqs)",
         "len(engine.scraper.slot.queue)",
         "len(engine.scraper.slot.active)",
         "engine.scraper.slot.active_size",
@@ -29,10 +29,10 @@ def get_engine_status(engine: ExecutionEngine) -> List[Tuple[str, Any]]:
         "engine.scraper.slot.needs_backout()",
     ]
 
-    checks: List[Tuple[str, Any]] = []
+    checks: list[tuple[str, Any]] = []
     for test in tests:
         try:
-            checks += [(test, eval(test))]  # nosec
+            checks += [(test, eval(test))]  # noqa: S307
         except Exception as e:
             checks += [(test, f"{type(e).__name__} (exception)")]
 

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import asyncio
 import sys
-from typing import Optional
 
 from scrapy import Spider
 from scrapy.crawler import CrawlerProcess
@@ -15,7 +16,7 @@ class UppercasePipeline:
     def open_spider(self, spider):
         return deferred_from_coro(self._open_spider(spider))
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         return {"url": item["url"].upper()}
 
 
@@ -31,7 +32,7 @@ class UrlSpider(Spider):
 
 
 if __name__ == "__main__":
-    ASYNCIO_EVENT_LOOP: Optional[str]
+    ASYNCIO_EVENT_LOOP: str | None
     try:
         ASYNCIO_EVENT_LOOP = sys.argv[1]
     except IndexError:

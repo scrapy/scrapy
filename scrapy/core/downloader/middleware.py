@@ -6,20 +6,27 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Generator, List, Union, cast
+import warnings
+from functools import partial, wraps
+from typing import TYPE_CHECKING, Any
 from weakref import WeakSet, finalize
 
-from twisted.internet.defer import Deferred, inlineCallbacks
-
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import deferred_from_coro, mustbe_deferred
+from scrapy.utils.defer import (
+    _defer_sleep_async,
+    deferred_from_coro,
+    ensure_awaitable,
+    maybe_deferred_to_future,
+)
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from twisted.python.failure import Failure
+    from collections.abc import Callable, Coroutine
+
+    from twisted.internet.defer import Deferred
 
     from scrapy import Spider
     from scrapy.settings import BaseSettings
@@ -34,16 +41,21 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         self._tracked_responses = WeakSet()
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:
-        return build_component_list(settings.getwithbase("DOWNLOADER_MIDDLEWARES"))
+    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
+        return build_component_list(
+            settings.get_component_priority_dict_with_base("DOWNLOADER_MIDDLEWARES")
+        )
 
     def _add_middleware(self, mw: Any) -> None:
         if hasattr(mw, "process_request"):
             self.methods["process_request"].append(mw.process_request)
+            self._check_mw_method_spider_arg(mw.process_request)
         if hasattr(mw, "process_response"):
             self.methods["process_response"].appendleft(mw.process_response)
+            self._check_mw_method_spider_arg(mw.process_response)
         if hasattr(mw, "process_exception"):
             self.methods["process_exception"].appendleft(mw.process_exception)
+            self._check_mw_method_spider_arg(mw.process_exception)
 
     def _count_response_size(self, response: Response) -> None:
         if response in self._tracked_responses:
@@ -61,76 +73,109 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         download_func: Callable[[Request, Spider], Deferred[Response]],
         request: Request,
         spider: Spider,
-    ) -> Deferred[Union[Response, Request]]:
-        @inlineCallbacks
-        def process_request(
-            request: Request,
-        ) -> Generator[Deferred[Any], Any, Union[Response, Request]]:
-            for method in self.methods["process_request"]:
-                method = cast(Callable, method)
-                result = yield deferred_from_coro(
-                    method(request=request, spider=spider)
-                )
-                if result is not None and not isinstance(result, (Response, Request)):
-                    raise _InvalidOutput(
-                        f"Middleware {method.__qualname__} must return None, Response or "
-                        f"Request, got {result.__class__.__name__}"
-                    )
-                if isinstance(result, Response):
-                    self._count_response_size(result)
-                if result:
-                    return result
-            return (yield download_func(request, spider))
-
-        @inlineCallbacks
-        def process_response(
-            response: Union[Response, Request]
-        ) -> Generator[Deferred[Any], Any, Union[Response, Request]]:
-            result = response
-            if result is None:
-                raise TypeError("Received None in process_response")
-            elif isinstance(result, Request):
-                return result
-
-            for method in self.methods["process_response"]:
-                method = cast(Callable, method)
-                result = yield deferred_from_coro(
-                    method(request=request, response=result, spider=spider)
-                )
-                if not isinstance(result, (Response, Request)):
-                    raise _InvalidOutput(
-                        f"Middleware {method.__qualname__} must return Response or Request, "
-                        f"got {type(result)}"
-                    )
-                if isinstance(result, Request):
-                    return result
-                self._count_response_size(result)
-            return result
-
-        @inlineCallbacks
-        def process_exception(
-            failure: Failure,
-        ) -> Generator[Deferred[Any], Any, Union[Failure, Response, Request]]:
-            exception = failure.value
-            for method in self.methods["process_exception"]:
-                method = cast(Callable, method)
-                result = yield deferred_from_coro(
-                    method(request=request, exception=exception, spider=spider)
-                )
-                if result is not None and not isinstance(result, (Response, Request)):
-                    raise _InvalidOutput(
-                        f"Middleware {method.__qualname__} must return None, Response or "
-                        f"Request, got {type(result)}"
-                    )
-                if isinstance(result, Response):
-                    self._count_response_size(result)
-                if result:
-                    return result
-            return failure
-
-        deferred: Deferred[Union[Response, Request]] = mustbe_deferred(
-            process_request, request
+    ) -> Deferred[Response | Request]:
+        warnings.warn(
+            "DownloaderMiddlewareManager.download() is deprecated, use download_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
         )
-        deferred.addErrback(process_exception)
-        deferred.addCallback(process_response)
-        return deferred
+
+        @wraps(download_func)
+        async def download_func_wrapped(request: Request) -> Response:
+            return await maybe_deferred_to_future(download_func(request, spider))
+
+        self._set_compat_spider(spider)
+        return deferred_from_coro(self.download_async(download_func_wrapped, request))
+
+    async def download_async(
+        self,
+        download_func: Callable[[Request], Coroutine[Any, Any, Response]],
+        request: Request,
+    ) -> Response | Request:
+
+        try:
+            result: Response | Request = await self._process_request(
+                request, download_func
+            )
+        except Exception as ex:
+            await _defer_sleep_async()
+            # either returns a request or response (which we pass to process_response())
+            # or reraises the exception
+            result = await self._process_exception(ex, request)
+        return await self._process_response(result, request)
+
+    def _handle_mw_method(self, method: Callable[..., Any], **kwargs: Any) -> Any:
+        if method in self._mw_methods_requiring_spider:
+            kwargs["spider"] = self._spider
+
+        return method(**kwargs)
+
+    async def _process_request(
+        self,
+        request: Request,
+        download_func: Callable[[Request], Coroutine[Any, Any, Response]],
+    ) -> Response | Request:
+        for method in self.methods["process_request"]:
+            assert method is not None
+            response = await ensure_awaitable(
+                self._handle_mw_method(method, request=request),
+                _warn=global_object_name(method),
+            )
+            if response is not None and not isinstance(response, (Response, Request)):
+                raise _InvalidOutput(
+                    f"Middleware {method.__qualname__} must return None, Response or "
+                    f"Request, got {response.__class__.__name__}"
+                )
+            if response:
+                if isinstance(response, Response):
+                    self._count_response_size(response)
+                return response
+        result = await download_func(request)
+        if isinstance(result, Response):
+            self._count_response_size(result)
+        return result
+
+    async def _process_response(
+        self, response: Response | Request, request: Request
+    ) -> Response | Request:
+        if response is None:
+            raise TypeError("Received None in process_response")
+        if isinstance(response, Request):
+            return response
+
+        for method in self.methods["process_response"]:
+            assert method is not None
+            response = await ensure_awaitable(
+                self._handle_mw_method(method, request=request, response=response),
+                _warn=global_object_name(method),
+            )
+
+            if not isinstance(response, (Response, Request)):
+                raise _InvalidOutput(
+                    f"Middleware {method.__qualname__} must return Response or Request, "
+                    f"got {type(response)}"
+                )
+            if isinstance(response, Request):
+                return response
+            self._count_response_size(response)
+        return response
+
+    async def _process_exception(
+        self, exception: Exception, request: Request | Response
+    ) -> Response | Request:
+        for method in self.methods["process_exception"]:
+            assert method is not None
+            response = await ensure_awaitable(
+                self._handle_mw_method(method, request=request, exception=exception),
+                _warn=global_object_name(method),
+            )
+            if response is not None and not isinstance(response, (Response, Request)):
+                raise _InvalidOutput(
+                    f"Middleware {method.__qualname__} must return None, Response or "
+                    f"Request, got {type(response)}"
+                )
+            if response:
+                if isinstance(response, Response):
+                    self._count_response_size(response)
+                return response
+        raise exception

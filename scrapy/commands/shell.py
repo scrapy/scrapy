@@ -6,26 +6,29 @@ See documentation in docs/topics/shell.rst
 
 from __future__ import annotations
 
+import asyncio
 from threading import Thread
-from typing import TYPE_CHECKING, Any, Dict, List, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
-from scrapy import Spider
 from scrapy.commands import ScrapyCommand
+from scrapy.crawler import AsyncCrawlerProcess, Crawler
 from scrapy.http import Request
 from scrapy.shell import Shell
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser, Namespace
 
+    from scrapy import Spider
+
 
 class Command(ScrapyCommand):
-    requires_project = False
-    default_settings = {
+    default_settings: ClassVar[dict[str, Any]] = {
+        "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "KEEP_ALIVE": True,
         "LOGSTATS_INTERVAL": 0,
-        "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
     }
 
     def syntax(self) -> str:
@@ -56,13 +59,12 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def update_vars(self, vars: Dict[str, Any]) -> None:
+    def update_vars(self, vars: dict[str, Any]) -> None:  # noqa: A002
         """You can use this function to update the Scrapy objects that will be
         available in the shell
         """
-        pass
 
-    def run(self, args: List[str], opts: Namespace) -> None:
+    def run(self, args: list[str], opts: Namespace) -> None:
         url = args[0] if args else None
         if url:
             # first argument may be a local file
@@ -71,7 +73,7 @@ class Command(ScrapyCommand):
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
-        spidercls: Type[Spider] = DefaultSpider
+        spidercls: type[Spider] = DefaultSpider
         if opts.spider:
             spidercls = spider_loader.load(opts.spider)
         elif url:
@@ -83,16 +85,47 @@ class Command(ScrapyCommand):
         # crawling engine, so the set up in the crawl method won't work
         crawler = self.crawler_process._create_crawler(spidercls)
         crawler._apply_settings()
-        # The Shell class needs a persistent engine in the crawler
-        crawler.engine = crawler._create_engine()
-        crawler.engine.start()
-
-        self._start_crawler_thread()
-
-        shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
+        loop: asyncio.AbstractEventLoop | None = None
+        if crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            self._init_with_reactor(crawler)
+        else:
+            self._init_without_reactor(crawler)
+            loop = self._get_reactorless_loop()
+        shell = Shell(crawler, update_vars=self.update_vars, code=opts.code, loop=loop)
         shell.start(url=url, redirect=not opts.no_redirect)
 
+    def _init_with_reactor(self, crawler: Crawler) -> None:
+        # Create the engine and run start_async() in the main thread
+        crawler.engine = crawler._create_engine()
+        _schedule_coro(crawler.engine.start_async(_start_request_processing=False))
+        self._start_crawler_thread()
+
+    def _init_without_reactor(self, crawler: Crawler) -> None:
+        # Create the engine and run start_async() in the event loop thread
+        loop = self._get_reactorless_loop()
+        self._start_crawler_thread()
+
+        async def _init_engine() -> None:
+            # We may need to wait until some parts of start_async() have
+            # finished, which may need a special event in the engine and may
+            # wait until https://github.com/scrapy/scrapy/issues/6916
+            crawler.engine = crawler._create_engine()
+            loop.create_task(
+                crawler.engine.start_async(_start_request_processing=False)
+            )
+
+        future = asyncio.run_coroutine_threadsafe(_init_engine(), loop)
+        future.result()
+
+    def _get_reactorless_loop(self) -> asyncio.AbstractEventLoop:
+        assert self.crawler_process
+        assert isinstance(self.crawler_process, AsyncCrawlerProcess)
+        loop = self.crawler_process._reactorless_loop
+        assert loop
+        return loop
+
     def _start_crawler_thread(self) -> None:
+        """Run self.crawler_process.start() in a separate thread."""
         assert self.crawler_process
         t = Thread(
             target=self.crawler_process.start,

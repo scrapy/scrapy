@@ -7,31 +7,42 @@ from __future__ import annotations
 import argparse
 import builtins
 import os
+import warnings
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from twisted.python import failure
 
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 
 if TYPE_CHECKING:
-    from scrapy.crawler import Crawler, CrawlerProcess
+    from collections.abc import Iterable
+
+    from scrapy.crawler import Crawler, CrawlerProcessBase
+    from scrapy.settings import Settings
 
 
-class ScrapyCommand:
+class ScrapyCommand(ABC):
     requires_project: bool = False
-    crawler_process: Optional[CrawlerProcess] = None
+    requires_crawler_process: bool = True
+    crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
 
     # default settings to be used for this command instead of global defaults
-    default_settings: Dict[str, Any] = {}
+    default_settings: ClassVar[dict[str, Any]] = {}
 
     exitcode: int = 0
 
     def __init__(self) -> None:
-        self.settings: Any = None  # set in scrapy.cmdline
+        self.settings: Settings | None = None  # set in scrapy.cmdline
 
-    def set_crawler(self, crawler: Crawler) -> None:
+    def set_crawler(self, crawler: Crawler) -> None:  # pragma: no cover
+        warnings.warn(
+            "ScrapyCommand.set_crawler() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         if hasattr(self, "_crawler"):
             raise RuntimeError("crawler already set")
         self._crawler: Crawler = crawler
@@ -42,6 +53,7 @@ class ScrapyCommand:
         """
         return ""
 
+    @abstractmethod
     def short_desc(self) -> str:
         """
         A short description of the command
@@ -66,6 +78,7 @@ class ScrapyCommand:
         """
         Populate option parse with options available for this command
         """
+        assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
         group.add_argument(
             "--logfile", metavar="FILE", help="log file. if omitted stderr will be used"
@@ -97,11 +110,14 @@ class ScrapyCommand:
         )
         group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
-    def process_options(self, args: List[str], opts: argparse.Namespace) -> None:
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
         except ValueError:
-            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
+            raise UsageError(
+                "Invalid -s value, use -s NAME=VALUE", print_help=False
+            ) from None
 
         if opts.logfile:
             self.settings.set("LOG_ENABLED", True, priority="cmdline")
@@ -122,7 +138,8 @@ class ScrapyCommand:
         if opts.pdb:
             failure.startDebugMode()
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    @abstractmethod
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         """
         Entry point for running commands
         """
@@ -160,25 +177,21 @@ class BaseRunSpiderCommand(ScrapyCommand):
             help="dump scraped items into FILE, overwriting any existing file,"
             " to define format set a colon at the end of the output URI (i.e. -O FILE:FORMAT)",
         )
-        parser.add_argument(
-            "-t",
-            "--output-format",
-            metavar="FORMAT",
-            help="format to use for dumping items",
-        )
 
-    def process_options(self, args: List[str], opts: argparse.Namespace) -> None:
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         super().process_options(args, opts)
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
+            raise UsageError(
+                "Invalid -a value, use -a NAME=VALUE", print_help=False
+            ) from None
         if opts.output or opts.overwrite_output:
+            assert self.settings is not None
             feeds = feed_process_params_from_cli(
                 self.settings,
                 opts.output,
-                opts.output_format,
-                opts.overwrite_output,
+                overwrite_output=opts.overwrite_output,
             )
             self.settings.set("FEEDS", feeds, priority="cmdline")
 
@@ -193,7 +206,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         prog: str,
         indent_increment: int = 2,
         max_help_position: int = 24,
-        width: Optional[int] = None,
+        width: int | None = None,
     ):
         super().__init__(
             prog,
@@ -207,7 +220,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         parts = self.format_part_strings(builtins.list(part_strings))
         return super()._join_parts(parts)
 
-    def format_part_strings(self, part_strings: List[str]) -> List[str]:
+    def format_part_strings(self, part_strings: list[str]) -> list[str]:
         """
         Underline and title case command line help message headers.
         """
@@ -216,7 +229,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         headings = [
             i for i in range(len(part_strings)) if part_strings[i].endswith(":\n")
         ]
-        for index in headings[::-1]:
+        for index in reversed(headings):
             char = "-" if "Global Options" in part_strings[index] else "="
             part_strings[index] = part_strings[index][:-2].title()
             underline = "".join(["\n", (char * len(part_strings[index])), "\n"])

@@ -1,6 +1,7 @@
 import warnings
 
 import pytest
+from twisted.internet.defer import Deferred
 from twisted.trial import unittest
 
 from scrapy import Request, Spider
@@ -14,9 +15,9 @@ from scrapy.utils.test import get_crawler
 class SlotTest(unittest.TestCase):
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        self.assertEqual(
-            repr(slot),
-            "Slot(concurrency=8, delay=0.10, randomize_delay=True, throttle=None)",
+        assert (
+            repr(slot)
+            == "Slot(concurrency=8, delay=0.10, randomize_delay=True, throttle=None)"
         )
 
 
@@ -29,6 +30,7 @@ class OfflineSpider(Spider):
 
 
 class gt:
+    __hash__ = None
 
     def __init__(self, value):
         self.value = value
@@ -41,7 +43,6 @@ class gt:
 
 
 class ResponseMaxActiveSizeTest(unittest.TestCase):
-
     @deferred_f_from_coro_f
     async def test_default(self):
         """A crawl without custom settings has its effective response max
@@ -50,7 +51,7 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             await maybe_deferred_to_future(crawler.crawl())
-        self.assertEqual(crawler.engine.downloader._response_max_active_size, 5_000_000)
+        assert crawler.engine.downloader._response_max_active_size == 5_000_000
 
     @deferred_f_from_coro_f
     async def test_custom(self):
@@ -62,7 +63,7 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             await maybe_deferred_to_future(crawler.crawl())
-        self.assertEqual(crawler.engine.downloader._response_max_active_size, 0)
+        assert crawler.engine.downloader._response_max_active_size == 0
 
     @deferred_f_from_coro_f
     async def test_deprecated_default(self):
@@ -73,14 +74,11 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
-        self.assertEqual(crawler.engine.downloader._response_max_active_size, 5_000_000)
-        self.assertEqual(len(warning_messages), 1)
-        self.assertEqual(
-            str(warning_messages[0].message),
-            (
-                "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-                "RESPONSE_MAX_ACTIVE_SIZE instead."
-            ),
+        assert crawler.engine.downloader._response_max_active_size == 5_000_000
+        assert len(warning_messages) == 1
+        assert str(warning_messages[0].message) == (
+            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
+            "RESPONSE_MAX_ACTIVE_SIZE instead."
         )
 
     @deferred_f_from_coro_f
@@ -93,14 +91,11 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
-        self.assertEqual(crawler.engine.downloader._response_max_active_size, 0)
-        self.assertEqual(len(warning_messages), 1)
-        self.assertEqual(
-            str(warning_messages[0].message),
-            (
-                "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-                "RESPONSE_MAX_ACTIVE_SIZE instead."
-            ),
+        assert crawler.engine.downloader._response_max_active_size == 0
+        assert len(warning_messages) == 1
+        assert str(warning_messages[0].message) == (
+            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
+            "RESPONSE_MAX_ACTIVE_SIZE instead."
         )
 
     @deferred_f_from_coro_f
@@ -118,14 +113,11 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
-        self.assertEqual(crawler.engine.downloader._response_max_active_size, 1)
-        self.assertEqual(len(warning_messages), 1)
-        self.assertEqual(
-            str(warning_messages[0].message),
-            (
-                "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-                "RESPONSE_MAX_ACTIVE_SIZE instead."
-            ),
+        assert crawler.engine.downloader._response_max_active_size == 1
+        assert len(warning_messages) == 1
+        assert str(warning_messages[0].message) == (
+            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
+            "RESPONSE_MAX_ACTIVE_SIZE instead."
         )
 
     @deferred_f_from_coro_f
@@ -151,19 +143,15 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
-        self.assertEqual(crawler.engine.downloader._response_max_active_size, 2)
-        self.assertEqual(len(warning_messages), 1)
-        self.assertEqual(
-            str(warning_messages[0].message),
-            (
-                "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-                "RESPONSE_MAX_ACTIVE_SIZE instead."
-            ),
+        assert crawler.engine.downloader._response_max_active_size == 2
+        assert len(warning_messages) == 1
+        assert str(warning_messages[0].message) == (
+            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
+            "RESPONSE_MAX_ACTIVE_SIZE instead."
         )
 
 
 class RequestBackoutTest(unittest.TestCase):
-
     @pytest.fixture(autouse=True)
     def use_caplog(self, caplog):
         self.caplog = caplog
@@ -190,14 +178,14 @@ class RequestBackoutTest(unittest.TestCase):
                 and log_record.levelname == "INFO"
             ):
                 matching_log_count += 1
-        self.assertEqual(matching_log_count, 0)
+        assert matching_log_count == 0
 
         stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
             if k.startswith("request_backout_seconds/")
         }
-        self.assertEqual(stats, {})
+        assert stats == {}
 
     @deferred_f_from_coro_f
     async def test_concurrency(self):
@@ -209,7 +197,6 @@ class RequestBackoutTest(unittest.TestCase):
 
             def process_request(self, request, spider):
                 from twisted.internet import reactor
-                from twisted.internet.defer import Deferred
 
                 d = Deferred()
                 reactor.callLater(0, d.callback, None)
@@ -238,7 +225,7 @@ class RequestBackoutTest(unittest.TestCase):
                 and log_record.levelname == "INFO"
             ):
                 matching_log_count += 1
-        self.assertEqual(matching_log_count, 0)
+        assert matching_log_count == 0
 
         expected_stats = {
             "request_backout_seconds/concurrency": gt(0),
@@ -249,7 +236,7 @@ class RequestBackoutTest(unittest.TestCase):
             for k, v in crawler.stats.get_stats().items()
             if k.startswith("request_backout_seconds/")
         }
-        self.assertEqual(expected_stats, actual_stats)
+        assert expected_stats == actual_stats
 
     @deferred_f_from_coro_f
     async def test_response_size(self):
@@ -276,7 +263,7 @@ class RequestBackoutTest(unittest.TestCase):
                 and log_record.levelname == "INFO"
             ):
                 matching_log_count += 1
-        self.assertEqual(matching_log_count, 1)
+        assert matching_log_count == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
@@ -287,13 +274,12 @@ class RequestBackoutTest(unittest.TestCase):
             for k, v in crawler.stats.get_stats().items()
             if k.startswith("request_backout_seconds/")
         }
-        self.assertEqual(expected_stats, actual_stats)
+        assert expected_stats == actual_stats
 
     @deferred_f_from_coro_f
     async def test_response_size_process_request(self):
 
         class DownloaderMiddleware:
-
             def process_request(self, request, spider):
                 return Response("https://example.com", body=b"a")
 
@@ -320,7 +306,7 @@ class RequestBackoutTest(unittest.TestCase):
                 and log_record.levelname == "INFO"
             ):
                 matching_log_count += 1
-        self.assertEqual(matching_log_count, 1)
+        assert matching_log_count == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
@@ -331,13 +317,12 @@ class RequestBackoutTest(unittest.TestCase):
             for k, v in crawler.stats.get_stats().items()
             if k.startswith("request_backout_seconds/")
         }
-        self.assertEqual(expected_stats, actual_stats)
+        assert expected_stats == actual_stats
 
     @deferred_f_from_coro_f
     async def test_response_size_process_response(self):
 
         class DownloaderMiddleware:
-
             def process_response(self, request, response, spider):
                 return Response("https://example.com", body=b"a")
 
@@ -364,7 +349,7 @@ class RequestBackoutTest(unittest.TestCase):
                 and log_record.levelname == "INFO"
             ):
                 matching_log_count += 1
-        self.assertEqual(matching_log_count, 1)
+        assert matching_log_count == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
@@ -375,18 +360,16 @@ class RequestBackoutTest(unittest.TestCase):
             for k, v in crawler.stats.get_stats().items()
             if k.startswith("request_backout_seconds/")
         }
-        self.assertEqual(expected_stats, actual_stats)
+        assert expected_stats == actual_stats
 
     @deferred_f_from_coro_f
     async def test_response_size_process_exception(self):
 
         class DownloaderMiddleware1:
-
             def process_exception(self, request, exception, spider):
                 return Response("https://example.com", body=b"a")
 
         class DownloaderMiddleware2:
-
             def process_request(self, request, spider):
                 raise ValueError
 
@@ -416,7 +399,7 @@ class RequestBackoutTest(unittest.TestCase):
                 and log_record.levelname == "INFO"
             ):
                 matching_log_count += 1
-        self.assertEqual(matching_log_count, 1)
+        assert matching_log_count == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
@@ -427,7 +410,7 @@ class RequestBackoutTest(unittest.TestCase):
             for k, v in crawler.stats.get_stats().items()
             if k.startswith("request_backout_seconds/")
         }
-        self.assertEqual(expected_stats, actual_stats)
+        assert expected_stats == actual_stats
 
     @deferred_f_from_coro_f
     async def test_response_size_download(self):
@@ -440,7 +423,6 @@ class RequestBackoutTest(unittest.TestCase):
 
             def process_item(self, item, spider):
                 from twisted.internet import reactor
-                from twisted.internet.defer import Deferred
 
                 d = Deferred()
                 reactor.callLater(0, d.callback, {})
@@ -470,7 +452,7 @@ class RequestBackoutTest(unittest.TestCase):
                 and log_record.levelname == "INFO"
             ):
                 matching_log_count += 1
-        self.assertEqual(matching_log_count, 1)
+        assert matching_log_count == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
@@ -481,4 +463,4 @@ class RequestBackoutTest(unittest.TestCase):
             for k, v in crawler.stats.get_stats().items()
             if k.startswith("request_backout_seconds/")
         }
-        self.assertEqual(expected_stats, actual_stats)
+        assert expected_stats == actual_stats

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Set
+from typing import TYPE_CHECKING
+from warnings import warn
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
     RequestFingerprinter,
@@ -19,67 +21,85 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import Request
-    from scrapy.settings import BaseSettings
     from scrapy.spiders import Spider
 
 
 class BaseDupeFilter:
+    """Dummy duplicate request filtering class (:setting:`DUPEFILTER_CLASS`)
+    that does not filter out any request."""
+
     @classmethod
-    def from_settings(cls, settings: BaseSettings) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls()
 
     def request_seen(self, request: Request) -> bool:
         return False
 
-    def open(self) -> Optional[Deferred[None]]:
+    def open(self) -> Deferred[None] | None:
         pass
 
-    def close(self, reason: str) -> Optional[Deferred[None]]:
+    def close(self, reason: str) -> Deferred[None] | None:
         pass
 
     def log(self, request: Request, spider: Spider) -> None:
         """Log that a request has been filtered"""
-        pass
+        warn(
+            "Calling BaseDupeFilter.log() is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
 
 
 class RFPDupeFilter(BaseDupeFilter):
-    """Request Fingerprint duplicates filter"""
+    """Duplicate request filtering class (:setting:`DUPEFILTER_CLASS`) that
+    filters out requests with the canonical
+    (:func:`w3lib.url.canonicalize_url`) :attr:`~scrapy.http.Request.url`,
+    :attr:`~scrapy.http.Request.method` and :attr:`~scrapy.http.Request.body`.
+
+    Job directory contents
+    ======================
+
+    .. warning:: The files that this class generates in the :ref:`job directory
+        <job-dir>` are an implementation detail, and may change without a
+        warning in a future version of Scrapy. Do not rely on the following
+        information for anything other than debugging purposes.
+
+    When using :setting:`JOBDIR`, seen fingerprints are tracked in a file named
+    ``requests.seen`` in the :ref:`job directory <job-dir>`, which contains 1
+    request fingerprint per line.
+    """
 
     def __init__(
         self,
-        path: Optional[str] = None,
+        path: str | None = None,
         debug: bool = False,
         *,
-        fingerprinter: Optional[RequestFingerprinterProtocol] = None,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
     ) -> None:
         self.file = None
         self.fingerprinter: RequestFingerprinterProtocol = (
             fingerprinter or RequestFingerprinter()
         )
-        self.fingerprints: Set[str] = set()
+        self.fingerprints: set[str] = set()
         self.logdupes = True
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            self.file = Path(path, "requests.seen").open("a+", encoding="utf-8")
+            # line-by-line writing, see: https://github.com/scrapy/scrapy/issues/6019
+            self.file = Path(path, "requests.seen").open(
+                "a+", buffering=1, encoding="utf-8"
+            )
+            self.file.reconfigure(write_through=True)
             self.file.seek(0)
             self.fingerprints.update(x.rstrip() for x in self.file)
 
     @classmethod
-    def from_settings(
-        cls,
-        settings: BaseSettings,
-        *,
-        fingerprinter: Optional[RequestFingerprinterProtocol] = None,
-    ) -> Self:
-        debug = settings.getbool("DUPEFILTER_DEBUG")
-        return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
-
-    @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.request_fingerprinter
-        return cls.from_settings(
-            crawler.settings,
+        debug = crawler.settings.getbool("DUPEFILTER_DEBUG")
+        return cls(
+            job_dir(crawler.settings),
+            debug,
             fingerprinter=crawler.request_fingerprinter,
         )
 
@@ -93,6 +113,7 @@ class RFPDupeFilter(BaseDupeFilter):
         return False
 
     def request_fingerprint(self, request: Request) -> str:
+        """Returns a string that uniquely identifies the specified request."""
         return self.fingerprinter.fingerprint(request).hex()
 
     def close(self, reason: str) -> None:
@@ -114,4 +135,4 @@ class RFPDupeFilter(BaseDupeFilter):
             self.logdupes = False
 
         assert spider.crawler.stats
-        spider.crawler.stats.inc_value("dupefilter/filtered", spider=spider)
+        spider.crawler.stats.inc_value("dupefilter/filtered")

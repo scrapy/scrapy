@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Dict, List, Type
+from argparse import Namespace  # noqa: TC003
+from typing import TYPE_CHECKING, Any
 
 from w3lib.url import is_url
 
-from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
@@ -13,12 +13,13 @@ from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 
 if TYPE_CHECKING:
-    from argparse import ArgumentParser, Namespace
+    from argparse import ArgumentParser
+    from collections.abc import AsyncIterator
+
+    from scrapy import Spider
 
 
 class Command(ScrapyCommand):
-    requires_project = False
-
     def syntax(self) -> str:
         return "[options] <url>"
 
@@ -48,7 +49,7 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def _print_headers(self, headers: Dict[bytes, List[bytes]], prefix: bytes) -> None:
+    def _print_headers(self, headers: dict[bytes, list[bytes]], prefix: bytes) -> None:
         for key, values in headers.items():
             for value in values:
                 self._print_bytes(prefix + b" " + key + b": " + value)
@@ -65,9 +66,9 @@ class Command(ScrapyCommand):
     def _print_bytes(self, bytes_: bytes) -> None:
         sys.stdout.buffer.write(bytes_ + b"\n")
 
-    def run(self, args: List[str], opts: Namespace) -> None:
+    def run(self, args: list[str], opts: Namespace) -> None:
         if len(args) != 1 or not is_url(args[0]):
-            raise UsageError()
+            raise UsageError
         request = Request(
             args[0],
             callback=self._print_response,
@@ -81,12 +82,18 @@ class Command(ScrapyCommand):
         else:
             request.meta["handle_httpstatus_all"] = True
 
-        spidercls: Type[Spider] = DefaultSpider
+        spidercls: type[Spider] = DefaultSpider
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
         if opts.spider:
             spidercls = spider_loader.load(opts.spider)
         else:
             spidercls = spidercls_for_request(spider_loader, request, spidercls)
-        self.crawler_process.crawl(spidercls, start_requests=lambda: [request])
+
+        async def start(self: Spider) -> AsyncIterator[Any]:
+            yield request
+
+        spidercls.start = start  # type: ignore[method-assign]
+
+        self.crawler_process.crawl(spidercls)
         self.crawler_process.start()

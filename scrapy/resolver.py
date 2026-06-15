@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet import defer
 from twisted.internet.base import ReactorBase, ThreadedResolver
@@ -16,6 +16,8 @@ from zope.interface.declarations import implementer, provider
 from scrapy.utils.datatypes import LocalCache
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from twisted.internet.defer import Deferred
 
     # typing.Self requires Python 3.11
@@ -74,7 +76,7 @@ class HostResolution:
         self.name: str = name
 
     def cancel(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 @provider(IResolutionReceiver)
@@ -82,7 +84,7 @@ class _CachingResolutionReceiver:
     def __init__(self, resolutionReceiver: IResolutionReceiver, hostName: str):
         self.resolutionReceiver: IResolutionReceiver = resolutionReceiver
         self.hostName: str = hostName
-        self.addresses: List[IAddress] = []
+        self.addresses: list[IAddress] = []
 
     def resolutionBegan(self, resolution: IHostResolution) -> None:
         self.resolutionReceiver.resolutionBegan(resolution)
@@ -126,7 +128,7 @@ class CachingHostnameResolver:
         resolutionReceiver: IResolutionReceiver,
         hostName: str,
         portNumber: int = 0,
-        addressTypes: Optional[Sequence[Type[IAddress]]] = None,
+        addressTypes: Sequence[type[IAddress]] | None = None,
         transportSemantics: str = "TCP",
     ) -> IHostResolution:
         try:
@@ -139,9 +141,8 @@ class CachingHostnameResolver:
                 addressTypes,
                 transportSemantics,
             )
-        else:
-            resolutionReceiver.resolutionBegan(HostResolution(hostName))
-            for addr in addresses:
-                resolutionReceiver.addressResolved(addr)
-            resolutionReceiver.resolutionComplete()
-            return resolutionReceiver
+        resolutionReceiver.resolutionBegan(HostResolution(hostName))
+        for addr in addresses:
+            resolutionReceiver.addressResolved(addr)
+        resolutionReceiver.resolutionComplete()
+        return resolutionReceiver

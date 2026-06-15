@@ -3,7 +3,8 @@
 # https://github.com/david-salac/classutilities/blob/a6e4a86331936d432afaa454ed4c963528165a61/src/classutilities/classproperty.py
 
 # Allows creating a class level property
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable
+from typing import Any
 
 
 class ClassPropertyContainer:
@@ -21,7 +22,7 @@ class ClassPropertyContainer:
         self.prop_get: Any = prop_get
         self.prop_set: Any = prop_set
 
-    def __get__(self, obj: Any, cls: Optional[type] = None) -> Callable:
+    def __get__(self, obj: Any, cls: type | None = None) -> Callable:
         """
         Get the property getter.
         :param obj: Instance of the class.
@@ -47,7 +48,7 @@ class ClassPropertyContainer:
         return self.prop_set.__get__(obj, _type)(value)
 
     def setter(
-        self, func: Union[Callable, classmethod, staticmethod]
+        self, func: Callable | classmethod | staticmethod
     ) -> "ClassPropertyContainer":
         """
         Allows creating setter in a property like way.
@@ -92,5 +93,3 @@ class ClassPropertiesMixin(metaclass=ClassPropertyMetaClass):
     This mixin allows using class properties setter (getter works
     correctly even without this mixin)
     """
-
-    pass

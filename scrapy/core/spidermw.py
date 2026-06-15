@@ -7,41 +7,31 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from inspect import isasyncgenfunction, iscoroutine
+from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
+from functools import wraps
+from inspect import isasyncgenfunction
 from itertools import islice
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncIterable,
-    Callable,
-    Generator,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
+from warnings import warn
 
-from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Request, Spider
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
-from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
+from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
+    _defer_sleep_async,
     deferred_from_coro,
     maybe_deferred_to_future,
-    mustbe_deferred,
 )
-from scrapy.utils.python import MutableAsyncChain, MutableChain
+from scrapy.utils.python import MutableAsyncChain, global_object_name
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     from scrapy.settings import BaseSettings
 
 
@@ -49,329 +39,249 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-ScrapeFunc = Callable[
-    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterable[_T]]
+ScrapeFunc: TypeAlias = Callable[
+    [Response | Failure, Request],
+    Coroutine[Any, Any, Iterable[_T] | AsyncIterator[_T]],
 ]
-
-
-def _isiterable(o: Any) -> bool:
-    return isinstance(o, (Iterable, AsyncIterable))
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
     component_name = "spider middleware"
 
-    def __init__(self, *middlewares: Any):
-        super().__init__(*middlewares)
-        self.downgrade_warning_done = False
-
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:
-        return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
+    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
+        return build_component_list(
+            settings.get_component_priority_dict_with_base("SPIDER_MIDDLEWARES")
+        )
 
     def _add_middleware(self, mw: Any) -> None:
-        super()._add_middleware(mw)
         if hasattr(mw, "process_spider_input"):
             self.methods["process_spider_input"].append(mw.process_spider_input)
-        if hasattr(mw, "process_start_requests"):
-            self.methods["process_start_requests"].appendleft(mw.process_start_requests)
-        process_spider_output = self._get_async_method_pair(mw, "process_spider_output")
+            self._check_mw_method_spider_arg(mw.process_spider_input)
+
+        if hasattr(mw, "process_start"):
+            self.methods["process_start"].appendleft(mw.process_start)
+
+        process_spider_output = self._get_process_spider_output(mw)
         self.methods["process_spider_output"].appendleft(process_spider_output)
+        if process_spider_output is not None:
+            self._check_mw_method_spider_arg(process_spider_output)
+
         process_spider_exception = getattr(mw, "process_spider_exception", None)
         self.methods["process_spider_exception"].appendleft(process_spider_exception)
+        if process_spider_exception is not None:
+            self._check_mw_method_spider_arg(process_spider_exception)
 
-    def _process_spider_input(
+    async def _process_spider_input(
         self,
-        scrape_func: ScrapeFunc,
+        scrape_func: ScrapeFunc[_T],
         response: Response,
         request: Request,
-        spider: Spider,
-    ) -> Union[Iterable[_T], AsyncIterable[_T]]:
+    ) -> Iterable[_T] | AsyncIterator[_T]:
         for method in self.methods["process_spider_input"]:
-            method = cast(Callable, method)
+            assert method is not None
             try:
-                result = method(response=response, spider=spider)
+                if method in self._mw_methods_requiring_spider:
+                    result = method(response=response, spider=self._spider)
+                else:
+                    result = method(response=response)
                 if result is not None:
                     msg = (
-                        f"{method.__qualname__} must return None "
+                        f"{global_object_name(method)} must return None "
                         f"or raise an exception, got {type(result)}"
                     )
                     raise _InvalidOutput(msg)
             except _InvalidOutput:
                 raise
             except Exception:
-                return scrape_func(Failure(), request, spider)
-        return scrape_func(response, request, spider)
+                return await scrape_func(Failure(), request)
+        return await scrape_func(response, request)
 
-    def _evaluate_iterable(
+    async def _evaluate_iterable(
         self,
         response: Response,
-        spider: Spider,
-        iterable: Union[Iterable[_T], AsyncIterable[_T]],
+        iterable: AsyncIterator[_T],
         exception_processor_index: int,
-        recover_to: Union[MutableChain[_T], MutableAsyncChain[_T]],
-    ) -> Union[Iterable[_T], AsyncIterable[_T]]:
-        def process_sync(iterable: Iterable[_T]) -> Iterable[_T]:
-            try:
-                yield from iterable
-            except Exception as ex:
-                exception_result = cast(
-                    Union[Failure, MutableChain[_T]],
-                    self._process_spider_exception(
-                        response, spider, Failure(ex), exception_processor_index
-                    ),
-                )
-                if isinstance(exception_result, Failure):
-                    raise
-                assert isinstance(recover_to, MutableChain)
-                recover_to.extend(exception_result)
-
-        async def process_async(iterable: AsyncIterable[_T]) -> AsyncIterable[_T]:
-            try:
-                async for r in iterable:
-                    yield r
-            except Exception as ex:
-                exception_result = cast(
-                    Union[Failure, MutableAsyncChain[_T]],
-                    self._process_spider_exception(
-                        response, spider, Failure(ex), exception_processor_index
-                    ),
-                )
-                if isinstance(exception_result, Failure):
-                    raise
-                assert isinstance(recover_to, MutableAsyncChain)
-                recover_to.extend(exception_result)
-
-        if isinstance(iterable, AsyncIterable):
-            return process_async(iterable)
-        return process_sync(iterable)
+        recover_to: MutableAsyncChain[_T],
+    ) -> AsyncIterator[_T]:
+        try:
+            async for r in iterable:
+                yield r
+        except Exception as ex:
+            exception_result: MutableAsyncChain[_T] = self._process_spider_exception(
+                response, ex, exception_processor_index
+            )
+            recover_to.extend(exception_result)
 
     def _process_spider_exception(
         self,
         response: Response,
-        spider: Spider,
-        _failure: Failure,
+        exception: Exception,
         start_index: int = 0,
-    ) -> Union[Failure, MutableChain[_T], MutableAsyncChain[_T]]:
-        exception = _failure.value
+    ) -> MutableAsyncChain[_T]:
         # don't handle _InvalidOutput exception
         if isinstance(exception, _InvalidOutput):
-            return _failure
+            raise exception
         method_list = islice(
             self.methods["process_spider_exception"], start_index, None
         )
         for method_index, method in enumerate(method_list, start=start_index):
             if method is None:
                 continue
-            method = cast(Callable, method)
-            result = method(response=response, exception=exception, spider=spider)
-            if _isiterable(result):
+            if method in self._mw_methods_requiring_spider:
+                result = method(
+                    response=response, exception=exception, spider=self._spider
+                )
+            else:
+                result = method(response=response, exception=exception)
+            if isinstance(result, (Iterable, AsyncIterator)):
                 # stop exception handling by handing control over to the
                 # process_spider_output chain if an iterable has been returned
-                dfd: Deferred[Union[MutableChain[_T], MutableAsyncChain[_T]]] = (
-                    self._process_spider_output(
-                        response, spider, result, method_index + 1
-                    )
-                )
-                # _process_spider_output() returns a Deferred only because of downgrading so this can be
-                # simplified when downgrading is removed.
-                if dfd.called:
-                    # the result is available immediately if _process_spider_output didn't do downgrading
-                    return cast(
-                        Union[MutableChain[_T], MutableAsyncChain[_T]], dfd.result
-                    )
-                # we forbid waiting here because otherwise we would need to return a deferred from
-                # _process_spider_exception too, which complicates the architecture
-                msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
-                raise _InvalidOutput(msg)
-            elif result is None:
+                if isinstance(result, Iterable):
+                    result = as_async_generator(result)
+                return self._process_spider_output(response, result, method_index + 1)
+            if result is None:
                 continue
-            else:
-                msg = (
-                    f"{method.__qualname__} must return None "
-                    f"or an iterable, got {type(result)}"
-                )
-                raise _InvalidOutput(msg)
-        return _failure
+            msg = (
+                f"{global_object_name(method)} must return None "
+                f"or an iterable, got {type(result)}"
+            )
+            raise _InvalidOutput(msg)
+        raise exception
 
-    # This method cannot be made async def, as _process_spider_exception relies on the Deferred result
-    # being available immediately which doesn't work when it's a wrapped coroutine.
-    # It also needs @inlineCallbacks only because of downgrading so it can be removed when downgrading is removed.
-    @inlineCallbacks
     def _process_spider_output(
         self,
         response: Response,
-        spider: Spider,
-        result: Union[Iterable[_T], AsyncIterable[_T]],
+        result: AsyncIterator[_T],
         start_index: int = 0,
-    ) -> Generator[Deferred[Any], Any, Union[MutableChain[_T], MutableAsyncChain[_T]]]:
+    ) -> MutableAsyncChain[_T]:
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
-        recovered: Union[MutableChain[_T], MutableAsyncChain[_T]]
-        last_result_is_async = isinstance(result, AsyncIterable)
-        if last_result_is_async:
-            recovered = MutableAsyncChain()
-        else:
-            recovered = MutableChain()
-
-        # There are three cases for the middleware: def foo, async def foo, def foo + async def foo_async.
-        # 1. def foo. Sync iterables are passed as is, async ones are downgraded.
-        # 2. async def foo. Sync iterables are upgraded, async ones are passed as is.
-        # 3. def foo + async def foo_async. Iterables are passed to the respective method.
-        # Storing methods and method tuples in the same list is weird but we should be able to roll this back
-        # when we drop this compatibility feature.
-
+        recovered: MutableAsyncChain[_T] = MutableAsyncChain()
         method_list = islice(self.methods["process_spider_output"], start_index, None)
-        for method_index, method_pair in enumerate(method_list, start=start_index):
-            if method_pair is None:
+        for method_index, method in enumerate(method_list, start=start_index):
+            if method is None:
                 continue
-            need_upgrade = need_downgrade = False
-            if isinstance(method_pair, tuple):
-                # This tuple handling is only needed until _async compatibility methods are removed.
-                method_sync, method_async = method_pair
-                method = method_async if last_result_is_async else method_sync
+            if method in self._mw_methods_requiring_spider:
+                result = method(response=response, result=result, spider=self._spider)
             else:
-                method = method_pair
-                if not last_result_is_async and isasyncgenfunction(method):
-                    need_upgrade = True
-                elif last_result_is_async and not isasyncgenfunction(method):
-                    need_downgrade = True
-            try:
-                if need_upgrade:
-                    # Iterable -> AsyncIterable
-                    result = as_async_generator(result)
-                elif need_downgrade:
-                    if not self.downgrade_warning_done:
-                        logger.warning(
-                            f"Async iterable passed to {method.__qualname__} "
-                            f"was downgraded to a non-async one"
-                        )
-                        self.downgrade_warning_done = True
-                    assert isinstance(result, AsyncIterable)
-                    # AsyncIterable -> Iterable
-                    result = yield deferred_from_coro(collect_asyncgen(result))
-                    if isinstance(recovered, AsyncIterable):
-                        recovered_collected = yield deferred_from_coro(
-                            collect_asyncgen(recovered)
-                        )
-                        recovered = MutableChain(recovered_collected)
-                # might fail directly if the output value is not a generator
-                result = method(response=response, result=result, spider=spider)
-            except Exception as ex:
-                exception_result: Union[
-                    Failure, MutableChain[_T], MutableAsyncChain[_T]
-                ] = self._process_spider_exception(
-                    response, spider, Failure(ex), method_index + 1
-                )
-                if isinstance(exception_result, Failure):
-                    raise
-                return exception_result
-            if _isiterable(result):
-                result = self._evaluate_iterable(
-                    response, spider, result, method_index + 1, recovered
-                )
-            else:
-                if iscoroutine(result):
-                    result.close()  # Silence warning about not awaiting
-                    msg = (
-                        f"{method.__qualname__} must be an asynchronous "
-                        f"generator (i.e. use yield)"
-                    )
-                else:
-                    msg = (
-                        f"{method.__qualname__} must return an iterable, got "
-                        f"{type(result)}"
-                    )
-                raise _InvalidOutput(msg)
-            last_result_is_async = isinstance(result, AsyncIterable)
-
-        if last_result_is_async:
-            return MutableAsyncChain(result, recovered)
-        return MutableChain(result, recovered)  # type: ignore[arg-type]
+                result = method(response=response, result=result)
+            result = self._evaluate_iterable(
+                response, result, method_index + 1, recovered
+            )
+        return MutableAsyncChain(result, recovered)
 
     async def _process_callback_output(
-        self,
-        response: Response,
-        spider: Spider,
-        result: Union[Iterable[_T], AsyncIterable[_T]],
-    ) -> Union[MutableChain[_T], MutableAsyncChain[_T]]:
-        recovered: Union[MutableChain[_T], MutableAsyncChain[_T]]
-        if isinstance(result, AsyncIterable):
-            recovered = MutableAsyncChain()
-        else:
-            recovered = MutableChain()
-        result = self._evaluate_iterable(response, spider, result, 0, recovered)
-        result = await maybe_deferred_to_future(
-            cast(
-                "Deferred[Union[Iterable[_T], AsyncIterable[_T]]]",
-                self._process_spider_output(response, spider, result),
-            )
-        )
-        if isinstance(result, AsyncIterable):
-            return MutableAsyncChain(result, recovered)
-        if isinstance(recovered, AsyncIterable):
-            recovered_collected = await collect_asyncgen(recovered)
-            recovered = MutableChain(recovered_collected)
-        return MutableChain(result, recovered)
+        self, response: Response, result: AsyncIterator[_T]
+    ) -> MutableAsyncChain[_T]:
+        recovered: MutableAsyncChain[_T] = MutableAsyncChain()
+        result = self._evaluate_iterable(response, result, 0, recovered)
+        result = self._process_spider_output(response, result)
+        return MutableAsyncChain(result, recovered)
 
     def scrape_response(
         self,
-        scrape_func: ScrapeFunc,
+        scrape_func: Callable[
+            [Response | Failure, Request],
+            Deferred[Iterable[_T] | AsyncIterator[_T]],
+        ],
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Deferred[Union[MutableChain[_T], MutableAsyncChain[_T]]]:
-        async def process_callback_output(
-            result: Union[Iterable[_T], AsyncIterable[_T]]
-        ) -> Union[MutableChain[_T], MutableAsyncChain[_T]]:
-            return await self._process_callback_output(response, spider, result)
-
-        def process_spider_exception(
-            _failure: Failure,
-        ) -> Union[Failure, MutableChain[_T], MutableAsyncChain[_T]]:
-            return self._process_spider_exception(response, spider, _failure)
-
-        dfd: Deferred[Union[Iterable[_T], AsyncIterable[_T]]] = mustbe_deferred(
-            self._process_spider_input, scrape_func, response, request, spider
+    ) -> Deferred[MutableAsyncChain[_T]]:  # pragma: no cover
+        warn(
+            "SpiderMiddlewareManager.scrape_response() is deprecated, use scrape_response_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
         )
-        dfd2: Deferred[Union[MutableChain[_T], MutableAsyncChain[_T]]] = (
-            dfd.addCallback(deferred_f_from_coro_f(process_callback_output))
-        )
-        dfd2.addErrback(process_spider_exception)
-        return dfd2
 
-    def process_start_requests(
-        self, start_requests: Iterable[Request], spider: Spider
-    ) -> Deferred[Iterable[Request]]:
-        return self._process_chain("process_start_requests", start_requests, spider)
+        @wraps(scrape_func)
+        async def scrape_func_wrapped(
+            response: Response | Failure, request: Request
+        ) -> Iterable[_T] | AsyncIterator[_T]:
+            return await maybe_deferred_to_future(scrape_func(response, request))
+
+        self._set_compat_spider(spider)
+        return deferred_from_coro(
+            self.scrape_response_async(scrape_func_wrapped, response, request)
+        )
+
+    async def scrape_response_async(
+        self,
+        scrape_func: ScrapeFunc[_T],
+        response: Response,
+        request: Request,
+    ) -> MutableAsyncChain[_T]:
+        if not self.crawler:
+            raise RuntimeError(
+                "scrape_response_async() called on a SpiderMiddlewareManager"
+                " instance created without a crawler."
+            )
+        try:
+            it: Iterable[_T] | AsyncIterator[_T] = await self._process_spider_input(
+                scrape_func, response, request
+            )
+            ait = it if isinstance(it, AsyncIterator) else as_async_generator(it)
+            return await self._process_callback_output(response, ait)
+        except Exception as ex:
+            await _defer_sleep_async()
+            return self._process_spider_exception(response, ex)
+
+    async def process_start(
+        self, spider: Spider | None = None
+    ) -> AsyncIterator[Any] | None:
+        if spider:
+            if self.crawler:
+                msg = (
+                    "Passing a spider argument to SpiderMiddlewareManager.process_start() is deprecated"
+                    " and the passed value is ignored."
+                )
+            else:
+                msg = (
+                    "Passing a spider argument to SpiderMiddlewareManager.process_start() is deprecated,"
+                    " SpiderMiddlewareManager should be instantiated with a Crawler instance instead."
+                )
+            warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
+            self._set_compat_spider(spider)
+        start = self._spider.start()
+        return await self._process_chain("process_start", start)
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod
-    def _get_async_method_pair(
-        mw: Any, methodname: str
-    ) -> Union[None, Callable, Tuple[Callable, Callable]]:
-        normal_method: Optional[Callable] = getattr(mw, methodname, None)
-        methodname_async = methodname + "_async"
-        async_method: Optional[Callable] = getattr(mw, methodname_async, None)
+    def _get_process_spider_output(mw: Any) -> Callable[..., Any] | None:
+        normal_method: Callable[..., Any] | None = getattr(
+            mw, "process_spider_output", None
+        )
+        async_method: Callable[..., Any] | None = getattr(
+            mw, "process_spider_output_async", None
+        )
         if not async_method:
+            if normal_method and not isasyncgenfunction(normal_method):
+                raise TypeError(
+                    f"Middleware {global_object_name(mw.__class__)} doesn't support"
+                    f" asynchronous spider output. Its process_spider_output() method"
+                    f" should be an async generator function or it should additionally"
+                    f" define a process_spider_output_async() method."
+                )
             return normal_method
         if not normal_method:
             logger.error(
-                f"Middleware {mw.__qualname__} has {methodname_async} "
-                f"without {methodname}, skipping this method."
+                f"Middleware {global_object_name(mw.__class__)} has"
+                f" process_spider_output_async() without process_spider_output(),"
+                f" skipping this method. Please rename it to process_spider_output()."
             )
             return None
         if not isasyncgenfunction(async_method):
             logger.error(
-                f"{async_method.__qualname__} is not "
+                f"{global_object_name(async_method)} is not "
                 f"an async generator function, skipping this method."
             )
             return normal_method
         if isasyncgenfunction(normal_method):
             logger.error(
-                f"{normal_method.__qualname__} is an async "
-                f"generator function while {methodname_async} exists, "
-                f"skipping both methods."
+                f"{global_object_name(normal_method)} is an async "
+                f"generator function while process_spider_output_async() exists, "
+                f"skipping both methods. Please remove process_spider_output_async()."
             )
             return None
-        return normal_method, async_method
+        return async_method

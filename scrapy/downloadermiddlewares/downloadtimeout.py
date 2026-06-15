@@ -6,9 +6,11 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
+from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -29,11 +31,14 @@ class DownloadTimeoutMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
+        if hasattr(spider, "download_timeout"):  # pragma: no cover
+            warn_on_deprecated_spider_attribute("download_timeout", "DOWNLOAD_TIMEOUT")
         self._timeout = getattr(spider, "download_timeout", self._timeout)
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+        self, request: Request, spider: Spider | None = None
+    ) -> Request | Response | None:
         if self._timeout:
             request.meta.setdefault("download_timeout", self._timeout)
         return None

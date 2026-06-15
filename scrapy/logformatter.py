@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypedDict, Union
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from twisted.python.failure import Failure
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from scrapy import Request, Spider  # noqa: TC001
 from scrapy.http import Response  # noqa: TC001
+from scrapy.utils.python import global_object_name
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ DOWNLOADERRORMSG_LONG = "Error downloading %(request)s: %(errmsg)s"
 class LogFormatterResult(TypedDict):
     level: int
     msg: str
-    args: Union[Dict[str, Any], Tuple[Any, ...]]
+    args: dict[str, Any] | tuple[Any, ...]
 
 
 class LogFormatter:
@@ -75,8 +76,8 @@ class LogFormatter:
         self, request: Request, response: Response, spider: Spider
     ) -> LogFormatterResult:
         """Logs a message when the crawler finds a webpage."""
-        request_flags = f" {str(request.flags)}" if request.flags else ""
-        response_flags = f" {str(response.flags)}" if response.flags else ""
+        request_flags = f" {request.flags!s}" if request.flags else ""
+        response_flags = f" {response.flags!s}" if response.flags else ""
         return {
             "level": logging.DEBUG,
             "msg": CRAWLEDMSG,
@@ -92,11 +93,13 @@ class LogFormatter:
         }
 
     def scraped(
-        self, item: Any, response: Union[Response, Failure], spider: Spider
+        self, item: Any, response: Response | Failure | None, spider: Spider
     ) -> LogFormatterResult:
         """Logs a message when an item is scraped by a spider."""
         src: Any
-        if isinstance(response, Failure):
+        if response is None:
+            src = f"{global_object_name(spider.__class__)}.start"
+        elif isinstance(response, Failure):
             src = response.getErrorMessage()
         else:
             src = response
@@ -110,11 +113,19 @@ class LogFormatter:
         }
 
     def dropped(
-        self, item: Any, exception: BaseException, response: Response, spider: Spider
+        self,
+        item: Any,
+        exception: BaseException,
+        response: Response | Failure | None,
+        spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
+        if (level := getattr(exception, "log_level", None)) is None:
+            level = spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"]
+        if isinstance(level, str):
+            level = getattr(logging, level)
         return {
-            "level": logging.WARNING,
+            "level": level,
             "msg": DROPPEDMSG,
             "args": {
                 "exception": exception,
@@ -123,12 +134,14 @@ class LogFormatter:
         }
 
     def item_error(
-        self, item: Any, exception: BaseException, response: Response, spider: Spider
+        self,
+        item: Any,
+        exception: BaseException,
+        response: Response | Failure | None,
+        spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item causes an error while it is passing
         through the item pipeline.
-
-        .. versionadded:: 2.0
         """
         return {
             "level": logging.ERROR,
@@ -142,13 +155,10 @@ class LogFormatter:
         self,
         failure: Failure,
         request: Request,
-        response: Union[Response, Failure],
+        response: Response | Failure,
         spider: Spider,
     ) -> LogFormatterResult:
-        """Logs an error message from a spider.
-
-        .. versionadded:: 2.0
-        """
+        """Logs an error message from a spider."""
         return {
             "level": logging.ERROR,
             "msg": SPIDERERRORMSG,
@@ -163,14 +173,12 @@ class LogFormatter:
         failure: Failure,
         request: Request,
         spider: Spider,
-        errmsg: Optional[str] = None,
+        errmsg: str | None = None,
     ) -> LogFormatterResult:
         """Logs a download error message from a spider (typically coming from
         the engine).
-
-        .. versionadded:: 2.0
         """
-        args: Dict[str, Any] = {"request": request}
+        args: dict[str, Any] = {"request": request}
         if errmsg:
             msg = DOWNLOADERRORMSG_LONG
             args["errmsg"] = errmsg

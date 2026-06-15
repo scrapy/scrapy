@@ -1,10 +1,10 @@
 """DBM-like dummy module"""
 
-import collections
-from typing import Any, DefaultDict
+from collections import defaultdict
+from typing import Any
 
 
-class DummyDB(dict):
+class DummyDB(dict):  # type: ignore[type-arg]
     """Provide dummy DBM-like interface."""
 
     def close(self):
@@ -14,10 +14,10 @@ class DummyDB(dict):
 error = KeyError
 
 
-_DATABASES: DefaultDict[Any, DummyDB] = collections.defaultdict(DummyDB)
+_DATABASES: defaultdict[Any, DummyDB] = defaultdict(DummyDB)
 
 
-def open(file, flag="r", mode=0o666):
+def open(file, flag="r", mode=0o666):  # noqa: A001
     """Open or create a dummy database compatible.
 
     Arguments ``flag`` and ``mode`` are ignored.
