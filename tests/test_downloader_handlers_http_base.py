@@ -1428,6 +1428,37 @@ class TestMitmProxyBase(ABC):
         echo = json.loads(crawler.spider.meta["responses"][0].text)
         assert "Proxy-Authorization" not in echo["headers"]
 
+    @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_proxy_redirect(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        proxy_server: str,
+        mockserver: MockServer,
+        https_dest: bool,
+    ) -> None:
+        """HTTP/HTTPS/SOCKS5 proxy, HTTP or HTTPS destination, following a
+        redirect. Check that the redirected request still goes through the
+        proxy and doesn't lose the proxy auth.
+        """
+        self._maybe_skip(proxy_server, https_dest)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver.url("/redirect", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        assert crawler.spider.meta.get("failure") is None
+        responses = crawler.spider.meta.get("responses", [])
+        assert len(responses) == 1
+        assert responses[0].status == 200
+        assert responses[0].url == mockserver.url("/redirected", is_secure=https_dest)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(responses[0].headers, https_dest)
+
     @staticmethod
     def _assert_headers(headers: Headers, https_dest: bool) -> None:
         assert b"X-Via-Mitmproxy" in headers
