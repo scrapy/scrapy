@@ -163,7 +163,7 @@ def memoizemethod_noargs(
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
 
-    return new_method
+    return new_method  # type: ignore[return-value]
 
 
 _BINARYCHARS = {
