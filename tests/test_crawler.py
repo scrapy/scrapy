@@ -82,6 +82,44 @@ class TestCrawler(TestBaseCrawler):
         assert not settings.frozen
         assert crawler.settings.frozen
 
+    @pytest.mark.parametrize(
+        ("setting_name", "current_default", "future_default"),
+        [
+            ("CONCURRENT_REQUESTS_PER_DOMAIN", 8, 1),
+            ("DOWNLOAD_DELAY", 0, 1),
+            ("ROBOTSTXT_OBEY", False, True),
+        ],
+    )
+    def test_default_value_deprecation_warning(
+        self, setting_name: str, current_default: Any, future_default: Any
+    ) -> None:
+        crawler = get_raw_crawler()
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            crawler._apply_settings()
+        messages = [str(warning.message) for warning in w]
+        assert any(
+            setting_name in msg
+            and repr(current_default) in msg
+            and repr(future_default) in msg
+            for msg in messages
+        )
+
+    @pytest.mark.parametrize(
+        "setting_name",
+        ["CONCURRENT_REQUESTS_PER_DOMAIN", "DOWNLOAD_DELAY", "ROBOTSTXT_OBEY"],
+    )
+    def test_no_deprecation_warning_when_set(self, setting_name: str) -> None:
+        crawler = get_raw_crawler(settings_dict={setting_name: 1})
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            crawler._apply_settings()
+        assert not any(
+            setting_name in str(warning.message)
+            and issubclass(warning.category, ScrapyDeprecationWarning)
+            for warning in w
+        )
+
     def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         assert crawler.settings["foo"] == "bar"
