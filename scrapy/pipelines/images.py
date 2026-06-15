@@ -135,6 +135,8 @@ class ImagesPipeline(FilesPipeline):
 
     @classmethod
     def _update_stores(cls, settings: BaseSettings) -> None:
+        super()._update_stores(settings)
+
         s3store: type[S3FilesStore] = cast(
             "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
         )
