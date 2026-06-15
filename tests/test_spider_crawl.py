@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import re
 import warnings
-from logging import ERROR
 
 import pytest
-from testfixtures import LogCapture
 from w3lib.url import safe_url_string
 
 from scrapy.http import HtmlResponse, Request, TextResponse
@@ -13,7 +11,6 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.utils.test import get_crawler
 from tests.test_spider import TestSpider
-from tests.utils.decorators import inline_callbacks_test
 
 
 class TestCrawlSpider(TestSpider):
@@ -245,18 +242,6 @@ class TestCrawlSpider(TestSpider):
         spider = self.spider_class.from_crawler(crawler, "example.com")
         assert hasattr(spider, "_follow_links")
         assert not spider._follow_links
-
-    @inline_callbacks_test
-    def test_start_url(self):
-        class TestSpider(self.spider_class):
-            name = "test"
-            start_url = "https://www.example.com"
-
-        crawler = get_crawler(TestSpider)
-        with LogCapture("scrapy.core.engine", propagate=False, level=ERROR) as log:
-            yield crawler.crawl()
-        assert "Error while reading start items and requests" in str(log)
-        assert "did you miss an 's'?" in str(log)
 
     def test_parse_response_use(self):
         class _CrawlSpider(CrawlSpider):
