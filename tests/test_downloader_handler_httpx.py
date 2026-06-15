@@ -159,3 +159,58 @@ class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
 @pytest.mark.requires_internet
 class TestRealWebsite(HttpxDownloadHandlerMixin, TestRealWebsiteBase):
     pass
+
+
+class TestProxyAuthRetry:
+    """Test that proxy auth header is preserved across retries.
+
+    Regression test for: _extract_proxy() used request.headers.pop()
+    which permanently removed the Proxy-Authorization header. On retry
+    the header was gone, causing 407 Proxy Authentication Required.
+    """
+
+    def test_extract_proxy_preserves_auth_on_retry(self) -> None:
+        from scrapy.core.downloader.handlers._base_streaming import (
+            BaseStreamingDownloadHandler,
+        )
+
+        request = Request(
+            "http://example.com",
+            meta={"proxy": "http://proxy.example.com:8080"},
+            headers={"Proxy-Authorization": "Basic dXNlcjpwYXNz"},
+        )
+        # First call should extract the auth from headers
+        proxy1, auth1 = BaseStreamingDownloadHandler._extract_proxy(request)
+        assert proxy1 == "http://proxy.example.com:8080"
+        assert auth1 == "Basic dXNlcjpwYXNz"
+        # Header should be removed from request after first call
+        assert b"Proxy-Authorization" not in request.headers
+        # Second call (simulating retry) should still return the auth
+        proxy2, auth2 = BaseStreamingDownloadHandler._extract_proxy(request)
+        assert proxy2 == "http://proxy.example.com:8080"
+        assert auth2 == "Basic dXNlcjpwYXNz"
+        # Auth should be cached in meta
+        assert request.meta["_proxy_auth_header"] == "Basic dXNlcjpwYXNz"
+
+    def test_extract_proxy_no_auth_header(self) -> None:
+        from scrapy.core.downloader.handlers._base_streaming import (
+            BaseStreamingDownloadHandler,
+        )
+
+        request = Request(
+            "http://example.com",
+            meta={"proxy": "http://proxy.example.com:8080"},
+        )
+        proxy, auth = BaseStreamingDownloadHandler._extract_proxy(request)
+        assert proxy == "http://proxy.example.com:8080"
+        assert auth is None
+
+    def test_extract_proxy_no_proxy(self) -> None:
+        from scrapy.core.downloader.handlers._base_streaming import (
+            BaseStreamingDownloadHandler,
+        )
+
+        request = Request("http://example.com")
+        proxy, auth = BaseStreamingDownloadHandler._extract_proxy(request)
+        assert proxy is None
+        assert auth is None
