@@ -12,6 +12,7 @@ import pytest
 import scrapy
 from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
 from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
 from tests.utils.cmdline import call, proc
@@ -45,6 +46,10 @@ class TestCommandSettings:
         self.command.process_options(args, opts)
         assert isinstance(self.command.settings["FEEDS"], scrapy.settings.BaseSettings)
         assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
+
+    def test_help_is_deprecated(self):
+        with pytest.warns(ScrapyDeprecationWarning, match="help"):
+            self.command.help()
 
     def test_help_formatter(self):
         formatter = ScrapyHelpFormatter(prog="scrapy")
