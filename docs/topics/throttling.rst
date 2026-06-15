@@ -26,7 +26,7 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 -   .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (default: ``1``)
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (default: ``1`` (:ref:`fallback <default-settings>`: ``8``))
 
     Maximum number of simultaneous requests per domain.
 
@@ -36,7 +36,7 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 -   .. setting:: DOWNLOAD_DELAY
 
-    :setting:`DOWNLOAD_DELAY` (default: ``1.0``)
+    :setting:`DOWNLOAD_DELAY` (default: ``1`` (:ref:`fallback <default-settings>`: ``0``))
 
     Minimum seconds between any two requests to the same domain.
 
