@@ -209,8 +209,8 @@ class Scheduler(BaseScheduler):
     -------------------------
 
     While pending requests are below the configured values of
-    :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
-    or :setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
+    :setting:`CONCURRENT_REQUESTS` or
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, those requests are sent
     concurrently.
 
     As a result, the first few requests of a crawl may not follow the desired

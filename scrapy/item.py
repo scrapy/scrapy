@@ -1,7 +1,7 @@
 """
 Scrapy Item
 
-See documentation in docs/topics/item.rst
+See documentation in docs/topics/items.rst
 """
 
 from __future__ import annotations

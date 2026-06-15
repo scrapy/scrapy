@@ -188,7 +188,8 @@ class Shell:
     async def _schedule(self, request: Request, spider: Spider | None) -> Response:
         """Send the request to the engine, wait for the result.
 
-        Runs in the reactor thread.
+        Runs in the reactor thread when using the reactor, or in the asyncio
+        event loop thread otherwise.
         """
         if not self.spider:
             await self._open_spider(spider)

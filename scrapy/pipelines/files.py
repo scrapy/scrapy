@@ -423,7 +423,7 @@ class FTPFilesStore:
 
 
 class FilesPipeline(MediaPipeline):
-    """Abstract pipeline that implement the file downloading
+    """Pipeline that implements the file downloading.
 
     This pipeline tries to minimize network transfers and file processing,
     doing stat of the files and determining if file is new, up-to-date or

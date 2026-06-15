@@ -39,7 +39,7 @@ def send_catch_log(
     *arguments: TypingAny,
     **named: TypingAny,
 ) -> list[tuple[TypingAny, TypingAny]]:
-    """Like ``pydispatcher.robust.sendRobust()`` but it also logs errors and returns
+    """Like ``pydispatch.robust.sendRobust()`` but it also logs errors and returns
     Failures instead of exceptions.
     """
     dont_log = named.pop("dont_log", ())
@@ -172,9 +172,7 @@ async def _send_catch_log_asyncio(
 
     Returns a coroutine that completes once all signal handlers have finished.
 
-    This function requires
-    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
-    installed.
+    This function an installed asyncio reactor or a running asyncio event loop.
 
     .. versionadded:: 2.14
     """

@@ -54,17 +54,21 @@ class XMLFeedSpider(Spider):
         return response
 
     def parse_node(self, response: Response, selector: Selector) -> Any:
-        """This method must be overridden with your custom spider functionality"""
+        """This method is called for the nodes matching the provided tag name
+        (itertag). Receives the response and an Selector for each node.
+
+        This method must return either an item, a request, or a list
+        containing any of them.
+
+        This method must be overridden with your custom spider functionality.
+        """
         if hasattr(self, "parse_item"):  # backward compatibility
             return self.parse_item(response, selector)
         raise NotImplementedError
 
     def parse_nodes(self, response: Response, nodes: Iterable[Selector]) -> Any:
         """This method is called for the nodes matching the provided tag name
-        (itertag). Receives the response and an Selector for each node.
-        Overriding this method is mandatory. Otherwise, you spider won't work.
-        This method must return either an item, a request, or a list
-        containing any of them.
+        (itertag). Receives the response and an iterable of Selectors.
         """
 
         for selector in nodes:
@@ -113,6 +117,9 @@ class CSVFeedSpider(Spider):
     It receives a CSV file in a response; iterates through each of its rows,
     and calls parse_row with a dict containing each field's data.
 
+    This spider also gives the opportunity to override adapt_response and
+    process_results methods for pre and post-processing purposes.
+
     You can set some options regarding the CSV file, such as the delimiter, quotechar
     and the file's headers.
     """
@@ -136,16 +143,14 @@ class CSVFeedSpider(Spider):
         return response
 
     def parse_row(self, response: Response, row: dict[str, str]) -> Any:
-        """This method must be overridden with your custom spider functionality"""
+        """Receives a response and a dict (representing each row) with a key for
+        each provided (or detected) header of the CSV file.
+
+        This method must be overridden with your custom spider functionality.
+        """
         raise NotImplementedError
 
     def parse_rows(self, response: Response) -> Any:
-        """Receives a response and a dict (representing each row) with a key for
-        each provided (or detected) header of the CSV file.  This spider also
-        gives the opportunity to override adapt_response and
-        process_results methods for pre and post-processing purposes.
-        """
-
         for row in csviter(
             response, self.delimiter, self.headers, quotechar=self.quotechar
         ):
