@@ -39,6 +39,11 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         super().__init__(*args, **kwargs)
         self.response_active_size = 0
         self._tracked_responses = WeakSet()
+        self._rough_active_size = 0
+        assert self.crawler is not None
+        self._response_rough_size: int = self.crawler.settings.getint(
+            "RESPONSE_ROUGH_SIZE"
+        )
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
@@ -56,6 +61,19 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         if hasattr(mw, "process_exception"):
             self.methods["process_exception"].appendleft(mw.process_exception)
             self._check_mw_method_spider_arg(mw.process_exception)
+
+    @property
+    def total_active_size(self) -> int:
+        """Sum of sizes of tracked responses and rough sizes of in-flight requests."""
+        return self.response_active_size + self._rough_active_size
+
+    def _count_rough_size(self, request: Request) -> int:
+        size: int = request.meta.get("response_rough_size", self._response_rough_size)
+        self._rough_active_size += size
+        return size
+
+    def _discount_rough_size(self, size: int) -> None:
+        self._rough_active_size -= size
 
     def _count_response_size(self, response: Response) -> None:
         if response in self._tracked_responses:

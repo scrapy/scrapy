@@ -15,10 +15,7 @@ from scrapy.utils.test import get_crawler
 class SlotTest(unittest.TestCase):
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert (
-            repr(slot)
-            == "Slot(concurrency=8, delay=0.10, randomize_delay=True, throttle=None)"
-        )
+        assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
 
 
 class OfflineSpider(Spider):
@@ -149,6 +146,107 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
             "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
             "RESPONSE_MAX_ACTIVE_SIZE instead."
         )
+
+
+class ResponseRoughSizeTest(unittest.TestCase):
+    @pytest.fixture(autouse=True)
+    def use_caplog(self, caplog):
+        self.caplog = caplog
+
+    @deferred_f_from_coro_f
+    async def test_default(self):
+        """A crawl without custom settings has RESPONSE_ROUGH_SIZE set to 1024."""
+        crawler = get_crawler(OfflineSpider)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine.downloader.middleware._response_rough_size == 1024
+
+    @deferred_f_from_coro_f
+    async def test_custom(self):
+        """Setting RESPONSE_ROUGH_SIZE to a custom value changes the rough size."""
+        crawler = get_crawler(OfflineSpider, settings_dict={"RESPONSE_ROUGH_SIZE": 0})
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine.downloader.middleware._response_rough_size == 0
+
+    @deferred_f_from_coro_f
+    async def test_rough_size_per_request(self):
+        """response_rough_size meta key overrides RESPONSE_ROUGH_SIZE per request.
+
+        A low RESPONSE_MAX_ACTIVE_SIZE is set so that only requests with the
+        custom rough size of 1 pass; without the override the default 1024 would
+        trigger backout and only one request would be downloaded."""
+
+        class TestSpider(Spider):
+            name = "test"
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 512,
+            }
+
+            async def start(self):
+                yield Request("data:,a", meta={"response_rough_size": 1})
+                yield Request("data:,b")
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await maybe_deferred_to_future(crawler.crawl())
+
+        active_size_log_count = sum(
+            1
+            for r in self.caplog.records
+            if str(r.msg).startswith("The active response size")
+            and r.levelname == "INFO"
+        )
+        assert active_size_log_count == 1
+
+    @deferred_f_from_coro_f
+    async def test_rough_size_triggers_backout(self):
+        """Rough sizes of in-flight requests count toward the backpressure limit.
+
+        With RESPONSE_MAX_ACTIVE_SIZE=512 and RESPONSE_ROUGH_SIZE=1024, even a
+        response with an empty body should trigger the backout log."""
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,", "data:,"]
+            custom_settings = {
+                "RESPONSE_MAX_ACTIVE_SIZE": 512,
+                "RESPONSE_ROUGH_SIZE": 1024,
+            }
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await maybe_deferred_to_future(crawler.crawl())
+
+        matching_log_count = 0
+        for log_record in self.caplog.records:
+            if (
+                str(log_record.msg).startswith("The active response size")
+                and log_record.levelname == "INFO"
+            ):
+                matching_log_count += 1
+        assert matching_log_count == 1
+
+        expected_stats = {
+            "request_backout_seconds/response_max_active_size": gt(0),
+            "request_backout_seconds/total": gt(0),
+        }
+        actual_stats = {
+            k: v
+            for k, v in crawler.stats.get_stats().items()
+            if k.startswith("request_backout_seconds/")
+        }
+        assert expected_stats == actual_stats
 
 
 class RequestBackoutTest(unittest.TestCase):

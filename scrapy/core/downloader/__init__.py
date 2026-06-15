@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-@dataclass(slots=True, eq=False)
+@dataclass(slots=True, eq=False, repr=False)
 class Slot:
     """Downloader slot"""
 
@@ -60,13 +60,20 @@ class Slot:
     delay: float
     randomize_delay: bool
 
-    active: set[Request] = field(default_factory=set, init=False, repr=False)
+    active: set[Request] = field(default_factory=set, init=False)
     queue: deque[tuple[Request, Deferred[Response]]] = field(
-        default_factory=deque, init=False, repr=False
+        default_factory=deque, init=False
     )
-    transferring: set[Request] = field(default_factory=set, init=False, repr=False)
-    lastseen: float = field(default=0, init=False, repr=False)
-    latercall: CallLaterResult | None = field(default=None, init=False, repr=False)
+    transferring: set[Request] = field(default_factory=set, init=False)
+    lastseen: float = field(default=0, init=False)
+    latercall: CallLaterResult | None = field(default=None, init=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"Slot(concurrency={self.concurrency!r}, "
+            f"delay={self.delay:.2f}, "
+            f"randomize_delay={self.randomize_delay!r})"
+        )
 
     def free_transfer_slots(self) -> int:
         return self.concurrency - len(self.transferring)
@@ -165,6 +172,7 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
+        rough_size = self.middleware._count_rough_size(request)
         try:
             result: Response | Request = yield (
                 deferred_from_coro(
@@ -174,6 +182,7 @@ class Downloader:
             return result
         finally:
             self.active.remove(request)
+            self.middleware._discount_rough_size(rough_size)
 
     def _record_backout(self, reason):
         last_reason, last_reason_start_time = self._last_backout
@@ -194,15 +203,16 @@ class Downloader:
             return True
         if (
             self._response_max_active_size
-            and self.middleware.response_active_size >= self._response_max_active_size
+            and self.middleware.total_active_size >= self._response_max_active_size
         ):
             if not self._response_max_active_size_warned:
                 self._response_max_active_size_warned = True
                 logger.info(
                     f"The active response size, i.e. the total size of all "
                     f"bodies from responses that have been processed by "
-                    f"downloader middlewares and remain in memory, is "
-                    f"{self.middleware.response_active_size} B. The "
+                    f"downloader middlewares and remain in memory, plus the "
+                    f"rough sizes of in-flight requests, is "
+                    f"{self.middleware.total_active_size} B. The "
                     f"RESPONSE_MAX_ACTIVE_SIZE setting sets its maximum value "
                     f"at {self._response_max_active_size} B. No more requests "
                     f"will be processed until active response size lowers. If "
@@ -217,7 +227,7 @@ class Downloader:
                     f"message will only appear the first time this happens. "
                     f"To learn how often request processing has been paused "
                     f"during a crawl for this reason, see the "
-                    f"request_backouts/response_max_active_size stat."
+                    f"request_backout_seconds/response_max_active_size stat."
                 )
             self._record_backout("response_max_active_size")
             # Force the garbage collection of response objects. Necessary for
