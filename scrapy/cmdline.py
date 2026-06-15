@@ -26,6 +26,7 @@ _P = ParamSpec("_P")
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
+    # the return type is list[tuple[Action | None, str, str | None, str | None]] | None on 3.12+
     def _parse_optional(
         self, arg_string: str
     ) -> tuple[argparse.Action | None, str, str | None] | None:
