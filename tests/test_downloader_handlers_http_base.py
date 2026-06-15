@@ -906,16 +906,17 @@ class TestSimpleHttpsBase(ABC):
     cipher_string: str | None = None
 
     @pytest.fixture(scope="class")
-    def simple_mockserver(self) -> Generator[SimpleMockServer]:
+    @classmethod
+    def simple_mockserver(cls) -> Generator[SimpleMockServer]:
         with SimpleMockServer(
-            self.keyfile, self.certfile, cipher_string=self.cipher_string
+            cls.keyfile, cls.certfile, cipher_string=cls.cipher_string
         ) as simple_mockserver:
             yield simple_mockserver
 
     @pytest.fixture(scope="class")
-    def url(self, simple_mockserver: SimpleMockServer) -> str:
-        # need to use self.host instead of what mockserver returns
-        return f"https://{self.host}:{simple_mockserver.port(is_secure=True)}/file"
+    @classmethod
+    def url(cls, simple_mockserver: SimpleMockServer) -> str:
+        return f"https://{cls.host}:{simple_mockserver.port(is_secure=True)}/file"
 
     @property
     @abstractmethod
