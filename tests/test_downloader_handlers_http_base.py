@@ -33,7 +33,10 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
-from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
+from scrapy.utils._deps_compat import (
+    PYOPENSSL_X509_DEPRECATED,
+    TWISTED_TLS_LIMITS_OFFBY1,
+)
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
@@ -831,8 +834,15 @@ class TestHttpsBase(TestHttpBase):
     is_secure = True
 
     tls_log_message = (
-        'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
-        'subject "/C=IE/O=Scrapy/CN=localhost"'
+        (
+            'SSL connection certificate: issuer "CN=localhost,O=Scrapy,C=IE", '
+            'subject "CN=localhost,O=Scrapy,C=IE"'
+        )
+        if PYOPENSSL_X509_DEPRECATED
+        else (
+            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
+            'subject "/C=IE/O=Scrapy/CN=localhost"'
+        )
     )
 
     def test_download_conn_lost(self) -> None:  # type: ignore[override]
