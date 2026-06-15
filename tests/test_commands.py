@@ -214,9 +214,7 @@ class MySpider(scrapy.Spider):
         self._append_settings(proj_path / self.project_name, "TWISTED_REACTOR = None\n")
 
         self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
-        self._assert_spider_asyncio_fail(
-            self.NORMAL_MSG, proj_path, "aiosp", "-s", "TWISTED_REACTOR="
-        )
+        self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
 
     def test_spider_settings_asyncio(self, proj_path: Path) -> None:
         """The reactor is set via the spider settings to the asyncio value.

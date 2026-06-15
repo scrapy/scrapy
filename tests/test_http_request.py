@@ -23,7 +23,6 @@ class TestRequest:
         # url argument must be basestring
         with pytest.raises(TypeError):
             self.request_class(123)
-        r = self.request_class("http://www.example.com")
 
         r = self.request_class("http://www.example.com")
         assert isinstance(r.url, str)
@@ -211,11 +210,11 @@ class TestRequest:
         r1.cb_kwargs["key"] = "value"
         r2 = r1.copy()
 
-        # make sure copy does not propagate callbacks
+        # make sure callbaclks are copied
         assert r1.callback is somecallback
         assert r1.errback is somecallback
         assert r2.callback is r1.callback
-        assert r2.errback is r2.errback
+        assert r2.errback is r1.errback
 
         # make sure flags list is shallow copied
         assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"

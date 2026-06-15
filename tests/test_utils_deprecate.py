@@ -22,9 +22,7 @@ class NewName(SomeBaseClass):
 
 
 class TestWarnWhenSubclassed:
-    def _mywarnings(
-        self, w: list[WarningMessage], category: type[Warning] = MyWarning
-    ) -> list[WarningMessage]:
+    def _mywarnings(self, w: list[WarningMessage]) -> list[WarningMessage]:
         return [x for x in w if x.category is MyWarning]
 
     def test_no_warning_on_definition(self):

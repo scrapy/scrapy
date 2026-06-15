@@ -238,16 +238,6 @@ class TestProcessSpiderOutputAsyncGen(TestProcessSpiderOutputSimple):
             yield item
 
 
-class ProcessSpiderOutputNonIterableMiddleware:
-    def process_spider_output(self, response, result):
-        return
-
-
-class ProcessSpiderOutputCoroutineMiddleware:
-    async def process_spider_output(self, response, result):
-        return result
-
-
 class ProcessStartSimpleMiddleware:
     async def process_start(self, start):
         async for item_or_request in start:
@@ -423,19 +413,11 @@ class TestBuiltinMiddlewareAsyncGen(TestBuiltinMiddlewareSimple):
 class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     ITEM_TYPE = dict
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
-    MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
     MW_EXC_SIMPLE = ProcessSpiderExceptionSimpleIterableMiddleware
     MW_EXC_ASYNCGEN = ProcessSpiderExceptionAsyncIteratorMiddleware
 
     def _callback(self) -> Any:
         1 / 0
-
-    async def _test_asyncgen_nodowngrade(self, *mw_classes: type[Any]) -> None:
-        with pytest.raises(
-            _InvalidOutput,
-            match=r"Async iterable returned from .+ cannot be downgraded",
-        ):
-            await self._get_middleware_result(*mw_classes)
 
     @coroutine_test
     async def test_exc_simple(self):

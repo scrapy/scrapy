@@ -16,7 +16,7 @@ class TestDownloaderStats:
         self.crawler.stats.open_spider()
 
         self.req = Request("http://scrapytest.org")
-        self.res = Response("scrapytest.org", status=400)
+        self.res = Response("http://scrapytest.org", status=400)
 
     def assertStatsEqual(self, key, value):
         assert self.crawler.stats.get_value(key) == value, str(
