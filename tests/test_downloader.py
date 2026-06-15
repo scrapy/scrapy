@@ -155,12 +155,11 @@ class ResponseRoughSizeTest(unittest.TestCase):
 
     @deferred_f_from_coro_f
     async def test_default(self):
-        """A crawl without custom settings has RESPONSE_ROUGH_SIZE set to 1024."""
         crawler = get_crawler(OfflineSpider)
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             await maybe_deferred_to_future(crawler.crawl())
-        assert crawler.engine.downloader.middleware._response_rough_size == 1024
+        assert crawler.engine.downloader.middleware._response_rough_size == 131072
 
     @deferred_f_from_coro_f
     async def test_custom(self):
@@ -176,8 +175,8 @@ class ResponseRoughSizeTest(unittest.TestCase):
         """response_rough_size meta key overrides RESPONSE_ROUGH_SIZE per request.
 
         A low RESPONSE_MAX_ACTIVE_SIZE is set so that only requests with the
-        custom rough size of 1 pass; without the override the default 1024 would
-        trigger backout and only one request would be downloaded."""
+        custom rough size of 1 pass; without the override the default 131072
+        would trigger backout and only one request would be downloaded."""
 
         class TestSpider(Spider):
             name = "test"

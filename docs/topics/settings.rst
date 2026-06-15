@@ -1759,7 +1759,7 @@ the course of a crawl.
 RESPONSE_ROUGH_SIZE
 -------------------
 
-Default: ``1024``
+Default: ``131072`` (128 kiB)
 
 Estimated size (in bytes) to count toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`
 for each request that is currently being downloaded, before its actual response
