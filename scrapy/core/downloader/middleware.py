@@ -35,10 +35,10 @@ if TYPE_CHECKING:
 class DownloaderMiddlewareManager(MiddlewareManager):
     component_name = "downloader middleware"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.response_active_size = 0
-        self._tracked_responses = WeakSet()
+        self._tracked_responses: WeakSet[Response] = WeakSet()
         self._rough_active_size = 0
         assert self.crawler is not None
         self._response_rough_size: int = self.crawler.settings.getint(

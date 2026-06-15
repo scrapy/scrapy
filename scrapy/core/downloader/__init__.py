@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING, Any
 from warnings import warn
 
 try:
-    from win_precise_time import time
+    from win_precise_time import time  # type: ignore[import-not-found]
 except ImportError:
-    from time import time
+    from time import time  # pylint: disable=ungrouped-imports
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -139,7 +139,7 @@ class Downloader:
             "DOWNLOAD_SLOTS"
         )
         self._stats = crawler.stats
-        self._last_backout = (None, None)
+        self._last_backout: tuple[str | None, float | None] = (None, None)
 
         deprecated_setting_priority = self.settings.getpriority(
             "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
@@ -184,12 +184,13 @@ class Downloader:
             self.active.remove(request)
             self.middleware._discount_rough_size(rough_size)
 
-    def _record_backout(self, reason):
+    def _record_backout(self, reason: str | None) -> None:
         last_reason, last_reason_start_time = self._last_backout
         if last_reason == reason:
             return
         current_time = time()
-        if last_reason is not None:
+        if last_reason is not None and self._stats is not None:
+            assert last_reason_start_time is not None
             last_reason_seconds = current_time - last_reason_start_time
             self._stats.inc_value("request_backout_seconds/total", last_reason_seconds)
             self._stats.inc_value(

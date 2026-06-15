@@ -65,7 +65,7 @@ class Slot(ClassPropertiesMixin):
     _MIN_RESPONSE_SIZE = 1024
 
     @classproperty
-    def MIN_RESPONSE_SIZE(cls):
+    def MIN_RESPONSE_SIZE(cls):  # pylint: disable=no-self-argument
         warnings.warn(
             "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
             ScrapyDeprecationWarning,
@@ -74,7 +74,7 @@ class Slot(ClassPropertiesMixin):
         return cls._MIN_RESPONSE_SIZE
 
     @MIN_RESPONSE_SIZE.setter  # type: ignore[no-redef]
-    def MIN_RESPONSE_SIZE(cls, value):
+    def MIN_RESPONSE_SIZE(cls, value):  # pylint: disable=no-self-argument
         warnings.warn(
             "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
             ScrapyDeprecationWarning,
@@ -95,7 +95,7 @@ class Slot(ClassPropertiesMixin):
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-        self._max_active_size = max_active_size
+        self._max_active_size: int = max_active_size
         self.queue: deque[QueueTuple] = deque()
         self.active: set[Request] = set()
         self.itemproc_size: int = 0  # just for scrapy.utils.engine.get_engine_status()
@@ -103,7 +103,7 @@ class Slot(ClassPropertiesMixin):
         self._active_size: int = 0
 
     @property
-    def active_size(self):
+    def active_size(self) -> int:
         warnings.warn(
             (
                 "scrapy.core.scraper.Slot.active_size is deprecated. Read "
@@ -116,7 +116,7 @@ class Slot(ClassPropertiesMixin):
         return self._active_size
 
     @active_size.setter
-    def active_size(self, value):
+    def active_size(self, value: int) -> None:
         warnings.warn(
             (
                 "scrapy.core.scraper.Slot.active_size is deprecated. "
@@ -134,7 +134,7 @@ class Slot(ClassPropertiesMixin):
         self._active_size = value
 
     @property
-    def max_active_size(self):
+    def max_active_size(self) -> int:
         warnings.warn(
             (
                 "scrapy.core.scraper.Slot.max_active_size is deprecated. Read "
@@ -146,7 +146,7 @@ class Slot(ClassPropertiesMixin):
         return self._max_active_size
 
     @max_active_size.setter
-    def max_active_size(self, value):
+    def max_active_size(self, value: int) -> None:
         warnings.warn(
             (
                 "scrapy.core.scraper.Slot.max_active_size is deprecated. Set "

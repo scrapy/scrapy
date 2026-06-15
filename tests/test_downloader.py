@@ -27,7 +27,7 @@ class OfflineSpider(Spider):
 
 
 class gt:
-    __hash__ = None
+    __hash__ = None  # type: ignore[assignment]
 
     def __init__(self, value):
         self.value = value
