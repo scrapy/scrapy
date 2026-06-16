@@ -1,0 +1,118 @@
+name: Delta Smart Tests
+
+on:
+  push:
+    branches:
+      - master
+      - '[0-9]+.[0-9]+'
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  delta:
+    name: Delta – affected tests only
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Fetch full history so Delta can diff against the base branch
+          fetch-depth: 0
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      # ── System libraries (same condition as tests-ubuntu.yml) ────────────
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-dev libxslt-dev
+
+      # ── Scrapy + all runtime deps (from pyproject.toml [project].dependencies) ──
+      - name: Install Scrapy and runtime dependencies
+        run: |
+          pip install -U pip
+          pip install -e .
+
+      # ── Core test dependencies (from tox.ini [test-requirements]) ────────
+      - name: Install test dependencies
+        run: |
+          pip install \
+            "pytest>=8.4.1" \
+            "pytest-cov>=7.0.0" \
+            pytest-xdist \
+            pytest-twisted>=1.14.3 \
+            attrs \
+            "coverage>=7.10.6" \
+            httpx \
+            "pexpect>=4.8.0" \
+            pygments \
+            "pyftpdlib>=2.0.1" \
+            "sybil>=1.3.0" \
+            testfixtures
+
+      # ── Extra optional deps (mirrors tox.ini [testenv:extra-deps]) ───────
+      # Included so Delta can map tests that import these packages.
+      - name: Install optional/extra test dependencies
+        run: |
+          pip install \
+            Pillow \
+            "Twisted[http2]" \
+            boto3 \
+            "brotli>=1.2.0" \
+            google-cloud-storage \
+            "httpx[http2,socks]" \
+            ipython \
+            robotexclusionrulesparser \
+            uvloop \
+            zstandard \
+            pytest-asyncio
+
+      # ── Delta CLI ─────────────────────────────────────────────────────────
+      - name: Install Delta
+        run: pip install deltatest-cli
+
+      # ── Run only tests affected by this diff ─────────────────────────────
+      - name: Run Delta (affected tests only)
+        env:
+          DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
+        run: |
+          BASE=${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || 'master' }}
+          echo "Diffing against: origin/${BASE}"
+          delta run \
+            --base-branch "origin/${BASE}" \
+            -- \
+            --cov-config=pyproject.toml \
+            --cov=scrapy \
+            --cov-report= \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --junitxml=delta.junit.xml \
+            -o junit_family=legacy \
+            --durations=10 \
+            scrapy tests \
+            --doctest-modules
+
+      # ── Push updated mapping back to Delta Cloud ──────────────────────────
+      - name: Push mapping to Delta Cloud
+        if: always()
+        env:
+          DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
+        run: delta push
+
+      # ── Upload results ────────────────────────────────────────────────────
+      - name: Upload coverage report
+        if: always()
+        uses: codecov/codecov-action@v5
+
+      - name: Upload test results
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          report_type: test_results
+          files: delta.junit.xml
