@@ -1,0 +1,15 @@
+{
+  "name": "DeltaTest (Smart Affected Test Runner)",
+  "description": "Accelerate your CI/CD by running only the Python/pytest tests affected by your code changes.",
+  "iconName": "terminal",
+  "categories": [
+    "Python",
+    "Testing"
+  ],
+  "filePatterns": [
+    "requirements.txt$",
+    "setup.py$",
+    "pyproject.toml$",
+    ".*\\.py$"
+  ]
+}
