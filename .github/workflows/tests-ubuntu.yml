@@ -71,9 +71,24 @@ jobs:
       - name: Install Delta
         run: pip install deltatest-cli
 
-      - name: Run Delta (affected tests only)
+      # Write config.toml so Delta connects to the remote mapping DB.
+      # Without repo_id, Delta falls back to building a local mapping from scratch.
+      - name: Configure Delta Cloud
         env:
           DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
+          DELTA_REPO_ID: ${{ secrets.DELTA_REPO_ID }}
+        run: |
+          mkdir -p .delta
+          cat > .delta/config.toml <<EOF
+          [cloud]
+          api_key = "${DELTA_API_KEY}"
+          api_url = "https://api.deltatest.dev"
+          repo_id = "${DELTA_REPO_ID}"
+          branch   = "master"
+          test_dir = "tests"
+          EOF
+
+      - name: Run Delta (affected tests only)
         run: |
           BASE=${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || 'master' }}
           echo "Diffing against: origin/${BASE}"
@@ -93,8 +108,6 @@ jobs:
 
       - name: Push mapping to Delta Cloud
         if: always()
-        env:
-          DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
         run: delta push
 
       - name: Upload coverage report
