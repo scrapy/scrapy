@@ -72,15 +72,15 @@ jobs:
         run: pip install deltatest-cli
 
       # Write config.toml so Delta connects to the remote mapping DB.
-      # Without repo_id, Delta falls back to building a local mapping from scratch.
-      # NOTE: heredocs inside YAML `run:` blocks indent the content with spaces,
-      # producing invalid TOML. Use explicit echo statements instead.
+      # IMPORTANT: Delta reads from ~/.delta/config.toml (Path.home()/'.delta'),
+      # NOT from the repo-local .delta/ directory. Writing to the wrong path
+      # causes Delta to fall back to local-init mode (4131 unmapped tests).
       - name: Configure Delta Cloud
         env:
           DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
           DELTA_REPO_ID: ${{ secrets.DELTA_REPO_ID }}
         run: |
-          mkdir -p .delta
+          mkdir -p ~/.delta
           {
             echo '[cloud]'
             echo "api_key  = \"${DELTA_API_KEY}\""
@@ -88,9 +88,9 @@ jobs:
             echo "repo_id  = \"${DELTA_REPO_ID}\""
             echo 'branch   = "master"'
             echo 'test_dir = "tests"'
-          } > .delta/config.toml
+          } > ~/.delta/config.toml
           # Verify structure (values masked)
-          sed 's/= ".*"/= "***"/' .delta/config.toml
+          sed 's/= ".*"/= "***"/' ~/.delta/config.toml
 
       - name: Run Delta (affected tests only)
         run: |
