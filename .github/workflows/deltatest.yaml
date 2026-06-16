@@ -33,6 +33,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt || echo "docs/requirements install failed, continuing"; fi
           pip install --no-cache-dir pytest twisted deltatest-cli
+          pip install -e .
 
       - name: Run Affected Tests
         env:
