@@ -1,0 +1,42 @@
+name: DeltaTest
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  deltatest:
+    name: DeltaTest Runner
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # DeltaTest requires the full Git history to calculate diffs and find affected tests
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install deltatest-cli
+
+      - name: Run Affected Tests
+        env:
+          DELTA_API_KEY: pt_live_ea9961eb4661fe6d056ec2f6ca7e8671b26fe557e738819f5e4b4bfe1fd8ef37
+          DELTA_REPO_ID: 39ee0ac5-e440-4cc9-9300-4868186133a8
+        run: |
+          delta run
+
