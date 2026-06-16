@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
 import OpenSSL.SSL
@@ -279,7 +279,7 @@ async def test_stop_async_drops_queued_requests() -> None:
     downloader.slots["example.com"] = slot
 
     request = Request("https://example.com")
-    queue_dfd: Deferred = Deferred()
+    queue_dfd: Deferred[Any] = Deferred()
     failures: list[Failure] = []
     queue_dfd.addErrback(failures.append)
     slot.queue.append((request, queue_dfd))
@@ -311,7 +311,7 @@ async def test_wait_for_download_errbacks_queue_deferred_on_error() -> None:
     downloader = Downloader(crawler)
     slot = Slot(concurrency=1, delay=0, randomize_delay=False)
 
-    queue_dfd: Deferred = Deferred()
+    queue_dfd: Deferred[Any] = Deferred()
     failures: list[Failure] = []
     queue_dfd.addErrback(failures.append)
 
@@ -332,7 +332,7 @@ async def test_wait_for_download_keeps_called_queue_deferred_on_error() -> None:
     downloader = Downloader(crawler)
     slot = Slot(concurrency=1, delay=0, randomize_delay=False)
 
-    queue_dfd: Deferred = Deferred()
+    queue_dfd: Deferred[Any] = Deferred()
     queue_dfd.callback(None)
 
     with patch.object(downloader, "_download", side_effect=RuntimeError("boom")):
@@ -353,7 +353,7 @@ async def test_stop_async_skips_called_queued_deferred() -> None:
     slot = Slot(concurrency=1, delay=0, randomize_delay=False)
     downloader.slots["example.com"] = slot
 
-    queue_dfd: Deferred = Deferred()
+    queue_dfd: Deferred[Any] = Deferred()
     queue_dfd.callback(None)
     slot.queue.append((Request("https://example.com"), queue_dfd))
 
@@ -366,10 +366,10 @@ async def test_stop_async_cancels_pending_download_tasks() -> None:
     crawler = get_crawler(DefaultSpider)
     downloader = Downloader(crawler)
 
-    done_dfd: Deferred = Deferred()
+    done_dfd: Deferred[None] = Deferred()
     done_dfd.callback(None)
 
-    pending_dfd: Deferred = Deferred()
+    pending_dfd: Deferred[None] = Deferred()
     failures: list[Failure] = []
     pending_dfd.addErrback(failures.append)
 
