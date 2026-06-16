@@ -30,12 +30,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r docs/requirements.txt
-          pip install deltatest-cli
+          # install runtime/test deps if a top-level requirements.txt exists
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # try docs requirements but don't fail the job on pin/version errors (e.g. invalid sphinx pin)
+          if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt || echo "docs/requirements install failed, continuing"; fi
+          # ensure test/runtime packages required by the test suite are present
+          pip install --no-cache-dir pytest twisted deltatest-cli
 
       - name: Run Affected Tests
         env:
-          DELTA_API_KEY: pt_live_ea9961eb4661fe6d056ec2f6ca7e8671b26fe557e738819f5e4b4bfe1fd8ef37
-          DELTA_REPO_ID: 39ee0ac5-e440-4cc9-9300-4868186133a8
+          DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
+          DELTA_REPO_ID: ${{ secrets.DELTA_REPO_ID }}
         run: |
           delta run
