@@ -30,11 +30,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # install runtime/test deps if a top-level requirements.txt exists
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # try docs requirements but don't fail the job on pin/version errors (e.g. invalid sphinx pin)
           if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt || echo "docs/requirements install failed, continuing"; fi
-          # ensure test/runtime packages required by the test suite are present
           pip install --no-cache-dir pytest twisted deltatest-cli
 
       - name: Run Affected Tests
