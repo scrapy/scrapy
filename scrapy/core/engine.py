@@ -11,6 +11,7 @@ import asyncio
 import contextlib
 import logging
 import warnings
+from functools import partial
 from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any
@@ -290,7 +291,7 @@ class ExecutionEngine:
         """
         assert self._start is not None
         try:
-            item_or_request = await self._start.__anext__()
+            item_or_request = await anext(self._start)
         except StopAsyncIteration:
             self._start = None
         except Exception as exception:
@@ -369,6 +370,10 @@ class ExecutionEngine:
             or self.scraper.slot.needs_backout()
         )
 
+    def _remove_request(self, _: Any, request: Request) -> None:
+        assert self._slot
+        self._slot.remove_request(request)
+
     def _start_scheduled_request(self) -> bool:
         assert self._slot is not None  # typing
         assert self.spider is not None  # typing
@@ -388,11 +393,7 @@ class ExecutionEngine:
             )
         )
 
-        def _remove_request(_: Any) -> None:
-            assert self._slot
-            self._slot.remove_request(request)
-
-        d2: Deferred[None] = d.addBoth(_remove_request)
+        d2: Deferred[None] = d.addBoth(partial(self._remove_request, request=request))
         d2.addErrback(
             lambda f: logger.info(
                 "Error while removing request from slot",
@@ -673,33 +674,36 @@ class ExecutionEngine:
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
         )
 
-        def log_failure(msg: str) -> None:
-            logger.error(msg, exc_info=True, extra={"spider": spider})  # noqa: LOG014
-
         if self._stop_mode == "fast":
             await self._fast_stop_downloader()
 
         try:
             await self._slot.close()
         except Exception:
-            log_failure("Slot close failure")
+            logger.error("Slot close failure", exc_info=True, extra={"spider": spider})
 
         try:
             self.downloader.close()
         except Exception:
-            log_failure("Downloader close failure")
+            logger.error(
+                "Downloader close failure", exc_info=True, extra={"spider": spider}
+            )
 
         try:
             await self.scraper.close_spider_async()
         except Exception:
-            log_failure("Scraper close failure")
+            logger.error(
+                "Scraper close failure", exc_info=True, extra={"spider": spider}
+            )
 
         if hasattr(self._slot.scheduler, "close"):
             try:
                 if (d := self._slot.scheduler.close(reason)) is not None:
                     await maybe_deferred_to_future(d)
             except Exception:
-                log_failure("Scheduler close failure")
+                logger.error(
+                    "Scheduler close failure", exc_info=True, extra={"spider": spider}
+                )
 
         try:
             await self.signals.send_catch_log_async(
@@ -708,7 +712,11 @@ class ExecutionEngine:
                 reason=reason,
             )
         except Exception:
-            log_failure("Error while sending spider_close signal")
+            logger.error(
+                "Error while sending spider_close signal",
+                exc_info=True,
+                extra={"spider": spider},
+            )
 
         assert self.crawler.stats
         try:
@@ -725,7 +733,7 @@ class ExecutionEngine:
             else:
                 self.crawler.stats.close_spider(reason=reason)
         except Exception:
-            log_failure("Stats close failure")
+            logger.error("Stats close failure")
 
         logger.info(
             "Spider closed (%(reason)s)",
@@ -739,4 +747,4 @@ class ExecutionEngine:
         try:
             await ensure_awaitable(self._spider_closed_callback(spider))
         except Exception:
-            log_failure("Error running spider_closed_callback")
+            logger.error("Error running spider_closed_callback")

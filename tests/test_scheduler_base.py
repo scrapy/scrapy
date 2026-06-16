@@ -41,10 +41,10 @@ class MinimalScheduler:
 
 
 class SimpleScheduler(MinimalScheduler):
-    def open(self, spider: Spider) -> defer.Deferred:
+    def open(self, spider: Spider) -> defer.Deferred[str]:
         return defer.succeed("open")
 
-    def close(self, reason: str) -> defer.Deferred:
+    def close(self, reason: str) -> defer.Deferred[str]:
         return defer.succeed("close")
 
     def __len__(self) -> int:
@@ -104,7 +104,7 @@ class TestMinimalScheduler(InterfaceCheckMixin):
         for url in URLS:
             assert self.scheduler.enqueue_request(Request(url))
             assert not self.scheduler.enqueue_request(Request(url))
-        assert self.scheduler.has_pending_requests
+        assert self.scheduler.has_pending_requests()
 
         dequeued = []
         while self.scheduler.has_pending_requests():

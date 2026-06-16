@@ -7,8 +7,7 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
-    # Twisted pinned until Scrapy is updated for its internal TLS API changes
-    "Twisted>=21.7.0,<=25.5.0",
+    "Twisted>=21.7.0",
     "cryptography>=37.0.0",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -20,7 +19,7 @@ dependencies = [
     "protego>=0.1.15",
     "pyOpenSSL>=22.0.0",
     "queuelib>=1.4.2",
-    "service_identity>=18.1.0",
+    "service_identity>=23.1.0",
     "tldextract",
     "w3lib>=1.17.0",
     "zope.interface>=5.1.0",
@@ -40,6 +39,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet :: WWW/HTTP",
@@ -86,12 +86,10 @@ pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
 strict = true
-allow_any_generics = true # 67 errors
 extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
     "twisted",
 ]
-warn_return_any = false # 37 errors
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -122,24 +120,9 @@ implicit_reexport = true
 module = "scrapy.settings.default_settings"
 ignore_errors = true
 
-# deprecated modules
-[[tool.mypy.overrides]]
-module = [
-    "scrapy.core.downloader.webclient",
-    "scrapy.spiders.init",
-    "scrapy.utils.testsite",
-    "tests.test_webclient",
-]
-allow_any_generics = true
-allow_untyped_calls = true
-allow_untyped_defs = true
-check_untyped_defs = false
-warn_return_any = false
-
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
-#    "IPython.*",
     "bpython",
     "brotli",
     "brotlicffi",
@@ -154,7 +137,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.15.2"
+current_version = "2.16.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -174,6 +157,8 @@ parse = """(?P<major>0|[1-9]\\d*)\\.(?P<minor>0|[1-9]\\d*)"""
 serialize = ["{major}.{minor}"]
 
 [tool.coverage.run]
+# sysmon, default on 3.14, is too slow: https://github.com/coveragepy/coveragepy/issues/2172
+core = "ctrace"
 branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
@@ -200,6 +185,7 @@ jobs = 1          # >1 hides results
 extension-pkg-allow-list=[
     "lxml",
 ]
+load-plugins = ["pylint_per_file_ignores"]
 
 [tool.pylint."MESSAGES CONTROL"]
 enable = [
@@ -241,6 +227,7 @@ disable = [
     "too-many-positional-arguments",
     "too-many-public-methods",
     "too-many-return-statements",
+    "undefined-variable",
     "unused-argument",
     "unused-variable",
     "useless-import-alias",  # used as a hint to mypy
@@ -259,15 +246,13 @@ disable = [
     "unused-import",
 
     # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
-    "abstract-method",
     "arguments-differ",
-    "arguments-renamed",
-    "dangerous-default-value",
     "keyword-arg-before-vararg",
-    "pointless-statement",
-    "raise-missing-from",
-    "unnecessary-dunder-call",
-    "used-before-assignment",
+]
+# requires `pylint_per_file_ignores` plugin
+per-file-ignores = [
+    # Extended list of ones that we may want to address, only for tests
+    "./tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unnecessary-dunder-call,used-before-assignment",
 ]
 
 [tool.pytest.ini_options]
@@ -284,6 +269,7 @@ markers = [
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_mitmproxy: marks tests that need mitmproxy",
+    "requires_internet: marks tests that need real Internet access",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",
@@ -466,4 +452,4 @@ split-on-trailing-comma = false
 convention = "pep257"
 
 [tool.sphinx-scrapy]
-python-version = "3.13"  # Keep in sync with .github/workflows/checks.yml.
+python-version = "3.14"  # Keep in sync with .github/workflows/checks.yml.

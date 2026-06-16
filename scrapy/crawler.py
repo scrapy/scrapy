@@ -7,6 +7,7 @@ import pprint
 import signal
 import warnings
 from abc import ABC, abstractmethod
+from functools import partial
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
@@ -605,28 +606,30 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
+    async def _crawl_and_track(
+        self, crawler: Crawler, *args: Any, **kwargs: Any
+    ) -> None:
+        try:
+            await crawler.crawl_async(*args, **kwargs)
+        except Exception:
+            self.bootstrap_failed = True
+            raise  # re-raise so asyncio still logs it to stderr naturally
+
+    def _done(self, task: asyncio.Task[None], crawler: Crawler) -> None:
+        self._active.discard(task)
+        self.crawlers.discard(crawler)
+        self.bootstrap_failed |= not getattr(crawler, "spider", None)
+
     def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
         # At this point the asyncio loop has been installed either by the user
         # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
         loop = asyncio.get_event_loop()
         self.crawlers.add(crawler)
 
-        async def _crawl_and_track() -> None:
-            try:
-                await crawler.crawl_async(*args, **kwargs)
-            except Exception:
-                self.bootstrap_failed = True
-                raise  # re-raise so asyncio still logs it to stderr naturally
-
-        task = loop.create_task(_crawl_and_track())
+        task = loop.create_task(self._crawl_and_track(crawler, *args, **kwargs))
         self._active.add(task)
+        task.add_done_callback(partial(self._done, crawler=crawler))
 
-        def _done(_: asyncio.Task[None]) -> None:
-            self.crawlers.discard(crawler)
-            self._active.discard(task)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
-
-        task.add_done_callback(_done)
         return task
 
     async def stop(self, *, mode: _StopMode = "graceful") -> None:

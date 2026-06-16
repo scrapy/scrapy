@@ -15,7 +15,8 @@ from tests.utils.decorators import coroutine_test
 def test_counter_handler() -> None:
     """Test that ``LogCounterHandler`` is always properly removed.
 
-    It's added in ``Crawler.crawl{,_async}()`` and removed on engine_stopped.
+    It's added in ``LogCount.spider_opened()`` and removed in
+    ``LogCount.spider_closed()``.
     """
     c = sum(1 for h in logging.root.handlers if isinstance(h, LogCounterHandler))
     assert c == 0
@@ -26,7 +27,7 @@ def test_stderr_log_handler() -> None:
 
     It's added in ``configure_logging()``, called by ``{Async,}CrawlerProcess``
     (without ``install_root_handler=False``). It can be removed with
-    ``_uninstall_scrapy_root_handler()`` if installing it was really neeeded.
+    ``_uninstall_scrapy_root_handler()`` if installing it was really needed.
     """
     c = sum(1 for h in logging.root.handlers if type(h) is logging.StreamHandler)  # pylint: disable=unidiomatic-typecheck
     assert c == 0

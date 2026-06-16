@@ -179,7 +179,6 @@ class TestTextResponse(TestResponse):
         # Inferring encoding from body also cache decoded body as sideeffect,
         # this test tries to ensure that calling response.encoding and
         # response.text in indistinct order doesn't affect final
-        # response.text in indistinct order doesn't affect final
         # values for encoding and decoded body.
         url = "http://example.com"
         body = b"\xef\xbb\xbfWORD"
@@ -308,11 +307,12 @@ class TestTextResponse(TestResponse):
             "http://example.com/sample3.html#foo",
             "http://www.google.com/something",
             "http://example.com/innertag.html",
+            "http://example.com/page%204.html",
         ]
 
         # select <a> elements
         for sellist in [resp.css("a"), resp.xpath("//a")]:
-            for sel, url in zip(sellist, urls, strict=False):
+            for sel, url in zip(sellist, urls, strict=True):
                 self._assert_followed_url(sel, url, response=resp)
 
         # select <link> elements
@@ -324,7 +324,7 @@ class TestTextResponse(TestResponse):
 
         # href attributes should work
         for sellist in [resp.css("a::attr(href)"), resp.xpath("//a/@href")]:
-            for sel, url in zip(sellist, urls, strict=False):
+            for sel, url in zip(sellist, urls, strict=True):
                 self._assert_followed_url(sel, url, response=resp)
 
         # non-a elements are not supported
@@ -376,12 +376,12 @@ class TestTextResponse(TestResponse):
             encoding="utf8",
             body='<html><body><a href="foo?привет">click me</a></body></html>'.encode(),
         )
-        req = self._assert_followed_url(
+        self._assert_followed_url(
             resp1.css("a")[0],
             "http://example.com/foo?%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82",
             response=resp1,
+            encoding="utf8",
         )
-        assert req.encoding == "utf8"
 
         resp2 = self.response_class(
             "http://example.com",
@@ -390,12 +390,12 @@ class TestTextResponse(TestResponse):
                 "cp1251"
             ),
         )
-        req = self._assert_followed_url(
+        self._assert_followed_url(
             resp2.css("a")[0],
             "http://example.com/foo?%EF%F0%E8%E2%E5%F2",
             response=resp2,
+            encoding="cp1251",
         )
-        assert req.encoding == "cp1251"
 
     def test_follow_flags(self):
         res = self.response_class("http://example.com/")

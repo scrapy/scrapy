@@ -81,9 +81,6 @@ thumbnailing and normalizing images to JPEG/RGB format.
 Enabling your Media Pipeline
 ============================
 
-.. setting:: IMAGES_STORE
-.. setting:: FILES_STORE
-
 To enable your media pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting.
 
@@ -102,6 +99,8 @@ For Files Pipeline, use:
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
+.. setting:: IMAGES_STORE
+.. setting:: FILES_STORE
 
 Then, configure the target storage setting to a valid value that will be used
 for storing the downloaded images. Otherwise the pipeline will remain disabled,
@@ -337,17 +336,18 @@ respectively), the pipeline will put the results under the respective field
 When using :ref:`item types <item-types>` for which fields are defined beforehand,
 you must define both the URLs field and the results field. For example, when
 using the images pipeline, items must define both the ``image_urls`` and the
-``images`` field. For instance, using the :class:`~scrapy.Item` class:
+``images`` field. For instance, using a dataclass:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
 
 
-    class MyItem(scrapy.Item):
+    @dataclass
+    class MyItem:
         # ... other item fields ...
-        image_urls = scrapy.Field()
-        images = scrapy.Field()
+        image_urls: list[str] = field(default_factory=list)
+        images: list[dict] = field(default_factory=list)
 
 If you want to use another field name for the URLs key or for the results key,
 it is also possible to override it.

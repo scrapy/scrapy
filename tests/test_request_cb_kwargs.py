@@ -38,8 +38,8 @@ class InjectArgumentsSpiderMiddleware:
         if request.callback.__name__ == "parse_spider_mw":
             request.cb_kwargs["from_process_spider_input"] = True
 
-    def process_spider_output(self, response, result):
-        for element in result:
+    async def process_spider_output(self, response, result):
+        async for element in result:
             if (
                 isinstance(element, Request)
                 and element.callback.__name__ == "parse_spider_mw_2"

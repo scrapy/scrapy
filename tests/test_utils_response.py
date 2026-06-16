@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from scrapy.http import HtmlResponse, Response
+from scrapy.http import HtmlResponse, Response, TextResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
     _remove_html_comments,
@@ -15,17 +15,21 @@ from scrapy.utils.response import (
 )
 
 
+def _read_browser_output(burl: str):
+    path = urlparse(burl).path
+    if not path or not Path(path).exists():
+        path = burl.replace("file://", "")
+    return Path(path).read_bytes()
+
+
 def test_open_in_browser():
-    url = "http:///www.example.com/some/page.html"
+    url = "http://www.example.com/some/page.html"
     body = (
         b"<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
     )
 
     def browser_open(burl: str) -> bool:
-        path = urlparse(burl).path
-        if not path or not Path(path).exists():
-            path = burl.replace("file://", "")
-        bbody = Path(path).read_bytes()
+        bbody = _read_browser_output(burl)
         assert b'<base href="' + to_bytes(url) + b'">' in bbody
         return True
 
@@ -169,10 +173,7 @@ def test_inject_base_url(body: bytes) -> None:
     url = "http://www.example.com"
 
     def check_base_url(burl):
-        path = urlparse(burl).path
-        if not path or not Path(path).exists():
-            path = burl.replace("file://", "")
-        bbody = Path(path).read_bytes()
+        bbody = _read_browser_output(burl)
         assert bbody.count(b'><base href="' + to_bytes(url) + b'">') == 1
         assert b"<head" in bbody
         return True
@@ -219,7 +220,104 @@ def test_open_in_browser_redos_head():
         (b"a<!--b-->c<!--d", b"ac"),
         (b"a<!--b-->c<!---->d", b"acd"),
         (b"a<!--b--><!--c-->d", b"ad"),
+        (b"a<!-- <!-- inner --> -->b", b"a -->b"),
+        (b"<!-- <head>fake</head> --><head>real</head>", b"<head>real</head>"),
     ],
 )
 def test_remove_html_comments(input_body, output_body):
     assert _remove_html_comments(input_body) == output_body
+
+
+def test_open_in_browser_preserves_html_comments():
+    url = "http://www.example.com"
+    body = (
+        b"<html>"
+        b"<!-- preserved comment -->"
+        b"<head><title>Real</title></head>"
+        b"<body>content</body>"
+        b"</html>"
+    )
+
+    def check(burl):
+        bbody = _read_browser_output(burl)
+        assert b"<!-- preserved comment -->" in bbody
+        return True
+
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_does_not_inject_base_when_present():
+    url = "http://www.example.com"
+    body = (
+        b"<html>"
+        b'<head><base href="http://real.com"><title>T</title></head>'
+        b"<body>hi</body>"
+        b"</html>"
+    )
+
+    def check(burl):
+        bbody = _read_browser_output(burl)
+        assert b'<base href="' + to_bytes(url) + b'">' not in bbody
+        assert b'<base href="http://real.com">' in bbody
+        return True
+
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_injects_base_when_only_in_comment():
+    url = "http://www.example.com"
+    body = (
+        b"<html>"
+        b"<!-- <base href='http://other.com'> -->"
+        b"<head><title>Real</title></head>"
+        b"<body>content</body>"
+        b"</html>"
+    )
+
+    def check(burl):
+        bbody = _read_browser_output(burl)
+        assert b'<base href="' + to_bytes(url) + b'">' in bbody
+        return True
+
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_injects_base_at_real_head_not_commented_head():
+    url = "http://www.example.com"
+    body = (
+        b"<html>"
+        b"<!--<head>comment head</head>-->"
+        b"<head><title>Actual</title></head>"
+        b"<body>hello</body>"
+        b"</html>"
+    )
+
+    def check(burl):
+        bbody = _read_browser_output(burl)
+        assert bbody.count(b'<base href="' + to_bytes(url) + b'">') == 1
+        base_pos = bbody.find(b'<base href="' + to_bytes(url) + b'">')
+        title_pos = bbody.find(b"<title>Actual</title>")
+        assert base_pos < title_pos
+        return True
+
+    response = HtmlResponse(url, body=body)
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_text_response_uses_txt_extension():
+    response = TextResponse("http://www.example.com", body=b"plain text content")
+
+    def check(burl):
+        assert burl.endswith(".txt")
+        return True
+
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_raises_for_unsupported_response_type():
+    response = Response("http://www.example.com", body=b"binary")
+    with pytest.raises(TypeError):
+        open_in_browser(response, _openfunc=lambda _: True)

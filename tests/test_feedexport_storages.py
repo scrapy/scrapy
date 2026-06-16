@@ -513,6 +513,34 @@ class TestGCSFeedStorage:
             client_mock.get_bucket.assert_called_once_with("mybucket")
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
+            f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_store_closes_file_on_upload_error(self):
+        try:
+            from google.cloud.storage import Client  # noqa: F401,PLC0415
+        except ImportError:
+            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+
+        uri = "gs://mybucket/export.csv"
+        project_id = "myproject-123"
+        acl = "publicRead"
+        (client_mock, bucket_mock, blob_mock) = mock_google_cloud_storage()
+        blob_mock.upload_from_file.side_effect = OSError("Upload failed")
+        with mock.patch("google.cloud.storage.Client") as m:
+            m.return_value = client_mock
+
+            f = mock.Mock()
+            storage = GCSFeedStorage(uri, project_id, acl)
+            with pytest.raises(OSError, match="Upload failed"):
+                await maybe_deferred_to_future(storage.store(f))
+
+            f.seek.assert_called_once_with(0)
+            m.assert_called_once_with(project=project_id)
+            client_mock.get_bucket.assert_called_once_with("mybucket")
+            bucket_mock.blob.assert_called_once_with("export.csv")
+            blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
+            f.close.assert_called_once_with()
 
     def test_overwrite_default(self):
         with LogCapture() as log:

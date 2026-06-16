@@ -354,11 +354,6 @@ Otherwise, you would cause iteration over a ``start_urls`` string
 (a very common python pitfall)
 resulting in each character being seen as a separate url.
 
-A valid use case is to set the http auth credentials
-used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`::
-
-    scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword
-
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
@@ -457,13 +452,14 @@ with a ``TestItem`` declared in a ``myproject.items`` module:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass
 
 
-    class TestItem(scrapy.Item):
-        id = scrapy.Field()
-        name = scrapy.Field()
-        description = scrapy.Field()
+    @dataclass
+    class TestItem:
+        id: str | None = None
+        name: str | None = None
+        description: str | None = None
 
 
 .. currentmodule:: scrapy.spiders
@@ -556,7 +552,6 @@ Let's now take a look at an example CrawlSpider with rules:
 
 .. code-block:: python
 
-    import scrapy
     from scrapy.spiders import CrawlSpider, Rule
     from scrapy.linkextractors import LinkExtractor
 
@@ -576,7 +571,7 @@ Let's now take a look at an example CrawlSpider with rules:
 
         def parse_item(self, response):
             self.logger.info("Hi, this is an item page! %s", response.url)
-            item = scrapy.Item()
+            item = {}
             item["id"] = response.xpath('//td[@id="item_id"]/text()').re(r"ID: (\d+)")
             item["name"] = response.xpath('//td[@id="item_name"]/text()').get()
             item["description"] = response.xpath(
@@ -714,9 +709,9 @@ These spiders are pretty easy to use, let's have a look at one example:
             )
 
             item = TestItem()
-            item["id"] = node.xpath("@id").get()
-            item["name"] = node.xpath("name").get()
-            item["description"] = node.xpath("description").get()
+            item.id = node.xpath("@id").get()
+            item.name = node.xpath("name").get()
+            item.description = node.xpath("description").get()
             return item
 
 Basically what we did up there was to create a spider that downloads a feed from
@@ -778,9 +773,9 @@ Let's see an example similar to the previous one, but using a
             self.logger.info("Hi, this is a row!: %r", row)
 
             item = TestItem()
-            item["id"] = row["id"]
-            item["name"] = row["name"]
-            item["description"] = row["description"]
+            item.id = row["id"]
+            item.name = row["name"]
+            item.description = row["description"]
             return item
 
 

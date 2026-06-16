@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import gzip
 import json
-import platform
+import logging
+import os
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -16,6 +17,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import urlparse
 
 import pytest
+from cryptography.x509 import load_der_x509_certificate
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
@@ -31,11 +33,16 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
+from scrapy.utils._deps_compat import (
+    PYOPENSSL_X509_DEPRECATED,
+    TWISTED_TLS_LIMITS_OFFBY1,
+)
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
+from tests.mockserver.mitm_proxy import wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import (
@@ -43,6 +50,7 @@ from tests.spiders import (
     BytesReceivedErrbackSpider,
     HeadersReceivedCallbackSpider,
     HeadersReceivedErrbackSpider,
+    SimpleSpider,
     SingleRequestSpider,
 )
 from tests.utils.decorators import coroutine_test
@@ -55,11 +63,20 @@ if TYPE_CHECKING:
 
 
 class TestHttpBase(ABC):
-    is_secure = False
+    is_secure: bool = False
+    http2: bool = False
     # whether the handler supports per-request bindaddress
-    handler_supports_bindaddress_meta = True
+    handler_supports_bindaddress_meta: bool = True
+    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
+    # stream error (of type PROTOCOL_ERROR) so the client will send
+    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
+    # connection (see handling of ProtocolError in
+    # h2.connection.H2Connection.receive_data()), thus closing all streams that
+    # were using it, and we handle this as a normal exception.
+    handler_supports_http2_dataloss: bool = True
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
+    default_handler_settings: ClassVar[dict[str, Any]] = {}
 
     @property
     @abstractmethod
@@ -70,6 +87,10 @@ class TestHttpBase(ABC):
     async def get_dh(
         self, settings_dict: dict[str, Any] | None = None
     ) -> AsyncGenerator[DownloadHandlerProtocol]:
+        settings_dict = {
+            **self.default_handler_settings,
+            **(settings_dict or {}),
+        }
         crawler = get_crawler(DefaultSpider, settings_dict)
         crawler.spider = crawler._create_spider()
         dh = build_from_crawler(self.download_handler_cls, crawler)
@@ -326,9 +347,7 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_timeout_download_from_spider_server_hangs(
-        self,
-        mockserver: MockServer,
-        reactor_pytest: str,
+        self, mockserver: MockServer, reactor_pytest: str
     ) -> None:
         if reactor_pytest == "asyncio" and sys.platform == "win32":
             # https://twistedmatrix.com/trac/ticket/10279
@@ -512,23 +531,12 @@ class TestHttpBase(ABC):
             await download_handler.download_request(request)
         assert "download_latency" in request.meta
         latency = request.meta["download_latency"]
-        if sys.version_info < (3, 13) and platform.system() == "Windows":
+        if sys.version_info < (3, 13) and sys.platform == "win32":
             # time.monotonic() resolution is too low here:
             # https://docs.python.org/3/whatsnew/3.13.html#time
             assert latency >= 0
         else:
             assert latency > 0
-
-
-class TestHttp11Base(TestHttpBase):
-    http2: bool = False
-    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
-    # stream error (of type PROTOCOL_ERROR) so the client will send
-    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
-    # connection (see handling of ProtocolError in
-    # h2.connection.H2Connection.receive_data()), thus closing all streams that
-    # were using it, and we handle this as a normal exception.
-    handler_supports_http2_dataloss: bool = True
 
     @coroutine_test
     async def test_download_without_maxsize_limit(self, mockserver: MockServer) -> None:
@@ -558,7 +566,7 @@ class TestHttp11Base(TestHttpBase):
     ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
 
-        # 10 is minimal size for this request and the limit is only counted on
+        # 5 is minimal size for this request and the limit is only counted on
         # response body. (regardless of headers)
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 5}) as download_handler:
             response = await download_handler.download_request(request)
@@ -802,13 +810,39 @@ class TestHttp11Base(TestHttpBase):
                 "The 'bindaddress' request meta key is not supported by" in caplog.text
             )
 
+    @coroutine_test
+    async def test_verbatim_url(self, mockserver: MockServer) -> None:
+        # Square brackets are encoded by safe_url_string (w3lib).
+        path = "/uri/items?data[0]=a"
+        url = mockserver.url(path, is_secure=self.is_secure)
 
-class TestHttps11Base(TestHttp11Base):
+        # Without verbatim_url, the brackets are percent-encoded before the
+        # request reaches the server.
+        request = Request(url)
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"/uri/items?data%5B0%5D=a"
+
+        # With verbatim_url=True the URL is sent to the server as-is.
+        request = Request(url, meta={"verbatim_url": True})
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == path.encode()
+
+
+class TestHttpsBase(TestHttpBase):
     is_secure = True
 
     tls_log_message = (
-        'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
-        'subject "/C=IE/O=Scrapy/CN=localhost"'
+        (
+            'SSL connection certificate: issuer "CN=localhost,O=Scrapy,C=IE", '
+            'subject "CN=localhost,O=Scrapy,C=IE"'
+        )
+        if PYOPENSSL_X509_DEPRECATED
+        else (
+            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
+            'subject "/C=IE/O=Scrapy/CN=localhost"'
+        )
     )
 
     def test_download_conn_lost(self) -> None:  # type: ignore[override]
@@ -872,16 +906,17 @@ class TestSimpleHttpsBase(ABC):
     cipher_string: str | None = None
 
     @pytest.fixture(scope="class")
-    def simple_mockserver(self) -> Generator[SimpleMockServer]:
+    @classmethod
+    def simple_mockserver(cls) -> Generator[SimpleMockServer]:
         with SimpleMockServer(
-            self.keyfile, self.certfile, self.cipher_string
+            cls.keyfile, cls.certfile, cipher_string=cls.cipher_string
         ) as simple_mockserver:
             yield simple_mockserver
 
     @pytest.fixture(scope="class")
-    def url(self, simple_mockserver: SimpleMockServer) -> str:
-        # need to use self.host instead of what mockserver returns
-        return f"https://{self.host}:{simple_mockserver.port(is_secure=True)}/file"
+    @classmethod
+    def url(cls, simple_mockserver: SimpleMockServer) -> str:
+        return f"https://{cls.host}:{simple_mockserver.port(is_secure=True)}/file"
 
     @property
     @abstractmethod
@@ -937,6 +972,143 @@ class TestHttpsCustomCiphersBase(TestSimpleHttpsBase):
     cipher_string = "CAMELLIA256-SHA"
 
 
+class TestHttpsTLSVersionBase(ABC):
+    keyfile = "keys/localhost.key"
+    certfile = "keys/localhost.crt"
+
+    @property
+    @abstractmethod
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        raise NotImplementedError
+
+    @asynccontextmanager
+    async def get_dh(
+        self, client_tls_min: str | None, client_tls_max: str | None
+    ) -> AsyncGenerator[DownloadHandlerProtocol]:
+        settings = {}
+        if client_tls_min is not None:
+            settings["DOWNLOAD_TLS_MIN_VERSION"] = client_tls_min
+        if client_tls_max is not None:
+            settings["DOWNLOAD_TLS_MAX_VERSION"] = client_tls_max
+        crawler = get_crawler(DefaultSpider, settings_dict=settings)
+        crawler.spider = crawler._create_spider()
+        dh = build_from_crawler(self.download_handler_cls, crawler)
+        try:
+            yield dh
+        finally:
+            await dh.close()
+
+    @pytest.mark.parametrize(
+        (
+            "server_tls_min",
+            "server_tls_max",
+            "client_tls_min",
+            "client_tls_max",
+            "expect_success",
+        ),
+        [
+            pytest.param(None, None, None, None, True, id="no-limits"),
+            pytest.param(None, None, None, "TLSv1.2", True, id="client-max-tls1.2"),
+            pytest.param(None, None, "TLSv1.3", None, True, id="client-min-tls1.3"),
+            pytest.param(
+                "TLSv1.3",
+                None,
+                None,
+                "TLSv1.2",
+                False,
+                id="client-max-below-server-min",
+            ),
+            pytest.param(
+                None,
+                "TLSv1.2",
+                "TLSv1.3",
+                None,
+                False,
+                id="client-min-above-server-max",
+            ),
+            pytest.param(None, "TLSv1.2", None, "TLSv1.2", True, id="both-tls1.2"),
+            pytest.param("TLSv1.3", None, "TLSv1.3", None, True, id="both-tls1.3"),
+            pytest.param(
+                None,
+                None,
+                "TLSv1.0",
+                None,
+                True,
+                id="client-min-tls1.0",
+                marks=pytest.mark.filterwarnings(
+                    r"ignore:ssl\.TLSVersion\.TLSv1 is deprecated:DeprecationWarning"
+                ),
+            ),
+            pytest.param(
+                "TLSv1.0",
+                None,
+                "TLSv1.0",
+                None,
+                True,
+                id="both-min-tls1.0",
+                marks=pytest.mark.filterwarnings(
+                    r"ignore:ssl\.TLSVersion\.TLSv1 is deprecated:DeprecationWarning"
+                ),
+            ),
+            pytest.param(
+                "TLSv1.2",
+                "TLSv1.3",
+                "TLSv1.2",
+                "TLSv1.3",
+                True,
+                id="both-tls1.2-1.3",
+                marks=pytest.mark.xfail(
+                    TWISTED_TLS_LIMITS_OFFBY1,
+                    reason="Can't set max to 1.3 on this Twisted version",
+                    strict=True,
+                ),
+            ),
+        ],
+    )
+    @coroutine_test
+    async def test_download(
+        self,
+        server_tls_min: str | None,
+        server_tls_max: str | None,
+        client_tls_min: str | None,
+        client_tls_max: str | None,
+        expect_success: bool,
+    ) -> None:
+        with SimpleMockServer(
+            self.keyfile,
+            self.certfile,
+            tls_min_version=server_tls_min,
+            tls_max_version=server_tls_max,
+        ) as simple_mockserver:
+            url = f"https://localhost:{simple_mockserver.port(is_secure=True)}/file"
+            request = Request(url)
+            async with self.get_dh(client_tls_min, client_tls_max) as dh:
+                if expect_success:
+                    response = await dh.download_request(request)
+                    assert response.body == b"0123456789"
+                else:
+                    with pytest.raises(
+                        (DownloadConnectionRefusedError, DownloadFailedError)
+                    ):
+                        await dh.download_request(request)
+
+    @coroutine_test
+    async def test_invalid_min_version_setting(self) -> None:
+        with pytest.raises(
+            ValueError, match="Unknown DOWNLOAD_TLS_MIN_VERSION value: invalid"
+        ):
+            async with self.get_dh(client_tls_min="invalid", client_tls_max=None):
+                pass
+
+    @coroutine_test
+    async def test_invalid_max_version_setting(self) -> None:
+        with pytest.raises(
+            ValueError, match="Unknown DOWNLOAD_TLS_MAX_VERSION value: invalid"
+        ):
+            async with self.get_dh(client_tls_min=None, client_tls_max="invalid"):
+                pass
+
+
 class TestHttpWithCrawlerBase(ABC):
     @property
     @abstractmethod
@@ -981,15 +1153,19 @@ class TestHttpWithCrawlerBase(ABC):
         if not self.is_secure:
             pytest.skip("Only applies to HTTPS")
         # copy of TestCrawl.test_response_ssl_certificate()
-        # the current test implementation can only work for Twisted-based download handlers
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
         await crawler.crawl_async(seed=url, mockserver=mockserver)
         assert isinstance(crawler.spider, SingleRequestSpider)
         cert = crawler.spider.meta["responses"][0].certificate
-        assert isinstance(cert, Certificate)
-        assert cert.getSubject().commonName == b"localhost"
-        assert cert.getIssuer().commonName == b"localhost"
+        assert cert is not None
+        if isinstance(cert, Certificate):  # Twisted
+            assert cert.getSubject().commonName == b"localhost"
+            assert cert.getIssuer().commonName == b"localhost"
+        elif isinstance(cert, bytes):  # DER bytes
+            cert_x509 = load_der_x509_certificate(cert)
+            assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
+            assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer) -> None:
@@ -1075,6 +1251,8 @@ class TestHttpWithCrawlerBase(ABC):
 class TestHttpProxyBase(ABC):
     is_secure = False
     expected_http_proxy_request_body = b"http://example.com"
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    handler_supports_tls_in_tls: bool = True
 
     @property
     @abstractmethod
@@ -1127,6 +1305,8 @@ class TestHttpProxyBase(ABC):
     ) -> None:
         if NON_EXISTING_RESOLVABLE:
             pytest.skip("Non-existing hosts are resolvable")
+        if self.is_secure and not self.handler_supports_tls_in_tls:
+            pytest.skip("HTTPS proxies for HTTPS destinations are not supported")
         http_proxy = proxy_mockserver.url("", is_secure=self.is_secure)
         domain = "https://no-such-domain.nosuch"
         request = Request(domain, meta={"proxy": http_proxy, "download_timeout": 0.2})
@@ -1146,3 +1326,237 @@ class TestHttpProxyBase(ABC):
         assert response.status == 200
         assert response.url == request.url
         assert response.body == self.expected_http_proxy_request_body
+
+
+class TestMitmProxyBase(ABC):
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    handler_supports_tls_in_tls: bool = True
+    handler_supports_socks: bool = False
+
+    @property
+    @abstractmethod
+    def settings_dict(self) -> dict[str, Any] | None:
+        raise NotImplementedError
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @pytest.mark.usefixtures("mitm_proxy_server")
+    @coroutine_test
+    async def test_http_proxy(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, https_dest: bool
+    ) -> None:
+        """HTTP proxy, HTTP or HTTPS destination."""
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @pytest.mark.usefixtures("mitm_proxy_server_https")
+    @coroutine_test
+    async def test_https_proxy(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, https_dest: bool
+    ) -> None:
+        """HTTPS proxy, HTTP or HTTPS destination."""
+        if https_dest and not self.handler_supports_tls_in_tls:
+            pytest.skip("HTTPS proxies for HTTPS destinations are not supported")
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @pytest.mark.usefixtures("mitm_proxy_server")
+    @coroutine_test
+    async def test_http_proxy_auth_error(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+        mockserver: MockServer,
+        https_dest: bool,
+    ) -> None:
+        """HTTP proxy, HTTP or HTTPS destination, wrong proxy creds."""
+        envvar = "https_proxy" if https_dest else "http_proxy"
+        monkeypatch.setenv(envvar, wrong_credentials(os.environ[envvar]))
+        crawler = get_crawler(SimpleSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        # The proxy returns a 407 error code but it does not reach the client;
+        # it just sees an exception.
+        self._assert_got_auth_exception(caplog.text)
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @pytest.mark.usefixtures("mitm_proxy_server")
+    @coroutine_test
+    async def test_dont_leak_proxy_authorization_header(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, https_dest: bool
+    ) -> None:
+        """HTTP proxy, HTTP or HTTPS destination. Check that the auth header
+        is not sent to the destination."""
+        request = Request(mockserver.url("/echo", is_secure=https_dest))
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(seed=request)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
+        echo = json.loads(crawler.spider.meta["responses"][0].text)
+        assert "Proxy-Authorization" not in echo["headers"]
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @pytest.mark.usefixtures("socks5_proxy_server")
+    @coroutine_test
+    async def test_download_with_socks_proxy(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, https_dest: bool
+    ) -> None:
+        """SOCKS5 proxy, HTTP or HTTPS destination."""
+        if not self.handler_supports_socks:
+            pytest.skip("SOCKS proxies are not supported")
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
+
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @pytest.mark.usefixtures("socks5_proxy_server")
+    @coroutine_test
+    async def test_socks_proxy_auth_error(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+        mockserver: MockServer,
+        https_dest: bool,
+    ) -> None:
+        if not self.handler_supports_socks:
+            pytest.skip("SOCKS proxies are not supported")
+        envvar = "https_proxy" if https_dest else "http_proxy"
+        monkeypatch.setenv(envvar, wrong_credentials(os.environ[envvar]))
+        crawler = get_crawler(SimpleSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        assert "DownloadConnectionRefusedError" in caplog.text
+
+    @staticmethod
+    def _assert_headers(headers: Headers, https_dest: bool) -> None:
+        assert b"X-Via-Mitmproxy" in headers
+        if https_dest:
+            assert b"X-Via-Mitmproxy-TLS" in headers
+
+    @staticmethod
+    def _assert_got_response_code(code: int, log: str) -> None:
+        assert str(log).count(f"Crawled ({code})") == 1
+
+    @staticmethod
+    def _assert_got_auth_exception(log: str) -> None:
+        assert "Proxy Authentication Required" in log or "407" in log
+
+
+class TestRealWebsiteBase(ABC):
+    @property
+    @abstractmethod
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def settings_dict(self) -> dict[str, Any] | None:
+        raise NotImplementedError
+
+    @property
+    def platform_cert_store_works(self) -> bool:
+        """Whether valid certificates can be verified.
+
+        Twisted on Windows cannot do that out of the box, see e.g.
+        https://github.com/twisted/twisted/issues/6371.
+        """
+        return True
+
+    @asynccontextmanager
+    async def get_dh(
+        self, settings_dict: dict[str, Any] | None = None
+    ) -> AsyncGenerator[DownloadHandlerProtocol]:
+        crawler = get_crawler(DefaultSpider, settings_dict)
+        crawler.spider = crawler._create_spider()
+        dh = build_from_crawler(self.download_handler_cls, crawler)
+        try:
+            yield dh
+        finally:
+            await dh.close()
+
+    @coroutine_test
+    async def test_download(self) -> None:
+        request = Request("https://books.toscrape.com/")
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert "All products | Books to Scrape - Sandbox" in response.text
+
+    @coroutine_test
+    async def test_download_with_spider(self) -> None:
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        await maybe_deferred_to_future(
+            crawler.crawl(seed=Request("https://books.toscrape.com/"))
+        )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        failure = crawler.spider.meta.get("failure")
+        assert failure is None
+        reason = crawler.spider.meta["close_reason"]
+        assert reason == "finished"
+
+    @coroutine_test
+    async def test_verify_certs(self) -> None:
+        if not self.platform_cert_store_works:
+            pytest.skip("Cannot verify certificates")
+        request = Request("https://books.toscrape.com/")
+        async with self.get_dh(
+            {"DOWNLOAD_VERIFY_CERTIFICATES": True}
+        ) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert "All products | Books to Scrape - Sandbox" in response.text
+
+    @pytest.mark.parametrize("verify_certs", [True, False])
+    @coroutine_test
+    async def test_tls_logging(
+        self, caplog: pytest.LogCaptureFixture, verify_certs: bool
+    ) -> None:
+        if verify_certs and not self.platform_cert_store_works:
+            pytest.skip("Cannot verify certificates")
+        request = Request("https://books.toscrape.com/")
+        async with self.get_dh(
+            {
+                "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING": True,
+                "DOWNLOAD_VERIFY_CERTIFICATES": verify_certs,
+            }
+        ) as download_handler:
+            with caplog.at_level("DEBUG"):
+                response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert "SSL connection to books.toscrape.com using protocol" in caplog.text

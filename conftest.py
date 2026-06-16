@@ -11,6 +11,7 @@ from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
+from tests.mockserver.mitm_proxy import MitmProxy
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -23,16 +24,13 @@ def _py_files(folder):
 collect_ignore = [
     # may need extra deps
     "docs/_ext",
-    # not a test, but looks like a test
-    "scrapy/utils/testproc.py",
-    "scrapy/utils/testsite.py",
-    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerProcessSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::AsyncCrawlerProcessSubprocess
     *_py_files("tests/AsyncCrawlerProcess"),
-    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerRunnerSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::AsyncCrawlerRunnerSubprocess
     *_py_files("tests/AsyncCrawlerRunner"),
-    # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::CrawlerProcessSubprocess
     *_py_files("tests/CrawlerProcess"),
-    # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::CrawlerRunnerSubprocess
     *_py_files("tests/CrawlerRunner"),
 ]
 
@@ -73,6 +71,45 @@ def pytest_addoption(parser, pluginmanager):
 def mockserver() -> Generator[MockServer]:
     with MockServer() as mockserver:
         yield mockserver
+
+
+@pytest.fixture  # function scope because it modifies os.environ
+def mitm_proxy_server(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
+    proxy = MitmProxy()
+    url = proxy.start()
+    monkeypatch.setenv("http_proxy", url)
+    monkeypatch.setenv("https_proxy", url)
+
+    try:
+        yield proxy
+    finally:
+        proxy.stop()
+
+
+@pytest.fixture  # function scope because it modifies os.environ
+def mitm_proxy_server_https(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
+    proxy = MitmProxy()
+    url = proxy.start().replace("http://", "https://")
+    monkeypatch.setenv("http_proxy", url)
+    monkeypatch.setenv("https_proxy", url)
+
+    try:
+        yield proxy
+    finally:
+        proxy.stop()
+
+
+@pytest.fixture  # function scope because it modifies os.environ
+def socks5_proxy_server(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
+    proxy = MitmProxy(mode="socks5")
+    url = proxy.start()
+    monkeypatch.setenv("http_proxy", url)
+    monkeypatch.setenv("https_proxy", url)
+
+    try:
+        yield proxy
+    finally:
+        proxy.stop()
 
 
 @pytest.fixture(scope="session")
