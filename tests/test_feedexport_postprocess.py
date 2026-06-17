@@ -270,7 +270,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             self._named_tempfile("check_CHECK_NONE"): lzma.compress(
                 self.expected, check=lzma.CHECK_NONE
             ),
-            self._named_tempfile("check_CHECK_CRC256"): lzma.compress(
+            self._named_tempfile("CHECK_SHA256"): lzma.compress(
                 self.expected, check=lzma.CHECK_SHA256
             ),
         }
@@ -282,7 +282,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
                     "postprocessing": ["scrapy.extensions.postprocessing.LZMAPlugin"],
                     "lzma_check": lzma.CHECK_NONE,
                 },
-                self._named_tempfile("check_CHECK_CRC256"): {
+                self._named_tempfile("CHECK_SHA256"): {
                     "format": "csv",
                     "postprocessing": ["scrapy.extensions.postprocessing.LZMAPlugin"],
                     "lzma_check": lzma.CHECK_SHA256,

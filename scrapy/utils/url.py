@@ -139,7 +139,8 @@ def strip_url(
             ("ftp", 21),
         }
     ):
-        netloc = netloc.replace(f":{parsed_url.port}", "")
+        port_suffix = f":{parsed_url.port}"
+        netloc = netloc.removesuffix(port_suffix)
 
     return urlunparse(
         (

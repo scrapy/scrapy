@@ -74,40 +74,19 @@ def mockserver() -> Generator[MockServer]:
 
 
 @pytest.fixture  # function scope because it modifies os.environ
-def mitm_proxy_server(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
-    proxy = MitmProxy()
+def proxy_server(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Generator[str]:
+    kind = request.param
+    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
     url = proxy.start()
+    if kind == "https":
+        url = url.replace("http://", "https://")
     monkeypatch.setenv("http_proxy", url)
     monkeypatch.setenv("https_proxy", url)
 
     try:
-        yield proxy
-    finally:
-        proxy.stop()
-
-
-@pytest.fixture  # function scope because it modifies os.environ
-def mitm_proxy_server_https(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
-    proxy = MitmProxy()
-    url = proxy.start().replace("http://", "https://")
-    monkeypatch.setenv("http_proxy", url)
-    monkeypatch.setenv("https_proxy", url)
-
-    try:
-        yield proxy
-    finally:
-        proxy.stop()
-
-
-@pytest.fixture  # function scope because it modifies os.environ
-def socks5_proxy_server(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
-    proxy = MitmProxy(mode="socks5")
-    url = proxy.start()
-    monkeypatch.setenv("http_proxy", url)
-    monkeypatch.setenv("https_proxy", url)
-
-    try:
-        yield proxy
+        yield kind
     finally:
         proxy.stop()
 

@@ -161,6 +161,7 @@ class TestAddonManager:
         settings.set("KEY", 0, priority="default")
         runner = runner_cls(settings)
         crawler = runner.create_crawler(Spider)
+        crawler._apply_settings()
         assert crawler.settings.getint("KEY") == 20
 
     def test_fallback_workflow(self):

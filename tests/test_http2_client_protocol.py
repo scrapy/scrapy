@@ -141,7 +141,7 @@ class Dataloss(LeafResource):
 
 class NoContentLengthHeader(LeafResource):
     def render_GET(self, request: TxRequest):
-        request.requestHeaders.removeHeader("Content-Length")
+        request.responseHeaders.removeHeader("Content-Length")
         self.deferRequest(request, 0, self._delayed_render, request)
         return NOT_DONE_YET
 
@@ -460,9 +460,7 @@ class TestHttps2ClientProtocol:
     def test_invalid_negotiated_protocol(
         self, server_port: int, client: H2ClientProtocol
     ) -> Generator[Deferred[Any], Any, None]:
-        with mock.patch(
-            "scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"
-        ):
+        with mock.patch("scrapy.core.http2.protocol.PROTOCOL_NAME", new=b"not-h2"):
             request = Request(url=self.get_url(server_port, "/status?n=200"))
             with pytest.raises(ResponseFailed):
                 yield make_request_dfd(client, request)

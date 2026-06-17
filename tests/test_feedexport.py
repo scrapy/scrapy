@@ -32,7 +32,6 @@ from scrapy.extensions.feedexport import (
     FeedSlot,
     FileFeedStorage,
     IFeedStorage,
-    S3FeedStorage,
 )
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
@@ -499,8 +498,7 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
         crawler = get_crawler(ItemSpider, settings)
-        with mock.patch.object(S3FeedStorage, "store"):
-            yield crawler.crawl(mockserver=self.mockserver)
+        yield crawler.crawl(mockserver=self.mockserver)
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert "feedexport/success_count/StdoutFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1

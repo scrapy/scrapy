@@ -162,7 +162,7 @@ def md5sum(file: IO[bytes]) -> str:
 
 def rel_has_nofollow(rel: str | None) -> bool:
     """Return True if link rel attribute has nofollow type"""
-    return rel is not None and "nofollow" in rel.replace(",", " ").split()
+    return rel is not None and "nofollow" in rel.lower().replace(",", " ").split()
 
 
 class SupportsFromCrawler(Protocol[_T_co, _P]):
