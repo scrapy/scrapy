@@ -17,6 +17,7 @@ jobs:
       PYTEST_ADDOPTS: -n auto
       DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
       DELTA_REPO_ID: ${{ secrets.DELTA_REPO_ID }}
+      DELTA_BRANCH: master
     strategy:
       fail-fast: false
       matrix:
