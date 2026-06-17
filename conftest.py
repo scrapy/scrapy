@@ -105,7 +105,11 @@ def pytest_configure(config):
         install_reactor_import_hook()
 
 
+@pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):
+    import os
+    os.environ["DELTA_TEST_NAME"] = item.nodeid
+
     # Skip tests based on reactor markers
     reactor = item.config.getoption("--reactor")
 
@@ -141,8 +145,3 @@ def pytest_runtest_setup(item):
 # Generate localhost certificate files, needed by some tests
 generate_keys()
 
-
-@pytest.hookimpl(tryfirst=True)
-def pytest_runtest_setup(item):
-    import os
-    os.environ["DELTA_TEST_NAME"] = item.nodeid
