@@ -106,8 +106,8 @@ def main():
                 commits.append((parts[0], parts[1]))
             print(f"Found {len(commits)} commits in the last day.")
         else:
-            print("No commits found in the last day. Falling back to the last 3 commits on the current branch.")
-            cmd = ["git", "log", "-n", "3", "--reverse", "--oneline"]
+            print("No commits found in the last day. Falling back to the last 10 commits on the current branch.")
+            cmd = ["git", "log", "-n", "10", "--reverse", "--oneline"]
             status, stdout, _ = run_cmd(cmd)
             for line in stdout.strip().split("\n"):
                 parts = line.split(" ", 1)
@@ -117,8 +117,8 @@ def main():
         print("No commits found to benchmark. Exiting.")
         sys.exit(1)
 
-    # Only benchmark the first commit as requested
-    commits = commits[:1]
+    # Benchmark up to 10 commits
+    commits = commits[:10]
 
     print("\nCommits to evaluate:")
     for sha, desc in commits:
