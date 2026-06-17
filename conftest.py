@@ -161,3 +161,9 @@ def pytest_runtest_setup(item):
 
 # Generate localhost certificate files, needed by some tests
 generate_keys()
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_setup(item):
+    import os
+    os.environ["DELTA_TEST_NAME"] = item.nodeid
