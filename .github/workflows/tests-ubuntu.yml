@@ -132,6 +132,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTEST_ADDOPTS: -n auto
+      DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
+      DELTA_REPO_ID: ${{ secrets.DELTA_REPO_ID }}
     strategy:
       fail-fast: false
       matrix:
