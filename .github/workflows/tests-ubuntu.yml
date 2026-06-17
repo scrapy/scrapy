@@ -11,124 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── Delta pre-check ────────────────────────────────────────────────────────
-  # Runs only the tests affected by the diff. The full matrix below is gated
-  # behind this job – if Delta fails, the expensive tox runners never start.
-  delta:
-    name: Delta – affected tests only
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-
-      - name: Install system libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxml2-dev libxslt-dev
-
-      - name: Install Scrapy and runtime dependencies
-        run: |
-          pip install -U pip
-          pip install -e .
-
-      - name: Install test dependencies
-        run: |
-          pip install \
-            "pytest>=8.4.1" \
-            "pytest-cov>=7.0.0" \
-            pytest-xdist \
-            "pytest-twisted>=1.14.3" \
-            attrs \
-            "coverage>=7.10.6" \
-            httpx \
-            "pexpect>=4.8.0" \
-            pygments \
-            "pyftpdlib>=2.0.1" \
-            "sybil>=1.3.0" \
-            testfixtures
-
-      - name: Install optional/extra test dependencies
-        run: |
-          pip install \
-            Pillow \
-            "Twisted[http2]" \
-            boto3 \
-            "brotli>=1.2.0" \
-            google-cloud-storage \
-            "httpx[http2,socks]" \
-            ipython \
-            robotexclusionrulesparser \
-            uvloop \
-            zstandard \
-            pytest-asyncio
-
-      - name: Install Delta
-        run: pip install deltatest-cli
-
-      # Write config.toml so Delta connects to the remote mapping DB.
-      # IMPORTANT: Delta reads from ~/.delta/config.toml (Path.home()/'.delta'),
-      # NOT from the repo-local .delta/ directory. Writing to the wrong path
-      # causes Delta to fall back to local-init mode (4131 unmapped tests).
-      - name: Configure Delta Cloud
-        env:
-          DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
-          DELTA_REPO_ID: ${{ secrets.DELTA_REPO_ID }}
-        run: |
-          mkdir -p ~/.delta
-          {
-            echo '[cloud]'
-            echo "api_key  = \"${DELTA_API_KEY}\""
-            echo 'api_url  = "https://api.deltatest.dev"'
-            echo "repo_id  = \"${DELTA_REPO_ID}\""
-            echo 'branch   = "master"'
-            echo 'test_dir = "tests"'
-          } > ~/.delta/config.toml
-          # Verify structure (values masked)
-          sed 's/= ".*"/= "***"/' ~/.delta/config.toml
-
-      - name: Run Delta (affected tests only)
-        run: |
-          BASE=${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || 'master' }}
-          echo "Diffing against: origin/${BASE}"
-          delta run \
-            --base-branch "origin/${BASE}" \
-            -- \
-            --cov-config=pyproject.toml \
-            --cov=scrapy \
-            --cov-report= \
-            --cov-report=term-missing \
-            --cov-report=xml \
-            --junitxml=delta.junit.xml \
-            -o junit_family=legacy \
-            --durations=10 \
-            scrapy tests \
-            --doctest-modules
-
-      - name: Push mapping to Delta Cloud
-        if: always()
-        run: delta push
-
-      - name: Upload coverage report
-        if: always()
-        uses: codecov/codecov-action@v5
-
-      - name: Upload test results
-        if: always()
-        uses: codecov/codecov-action@v5
-        with:
-          report_type: test_results
-          files: delta.junit.xml
-
-  # ── Full tox matrix ────────────────────────────────────────────────────────
-  # Only starts after Delta passes.
   tests:
-    needs: delta
     runs-on: ubuntu-latest
     env:
       PYTEST_ADDOPTS: -n auto
@@ -216,6 +99,21 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
+
+    # Write ~/.delta/config.toml so tox-spawned delta processes connect to
+    # the remote mapping DB (Delta reads from Path.home()/'.delta/config.toml').
+    - name: Configure Delta Cloud
+      run: |
+        mkdir -p ~/.delta
+        {
+          echo '[cloud]'
+          echo "api_key  = \"${DELTA_API_KEY}\""
+          echo 'api_url  = "https://api.deltatest.dev"'
+          echo "repo_id  = \"${DELTA_REPO_ID}\""
+          echo 'branch   = "master"'
+          echo 'test_dir = "tests"'
+        } > ~/.delta/config.toml
+        sed 's/= ".*"/= "***"/' ~/.delta/config.toml
 
     - name: Run tests
       env: ${{ matrix.env }}
