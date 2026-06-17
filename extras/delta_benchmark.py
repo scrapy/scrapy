@@ -84,34 +84,48 @@ def main():
     print(f"Current branch: {active_branch}")
     print(f"Original HEAD: {orig_head}")
 
-    # 1. Get merges/commits from the last day.
-    # We look for commits matching the pattern "Merge pull request" or merges in general.
-    # Fallback to last 5 commits if none found in the last day.
-    cmd = ["git", "log", "--merges", "--since=1 day ago", "--reverse", "--oneline"]
-    status, stdout, _ = run_cmd(cmd)
-    
     commits = []
-    if status == 0 and stdout.strip():
-        for line in stdout.strip().split("\n"):
-            parts = line.split(" ", 1)
-            commits.append((parts[0], parts[1]))
-        print(f"Found {len(commits)} merge commits in the last day.")
-    else:
-        print("No merge commits found in the last day. Checking for regular commits in the last day...")
-        cmd = ["git", "log", "--since=1 day ago", "--reverse", "--oneline"]
+    
+    if len(sys.argv) > 1:
+        target_sha = sys.argv[1]
+        print(f"Target commit specified: {target_sha}. Fetching it and 9 previous commits...")
+        cmd = ["git", "log", target_sha, "-n", "10", "--reverse", "--oneline"]
         status, stdout, _ = run_cmd(cmd)
         if status == 0 and stdout.strip():
             for line in stdout.strip().split("\n"):
                 parts = line.split(" ", 1)
                 commits.append((parts[0], parts[1]))
-            print(f"Found {len(commits)} commits in the last day.")
         else:
-            print("No commits found in the last day. Falling back to the last 10 commits on the current branch.")
-            cmd = ["git", "log", "-n", "10", "--reverse", "--oneline"]
-            status, stdout, _ = run_cmd(cmd)
+            print(f"Error: Could not retrieve commits ending at {target_sha}")
+            sys.exit(1)
+    else:
+        # 1. Get merges/commits from the last day.
+        # We look for commits matching the pattern "Merge pull request" or merges in general.
+        # Fallback to last 5 commits if none found in the last day.
+        cmd = ["git", "log", "--merges", "--since=1 day ago", "--reverse", "--oneline"]
+        status, stdout, _ = run_cmd(cmd)
+        
+        if status == 0 and stdout.strip():
             for line in stdout.strip().split("\n"):
                 parts = line.split(" ", 1)
                 commits.append((parts[0], parts[1]))
+            print(f"Found {len(commits)} merge commits in the last day.")
+        else:
+            print("No merge commits found in the last day. Checking for regular commits in the last day...")
+            cmd = ["git", "log", "--since=1 day ago", "--reverse", "--oneline"]
+            status, stdout, _ = run_cmd(cmd)
+            if status == 0 and stdout.strip():
+                for line in stdout.strip().split("\n"):
+                    parts = line.split(" ", 1)
+                    commits.append((parts[0], parts[1]))
+                print(f"Found {len(commits)} commits in the last day.")
+            else:
+                print("No commits found in the last day. Falling back to the last 10 commits on the current branch.")
+                cmd = ["git", "log", "-n", "10", "--reverse", "--oneline"]
+                status, stdout, _ = run_cmd(cmd)
+                for line in stdout.strip().split("\n"):
+                    parts = line.split(" ", 1)
+                    commits.append((parts[0], parts[1]))
 
     if not commits:
         print("No commits found to benchmark. Exiting.")
