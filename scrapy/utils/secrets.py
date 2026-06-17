@@ -141,7 +141,7 @@ def _load_dotenv(path: str = ".env", override: bool = False) -> None:
     if not Path(path).is_file():
         return
     try:
-        from dotenv import load_dotenv as _load  # noqa: PLC0415
+        from dotenv import load_dotenv  # noqa: PLC0415
     except ImportError:
         warnings.warn(
             "Install the 'python-dotenv' package to load a .env file: "
@@ -150,4 +150,4 @@ def _load_dotenv(path: str = ".env", override: bool = False) -> None:
             stacklevel=2,
         )
         return
-    _load(dotenv_path=path, override=override)
+    load_dotenv(dotenv_path=path, override=override)
