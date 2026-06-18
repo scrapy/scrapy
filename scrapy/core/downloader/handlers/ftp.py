@@ -114,12 +114,17 @@ class FTPDownloadHandler(BaseDownloadHandler):
             await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
         except CommandFailed as e:
             message = str(e)
+            # Close protocol and client on error to prevent resource leaks
+            protocol.close()
+            client.transport.loseConnection()
             if m := _CODE_RE.search(message):
                 ftpcode = m.group()
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message.encode())
             raise
         protocol.close()
+        # Close the FTP client connection to prevent resource leaks
+        client.transport.loseConnection()
         headers = {"local filename": protocol.filename or b"", "size": protocol.size}
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
