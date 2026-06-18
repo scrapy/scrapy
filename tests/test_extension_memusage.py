@@ -5,6 +5,7 @@ import sys
 
 import pytest
 
+from scrapy import signals
 from scrapy.extensions import memusage as memusage_mod
 from scrapy.extensions.memusage import MemoryUsage
 from scrapy.spiders import Spider
@@ -61,6 +62,7 @@ async def test_memusage_limit_closes_spider_with_reason_and_error_log(
         await crawler.crawl_async(url="data:,", loops=100)
 
     assert crawler.stats
+    assert crawler.stats.get_value("memusage/limit_reached") == 1
     assert crawler.stats.get_value("finish_reason") == "memusage_exceeded"
     assert any(
         "memory usage exceeded" in r.getMessage().lower() for r in caplog.records
@@ -86,9 +88,18 @@ async def test_memusage_warning_logs_but_allows_normal_finish(
 
     crawler = get_crawler(spidercls=_LoopSpider, settings_dict=settings)
 
+    warning_signals: list[int] = []
+
+    def on_warning_reached() -> None:
+        warning_signals.append(1)
+
+    crawler.signals.connect(on_warning_reached, signal=signals.memusage_warning_reached)
+
     with caplog.at_level(logging.WARNING, logger="scrapy.extensions.memusage"):
         await crawler.crawl_async(url="data:,", loops=60)
 
+    assert warning_signals == [1]
     assert crawler.stats
+    assert crawler.stats.get_value("memusage/warning_reached") == 1
     assert crawler.stats.get_value("finish_reason") == "finished"
     assert any("memory usage reached" in r.getMessage().lower() for r in caplog.records)
