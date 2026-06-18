@@ -715,6 +715,9 @@ class TestCrawlSpider:
         assert isinstance(crawler.spider, SingleRequestSpider)
         assert crawler.spider.meta["responses"][0].certificate is None
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
     @pytest.mark.parametrize(
         "url",
         [
