@@ -2,21 +2,26 @@ from __future__ import annotations
 
 import logging
 import sys
+from typing import Any
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy import signals
 from scrapy.extensions import memusage as memusage_mod
 from scrapy.extensions.memusage import MemoryUsage
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
+from tests.utils import OneShotLoop
+from tests.utils.decorators import coroutine_test
 
-# memusage relies on the stdlib 'resource' module (not available on Windows)
+# MemoryUsage relies on the stdlib 'resource' module (not available on Windows)
 pytestmark = pytest.mark.skipif(
     sys.platform.startswith("win"),
     reason="MemoryUsage extension not available on Windows",
 )
+
+
+MB = 1024 * 1024
 
 
 class _LoopSpider(Spider):
@@ -36,40 +41,24 @@ class _LoopSpider(Spider):
             )
 
 
-class _OneShotLoop:
-    """Test stub for create_looping_call: run once immediately, no background task."""
-
-    def __init__(self, func):
-        self.func = func
-        self.running = False
-
-    def start(self, _interval, now: bool = False, **_kw):
-        self.running = True
-        if now:
-            self.func()
-        return self
-
-    def stop(self):
-        self.running = False
-
-
-@inlineCallbacks
-def test_memusage_limit_closes_spider_with_reason_and_error_log(caplog, monkeypatch):
-    url = "data:,"
+@coroutine_test
+async def test_memusage_limit_closes_spider_with_reason_and_error_log(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     settings = {
         "MEMUSAGE_ENABLED": True,
         "MEMUSAGE_LIMIT_MB": 10,
         "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.01,
+        "TELNETCONSOLE_ENABLED": False,
         "LOG_LEVEL": "INFO",
     }
 
     # Avoid background LoopingCall that can log after the test finishes.
-    monkeypatch.setattr(memusage_mod, "create_looping_call", lambda f: _OneShotLoop(f))
+    monkeypatch.setattr(memusage_mod, "create_looping_call", OneShotLoop)
 
-    MB = 1024 * 1024
     state = {"high": False}
 
-    def fake_vsz(self):
+    def fake_vsz(self: Any) -> int:
         return 250 * MB if state["high"] else 5 * MB
 
     monkeypatch.setattr(MemoryUsage, "get_virtual_size", fake_vsz)
@@ -81,36 +70,38 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(caplog, monkeypa
 
     crawler.signals.connect(on_opened, signal=signals.spider_opened)
 
-    caplog.set_level(logging.ERROR, logger="scrapy.extensions.memusage")
-    yield crawler.crawl(url=url, loops=100)
+    with caplog.at_level(logging.ERROR, logger="scrapy.extensions.memusage"):
+        await crawler.crawl_async(url="data:,", loops=100)
 
+    assert crawler.stats
     assert crawler.stats.get_value("finish_reason") == "memusage_exceeded"
     assert any(
         "memory usage exceeded" in r.getMessage().lower() for r in caplog.records
     )
 
 
-@inlineCallbacks
-def test_memusage_warning_logs_but_allows_normal_finish(caplog, monkeypatch):
-    url = "data:,"
+@coroutine_test
+async def test_memusage_warning_logs_but_allows_normal_finish(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     settings = {
         "MEMUSAGE_ENABLED": True,
         "MEMUSAGE_WARNING_MB": 50,
         "MEMUSAGE_LIMIT_MB": 0,  # no hard limit
         "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.01,
+        "TELNETCONSOLE_ENABLED": False,
         "LOG_LEVEL": "INFO",
     }
 
     # Avoid background LoopingCall that can log after the test finishes.
-    monkeypatch.setattr(memusage_mod, "create_looping_call", lambda f: _OneShotLoop(f))
-
-    MB = 1024 * 1024
+    monkeypatch.setattr(memusage_mod, "create_looping_call", OneShotLoop)
     monkeypatch.setattr(MemoryUsage, "get_virtual_size", lambda self: 75 * MB)
 
     crawler = get_crawler(spidercls=_LoopSpider, settings_dict=settings)
 
-    caplog.set_level(logging.WARNING, logger="scrapy.extensions.memusage")
-    yield crawler.crawl(url=url, loops=60)
+    with caplog.at_level(logging.WARNING, logger="scrapy.extensions.memusage"):
+        await crawler.crawl_async(url="data:,", loops=60)
 
+    assert crawler.stats
     assert crawler.stats.get_value("finish_reason") == "finished"
     assert any("memory usage reached" in r.getMessage().lower() for r in caplog.records)
