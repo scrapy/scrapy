@@ -6,6 +6,7 @@ import sys
 import pytest
 
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
 from scrapy.extensions import memusage as memusage_mod
 from scrapy.extensions.memusage import MemoryUsage
 from scrapy.spiders import Spider
@@ -40,12 +41,19 @@ class _LoopSpider(Spider):
             )
 
 
+def test_memusage_disabled() -> None:
+    settings = {
+        "MEMUSAGE_ENABLED": False,
+    }
+    with pytest.raises(NotConfigured):
+        MemoryUsage.from_crawler(get_crawler(settings_dict=settings))
+
+
 @coroutine_test
 async def test_memusage_limit_closes_spider_with_reason_and_error_log(
     caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     settings = {
-        "MEMUSAGE_ENABLED": True,
         "MEMUSAGE_LIMIT_MB": 10,
         "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.01,
         "TELNETCONSOLE_ENABLED": False,
@@ -74,7 +82,6 @@ async def test_memusage_warning_logs_but_allows_normal_finish(
     caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     settings = {
-        "MEMUSAGE_ENABLED": True,
         "MEMUSAGE_WARNING_MB": 50,
         "MEMUSAGE_LIMIT_MB": 0,  # no hard limit
         "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.01,
