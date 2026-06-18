@@ -40,7 +40,7 @@
    :alt: Ask DeepWiki
 
 Scrapy_ is a web scraping framework to extract structured data from websites.
-It is cross-platform, and requires Python 3.9+. It is maintained by Zyte_
+It is cross-platform, and requires Python 3.10+. It is maintained by Zyte_
 (formerly Scrapinghub) and `many other contributors`_.
 
 .. _many other contributors: https://github.com/scrapy/scrapy/graphs/contributors

@@ -1,10 +1,8 @@
 from unittest import TextTestResult
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
 from twisted.python import failure
 
-from scrapy import FormRequest
 from scrapy.contracts import Contract, ContractsManager
 from scrapy.contracts.default import (
     CallbackKeywordArgumentsContract,
@@ -19,6 +17,7 @@ from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import inline_callbacks_test
 
 
 class DemoItem(Item):
@@ -32,6 +31,12 @@ class ResponseMock:
 
 class ResponseMetaMock(ResponseMock):
     meta = None
+
+
+class TaggedRequest(Request):
+    def __init__(self, url, contract_tag=None, **kwargs):
+        super().__init__(url, **kwargs)
+        self.contract_tag = contract_tag
 
 
 class CustomSuccessContract(Contract):
@@ -49,12 +54,13 @@ class CustomFailContract(Contract):
         raise TypeError("Error in adjust_request_args")
 
 
-class CustomFormContract(Contract):
-    name = "custom_form"
-    request_cls = FormRequest
+class CustomTaggedRequestContract(Contract):
+    name = "custom_tagged_request"
+    request_cls = TaggedRequest
 
     def adjust_request_args(self, args):
-        args["formdata"] = {"name": "scrapy"}
+        args["contract_tag"] = "custom"
+        args["method"] = "POST"
         return args
 
 
@@ -179,10 +185,10 @@ class DemoSpider(Spider):
         @returns items 1 1
         """
 
-    def custom_form(self, response):
+    def custom_tagged_request(self, response):
         """
         @url http://scrapy.org
-        @custom_form
+        @custom_tagged_request
         """
 
     def invalid_regex(self, response):
@@ -253,7 +259,7 @@ class TestContractsManager:
         MetadataContract,
         ReturnsContract,
         ScrapesContract,
-        CustomFormContract,
+        CustomTaggedRequestContract,
         CustomSuccessContract,
         CustomFailContract,
     ]
@@ -382,7 +388,7 @@ class TestContractsManager:
         request = self.conman.from_method(spider.returns_item_meta, self.results)
         assert request.meta["key"] == "example"
         response.meta = request.meta
-        request.callback(ResponseMetaMock)
+        request.callback(response)
         assert response.meta["key"] == "example"
         self.should_succeed()
 
@@ -470,14 +476,14 @@ class TestContractsManager:
 
         # invalid regex
         request = self.conman.from_method(spider.invalid_regex, self.results)
-        self.should_succeed()
+        assert request is None
 
         # invalid regex with valid contract
         request = self.conman.from_method(
             spider.invalid_regex_with_valid_contract, self.results
         )
-        self.should_succeed()
         request.callback(response)
+        self.should_succeed()
 
     def test_custom_contracts(self):
         self.conman.from_spider(CustomContractSuccessSpider(), self.results)
@@ -501,7 +507,7 @@ class TestContractsManager:
         assert not self.results.failures
         assert self.results.errors
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_same_url(self):
         class TestSameUrlSpider(Spider):
             name = "test_same_url"
@@ -533,17 +539,21 @@ class TestContractsManager:
 
         assert crawler.spider.visited == 2
 
-    def test_form_contract(self):
+    def test_custom_tagged_request_contract(self):
         spider = DemoSpider()
-        request = self.conman.from_method(spider.custom_form, self.results)
+        request = self.conman.from_method(spider.custom_tagged_request, self.results)
         assert request.method == "POST"
-        assert isinstance(request, FormRequest)
+        assert isinstance(request, TaggedRequest)
+        assert request.contract_tag == "custom"
 
     def test_inherited_contracts(self):
         spider = InheritsDemoSpider()
 
         requests = self.conman.from_spider(spider, self.results)
         assert requests
+        assert any(
+            isinstance(request, TaggedRequest) for request in requests if request
+        )
 
 
 class CustomFailContractPreProcess(Contract):
@@ -568,7 +578,7 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPreProcess(spider.returns_request)
-        conman = ContractsManager([contract])
+        conman = ContractsManager([UrlContract, ReturnsContract, contract])
 
         request = conman.from_method(spider.returns_request, self.results)
         contract.add_pre_hook(request, self.results)
@@ -582,7 +592,7 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPostProcess(spider.returns_request)
-        conman = ContractsManager([contract])
+        conman = ContractsManager([UrlContract, ReturnsContract, contract])
 
         request = conman.from_method(spider.returns_request, self.results)
         contract.add_post_hook(request, self.results)

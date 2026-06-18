@@ -5,6 +5,7 @@ Extension for collecting core stats like items scraped and start/finish times
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from time import monotonic
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider, signals
@@ -21,6 +22,7 @@ class CoreStats:
     def __init__(self, stats: StatsCollector):
         self.stats: StatsCollector = stats
         self.start_time: datetime | None = None
+        self._start_time_mono: float | None = None
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -35,13 +37,14 @@ class CoreStats:
 
     def spider_opened(self, spider: Spider) -> None:
         self.start_time = datetime.now(tz=timezone.utc)
+        self._start_time_mono = monotonic()
         self.stats.set_value("start_time", self.start_time)
 
     def spider_closed(self, spider: Spider, reason: str) -> None:
         assert self.start_time is not None
-        finish_time = datetime.now(tz=timezone.utc)
-        elapsed_time = finish_time - self.start_time
-        elapsed_time_seconds = elapsed_time.total_seconds()
+        assert self._start_time_mono is not None
+        finish_time, finish_time_mono = datetime.now(tz=timezone.utc), monotonic()
+        elapsed_time_seconds = finish_time_mono - self._start_time_mono
         self.stats.set_value("elapsed_time_seconds", elapsed_time_seconds)
         self.stats.set_value("finish_time", finish_time)
         self.stats.set_value("finish_reason", reason)

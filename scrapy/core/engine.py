@@ -8,8 +8,10 @@ For more information see docs/topics/architecture.rst
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import warnings
+from functools import partial
 from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any
@@ -115,6 +117,8 @@ class ExecutionEngine:
         self._slot: _Slot | None = None
         self.spider: Spider | None = None
         self.running: bool = False
+        self._starting: bool = False
+        self._stopping: bool = False
         self.paused: bool = False
         self._spider_closed_callback: Callable[
             [Spider], Coroutine[Any, Any, None] | Deferred[None] | None
@@ -157,7 +161,9 @@ class ExecutionEngine:
             )
         return scheduler_cls
 
-    def start(self, _start_request_processing=True) -> Deferred[None]:
+    def start(
+        self, _start_request_processing: bool = True
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.start() is deprecated, use start_async() instead",
             ScrapyDeprecationWarning,
@@ -170,12 +176,16 @@ class ExecutionEngine:
     async def start_async(self, *, _start_request_processing: bool = True) -> None:
         """Start the execution engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
-        if self.running:
+        if self._starting:
             raise RuntimeError("Engine already running")
         self.start_time = time()
+        self._starting = True
         await self.signals.send_catch_log_async(signal=signals.engine_started)
+        if self._stopping:
+            # band-aid until https://github.com/scrapy/scrapy/issues/6916
+            return
         if _start_request_processing and self.spider is None:
             # require an opened spider when not run in scrapy shell
             return
@@ -189,9 +199,10 @@ class ExecutionEngine:
                 self._start_request_processing_awaitable = asyncio.ensure_future(coro)
             else:
                 self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
-        await maybe_deferred_to_future(self._closewait)
+        with contextlib.suppress(asyncio.exceptions.CancelledError):
+            await maybe_deferred_to_future(self._closewait)
 
-    def stop(self) -> Deferred[None]:
+    def stop(self) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.stop() is deprecated, use stop_async() instead",
             ScrapyDeprecationWarning,
@@ -202,15 +213,24 @@ class ExecutionEngine:
     async def stop_async(self) -> None:
         """Gracefully stop the execution engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
 
-        if not self.running:
+        if not self._starting:
             raise RuntimeError("Engine not running")
 
-        self.running = False
+        self.running = self._starting = False
+        self._stopping = True
         if self._start_request_processing_awaitable is not None:
-            self._start_request_processing_awaitable.cancel()
+            if (
+                not is_asyncio_available()
+                or self._start_request_processing_awaitable
+                is not asyncio.current_task()
+            ):
+                # If using the asyncio loop and stop_async() was called from
+                # start() itself, we can't cancel it, and _start_request_processing()
+                # will exit via the self.running check.
+                self._start_request_processing_awaitable.cancel()
             self._start_request_processing_awaitable = None
         if self.spider is not None:
             await self.close_spider_async(reason="shutdown")
@@ -218,7 +238,7 @@ class ExecutionEngine:
         if self._closewait:
             self._closewait.callback(None)
 
-    def close(self) -> Deferred[None]:
+    def close(self) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.close() is deprecated, use close_async() instead",
             ScrapyDeprecationWarning,
@@ -246,14 +266,15 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    async def _process_start_next(self):
+    async def _process_start_next(self) -> None:
         """Processes the next item or request from Spider.start().
 
         If a request, it is scheduled. If an item, it is sent to item
         pipelines.
         """
+        assert self._start is not None
         try:
-            item_or_request = await self._start.__anext__()
+            item_or_request = await anext(self._start)
         except StopAsyncIteration:
             self._start = None
         except Exception as exception:
@@ -269,6 +290,7 @@ class ExecutionEngine:
             if isinstance(item_or_request, Request):
                 self.crawl(item_or_request)
             else:
+                assert self._slot is not None
                 _schedule_coro(
                     self.scraper.start_itemproc_async(item_or_request, response=None)
                 )
@@ -285,7 +307,7 @@ class ExecutionEngine:
             self._slot.nextcall.schedule()
             self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
-            while self._start and self.spider:
+            while self._start and self.spider and self.running:
                 await self._process_start_next()
                 if not self.needs_backout():
                     # Give room for the outcome of self._process_start_next() to be
@@ -293,7 +315,7 @@ class ExecutionEngine:
                     self._slot.nextcall.schedule()
                     await self._slot.nextcall.wait()
         except (asyncio.exceptions.CancelledError, CancelledError):
-            # self.stop() has cancelled us, nothing to do
+            # self.stop_async() has cancelled us, nothing to do
             return
         except Exception:
             # an error happened, log it and stop the engine
@@ -331,6 +353,10 @@ class ExecutionEngine:
             or self.scraper.slot.needs_backout()
         )
 
+    def _remove_request(self, _: Any, request: Request) -> None:
+        assert self._slot
+        self._slot.remove_request(request)
+
     def _start_scheduled_request(self) -> bool:
         assert self._slot is not None  # typing
         assert self.spider is not None  # typing
@@ -350,11 +376,7 @@ class ExecutionEngine:
             )
         )
 
-        def _remove_request(_: Any) -> None:
-            assert self._slot
-            self._slot.remove_request(request)
-
-        d2: Deferred[None] = d.addBoth(_remove_request)
+        d2: Deferred[None] = d.addBoth(partial(self._remove_request, request=request))
         d2.addErrback(
             lambda f: logger.info(
                 "Error while removing request from slot",
@@ -422,7 +444,7 @@ class ExecutionEngine:
             spider=self.spider,
             dont_log=IgnoreRequest,
         )
-        for handler, result in request_scheduled_result:
+        for _, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
         if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
@@ -444,7 +466,7 @@ class ExecutionEngine:
 
          Only downloader middlewares are applied.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
@@ -495,7 +517,9 @@ class ExecutionEngine:
         finally:
             self._slot.nextcall.schedule()
 
-    def open_spider(self, spider: Spider, close_if_idle: bool = True) -> Deferred[None]:
+    def open_spider(
+        self, spider: Spider, close_if_idle: bool = True
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.open_spider() is deprecated, use open_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -519,7 +543,16 @@ class ExecutionEngine:
             await maybe_deferred_to_future(d)
         await self.scraper.open_spider_async()
         assert self.crawler.stats
-        self.crawler.stats.open_spider()
+        if argument_is_required(self.crawler.stats.open_spider, "spider"):
+            warnings.warn(
+                f"The open_spider() method of {global_object_name(type(self.crawler.stats))} requires a spider argument,"
+                f" this is deprecated and the argument will not be passed in future Scrapy versions.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self.crawler.stats.open_spider(spider=self.crawler.spider)
+        else:
+            self.crawler.stats.open_spider()
         await self.signals.send_catch_log_async(
             signals.spider_opened, spider=self.crawler.spider
         )
@@ -549,7 +582,9 @@ class ExecutionEngine:
             assert isinstance(ex, CloseSpider)  # typing
             _schedule_coro(self.close_spider_async(reason=ex.reason))
 
-    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
+    def close_spider(
+        self, spider: Spider, reason: str = "cancelled"
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.close_spider() is deprecated, use close_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -557,10 +592,10 @@ class ExecutionEngine:
         )
         return deferred_from_coro(self.close_spider_async(reason=reason))
 
-    async def close_spider_async(self, *, reason: str = "cancelled") -> None:
+    async def close_spider_async(self, *, reason: str = "cancelled") -> None:  # noqa: PLR0912
         """Close (cancel) spider and clear all its outstanding requests.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.spider is None:
             raise RuntimeError("Spider not opened")
@@ -578,30 +613,33 @@ class ExecutionEngine:
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
         )
 
-        def log_failure(msg: str) -> None:
-            logger.error(msg, exc_info=True, extra={"spider": spider})  # noqa: LOG014
-
         try:
             await self._slot.close()
         except Exception:
-            log_failure("Slot close failure")
+            logger.error("Slot close failure", exc_info=True, extra={"spider": spider})
 
         try:
             self.downloader.close()
         except Exception:
-            log_failure("Downloader close failure")
+            logger.error(
+                "Downloader close failure", exc_info=True, extra={"spider": spider}
+            )
 
         try:
             await self.scraper.close_spider_async()
         except Exception:
-            log_failure("Scraper close failure")
+            logger.error(
+                "Scraper close failure", exc_info=True, extra={"spider": spider}
+            )
 
         if hasattr(self._slot.scheduler, "close"):
             try:
                 if (d := self._slot.scheduler.close(reason)) is not None:
                     await maybe_deferred_to_future(d)
             except Exception:
-                log_failure("Scheduler close failure")
+                logger.error(
+                    "Scheduler close failure", exc_info=True, extra={"spider": spider}
+                )
 
         try:
             await self.signals.send_catch_log_async(
@@ -610,13 +648,28 @@ class ExecutionEngine:
                 reason=reason,
             )
         except Exception:
-            log_failure("Error while sending spider_close signal")
+            logger.error(
+                "Error while sending spider_close signal",
+                exc_info=True,
+                extra={"spider": spider},
+            )
 
         assert self.crawler.stats
         try:
-            self.crawler.stats.close_spider(reason=reason)
+            if argument_is_required(self.crawler.stats.close_spider, "spider"):
+                warnings.warn(
+                    f"The close_spider() method of {global_object_name(type(self.crawler.stats))} requires a spider argument,"
+                    f" this is deprecated and the argument will not be passed in future Scrapy versions.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+                self.crawler.stats.close_spider(
+                    spider=self.crawler.spider, reason=reason
+                )
+            else:
+                self.crawler.stats.close_spider(reason=reason)
         except Exception:
-            log_failure("Stats close failure")
+            logger.error("Stats close failure")
 
         logger.info(
             "Spider closed (%(reason)s)",
@@ -630,4 +683,4 @@ class ExecutionEngine:
         try:
             await ensure_awaitable(self._spider_closed_callback(spider))
         except Exception:
-            log_failure("Error running spider_closed_callback")
+            logger.error("Error running spider_closed_callback")

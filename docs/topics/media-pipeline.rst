@@ -70,7 +70,7 @@ The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
 
-The Images Pipeline requires Pillow_ 8.0.0 or greater. It is used for
+The Images Pipeline requires Pillow_ 8.3.2 or greater. It is used for
 thumbnailing and normalizing images to JPEG/RGB format.
 
 .. _Pillow: https://github.com/python-pillow/Pillow
@@ -80,9 +80,6 @@ thumbnailing and normalizing images to JPEG/RGB format.
 
 Enabling your Media Pipeline
 ============================
-
-.. setting:: IMAGES_STORE
-.. setting:: FILES_STORE
 
 To enable your media pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting.
@@ -102,6 +99,8 @@ For Files Pipeline, use:
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
+.. setting:: IMAGES_STORE
+.. setting:: FILES_STORE
 
 Then, configure the target storage setting to a valid value that will be used
 for storing the downloaded images. Otherwise the pipeline will remain disabled,
@@ -212,8 +211,6 @@ Where:
 FTP server storage
 ------------------
 
-.. versionadded:: 2.0
-
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can point to an FTP server.
 Scrapy will automatically upload the files to the server.
 
@@ -238,7 +235,7 @@ Amazon S3 storage
 .. setting:: FILES_STORE_S3_ACL
 .. setting:: IMAGES_STORE_S3_ACL
 
-If botocore_ >= 1.4.87 is installed, :setting:`FILES_STORE` and
+If botocore_ >= 1.13.45 is installed, :setting:`FILES_STORE` and
 :setting:`IMAGES_STORE` can represent an Amazon S3 bucket. Scrapy will
 automatically upload the files to the bucket.
 
@@ -292,7 +289,7 @@ Google Cloud Storage
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud Storage
 bucket. Scrapy will automatically upload the files to the bucket. (requires `google-cloud-storage`_ )
 
-.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+.. _google-cloud-storage: https://docs.cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
 For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings:
 
@@ -303,7 +300,7 @@ For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_I
 
 For information about authentication, see this `documentation`_.
 
-.. _documentation: https://cloud.google.com/docs/authentication
+.. _documentation: https://docs.cloud.google.com/docs/authentication
 
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_GCS_ACL` and
@@ -318,7 +315,7 @@ policy:
 
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
-.. _Predefined ACLs: https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
+.. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
 
 Usage example
 =============
@@ -339,17 +336,18 @@ respectively), the pipeline will put the results under the respective field
 When using :ref:`item types <item-types>` for which fields are defined beforehand,
 you must define both the URLs field and the results field. For example, when
 using the images pipeline, items must define both the ``image_urls`` and the
-``images`` field. For instance, using the :class:`~scrapy.Item` class:
+``images`` field. For instance, using a dataclass:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
 
 
-    class MyItem(scrapy.Item):
+    @dataclass
+    class MyItem:
         # ... other item fields ...
-        image_urls = scrapy.Field()
-        images = scrapy.Field()
+        image_urls: list[str] = field(default_factory=list)
+        images: list[dict] = field(default_factory=list)
 
 If you want to use another field name for the URLs key or for the results key,
 it is also possible to override it.
@@ -547,9 +545,6 @@ See here the methods that you can override in your custom Files Pipeline:
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 
-      .. versionadded:: 2.4
-         The *item* parameter.
-
    .. method:: FilesPipeline.get_media_requests(item, info)
 
       As seen on the workflow, the pipeline will get the URLs of the images to
@@ -589,8 +584,6 @@ See here the methods that you can override in your custom Files Pipeline:
         * ``checksum`` - a `MD5 hash`_ of the image contents
 
         * ``status`` - the file status indication.
-
-          .. versionadded:: 2.2
 
           It can be one of the following:
 
@@ -704,9 +697,6 @@ See here the methods that you can override in your custom Images Pipeline:
 
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
-
-      .. versionadded:: 2.4
-         The *item* parameter.
 
    .. method:: ImagesPipeline.thumb_path(self, request, thumb_id, response=None, info=None, *, item=None)
 

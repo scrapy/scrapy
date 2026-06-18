@@ -317,4 +317,3 @@ to identifying the correct request and replicating it in your spider.
 .. _quotes.toscrape.com/scroll: https://quotes.toscrape.com/scroll
 .. _quotes.toscrape.com/api/quotes?page=10: https://quotes.toscrape.com/api/quotes?page=10
 .. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
-

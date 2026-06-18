@@ -1,9 +1,9 @@
 from testfixtures import LogCapture
 
 from scrapy import Request, Spider
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import coroutine_test
 
 
 class _BaseSpiderMiddleware:
@@ -169,8 +169,8 @@ class NotGeneratorCallbackSpiderMiddlewareRightAfterSpider(NotGeneratorCallbackS
 # ================================================================================
 # (4) exceptions from a middleware process_spider_output method (generator)
 class _GeneratorDoNothingMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        for r in result:
+    async def process_spider_output(self, response, result):
+        async for r in result:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
 
@@ -182,8 +182,8 @@ class _GeneratorDoNothingMiddleware(_BaseSpiderMiddleware):
 
 
 class GeneratorFailMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        for r in result:
+    async def process_spider_output(self, response, result):
+        async for r in result:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
             raise LookupError
@@ -201,8 +201,8 @@ class GeneratorDoNothingAfterFailureMiddleware(_GeneratorDoNothingMiddleware):
 
 
 class GeneratorRecoverMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        for r in result:
+    async def process_spider_output(self, response, result):
+        async for r in result:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
 
@@ -238,86 +238,6 @@ class GeneratorOutputChainSpider(Spider):
 
 
 # ================================================================================
-# (5) exceptions from a middleware process_spider_output method (not generator)
-
-
-class _NotGeneratorDoNothingMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        out = []
-        for r in result:
-            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
-            out.append(r)
-        return out
-
-    def process_spider_exception(self, response, exception):
-        method = f"{self.__class__.__name__}.process_spider_exception"
-        self.crawler.spider.logger.info(
-            "%s: %s caught", method, exception.__class__.__name__
-        )
-
-
-class NotGeneratorFailMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        out = []
-        for r in result:
-            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
-            out.append(r)
-        raise ReferenceError
-
-    def process_spider_exception(self, response, exception):
-        method = f"{self.__class__.__name__}.process_spider_exception"
-        self.crawler.spider.logger.info(
-            "%s: %s caught", method, exception.__class__.__name__
-        )
-        return [{"processed": [method]}]
-
-
-class NotGeneratorDoNothingAfterFailureMiddleware(_NotGeneratorDoNothingMiddleware):
-    pass
-
-
-class NotGeneratorRecoverMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        out = []
-        for r in result:
-            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
-            out.append(r)
-        return out
-
-    def process_spider_exception(self, response, exception):
-        method = f"{self.__class__.__name__}.process_spider_exception"
-        self.crawler.spider.logger.info(
-            "%s: %s caught", method, exception.__class__.__name__
-        )
-        return [{"processed": [method]}]
-
-
-class NotGeneratorDoNothingAfterRecoveryMiddleware(_NotGeneratorDoNothingMiddleware):
-    pass
-
-
-class NotGeneratorOutputChainSpider(Spider):
-    name = "NotGeneratorOutputChainSpider"
-    custom_settings = {
-        "SPIDER_MIDDLEWARES": {
-            NotGeneratorFailMiddleware: 10,
-            NotGeneratorDoNothingAfterFailureMiddleware: 8,
-            NotGeneratorRecoverMiddleware: 5,
-            NotGeneratorDoNothingAfterRecoveryMiddleware: 3,
-        },
-    }
-
-    async def start(self):
-        yield Request(self.mockserver.url("/status?n=200"))
-
-    def parse(self, response):
-        return [
-            {"processed": ["parse-first-item"]},
-            {"processed": ["parse-second-item"]},
-        ]
-
-
-# ================================================================================
 class TestSpiderMiddleware:
     mockserver: MockServer
 
@@ -333,10 +253,10 @@ class TestSpiderMiddleware:
     async def crawl_log(self, spider: type[Spider]) -> LogCapture:
         crawler = get_crawler(spider)
         with LogCapture() as log:
-            await maybe_deferred_to_future(crawler.crawl(mockserver=self.mockserver))
+            await crawler.crawl_async(mockserver=self.mockserver)
         return log
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_recovery(self):
         """
         (0) Recover from an exception in a spider callback. The final item count should be 3
@@ -349,7 +269,7 @@ class TestSpiderMiddleware:
         assert str(log).count("Middleware: TabError exception caught") == 1
         assert "'item_scraped_count': 3" in str(log)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_recovery_asyncgen(self):
         """
         Same as test_recovery but with an async callback.
@@ -359,7 +279,7 @@ class TestSpiderMiddleware:
         assert str(log).count("Middleware: TabError exception caught") == 1
         assert "'item_scraped_count': 3" in str(log)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_process_spider_input_without_errback(self):
         """
         (1.1) An exception from the process_spider_input chain should be caught by the
@@ -369,7 +289,7 @@ class TestSpiderMiddleware:
         assert "Middleware: will raise IndexError" in str(log1)
         assert "Middleware: IndexError exception caught" in str(log1)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_process_spider_input_with_errback(self):
         """
         (1.2) An exception from the process_spider_input chain should not be caught by the
@@ -383,7 +303,7 @@ class TestSpiderMiddleware:
         assert "{'from': 'callback'}" not in str(log1)
         assert "'item_scraped_count': 1" in str(log1)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_generator_callback(self):
         """
         (2) An exception from a spider callback (returning a generator) should
@@ -394,7 +314,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ImportError exception caught" in str(log2)
         assert "'item_scraped_count': 2" in str(log2)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_generator_callback(self):
         """
         Same as test_generator_callback but with an async callback.
@@ -403,7 +323,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ImportError exception caught" in str(log2)
         assert "'item_scraped_count': 2" in str(log2)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_generator_callback_right_after_callback(self):
         """
         (2.1) Special case of (2): Exceptions should be caught
@@ -413,7 +333,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ImportError exception caught" in str(log21)
         assert "'item_scraped_count': 2" in str(log21)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_not_a_generator_callback(self):
         """
         (3) An exception from a spider callback (returning a list) should
@@ -423,7 +343,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ZeroDivisionError exception caught" in str(log3)
         assert "item_scraped_count" not in str(log3)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_not_a_generator_callback_right_after_callback(self):
         """
         (3.1) Special case of (3): Exceptions should be caught
@@ -435,7 +355,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ZeroDivisionError exception caught" in str(log31)
         assert "item_scraped_count" not in str(log31)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_generator_output_chain(self):
         """
         (4) An exception from a middleware's process_spider_output method should be sent
@@ -481,41 +401,3 @@ class TestSpiderMiddleware:
         assert str(item_from_callback) in str(log4)
         assert str(item_recovered) in str(log4)
         assert "parse-second-item" not in str(log4)
-
-    @deferred_f_from_coro_f
-    async def test_not_a_generator_output_chain(self):
-        """
-        (5) An exception from a middleware's process_spider_output method should be sent
-        to the process_spider_exception method from the next middleware in the chain.
-        The result of the recovery by the process_spider_exception method should be handled
-        by the process_spider_output method from the next middleware.
-        The final item count should be 1 (from the process_spider_exception chain, the items
-        from the spider callback are lost)
-        """
-        log5 = await self.crawl_log(NotGeneratorOutputChainSpider)
-        assert "'item_scraped_count': 1" in str(log5)
-        assert (
-            "GeneratorRecoverMiddleware.process_spider_exception: ReferenceError caught"
-            in str(log5)
-        )
-        assert (
-            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught"
-            in str(log5)
-        )
-        assert (
-            "GeneratorFailMiddleware.process_spider_exception: ReferenceError caught"
-            not in str(log5)
-        )
-        assert (
-            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught"
-            not in str(log5)
-        )
-        item_recovered = {
-            "processed": [
-                "NotGeneratorRecoverMiddleware.process_spider_exception",
-                "NotGeneratorDoNothingAfterRecoveryMiddleware.process_spider_output",
-            ]
-        }
-        assert str(item_recovered) in str(log5)
-        assert "parse-first-item" not in str(log5)
-        assert "parse-second-item" not in str(log5)

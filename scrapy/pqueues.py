@@ -51,16 +51,17 @@ class QueueProtocol(Protocol):
 
 class ScrapyPriorityQueue:
     """A priority queue implemented using multiple internal queues (typically,
-    FIFO queues). It uses one internal queue for each priority value. The internal
-    queue must implement the following methods:
+    FIFO queues). It uses one internal queue for each priority value. The
+    internal queue must implement the following methods:
 
         * push(obj)
         * pop()
         * close()
         * __len__()
 
-    Optionally, the queue could provide a ``peek`` method, that should return the
-    next object to be returned by ``pop``, but without removing it from the queue.
+    Optionally, the queue could provide a ``peek`` method, that should return
+    the next object to be returned by ``pop``, but without removing it from the
+    queue.
 
     ``__init__`` method of ScrapyPriorityQueue receives a downstream_queue_cls
     argument, which is a class used to instantiate a new (internal) queue when
@@ -72,6 +73,28 @@ class ScrapyPriorityQueue:
     startprios is a sequence of priorities to start with. If the queue was
     previously closed leaving some priority buckets non-empty, those priorities
     should be passed in startprios.
+
+    Disk persistence
+    ================
+
+    .. warning:: The files that this class generates on disk are an
+        implementation detail, and may change without a warning in a future
+        version of Scrapy. Do not rely on the following information for
+        anything other than debugging purposes.
+
+    When a component instantiates this class with a non-empty *key* argument,
+    *key* is used as a persistence directory.
+
+    For every request enqueued, this class checks:
+
+    -   Whether the request is a :ref:`start request <start-requests>` or not.
+
+    -   The :data:`~scrapy.Request.priority` of the request.
+
+    For each combination of the above seen, this class creates an instance of
+    *downstream_queue_cls* with *key* set to a subdirectory of the persistence
+    directory, named as the request priority (e.g. ``1``), with an ``s`` suffix
+    in case of a start request (e.g. ``1s``).
     """
 
     @classmethod
@@ -255,6 +278,26 @@ class DownloaderAwarePriorityQueue:
     """PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
     first.
+
+    Disk persistence
+    ================
+
+    .. warning:: The files that this class generates on disk are an
+        implementation detail, and may change without a warning in a future
+        version of Scrapy. Do not rely on the following information for
+        anything other than debugging purposes.
+
+    When a component instantiates this class with a non-empty *key* argument,
+    *key* is used as a persistence directory, and inside that directory this
+    class creates a subdirectory per download slot (domain).
+
+    Those subdirectories are named after the corresponding download slot, with
+    path-unsafe characters replaced by underscores and an MD5 hash suffix to
+    avoid collisions.
+
+    For each download slot, this class creates an instance of
+    :class:`ScrapyPriorityQueue` with the download slot subdirectory as *key*
+    and its own *downstream_queue_cls*.
     """
 
     @classmethod
@@ -307,8 +350,37 @@ class DownloaderAwarePriorityQueue:
         self.crawler: Crawler = crawler
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
-        for slot, startprios in (slot_startprios or {}).items():
-            self.pqueues[slot] = self.pqfactory(slot, startprios)
+        self._last_selected_slot: str | None = None
+        if slot_startprios:
+            for slot, startprios in slot_startprios.items():
+                self.pqueues[slot] = self.pqfactory(slot, startprios)
+
+    def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
+        last = self._last_selected_slot
+        min_active: int | None = None
+        best_slot: str | None = None
+        best_slot_after_last: str | None = None
+        for active, slot in stats:
+            if min_active is None or active < min_active:
+                min_active = active
+                best_slot = slot
+                best_slot_after_last = None
+                if last is not None and slot > last:
+                    best_slot_after_last = slot
+            elif active == min_active:
+                if best_slot is None or slot < best_slot:
+                    best_slot = slot
+                if (
+                    last is not None
+                    and slot > last
+                    and (best_slot_after_last is None or slot < best_slot_after_last)
+                ):
+                    best_slot_after_last = slot
+        assert best_slot is not None
+        slot = best_slot_after_last if best_slot_after_last is not None else best_slot
+        if update_state:
+            self._last_selected_slot = slot
+        return slot
 
     def pqfactory(
         self, slot: str, startprios: Iterable[int] = ()
@@ -327,7 +399,7 @@ class DownloaderAwarePriorityQueue:
         if not stats:
             return None
 
-        slot = min(stats)[1]
+        slot = self._next_slot(stats, update_state=True)
         queue = self.pqueues[slot]
         request = queue.pop()
         if len(queue) == 0:
@@ -351,7 +423,7 @@ class DownloaderAwarePriorityQueue:
         stats = self._downloader_interface.stats(self.pqueues)
         if not stats:
             return None
-        slot = min(stats)[1]
+        slot = self._next_slot(stats, update_state=False)
         queue = self.pqueues[slot]
         return queue.peek()
 

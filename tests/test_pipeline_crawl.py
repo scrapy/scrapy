@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from w3lib.url import add_or_replace_parameter
 
 from scrapy import Spider, signals
@@ -15,6 +14,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider
+from tests.utils.decorators import inline_callbacks_test
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -144,7 +144,7 @@ class TestFileDownloadCrawl:
         # check that no files were written to the media store
         assert not list(self.tmpmediastore.iterdir())
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_download_media(self):
         crawler = self._create_crawler(MediaDownloadSpider)
         with LogCapture() as log:
@@ -155,7 +155,7 @@ class TestFileDownloadCrawl:
             )
         self._assert_files_downloaded(self.items, str(log))
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_download_media_wrong_urls(self):
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
         with LogCapture() as log:
@@ -166,7 +166,7 @@ class TestFileDownloadCrawl:
             )
         self._assert_files_download_failure(crawler, self.items, 404, str(log))
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_download_media_redirected_default_failure(self):
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
@@ -178,7 +178,7 @@ class TestFileDownloadCrawl:
             )
         self._assert_files_download_failure(crawler, self.items, 302, str(log))
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_download_media_redirected_allowed(self):
         settings = {
             **self.settings,
@@ -195,7 +195,7 @@ class TestFileDownloadCrawl:
         self._assert_files_downloaded(self.items, str(log))
         assert crawler.stats.get_value("downloader/response_status_count/302") == 3
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_download_media_file_path_error(self):
         cls = load_object(self.pipeline_class)
 

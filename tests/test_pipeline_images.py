@@ -14,6 +14,7 @@ from itemadapter import ItemAdapter
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
+from scrapy.pipelines.files import GCSFilesStore, S3FilesStore
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.test import get_crawler
 
@@ -159,7 +160,7 @@ class TestImagesPipeline:
         self.pipeline.thumbs = {"small": (20, 20)}
 
         orig_im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
-        orig_thumb, orig_thumb_buf = _create_image("JPEG", "RGB", (20, 20), (0, 0, 0))
+        _, orig_thumb_buf = _create_image("JPEG", "RGB", (20, 20), (0, 0, 0))
         resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
@@ -169,12 +170,32 @@ class TestImagesPipeline:
 
         path, new_im, new_buf = next(get_images_gen)
         assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
-        assert orig_im == new_im
+        assert orig_im.copy() == new_im
         assert buf.getvalue() == new_buf.getvalue()
 
-        thumb_path, thumb_img, thumb_buf = next(get_images_gen)
+        thumb_path, _, thumb_buf = next(get_images_gen)
         assert thumb_path == "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert orig_thumb_buf.getvalue() == thumb_buf.getvalue()
+
+    def test_get_transposed_images(self):
+        orig_im = Image.new("RGB", (2, 2), (0, 0, 0))
+        orig_im.putpixel((1, 1), (255, 0, 0))
+        exif = orig_im.getexif()
+        exif[274] = 3
+        buf = io.BytesIO()
+        orig_im.save(buf, "PNG", exif=exif)
+        buf.seek(0)
+
+        resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
+        req = Request(url="https://dev.mydeco.com/mydeco.gif")
+
+        get_images_gen = self.pipeline.get_images(
+            response=resp, request=req, info=object()
+        )
+
+        path, new_im, _ = next(get_images_gen)
+        assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        assert new_im.getpixel((0, 0)) == (255, 0, 0)
 
     def test_convert_image(self):
         SIZE = (100, 100)
@@ -294,11 +315,11 @@ class TestImagesPipelineFieldsItem(TestImagesPipelineFieldsMixin):
 class ImagesPipelineTestDataClass:
     name: str
     # default fields
-    image_urls: list = dataclasses.field(default_factory=list)
-    images: list = dataclasses.field(default_factory=list)
+    image_urls: list[str] = dataclasses.field(default_factory=list)
+    images: list[dict[str, str]] = dataclasses.field(default_factory=list)
     # overridden fields
-    custom_image_urls: list = dataclasses.field(default_factory=list)
-    custom_images: list = dataclasses.field(default_factory=list)
+    custom_image_urls: list[str] = dataclasses.field(default_factory=list)
+    custom_images: list[dict[str, str]] = dataclasses.field(default_factory=list)
 
 
 class TestImagesPipelineFieldsDataClass(TestImagesPipelineFieldsMixin):
@@ -415,7 +436,7 @@ class TestImagesPipelineCustomSettings:
         pipeline = pipeline_cls.from_crawler(
             get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+        for pipe_attr, _ in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
             attr_value = getattr(pipeline, pipe_attr.lower())
             assert attr_value != self.default_pipeline_settings[pipe_attr]
@@ -449,7 +470,7 @@ class TestImagesPipelineCustomSettings:
         user_pipeline = UserDefinedImagePipeline.from_crawler(
             get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+        for pipe_attr, _ in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_pipeline_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_attr.lower()) == custom_value
@@ -520,6 +541,44 @@ class TestImagesPipelineCustomSettings:
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
+
+    def test_images_store_s3_acl_setting_used(self, tmp_path):
+        old_policy = S3FilesStore.POLICY
+
+        try:
+            crawler = get_crawler(
+                None,
+                {
+                    "IMAGES_STORE": tmp_path,
+                    "IMAGES_STORE_S3_ACL": "public-read",
+                    "FILES_STORE_S3_ACL": "private",
+                },
+            )
+
+            ImagesPipeline.from_crawler(crawler)
+
+            assert S3FilesStore.POLICY == "public-read"
+        finally:
+            S3FilesStore.POLICY = old_policy
+
+    def test_images_store_gcs_acl_setting_used(self, tmp_path):
+        old_policy = GCSFilesStore.POLICY
+
+        try:
+            crawler = get_crawler(
+                None,
+                {
+                    "IMAGES_STORE": tmp_path,
+                    "IMAGES_STORE_GCS_ACL": "authenticatedRead",
+                    "FILES_STORE_GCS_ACL": "",
+                },
+            )
+
+            ImagesPipeline.from_crawler(crawler)
+
+            assert GCSFilesStore.POLICY == "authenticatedRead"
+        finally:
+            GCSFilesStore.POLICY = old_policy
 
 
 def _create_image(format_, *a, **kw):

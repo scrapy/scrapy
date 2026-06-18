@@ -22,9 +22,7 @@ class NewName(SomeBaseClass):
 
 
 class TestWarnWhenSubclassed:
-    def _mywarnings(
-        self, w: list[WarningMessage], category: type[Warning] = MyWarning
-    ) -> list[WarningMessage]:
+    def _mywarnings(self, w: list[WarningMessage]) -> list[WarningMessage]:
         return [x for x in w if x.category is MyWarning]
 
     def test_no_warning_on_definition(self):
@@ -169,17 +167,12 @@ class TestWarnWhenSubclassed:
             class UnrelatedClass:
                 pass
 
-            class OldStyleClass:
-                pass
-
         assert issubclass(UpdatedUserClass1, NewName)
         assert issubclass(UpdatedUserClass1a, NewName)
         assert issubclass(UpdatedUserClass1, DeprecatedName)
         assert issubclass(UpdatedUserClass1a, DeprecatedName)
         assert issubclass(OutdatedUserClass1, DeprecatedName)
         assert not issubclass(UnrelatedClass, DeprecatedName)
-        assert not issubclass(OldStyleClass, DeprecatedName)
-        assert not issubclass(OldStyleClass, DeprecatedName)
         assert not issubclass(OutdatedUserClass1, OutdatedUserClass1a)
         assert not issubclass(OutdatedUserClass1a, OutdatedUserClass1)
 
@@ -206,9 +199,6 @@ class TestWarnWhenSubclassed:
             class UnrelatedClass:
                 pass
 
-            class OldStyleClass:
-                pass
-
         assert isinstance(UpdatedUserClass2(), NewName)
         assert isinstance(UpdatedUserClass2a(), NewName)
         assert isinstance(UpdatedUserClass2(), DeprecatedName)
@@ -218,7 +208,6 @@ class TestWarnWhenSubclassed:
         assert not isinstance(OutdatedUserClass2a(), OutdatedUserClass2)
         assert not isinstance(OutdatedUserClass2(), OutdatedUserClass2a)
         assert not isinstance(UnrelatedClass(), DeprecatedName)
-        assert not isinstance(OldStyleClass(), DeprecatedName)
 
     def test_clsdict(self):
         with warnings.catch_warnings():

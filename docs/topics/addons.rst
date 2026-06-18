@@ -88,7 +88,7 @@ recommend that such custom components should be written in the following way:
 
 1. The custom component (e.g. ``MyDownloadHandler``) shouldn't inherit from the
    default Scrapy one (e.g.
-   ``scrapy.core.downloader.handlers.http.HTTPDownloadHandler``), but instead
+   ``scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler``), but instead
    be able to load the class of the fallback component from a special setting
    (e.g. ``MY_FALLBACK_DOWNLOAD_HANDLER``), create an instance of it and use
    it.
@@ -98,9 +98,9 @@ recommend that such custom components should be written in the following way:
    (``MY_FALLBACK_DOWNLOAD_HANDLER`` mentioned earlier) and set the default
    setting to the component provided by the add-on (e.g.
    ``MyDownloadHandler``). If the fallback setting is already set by the user,
-   they shouldn't change it.
+   it should not be changed.
 3. This way, if there are several add-ons that want to modify the same setting,
-   all of them will fallback to the component from the previous one and then to
+   all of them will fall back to the component from the previous one and then to
    the Scrapy default. The order of that depends on the priority order in the
    ``ADDONS`` setting.
 
@@ -166,8 +166,7 @@ Use a fallback component:
 
 .. code-block:: python
 
-    from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
-    from scrapy.utils.misc import build_from_crawler
+    from scrapy.utils.misc import build_from_crawler, load_object
 
 
     FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
@@ -176,16 +175,19 @@ Use a fallback component:
     class MyHandler:
         lazy = False
 
-        def __init__(self, settings, crawler):
-            dhcls = load_object(settings.get(FALLBACK_SETTING))
+        def __init__(self, crawler):
+            dhcls = load_object(crawler.settings.get(FALLBACK_SETTING))
             self._fallback_handler = build_from_crawler(dhcls, crawler)
 
-        def download_request(self, request, spider):
+        async def download_request(self, request):
             if request.meta.get("my_params"):
                 # handle the request
                 ...
             else:
-                return self._fallback_handler.download_request(request, spider)
+                return await self._fallback_handler.download_request(request)
+
+        async def close(self):
+            pass
 
 
     class MyAddon:

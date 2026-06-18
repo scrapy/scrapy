@@ -48,6 +48,18 @@ class TestItem:
         with pytest.raises(KeyError):
             i["field"]
 
+    def test_delitem(self):
+        class TestItem(Item):
+            name = Field()
+
+        i = TestItem(name="John")
+        del i["name"]
+        with pytest.raises(KeyError):
+            i["name"]
+
+        with pytest.raises(KeyError):
+            del i["name"]
+
     def test_repr(self):
         class TestItem(Item):
             name = Field()
@@ -60,7 +72,7 @@ class TestItem:
 
         assert itemrepr == "{'name': 'John Doe', 'number': 123}"
 
-        i2 = eval(itemrepr)  # pylint: disable=eval-used
+        i2 = eval(itemrepr)
         assert i2["name"] == "John Doe"
         assert i2["number"] == 123
 
@@ -284,9 +296,9 @@ class TestItemMeta:
 
         (first_call, second_call) = new_mock.call_args_list[-2:]
 
-        mcs, class_name, bases, attrs = first_call[0]
+        *_, attrs = first_call[0]
         assert "__classcell__" not in attrs
-        mcs, class_name, bases, attrs = second_call[0]
+        *_, attrs = second_call[0]
         assert "__classcell__" in attrs
 
 

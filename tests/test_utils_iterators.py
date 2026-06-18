@@ -527,7 +527,7 @@ class TestBodyOrStr:
         r3 = _body_or_str(obj, unicode=False)
         self._assert_type_and_value(r3, self.bbody, obj)
         assert type(r1) is type(r2)
-        assert type(r1) is not type(r3)
+        assert type(r1) is not type(r3)  # type: ignore[comparison-overlap]
 
     @staticmethod
     def _assert_type_and_value(

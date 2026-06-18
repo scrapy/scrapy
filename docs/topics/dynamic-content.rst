@@ -83,7 +83,7 @@ request with Scrapy.
 
 It might be enough to yield a :class:`~scrapy.Request` with the same HTTP
 method and URL. However, you may also need to reproduce the body, headers and
-form parameters (see :class:`~scrapy.FormRequest`) of that request.
+form parameters (see :ref:`form`) of that request.
 
 As all major browsers allow to export the requests in curl_ format, Scrapy
 incorporates the method :meth:`~scrapy.Request.from_curl` to generate an equivalent
@@ -274,16 +274,13 @@ However, using `playwright-python`_ directly as in the above example
 circumvents most of the Scrapy components (middlewares, dupefilter, etc).
 We recommend using `scrapy-playwright`_ for a better integration.
 
-.. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
 .. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets
-.. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _chompjs: https://github.com/Nykakin/chompjs
 .. _curl: https://curl.se/
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
 .. _js2xml: https://github.com/scrapinghub/js2xml
 .. _playwright-python: https://github.com/microsoft/playwright-python
 .. _playwright: https://github.com/microsoft/playwright
-.. _pyppeteer: https://pyppeteer.github.io/pyppeteer/
 .. _pytesseract: https://github.com/madmaze/pytesseract
 .. _scrapy-playwright: https://github.com/scrapy-plugins/scrapy-playwright
 .. _tabula-py: https://github.com/chezou/tabula-py

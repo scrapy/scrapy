@@ -5,14 +5,14 @@ import pprint
 import sys
 from collections.abc import MutableMapping
 from logging.config import dictConfig
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings, _SettingsKeyT
+from scrapy.settings import Settings
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
@@ -35,7 +35,7 @@ def failure_to_exc_info(
         return (
             failure.type,
             failure.value,
-            cast("Optional[TracebackType]", failure.getTracebackObject()),
+            cast("TracebackType | None", failure.getTracebackObject()),
         )
     return None
 
@@ -72,6 +72,12 @@ DEFAULT_LOGGING = {
         "hpack": {
             "level": "ERROR",
         },
+        "httpcore": {
+            "level": "ERROR",
+        },
+        "httpx": {
+            "level": "WARNING",
+        },
         "scrapy": {
             "level": "DEBUG",
         },
@@ -83,7 +89,7 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(
-    settings: Settings | dict[_SettingsKeyT, Any] | None = None,
+    settings: Settings | dict[str, Any] | None = None,
     install_root_handler: bool = True,
 ) -> None:
     """
@@ -132,16 +138,23 @@ _scrapy_root_handler: logging.Handler | None = None
 
 
 def install_scrapy_root_handler(settings: Settings) -> None:
-    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
+    global _scrapy_root_handler  # noqa: PLW0603
+
+    _uninstall_scrapy_root_handler()
+    logging.root.setLevel(logging.NOTSET)
+    _scrapy_root_handler = _get_handler(settings)
+    logging.root.addHandler(_scrapy_root_handler)
+
+
+def _uninstall_scrapy_root_handler() -> None:
+    global _scrapy_root_handler  # noqa: PLW0603
 
     if (
         _scrapy_root_handler is not None
         and _scrapy_root_handler in logging.root.handlers
     ):
         logging.root.removeHandler(_scrapy_root_handler)
-    logging.root.setLevel(logging.NOTSET)
-    _scrapy_root_handler = _get_handler(settings)
-    logging.root.addHandler(_scrapy_root_handler)
+    _scrapy_root_handler = None
 
 
 def get_scrapy_root_handler() -> logging.Handler | None:
@@ -176,7 +189,7 @@ def log_scrapy_info(settings: Settings) -> None:
         "Scrapy %(version)s started (bot: %(bot)s)",
         {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
     )
-    software = settings.getlist("LOG_VERSIONS")
+    software: list[str] = settings.getlist("LOG_VERSIONS")
     if not software:
         return
     versions = pprint.pformat(dict(get_versions(software)), sort_dicts=False)
@@ -247,7 +260,8 @@ def logformatter_adapter(
     return (level, message, args)
 
 
-class SpiderLoggerAdapter(logging.LoggerAdapter):
+# LoggerAdapter is only parameterized since Python 3.11
+class SpiderLoggerAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
     def process(
         self, msg: str, kwargs: MutableMapping[str, Any]
     ) -> tuple[str, MutableMapping[str, Any]]:

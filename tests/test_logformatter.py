@@ -2,7 +2,6 @@ import logging
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy.exceptions import DropItem
@@ -13,6 +12,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
+from tests.utils.decorators import inline_callbacks_test
 
 
 class CustomItem(Item):
@@ -28,14 +28,14 @@ class TestLogFormatter:
         self.spider = Spider("default")
         self.spider.crawler = get_crawler()
 
-    def test_crawled_with_referer(self):
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
         assert logline == "Crawled (200) <GET http://www.example.com> (referer: None)"
 
-    def test_crawled_without_referer(self):
+    def test_crawled_with_referer(self):
         req = Request(
             "http://www.example.com", headers={"referer": "http://example.com"}
         )
@@ -198,7 +198,7 @@ class TestLogformatterSubclass(TestLogFormatter):
         self.spider = Spider("default")
         self.spider.crawler = get_crawler(Spider)
 
-    def test_crawled_with_referer(self):
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
@@ -207,7 +207,7 @@ class TestLogformatterSubclass(TestLogFormatter):
             logline == "Crawled (200) <GET http://www.example.com> (referer: None) []"
         )
 
-    def test_crawled_without_referer(self):
+    def test_crawled_with_referer(self):
         req = Request(
             "http://www.example.com",
             headers={"referer": "http://example.com"},
@@ -271,7 +271,7 @@ class TestShowOrSkipMessages:
             },
         }
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_show_messages(self):
         crawler = get_crawler(ItemSpider, self.base_settings)
         with LogCapture() as lc:
@@ -280,7 +280,7 @@ class TestShowOrSkipMessages:
         assert "Crawled (200) <GET http://127.0.0.1:" in str(lc)
         assert "Dropped: Ignoring item" in str(lc)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_skip_messages(self):
         settings = self.base_settings.copy()
         settings["LOG_FORMATTER"] = SkipMessagesLogFormatter

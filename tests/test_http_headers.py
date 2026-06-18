@@ -56,12 +56,12 @@ class TestHeaders:
 
     def test_encode_latin1(self):
         h = Headers({"key": "\xa3"}, encoding="latin1")
-        key, val = dict(h).popitem()
+        _, val = dict(h).popitem()
         assert val[0] == b"\xa3"
 
     def test_encode_multiple(self):
         h = Headers({"key": ["\xa3"]}, encoding="utf-8")
-        key, val = dict(h).popitem()
+        _, val = dict(h).popitem()
         assert val[0] == b"\xc2\xa3"
 
     def test_delete_and_contains(self):

@@ -6,9 +6,10 @@ from scrapy.robotstxt import (
     RerpRobotParser,
     decode_robotstxt,
 )
+from scrapy.utils._deps_compat import STDLIB_IMPROVED_ROBOTFILEPARSER
 
 
-def rerp_available():
+def rerp_available() -> bool:
     # check if robotexclusionrulesparser is installed
     try:
         from robotexclusionrulesparser import (  # noqa: PLC0415
@@ -129,18 +130,37 @@ class TestDecodeRobotsTxt:
         decoded_content = decode_robotstxt(robotstxt_body, spider=None)
         assert decoded_content == "User-agent: *\nDisallow: /\n"
 
+    # UTF-8 BOM at the beginning of the file ignored
+    def test_decode_utf8_bom(self):
+        robotstxt_body = b"\xef\xbb\xbfUser-agent: *\nDisallow: /\n"
+        decoded_content = decode_robotstxt(robotstxt_body, spider=None)
+        assert decoded_content == "User-agent: *\nDisallow: /\n"
+
 
 class TestPythonRobotParser(BaseRobotParserTest):
     def setup_method(self):
         super()._setUp(PythonRobotParser)
 
+    @pytest.mark.skipif(
+        not STDLIB_IMPROVED_ROBOTFILEPARSER,
+        reason="RobotFileParser from this Python version does not support length based directives precedence.",
+    )
     def test_length_based_precedence(self):
-        pytest.skip(
-            "RobotFileParser does not support length based directives precedence."
-        )
+        super().test_length_based_precedence()
 
+    @pytest.mark.skipif(
+        STDLIB_IMPROVED_ROBOTFILEPARSER,
+        reason="RobotFileParser from this Python version does not support order based directives precedence.",
+    )
+    def test_order_based_precedence(self):
+        super().test_order_based_precedence()
+
+    @pytest.mark.skipif(
+        not STDLIB_IMPROVED_ROBOTFILEPARSER,
+        reason="RobotFileParser from this Python version does not support wildcards.",
+    )
     def test_allowed_wildcards(self):
-        pytest.skip("RobotFileParser does not support wildcards.")
+        super().test_allowed_wildcards()
 
 
 @pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")

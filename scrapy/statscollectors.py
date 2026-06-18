@@ -4,13 +4,11 @@ Scrapy extension for collecting scraping stats
 
 from __future__ import annotations
 
-import inspect
 import logging
 import pprint
-import warnings
 from typing import TYPE_CHECKING, Any
 
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -29,10 +27,16 @@ class StatsCollector:
         self._stats: StatsT = {}
         self._crawler: Crawler = crawler
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
+        cached_name = f"_cached_{name}"
+        try:
+            return super().__getattribute__(cached_name)
+        except AttributeError:
+            pass
+
         original_attr = super().__getattribute__(name)
 
-        if name in (
+        if name in {
             "get_value",
             "get_stats",
             "set_value",
@@ -43,23 +47,10 @@ class StatsCollector:
             "clear_stats",
             "open_spider",
             "close_spider",
-        ) and callable(original_attr):
-
-            def _deprecated_wrapper(*args, **kwargs):
-                sig = inspect.signature(original_attr).bind(*args, **kwargs)
-                sig.apply_defaults()
-
-                if sig.arguments.get("spider"):
-                    warnings.warn(
-                        f"Passing a 'spider' argument to StatsCollector.{name}() is deprecated and"
-                        f" the argument will be removed in a future Scrapy version.",
-                        category=ScrapyDeprecationWarning,
-                        stacklevel=2,
-                    )
-
-                return original_attr(*args, **kwargs)
-
-            return _deprecated_wrapper
+        } and callable(original_attr):
+            wrapped = _warn_spider_arg(original_attr)
+            setattr(self, cached_name, wrapped)
+            return wrapped
 
         return original_attr
 

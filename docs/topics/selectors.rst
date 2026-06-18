@@ -543,7 +543,7 @@ you may want to take a look first at this `XPath tutorial`_.
 .. note::
     Some of the tips are based on `this post from Zyte's blog`_.
 
-.. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
+.. _XPath tutorial: http://www.zvon.org/comp/r/tut-XPath_1.html
 .. _this post from Zyte's blog: https://www.zyte.com/blog/xpath-tips-from-the-web-scraping-trenches/
 
 
@@ -728,7 +728,7 @@ But using the ``.`` to mean the node, works:
     >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
     ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-.. _`XPath string function`: https://www.w3.org/TR/xpath-10/#section-String-Functions
+.. _XPath string function: https://www.w3.org/TR/xpath-10/#section-String-Functions
 
 .. _topics-selectors-xpath-variables:
 
@@ -983,9 +983,9 @@ Here we first iterate over ``itemscope`` elements, and for each one,
 we look for all ``itemprops`` elements and exclude those that are themselves
 inside another ``itemscope``.
 
-.. _EXSLT: http://exslt.org/
-.. _regular expressions: http://exslt.org/regexp/index.html
-.. _set manipulation: http://exslt.org/set/index.html
+.. _EXSLT: https://exslt.github.io/
+.. _regular expressions: https://exslt.github.io/regexp/index.html
+.. _set manipulation: https://exslt.github.io/set/index.html
 
 Other XPath extensions
 ----------------------
@@ -1190,4 +1190,4 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object:
 
 .. skip: end
 
-.. _Google Base XML feed: https://support.google.com/merchants/answer/160589?hl=en&ref_topic=2473799
+.. _Google Base XML feed: https://support.google.com/merchants/answer/14987622

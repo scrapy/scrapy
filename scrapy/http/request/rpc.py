@@ -21,6 +21,8 @@ DUMPS_ARGS = get_func_args(xmlrpclib.dumps)
 
 
 class XmlRpcRequest(Request):
+    __slots__ = ()
+
     def __init__(self, *args: Any, encoding: str | None = None, **kwargs: Any):
         if "body" not in kwargs and "params" in kwargs:
             kw = {k: kwargs.pop(k) for k in DUMPS_ARGS if k in kwargs}

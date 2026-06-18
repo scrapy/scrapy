@@ -10,6 +10,7 @@ from urllib.request import (  # type: ignore[attr-defined]
 )
 
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
@@ -55,8 +56,9 @@ class HttpProxyMiddleware:
 
         return creds, proxy_url
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         creds, proxy_url, scheme = None, None, None
         if "proxy" in request.meta:
@@ -67,7 +69,7 @@ class HttpProxyMiddleware:
             _scheme = parsed.scheme
             if (
                 # 'no_proxy' is only supported by http schemes
-                _scheme not in ("http", "https")
+                _scheme not in {"http", "https"}
                 or (parsed.hostname and not proxy_bypass(parsed.hostname))
             ) and _scheme in self.proxies:
                 scheme = _scheme

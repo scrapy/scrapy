@@ -34,7 +34,7 @@ class BaseMockServer(ABC):
         if not self.listen_http and not self.listen_https:
             raise ValueError("At least one of listen_http and listen_https must be set")
 
-        self.proc: Popen | None = None
+        self.proc: Popen[str] | None = None
         self.host: str = "127.0.0.1"
         self.http_port: int | None = None
         self.https_port: int | None = None
@@ -44,13 +44,14 @@ class BaseMockServer(ABC):
             [sys.executable, "-u", "-m", self.module_name, *self.get_additional_args()],
             stdout=PIPE,
             env=get_script_run_env(),
+            text=True,
         )
         if self.listen_http:
-            http_address = self.proc.stdout.readline().strip().decode("ascii")
+            http_address = self.proc.stdout.readline().strip()
             http_parsed = urlparse(http_address)
             self.http_port = http_parsed.port
         if self.listen_https:
-            https_address = self.proc.stdout.readline().strip().decode("ascii")
+            https_address = self.proc.stdout.readline().strip()
             https_parsed = urlparse(https_address)
             self.https_port = https_parsed.port
         return self
@@ -105,6 +106,16 @@ def main_factory(
                 default=None,
                 help="SSL cipher string (optional)",
             )
+            parser.add_argument(
+                "--tls-min-version",
+                default=None,
+                help="Minimum accepted TLS version (optional)",
+            )
+            parser.add_argument(
+                "--tls-max-version",
+                default=None,
+                help="Maximum accepted TLS version (optional)",
+            )
             args = parser.parse_args()
             context_factory_kw = {}
             if args.keyfile:
@@ -113,6 +124,10 @@ def main_factory(
                 context_factory_kw["certfile"] = args.certfile
             if args.cipher_string:
                 context_factory_kw["cipher_string"] = args.cipher_string
+            if args.tls_min_version:
+                context_factory_kw["tls_min_version"] = args.tls_min_version
+            if args.tls_max_version:
+                context_factory_kw["tls_max_version"] = args.tls_max_version
             context_factory = ssl_context_factory(**context_factory_kw)
             https_port = reactor.listenSSL(0, factory, context_factory)
 

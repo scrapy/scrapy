@@ -7,16 +7,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import warnings
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
-from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
 from scrapy import Request, Spider
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
@@ -31,7 +28,7 @@ if TYPE_CHECKING:
 
 
 _fingerprint_cache: WeakKeyDictionary[
-    Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]
+    Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
 ] = WeakKeyDictionary()
 
 
@@ -74,8 +71,10 @@ def fingerprint(
         processed_include_headers = tuple(
             to_bytes(h.lower()) for h in sorted(include_headers)
         )
+    verbatim_url = bool(request.meta.get("verbatim_url"))
+    effective_keep_fragments = keep_fragments and not verbatim_url
     cache = _fingerprint_cache.setdefault(request, {})
-    cache_key = (processed_include_headers, keep_fragments)
+    cache_key = (processed_include_headers, effective_keep_fragments, verbatim_url)
     if cache_key not in cache:
         # To decode bytes reliably (JSON does not support bytes), regardless of
         # character encoding, we use bytes.hex()
@@ -87,9 +86,13 @@ def fingerprint(
                         header_value.hex()
                         for header_value in request.headers.getlist(header)
                     ]
+        if verbatim_url:
+            url = request.url
+        else:
+            url = canonicalize_url(request.url, keep_fragments=keep_fragments)
         fingerprint_data = {
             "method": to_unicode(request.method),
-            "url": canonicalize_url(request.url, keep_fragments=keep_fragments),
+            "url": url,
             "body": (request.body or b"").hex(),
             "headers": headers,
         }
@@ -111,8 +114,9 @@ class RequestFingerprinter:
     (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url
     <scrapy.Request.url>` and the values of :attr:`request.method
     <scrapy.Request.method>` and :attr:`request.body
-    <scrapy.Request.body>`. It then generates an `SHA1
-    <https://en.wikipedia.org/wiki/SHA-1>`_ hash.
+    <scrapy.Request.body>`, unless :reqmeta:`verbatim_url` is true for that
+    request. It then generates an `SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_
+    hash.
     """
 
     @classmethod
@@ -120,39 +124,10 @@ class RequestFingerprinter:
         return cls(crawler)
 
     def __init__(self, crawler: Crawler | None = None):
-        if crawler:
-            implementation = crawler.settings.get(
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION"
-            )
-        else:
-            implementation = "SENTINEL"
-
-        if implementation != "SENTINEL":
-            message = (
-                "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
-                "It will be removed in a future version of Scrapy."
-            )
-            warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
         self._fingerprint = fingerprint
 
     def fingerprint(self, request: Request) -> bytes:
         return self._fingerprint(request)
-
-
-def request_authenticate(
-    request: Request,
-    username: str,
-    password: str,
-) -> None:
-    """Authenticate the given request (in place) using the HTTP basic access
-    authentication mechanism (RFC 2617) and the given username and password
-    """
-    warnings.warn(
-        "The request_authenticate function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    request.headers["Authorization"] = basic_auth_header(username, password)
 
 
 def request_httprepr(request: Request) -> bytes:
@@ -201,7 +176,13 @@ def _get_method(obj: Any, name: Any) -> Any:
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError(f"Method {name!r} not found in: {obj}")
+        raise ValueError(f"Method {name!r} not found in: {obj}") from None
+
+
+def _cookie_value_to_unicode(value: str | bytes | float) -> str:
+    if isinstance(value, bytes):
+        return value.decode()
+    return str(value)
 
 
 def request_to_curl(request: Request) -> str:
@@ -227,7 +208,9 @@ def request_to_curl(request: Request) -> str:
             cookies = f"--cookie '{cookie}'"
         elif isinstance(request.cookies, list):
             cookie = "; ".join(
-                f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                f"{_cookie_value_to_unicode(c['name'])}={_cookie_value_to_unicode(c['value'])}"
+                if "name" in c and "value" in c
+                else f"{next(iter(c.keys()))}={next(iter(c.values()))}"
                 for c in request.cookies
             )
             cookies = f"--cookie '{cookie}'"
