@@ -6,6 +6,7 @@ import sys
 import pytest
 
 from scrapy import signals
+from scrapy.core import engine as engine_mod
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions import memusage as memusage_mod
 from scrapy.extensions.memusage import MemoryUsage
@@ -62,6 +63,8 @@ async def test_memusage_limit_closes_spider_with_reason_and_error_log(
 
     # Avoid background LoopingCall that can log after the test finishes.
     monkeypatch.setattr(memusage_mod, "create_looping_call", OneShotLoop)
+    # Avoid engine start/stop races (the extension stops the engine in engine_started).
+    monkeypatch.setattr(engine_mod, "create_looping_call", OneShotLoop)
     monkeypatch.setattr(MemoryUsage, "get_virtual_size", lambda _: 250 * MB)
 
     crawler = get_crawler(spidercls=_LoopSpider, settings_dict=settings)
