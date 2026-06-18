@@ -71,7 +71,19 @@ class ScrapyCommand(ABC):
         """An extensive help for the command. It will be shown when using the
         "help" command. It can contain newlines since no post-formatting will
         be applied to its contents.
+
+        .. deprecated::
+            This method is never called by the framework. Use ``long_desc()``
+            instead. Will be removed in Scrapy 2.15.
         """
+        import warnings
+        warnings.warn(
+            "ScrapyCommand.help() is deprecated and never called by the framework. "
+"
+            "Use long_desc() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.long_desc()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
