@@ -159,5 +159,7 @@ class TestInteractiveShell:
         p.expect_exact("HtmlResponse")
         p.sendeof()
         p.wait()  # type: ignore[no-untyped-call]
+        p.proc.stdin.close()
+        p.proc.stdout.close()
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
