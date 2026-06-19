@@ -10,10 +10,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
+from warnings import warn
 
 from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import Request
 from scrapy.utils.python import is_listlike, to_bytes
 
@@ -30,6 +32,12 @@ if TYPE_CHECKING:
 
     from scrapy.http.response.text import TextResponse
 
+warn(
+    "The entire scrapy.http.request.form module is deprecated. Use the "
+    "form2request library instead.",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
 FormdataVType: TypeAlias = str | Iterable[str]
 FormdataKVType: TypeAlias = tuple[str, FormdataVType]

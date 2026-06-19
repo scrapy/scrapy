@@ -83,6 +83,7 @@ class TestParallelAsyncio:
                 max_parallel_count,
             )
             assert list(range(length)) == sorted(results)
+            assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
     @coroutine_test
@@ -101,6 +102,7 @@ class TestParallelAsyncio:
                 max_parallel_count,
             )
             assert list(range(length)) == sorted(results)
+            assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
 

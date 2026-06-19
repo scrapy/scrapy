@@ -387,6 +387,26 @@ crawl::
     curl http://scrapy2.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=2
     curl http://scrapy3.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=3
 
+.. _large-project-startup:
+
+Reducing startup time in large projects
+=======================================
+
+When running a spider with ``scrapy crawl``, Scrapy loads all modules listed in
+:setting:`SPIDER_MODULES` to find the target spider. In large projects with
+many spiders, this can noticeably increase startup time and memory usage.
+
+To avoid loading every spider module, override :setting:`SPIDER_MODULES` on the
+command line to point only to the module that contains the spider you want to
+run:
+
+.. code-block:: shell
+
+    scrapy crawl myspider -s SPIDER_MODULES=myproject.spiders.myspider
+
+Because :setting:`SPIDER_MODULES` is a list setting, you can include multiple
+modules by separating them with commas.
+
 .. _bans:
 
 Avoiding getting banned
@@ -409,6 +429,10 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
   services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
   super proxy that you can attach your own proxies to.
+* for HTTPS websites, if blocking appears related to TLS behavior, consider
+  adjusting the :setting:`DOWNLOAD_TLS_MIN_VERSION` and
+  :setting:`DOWNLOAD_TLS_MAX_VERSION` settings, since some websites may respond
+  differently depending on the TLS method used by the client.
 * use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
   plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
   features, like `AI web scraping <https://www.zyte.com/ai-web-scraping/>`__

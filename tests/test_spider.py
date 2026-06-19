@@ -11,10 +11,9 @@ from scrapy.crawler import Crawler
 from scrapy.http import Response, TextResponse, XmlResponse
 from scrapy.settings import Settings
 from scrapy.spiders import CSVFeedSpider, Spider, XMLFeedSpider
-from scrapy.spiders.init import InitSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata
-from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.decorators import inline_callbacks_test
 
 
 class TestSpider:
@@ -120,27 +119,6 @@ class TestSpider:
         with mock.patch("scrapy.spiders.Spider.logger") as mock_logger:
             spider.log("test log msg", "INFO")
         mock_logger.log.assert_called_once_with("INFO", "test log msg")
-
-
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestInitSpider(TestSpider):
-    spider_class = InitSpider
-
-    @coroutine_test
-    async def test_start_urls(self):
-        responses = []
-
-        class TestSpider(self.spider_class):
-            name = "test"
-            start_urls = ["data:,"]
-
-            async def parse(self, response):
-                responses.append(response)
-
-        crawler = get_crawler(TestSpider)
-        await crawler.crawl_async()
-        assert len(responses) == 1
-        assert responses[0].url == "data:,"
 
 
 class TestXMLFeedSpider(TestSpider):

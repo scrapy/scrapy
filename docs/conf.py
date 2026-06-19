@@ -154,6 +154,7 @@ scrapy_intersphinx_enable = [
     "coverage",
     "cryptography",
     "cssselect",
+    "form2request",
     "itemloaders",
     "parsel",
     "pytest",

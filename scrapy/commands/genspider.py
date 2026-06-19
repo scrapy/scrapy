@@ -147,7 +147,7 @@ class Command(ScrapyCommand):
         name: str,
         url: str,
         template_name: str,
-        template_file: str | os.PathLike,
+        template_file: str | os.PathLike[str],
     ) -> None:
         """Generate the spider module, based on the given template"""
         assert self.settings is not None

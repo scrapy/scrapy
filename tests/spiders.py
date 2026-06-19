@@ -94,19 +94,19 @@ class DelaySpider(MetaSpider):
 class LogSpider(MetaSpider):
     name = "log_spider"
 
-    def log_debug(self, message: str, extra: dict | None = None):
+    def log_debug(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.debug(message, extra=extra)
 
-    def log_info(self, message: str, extra: dict | None = None):
+    def log_info(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.info(message, extra=extra)
 
-    def log_warning(self, message: str, extra: dict | None = None):
+    def log_warning(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.warning(message, extra=extra)
 
-    def log_error(self, message: str, extra: dict | None = None):
+    def log_error(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.error(message, extra=extra)
 
-    def log_critical(self, message: str, extra: dict | None = None):
+    def log_critical(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.critical(message, extra=extra)
 
     def parse(self, response):
@@ -222,7 +222,7 @@ class AsyncDefDeferredWrappedSpider(SimpleSpider):
 
 
 class AsyncDefDeferredMaybeWrappedSpider(SimpleSpider):
-    name = "asyncdef_deferred_wrapped"
+    name = "asyncdef_deferred_maybe_wrapped"
 
     async def parse(self, response):
         await maybe_deferred_to_future(defer.succeed(None))
@@ -417,7 +417,7 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     """
 
     name = "crawl_spider_with_parse_method"
-    custom_settings: dict = {
+    custom_settings: dict[str, Any] = {
         "RETRY_HTTP_CODES": [],  # no need to retry
     }
     rules = (Rule(LinkExtractor(), callback="parse", follow=True),)

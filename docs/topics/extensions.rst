@@ -136,7 +136,18 @@ Core Stats extension
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
 
-.. _topics-extensions-ref-telnetconsole:
+The following stats are collected:
+
+* ``start_time``: start date/time of the crawl (:class:`~datetime.datetime`).
+* ``finish_time``: end date/time of the crawl (:class:`~datetime.datetime`).
+* ``elapsed_time_seconds``: total crawl duration in seconds (:class:`float`).
+* ``finish_reason``: the closing reason string (e.g. ``"finished"``,
+  ``"closespider_timeout"``).
+* ``item_scraped_count``: total number of items that passed all pipelines.
+* ``item_dropped_count``: total number of items dropped by a pipeline.
+* ``item_dropped_reasons_count/<ExceptionName>``: per-exception drop count
+  (e.g. ``item_dropped_reasons_count/DropItem``).
+* ``response_received_count``: total number of HTTP responses received.
 
 Log Count extension
 ~~~~~~~~~~~~~~~~~~~
@@ -145,6 +156,8 @@ Log Count extension
    :synopsis: Basic stats logging
 
 .. autoclass:: LogCount
+
+.. _topics-extensions-ref-telnetconsole:
 
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -247,6 +260,7 @@ settings:
 * :setting:`CLOSESPIDER_TIMEOUT_NO_ITEM`
 * :setting:`CLOSESPIDER_ITEMCOUNT`
 * :setting:`CLOSESPIDER_PAGECOUNT`
+* :setting:`CLOSESPIDER_PAGECOUNT_NO_ITEM`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
 
 .. note::
@@ -260,12 +274,11 @@ settings:
 CLOSESPIDER_TIMEOUT
 """""""""""""""""""
 
-Default: ``0``
+Default: ``0.0``
 
-An integer which specifies a number of seconds. If the spider remains open for
-more than that number of seconds, it will be automatically closed with the
-reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
-timeout.
+If the spider remains open for more than this number of seconds, it will be
+automatically closed with the reason ``closespider_timeout``. If zero (or non
+set), spiders won't be closed by timeout.
 
 .. setting:: CLOSESPIDER_TIMEOUT_NO_ITEM
 
