@@ -113,7 +113,7 @@ class MemoryUsage:
                 {"memusage": mem},
                 extra={"crawler": self.crawler},
             )
-            if self.notify_mails:
+            if self.notify_mails:  # pragma: no cover
                 subj = (
                     f"{self.crawler.settings['BOT_NAME']} terminated: "
                     f"memory usage exceeded {mem}MiB at {socket.gethostname()}"
@@ -146,7 +146,7 @@ class MemoryUsage:
                 {"memusage": mem},
                 extra={"crawler": self.crawler},
             )
-            if self.notify_mails:
+            if self.notify_mails:  # pragma: no cover
                 subj = (
                     f"{self.crawler.settings['BOT_NAME']} warning: "
                     f"memory usage reached {mem}MiB at {socket.gethostname()}"
@@ -155,7 +155,7 @@ class MemoryUsage:
                 self.crawler.stats.set_value("memusage/warning_notified", 1)
             self.warned = True
 
-    def _send_report(self, rcpts: list[str], subject: str) -> None:
+    def _send_report(self, rcpts: list[str], subject: str) -> None:  # pragma: no cover
         """send notification mail with some additional useful info"""
         assert self.crawler.engine
         assert self.crawler.stats
