@@ -6,14 +6,9 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from logging import getLogger
-from time import monotonic
+from time import monotonic, time
 from typing import TYPE_CHECKING, Any
 from warnings import warn
-
-try:
-    from win_precise_time import time  # type: ignore[import-not-found]
-except ImportError:
-    from time import time  # pylint: disable=ungrouped-imports
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure

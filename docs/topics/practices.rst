@@ -436,16 +436,6 @@ in memory. You could:
 - Check that your code doesn't hold strong references to
   :class:`~scrapy.http.Response` objects longer than necessary.
 
-.. note::
-
-    On Windows, Scrapy uses the `win-precise-time
-    <https://pypi.org/project/win-precise-time/>`_ package when available to
-    measure backout durations with higher precision. Install it with:
-
-    .. code-block:: shell
-
-        pip install win-precise-time
-
 .. _bans:
 
 Avoiding getting banned
