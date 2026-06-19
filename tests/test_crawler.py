@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-import warnings
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -88,9 +87,7 @@ class TestCrawler(TestBaseCrawler):
         self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
 
     def test_crawler_accepts_None(self) -> None:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-            crawler = Crawler(DefaultSpider)
+        crawler = Crawler(DefaultSpider)
         self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
 
     def test_crawler_rejects_spider_objects(self) -> None:
