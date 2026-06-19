@@ -141,10 +141,14 @@ class ScrapyPriorityQueue:
             q = self.qfactory(priority)
             if q:
                 self.queues[priority] = q
+            else:
+                q.close()
             if self._start_queue_cls:
                 q = self._sqfactory(priority)
                 if q:
                     self._start_queues[priority] = q
+                else:
+                    q.close()
 
         self.curprio = min(startprios)
 
