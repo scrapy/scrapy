@@ -134,6 +134,8 @@ class Downloader:
             "DOWNLOAD_SLOTS"
         )
         self._stats = crawler.stats
+        # (reason, start_time): current backout reason and when it began, or
+        # (None, None) if not backing out.
         self._last_backout: tuple[str | None, float | None] = (None, None)
 
         deprecated_setting_priority = self.settings.getpriority(
