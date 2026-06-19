@@ -22,6 +22,7 @@ dependencies = [
     "service_identity>=23.1.0",
     "tldextract",
     "w3lib>=1.17.0",
+    "xtractmime>=0.2.0",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
@@ -132,6 +133,8 @@ module = [
     "pytest_twisted",
     "robotexclusionrulesparser",
     "testfixtures",
+    "xtractmime",
+    "xtractmime.*",
     "zope.interface.*",
 ]
 ignore_missing_imports = true
@@ -274,6 +277,8 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",
+    "ignore:scrapy.responsetypes is deprecated",
+    "ignore:scrapy.utils.response.get_base_url is deprecated",
 ]
 
 [tool.ruff.lint]

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
-from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
     _DecompressionMaxSizeExceeded,
     _inflate,
@@ -18,6 +17,7 @@ from scrapy.utils._compression import (
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.gz import gunzip
+from scrapy.utils.response import get_response_class
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -139,8 +139,10 @@ class HttpCompressionMiddleware:
                         len(decoded_body),
                     )
                     self.stats.inc_value("httpcompression/response_count")
-                respcls = responsetypes.from_args(
-                    headers=response.headers, url=response.url, body=decoded_body
+                respcls = get_response_class(
+                    http_headers=response.headers,
+                    url=response.url,
+                    body=decoded_body,
                 )
                 kwargs: dict[str, Any] = {"body": decoded_body}
                 if issubclass(respcls, TextResponse):

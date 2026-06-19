@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from typing import Any
+
+import pytest
+
 from scrapy.http import (
     Headers,
     HtmlResponse,
@@ -7,6 +13,43 @@ from scrapy.http import (
     XmlResponse,
 )
 from scrapy.responsetypes import responsetypes
+
+from .test_utils_response import POST_XTRACTMIME_SCENARIOS, PRE_XTRACTMIME_SCENARIOS
+
+
+def _unmark(item: Any) -> Any:
+    return pytest.param(*item.values)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "response_class"),
+    [
+        *(
+            item if not hasattr(item, "marks") else _unmark(item)
+            for item in PRE_XTRACTMIME_SCENARIOS
+        ),
+        *(
+            pytest.param(
+                kwargs,
+                response_class,
+                marks=pytest.mark.xfail(
+                    strict=True,
+                    reason=(
+                        "Expected failure of deprecated "
+                        "scrapy.responsetypes.responsetypes.from_args, works "
+                        "with its replacement "
+                        "scrapy.utils.response.get_response_class"
+                    ),
+                ),
+            )
+            for kwargs, response_class in POST_XTRACTMIME_SCENARIOS
+        ),
+    ],
+)
+def test_from_args(kwargs, response_class):
+    assert responsetypes.from_args(**kwargs) == response_class, (
+        f"{responsetypes.from_args(**kwargs)=} != {response_class=}"
+    )
 
 
 class TestResponseTypes:
@@ -91,32 +134,6 @@ class TestResponseTypes:
         for source, cls in mappings:
             source = Headers(source)
             retcls = responsetypes.from_headers(source)
-            assert retcls is cls, f"{source} ==> {retcls} != {cls}"
-
-    def test_from_args(self):
-        # TODO: add more tests that check precedence between the different arguments
-        mappings = [
-            ({"url": "http://www.example.com/data.csv"}, TextResponse),
-            # headers takes precedence over url
-            (
-                {
-                    "headers": Headers({"Content-Type": ["text/html; charset=utf-8"]}),
-                    "url": "http://www.example.com/item/",
-                },
-                HtmlResponse,
-            ),
-            (
-                {
-                    "headers": Headers(
-                        {"Content-Disposition": ['attachment; filename="data.xml.gz"']}
-                    ),
-                    "url": "http://www.example.com/page/",
-                },
-                Response,
-            ),
-        ]
-        for source, cls in mappings:
-            retcls = responsetypes.from_args(**source)
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
     def test_custom_mime_types_loaded(self):

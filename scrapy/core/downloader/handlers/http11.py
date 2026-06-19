@@ -67,7 +67,6 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
 
-
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")

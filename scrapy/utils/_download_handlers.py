@@ -14,7 +14,6 @@ from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 from twisted.web.error import SchemeNotSupported
 
-from scrapy import responsetypes
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
@@ -25,6 +24,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.utils.log import logger
+from scrapy.utils.response import get_response_class
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -102,7 +102,7 @@ def make_response(
     protocol: str | None = None,
     stop_download: StopDownload | None = None,
 ) -> Response:
-    respcls = responsetypes.responsetypes.from_args(headers=headers, url=url, body=body)
+    respcls = get_response_class(http_headers=headers, url=url, body=body)
     response = respcls(
         url=url,
         status=status,
