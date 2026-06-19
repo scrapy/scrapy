@@ -1148,6 +1148,9 @@ class TestHttpWithCrawlerBase(ABC):
         reason = crawler.spider.meta["close_reason"]  # type: ignore[attr-defined]
         assert reason == "finished"
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
     @coroutine_test
     async def test_response_ssl_certificate(self, mockserver: MockServer) -> None:
         if not self.is_secure:

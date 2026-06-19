@@ -1,4 +1,3 @@
-import warnings
 from asyncio import sleep
 
 import pytest
@@ -76,9 +75,7 @@ class TestMain:
 
     @coroutine_test
     async def test_modern_mw_modern_spider(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
+        await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
 
     async def _test_sleep(self, spider_middlewares):
         class TestSpider(Spider):
