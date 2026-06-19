@@ -306,18 +306,25 @@ class TestRequestBackout:
         class SlowDown:
             """Downloader middleware that returns a non-instant deferred from
             process_request, to force need_backout calls to happen at that
-            point."""
+            point.
+
+            The delay is deliberately non-zero so that the concurrency backout
+            state lasts a measurable amount of wall-clock time, which keeps the
+            request_backout_seconds/concurrency stat reliably above 0."""
 
             def process_request(self, request, spider):
                 from twisted.internet import reactor
 
                 d = Deferred()
-                reactor.callLater(0, d.callback, None)
+                reactor.callLater(0.01, d.callback, None)
                 return d
 
         class TestSpider(Spider):
             name = "test"
-            start_urls = ["data:,"]
+            # Several start URLs so that, with CONCURRENT_REQUESTS=1, the engine
+            # reliably attempts to schedule a second request while the first one
+            # is still active, which is what triggers the concurrency backout.
+            start_urls = ["data:,"] * 5
             custom_settings = {
                 "CONCURRENT_REQUESTS": 1,
                 "DOWNLOADER_MIDDLEWARES": {SlowDown: 0},
