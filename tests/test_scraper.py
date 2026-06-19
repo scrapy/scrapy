@@ -26,7 +26,9 @@ class ScraperTest(unittest.TestCase):
                         self.crawler.engine.scraper.slot.active_size
                     )
 
-        crawler = get_crawler(TestSpider)
+        crawler = get_crawler(
+            TestSpider, settings_dict={"TELNETCONSOLE_ENABLED": False}
+        )
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             await maybe_deferred_to_future(crawler.crawl())
