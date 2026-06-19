@@ -26,23 +26,35 @@ class OfflineSpider(Spider):
         pass
 
 
-def _assert_scraper_slot_deprecation(warning_messages):
+def _assert_scraper_slot_deprecation(warning_messages, *, ignored=False):
     """Assert that a crawl emitted exactly one Scrapy deprecation warning, the
     one about SCRAPER_SLOT_MAX_ACTIVE_SIZE.
 
     Only Scrapy deprecation warnings are counted: a crawl may emit unrelated
     warnings (e.g. a ResourceWarning for a socket garbage-collected while the
-    recorder is active), and those must not make the assertion flaky."""
+    recorder is active), and those must not make the assertion flaky.
+
+    Pass ``ignored=True`` when RESPONSE_MAX_ACTIVE_SIZE is set with an equal or
+    higher priority and therefore SCRAPER_SLOT_MAX_ACTIVE_SIZE is being
+    ignored."""
     deprecations = [
         message
         for message in warning_messages
         if issubclass(message.category, ScrapyDeprecationWarning)
     ]
     assert len(deprecations) == 1
-    assert str(deprecations[0].message) == (
-        "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-        "RESPONSE_MAX_ACTIVE_SIZE instead."
-    )
+    if ignored:
+        assert str(deprecations[0].message) == (
+            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated and is "
+            "being ignored because RESPONSE_MAX_ACTIVE_SIZE is set with an "
+            "equal or higher priority. Remove SCRAPER_SLOT_MAX_ACTIVE_SIZE "
+            "from your settings."
+        )
+    else:
+        assert str(deprecations[0].message) == (
+            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
+            "RESPONSE_MAX_ACTIVE_SIZE instead."
+        )
 
 
 class gt:
@@ -110,8 +122,9 @@ class TestResponseMaxActiveSize:
     async def test_both(self):
         """Setting RESPONSE_MAX_ACTIVE_SIZE and SCRAPER_SLOT_MAX_ACTIVE_SIZE to
         different values with the same setting priority triggers a deprecation
-        warning about SCRAPER_SLOT_MAX_ACTIVE_SIZE and makes the value of
-        RESPONSE_MAX_ACTIVE_SIZE the effective response max active size."""
+        warning about SCRAPER_SLOT_MAX_ACTIVE_SIZE being ignored, and makes
+        the value of RESPONSE_MAX_ACTIVE_SIZE the effective response max active
+        size."""
         crawler = get_crawler(
             OfflineSpider,
             settings_dict={
@@ -122,7 +135,7 @@ class TestResponseMaxActiveSize:
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader._response_max_active_size == 1
-        _assert_scraper_slot_deprecation(warning_messages)
+        _assert_scraper_slot_deprecation(warning_messages, ignored=True)
 
     @coroutine_test
     async def test_both_deprecated_priority(self):

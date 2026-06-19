@@ -142,24 +142,38 @@ class Downloader:
             "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
         )
         assert deprecated_setting_priority is not None
-        if deprecated_setting_priority > 0:
-            warn(
-                (
-                    "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, "
-                    "use RESPONSE_MAX_ACTIVE_SIZE instead."
-                ),
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         setting_priority = self.settings.getpriority("RESPONSE_MAX_ACTIVE_SIZE")
         assert setting_priority is not None
-        if setting_priority >= deprecated_setting_priority:
-            self._response_max_active_size = self.settings.getint(
-                "RESPONSE_MAX_ACTIVE_SIZE"
-            )
+        if deprecated_setting_priority > 0:
+            if setting_priority >= deprecated_setting_priority:
+                warn(
+                    (
+                        "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated "
+                        "and is being ignored because RESPONSE_MAX_ACTIVE_SIZE is "
+                        "set with an equal or higher priority. Remove "
+                        "SCRAPER_SLOT_MAX_ACTIVE_SIZE from your settings."
+                    ),
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+                self._response_max_active_size = self.settings.getint(
+                    "RESPONSE_MAX_ACTIVE_SIZE"
+                )
+            else:
+                warn(
+                    (
+                        "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, "
+                        "use RESPONSE_MAX_ACTIVE_SIZE instead."
+                    ),
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+                self._response_max_active_size = self.settings.getint(
+                    "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
+                )
         else:
             self._response_max_active_size = self.settings.getint(
-                "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
+                "RESPONSE_MAX_ACTIVE_SIZE"
             )
         self._response_max_active_size_warned = False
 
