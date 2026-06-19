@@ -1,4 +1,4 @@
-# pylint: disable=unsubscriptable-object,unsupported-membership-test,use-implicit-booleaness-not-comparison
+# pylint: disable=unsubscriptable-object,unsupported-membership-test
 # (too many false positives)
 
 import logging
