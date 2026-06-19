@@ -149,11 +149,12 @@ def install_scrapy_root_handler(settings: Settings) -> None:
 def _uninstall_scrapy_root_handler() -> None:
     global _scrapy_root_handler  # noqa: PLW0603
 
-    if (
-        _scrapy_root_handler is not None
-        and _scrapy_root_handler in logging.root.handlers
-    ):
+    if _scrapy_root_handler is None:
+        return
+
+    if _scrapy_root_handler in logging.root.handlers:
         logging.root.removeHandler(_scrapy_root_handler)
+    _scrapy_root_handler.close()
     _scrapy_root_handler = None
 
 
