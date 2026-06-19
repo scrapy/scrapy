@@ -212,6 +212,7 @@ class MySpider(scrapy.Spider):
             f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}"
             in log
         )
+        loop.close()
 
     def test_no_reactor(self, tmp_path: Path) -> None:
         log = self.get_log(
