@@ -1,4 +1,5 @@
 import logging
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -123,6 +124,25 @@ def test_process_request_invalid_domains(caplog):
     with caplog.at_level(logging.ERROR):
         mw.spider_opened(crawler.spider)
     assert "Invalid domain configuration" in caplog.text
+
+
+def test_invalid_domains_closes_spider(caplog):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(
+        name="a", allowed_domains=["a.example", None]
+    )
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mock_engine = AsyncMock()
+    crawler.engine = mock_engine
+    with (
+        patch(
+            "scrapy.downloadermiddlewares.offsite._schedule_coro"
+        ) as mock_schedule,
+        caplog.at_level(logging.ERROR),
+    ):
+        mw.spider_opened(crawler.spider)
+    assert "Invalid domain configuration" in caplog.text
+    mock_schedule.assert_called_once()
 
 
 @pytest.mark.parametrize(

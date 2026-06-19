@@ -131,9 +131,7 @@ class OffsiteMiddleware:
             return re.compile("")  # allow all by default
 
         domains = self._process_domains(allowed_domains, "allowed_domains")
-        if domains:
-            return re.compile(rf"^(.*\.)?({'|'.join(domains)})$")
-        return re.compile("")  # allow all if no valid domains remain
+        return re.compile(rf"^(.*\.)?({'|'.join(domains)})$")
 
     def _get_disallowed_host_regex(self, spider: Spider) -> re.Pattern[str] | None:
         """Build a regex that positively matches disallowed hosts.
@@ -146,6 +144,4 @@ class OffsiteMiddleware:
             return None
 
         domains = self._process_domains(disallowed_domains, "disallowed_domains")
-        if domains:
-            return re.compile(rf"^(.*\.)?({'|'.join(domains)})$")
-        return None
+        return re.compile(rf"^(.*\.)?({'|'.join(domains)})$")
