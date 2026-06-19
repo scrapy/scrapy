@@ -14,7 +14,7 @@ from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
-from scrapy.core.downloader import Downloader, Slot, tls
+from scrapy.core.downloader import Downloader, tls
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
@@ -37,12 +37,6 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
     from twisted.web.iweb import IBodyProducer
-
-
-class TestSlot:
-    def test_repr(self):
-        slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code

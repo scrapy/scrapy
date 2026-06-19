@@ -2,17 +2,17 @@ import warnings
 
 import pytest
 from twisted.internet.defer import Deferred
-from twisted.trial import unittest
 
 from scrapy import Request, Spider
 from scrapy.core.downloader import Slot
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
 
 
-class SlotTest(unittest.TestCase):
+class TestSlot:
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
         assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
@@ -24,6 +24,25 @@ class OfflineSpider(Spider):
 
     def parse(self, response):
         pass
+
+
+def _assert_scraper_slot_deprecation(warning_messages):
+    """Assert that a crawl emitted exactly one Scrapy deprecation warning, the
+    one about SCRAPER_SLOT_MAX_ACTIVE_SIZE.
+
+    Only Scrapy deprecation warnings are counted: a crawl may emit unrelated
+    warnings (e.g. a ResourceWarning for a socket garbage-collected while the
+    recorder is active), and those must not make the assertion flaky."""
+    deprecations = [
+        message
+        for message in warning_messages
+        if issubclass(message.category, ScrapyDeprecationWarning)
+    ]
+    assert len(deprecations) == 1
+    assert str(deprecations[0].message) == (
+        "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
+        "RESPONSE_MAX_ACTIVE_SIZE instead."
+    )
 
 
 class gt:
@@ -39,18 +58,18 @@ class gt:
         return f">{self.value}"
 
 
-class ResponseMaxActiveSizeTest(unittest.TestCase):
-    @deferred_f_from_coro_f
+class TestResponseMaxActiveSize:
+    @coroutine_test
     async def test_default(self):
         """A crawl without custom settings has its effective response max
         active size set to 5 000 000, and triggers no deprecation warning."""
         crawler = get_crawler(OfflineSpider)
         with warnings.catch_warnings():
-            warnings.simplefilter("error")
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader._response_max_active_size == 5_000_000
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_custom(self):
         """Setting RESPONSE_MAX_ACTIVE_SIZE to a custom value changes the
         effective response max active size."""
@@ -58,11 +77,11 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
             OfflineSpider, settings_dict={"RESPONSE_MAX_ACTIVE_SIZE": 0}
         )
         with warnings.catch_warnings():
-            warnings.simplefilter("error")
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader._response_max_active_size == 0
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_default(self):
         """Setting SCRAPER_SLOT_MAX_ACTIVE_SIZE triggers a deprecation warning,
         even if it is the default value."""
@@ -72,13 +91,9 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader._response_max_active_size == 5_000_000
-        assert len(warning_messages) == 1
-        assert str(warning_messages[0].message) == (
-            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-            "RESPONSE_MAX_ACTIVE_SIZE instead."
-        )
+        _assert_scraper_slot_deprecation(warning_messages)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_custom(self):
         """Setting SCRAPER_SLOT_MAX_ACTIVE_SIZE to a custom value triggers a
         deprecation warning, and changes the effective response max active
@@ -89,13 +104,9 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader._response_max_active_size == 0
-        assert len(warning_messages) == 1
-        assert str(warning_messages[0].message) == (
-            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-            "RESPONSE_MAX_ACTIVE_SIZE instead."
-        )
+        _assert_scraper_slot_deprecation(warning_messages)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_both(self):
         """Setting RESPONSE_MAX_ACTIVE_SIZE and SCRAPER_SLOT_MAX_ACTIVE_SIZE to
         different values with the same setting priority triggers a deprecation
@@ -111,13 +122,9 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader._response_max_active_size == 1
-        assert len(warning_messages) == 1
-        assert str(warning_messages[0].message) == (
-            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-            "RESPONSE_MAX_ACTIVE_SIZE instead."
-        )
+        _assert_scraper_slot_deprecation(warning_messages)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_both_deprecated_priority(self):
         """Setting RESPONSE_MAX_ACTIVE_SIZE and SCRAPER_SLOT_MAX_ACTIVE_SIZE to
         different values and SCRAPER_SLOT_MAX_ACTIVE_SIZE with a higher
@@ -141,36 +148,32 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader._response_max_active_size == 2
-        assert len(warning_messages) == 1
-        assert str(warning_messages[0].message) == (
-            "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, use "
-            "RESPONSE_MAX_ACTIVE_SIZE instead."
-        )
+        _assert_scraper_slot_deprecation(warning_messages)
 
 
-class ResponseRoughSizeTest(unittest.TestCase):
+class TestResponseRoughSize:
     @pytest.fixture(autouse=True)
     def use_caplog(self, caplog):
         self.caplog = caplog
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_default(self):
         crawler = get_crawler(OfflineSpider)
         with warnings.catch_warnings():
-            warnings.simplefilter("error")
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader.middleware._response_rough_size == 131072
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_custom(self):
         """Setting RESPONSE_ROUGH_SIZE to a custom value changes the rough size."""
         crawler = get_crawler(OfflineSpider, settings_dict={"RESPONSE_ROUGH_SIZE": 0})
         with warnings.catch_warnings():
-            warnings.simplefilter("error")
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine.downloader.middleware._response_rough_size == 0
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_rough_size_per_request(self):
         """response_rough_size meta key overrides RESPONSE_ROUGH_SIZE per request.
 
@@ -204,7 +207,7 @@ class ResponseRoughSizeTest(unittest.TestCase):
         )
         assert active_size_log_count == 1
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_rough_size_triggers_backout(self):
         """Rough sizes of in-flight requests count toward the backpressure limit.
 
@@ -248,12 +251,12 @@ class ResponseRoughSizeTest(unittest.TestCase):
         assert expected_stats == actual_stats
 
 
-class RequestBackoutTest(unittest.TestCase):
+class TestRequestBackout:
     @pytest.fixture(autouse=True)
     def use_caplog(self, caplog):
         self.caplog = caplog
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_none(self):
 
         class TestSpider(Spider):
@@ -284,7 +287,7 @@ class RequestBackoutTest(unittest.TestCase):
         }
         assert stats == {}
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_concurrency(self):
 
         class SlowDown:
@@ -335,7 +338,7 @@ class RequestBackoutTest(unittest.TestCase):
         }
         assert expected_stats == actual_stats
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_response_size(self):
 
         class TestSpider(Spider):
@@ -373,7 +376,7 @@ class RequestBackoutTest(unittest.TestCase):
         }
         assert expected_stats == actual_stats
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_response_size_process_request(self):
 
         class DownloaderMiddleware:
@@ -416,7 +419,7 @@ class RequestBackoutTest(unittest.TestCase):
         }
         assert expected_stats == actual_stats
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_response_size_process_response(self):
 
         class DownloaderMiddleware:
@@ -459,7 +462,7 @@ class RequestBackoutTest(unittest.TestCase):
         }
         assert expected_stats == actual_stats
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_response_size_process_exception(self):
 
         class DownloaderMiddleware1:
@@ -509,7 +512,7 @@ class RequestBackoutTest(unittest.TestCase):
         }
         assert expected_stats == actual_stats
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_response_size_download(self):
         """Ensure that responses from engine.download calls are also taken into
         account for the RESPONSE_MAX_ACTIVE_SIZE setting."""

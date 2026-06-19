@@ -1,17 +1,17 @@
 import warnings
 
 import pytest
-from twisted.trial import unittest
 
 from scrapy import Spider
 from scrapy.core.scraper import Slot
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
 
 
-class ScraperTest(unittest.TestCase):
-    @deferred_f_from_coro_f
+class TestScraper:
+    @coroutine_test
     async def test_crawl(self):
         """A crawl should not trigger any deprecation warning."""
         outcome = {}
@@ -30,7 +30,7 @@ class ScraperTest(unittest.TestCase):
             TestSpider, settings_dict={"TELNETCONSOLE_ENABLED": False}
         )
         with warnings.catch_warnings():
-            warnings.simplefilter("error")
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
 
         with pytest.warns(ScrapyDeprecationWarning):
