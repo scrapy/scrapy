@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -12,6 +13,8 @@ from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from scrapy.crawler import Crawler
 
 pytestmark = pytest.mark.requires_reactor  # TelnetConsole requires a reactor
@@ -25,9 +28,10 @@ def _get_crawler(settings_dict: dict[str, Any] | None = None) -> Crawler:
     return get_crawler(settings_dict=settings)
 
 
+@contextmanager
 def _get_console_and_portal(
     settings: dict[str, Any] | None = None,
-) -> tuple[TelnetConsole, Any]:
+) -> Generator[tuple[TelnetConsole, Any]]:
     crawler = _get_crawler(settings_dict=settings)
     console = TelnetConsole(crawler)
 
@@ -38,28 +42,29 @@ def _get_console_and_portal(
     protocol = console.protocol()
     portal = protocol.protocolArgs[0]
 
-    return console, portal
+    try:
+        yield console, portal
+    finally:
+        console.stop_listening()
 
 
 @coroutine_test
 async def test_bad_credentials() -> None:
-    console, portal = _get_console_and_portal()
-    creds = credentials.UsernamePassword(b"username", b"password")
-    d = portal.login(creds, None, ITelnetProtocol)
-    with pytest.raises(ValueError, match="Invalid credentials"):
-        await maybe_deferred_to_future(d)
-    console.stop_listening()
+    with _get_console_and_portal() as (_, portal):
+        creds = credentials.UsernamePassword(b"username", b"password")
+        d = portal.login(creds, None, ITelnetProtocol)
+        with pytest.raises(ValueError, match="Invalid credentials"):
+            await maybe_deferred_to_future(d)
 
 
 @coroutine_test
 async def test_good_credentials() -> None:
-    console, portal = _get_console_and_portal()
-    creds = credentials.UsernamePassword(
-        console.username.encode("utf8"), console.password.encode("utf8")
-    )
-    d = portal.login(creds, None, ITelnetProtocol)
-    await maybe_deferred_to_future(d)
-    console.stop_listening()
+    with _get_console_and_portal() as (console, portal):
+        creds = credentials.UsernamePassword(
+            console.username.encode("utf8"), console.password.encode("utf8")
+        )
+        d = portal.login(creds, None, ITelnetProtocol)
+        await maybe_deferred_to_future(d)
 
 
 @coroutine_test
@@ -68,11 +73,10 @@ async def test_custom_credentials() -> None:
         "TELNETCONSOLE_USERNAME": "user",
         "TELNETCONSOLE_PASSWORD": "pass",
     }
-    console, portal = _get_console_and_portal(settings=settings)
-    creds = credentials.UsernamePassword(b"user", b"pass")
-    d = portal.login(creds, None, ITelnetProtocol)
-    await maybe_deferred_to_future(d)
-    console.stop_listening()
+    with _get_console_and_portal(settings=settings) as (_, portal):
+        creds = credentials.UsernamePassword(b"user", b"pass")
+        d = portal.login(creds, None, ITelnetProtocol)
+        await maybe_deferred_to_future(d)
 
 
 def test_invalid_reversed_portrange() -> None:
