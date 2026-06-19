@@ -3,8 +3,12 @@
 # https://github.com/david-salac/classutilities/blob/a6e4a86331936d432afaa454ed4c963528165a61/src/classutilities/classproperty.py
 
 # Allows creating a class level property
-from collections.abc import Callable
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class ClassPropertyContainer:
@@ -49,7 +53,7 @@ class ClassPropertyContainer:
     def setter(
         self,
         func: Callable[..., Any] | classmethod[Any, Any, Any] | staticmethod[Any, Any],
-    ) -> "ClassPropertyContainer":
+    ) -> ClassPropertyContainer:
         """
         Allows creating setter in a property like way.
         :param func: Setter function.
@@ -63,7 +67,7 @@ class ClassPropertyContainer:
 
 def classproperty(
     func: Callable[..., Any] | classmethod[Any, Any, Any] | staticmethod[Any, Any],
-) -> "ClassPropertyContainer":
+) -> ClassPropertyContainer:
     """
     Create a decorator for a class level property.
     :param func: This class method is decorated.
