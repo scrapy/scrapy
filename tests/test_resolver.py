@@ -5,7 +5,9 @@ from unittest.mock import Mock
 import pytest
 
 from scrapy.resolver import CachingHostnameResolver, CachingThreadedResolver, dnscache
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
 
 
 @pytest.fixture(autouse=True)
@@ -23,14 +25,13 @@ def test_caching_threaded_resolver_dnscache_disabled():
     assert dnscache.limit == 0
 
 
-def test_caching_threaded_resolver_getHostByName_cache_hit():
+@coroutine_test
+async def test_caching_threaded_resolver_getHostByName_cache_hit():
     resolver = CachingThreadedResolver(Mock(), cache_size=10, timeout=5.0)
     dnscache["example.com"] = "1.2.3.4"
 
-    result_deferred = resolver.getHostByName("example.com")
-    results = []
-    result_deferred.addCallback(results.append)
-    assert results == ["1.2.3.4"]
+    result = await maybe_deferred_to_future(resolver.getHostByName("example.com"))
+    assert result == "1.2.3.4"
 
 
 def test_caching_hostname_resolver_dnscache_disabled():
