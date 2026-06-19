@@ -1,4 +1,6 @@
+import argparse
 import json
+import logging
 import os
 import pstats
 import shutil
@@ -8,7 +10,27 @@ from io import StringIO
 from pathlib import Path
 from subprocess import PIPE, Popen
 
+from scrapy.cmdline import _run_command_profiled
 from scrapy.utils.test import get_testenv
+
+
+class _NoopCmd:
+    """Minimal command stub whose run() does nothing."""
+
+    def run(self, args, opts):
+        pass
+
+
+def _profiling_opts(**overrides):
+    defaults = {"profile": "", "profile_sort": "cumulative", "profile_limit": 30}
+    defaults.update(overrides)
+    return argparse.Namespace(**defaults)
+
+
+def test_profiling_stats_go_to_log(caplog):
+    with caplog.at_level(logging.INFO, logger="scrapy.cmdline"):
+        _run_command_profiled(_NoopCmd(), [], _profiling_opts())
+    assert "Profile stats:" in caplog.text
 
 
 class TestCmdline:
