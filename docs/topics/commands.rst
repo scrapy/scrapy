@@ -620,6 +620,66 @@ In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
 ``True`` (at the project level or via the command line) so that Scrapy uses
 :class:`~scrapy.crawler.CrawlerProcess` which supports all reactors.
 
+.. _cli-global-options:
+
+Global options
+==============
+
+The following options are available for all Scrapy commands:
+
+.. option:: --profile [FILE]
+
+    Run the command under :mod:`cProfile`. Profile statistics are printed to
+    the log after the command finishes. If ``FILE`` is given, binary cProfile
+    stats are also written to that file for later analysis with tools like
+    :mod:`pstats`.
+
+    Example (log only):
+
+    .. code-block:: none
+
+        scrapy crawl myspider --profile
+
+    Example (log + binary dump):
+
+    .. code-block:: none
+
+        scrapy crawl myspider --profile=myspider.prof
+
+    See also :option:`--profile-sort` and :option:`--profile-limit`.
+
+.. option:: --profile-sort COLUMN
+
+    Sort the profile stats output by ``COLUMN``. Accepts any column name
+    supported by :meth:`pstats.Stats.sort_stats`, such as ``cumulative``
+    (default), ``tottime``, ``calls``, ``name``, etc.
+
+.. option:: --profile-limit N
+
+    Limit the profile stats output to the top ``N`` rows. Default: ``30``.
+
+.. option:: --logfile FILE
+
+    Redirect the log output to ``FILE`` instead of stderr.
+
+.. option:: -L, --loglevel LEVEL
+
+    Override the :setting:`LOG_LEVEL` setting. Valid levels are ``CRITICAL``,
+    ``ERROR``, ``WARNING``, ``INFO``, and ``DEBUG``.
+
+.. option:: --nolog
+
+    Disable logging entirely. Equivalent to setting :setting:`LOG_ENABLED` to
+    ``False``.
+
+.. option:: --pidfile FILE
+
+    Write the process ID to ``FILE``.
+
+.. option:: -s NAME=VALUE, --set NAME=VALUE
+
+    Override a Scrapy setting. May be repeated.
+
 Custom project commands
 =======================
 

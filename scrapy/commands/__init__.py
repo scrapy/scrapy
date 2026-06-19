@@ -96,8 +96,30 @@ class ScrapyCommand(ABC):
         group.add_argument(
             "--profile",
             metavar="FILE",
+            nargs="?",
+            const="",
             default=None,
-            help="write python cProfile stats to FILE",
+            help=(
+                "Run under cProfile, printing stats to the log after the "
+                "command finishes (use --profile=FILE to also write binary "
+                "cProfile stats to FILE)"
+            ),
+        )
+        group.add_argument(
+            "--profile-sort",
+            metavar="COLUMN",
+            default="cumulative",
+            help=(
+                "Sort profile stats by COLUMN, e.g. 'cumulative', 'tottime', "
+                "'calls' (default: cumulative)"
+            ),
+        )
+        group.add_argument(
+            "--profile-limit",
+            metavar="N",
+            type=int,
+            default=30,
+            help="Limit profile stats output to N rows (default: 30)",
         )
         group.add_argument("--pidfile", metavar="FILE", help="write process ID to FILE")
         group.add_argument(

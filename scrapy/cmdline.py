@@ -3,7 +3,10 @@ from __future__ import annotations
 import argparse
 import cProfile
 import inspect
+import io
+import logging
 import os
+import pstats
 import sys
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING, ParamSpec
@@ -23,6 +26,8 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings, Settings
 
 _P = ParamSpec("_P")
+
+logger = logging.getLogger(__name__)
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
@@ -216,7 +221,7 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
 
 
 def _run_command(cmd: ScrapyCommand, args: list[str], opts: argparse.Namespace) -> None:
-    if opts.profile:
+    if opts.profile is not None:
         _run_command_profiled(cmd, args, opts)
     else:
         cmd.run(args, opts)
@@ -232,6 +237,15 @@ def _run_command_profiled(
     p.runctx("cmd.run(args, opts)", globals(), loc)
     if opts.profile:
         p.dump_stats(opts.profile)
+    stream = io.StringIO()
+    stats = pstats.Stats(p, stream=stream)
+    stats.sort_stats(opts.profile_sort)
+    stats.print_stats(opts.profile_limit)
+    stats_output = stream.getvalue()
+    if logging.root.handlers:
+        logger.info("Profile stats:\n%s", stats_output)
+    else:
+        sys.stderr.write(f"Profile stats:\n{stats_output}")
 
 
 if __name__ == "__main__":

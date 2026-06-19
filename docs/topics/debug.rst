@@ -182,3 +182,24 @@ To debug spiders with Visual Studio Code you can use the following ``launch.json
 
 Also, make sure you enable "User Uncaught Exceptions", to catch exceptions in
 your Scrapy spider.
+
+Profiling
+=========
+
+To measure where your spider spends time, run any Scrapy command under
+:mod:`cProfile` using the :option:`--profile` option:
+
+.. code-block:: shell
+
+    scrapy crawl myspider --profile
+
+Profile statistics are printed to the log after the command finishes. Use
+:option:`--profile-sort` to change the sort column and
+:option:`--profile-limit` to cap the number of rows shown.
+
+To also save binary stats for later analysis with :mod:`pstats` or tools like
+`SnakeViz <https://jiffyclub.github.io/snakeviz/>`_, pass a filename:
+
+.. code-block:: shell
+
+    scrapy crawl myspider --profile=myspider.prof
