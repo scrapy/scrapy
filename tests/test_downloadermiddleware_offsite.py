@@ -135,9 +135,7 @@ def test_invalid_domains_closes_spider(caplog):
     mock_engine = AsyncMock()
     crawler.engine = mock_engine
     with (
-        patch(
-            "scrapy.downloadermiddlewares.offsite._schedule_coro"
-        ) as mock_schedule,
+        patch("scrapy.downloadermiddlewares.offsite._schedule_coro") as mock_schedule,
         caplog.at_level(logging.ERROR),
     ):
         mw.spider_opened(crawler.spider)

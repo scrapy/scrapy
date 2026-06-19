@@ -74,6 +74,18 @@ scrapy.Spider
        Let's say your target url is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
 
+   .. attribute:: disallowed_domains
+
+       An optional list of strings containing domains that this spider is
+       not allowed to crawl. Requests for URLs belonging to the domain names
+       specified in this list (or their subdomains) will be filtered out when
+       :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
+       enabled.
+
+       This is useful when you want to allow all domains except a few
+       specific ones. For example, to block requests to ``ads.example.com``,
+       add ``'ads.example.com'`` to the list.
+
    .. autoattribute:: start_urls
 
    .. attribute:: custom_settings
