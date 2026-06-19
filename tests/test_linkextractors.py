@@ -9,7 +9,7 @@ from w3lib import __version__ as w3lib_version
 
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
-from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor, LxmlParserLinkExtractor
 from tests import get_testdata
 
 
@@ -837,3 +837,36 @@ class TestLxmlLinkExtractor(Base.TestLinkExtractorBase):
     def test_link_allowed_is_false_with_missing_url_prefix(self):
         bad_link = Link("should_have_prefix.example")
         assert not LxmlLinkExtractor()._link_allowed(bad_link)
+
+
+class TestLxmlParserLinkExtractor:
+    def test_extract_links(self):
+        html = b'<a href="http://example.com/page.html">Link</a>'
+        response = HtmlResponse("http://example.com/", body=html)
+        lx = LxmlParserLinkExtractor()
+        assert lx.extract_links(response) == [
+            Link(url="http://example.com/page.html", text="Link", nofollow=False),
+        ]
+
+    def test_strip_false(self):
+        # With strip=False, trailing whitespace on a relative href survives urljoin
+        # and is visible to process_value (safe_url_string cleans it up afterward).
+        # Here process_value rejects URLs that still carry trailing whitespace,
+        # demonstrating the difference from strip=True.
+        def reject_trailing_whitespace(url):
+            return None if url != url.rstrip() else url
+
+        html = b'<a href="page.html   ">Link</a>'
+        response = HtmlResponse("http://example.com/", body=html)
+
+        lx_strip = LxmlParserLinkExtractor(
+            strip=True, process=reject_trailing_whitespace
+        )
+        assert lx_strip.extract_links(response) == [
+            Link(url="http://example.com/page.html", text="Link", nofollow=False),
+        ]
+
+        lx_no_strip = LxmlParserLinkExtractor(
+            strip=False, process=reject_trailing_whitespace
+        )
+        assert lx_no_strip.extract_links(response) == []
