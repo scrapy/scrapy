@@ -10,14 +10,6 @@ from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 
-class DummySpider(Spider):
-    name = "test"
-    start_urls = ["data:,"]
-
-    def parse(self, response):
-        pass
-
-
 class ScraperTest(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_crawl(self):
@@ -43,6 +35,8 @@ class ScraperTest(unittest.TestCase):
             expected = crawler.engine.scraper.slot.MIN_RESPONSE_SIZE
         assert outcome["active_size"] == expected
 
+
+class TestSlot:
     def test_min_response_time_read(self):
         slot = Slot()
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
