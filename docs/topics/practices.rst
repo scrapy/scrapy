@@ -433,7 +433,6 @@ In this case, the spider spent about 45 seconds paused due to large responses
 in memory. You could:
 
 - Increase :setting:`RESPONSE_MAX_ACTIVE_SIZE` if your machine has enough RAM.
-- Reduce :setting:`CONCURRENT_REQUESTS` to let responses be processed faster.
 - Check that your code doesn't hold strong references to
   :class:`~scrapy.http.Response` objects longer than necessary.
 

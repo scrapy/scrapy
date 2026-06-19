@@ -1723,8 +1723,8 @@ This counts both the size of response bodies that have passed through
 memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
 currently being downloaded.
 
-When the total exceeds this value, Scrapy pauses scheduling new requests until
-it drops below the limit.
+When the total exceeds this value, Scrapy pauses sending new requests to the
+downloader until it drops below the limit.
 
 If you set this to ``0``, the limit is disabled.
 
