@@ -62,6 +62,31 @@ class TestSlot:
             == "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated."
         )
 
+    def test_min_response_size_class_read(self):
+        with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
+            actual = Slot.MIN_RESPONSE_SIZE
+        assert actual == 1024
+        assert len(warning_messages) == 1
+        assert (
+            str(warning_messages[0].message)
+            == "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated."
+        )
+
+    def test_min_response_size_class_write(self):
+        original = Slot._MIN_RESPONSE_SIZE
+        try:
+            with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
+                Slot.MIN_RESPONSE_SIZE = 0
+            with pytest.warns(ScrapyDeprecationWarning):
+                assert Slot.MIN_RESPONSE_SIZE == 0
+            assert len(warning_messages) == 1
+            assert (
+                str(warning_messages[0].message)
+                == "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated."
+            )
+        finally:
+            Slot._MIN_RESPONSE_SIZE = original
+
     def test_slot_init_max_active_size_default(self):
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             slot = Slot(max_active_size=5_000_000)

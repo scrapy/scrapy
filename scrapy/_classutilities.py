@@ -33,7 +33,7 @@ class ClassPropertyContainer:
         :param cls: Type of the class.
         :return: Value of the class property.
         """
-        if cls is None:
+        if cls is None:  # pragma: no cover
             cls = type(obj)
         return self.prop_get.__get__(obj, cls)()
 
@@ -43,7 +43,7 @@ class ClassPropertyContainer:
         :param obj: Instance of the class.
         :param value: A value to be set.
         """
-        if not self.prop_set:
+        if not self.prop_set:  # pragma: no cover
             raise AttributeError("cannot set attribute")
         _type: type = type(obj)
         if _type == ClassPropertyMetaClass:
