@@ -110,6 +110,7 @@ class CrawlSpider(Spider):
                 "deprecated: it will be removed in future Scrapy releases. "
                 "Please override the CrawlSpider.parse_with_rules method "
                 "instead.",
+                ScrapyDeprecationWarning,
                 stacklevel=2,
             )
 
@@ -199,6 +200,7 @@ class CrawlSpider(Spider):
             "The CrawlSpider._parse_response method is deprecated: "
             "it will be removed in future Scrapy releases. "
             "Please use the CrawlSpider.parse_with_rules method instead.",
+            ScrapyDeprecationWarning,
             stacklevel=2,
         )
         return self.parse_with_rules(response, callback, cb_kwargs, follow)
