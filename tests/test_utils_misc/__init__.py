@@ -160,3 +160,8 @@ class TestUtilsMisc:
         assert rel_has_nofollow("nofollowfoo") is False
         assert rel_has_nofollow("foonofollow") is False
         assert rel_has_nofollow("ugc,  ,  nofollow") is True
+        # rel attribute values are ASCII case-insensitive per the HTML spec
+        assert rel_has_nofollow("NoFollow") is True
+        assert rel_has_nofollow("NOFOLLOW") is True
+        assert rel_has_nofollow("UGC NoFollow") is True
+        assert rel_has_nofollow("ugc,NoFollow") is True
