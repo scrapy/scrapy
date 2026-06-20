@@ -141,9 +141,18 @@ class TestStatsCollector:
             def get_stats(self, spider=None):
                 return self._stats
 
+            def get_value(self, key, default=None, spider=None):
+                return self._stats.get(key, default)
+
+            def set_value(self, key, value, spider=None):
+                self._stats[key] = value
+
             def inc_value(self, key, count=1, start=0, spider=None):
                 d = self._stats
                 d[key] = d.setdefault(key, start) + count
+
+            def max_value(self, key, value, spider=None) -> None:
+                self._stats[key] = max(self._stats.setdefault(key, value), value)
 
             def close_spider(self, spider, reason):
                 pass
