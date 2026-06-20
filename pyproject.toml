@@ -274,7 +274,7 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",
-    # Twisted doesn't close failed sockets after CannotListenError
+    # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
     "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
 ]
 
