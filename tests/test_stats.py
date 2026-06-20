@@ -131,6 +131,7 @@ class TestStatsCollector:
 
     @coroutine_test
     async def test_deprecated_spider_arg_custom_collector(self) -> None:
+        # the class reimplements many methods because those are called during the test crawl
         class CustomStatsCollector:
             def __init__(self, crawler):
                 self._stats = {}
