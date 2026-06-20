@@ -36,7 +36,7 @@ def _get_console_and_portal(
     console = TelnetConsole(crawler)
 
     # This function has some side effects we don't need for this test
-    console._get_telnet_vars = dict
+    console._get_telnet_vars = dict  # type: ignore[method-assign]
 
     console.start_listening()
     protocol = console.protocol()
