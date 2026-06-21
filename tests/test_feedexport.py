@@ -87,6 +87,7 @@ class DummyBlockingFeedStorage(BlockingFeedStorage):
 
 class FailingBlockingFeedStorage(DummyBlockingFeedStorage):
     def _store_in_thread(self, file):
+        file.close()
         raise OSError("Cannot store")
 
 
@@ -479,7 +480,7 @@ class TestFeedExport(TestFeedExportBase):
         crawler = get_crawler(ItemSpider, settings)
         with mock.patch(
             "scrapy.extensions.feedexport.FileFeedStorage.store",
-            side_effect=KeyError("foo"),
+            side_effect=KeyError("foo"),  # TODO this needs file.close()
         ):
             yield crawler.crawl(mockserver=self.mockserver)
         assert "feedexport/failed_count/FileFeedStorage" in crawler.stats.get_stats()
