@@ -231,6 +231,7 @@ disable = [
     "undefined-variable",
     "unused-argument",
     "unused-variable",
+    "use-implicit-booleaness-not-comparison",
     "useless-import-alias",  # used as a hint to mypy
     "useless-return",  # https://github.com/pylint-dev/pylint/issues/6530
     "wrong-import-position",

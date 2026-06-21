@@ -460,11 +460,13 @@ class TestRequest:
     def test_from_curl_ignore_unknown_options(self):
         # By default: it works and ignores the unknown options: --foo and -z
         with warnings.catch_warnings():  # avoid warning when executing tests
-            warnings.simplefilter("ignore")
+            warnings.filterwarnings(
+                "ignore", category=UserWarning, message="Unrecognized options:"
+            )
             r = self.request_class.from_curl(
                 'curl -X DELETE "http://example.org" --foo -z',
             )
-            assert r.method == "DELETE"
+        assert r.method == "DELETE"
 
         # If `ignore_unknown_options` is set to `False` it raises an error with
         # the unknown options: --foo and -z

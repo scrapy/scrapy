@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spidermiddlewares.referer import (
@@ -842,13 +843,14 @@ class TestRequestMetaSettingFallback:
             response = Response(origin, headers=response_headers)
             request = Request(target, meta=request_meta)
 
-            with warnings.catch_warnings(record=True) as w:
+            if check_warning:
+                with pytest.warns(
+                    RuntimeWarning, match="Could not load referrer policy"
+                ):
+                    policy = mw.policy(response, request)
+            else:
                 policy = mw.policy(response, request)
-                assert isinstance(policy, policy_class)
-
-                if check_warning:
-                    assert len(w) == 1
-                    assert w[0].category is RuntimeWarning, w[0].message
+            assert isinstance(policy, policy_class)
 
 
 class TestSettingsPolicyByName:
@@ -973,49 +975,39 @@ class TestPolicyMethodResponseParamRename:
         self.response = Response("http://www.example.com")
 
     def test_pos_string(self):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Passing a response URL to RefererMiddleware\.policy\(\)",
+        ):
             self.mw.policy("http://old.com", self.request)
-            found = False
-            for warning in w:
-                if "Passing a response URL" in str(warning.message):
-                    found = True
-                    break
-            assert found
 
     def test_pos_response(self):
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error",
+                category=ScrapyDeprecationWarning,
+                message=r"Passing 'resp_or_url' is deprecated",
+            )
             self.mw.policy(self.response, self.request)
-            for warning in w:
-                assert "resp_or_url" not in str(warning.message)
 
     def test_key_resp_or_url(self):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"Passing 'resp_or_url' is deprecated"
+        ):
             self.mw.policy(resp_or_url=self.response, request=self.request)
-            found = False
-            for warning in w:
-                if "Passing 'resp_or_url' is deprecated, use 'response' instead" in str(
-                    warning.message
-                ):
-                    found = True
-                    break
-            assert found
 
     def test_key_response(self):
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error",
+                category=ScrapyDeprecationWarning,
+                message=r"Passing 'resp_or_url' is deprecated",
+            )
             self.mw.policy(response=self.response, request=self.request)
-            for warning in w:
-                assert "resp_or_url" not in str(warning.message)
 
     def test_key_response_string(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        with pytest.warns(ScrapyDeprecationWarning, match="Passing a response URL"):
             self.mw.policy(response="http://old.com", request=self.request)
-            found = False
-            for warning in w:
-                if "Passing a response URL" in str(warning.message):
-                    found = True
-                    break
-            assert found
 
     def test_both_resp_or_url_and_response(self):
         with pytest.raises(

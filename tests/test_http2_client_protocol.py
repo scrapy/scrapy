@@ -669,6 +669,9 @@ class TestHttps2ClientProtocol:
             response = await make_request(client, request)
             assert response.status == status
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
     @deferred_f_from_coro_f
     async def test_response_has_correct_certificate_ip_address(
         self,
