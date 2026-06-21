@@ -59,6 +59,25 @@ except ImportError:
 def pytest_addoption(parser, pluginmanager):
     if pluginmanager.hasplugin("twisted"):
         return
+
+    # Check if --reactor is already added by another plugin
+    has_reactor = False
+    for opt in getattr(parser, "_anonymous", None) or []:
+        if hasattr(opt, "names") and "--reactor" in opt.names():
+            has_reactor = True
+            break
+    if not has_reactor:
+        for group in getattr(parser, "_groups", None) or []:
+            for opt in getattr(group, "options", []):
+                if hasattr(opt, "names") and "--reactor" in opt.names():
+                    has_reactor = True
+                    break
+            if has_reactor:
+                break
+
+    if has_reactor:
+        return
+
     # add the full choice set so that pytest doesn't complain about invalid choices in some cases
     parser.addoption(
         "--reactor",
