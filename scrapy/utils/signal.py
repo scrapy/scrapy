@@ -125,12 +125,8 @@ def _send_catch_log_deferred(
             **named,
         )
         d.addErrback(logerror, receiver)
-        # TODO https://pylint.readthedocs.io/en/latest/user_guide/messages/warning/cell-var-from-loop.html
         d2: Deferred[tuple[TypingAny, TypingAny]] = d.addBoth(
-            lambda result: (
-                receiver,  # pylint: disable=cell-var-from-loop  # noqa: B023
-                result,
-            )
+            lambda result, recv=receiver: (recv, result)
         )
         dfds.append(d2)
 
