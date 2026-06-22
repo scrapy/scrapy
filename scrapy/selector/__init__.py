@@ -1,4 +1,11 @@
 """
 Selectors
 """
-from scrapy.selector.unified import *  # noqa: F401
+
+# top-level imports
+from scrapy.selector.unified import Selector, SelectorList
+
+__all__ = [
+    "Selector",
+    "SelectorList",
+]

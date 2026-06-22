@@ -1,19 +1,22 @@
 import pickle
+import sys
 
+import pytest
 from queuelib.tests import test_queue as t
-from scrapy.squeues import (
-    MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
-    MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
-    PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
-    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
-)
-from scrapy.item import Item, Field
+
 from scrapy.http import Request
+from scrapy.item import Field, Item
 from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
+from scrapy.squeues import (
+    _MarshalFifoSerializationDiskQueue,
+    _MarshalLifoSerializationDiskQueue,
+    _PickleFifoSerializationDiskQueue,
+    _PickleLifoSerializationDiskQueue,
+)
 
 
-class TestItem(Item):
+class MyItem(Item):
     name = Field()
 
 
@@ -21,49 +24,44 @@ def _test_procesor(x):
     return x + x
 
 
-class TestLoader(ItemLoader):
-    default_item_class = TestItem
+class MyLoader(ItemLoader):
+    default_item_class = MyItem
     name_out = staticmethod(_test_procesor)
 
 
 def nonserializable_object_test(self):
     q = self.queue()
-    try:
-        pickle.dumps(lambda x: x)
-    except Exception:
-        # Trigger Twisted bug #7989
-        import twisted.persisted.styles  # NOQA
-        self.assertRaises(ValueError, q.push, lambda x: x)
-    else:
-        # Use a different unpickleable object
-        class A:
-            pass
-
-        a = A()
-        a.__reduce__ = a.__reduce_ex__ = None
-        self.assertRaises(ValueError, q.push, a)
+    with pytest.raises(
+        ValueError,
+        match=r"unmarshallable object|Can't (get|pickle) local object|Can't pickle .*: it's not found as",
+    ):
+        q.push(lambda x: x)
     # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
-    sel = Selector(text='<html><body><p>some text</p></body></html>')
-    self.assertRaises(ValueError, q.push, sel)
+    sel = Selector(text="<html><body><p>some text</p></body></html>")
+    with pytest.raises(
+        ValueError, match=r"unmarshallable object|can't pickle Selector objects"
+    ):
+        q.push(sel)
 
 
-class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
+class FifoDiskQueueTestMixin:
+    def test_serialize(self):
+        q = self.queue()
+        q.push("a")
+        q.push(123)
+        q.push({"a": "dict"})
+        assert q.pop() == "a"
+        assert q.pop() == 123
+        assert q.pop() == {"a": "dict"}
 
+    test_nonserializable_object = nonserializable_object_test
+
+
+class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
     chunksize = 100000
 
     def queue(self):
-        return MarshalFifoDiskQueue(self.qpath, chunksize=self.chunksize)
-
-    def test_serialize(self):
-        q = self.queue()
-        q.push('a')
-        q.push(123)
-        q.push({'a': 'dict'})
-        self.assertEqual(q.pop(), 'a')
-        self.assertEqual(q.pop(), 123)
-        self.assertEqual(q.pop(), {'a': 'dict'})
-
-    test_nonserializable_object = nonserializable_object_test
+        return _MarshalFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
 
 
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
@@ -82,39 +80,57 @@ class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 4
 
 
-class PickleFifoDiskQueueTest(MarshalFifoDiskQueueTest):
-
+class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
     chunksize = 100000
 
     def queue(self):
-        return PickleFifoDiskQueue(self.qpath, chunksize=self.chunksize)
+        return _PickleFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize_item(self):
         q = self.queue()
-        i = TestItem(name='foo')
+        i = MyItem(name="foo")
         q.push(i)
         i2 = q.pop()
-        assert isinstance(i2, TestItem)
-        self.assertEqual(i, i2)
+        assert isinstance(i2, MyItem)
+        assert i == i2
 
     def test_serialize_loader(self):
         q = self.queue()
-        l = TestLoader()
-        q.push(l)
-        l2 = q.pop()
-        assert isinstance(l2, TestLoader)
-        assert l2.default_item_class is TestItem
-        self.assertEqual(l2.name_out('x'), 'xx')
+        loader = MyLoader()
+        q.push(loader)
+        loader2 = q.pop()
+        assert isinstance(loader2, MyLoader)
+        assert loader2.default_item_class is MyItem
+        assert loader2.name_out("x") == "xx"
 
     def test_serialize_request_recursive(self):
         q = self.queue()
-        r = Request('http://www.example.com')
-        r.meta['request'] = r
+        r = Request("http://www.example.com")
+        r.meta["request"] = r
         q.push(r)
         r2 = q.pop()
         assert isinstance(r2, Request)
-        self.assertEqual(r.url, r2.url)
-        assert r2.meta['request'] is r2
+        assert r.url == r2.url
+        assert r2.meta["request"] is r2
+
+    def test_non_pickable_object(self):
+        q = self.queue()
+        with pytest.raises(
+            ValueError,
+            match=r"Can't (get|pickle) local object|Can't pickle .*: it's not found as",
+        ) as exc_info:
+            q.push(lambda x: x)
+        if sys.version_info >= (3, 14) or hasattr(sys, "pypy_version_info"):
+            assert isinstance(exc_info.value.__context__, pickle.PicklingError)
+        else:
+            assert isinstance(exc_info.value.__context__, AttributeError)
+        sel = Selector(text="<html><body><p>some text</p></body></html>")
+        with pytest.raises(
+            ValueError, match="can't pickle Selector objects"
+        ) as exc_info:
+            q.push(sel)
+        assert isinstance(exc_info.value.__context__, TypeError)
+        q.close()
 
 
 class ChunkSize1PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
@@ -133,51 +149,51 @@ class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 4
 
 
-class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
-
-    def queue(self):
-        return MarshalLifoDiskQueue(self.qpath)
-
+class LifoDiskQueueTestMixin:
     def test_serialize(self):
         q = self.queue()
-        q.push('a')
+        q.push("a")
         q.push(123)
-        q.push({'a': 'dict'})
-        self.assertEqual(q.pop(), {'a': 'dict'})
-        self.assertEqual(q.pop(), 123)
-        self.assertEqual(q.pop(), 'a')
+        q.push({"a": "dict"})
+        assert q.pop() == {"a": "dict"}
+        assert q.pop() == 123
+        assert q.pop() == "a"
 
     test_nonserializable_object = nonserializable_object_test
 
 
-class PickleLifoDiskQueueTest(MarshalLifoDiskQueueTest):
-
+class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
     def queue(self):
-        return PickleLifoDiskQueue(self.qpath)
+        return _MarshalLifoSerializationDiskQueue(self.qpath)
+
+
+class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
+    def queue(self):
+        return _PickleLifoSerializationDiskQueue(self.qpath)
 
     def test_serialize_item(self):
         q = self.queue()
-        i = TestItem(name='foo')
+        i = MyItem(name="foo")
         q.push(i)
         i2 = q.pop()
-        assert isinstance(i2, TestItem)
-        self.assertEqual(i, i2)
+        assert isinstance(i2, MyItem)
+        assert i == i2
 
     def test_serialize_loader(self):
         q = self.queue()
-        l = TestLoader()
-        q.push(l)
-        l2 = q.pop()
-        assert isinstance(l2, TestLoader)
-        assert l2.default_item_class is TestItem
-        self.assertEqual(l2.name_out('x'), 'xx')
+        loader = MyLoader()
+        q.push(loader)
+        loader2 = q.pop()
+        assert isinstance(loader2, MyLoader)
+        assert loader2.default_item_class is MyItem
+        assert loader2.name_out("x") == "xx"
 
     def test_serialize_request_recursive(self):
         q = self.queue()
-        r = Request('http://www.example.com')
-        r.meta['request'] = r
+        r = Request("http://www.example.com")
+        r.meta["request"] = r
         q.push(r)
         r2 = q.pop()
         assert isinstance(r2, Request)
-        self.assertEqual(r.url, r2.url)
-        assert r2.meta['request'] is r2
+        assert r.url == r2.url
+        assert r2.meta["request"] is r2

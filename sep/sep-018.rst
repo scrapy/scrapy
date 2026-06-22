@@ -140,7 +140,7 @@ Example:
 
 The data flow with Spider Middleware v2 is as follows:
 
-1. When a response arrives from the engine, it it passed through all the spider
+1. When a response arrives from the engine, it is passed through all the spider
    middlewares (in descending order). The result of each middleware
    ``process_response`` is kept and then returned along with the spider
    callback result
@@ -166,27 +166,31 @@ written, it should work both globally and per spider.
 Here's an example that combines functionality from multiple middlewares into
 the same spider:
 
-::
+.. code-block:: python
 
    #!python
    class MySpider(BaseSpider):
+       middlewares = [
+           RegexLinkExtractor(),
+           CallbackRules(),
+           CanonicalizeUrl(),
+           ItemIdSetter(),
+           OffsiteMiddleware(),
+       ]
 
-       middlewares = [RegexLinkExtractor(), CallbackRules(), CanonicalizeUrl(), 
-                      ItemIdSetter(), OffsiteMiddleware()]
+       allowed_domains = ["example.com", "sub.example.com"]
 
-       allowed_domains = ['example.com', 'sub.example.com']
-
-       url_regexes_to_follow = ['/product.php?.*']
+       url_regexes_to_follow = ["/product.php?.*"]
 
        callback_rules = {
-           '/product.php.*': 'parse_product',
-           '/category.php.*': 'parse_category',
+           "/product.php.*": "parse_product",
+           "/category.php.*": "parse_category",
        }
 
-       canonicalization_rules = ['sort-query-args', 'normalize-percent-encoding', ...]
+       canonicalization_rules = ["sort-query-args", "normalize-percent-encoding", ...]
 
-       id_field = 'guid'
-       id_fields_to_hash = ['supplier_name', 'supplier_id']
+       id_field = "guid"
+       id_fields_to_hash = ["supplier_name", "supplier_id"]
 
        def parse_product(self, item):
            # extract item from response
@@ -196,7 +200,7 @@ the same spider:
            # extract item from response
            return item
 
-The Spider Middleware that implements spider code 
+The Spider Middleware that implements spider code
 =================================================
 
 There's gonna be one middleware that will take care of calling the proper
@@ -234,35 +238,33 @@ Regex (HTML) Link Extractor
 A typical application of spider middlewares could be to build Link Extractors.
 For example:
 
-::
+.. code-block:: python
 
    #!python
    class RegexHtmlLinkExtractor(object):
-
        def process_response(self, response, request, spider):
            if isinstance(response, HtmlResponse):
                allowed_regexes = spider.url_regexes_to_follow
                # extract urls to follow using allowed_regexes
                return [Request(x) for x in urls_to_follow]
 
+
    # Example spider using this middleware
    class MySpider(BaseSpider):
-
        middlewares = [RegexHtmlLinkExtractor()]
-       url_regexes_to_follow = ['/product.php?.*']
+       url_regexes_to_follow = ["/product.php?.*"]
 
        # parsing callbacks below
 
 RSS2 link extractor
 -------------------
 
-::
+.. code-block:: python
 
    #!python
    class Rss2LinkExtractor(object):
-
        def process_response(self, response, request, spider):
-           if response.headers.get('Content-type') 'application/rss+xml':
+           if response.headers.get("Content-type") == "application/rss+xml":
                xs = XmlXPathSelector(response)
                urls = xs.select("//item/link/text()").extract()
                return [Request(x) for x in urls]
@@ -272,11 +274,10 @@ Callback dispatcher based on rules
 
 Another example could be to build a callback dispatcher based on rules:
 
-::
+.. code-block:: python
 
    #!python
    class CallbackRules(object):
-
        def __init__(self):
            self.rules = {}
            dispatcher.connect(signals.spider_opened, self.spider_opened)
@@ -300,13 +301,13 @@ Another example could be to build a callback dispatcher based on rules:
                    return method(response)
            return []
 
+
    # Example spider using this middleware
    class MySpider(BaseSpider):
-
        middlewares = [CallbackRules()]
        callback_rules = {
-           '/product.php.*': 'parse_product',
-           '/category.php.*': 'parse_category',
+           "/product.php.*": "parse_product",
+           "/category.php.*": "parse_category",
        }
 
        def parse_product(self, response):
@@ -318,22 +319,19 @@ URL Canonicalizers
 
 Another example could be for building URL canonicalizers:
 
-::
+.. code-block:: python
 
    #!python
-   class CanonializeUrl(object):
-
+   class CanonicalizeUrl(object):
        def process_request(self, request, response, spider):
-           curl = canonicalize_url(request.url, 
-                                   rules=spider.canonicalization_rules)
+           curl = canonicalize_url(request.url, rules=spider.canonicalization_rules)
            return request.replace(url=curl)
+
 
    # Example spider using this middleware
    class MySpider(BaseSpider):
-
        middlewares = [CanonicalizeUrl()]
-       canonicalization_rules = ['sort-query-args', 
-                                 'normalize-percent-encoding', ...]
+       canonicalization_rules = ["sort-query-args", "normalize-percent-encoding", ...]
 
        # ...
 
@@ -343,23 +341,22 @@ Setting item identifier
 Another example could be for setting a unique identifier to items, based on
 certain fields:
 
-::
+.. code-block:: python
 
    #!python
    class ItemIdSetter(object):
-
        def process_item(self, item, response, spider):
            id_field = spider.id_field
            id_fields_to_hash = spider.id_fields_to_hash
            item[id_field] = make_hash_based_on_fields(item, id_fields_to_hash)
            return item
 
+
    # Example spider using this middleware
    class MySpider(BaseSpider):
-
        middlewares = [ItemIdSetter()]
-       id_field = 'guid'
-       id_fields_to_hash = ['supplier_name', 'supplier_id']
+       id_field = "guid"
+       id_fields_to_hash = ["supplier_name", "supplier_id"]
 
        def parse(self, response):
            # extract item from response
@@ -370,11 +367,10 @@ robots.txt exclusion
 
 A spider middleware to avoid visiting pages forbidden by robots.txt:
 
-::
+.. code-block:: python
 
    #!python
    class SpiderInfo(object):
-
        def __init__(self, useragent):
            self.useragent = useragent
            self.parsers = {}
@@ -382,13 +378,11 @@ A spider middleware to avoid visiting pages forbidden by robots.txt:
 
 
    class AllowAllParser(object):
-
        def can_fetch(useragent, url):
            return True
 
 
    class RobotsTxtMiddleware(object):
-
        REQUEST_PRIORITY = 1000
 
        def __init__(self):
@@ -397,7 +391,7 @@ A spider middleware to avoid visiting pages forbidden by robots.txt:
            dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
        def process_request(self, request, response, spider):
-           return self.process_start_request(self, request)
+           return self.process_start_request(request)
 
        def process_start_request(self, request, spider):
            info = self.spiders[spider]
@@ -415,17 +409,21 @@ A spider middleware to avoid visiting pages forbidden by robots.txt:
                    res = None
                else:
                    robotsurl = "%s://%s/robots.txt" % (url.scheme, netloc)
-                   meta = {'spider': spider, {'handle_httpstatus_list': [403, 404, 500]}
-                   res = Request(robotsurl, callback=self.parse_robots,
-                       meta=meta, priority=self.REQUEST_PRIORITY)
+                   meta = {"spider": spider, "handle_httpstatus_list": [403, 404, 500]}
+                   res = Request(
+                       robotsurl,
+                       callback=self.parse_robots,
+                       meta=meta,
+                       priority=self.REQUEST_PRIORITY,
+                   )
                info.pending[netloc].append(request)
            return res
 
        def parse_robots(self, response):
-           spider = response.request.meta['spider']
-           netloc urlparse_cached(response).netloc
+           spider = response.request.meta["spider"]
+           netloc = urlparse_cached(response).netloc
            info = self.spiders[spider]
-           if response.status 200;
+           if response.status == 200:
                rp = robotparser.RobotFileParser(response.url)
                rp.parse(response.body.splitlines())
                info.parsers[netloc] = rp
@@ -434,7 +432,7 @@ A spider middleware to avoid visiting pages forbidden by robots.txt:
            return info.pending[netloc]
 
        def spider_opened(self, spider):
-           ua = getattr(spider, 'user_agent', None) or settings['USER_AGENT']
+           ua = getattr(spider, "user_agent", None) or settings["USER_AGENT"]
            self.spiders[spider] = SpiderInfo(ua)
 
        def spider_closed(self, spider):
@@ -445,18 +443,16 @@ Offsite middleware
 
 This is a port of the Offsite middleware to the new spider middleware API:
 
-::
+.. code-block:: python
 
    #!python
    class SpiderInfo(object):
-
        def __init__(self, host_regex):
            self.host_regex = host_regex
            self.hosts_seen = set()
 
 
    class OffsiteMiddleware(object):
-
        def __init__(self):
            self.spiders = {}
            dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
@@ -472,19 +468,19 @@ This is a port of the Offsite middleware to the new spider middleware API:
                info = self.spiders[spider]
                host = urlparse_cached(x).hostname
                if host and host not in info.hosts_seen:
-                  spider.log("Filtered offsite request to %r: %s" % (host, request))
-                  info.hosts_seen.add(host)
-    
+                   spider.log("Filtered offsite request to %r: %s" % (host, request))
+                   info.hosts_seen.add(host)
+
        def should_follow(self, request, spider):
            info = self.spiders[spider]
            # hostname can be None for wrong urls (like javascript links)
-           host = urlparse_cached(request).hostname or ''
+           host = urlparse_cached(request).hostname or ""
            return bool(info.regex.search(host))
 
        def get_host_regex(self, spider):
            """Override this method to implement a different offsite policy"""
-           domains = [d.replace('.', r'\.') for d in spider.allowed_domains]
-           regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
+           domains = [d.replace(".", r"\.") for d in spider.allowed_domains]
+           regex = r"^(.*\.)?(%s)$" % "|".join(domains)
            return re.compile(regex)
 
        def spider_opened(self, spider):
@@ -499,35 +495,36 @@ Limit URL length
 
 A middleware to filter out requests with long urls:
 
-::
+.. code-block:: python
 
    #!python
 
-   class LimitUrlLength(object):
 
+   class LimitUrlLength(object):
        def __init__(self):
-           self.maxlength = settings.getint('URLLENGTH_LIMIT')
+           self.maxlength = settings.getint("URLLENGTH_LIMIT")
 
        def process_request(self, request, response, spider):
            return self.process_start_request(self, request)
 
        def process_start_request(self, request, spider):
-            if len(request.url) <= self.maxlength:
+           if len(request.url) <= self.maxlength:
                return request
-            spider.log("Ignoring request (url length > %d): %s " % (self.maxlength, request.url))
+           spider.log(
+               "Ignoring request (url length > %d): %s " % (self.maxlength, request.url)
+           )
 
 Set Referer
 -----------
 
 A middleware to set the Referer:
 
-::
+.. code-block:: python
 
    #!python
    class SetReferer(object):
-
        def process_request(self, request, response, spider):
-           request.headers.setdefault('Referer', response.url)
+           request.headers.setdefault("Referer", response.url)
            return request
 
 Set and limit crawling depth
@@ -536,23 +533,22 @@ Set and limit crawling depth
 A middleware to set (and limit) the request/response depth, taken from the
 start requests:
 
-::
+.. code-block:: python
 
    #!python
    class SetLimitDepth(object):
-
        def __init__(self, maxdepth=0):
-           self.maxdepth = maxdepth or settings.getint('DEPTH_LIMIT')
+           self.maxdepth = maxdepth or settings.getint("DEPTH_LIMIT")
 
        def process_request(self, request, response, spider):
-           depth = response.request.meta['depth'] + 1
-           request.meta['depth'] = depth
+           depth = response.request.meta["depth"] + 1
+           request.meta["depth"] = depth
            if not self.maxdepth or depth <= self.maxdepth:
                return request
-           spider.log("Ignoring link (depth > %d): %s " % (self.maxdepth, request)
+           spider.log("Ignoring link (depth > %d): %s " % (self.maxdepth, request))
 
        def process_start_request(self, request, spider):
-           request.meta['depth'] = 0
+           request.meta["depth"] = 0
            return request
 
 Filter duplicate requests
@@ -560,17 +556,16 @@ Filter duplicate requests
 
 A middleware to filter out requests already seen:
 
-::
+.. code-block:: python
 
    #!python
    class FilterDuplicates(object):
-
        def __init__(self):
-           clspath = settings.get('DUPEFILTER_CLASS')
+           clspath = settings.get("DUPEFILTER_CLASS")
            self.dupefilter = load_object(clspath)()
            dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
            dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
-           
+
        def enqueue_request(self, spider, request):
            seen = self.dupefilter.request_seen(spider, request)
            if not seen or request.dont_filter:
@@ -587,25 +582,28 @@ Scrape data using Parsley
 
 A middleware to Scrape data using Parsley as described in UsingParsley
 
-::
+.. code-block:: python
 
    #!python
    from pyparsley import PyParsley
 
-   class ParsleyExtractor(object):
 
-       def __init__(self, parslet_json_code):
-           parslet = json.loads(parselet_json_code)
+   class ParsleyExtractor(object):
+       def __init__(self, parsley_json_code):
+           parsley = json.loads(parselet_json_code)
+
            class ParsleyItem(Item):
                def __init__(self, *a, **kw):
-                   for name in parslet.keys():
+                   for name in parsley.keys():
                        self.fields[name] = Field()
+
                super(ParsleyItem, self).__init__(*a, **kw)
-           self.item_class = ParsleyItem    
-           self.parsley = PyParsley(parslet, output='python') 
+
+           self.item_class = ParsleyItem
+           self.parsley = PyParsley(parsley, output="python")
 
        def process_response(self, response, request, spider):
-           return self.item_class(self.parsly.parse(string=response.body))
+           return self.item_class(self.parsley.parse(string=response.body))
 
 
 
@@ -621,13 +619,13 @@ Resolved:
      ``manager.scraper.process_request()`` instead of
      ``manager.engine.crawl()``
 - should we support adding additional start requests from a spider middleware?
-   - Yes - there is a spider middleware method (``start_requests``) for that
+   - Yes - there is a spider middleware method (``start_requests()``) for that
 - should ``process_response()`` receive a ``request`` argument with the
   ``request`` that originated it?. ``response.request`` is the latest request,
   not the original one (think of redirections), but it does carry the ``meta``
   of the original one. The original one may not be available anymore (in
   memory) if we're using a persistent scheduler., but in that case it would be
-  the deserialized request from the persistent scheduler queue. 
+  the deserialized request from the persistent scheduler queue.
 
    - No - this would make implementation more complex and we're not sure it's
      really needed
