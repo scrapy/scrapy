@@ -40,18 +40,12 @@ class ResponseTypes:
         self.classes: dict[str, type[Response]] = {}
         self.mimetypes: MimeTypes = MimeTypes()
         mimedata = get_data("scrapy", "mime.types")
-        if not mimedata:
-            raise ValueError(
-                "The mime.types file is not found in the Scrapy installation"
-            )
         self.mimetypes.readfp(StringIO(mimedata.decode("utf8")))
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
     def from_mimetype(self, mimetype: str) -> type[Response]:
         """Return the most appropriate Response class for the given mimetype"""
-        if mimetype is None:
-            return Response
         if mimetype in self.classes:
             return self.classes[mimetype]
         basetype = f"{mimetype.split('/', maxsplit=1)[0]}/*"
