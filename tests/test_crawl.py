@@ -14,7 +14,7 @@ from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
-from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner
+from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerRunner
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
@@ -432,7 +432,7 @@ with multiples lines
     async def test_crawlerrunner_accepts_crawler(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        crawler = get_crawler(SimpleSpider)
+        crawler = Crawler(SimpleSpider, get_reactor_settings())
         runner = CrawlerRunner()
         with caplog.at_level(logging.DEBUG):
             await maybe_deferred_to_future(
