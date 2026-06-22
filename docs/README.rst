@@ -43,7 +43,7 @@ This command will fire up your default browser and open the main page of your
 Start over
 ----------
 
-To cleanup all generated documentation files and start from scratch run::
+To clean up all generated documentation files and start from scratch run::
 
     make clean
 
@@ -65,4 +65,4 @@ To compile the documentation to HTML run the following command::
 
     tox -e docs
 
-Documentation will be generated (in HTML format) inside the ``.tox/docs/tmp/html`` dir.
+Documentation will be generated inside the ``docs/_build/all`` dir.

@@ -12,7 +12,7 @@ SEP-005: Detailed ``ItemBuilder`` API use
 
 Item class for examples:
 
-::
+.. code-block:: python
 
    #!python
    class NewsItem(Item):
@@ -25,7 +25,7 @@ Item class for examples:
 gSetting expanders
 ==================
 
-::
+.. code-block:: python
 
    #!python
    class NewsItemBuilder(ItemBuilder):
@@ -44,7 +44,7 @@ on their Item Field class:
 gSetting reducers
 =================
 
-::
+.. code-block:: python
 
    #!python
    class NewsItemBuilder(ItemBuilder):
@@ -60,7 +60,7 @@ content
 gSetting expanders/reducers new way
 ===================================
 
-::
+.. code-block:: python
 
    #!python
    class NewsItemBuilder(ItemBuilder):
@@ -76,28 +76,29 @@ gSetting expanders/reducers new way
 gExtending ``ItemBuilder``
 ==========================
 
-::
+.. code-block:: python
 
    #!python
    class SiteNewsItemBuilder(NewsItemBuilder):
-       published = reducers.Reducer(extract, remove_tags(), unquote(), 
-                                    strip, to_date('%d.%m.%Y'))
+       published = reducers.Reducer(
+           extract, remove_tags(), unquote(), strip, to_date("%d.%m.%Y")
+       )
 
 
 gExtending ``ItemBuilder`` using statich methods
 ================================================
 
-::
+.. code-block:: python
 
    #!python
    class SiteNewsItemBuilder(NewsItemBuilder):
-       published = reducers.Reducer(NewsItemBuilder.published, to_date('%d.%m.%Y'))
+       published = reducers.Reducer(NewsItemBuilder.published, to_date("%d.%m.%Y"))
 
 
 gUsing default_builder
 ======================
 
-::
+.. code-block:: python
 
    #!python
    class DefaultedNewsItemBuilder(ItemBuilder):
@@ -107,12 +108,12 @@ gUsing default_builder
 
 
 This will use default_builder as the builder for every field in the item class.
-As a reducer is not set reducers will be set based on Item Field classess.
+As a reducer is not set reducers will be set based on Item Field classes.
 
 gReset default_builder for a field
 ==================================
 
-::
+.. code-block:: python
 
    #!python
    class DefaultedNewsItemBuilder(ItemBuilder):
@@ -125,18 +126,20 @@ gReset default_builder for a field
 gExtending default ``ItemBuilder``
 ==================================
 
-::
+.. code-block:: python
 
    #!python
    class SiteNewsItemBuilder(NewsItemBuilder):
-       published = reducers.Reducer(extract, remove_tags(), unquote(), strip, to_date('%d.%m.%Y'))
+       published = reducers.Reducer(
+           extract, remove_tags(), unquote(), strip, to_date("%d.%m.%Y")
+       )
 
 
 gExtending default ``ItemBuilder`` using static methods
 =======================================================
 
-::
+.. code-block:: python
 
    #!python
    class SiteNewsItemBuilder(NewsItemBuilder):
-       published = reducers.Reducer(NewsItemBuilder.default_builder, to_date('%d.%m.%Y'))
+       published = reducers.Reducer(NewsItemBuilder.default_builder, to_date("%d.%m.%Y"))

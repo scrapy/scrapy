@@ -96,7 +96,7 @@ specified, else utf-8 is used) and returns a new unicode object. E.g:
 
 ``clean_spaces``
 ----------------
-   
+
 Converts multispaces into single spaces for the given string. E.g:
 
 ::

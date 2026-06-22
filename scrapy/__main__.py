@@ -1,4 +1,5 @@
+# pragma: no file cover
 from scrapy.cmdline import execute
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     execute()

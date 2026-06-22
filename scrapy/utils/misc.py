@@ -1,42 +1,61 @@
 """Helper functions which don't fit anywhere else"""
+
+from __future__ import annotations
+
 import ast
+import hashlib
 import inspect
 import os
 import re
-import hashlib
 import warnings
 from collections import deque
 from contextlib import contextmanager
+from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from textwrap import dedent
+from typing import IO, TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, cast, overload
 
-from w3lib.html import replace_entities
-
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
-from scrapy.utils.python import flatten, to_unicode
-from scrapy.item import _BaseItem
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Iterator
+    from types import ModuleType
+
+    from scrapy import Spider
+    from scrapy.crawler import Crawler
 
 
-_ITERABLE_SINGLE_VALUES = dict, _BaseItem, str, bytes
+_ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
+_ITER_T = TypeVar("_ITER_T", bound=dict[Any, Any] | Item | str | bytes)
+_T = TypeVar("_T")
+_T_co = TypeVar("_T_co", covariant=True)
+_P = ParamSpec("_P")
 
 
-def arg_to_iter(arg):
+@overload
+def arg_to_iter(arg: None) -> tuple[()]: ...
+@overload
+def arg_to_iter(arg: _ITER_T) -> Iterable[_ITER_T]: ...
+@overload
+def arg_to_iter(arg: Iterable[_T]) -> Iterable[_T]: ...
+@overload
+def arg_to_iter(arg: _T) -> Iterable[_T]: ...
+def arg_to_iter(arg: Any) -> Iterable[Any]:
     """Convert an argument to an iterable. The argument can be a None, single
     value, or an iterable.
 
     Exception: if arg is a dict, [arg] will be returned
     """
     if arg is None:
-        return []
-    elif not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, '__iter__'):
-        return arg
-    else:
-        return [arg]
+        return ()
+    if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
+        return cast("Iterable[Any]", arg)
+    return [arg]
 
 
-def load_object(path):
+def load_object(path: str | Callable[..., Any]) -> Any:
     """Load an object given its absolute object path, and return it.
 
     The object can be the import path of a class, function, variable or an
@@ -49,86 +68,85 @@ def load_object(path):
     if not isinstance(path, str):
         if callable(path):
             return path
-        else:
-            raise TypeError("Unexpected argument type, expected string "
-                            "or object, got: %s" % type(path))
+        raise TypeError(
+            f"Unexpected argument type, expected string or object, got: {type(path)}"
+        )
 
     try:
-        dot = path.rindex('.')
+        dot = path.rindex(".")
     except ValueError:
-        raise ValueError(f"Error loading object '{path}': not a full path")
+        raise ValueError(f"Error loading object '{path}': not a full path") from None
 
-    module, name = path[:dot], path[dot + 1:]
+    module, name = path[:dot], path[dot + 1 :]
     mod = import_module(module)
 
     try:
         obj = getattr(mod, name)
     except AttributeError:
-        raise NameError(f"Module '{module}' doesn't define any object named '{name}'")
+        raise NameError(
+            f"Module '{module}' doesn't define any object named '{name}'"
+        ) from None
 
     return obj
 
 
-def walk_modules(path):
+def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
 
-    For example: walk_modules('scrapy.utils')
+    For example:
+    >>> list(walk_modules_iter('scrapy.utils'))
+    [<module 'scrapy.utils' from '...'>, ...]
+    >>> gen = walk_modules_iter('scrapy.utils.nonexistent') # error not raised until the generator is consumed
+    >>> list(gen)
+    Traceback (most recent call last):
+        ...
+    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'
     """
 
-    mods = []
     mod = import_module(path)
-    mods.append(mod)
-    if hasattr(mod, '__path__'):
+    yield mod
+    if hasattr(mod, "__path__"):
         for _, subpath, ispkg in iter_modules(mod.__path__):
-            fullpath = path + '.' + subpath
+            fullpath = path + "." + subpath
             if ispkg:
-                mods += walk_modules(fullpath)
+                yield from walk_modules_iter(fullpath)
             else:
-                submod = import_module(fullpath)
-                mods.append(submod)
-    return mods
+                yield import_module(fullpath)
 
 
-def extract_regex(regex, text, encoding='utf-8'):
-    """Extract a list of unicode strings from the given text/encoding using the following policies:
-
-    * if the regex contains a named group called "extract" that will be returned
-    * if the regex contains multiple numbered groups, all those will be returned (flattened)
-    * if the regex doesn't contain any group the entire regex matching is returned
+def walk_modules(path: str) -> list[ModuleType]:  # pragma: no cover
+    """
+    Loads a module and all its submodules from the given module path and
+    returns them. If *any* module throws an exception while importing, that
+    exception is thrown back.
     """
     warnings.warn(
-        "scrapy.utils.misc.extract_regex has moved to parsel.utils.extract_regex.",
+        (
+            "The scrapy.utils.misc.walk_modules function is deprecated and will be "
+            "removed in a future version of Scrapy. "
+            "Use scrapy.utils.misc.walk_modules_iter instead."
+        ),
         ScrapyDeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
 
-    if isinstance(regex, str):
-        regex = re.compile(regex, re.UNICODE)
-
-    try:
-        strings = [regex.search(text).group('extract')]   # named group
-    except Exception:
-        strings = regex.findall(text)    # full regex or numbered groups
-    strings = flatten(strings)
-
-    if isinstance(text, str):
-        return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
-    else:
-        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
-                for s in strings]
+    return list(walk_modules_iter(path))
 
 
-def md5sum(file):
+def md5sum(file: IO[bytes]) -> str:  # pragma: no cover
     """Calculate the md5 checksum of a file-like object without reading its
-    whole content in memory.
-
-    >>> from io import BytesIO
-    >>> md5sum(BytesIO(b'file content to hash'))
-    '784406af91dd5a54fbb9c84c2236595a'
-    """
-    m = hashlib.md5()
+    whole content in memory."""
+    warnings.warn(
+        (
+            "The scrapy.utils.misc.md5sum function is deprecated and will be "
+            "removed in a future version of Scrapy."
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    m = hashlib.md5()  # noqa: S324
     while True:
         d = file.read(8096)
         if not d:
@@ -137,48 +155,66 @@ def md5sum(file):
     return m.hexdigest()
 
 
-def rel_has_nofollow(rel):
+def rel_has_nofollow(rel: str | None) -> bool:
     """Return True if link rel attribute has nofollow type"""
-    return rel is not None and 'nofollow' in rel.split()
+    return rel is not None and "nofollow" in rel.lower().replace(",", " ").split()
 
 
-def create_instance(objcls, settings, crawler, *args, **kwargs):
-    """Construct a class instance using its ``from_crawler`` or
-    ``from_settings`` constructors, if available.
+class SupportsFromCrawler(Protocol[_T_co, _P]):
+    @classmethod
+    def from_crawler(
+        cls, crawler: Crawler, /, *args: _P.args, **kwargs: _P.kwargs
+    ) -> _T_co: ...
 
-    At least one of ``settings`` and ``crawler`` needs to be different from
-    ``None``. If ``settings `` is ``None``, ``crawler.settings`` will be used.
-    If ``crawler`` is ``None``, only the ``from_settings`` constructor will be
-    tried.
 
-    ``*args`` and ``**kwargs`` are forwarded to the constructors.
+@overload
+def build_from_crawler(
+    objcls: SupportsFromCrawler[_T_co, _P],
+    crawler: Crawler,
+    /,
+    *args: _P.args,
+    **kwargs: _P.kwargs,
+) -> _T_co: ...
 
-    Raises ``ValueError`` if both ``settings`` and ``crawler`` are ``None``.
 
-    .. versionchanged:: 2.2
-       Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
-       extension has not been implemented correctly).
+@overload
+def build_from_crawler(
+    objcls: Callable[_P, _T_co],
+    crawler: Crawler,
+    /,
+    *args: _P.args,
+    **kwargs: _P.kwargs,
+) -> _T_co: ...
+
+
+def build_from_crawler(
+    objcls: Any,
+    crawler: Crawler,
+    /,
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
+    """Construct a class instance using its ``from_crawler()`` or ``__init__()`` constructor.
+
+    .. versionadded:: 2.12
+
+    ``*args`` and ``**kwargs`` are forwarded to the constructor.
+
+    Raises ``TypeError`` if the resulting instance is ``None``.
     """
-    if settings is None:
-        if crawler is None:
-            raise ValueError("Specify at least one of settings and crawler.")
-        settings = crawler.settings
-    if crawler and hasattr(objcls, 'from_crawler'):
+    if hasattr(objcls, "from_crawler"):
         instance = objcls.from_crawler(crawler, *args, **kwargs)
-        method_name = 'from_crawler'
-    elif hasattr(objcls, 'from_settings'):
-        instance = objcls.from_settings(settings, *args, **kwargs)
-        method_name = 'from_settings'
+        method_name = "from_crawler"
     else:
         instance = objcls(*args, **kwargs)
-        method_name = '__new__'
+        method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
 
 
 @contextmanager
-def set_environ(**kwargs):
+def set_environ(**kwargs: str) -> Iterator[None]:
     """Temporarily set environment variables inside the context manager and
     fully restore previous environment afterwards
     """
@@ -195,11 +231,11 @@ def set_environ(**kwargs):
                 os.environ[k] = v
 
 
-def walk_callable(node):
+def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
     """Similar to ``ast.walk``, but walks only function body and skips nested
     functions defined within the node.
     """
-    todo = deque([node])
+    todo: deque[ast.AST] = deque([node])
     walked_func_def = False
     while todo:
         node = todo.popleft()
@@ -211,43 +247,74 @@ def walk_callable(node):
         yield node
 
 
-_generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
+_generator_callbacks_cache: LocalWeakReferencedCache[Callable[..., Any], bool] = (
+    LocalWeakReferencedCache(limit=128)
+)
 
 
-def is_generator_with_return_value(callable):
+def _returns_none(return_node: ast.Return) -> bool:
+    value = return_node.value
+    return value is None or (isinstance(value, ast.Constant) and value.value is None)
+
+
+def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noqa: A002
     """
     Returns True if a callable is a generator function which includes a
     'return' statement with a value different than None, False otherwise
     """
     if callable in _generator_callbacks_cache:
-        return _generator_callbacks_cache[callable]
-
-    def returns_none(return_node):
-        value = return_node.value
-        return value is None or isinstance(value, ast.NameConstant) and value.value is None
+        return bool(_generator_callbacks_cache[callable])
 
     if inspect.isgeneratorfunction(callable):
-        tree = ast.parse(dedent(inspect.getsource(callable)))
+        func = callable
+        while isinstance(func, partial):
+            func = func.func
+
+        src = inspect.getsource(func)
+        pattern = re.compile(r"(^[\t ]+)")
+        code = pattern.sub("", src)
+
+        match = pattern.match(src)  # finds indentation
+        if match:
+            code = re.sub(f"\n{match.group(0)}", "\n", code)  # remove indentation
+
+        tree = ast.parse(code)
         for node in walk_callable(tree):
-            if isinstance(node, ast.Return) and not returns_none(node):
+            if isinstance(node, ast.Return) and not _returns_none(node):
                 _generator_callbacks_cache[callable] = True
-                return _generator_callbacks_cache[callable]
+                return bool(_generator_callbacks_cache[callable])
 
     _generator_callbacks_cache[callable] = False
-    return _generator_callbacks_cache[callable]
+    return bool(_generator_callbacks_cache[callable])
 
 
-def warn_on_generator_with_return_value(spider, callable):
+def warn_on_generator_with_return_value(
+    spider: Spider,
+    callable: Callable[..., Any],  # noqa: A002
+) -> None:
     """
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None
     """
-    if is_generator_with_return_value(callable):
+    if not spider.settings.getbool("WARN_ON_GENERATOR_RETURN_VALUE"):
+        return
+    try:
+        if is_generator_with_return_value(callable):
+            warnings.warn(
+                f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
+                'a generator and includes a "return" statement with a value '
+                "different than None. This could lead to unexpected behaviour. Please see "
+                "https://docs.python.org/3/reference/simple_stmts.html#the-return-statement "
+                'for details about the semantics of the "return" statement within generators',
+                stacklevel=2,
+            )
+    except IndentationError:
+        callable_name = spider.__class__.__name__ + "." + callable.__name__
         warnings.warn(
-            f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
-            'a generator and includes a "return" statement with a value '
-            'different than None. This could lead to unexpected behaviour. Please see '
-            'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
-            'for details about the semantics of the "return" statement within generators',
+            f'Unable to determine whether or not "{callable_name}" is a generator with a return value. '
+            "This will not prevent your code from working, but it prevents Scrapy from detecting "
+            f'potential issues in your implementation of "{callable_name}". Please, report this in the '
+            "Scrapy issue tracker (https://github.com/scrapy/scrapy/issues), "
+            f'including the code of "{callable_name}"',
             stacklevel=2,
         )

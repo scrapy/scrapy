@@ -24,7 +24,8 @@ You should see an output like this::
      'scrapy.extensions.telnet.TelnetConsole',
      'scrapy.extensions.corestats.CoreStats']
     2016-12-16 21:18:49 [scrapy.middleware] INFO: Enabled downloader middlewares:
-    ['scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware',
+    ['scrapy.downloadermiddlewares.offsite.OffsiteMiddleware',
+     'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware',
      'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware',
      'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware',
      'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware',
@@ -37,7 +38,6 @@ You should see an output like this::
      'scrapy.downloadermiddlewares.stats.DownloaderStats']
     2016-12-16 21:18:49 [scrapy.middleware] INFO: Enabled spider middlewares:
     ['scrapy.spidermiddlewares.httperror.HttpErrorMiddleware',
-     'scrapy.spidermiddlewares.offsite.OffsiteMiddleware',
      'scrapy.spidermiddlewares.referer.RefererMiddleware',
      'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware',
      'scrapy.spidermiddlewares.depth.DepthMiddleware']
@@ -81,5 +81,6 @@ follow links, any custom spider you write will probably do more stuff which
 results in slower crawl rates. How slower depends on how much your spider does
 and how well it's written.
 
-In the future, more cases will be added to the benchmarking suite to cover
-other common scenarios.
+Use scrapy-bench_ for more complex benchmarking.
+
+.. _scrapy-bench: https://github.com/scrapy/scrapy-bench

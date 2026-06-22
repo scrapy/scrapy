@@ -26,11 +26,13 @@ CloseSpider
     :param reason: the reason for closing
     :type reason: str
 
-For example::
+For example:
+
+.. code-block:: python
 
     def parse_page(self, response):
-        if 'Bandwidth exceeded' in response.body:
-            raise CloseSpider('bandwidth_exceeded')
+        if "Bandwidth exceeded" in response.body:
+            raise CloseSpider("bandwidth_exceeded")
 
 DontCloseSpider
 ---------------
@@ -64,10 +66,10 @@ NotConfigured
 This exception can be raised by some components to indicate that they will
 remain disabled. Those components include:
 
- * Extensions
- * Item pipelines
- * Downloader middlewares
- * Spider middlewares
+-   Extensions
+-   Item pipelines
+-   Downloader middlewares
+-   Spider middlewares
 
 The exception must be raised in the component's ``__init__`` method.
 
@@ -81,12 +83,10 @@ This exception is raised to indicate an unsupported feature.
 StopDownload
 -------------
 
-.. versionadded:: 2.2
-
 .. exception:: StopDownload(fail=True)
 
-Raised from a :class:`~scrapy.signals.bytes_received` signal handler to
-indicate that no further bytes should be downloaded for a response.
+Raised from a :class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`
+signal handler to indicate that no further bytes should be downloaded for a response.
 
 The ``fail`` boolean parameter controls which method will handle the resulting
 response:
@@ -103,12 +103,13 @@ response:
 In both cases, the response could have its body truncated: the body contains
 all bytes received up until the exception is raised, including the bytes
 received in the signal handler that raises the exception. Also, the response
-object is marked with ``"download_stopped"`` in its :attr:`Response.flags`
+object is marked with ``"download_stopped"`` in its :attr:`~scrapy.http.Response.flags`
 attribute.
 
 .. note:: ``fail`` is a keyword-only parameter, i.e. raising
     ``StopDownload(False)`` or ``StopDownload(True)`` will raise
     a :class:`TypeError`.
 
-See the documentation for the :class:`~scrapy.signals.bytes_received` signal
+See the documentation for the :class:`~scrapy.signals.bytes_received` and
+:class:`~scrapy.signals.headers_received` signals
 and the :ref:`topics-stop-response-download` topic for additional information and examples.
