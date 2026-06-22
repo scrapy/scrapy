@@ -260,6 +260,7 @@ class TestMarshalItemExporter(TestBaseItemExporter):
         del ie  # See the first “del self.ie” in this file for context.
         fp.seek(0)
         assert marshal.load(fp) == item
+        fp.close()
 
 
 class TestMarshalItemExporterDataclass(TestMarshalItemExporter):
