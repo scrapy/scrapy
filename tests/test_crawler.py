@@ -120,6 +120,24 @@ class TestCrawler(TestBaseCrawler):
             for warning in w
         )
 
+    def test_get_crawler_prevent_warnings_false(self) -> None:
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            get_crawler(prevent_warnings=False)
+        setting_names = {
+            "CONCURRENT_REQUESTS_PER_DOMAIN",
+            "DOWNLOAD_DELAY",
+            "ROBOTSTXT_OBEY",
+        }
+        warned_messages = [
+            str(warning.message)
+            for warning in w
+            if issubclass(warning.category, ScrapyDeprecationWarning)
+        ]
+        assert all(
+            any(name in msg for msg in warned_messages) for name in setting_names
+        )
+
     def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         assert crawler.settings["foo"] == "bar"
