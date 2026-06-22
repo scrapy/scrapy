@@ -3,7 +3,6 @@ import json
 import marshal
 import pickle
 import re
-import tempfile
 from abc import ABC, abstractmethod
 from datetime import datetime
 from io import BytesIO
@@ -242,7 +241,6 @@ class TestPickleItemExporterDataclass(TestPickleItemExporter):
 
 class TestMarshalItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
-        self.output = tempfile.TemporaryFile()
         return MarshalItemExporter(self.output, **kwargs)
 
     def _check_output(self):
@@ -252,7 +250,7 @@ class TestMarshalItemExporter(TestBaseItemExporter):
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
         item.pop("time")  # datetime is not marshallable
-        fp = tempfile.TemporaryFile()
+        fp = BytesIO()
         ie = MarshalItemExporter(fp)
         ie.start_exporting()
         ie.export_item(item)
@@ -270,7 +268,11 @@ class TestMarshalItemExporterDataclass(TestMarshalItemExporter):
 
 class TestCsvItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
-        self.output = tempfile.TemporaryFile()
+        # We need a fresh instance for each exporter, because
+        # CsvItemExporter.stream.__del__() closes the underlying file
+        # (CsvItemExporter.finish_exporting() calls detach() but not all tests
+        # call it).
+        self.output = BytesIO()
         return CsvItemExporter(self.output, **kwargs)
 
     def assertCsvEqual(self, first, second, msg=None):
