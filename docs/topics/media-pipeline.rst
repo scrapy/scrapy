@@ -777,27 +777,24 @@ To enable your custom media pipeline component you must add its class import pat
 Content-based image filtering pipeline
 --------------------------------------
 
-This example overrides ``get_images()`` to use an image classifier (e.g. a
-TensorFlow_ model) to filter images before storing them. ``self.model`` and
-``self.label`` should be initialized in ``__init__``:
+This example overrides ``get_images()`` to filter images using a classifier,
+such as a TensorFlow_ model. Override ``is_valid_image()`` with your
+classification logic:
 
 .. code-block:: python
 
-    import numpy as np
-    from io import BytesIO
-    from PIL import Image
     from scrapy.pipelines.images import ImagesPipeline, ImageException
 
 
     class ImageClassifierPipeline(ImagesPipeline):
+        def is_valid_image(self, image):
+            raise NotImplementedError
+
         def get_images(self, response, request, info, *, item=None):
-            path = self.file_path(request, response=response, info=info, item=item)
-            orig_image = Image.open(BytesIO(response.body))
-            img = np.expand_dims(np.array(orig_image.resize([224, 224])), axis=0)
-            if self.model.predict(img)[0].argsort()[-1] != self.label:
-                raise ImageException("Image does not match label")
-            image, buf = self.convert_image(orig_image)
-            yield path, image, buf
+            for path, image, buf in super().get_images(response, request, info, item=item):
+                if not self.is_valid_image(image):
+                    raise ImageException("Image does not match criteria")
+                yield path, image, buf
 
 
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5
