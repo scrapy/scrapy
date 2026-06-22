@@ -651,6 +651,42 @@ class TestAsyncCrawlerProcess(TestBaseCrawler):
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
 
+@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
+def test_runner_settings_applied_to_crawler_instance(
+    runner_cls: type[CrawlerRunnerBase],
+) -> None:
+    runner = runner_cls({"FOO": "runner"})
+    crawler = Crawler(DefaultSpider)
+    result = runner.create_crawler(crawler)
+    assert result is crawler
+    assert result.settings["FOO"] == "runner"
+
+
+@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
+def test_spider_custom_settings_override_runner(
+    runner_cls: type[CrawlerRunnerBase],
+) -> None:
+    class MySpider(DefaultSpider):
+        custom_settings = {"FOO": "spider"}
+
+    runner = runner_cls({"FOO": "runner"})
+    crawler = Crawler(MySpider)
+    runner.create_crawler(crawler)
+    assert crawler.settings["FOO"] == "spider"
+
+
+def test_create_crawler_instance_consistent_with_spider_class() -> None:
+    runner = AsyncCrawlerRunner({"FOO": "runner"})
+
+    crawler_from_class = runner.create_crawler(DefaultSpider)
+
+    pre_built = Crawler(DefaultSpider)
+    runner.create_crawler(pre_built)
+
+    assert crawler_from_class.settings["FOO"] == "runner"
+    assert pre_built.settings["FOO"] == "runner"
+
+
 class ExceptionSpider(scrapy.Spider):
     name = "exception"
 
