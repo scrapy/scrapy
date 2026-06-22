@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 import re
 import sys
@@ -31,6 +32,7 @@ from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
+from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
@@ -50,6 +52,9 @@ logger = logging.getLogger(__name__)
 UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
 ]
+
+_BATCH_ID_RE = re.compile(r"%\(batch_id\)")
+_BATCH_STATE_FILENAME = "feedexport.state"
 
 
 class ItemFilter:
@@ -457,6 +462,7 @@ class FeedExporter:
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
         self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
+        self._persisted_batch_ids: dict[str, int] = self._load_batch_state()
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -508,10 +514,13 @@ class FeedExporter:
 
     def open_spider(self, spider: Spider) -> None:
         for uri, feed_options in self.feeds.items():
-            uri_params = self._get_uri_params(spider, feed_options["uri_params"])
+            batch_id = self._next_batch_id(uri)
+            uri_params = self._get_uri_params(
+                spider, feed_options["uri_params"], batch_id=batch_id
+            )
             self.slots.append(
                 self._start_new_batch(
-                    batch_id=1,
+                    batch_id=batch_id,
                     uri=uri % uri_params,
                     feed_options=feed_options,
                     spider=spider,
@@ -557,6 +566,10 @@ class FeedExporter:
         else:
             # In this case, the file is not stored, so no processing is required.
             return
+
+        # Record that this batch_id was actually written, so a restart with the
+        # same JOBDIR will pick the next unused id and avoid overwriting it.
+        self._record_batch_id(slot.uri_template, slot.batch_id)
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         slot_type = type(slot.storage).__name__
@@ -634,9 +647,10 @@ class FeedExporter:
                     spider, self.feeds[slot.uri_template]["uri_params"], slot
                 )
                 self._pending_close_coros.append(self._close_slot(slot, spider))
+                new_batch_id = slot.batch_id + 1
                 slots.append(
                     self._start_new_batch(
-                        batch_id=slot.batch_id + 1,
+                        batch_id=new_batch_id,
                         uri=slot.uri_template % uri_params,
                         feed_options=self.feeds[slot.uri_template],
                         spider=spider,
@@ -709,12 +723,17 @@ class FeedExporter:
         spider: Spider,
         uri_params_function: str | UriParamsCallableT | None,
         slot: FeedSlot | None = None,
+        *,
+        batch_id: int | None = None,
     ) -> dict[str, Any]:
         params = {k: getattr(spider, k) for k in dir(spider)}
         utc_now = datetime.now(tz=timezone.utc)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")
-        params["batch_id"] = slot.batch_id + 1 if slot is not None else 1
+        if batch_id is not None:
+            params["batch_id"] = batch_id
+        else:
+            params["batch_id"] = slot.batch_id + 1 if slot is not None else 1
         uripar_function: UriParamsCallableT = (
             load_object(uri_params_function)
             if uri_params_function
@@ -729,3 +748,74 @@ class FeedExporter:
             feed_options.get("item_filter", ItemFilter)
         )
         return item_filter_class(feed_options)
+
+    def _batch_state_path(self) -> Path | None:
+        """Return the path to the persisted batch-id state file when JOBDIR is set."""
+        jobdir = job_dir(self.settings)
+        if not jobdir:
+            return None
+        return Path(jobdir, _BATCH_STATE_FILENAME)
+
+    def _load_batch_state(self) -> dict[str, int]:
+        """Load the persisted ``{uri_template: last_batch_id_used}`` mapping.
+
+        Returns an empty dict if JOBDIR is not set or the state file does not
+        yet exist. Unreadable or malformed state files are ignored so a
+        corrupted file does not prevent a crawl from starting.
+        """
+        state_path = self._batch_state_path()
+        if state_path is None or not state_path.exists():
+            return {}
+        try:
+            with state_path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            logger.warning(
+                "Could not read feed exporter batch state at %s; "
+                "starting batch_id counters from 1.",
+                state_path,
+            )
+            return {}
+        if not isinstance(data, dict):
+            return {}
+        return {str(k): int(v) for k, v in data.items()}
+
+    def _save_batch_state(self) -> None:
+        """Persist the current ``self._persisted_batch_ids`` to JOBDIR."""
+        state_path = self._batch_state_path()
+        if state_path is None:
+            return
+        try:
+            with state_path.open("w", encoding="utf-8") as f:
+                json.dump(self._persisted_batch_ids, f)
+        except OSError:
+            logger.warning(
+                "Could not write feed exporter batch state to %s; "
+                "batch_id may reset on restart.",
+                state_path,
+                exc_info=True,
+            )
+
+    def _next_batch_id(self, uri_template: str) -> int:
+        """Compute the next batch_id to use for *uri_template*.
+
+        When JOBDIR is set and *uri_template* references ``%(batch_id)``, the
+        next id continues from the last value persisted across runs; otherwise
+        it is 1.
+        """
+        if self._batch_state_path() is None or not _BATCH_ID_RE.search(uri_template):
+            return 1
+        return self._persisted_batch_ids.get(uri_template, 0) + 1
+
+    def _record_batch_id(self, uri_template: str, batch_id: int) -> None:
+        """Persist that *batch_id* has been used (written to storage) for
+        *uri_template*. The stored value is the maximum batch_id seen, so
+        out-of-order slot close-outs cannot lower it.
+        """
+        if self._batch_state_path() is None or not _BATCH_ID_RE.search(uri_template):
+            return
+        current = self._persisted_batch_ids.get(uri_template, 0)
+        if batch_id <= current:
+            return
+        self._persisted_batch_ids[uri_template] = batch_id
+        self._save_batch_state()
