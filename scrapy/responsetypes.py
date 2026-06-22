@@ -40,6 +40,7 @@ class ResponseTypes:
         self.classes: dict[str, type[Response]] = {}
         self.mimetypes: MimeTypes = MimeTypes()
         mimedata = get_data("scrapy", "mime.types")
+        assert mimedata is not None
         self.mimetypes.readfp(StringIO(mimedata.decode("utf8")))
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
