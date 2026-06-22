@@ -125,9 +125,11 @@ def _send_catch_log_deferred(
             **named,
         )
         d.addErrback(logerror, receiver)
+
         d2: Deferred[tuple[TypingAny, TypingAny]] = d.addBoth(
-            lambda result, recv=receiver: (recv, result)
-        )
+    lambda result, recv: (recv, result), receiver
+)
+
         dfds.append(d2)
 
     results = yield DeferredList(dfds)
