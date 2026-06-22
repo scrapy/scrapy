@@ -392,6 +392,11 @@ class TestCsvItemExporterDataclass(TestCsvItemExporter):
 
 class TestXmlItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
+        # We need a fresh instance for each exporter, because
+        # XmlItemExporter.stream.__del__() closes the underlying file
+        # (XmlItemExporter.finish_exporting() calls detach() but not all tests
+        # call it).
+        self.output = BytesIO()
         return XmlItemExporter(self.output, **kwargs)
 
     def assertXmlEquivalent(self, first, second, msg=None):

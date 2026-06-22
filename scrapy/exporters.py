@@ -171,7 +171,15 @@ class XmlItemExporter(BaseItemExporter):
         super().__init__(**kwargs)
         if not self.encoding:
             self.encoding = "utf-8"
-        self.xg = XMLGenerator(file, encoding=self.encoding)
+        # copied from xml.sax.saxutils._gettextwriter()
+        self.stream = TextIOWrapper(
+            file,
+            encoding=self.encoding,
+            errors="xmlcharrefreplace",
+            newline="\n",
+            write_through=True,
+        )
+        self.xg = XMLGenerator(self.stream, encoding=self.encoding)
 
     def _beautify_newline(self, new_item: bool = False) -> None:
         if self.indent is not None and (self.indent > 0 or new_item):
@@ -199,6 +207,7 @@ class XmlItemExporter(BaseItemExporter):
     def finish_exporting(self) -> None:
         self.xg.endElement(self.root_element)
         self.xg.endDocument()
+        self.stream.detach()  # Avoid closing the wrapped file.
 
     def _export_xml_field(self, name: str, serialized_value: Any, depth: int) -> None:
         self._beautify_indent(depth=depth)
