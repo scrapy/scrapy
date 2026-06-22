@@ -74,7 +74,7 @@ class BaseItemExporter(ABC):
     def _serialize_nested_items(
         self, value: Any, default_value: Any, include_empty: bool | None
     ) -> Any:
-        def serialize_iterable(it):
+        def serialize_iterable(it: Iterable[Any]) -> list[Any]:
             return [
                 self._serialize_nested_items(x, default_value, include_empty)
                 for x in it
