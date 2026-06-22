@@ -101,13 +101,14 @@ class OffsiteMiddleware:
         misconfigured domains.
         """
         url_pattern = re.compile(r"^https?://.*$")
+        protocol_relative_pattern = re.compile(r"^//")
         port_pattern = re.compile(r":\d+$")
         valid_domains: list[str] = []
 
         for domain in domains_list:
             if domain is None:
                 raise ValueError(f"{domains_type} contains empty value.")
-            if url_pattern.match(domain):
+            if url_pattern.match(domain) or protocol_relative_pattern.match(domain):
                 raise ValueError(
                     f"{domains_type} accepts only domains, not URLs. "
                     f"Got URL entry {domain} in {domains_type}."

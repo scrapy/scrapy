@@ -121,6 +121,7 @@ def test_process_request_no_allowed_domains(value):
     [
         ["a.example", None],
         ["a.example", "http://b.example"],
+        ["a.example", "//c.example"],
         ["a.example", "c.example:8080"],
     ],
 )
@@ -233,6 +234,7 @@ def test_request_scheduled_no_allowed_domains(value):
     [
         ["a.example", None],
         ["a.example", "http://b.example"],
+        ["a.example", "//c.example"],
         ["a.example", "c.example:8080"],
     ],
 )
