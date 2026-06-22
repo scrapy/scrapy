@@ -241,6 +241,16 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
             body=response_body.getvalue(),
         )
 
+    @staticmethod
+    def _request_headers(request: Request) -> Headers:
+        """Get a prepared copy of the request headers.
+
+        This removes the Proxy-Authorization header.
+        """
+        headers = request.headers.copy()
+        headers.pop(b"Proxy-Authorization", None)
+        return headers
+
     def _get_bind_address_host(self) -> str | None:
         """Return the host portion of the bind address.
 
@@ -279,10 +289,8 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         if not proxy:
             return None, None
         proxy = add_http_if_no_scheme(proxy)
-        auth_header: list[bytes] | None = request.headers.pop(
-            b"Proxy-Authorization", None
-        )
-        return proxy, auth_header[0].decode("ascii") if auth_header else None
+        auth_header: bytes | None = request.headers.get(b"Proxy-Authorization")
+        return proxy, auth_header.decode("ascii") if auth_header else None
 
     def _extract_proxy_url_with_creds(self, request: Request) -> str | None:
         """Return the proxy URL with the userinfo added based on the
