@@ -116,12 +116,23 @@ def test_process_request_no_allowed_domains(value):
     assert mw.process_request(request) is None
 
 
-def test_process_request_invalid_domains(caplog):
+@pytest.mark.parametrize(
+    "allowed_domains",
+    [
+        ["a.example", None],
+        ["a.example", "http://b.example"],
+        ["a.example", "c.example:8080"],
+    ],
+)
+def test_process_request_invalid_domains(allowed_domains, caplog):
     crawler = get_crawler(Spider)
-    allowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     crawler.spider = crawler._create_spider(name="a", allowed_domains=allowed_domains)
     mw = OffsiteMiddleware.from_crawler(crawler)
-    with caplog.at_level(logging.ERROR):
+    crawler.engine = AsyncMock()
+    with (
+        patch("scrapy.downloadermiddlewares.offsite._schedule_coro"),
+        caplog.at_level(logging.ERROR),
+    ):
         mw.spider_opened(crawler.spider)
     assert "Invalid domain configuration" in caplog.text
 
@@ -217,12 +228,23 @@ def test_request_scheduled_no_allowed_domains(value):
     assert mw.request_scheduled(request, crawler.spider) is None
 
 
-def test_request_scheduled_invalid_domains(caplog):
+@pytest.mark.parametrize(
+    "allowed_domains",
+    [
+        ["a.example", None],
+        ["a.example", "http://b.example"],
+        ["a.example", "c.example:8080"],
+    ],
+)
+def test_request_scheduled_invalid_domains(allowed_domains, caplog):
     crawler = get_crawler(Spider)
-    allowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     crawler.spider = crawler._create_spider(name="a", allowed_domains=allowed_domains)
     mw = OffsiteMiddleware.from_crawler(crawler)
-    with caplog.at_level(logging.ERROR):
+    crawler.engine = AsyncMock()
+    with (
+        patch("scrapy.downloadermiddlewares.offsite._schedule_coro"),
+        caplog.at_level(logging.ERROR),
+    ):
         mw.spider_opened(crawler.spider)
     assert "Invalid domain configuration" in caplog.text
 
@@ -325,7 +347,11 @@ def test_process_request_invalid_disallowed_domains(disallowed_domains, caplog):
     )
 
     mw = OffsiteMiddleware.from_crawler(crawler)
-    with caplog.at_level(logging.ERROR):
+    crawler.engine = AsyncMock()
+    with (
+        patch("scrapy.downloadermiddlewares.offsite._schedule_coro"),
+        caplog.at_level(logging.ERROR),
+    ):
         mw.spider_opened(crawler.spider)
     assert "Invalid domain configuration" in caplog.text
 
@@ -430,6 +456,37 @@ def test_request_scheduled_invalid_disallowed_domains(disallowed_domains, caplog
     )
 
     mw = OffsiteMiddleware.from_crawler(crawler)
-    with caplog.at_level(logging.ERROR):
+    crawler.engine = AsyncMock()
+    with (
+        patch("scrapy.downloadermiddlewares.offsite._schedule_coro"),
+        caplog.at_level(logging.ERROR),
+    ):
         mw.spider_opened(crawler.spider)
     assert "Invalid domain configuration" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("url", "filtered"),
+    [
+        ("http://example.com/page", False),
+        ("http://sub.example.com/page", False),
+        ("http://ads.example.com/page", True),
+        ("http://sub.ads.example.com/page", True),
+        ("http://other.com/page", True),
+    ],
+)
+def test_process_request_allowed_and_disallowed_domains(url, filtered):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(
+        name="a",
+        allowed_domains=["example.com"],
+        disallowed_domains=["ads.example.com"],
+    )
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+    request = Request(url)
+    if filtered:
+        with pytest.raises(IgnoreRequest):
+            mw.process_request(request)
+    else:
+        assert mw.process_request(request) is None

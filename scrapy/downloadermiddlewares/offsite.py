@@ -49,12 +49,12 @@ class OffsiteMiddleware:
                 {"error": exc},
                 extra={"spider": spider},
             )
-            if self.crawler.engine:
-                _schedule_coro(
-                    self.crawler.engine.close_spider_async(
-                        reason="invalid_domain_configuration"
-                    )
+            assert self.crawler.engine
+            _schedule_coro(
+                self.crawler.engine.close_spider_async(
+                    reason="invalid_domain_configuration"
                 )
+            )
 
     def request_scheduled(self, request: Request, spider: Spider) -> None:
         self.process_request(request)
@@ -110,12 +110,12 @@ class OffsiteMiddleware:
             if url_pattern.match(domain):
                 raise ValueError(
                     f"{domains_type} accepts only domains, not URLs. "
-                    f"Ignoring URL entry {domain} in {domains_type}."
+                    f"Got URL entry {domain} in {domains_type}."
                 )
             if port_pattern.search(domain):
                 raise ValueError(
                     f"{domains_type} accepts only domains without ports. "
-                    f"Ignoring entry {domain} in {domains_type}."
+                    f"Got entry {domain} in {domains_type}."
                 )
             valid_domains.append(re.escape(domain))
         return valid_domains
