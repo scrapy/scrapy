@@ -12,6 +12,7 @@ import pytest
 import scrapy
 from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
 from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
 from tests.utils.cmdline import call, proc
@@ -26,6 +27,50 @@ class EmptyCommand(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         pass
+
+
+class TestHelpDeprecation:
+    def test_calling_help_is_deprecated(self) -> None:
+        command = EmptyCommand()
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"ScrapyCommand\.help\(\) is deprecated, use long_desc\(\) instead\.",
+        ):
+            result = command.help()
+        # help() still delegates to long_desc() for backward compatibility.
+        assert result == command.long_desc()
+
+    def test_overriding_help_is_deprecated(self) -> None:
+        class HelpCommand(ScrapyCommand):
+            def short_desc(self) -> str:
+                return ""
+
+            def run(self, args: list[str], opts: argparse.Namespace) -> None:
+                pass
+
+            def help(self) -> str:
+                return "custom help"
+
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"The ScrapyCommand\.help\(\) method is deprecated and "
+            r"overriding it, as the .*HelpCommand class does, has no effect; "
+            r"override long_desc\(\) instead\.",
+        ):
+            HelpCommand()
+
+    def test_not_overriding_help_does_not_warn(self, recwarn) -> None:
+        # Commands that do not override help() must not emit the
+        # override-deprecation warning when instantiated, including subclasses
+        # several levels below ScrapyCommand (as the built-in commands are).
+        class SubCommand(EmptyCommand):
+            pass
+
+        EmptyCommand()
+        SubCommand()
+        assert not [
+            w for w in recwarn.list if issubclass(w.category, ScrapyDeprecationWarning)
+        ]
 
 
 class TestCommandSettings:

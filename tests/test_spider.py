@@ -22,7 +22,7 @@ class TestSpider:
     def test_base_spider(self):
         spider = self.spider_class("example.com")
         assert spider.name == "example.com"
-        assert spider.start_urls == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert spider.start_urls == []
 
     def test_spider_args(self):
         """``__init__`` method arguments are assigned to spider attributes"""

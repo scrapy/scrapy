@@ -1,5 +1,6 @@
-import warnings
+import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
 
@@ -204,7 +205,10 @@ Disallow: /forum/search/
 Disallow: /forum/active/
 """
 
-    with warnings.catch_warnings(record=True) as w:
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="Passing `str` type as `robots_text` is deprecated",
+    ):
         assert list(
             sitemap_urls_from_robots(robots, base_url="http://example.com")
         ) == [
@@ -213,9 +217,6 @@ Disallow: /forum/active/
             "http://example.com/sitemap-uppercase.xml",
             "http://example.com/sitemap-relative-url.xml",
         ]
-        assert "Passing `str` type as `robots_text` is deprecated, use `bytes`" in str(
-            w[0].message
-        )
 
 
 def test_sitemap_blanklines():
