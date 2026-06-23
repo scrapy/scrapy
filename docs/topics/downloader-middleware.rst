@@ -856,6 +856,21 @@ OffsiteMiddleware
    :attr:`~scrapy.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
+   If the spider defines a :attr:`~scrapy.Spider.disallowed_domains`
+   attribute, any request whose host name matches one of the domains in
+   that list (or their subdomains) will be filtered out, regardless of
+   :attr:`~scrapy.Spider.allowed_domains`. This is useful when you want
+   to allow most domains but block a few specific ones.
+
+   If a request matches both :attr:`~scrapy.Spider.allowed_domains` and
+   :attr:`~scrapy.Spider.disallowed_domains`, it will be filtered out
+   (i.e. :attr:`~scrapy.Spider.disallowed_domains` takes precedence).
+
+   Both :attr:`~scrapy.Spider.allowed_domains` and
+   :attr:`~scrapy.Spider.disallowed_domains` must contain valid domain
+   names only (not URLs or domains with ports). Invalid entries will cause
+   the spider to close with reason ``invalid_domain_configuration``.
+
    .. reqmeta:: allow_offsite
 
    If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
