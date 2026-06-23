@@ -258,7 +258,7 @@ has a version of pyOpenSSL that your version of Twisted does not support.
 To install a version of pyOpenSSL that your version of Twisted supports,
 reinstall Twisted with the :code:`tls` extra option::
 
-    pip install twisted[tls]
+    pip install 'twisted[tls]'
 
 For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 
