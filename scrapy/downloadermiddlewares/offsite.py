@@ -83,10 +83,8 @@ class OffsiteMiddleware:
     def should_follow(self, request: Request, spider: Spider) -> bool:
         # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ""
-        # If the host matches a disallowed domain, we can reject it
         if self.disallowed_host_regex and self.disallowed_host_regex.search(host):
             return False
-        # Otherwise, check allowed domains
         return bool(self.host_regex.search(host))
 
     @staticmethod
