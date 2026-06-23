@@ -110,6 +110,29 @@ class TestFTPBase(ABC):
         assert r.body == b"['550 nonexistent.txt: No such file or directory.']"
 
     @deferred_f_from_coro_f
+    async def test_ftp_download_closes_connection(
+        self, server_url: str, dh: FTPDownloadHandler
+    ) -> None:
+        # Regression test for #7602: a successful download must close the FTP
+        # connection rather than leaking it until garbage collection.
+        request = Request(url=server_url + "file.txt", meta=self.req_meta)
+        await dh.download_request(request)
+        assert dh.client.transport is not None
+        assert dh.client.transport.disconnecting
+
+    @deferred_f_from_coro_f
+    async def test_ftp_download_closes_connection_on_missing_file(
+        self, server_url: str, dh: FTPDownloadHandler
+    ) -> None:
+        # Regression test for #7602: the connection must be closed even on the
+        # CommandFailed path (e.g. a missing file mapped to a 404 response).
+        request = Request(url=server_url + "nonexistent.txt", meta=self.req_meta)
+        r = await dh.download_request(request)
+        assert r.status == 404
+        assert dh.client.transport is not None
+        assert dh.client.transport.disconnecting
+
+    @deferred_f_from_coro_f
     async def test_ftp_local_filename(
         self, server_url: str, dh: FTPDownloadHandler
     ) -> None:

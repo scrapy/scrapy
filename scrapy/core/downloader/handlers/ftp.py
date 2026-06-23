@@ -108,20 +108,37 @@ class FTPDownloadHandler(BaseDownloadHandler):
         client: FTPClient = await maybe_deferred_to_future(
             creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
         )
-        filepath = unquote(parsed_url.path)
-        protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
+        self.client: FTPClient = client
         try:
-            await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
-        except CommandFailed as e:
-            message = str(e)
-            if m := _CODE_RE.search(message):
-                ftpcode = m.group()
-                httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
-                return Response(url=request.url, status=httpcode, body=message.encode())
-            raise
-        protocol.close()
-        headers = {"local filename": protocol.filename or b"", "size": protocol.size}
-        body = protocol.filename or protocol.body.read()
-        respcls = responsetypes.from_args(url=request.url, body=body)
-        # hints for Headers-related types may need to be fixed to not use AnyStr
-        return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]
+            filepath = unquote(parsed_url.path)
+            protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
+            try:
+                await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
+            except CommandFailed as e:
+                message = str(e)
+                if m := _CODE_RE.search(message):
+                    ftpcode = m.group()
+                    httpcode = self.CODE_MAPPING.get(
+                        ftpcode, self.CODE_MAPPING["default"]
+                    )
+                    return Response(
+                        url=request.url, status=httpcode, body=message.encode()
+                    )
+                raise
+            finally:
+                # Always release the file descriptor / memory buffer held by
+                # the protocol, including on the CommandFailed path above.
+                protocol.close()
+            headers = {
+                "local filename": protocol.filename or b"",
+                "size": protocol.size,
+            }
+            body = protocol.filename or protocol.body.read()
+            respcls = responsetypes.from_args(url=request.url, body=body)
+            # hints for Headers-related types may need to be fixed to not use AnyStr
+            return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]
+        finally:
+            # Close the FTP connection instead of leaving it for the garbage
+            # collector to reap at some unspecified later time.
+            if client.transport is not None:
+                client.transport.loseConnection()
