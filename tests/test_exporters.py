@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from io import BytesIO
 from typing import Any
+from unittest.mock import patch
 
 import lxml.etree
 import pytest
@@ -380,6 +381,21 @@ class TestCsvItemExporter(TestBaseItemExporter):
             encoding="windows-1251",
             errors="xmlcharrefreplace",
         )
+
+    def test_csv_dropped_fields_warning(self):
+        out = BytesIO()
+        exporter = CsvItemExporter(out)
+        exporter.start_exporting()
+
+        with patch("scrapy.exporters.logger.warning") as mock_warning:
+            exporter.export_item({"name": "Apple"})
+            exporter.export_item({"name": "Banana", "price": 2.00})
+
+            assert mock_warning.called, "Warning was not triggered for dropped fields."
+
+            warning_msg = mock_warning.call_args[0][0]
+            assert "CSVExporter dropped fields" in warning_msg
+            assert "'price'" in warning_msg
 
 
 class TestCsvItemExporterDataclass(TestCsvItemExporter):
