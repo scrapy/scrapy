@@ -131,6 +131,20 @@ class TestCookiesMiddleware:
                 ),
             )
 
+    def test_debug_no_cookies(self):
+        crawler = get_crawler(settings_dict={"COOKIES_DEBUG": True})
+        mw = CookiesMiddleware.from_crawler(crawler)
+        with LogCapture(
+            "scrapy.downloadermiddlewares.cookies",
+            propagate=False,
+            level=logging.DEBUG,
+        ) as log:
+            req = Request("http://scrapytest.org/")
+            res = Response("http://scrapytest.org/")  # no Set-Cookie header
+            mw.process_response(req, res)
+            mw.process_request(req)  # no cookies to send either
+            log.check()  # no log output since cl is empty in both cases
+
     def test_setting_disabled_cookies_debug(self):
         crawler = get_crawler(settings_dict={"COOKIES_DEBUG": False})
         mw = CookiesMiddleware.from_crawler(crawler)
