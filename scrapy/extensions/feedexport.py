@@ -446,7 +446,10 @@ class FeedExporter:
     def from_crawler(cls, crawler: Crawler) -> Self:
         exporter = cls(crawler)
         crawler.signals.connect(exporter.open_spider, signals.spider_opened)
+        crawler.signals.connect(exporter._on_state_loaded, signals.spider_state_loaded)
+        crawler.signals.connect(exporter._on_engine_started, signals.engine_started)
         crawler.signals.connect(exporter.close_spider, signals.spider_closed)
+        crawler.signals.connect(exporter._on_state_saving, signals.spider_state_saving)
         crawler.signals.connect(exporter.item_scraped, signals.item_scraped)
         return exporter
 
@@ -507,6 +510,7 @@ class FeedExporter:
                 raise NotConfigured
 
     def open_spider(self, spider: Spider) -> None:
+        self._slots_initialized = False
         for uri, feed_options in self.feeds.items():
             uri_params = self._get_uri_params(spider, feed_options["uri_params"])
             self.slots.append(
@@ -518,6 +522,51 @@ class FeedExporter:
                     uri_template=uri,
                 )
             )
+
+    async def _on_state_loaded(self, state: dict) -> None:
+        """Update initial batch-1 slots with the correct resumed batch IDs.
+
+        Called via the spider_state_loaded signal after SpiderState has
+        populated spider.state. Safe to mutate slots here because FeedSlot
+        opens its file lazily; no I/O has occurred yet.
+        """
+        feed_batch_ids: dict[str, int] = state.get("feed_batch_ids", {})
+        if feed_batch_ids:
+            spider = self.crawler.spider
+            for slot in self.slots:
+                saved_id = feed_batch_ids.get(slot.uri_template, 0)
+                if saved_id == 0:
+                    continue
+                batch_id = saved_id + 1
+                uri_params = self._get_uri_params(
+                    spider, self.feeds[slot.uri_template]["uri_params"]
+                )
+                uri_params["batch_id"] = batch_id
+                uri = slot.uri_template % uri_params
+                slot.batch_id = batch_id
+                slot.uri = uri
+                slot.storage = self._get_storage(uri, self.feeds[slot.uri_template])
+        self._slots_initialized = True
+        await self.crawler.signals.send_catch_log_async(
+            signals.feed_slots_initialized, slots=self.slots
+        )
+
+    async def _on_engine_started(self) -> None:
+        if not self._slots_initialized:
+            self._slots_initialized = True
+            await self.crawler.signals.send_catch_log_async(
+                signals.feed_slots_initialized, slots=self.slots
+            )
+
+    def _on_state_saving(self, state: dict) -> None:
+        """Persist the current batch ID for each feed into spider.state.
+
+        Called via the spider_state_saving signal before SpiderState writes
+        spider.state to disk, so the next run can resume from the right batch.
+        """
+        feed_batch_ids = state.setdefault("feed_batch_ids", {})
+        for slot in self.slots:
+            feed_batch_ids[slot.uri_template] = slot.batch_id
 
     async def close_spider(self, spider: Spider) -> None:
         self._pending_close_coros.extend(
