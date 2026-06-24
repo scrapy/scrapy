@@ -1448,6 +1448,7 @@ class TestFeedExporterBatchIdState:
             spider.state = {"feed_batch_ids": {uri_a: 3, uri_b: 7}}
 
             exporter.open_spider(spider)
+            exporter.crawler.spider = spider
             await exporter._on_state_loaded(spider.state)
             batch_ids = {slot.uri_template: slot.batch_id for slot in exporter.slots}
             assert batch_ids[uri_a] == 4
@@ -1534,6 +1535,7 @@ class TestFeedExporterBatchIdState:
                 on_initialized, signal=signals.feed_slots_initialized, weak=False
             )
             exporter.open_spider(spider)
+            exporter.crawler.spider = spider
             await exporter._on_state_loaded(spider.state)
 
             assert len(received) == 1
