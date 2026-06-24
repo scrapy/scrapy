@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from pytest_twisted import async_yield_fixture
 from twisted.cred import checkers, credentials, portal
+from twisted.internet import defer
 
 from scrapy import Spider
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
@@ -23,12 +24,52 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Generator
+    from collections.abc import AsyncGenerator, Callable, Generator
 
     from twisted.protocols.ftp import FTPFactory
 
 
 pytestmark = pytest.mark.requires_reactor  # FTPDownloadHandler requires a reactor
+
+
+class _FakeTransport:
+    def __init__(self) -> None:
+        self.closed = False
+
+    def loseConnection(self) -> None:
+        self.closed = True
+
+
+class _FakeFTPClient:
+    def __init__(self, retrieve_result: Callable[[Any], defer.Deferred[Any]]):
+        self.retrieve_result = retrieve_result
+        self.transport = _FakeTransport()
+        self.protocol: Any = None
+        self.filepath: str | None = None
+        self.host: str | None = None
+        self.port: int | None = None
+
+    def retrieveFile(self, filepath: str, protocol: Any) -> defer.Deferred[Any]:
+        self.filepath = filepath
+        self.protocol = protocol
+        return self.retrieve_result(protocol)
+
+
+def _patch_client_creator(
+    monkeypatch: pytest.MonkeyPatch, client: _FakeFTPClient
+) -> None:
+    class FakeClientCreator:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        def connectTCP(self, host: str | None, port: int) -> defer.Deferred[Any]:
+            client.host = host
+            client.port = port
+            return defer.succeed(client)
+
+    monkeypatch.setattr(
+        "scrapy.core.downloader.handlers.ftp.ClientCreator", FakeClientCreator
+    )
 
 
 class TestFTPBase(ABC):
@@ -147,6 +188,52 @@ class TestFTPBase(ABC):
         request = Request(url=server_url + filename, meta=meta)
         r = await dh.download_request(request)
         assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
+
+    @deferred_f_from_coro_f
+    async def test_ftp_download_closes_client_connection(
+        self, monkeypatch: pytest.MonkeyPatch, dh: FTPDownloadHandler
+    ) -> None:
+        def retrieve_file(protocol: Any) -> defer.Deferred[None]:
+            protocol.dataReceived(b"I have the power!")
+            return defer.succeed(None)
+
+        client = _FakeFTPClient(retrieve_file)
+        _patch_client_creator(monkeypatch, client)
+        request = Request(url="ftp://example.com/file.txt", meta=self.req_meta)
+
+        r = await dh.download_request(request)
+
+        assert r.status == 200
+        assert r.body == b"I have the power!"
+        assert client.filepath == "/file.txt"
+        assert client.transport.closed is True
+
+    @deferred_f_from_coro_f
+    async def test_ftp_download_closes_resources_after_command_failed(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        dh: FTPDownloadHandler,
+    ) -> None:
+        from twisted.protocols.ftp import CommandFailed
+
+        def retrieve_file(protocol: Any) -> defer.Deferred[None]:
+            protocol.dataReceived(b"partial")
+            return defer.fail(CommandFailed(["550 missing.txt"]))
+
+        local_path = tmp_path / "partial.txt"
+        client = _FakeFTPClient(retrieve_file)
+        _patch_client_creator(monkeypatch, client)
+        meta = {"ftp_local_filename": to_bytes(str(local_path))}
+        meta.update(self.req_meta)
+        request = Request(url="ftp://example.com/missing.txt", meta=meta)
+
+        r = await dh.download_request(request)
+
+        assert r.status == 404
+        assert r.body == b"['550 missing.txt']"
+        assert client.protocol.body.closed is True
+        assert client.transport.closed is True
 
 
 class TestFTP(TestFTPBase):
