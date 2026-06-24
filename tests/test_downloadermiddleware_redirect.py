@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.referer import (
     POLICY_NO_REFERRER,
@@ -265,6 +266,16 @@ class TestRedirectMiddleware(Base.Test):
         assert isinstance(req2, Request)
         assert req2.url == "http://www.example.com/redirected#frag"
 
+    def test_redirect_target_has_fragment(self):
+        url = "http://www.example.com/302#original"
+        url2 = "http://www.example.com/redirected#target"
+        req = Request(url)
+        rsp = Response(url, headers={"Location": url2}, status=302)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == "http://www.example.com/redirected#target"
+
     def test_redirect_302_head(self):
         url = "http://www.example.com/302"
         url2 = "http://www.example.com/redirected2"
@@ -458,3 +469,9 @@ def test_warning_subclass(caplog):
     assert (
         "(if defined in your code base) to override the handle_referer() method"
     ) in caplog.text
+
+
+def test_not_configured():
+    crawler = get_crawler(DefaultSpider, {"REDIRECT_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        RedirectMiddleware.from_crawler(crawler)
