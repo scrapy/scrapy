@@ -1451,8 +1451,8 @@ class TestFeedExporterBatchIdState:
             exporter.crawler.spider = spider
             await exporter._on_state_loaded(spider.state)
             batch_ids = {slot.uri_template: slot.batch_id for slot in exporter.slots}
-            assert batch_ids[uri_a] == 4
-            assert batch_ids[uri_b] == 8
+            assert batch_ids[uri_a] == 3
+            assert batch_ids[uri_b] == 7
 
     @coroutine_test
     async def test_no_jobdir_no_error(self):
@@ -1481,8 +1481,8 @@ class TestFeedExporterBatchIdState:
         Uses the full Scrapy machinery (real crawl_async()) so that any internal
         change to signal ordering or extension wiring is caught.  SpiderState
         fires spider_state_loaded / spider_state_saving; FeedExporter uses those
-        to resume from the right batch ID, so the second run's files (feed-4.jl,
-        feed-5.jl) never collide with the first run's files (feed-1.jl, feed-2.jl).
+        to resume from the right batch ID, so the second run's files (feed-3.jl,
+        feed-4.jl) never collide with the first run's files (feed-1.jl, feed-2.jl).
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             jobdir = Path(tmpdir) / "jobdir"
@@ -1514,8 +1514,8 @@ class TestFeedExporterBatchIdState:
             assert Path(f"{tmpdir}/feed-1.jl").read_bytes() == content_run1[1]
             assert Path(f"{tmpdir}/feed-2.jl").read_bytes() == content_run1[2]
             # Second run created new files with higher batch IDs
+            assert Path(f"{tmpdir}/feed-3.jl").exists()
             assert Path(f"{tmpdir}/feed-4.jl").exists()
-            assert Path(f"{tmpdir}/feed-5.jl").exists()
 
     @coroutine_test
     async def test_feed_slots_initialized_fires_after_state_loaded(self):
@@ -1539,7 +1539,7 @@ class TestFeedExporterBatchIdState:
             await exporter._on_state_loaded(spider.state)
 
             assert len(received) == 1
-            assert received[0][0].batch_id == 6
+            assert received[0][0].batch_id == 5
 
     @coroutine_test
     async def test_feed_slots_initialized_fires_from_engine_started_without_state(self):

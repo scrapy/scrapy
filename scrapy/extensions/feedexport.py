@@ -538,7 +538,7 @@ class FeedExporter:
                 saved_id = feed_batch_ids.get(slot.uri_template, 0)
                 if saved_id == 0:
                     continue
-                batch_id = saved_id + 1
+                batch_id = saved_id
                 uri_params = self._get_uri_params(
                     spider, self.feeds[slot.uri_template]["uri_params"]
                 )
