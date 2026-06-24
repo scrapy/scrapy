@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 pytestmark = [
-    pytest.mark.requires_reactor,
+    pytest.mark.requires_reactor,  # H2ClientProtocol requires a reactor
     pytest.mark.skipif(
         not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
     ),
@@ -61,7 +61,7 @@ def make_html_body(val: str) -> bytes:
 
 class DummySpider(Spider):
     name = "dummy"
-    start_urls: list = []
+    start_urls = []
 
     def parse(self, response):
         print(response)
@@ -141,7 +141,7 @@ class Dataloss(LeafResource):
 
 class NoContentLengthHeader(LeafResource):
     def render_GET(self, request: TxRequest):
-        request.requestHeaders.removeHeader("Content-Length")
+        request.responseHeaders.removeHeader("Content-Length")
         self.deferRequest(request, 0, self._delayed_render, request)
         return NOT_DONE_YET
 
@@ -234,7 +234,7 @@ class TestHttps2ClientProtocol:
         pem = self.key_file.read_text(
             encoding="utf-8"
         ) + self.certificate_file.read_text(encoding="utf-8")
-        return PrivateCertificate.loadPEM(pem)
+        return PrivateCertificate.loadPEM(pem)  # type: ignore[no-any-return]
 
     @async_yield_fixture  # type: ignore[untyped-decorator]
     async def client(
@@ -411,9 +411,22 @@ class TestHttps2ClientProtocol:
             client, request, Data.JSON_LARGE, Data.EXTRA_LARGE, 200
         )
 
-    async def _check_POST_json_x10(self, *args, **kwargs):
+    async def _check_POST_json_x10(
+        self,
+        client: H2ClientProtocol,
+        request: Request,
+        expected_request_body: dict[str, str],
+        expected_extra_data: str,
+        expected_status: int,
+    ) -> None:
         async def get_coro() -> None:
-            await self._check_POST_json(*args, **kwargs)
+            await self._check_POST_json(
+                client,
+                request,
+                expected_request_body,
+                expected_extra_data,
+                expected_status,
+            )
 
         await self._check_repeat(get_coro, 10)
 
@@ -447,9 +460,7 @@ class TestHttps2ClientProtocol:
     def test_invalid_negotiated_protocol(
         self, server_port: int, client: H2ClientProtocol
     ) -> Generator[Deferred[Any], Any, None]:
-        with mock.patch(
-            "scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"
-        ):
+        with mock.patch("scrapy.core.http2.protocol.PROTOCOL_NAME", new=b"not-h2"):
             request = Request(url=self.get_url(server_port, "/status?n=200"))
             with pytest.raises(ResponseFailed):
                 yield make_request_dfd(client, request)
@@ -658,6 +669,9 @@ class TestHttps2ClientProtocol:
             response = await make_request(client, request)
             assert response.status == status
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
     @deferred_f_from_coro_f
     async def test_response_has_correct_certificate_ip_address(
         self,
@@ -717,7 +731,7 @@ class TestHttps2ClientProtocol:
         request = Request(self.get_url(server_port, "/timeout"))
 
         # Update the timer to 1s to test connection timeout
-        client.setTimeout(1)
+        client.setTimeout(1)  # type: ignore[no-untyped-call]
 
         with pytest.raises(ResponseFailed) as exc_info:
             yield make_request_dfd(client, request)

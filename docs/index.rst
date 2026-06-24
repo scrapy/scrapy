@@ -128,7 +128,6 @@ Built-in services
 
    topics/logging
    topics/stats
-   topics/email
    topics/telnetconsole
 
 :doc:`topics/logging`
@@ -136,9 +135,6 @@ Built-in services
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
-
-:doc:`topics/email`
-    Send email notifications when certain events occur.
 
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.

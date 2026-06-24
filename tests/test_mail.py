@@ -5,11 +5,18 @@ import pytest
 from twisted.internet import defer
 from twisted.internet._sslverify import ClientTLSOptions
 
-from scrapy.mail import MailSender
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:The scrapy.mail module is deprecated:scrapy.exceptions.ScrapyDeprecationWarning"
+)
+
+from scrapy.mail import MailSender  # noqa: E402
 
 
-@pytest.mark.requires_reactor
+@pytest.mark.requires_reactor  # MailSender requires a reactor
 class TestMailSender:
+    def _catch_mail_sent(self, **kwargs):
+        self.catched_msg = {**kwargs}
+
     def test_send(self):
         mailsender = MailSender(debug=True)
         mailsender.send(
@@ -87,9 +94,6 @@ class TestMailSender:
         assert text.get_payload(decode=True) == b"body"
         assert text.get_charset() == Charset("us-ascii")
         assert attach.get_payload(decode=True) == b"content"
-
-    def _catch_mail_sent(self, **kwargs):
-        self.catched_msg = {**kwargs}
 
     def test_send_utf8(self):
         subject = "sübjèçt"

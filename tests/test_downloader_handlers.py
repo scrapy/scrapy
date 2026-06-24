@@ -156,12 +156,12 @@ class HttpDownloadHandlerMock:
 @pytest.mark.requires_botocore
 class TestS3Anon:
     def setup_method(self):
-        crawler = get_crawler()
-        with mock.patch(
-            "scrapy.core.downloader.handlers.s3.HTTP11DownloadHandler",
-            HttpDownloadHandlerMock,
-        ):
-            self.s3reqh = build_from_crawler(S3DownloadHandler, crawler)
+        crawler = get_crawler(
+            settings_dict={
+                "DOWNLOAD_HANDLERS": {"https": HttpDownloadHandlerMock},
+            }
+        )
+        self.s3reqh = build_from_crawler(S3DownloadHandler, crawler)
         self.download_request = self.s3reqh.download_request
 
     @coroutine_test
@@ -183,28 +183,22 @@ class TestS3:
             settings_dict={
                 "AWS_ACCESS_KEY_ID": "0PN5J17HBGZHT7JJ3X82",
                 "AWS_SECRET_ACCESS_KEY": "uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o",
+                "DOWNLOAD_HANDLERS": {"https": HttpDownloadHandlerMock},
             }
         )
-        with mock.patch(
-            "scrapy.core.downloader.handlers.s3.HTTP11DownloadHandler",
-            HttpDownloadHandlerMock,
-        ):
-            s3reqh = build_from_crawler(S3DownloadHandler, crawler)
+        s3reqh = build_from_crawler(S3DownloadHandler, crawler)
         self.download_request = s3reqh.download_request
 
     @contextlib.contextmanager
     def _mocked_date(self, date):
-        try:
-            import botocore.auth  # noqa: F401,PLC0415
-        except ImportError:
+        import botocore.auth  # noqa: F401,PLC0415
+
+        # We need to mock botocore.auth.formatdate, because otherwise
+        # botocore overrides Date header with current date and time
+        # and Authorization header is different each time
+        with mock.patch("botocore.auth.formatdate") as mock_formatdate:
+            mock_formatdate.return_value = date
             yield
-        else:
-            # We need to mock botocore.auth.formatdate, because otherwise
-            # botocore overrides Date header with current date and time
-            # and Authorization header is different each time
-            with mock.patch("botocore.auth.formatdate") as mock_formatdate:
-                mock_formatdate.return_value = date
-                yield
 
     @coroutine_test
     async def test_request_signing1(self):

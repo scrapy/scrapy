@@ -68,19 +68,21 @@ Response, Item, Spider and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
-alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
+alias to the :func:`~scrapy.utils.trackref.print_live_refs` function:
+
+.. code-block:: bash
 
     telnet localhost 6023
 
-    .. code-block:: pycon
+.. code-block:: pycon
 
-        >>> prefs()
-        Live References
+    >>> prefs()
+    Live References
 
-        ExampleSpider                       1   oldest: 15s ago
-        HtmlResponse                       10   oldest: 1s ago
-        Selector                            2   oldest: 0s ago
-        FormRequest                       878   oldest: 7s ago
+    ExampleSpider                       1   oldest: 15s ago
+    HtmlResponse                       10   oldest: 1s ago
+    Selector                            2   oldest: 0s ago
+    Request                           878   oldest: 7s ago
 
 As you can see, that report also shows the "age" of the oldest object in each
 class. If you're running multiple spiders per process chances are you can

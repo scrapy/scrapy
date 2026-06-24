@@ -69,7 +69,7 @@ class HttpProxyMiddleware:
             _scheme = parsed.scheme
             if (
                 # 'no_proxy' is only supported by http schemes
-                _scheme not in ("http", "https")
+                _scheme not in {"http", "https"}
                 or (parsed.hostname and not proxy_bypass(parsed.hostname))
             ) and _scheme in self.proxies:
                 scheme = _scheme

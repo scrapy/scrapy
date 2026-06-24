@@ -9,7 +9,7 @@ from zope.interface import implementer
 from zope.interface.verify import verifyClass
 
 from scrapy.interfaces import ISpiderLoader
-from scrapy.utils.misc import load_object, walk_modules
+from scrapy.utils.misc import load_object, walk_modules_iter
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -77,6 +77,7 @@ class SpiderLoader:
             warnings.warn(
                 "There are several spiders with the same name:\n\n"
                 f"{dupes_string}\n\n  This can cause unexpected behavior.",
+                stacklevel=2,
                 category=UserWarning,
             )
 
@@ -88,7 +89,7 @@ class SpiderLoader:
     def _load_all_spiders(self) -> None:
         for name in self.spider_modules:
             try:
-                for module in walk_modules(name):
+                for module in walk_modules_iter(name):
                     self._load_spiders(module)
             except (ImportError, SyntaxError):
                 if self.warn_only:
@@ -96,6 +97,7 @@ class SpiderLoader:
                         f"\n{traceback.format_exc()}Could not load spiders "
                         f"from module '{name}'. "
                         "See above traceback for details.",
+                        stacklevel=2,
                         category=RuntimeWarning,
                     )
                 else:
@@ -114,7 +116,7 @@ class SpiderLoader:
         try:
             return self._spiders[spider_name]
         except KeyError:
-            raise KeyError(f"Spider not found: {spider_name}")
+            raise KeyError(f"Spider not found: {spider_name}") from None
 
     def find_by_request(self, request: Request) -> list[str]:
         """

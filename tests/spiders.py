@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 from twisted.internet import defer
@@ -20,9 +21,18 @@ from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.test import get_from_asyncio_queue
 
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
+
 
 class MockServerSpider(Spider):
-    def __init__(self, *args, mockserver=None, is_secure=False, **kwargs):
+    def __init__(
+        self,
+        *args,
+        mockserver: MockServer | None = None,
+        is_secure: bool = False,
+        **kwargs: Any,
+    ):
         super().__init__(*args, **kwargs)
         self.mockserver = mockserver
         self.is_secure = is_secure
@@ -31,9 +41,9 @@ class MockServerSpider(Spider):
 class MetaSpider(MockServerSpider):
     name = "meta"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.meta = {}
+        self.meta: dict[str, Any] = {}
 
     def closed(self, reason):
         self.meta["close_reason"] = reason
@@ -84,19 +94,19 @@ class DelaySpider(MetaSpider):
 class LogSpider(MetaSpider):
     name = "log_spider"
 
-    def log_debug(self, message: str, extra: dict | None = None):
+    def log_debug(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.debug(message, extra=extra)
 
-    def log_info(self, message: str, extra: dict | None = None):
+    def log_info(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.info(message, extra=extra)
 
-    def log_warning(self, message: str, extra: dict | None = None):
+    def log_warning(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.warning(message, extra=extra)
 
-    def log_error(self, message: str, extra: dict | None = None):
+    def log_error(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.error(message, extra=extra)
 
-    def log_critical(self, message: str, extra: dict | None = None):
+    def log_critical(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.critical(message, extra=extra)
 
     def parse(self, response):
@@ -212,7 +222,7 @@ class AsyncDefDeferredWrappedSpider(SimpleSpider):
 
 
 class AsyncDefDeferredMaybeWrappedSpider(SimpleSpider):
-    name = "asyncdef_deferred_wrapped"
+    name = "asyncdef_deferred_maybe_wrapped"
 
     async def parse(self, response):
         await maybe_deferred_to_future(defer.succeed(None))
@@ -407,7 +417,7 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     """
 
     name = "crawl_spider_with_parse_method"
-    custom_settings: dict = {
+    custom_settings: dict[str, Any] = {
         "RETRY_HTTP_CODES": [],  # no need to retry
     }
     rules = (Rule(LinkExtractor(), callback="parse", follow=True),)

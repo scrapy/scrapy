@@ -35,11 +35,11 @@ from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Request, Response
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
+from scrapy.utils.ssl import _log_ssl_conn_debug_info
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
 
-    from hpack import HeaderTuple
     from twisted.internet.defer import Deferred
     from twisted.python.failure import Failure
     from twisted.web.client import URI
@@ -92,6 +92,8 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         uri: URI,
         settings: Settings,
         conn_lost_deferred: Deferred[list[BaseException]],
+        *,
+        tls_verbose_logging: bool = False,
     ) -> None:
         """
         Arguments:
@@ -101,8 +103,10 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             settings -- Scrapy project settings
             conn_lost_deferred -- Deferred fires with the reason: Failure to notify
                 that connection was lost
+            tls_verbose_logging -- Whether to log TLS details
         """
         self._conn_lost_deferred: Deferred[list[BaseException]] = conn_lost_deferred
+        self._tls_verbose_logging: bool = tls_verbose_logging
 
         config = H2Configuration(client_side=True, header_encoding="utf-8")
         self.conn = H2Connection(config=config)
@@ -220,7 +224,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         """
         assert self.transport is not None  # typing
         # Reset the idle timeout as connection is still actively sending data
-        self.resetTimeout()
+        self.resetTimeout()  # type: ignore[no-untyped-call]
 
         data = self.conn.data_to_send()
         self.transport.write(data)
@@ -247,7 +251,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         sending some data now: we should open with the connection preamble.
         """
         # Initialize the timeout
-        self.setTimeout(self.IDLE_TIMEOUT)
+        self.setTimeout(self.IDLE_TIMEOUT)  # type: ignore[no-untyped-call]
 
         assert self.transport is not None  # typing
         destination = self.transport.getPeer()
@@ -260,7 +264,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
     def _lose_connection_with_error(self, errors: list[BaseException]) -> None:
         """Helper function to lose the connection with the error sent as a
         reason"""
-        self._conn_lost_errors += errors
+        self._conn_lost_errors.extend(errors)
         assert self.transport is not None  # typing
         self.transport.loseConnection()
 
@@ -278,6 +282,11 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
                 [InvalidNegotiatedProtocol(self.transport.negotiatedProtocol)]
             )
 
+        if self._tls_verbose_logging:
+            connection = self.transport.getHandle()
+            hostname = self.metadata["uri"].host.decode("ascii")
+            _log_ssl_conn_debug_info(hostname, connection)
+
     def _check_received_data(self, data: bytes) -> None:
         """Checks for edge cases where the connection to remote fails
         without raising an appropriate H2Error
@@ -290,7 +299,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def dataReceived(self, data: bytes) -> None:
         # Reset the idle timeout as connection is still actively receiving data
-        self.resetTimeout()
+        self.resetTimeout()  # type: ignore[no-untyped-call]
 
         try:
             self._check_received_data(data)
@@ -300,7 +309,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             if isinstance(e, FrameTooLargeError):
                 # hyper-h2 does not drop the connection in this scenario, we
                 # need to abort the connection manually.
-                self._conn_lost_errors += [e]
+                self._conn_lost_errors.append(e)
                 assert self.transport is not None  # typing
                 self.transport.abortConnection()
                 return
@@ -343,7 +352,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         No need to write anything to transport here.
         """
         # Cancel the timeout if not done yet
-        self.setTimeout(None)
+        self.setTimeout(None)  # type: ignore[no-untyped-call]
 
         # Notify the connection pool instance such that no new requests are
         # sent over current connection
@@ -409,7 +418,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         except KeyError:
             pass  # We ignore server-initiated events
         else:
-            stream.receive_headers(cast("list[HeaderTuple]", event.headers))
+            stream.receive_headers(cast("list[tuple[str, str]]", event.headers))
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata["settings_acknowledged"] = True
@@ -454,13 +463,21 @@ class H2ClientFactory(Factory):
         uri: URI,
         settings: Settings,
         conn_lost_deferred: Deferred[list[BaseException]],
+        *,
+        tls_verbose_logging: bool = False,
     ) -> None:
         self.uri = uri
         self.settings = settings
         self.conn_lost_deferred = conn_lost_deferred
+        self.tls_verbose_logging = tls_verbose_logging
 
     def buildProtocol(self, addr: IAddress) -> H2ClientProtocol:
-        return H2ClientProtocol(self.uri, self.settings, self.conn_lost_deferred)
+        return H2ClientProtocol(
+            self.uri,
+            self.settings,
+            self.conn_lost_deferred,
+            tls_verbose_logging=self.tls_verbose_logging,
+        )
 
     def acceptableProtocols(self) -> list[bytes]:
         return [PROTOCOL_NAME]

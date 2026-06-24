@@ -9,12 +9,14 @@ import pytest
 
 from scrapy.utils.log import LogCounterHandler
 from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
+from tests.utils.decorators import coroutine_test
 
 
 def test_counter_handler() -> None:
     """Test that ``LogCounterHandler`` is always properly removed.
 
-    It's added in ``Crawler.crawl{,_async}()`` and removed on engine_stopped.
+    It's added in ``LogCount.spider_opened()`` and removed in
+    ``LogCount.spider_closed()``.
     """
     c = sum(1 for h in logging.root.handlers if isinstance(h, LogCounterHandler))
     assert c == 0
@@ -25,17 +27,26 @@ def test_stderr_log_handler() -> None:
 
     It's added in ``configure_logging()``, called by ``{Async,}CrawlerProcess``
     (without ``install_root_handler=False``). It can be removed with
-    ``_uninstall_scrapy_root_handler()`` if installing it was really neeeded.
+    ``_uninstall_scrapy_root_handler()`` if installing it was really needed.
     """
     c = sum(1 for h in logging.root.handlers if type(h) is logging.StreamHandler)  # pylint: disable=unidiomatic-typecheck
     assert c == 0
 
 
-@pytest.mark.requires_reactor  # needs a running event loop for asyncio.all_tasks()
 @pytest.mark.only_asyncio
-def test_pending_asyncio_tasks() -> None:
+@coroutine_test
+async def test_pending_asyncio_tasks() -> None:
     """Test that there are no pending asyncio tasks."""
-    assert not asyncio.all_tasks()
+    # note that pytest-asyncio uses separate loops per function so this isn't as useful there
+    tasks = []
+    for t in asyncio.all_tasks():
+        coro = t.get_coro()
+        if (
+            coro is not None
+            and getattr(coro, "__name__", None) != "test_pending_asyncio_tasks"
+        ):
+            tasks.append(t)
+    assert not tasks
 
 
 def test_installed_reactor(reactor_pytest: str) -> None:

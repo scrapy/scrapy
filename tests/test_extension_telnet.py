@@ -6,7 +6,7 @@ from scrapy.extensions.telnet import TelnetConsole
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import inline_callbacks_test
 
-pytestmark = pytest.mark.requires_reactor
+pytestmark = pytest.mark.requires_reactor  # TelnetConsole requires a reactor
 
 
 class TestTelnetExtension:
@@ -53,3 +53,9 @@ class TestTelnetExtension:
         d = portal.login(creds, None, ITelnetProtocol)
         yield d
         console.stop_listening()
+
+    def test_invalid_reversed_portrange(self):
+        settings = {"TELNETCONSOLE_PORT": [2, 1]}
+        console = TelnetConsole(get_crawler(settings_dict=settings))
+        with pytest.raises(ValueError, match=r"invalid portrange: \[2, 1\]"):
+            console.start_listening()

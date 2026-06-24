@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from abc import ABC
 from contextlib import contextmanager
+from http.cookiejar import CookieJar
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import CancelledError
@@ -15,7 +15,6 @@ from twisted.web.client import ResponseFailed
 from twisted.web.error import SchemeNotSupported
 
 from scrapy import responsetypes
-from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
@@ -29,26 +28,24 @@ from scrapy.utils.log import logger
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from http.client import HTTPResponse
+    from http.cookiejar import Cookie
     from ipaddress import IPv4Address, IPv6Address
-
-    from twisted.internet.ssl import Certificate
+    from urllib.request import Request as ULRequest
 
     from scrapy import Request
     from scrapy.crawler import Crawler
     from scrapy.http import Headers, Response
 
 
-class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
-    """Base class for built-in HTTP download handlers."""
+class NullCookieJar(CookieJar):  # pragma: no cover
+    """A CookieJar that rejects all cookies."""
 
-    def __init__(self, crawler: Crawler):
-        super().__init__(crawler)
-        self._default_maxsize: int = crawler.settings.getint("DOWNLOAD_MAXSIZE")
-        self._default_warnsize: int = crawler.settings.getint("DOWNLOAD_WARNSIZE")
-        self._fail_on_dataloss: bool = crawler.settings.getbool(
-            "DOWNLOAD_FAIL_ON_DATALOSS"
-        )
-        self._fail_on_dataloss_warned: bool = False
+    def extract_cookies(self, response: HTTPResponse, request: ULRequest) -> None:
+        pass
+
+    def set_cookie(self, cookie: Cookie) -> None:
+        pass
 
 
 @contextmanager
@@ -100,7 +97,7 @@ def make_response(
     headers: Headers,
     body: bytes = b"",
     flags: list[str] | None = None,
-    certificate: Certificate | None = None,
+    certificate: Any = None,
     ip_address: IPv4Address | IPv6Address | None = None,
     protocol: str | None = None,
     stop_download: StopDownload | None = None,
@@ -146,3 +143,11 @@ def get_dataloss_msg(url: str) -> str:
         f"responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
         f" -- This message won't be shown in further requests"
     )
+
+
+def normalize_bind_address(
+    value: str | tuple[str, int] | None,
+) -> tuple[str, int] | None:
+    if isinstance(value, str):
+        return (value, 0)
+    return value

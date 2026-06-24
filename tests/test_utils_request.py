@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from hashlib import sha1
+from typing import Any
 from weakref import WeakKeyDictionary
 
 import pytest
@@ -56,13 +57,17 @@ def test_request_httprepr_for_non_http_request(r: Request) -> None:
 
 
 class TestFingerprint:
-    function: staticmethod = staticmethod(fingerprint)
+    function: staticmethod[[Request], bytes] = staticmethod(fingerprint)
     cache: (
-        WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]]
-        | WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], str]]
+        WeakKeyDictionary[
+            Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
+        ]
+        | WeakKeyDictionary[
+            Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], str]
+        ]
     ) = _fingerprint_cache
-    default_cache_key = (None, False)
-    known_hashes: tuple[tuple[Request, bytes | str, dict], ...] = (
+    default_cache_key = (None, False, False)
+    known_hashes: tuple[tuple[Request, bytes | str, dict[str, Any]], ...] = (
         (
             Request("http://example.org"),
             b"xs\xd7\x0c3uj\x15\xfe\xd7d\x9b\xa9\t\xe0d\xbf\x9cXD",
@@ -190,6 +195,32 @@ class TestFingerprint:
         assert self.function(r1) == self.function(r1, keep_fragments=True)
         assert self.function(r2) != self.function(r2, keep_fragments=True)
         assert self.function(r1) != self.function(r2, keep_fragments=True)
+
+    def test_verbatim_url(self):
+        # verbatim_url requests skip URL canonicalization
+        r1 = Request(
+            "http://www.example.com/query?a=1&b=2", meta={"verbatim_url": True}
+        )
+        r2 = Request(
+            "http://www.example.com/query?b=2&a=1", meta={"verbatim_url": True}
+        )
+        assert self.function(r1) != self.function(r2)
+
+        # without verbatim_url, canonicalization makes query-param order irrelevant
+        r3 = Request("http://www.example.com/query?a=1&b=2")
+        r4 = Request("http://www.example.com/query?b=2&a=1")
+        assert self.function(r3) == self.function(r4)
+
+        # with verbatim_url, the fragment is always kept in the fingerprint
+        r5 = Request(
+            "http://www.example.com/test#fragment", meta={"verbatim_url": True}
+        )
+        r6 = Request("http://www.example.com/test", meta={"verbatim_url": True})
+        assert self.function(r5) != self.function(r6)
+
+        # keep_fragments parameter is ignored for verbatim_url requests
+        assert self.function(r5) == self.function(r5, keep_fragments=True)
+        assert self.function(r5) == self.function(r5, keep_fragments=False)
 
     def test_method_and_body(self):
         r1 = Request("http://www.example.com")
@@ -380,5 +411,47 @@ class TestRequestToCurl:
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list_verbose(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[
+                {
+                    "name": b"foo",
+                    "value": b"bar",
+                    "domain": "example.com",
+                    "path": "/",
+                    "secure": True,
+                }
+            ],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list_verbose_non_string_value(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[
+                {
+                    "name": "foo",
+                    "value": 1,
+                    "domain": "example.com",
+                    "path": "/",
+                    "secure": True,
+                }
+            ],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=1'"
         )
         self._test_request(request_object, expected_curl_command)

@@ -356,6 +356,18 @@ feed_exporter_closed
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
+memusage_warning_reached
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. signal:: memusage_warning_reached
+
+.. function:: memusage_warning_reached()
+
+    Sent by the :class:`~scrapy.extensions.memusage.MemoryUsage` extension when the
+    memory usage reaches the warning threshold (:setting:`MEMUSAGE_WARNING_MB`).
+
+    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+
 
 Request signals
 ---------------

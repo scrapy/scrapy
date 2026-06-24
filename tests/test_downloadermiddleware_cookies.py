@@ -42,7 +42,7 @@ def _cookie_to_set_cookie_value(cookie):
 def _cookies_to_set_cookie_list(cookies):
     """Given a group of cookie defined either as a dictionary or as a list of
     dictionaries (i.e. in a format supported by the cookies parameter of
-    Request), return the equivalen list of strings that can be associated to a
+    Request), return the equivalent list of strings that can be associated to a
     ``Set-Cookie`` header."""
     if not cookies:
         return []

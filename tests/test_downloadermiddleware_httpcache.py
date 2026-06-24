@@ -89,20 +89,6 @@ class TestBase:
         assert response1.headers == response2.headers
         assert response1.body == response2.body
 
-    def assertEqualRequest(self, request1, request2):
-        assert request1.url == request2.url
-        assert request1.headers == request2.headers
-        assert request1.body == request2.body
-
-    def assertEqualRequestButWithCacheValidators(self, request1, request2):
-        assert request1.url == request2.url
-        assert b"If-None-Match" not in request1.headers
-        assert b"If-Modified-Since" not in request1.headers
-        assert any(
-            h in request2.headers for h in (b"If-None-Match", b"If-Modified-Since")
-        )
-        assert request1.body == request2.body
-
 
 class StorageTestMixin:
     """Mixin containing storage-specific test methods."""
@@ -217,7 +203,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert mw.process_request(req) is None
 
         # s3 scheme response is cached by default
-        req, res = Request("s3://bucket/key"), Response("http://bucket/key")
+        req, res = Request("s3://bucket/key"), Response("s3://bucket/key")
         with self._middleware() as mw:
             assert mw.process_request(req) is None
             mw.process_response(req, res)
@@ -228,7 +214,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert "cached" in cached.flags
 
         # ignore s3 scheme
-        req, res = Request("s3://bucket/key2"), Response("http://bucket/key2")
+        req, res = Request("s3://bucket/key2"), Response("s3://bucket/key2")
         with self._middleware(HTTPCACHE_IGNORE_SCHEMES=["s3"]) as mw:
             assert mw.process_request(req) is None
             mw.process_response(req, res)

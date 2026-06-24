@@ -38,8 +38,8 @@ class InjectArgumentsSpiderMiddleware:
         if request.callback.__name__ == "parse_spider_mw":
             request.cb_kwargs["from_process_spider_input"] = True
 
-    def process_spider_output(self, response, result):
-        for element in result:
+    async def process_spider_output(self, response, result):
+        async for element in result:
             if (
                 isinstance(element, Request)
                 and element.callback.__name__ == "parse_spider_mw_2"
@@ -102,9 +102,7 @@ class KeywordArgumentsSpider(MockServerSpider):
             self.checks.append(kwargs["callback"] == "some_callback")
             self.crawler.stats.inc_value("boolean_checks", 3)
         elif response.url.endswith("/general_without"):
-            self.checks.append(
-                kwargs == {}  # pylint: disable=use-implicit-booleaness-not-comparison
-            )
+            self.checks.append(kwargs == {})
             self.crawler.stats.inc_value("boolean_checks")
 
     def parse_no_kwargs(self, response):

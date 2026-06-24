@@ -4,7 +4,7 @@ import os
 import sys
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pytest
 from pexpect.popen_spawn import PopenSpawn
@@ -20,6 +20,12 @@ if TYPE_CHECKING:
 class TestShellCommand:
     def test_empty(self) -> None:
         _, out, _ = proc("shell", "-c", "item")
+        assert "{}" in out
+
+    def test_empty_no_reactor(self) -> None:
+        _, out, _ = proc(
+            "shell", "-c", "item", "--set", "TWISTED_REACTOR_ENABLED=False"
+        )
         assert "{}" in out
 
     def test_response_body(self, mockserver: MockServer) -> None:
@@ -125,6 +131,14 @@ class TestShellCommand:
         assert ret == 0, err
         assert "RuntimeError: There is no current event loop in thread" not in err
 
+    def test_shell_fetch_no_reactor(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/html")
+        code = f"fetch('{url}')"
+        ret, _, err = proc(
+            "shell", "-c", code, "--set", "TWISTED_REACTOR_ENABLED=False"
+        )
+        assert ret == 0, err
+
 
 class TestInteractiveShell:
     def test_fetch(self, mockserver: MockServer) -> None:
@@ -137,14 +151,13 @@ class TestInteractiveShell:
         env = os.environ.copy()
         env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        # https://github.com/python/typeshed/issues/14915
-        p = PopenSpawn(args, env=cast("os._Environ", env), timeout=5)
+        p = PopenSpawn(args, env=env, timeout=5)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline(f"fetch('{mockserver.url('/')}')")
         p.sendline("type(response)")
         p.expect_exact("HtmlResponse")
         p.sendeof()
-        p.wait()
+        p.wait()  # type: ignore[no-untyped-call]
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()

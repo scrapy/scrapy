@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import warnings
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import get_func_args_dict
@@ -68,7 +68,7 @@ def create_deprecated_class(
         def __new__(  # pylint: disable=bad-classmethod-argument
             metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
         ) -> type:
-            cls = super().__new__(metacls, name, bases, clsdict_)
+            cls: type = super().__new__(metacls, name, bases, clsdict_)
             if metacls.deprecated_class is None:
                 metacls.deprecated_class = cls
             return cls
@@ -100,7 +100,7 @@ def create_deprecated_class(
                 # is the deprecated class itself - subclasses of the
                 # deprecated class should not use custom `__subclasscheck__`
                 # method.
-                return super().__subclasscheck__(sub)
+                return cast("bool", super().__subclasscheck__(sub))
 
             if not inspect.isclass(sub):
                 raise TypeError("issubclass() arg 1 must be a class")
@@ -130,7 +130,7 @@ def create_deprecated_class(
         # deprecated class is in jinja2 template). __module__ attribute is not
         # important enough to raise an exception as users may be unable
         # to fix inspect.stack() errors.
-        warnings.warn(f"Error detecting parent module: {e!r}")
+        warnings.warn(f"Error detecting parent module: {e!r}", stacklevel=2)
 
     return deprecated_cls
 
@@ -160,6 +160,7 @@ def update_classpath(path: Any) -> Any:
             warnings.warn(
                 f"`{path}` class is deprecated, use `{new_path}` instead",
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
             return new_path
     return path

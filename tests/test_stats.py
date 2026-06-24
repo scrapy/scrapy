@@ -29,6 +29,7 @@ def spider(crawler: Crawler) -> Spider:
 
 
 class TestCoreStatsExtension:
+    @mock.patch("scrapy.extensions.corestats.monotonic", return_value=0)
     @mock.patch("scrapy.extensions.corestats.datetime")
     def test_core_stats_default_stats_collector(
         self, mock_datetime: mock.Mock, crawler: Crawler, spider: Spider
@@ -93,8 +94,13 @@ class TestStatsCollector:
         assert stats.get_value("test2") == 35
         stats.min_value("test4", 7)
         assert stats.get_value("test4") == 7
+        stats.set_stats({"replaced": "stats"})
+        assert stats.get_stats() == {"replaced": "stats"}
+        stats.clear_stats()
+        assert stats.get_stats() == {}
 
-    def test_dummy_collector(self, crawler: Crawler) -> None:
+    def test_dummy_collector(self) -> None:
+        crawler = get_crawler(Spider, {"STATS_DUMP": False})
         stats = DummyStatsCollector(crawler)
         assert stats.get_stats() == {}
         assert stats.get_value("anything") is None
@@ -103,9 +109,11 @@ class TestStatsCollector:
         stats.inc_value("v1")
         stats.max_value("v2", 100)
         stats.min_value("v3", 100)
+        stats.set_stats({"key": "val"})
         stats.open_spider()
         stats.set_value("test", "value")
         assert stats.get_stats() == {}
+        stats.close_spider()
 
     def test_deprecated_spider_arg(self, crawler: Crawler, spider: Spider) -> None:
         stats = StatsCollector(crawler)

@@ -81,9 +81,6 @@ thumbnailing and normalizing images to JPEG/RGB format.
 Enabling your Media Pipeline
 ============================
 
-.. setting:: IMAGES_STORE
-.. setting:: FILES_STORE
-
 To enable your media pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting.
 
@@ -102,6 +99,8 @@ For Files Pipeline, use:
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
 
+.. setting:: IMAGES_STORE
+.. setting:: FILES_STORE
 
 Then, configure the target storage setting to a valid value that will be used
 for storing the downloaded images. Otherwise the pipeline will remain disabled,
@@ -290,7 +289,7 @@ Google Cloud Storage
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent a Google Cloud Storage
 bucket. Scrapy will automatically upload the files to the bucket. (requires `google-cloud-storage`_ )
 
-.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+.. _google-cloud-storage: https://docs.cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
 For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings:
 
@@ -301,7 +300,7 @@ For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_I
 
 For information about authentication, see this `documentation`_.
 
-.. _documentation: https://cloud.google.com/docs/authentication
+.. _documentation: https://docs.cloud.google.com/docs/authentication
 
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_GCS_ACL` and
@@ -316,7 +315,7 @@ policy:
 
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
-.. _Predefined ACLs: https://cloud.google.com/storage/docs/access-control/lists#predefined-acl
+.. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
 
 Usage example
 =============
@@ -337,17 +336,18 @@ respectively), the pipeline will put the results under the respective field
 When using :ref:`item types <item-types>` for which fields are defined beforehand,
 you must define both the URLs field and the results field. For example, when
 using the images pipeline, items must define both the ``image_urls`` and the
-``images`` field. For instance, using the :class:`~scrapy.Item` class:
+``images`` field. For instance, using a dataclass:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
 
 
-    class MyItem(scrapy.Item):
+    @dataclass
+    class MyItem:
         # ... other item fields ...
-        image_urls = scrapy.Field()
-        images = scrapy.Field()
+        image_urls: list[str] = field(default_factory=list)
+        images: list[dict] = field(default_factory=list)
 
 If you want to use another field name for the URLs key or for the results key,
 it is also possible to override it.
@@ -774,4 +774,28 @@ To enable your custom media pipeline component you must add its class import pat
 
    ITEM_PIPELINES = {"myproject.pipelines.MyImagesPipeline": 300}
 
+Content-based image filtering pipeline
+--------------------------------------
+
+This example overrides ``get_images()`` to filter images using a classifier,
+such as a TensorFlow_ model. Override ``is_valid_image()`` with your
+classification logic:
+
+.. code-block:: python
+
+    from scrapy.pipelines.images import ImagesPipeline, ImageException
+
+
+    class ImageClassifierPipeline(ImagesPipeline):
+        def is_valid_image(self, image):
+            raise NotImplementedError
+
+        def get_images(self, response, request, info, *, item=None):
+            for path, image, buf in super().get_images(response, request, info, item=item):
+                if not self.is_valid_image(image):
+                    raise ImageException("Image does not match criteria")
+                yield path, image, buf
+
+
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5
+.. _TensorFlow: https://tensorflow.org

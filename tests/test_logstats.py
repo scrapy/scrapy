@@ -5,6 +5,7 @@ import pytest
 from scrapy.extensions.logstats import LogStats
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
+from tests.utils.decorators import coroutine_test
 
 
 class TestLogStats:
@@ -16,8 +17,8 @@ class TestLogStats:
         self.stats.set_value("response_received_count", 4802)
         self.stats.set_value("item_scraped_count", 3201)
 
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for LogStats.task
-    def test_stats_calculations(self):
+    @coroutine_test
+    async def test_stats_calculations(self):
         logstats = LogStats.from_crawler(self.crawler)
 
         with pytest.raises(AttributeError):

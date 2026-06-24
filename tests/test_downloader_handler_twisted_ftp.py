@@ -11,7 +11,10 @@ import pytest
 from pytest_twisted import async_yield_fixture
 from twisted.cred import checkers, credentials, portal
 
+from scrapy import Spider
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
+from scrapy.crawler import Crawler
+from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.http.response.text import TextResponse
 from scrapy.utils.defer import deferred_f_from_coro_f
@@ -25,7 +28,7 @@ if TYPE_CHECKING:
     from twisted.protocols.ftp import FTPFactory
 
 
-pytestmark = pytest.mark.requires_reactor
+pytestmark = pytest.mark.requires_reactor  # FTPDownloadHandler requires a reactor
 
 
 class TestFTPBase(ABC):
@@ -56,7 +59,7 @@ class TestFTPBase(ABC):
         port = reactor.listenTCP(0, factory, interface="127.0.0.1")
         portno = port.getHost().port
 
-        yield f"https://127.0.0.1:{portno}/"
+        yield f"ftp://127.0.0.1:{portno}/"
 
         await port.stopListening()
 
@@ -139,15 +142,11 @@ class TestFTPBase(ABC):
         server_url: str,
         dh: FTPDownloadHandler,
     ) -> None:
-        f, local_fname = mkstemp()
-        local_fname_path = Path(local_fname)
-        os.close(f)
         meta = {}
         meta.update(self.req_meta)
         request = Request(url=server_url + filename, meta=meta)
         r = await dh.download_request(request)
         assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
-        local_fname_path.unlink()
 
 
 class TestFTP(TestFTPBase):
@@ -200,3 +199,9 @@ class TestAnonymousFTP(TestFTPBase):
         p = portal.Portal(realm)
         p.registerChecker(checkers.AllowAnonymousAccess(), credentials.IAnonymous)
         return FTPFactory(portal=p, userAnonymous=self.username)
+
+
+def test_not_configured_without_reactor() -> None:
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        FTPDownloadHandler.from_crawler(crawler)

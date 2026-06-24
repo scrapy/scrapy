@@ -7,17 +7,15 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
-import warnings
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import signals
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterable
+    from collections.abc import AsyncIterator
 
     from twisted.internet.defer import Deferred
 
@@ -26,7 +24,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
-    from scrapy.settings import BaseSettings, _SettingsKey
+    from scrapy.settings import BaseSettings
     from scrapy.utils.log import SpiderLoggerAdapter
 
 
@@ -39,7 +37,7 @@ class Spider(object_ref):
     """
 
     name: str
-    custom_settings: dict[_SettingsKey, Any] | None = None
+    custom_settings: dict[str, Any] | None = None
 
     #: Start URLs. See :meth:`start`.
     start_urls: list[str]
@@ -127,30 +125,6 @@ class Spider(object_ref):
 
         .. seealso:: :ref:`start-requests`
         """
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", category=ScrapyDeprecationWarning, module=r"^scrapy\.spiders$"
-            )
-            for item_or_request in self.start_requests():
-                yield item_or_request
-
-    def start_requests(self) -> Iterable[Any]:
-        warnings.warn(
-            (
-                "The Spider.start_requests() method is deprecated, use "
-                "Spider.start() instead. If you are calling "
-                "super().start_requests() from a Spider.start() override, "
-                "iterate super().start() instead."
-            ),
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        if not self.start_urls and hasattr(self, "start_url"):
-            raise AttributeError(
-                "Crawling could not start: 'start_urls' not found "
-                "or empty (but found 'start_url' attribute instead, "
-                "did you miss an 's'?)"
-            )
         for url in self.start_urls:
             yield Request(url, dont_filter=True)
 

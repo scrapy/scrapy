@@ -36,7 +36,9 @@ class JsonRequest(Request):
         data_passed: bool = data is not None
 
         if body_passed and data_passed:
-            warnings.warn("Both body and data passed. data will be ignored")
+            warnings.warn(
+                "Both body and data passed. data will be ignored", stacklevel=2
+            )
         elif not body_passed and data_passed:
             kwargs["body"] = self._dumps(data)
             if "method" not in kwargs:
@@ -68,7 +70,9 @@ class JsonRequest(Request):
         data_passed: bool = data is not None
 
         if body_passed and data_passed:
-            warnings.warn("Both body and data passed. data will be ignored")
+            warnings.warn(
+                "Both body and data passed. data will be ignored", stacklevel=2
+            )
         elif not body_passed and data_passed:
             kwargs["body"] = self._dumps(data)
 

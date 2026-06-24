@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from unittest.mock import MagicMock
 
 import pytest
@@ -175,10 +174,6 @@ class MockedMediaPipeline(UserDefinedPipeline):
         super().__init__(*args, crawler=crawler, **kwargs)
         self._mockcalled = []
 
-    def download(self, request, info):
-        self._mockcalled.append("download")
-        return super().download(request, info)
-
     def media_to_download(self, request, info, *, item=None):
         self._mockcalled.append("media_to_download")
         if "result" in request.meta:
@@ -202,6 +197,11 @@ class MockedMediaPipeline(UserDefinedPipeline):
         item = super().item_completed(results, item, info)
         item["results"] = results
         return item
+
+
+class AsyncMediaDownloadedPipeline(MockedMediaPipeline):
+    async def media_downloaded(self, response, request, info, *, item=None):
+        return super().media_downloaded(response, request, info)
 
 
 class TestMediaPipeline(TestBaseMediaPipeline):
@@ -371,6 +371,16 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         )
 
 
+class TestAsyncMediaDownloaded(TestMediaPipeline):
+    pipeline_class = AsyncMediaDownloadedPipeline
+
+    def test_key_for_pipe(self):
+        assert (
+            self.pipe._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
+            == "ASYNCMEDIADOWNLOADEDPIPELINE_IMAGES"
+        )
+
+
 class TestMediaPipelineAllowRedirectSettings:
     def _assert_request_no3xx(self, pipeline_class, settings):
         pipe = pipeline_class(crawler=get_crawler(None, settings))
@@ -414,11 +424,9 @@ class TestBuildFromCrawler:
         class Pipeline(UserDefinedPipeline):
             pass
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
 
     def test_has_from_crawler_and_init(self):
         class Pipeline(UserDefinedPipeline):
@@ -436,13 +444,11 @@ class TestBuildFromCrawler:
                 o._from_crawler_called = True
                 return o
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe._from_crawler_called
-            assert pipe._init_called
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe._from_crawler_called
+        assert pipe._init_called
 
     def test_has_from_crawler(self):
         class Pipeline(UserDefinedPipeline):
@@ -456,13 +462,10 @@ class TestBuildFromCrawler:
                 o.store_uri = settings["FILES_STORE"]
                 return o
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            # this and the next assert will fail as MediaPipeline.from_crawler() wasn't called
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe._from_crawler_called
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe._from_crawler_called
 
 
 class MediaFailedFailurePipeline(MockedMediaPipeline):

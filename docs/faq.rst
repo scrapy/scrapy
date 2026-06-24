@@ -82,9 +82,17 @@ to steal from us!
 Does Scrapy work with HTTP proxies?
 -----------------------------------
 
-Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
-Proxy downloader middleware. See
+Yes. Support for HTTP proxies is provided through the HTTP Proxy downloader
+middleware. See
 :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`.
+
+Does Scrapy work with SOCKS proxies?
+------------------------------------
+
+Yes, when using
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. See
+:class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` and the
+handler documentation.
 
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
@@ -360,7 +368,10 @@ method for this purpose. For example:
 Does Scrapy support IPv6 addresses?
 -----------------------------------
 
-Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Yes, but when using
+:class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` or
+:class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` you need to
+set :setting:`TWISTED_DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
 Note that by doing so, you lose the ability to set a specific timeout for DNS requests
 (the value of the :setting:`DNS_TIMEOUT` setting is ignored).
 
@@ -418,4 +429,3 @@ See :issue:`2680`.
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
-.. _user agents: https://en.wikipedia.org/wiki/User_agent

@@ -41,13 +41,6 @@ class BaseSpiderMiddleware:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
-    def process_start_requests(
-        self, start: Iterable[Any], spider: Spider
-    ) -> Iterable[Any]:
-        for o in start:
-            if (o := self._get_processed(o, None)) is not None:
-                yield o
-
     async def process_start(self, start: AsyncIterator[Any]) -> AsyncIterator[Any]:
         async for o in start:
             if (o := self._get_processed(o, None)) is not None:
