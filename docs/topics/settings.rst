@@ -361,6 +361,14 @@ All of these settings, except for :setting:`ASYNCIO_EVENT_LOOP`, are only used
 when the Twisted reactor is used, i.e. when :setting:`TWISTED_REACTOR_ENABLED`
 is ``True``.
 
+Logging settings
+----------------
+
+:setting:`LOG_FILE` is a global logging setting. It can be defined from a
+spider, but when multiple spiders run in the same process, for example with
+:class:`~scrapy.crawler.CrawlerProcess`, it cannot be used as a per-spider log
+destination through :attr:`~scrapy.Spider.custom_settings`.
+
 .. _topics-settings-ref:
 
 Built-in settings reference
@@ -1459,6 +1467,12 @@ LOG_FILE
 Default: ``None``
 
 File name to use for logging output. If ``None``, standard error will be used.
+
+This is a global logging setting. When running multiple spiders in the same
+process, for example with :class:`~scrapy.crawler.CrawlerProcess`,
+:setting:`LOG_FILE` cannot be used as a per-spider log destination through
+:attr:`~scrapy.Spider.custom_settings`. See :ref:`topics-logging-settings` for
+more information about logging configuration.
 
 .. setting:: LOG_FILE_APPEND
 
