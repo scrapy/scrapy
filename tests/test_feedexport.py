@@ -1424,7 +1424,7 @@ class TestFeedExporterBatchIdState:
     async def test_fresh_crawl_starts_at_one(self):
         """Without saved state, batch_id starts at 1."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            uri = f"file://{tmpdir}/feed-%(batch_id)d.jl"
+            uri = f"{path_to_url(tmpdir)}/feed-%(batch_id)d.jl"
             exporter = self._make_exporter(uri)
             spider = scrapy.Spider("testspider")
 
@@ -1435,8 +1435,8 @@ class TestFeedExporterBatchIdState:
     async def test_multiple_feeds_tracked_independently(self):
         """Each feed URI is tracked independently in spider.state."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            uri_a = f"file://{tmpdir}/a-%(batch_id)d.jl"
-            uri_b = f"file://{tmpdir}/b-%(batch_id)d.jl"
+            uri_a = f"{path_to_url(tmpdir)}/a-%(batch_id)d.jl"
+            uri_b = f"{path_to_url(tmpdir)}/b-%(batch_id)d.jl"
             settings = {
                 "FEEDS": {
                     uri_a: {"format": "jl", "batch_item_count": 1},
@@ -1462,7 +1462,7 @@ class TestFeedExporterBatchIdState:
         with no state persisted.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            uri = f"file://{tmpdir}/feed-%(batch_id)d.jl"
+            uri = f"{path_to_url(tmpdir)}/feed-%(batch_id)d.jl"
             exporter = self._make_exporter(uri)
             spider = scrapy.Spider("testspider")
 
@@ -1486,7 +1486,7 @@ class TestFeedExporterBatchIdState:
         with tempfile.TemporaryDirectory() as tmpdir:
             jobdir = Path(tmpdir) / "jobdir"
             jobdir.mkdir()
-            feed_uri_template = f"file://{tmpdir}/feed-%(batch_id)d.jl"
+            feed_uri_template = f"{path_to_url(tmpdir)}/feed-%(batch_id)d.jl"
             settings = {
                 "FEEDS": {feed_uri_template: {"format": "jl", "batch_item_count": 1}},
                 "JOBDIR": str(jobdir),
@@ -1520,7 +1520,7 @@ class TestFeedExporterBatchIdState:
     async def test_feed_slots_initialized_fires_after_state_loaded(self):
         """feed_slots_initialized fires with correct slots when state is restored."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            uri = f"file://{tmpdir}/feed-%(batch_id)d.jl"
+            uri = f"{path_to_url(tmpdir)}/feed-%(batch_id)d.jl"
             exporter = self._make_exporter(uri)
             spider = scrapy.Spider("testspider")
             spider.state = {"feed_batch_ids": {uri: 5}}
@@ -1543,7 +1543,7 @@ class TestFeedExporterBatchIdState:
     async def test_feed_slots_initialized_fires_from_engine_started_without_state(self):
         """feed_slots_initialized fires via engine_started when no state is loaded."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            uri = f"file://{tmpdir}/feed-%(batch_id)d.jl"
+            uri = f"{path_to_url(tmpdir)}/feed-%(batch_id)d.jl"
             exporter = self._make_exporter(uri)
             spider = scrapy.Spider("testspider")
 
