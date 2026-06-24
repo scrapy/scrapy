@@ -1917,6 +1917,7 @@ See :ref:`asyncio-without-reactor` for more information about this mode.
 
 .. versionadded:: 2.15.0
 
+
 .. setting:: TWISTED_REACTOR
 
 TWISTED_REACTOR

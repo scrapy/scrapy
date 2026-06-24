@@ -4,6 +4,8 @@
 Throttling
 ==========
 
+.. versionadded:: VERSION
+
 Sending too many requests too quickly can `overwhelm websites`_.
 :ref:`Throttling <basic-throttling>` and :ref:`backoff <backoff>` aim to
 prevent that.
@@ -45,13 +47,17 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 -   .. setting:: DOWNLOAD_DELAY_PER_SLOT
 
-    :setting:`DOWNLOAD_DELAY_PER_SLOT` (default: ``1.0``)
+    :setting:`DOWNLOAD_DELAY_PER_SLOT` (default: ``None``)
 
-    Minimum seconds between requests in the same slot.
+    Minimum seconds to wait between two consecutive requests sent to the same
+    download slot. Unlike :setting:`DOWNLOAD_DELAY`, which applies per domain
+    (:ref:`throttling scope <throttling-scopes>`), this delay is per slot.
 
-    If a slot sends a request and receives its response before this delay has
-    elapsed, it must wait before sending the next request. The wait time is
-    measured from when the previous request was sent.
+    When ``None`` (default), the per-slot delay falls back to
+    :setting:`DOWNLOAD_DELAY`, preserving the historical behavior where
+    :setting:`DOWNLOAD_DELAY` was enforced per slot.
+
+    The wait time is measured from when the previous request was sent.
 
 For example, with ``CONCURRENT_REQUESTS_PER_DOMAIN = 2``, ``DOWNLOAD_DELAY = 0.3``,
 and ``DOWNLOAD_DELAY_PER_SLOT = 1.0``, sending 3 requests to the same domain
@@ -79,13 +85,17 @@ When configuring these settings, note that:
 
 
 .. setting:: THROTTLING_SCOPES
+
 .. _per-domain-throttling:
 
 Per-domain throttling
 =====================
 
-The :setting:`THROTTLING_SCOPES` setting allows you to customize throttling behavior
-for specific domains [1]_.
+The :setting:`THROTTLING_SCOPES` setting allows you to customize throttling
+behavior for specific domains [1]_.
+
+It is a dict that maps scope names to
+:class:`~scrapy.throttling.ThrottlingScopeConfig` dicts.
 
 Its default value allows faster crawling of the testing website using during
 the :ref:`tutorial <intro-tutorial>` while maintaining conservative defaults
@@ -118,19 +128,22 @@ The key settings are:
 
     :setting:`BACKOFF_HTTP_CODES` (default: ``[429, 502, 503, 504, 520, 521, 522, 523, 524]``)
 
-    HTTP status codes that trigger backoff.
+    HTTP response status codes that trigger backoff.
 
 -   .. setting:: BACKOFF_DELAY_FACTOR
 
     :setting:`BACKOFF_DELAY_FACTOR` (default: ``2.0``)
 
-    Each backoff multiplies delay by this factor (2x, 4x, 8x, etc.).
+    Factor by which the delay of a scope is multiplied on each backoff step
+    (2×, 4×, 8×, etc.).
 
 -   .. setting:: BACKOFF_MAX_DELAY
 
     :setting:`BACKOFF_MAX_DELAY` (default: ``300.0``)
 
-    Maximum delay cap to prevent excessively long waits.
+    Maximum delay, in seconds, that backoff can reach. Also caps
+    :ref:`Retry-After <retry-after>` and :ref:`RateLimit-Reset
+    <rate-limiting-headers>` delays.
 
 
 .. _rampup:
@@ -158,8 +171,9 @@ setting:
 
     :setting:`RAMPUP_BACKOFF_TARGET` (default: ``1``)
 
-    Target number of backoff responses per rampup window, indicating optimal
-    throughput. Can be a range like ``[1, 3]``.
+    Target number of backoff responses per :setting:`BACKOFF_WINDOW` that
+    :ref:`rampup <rampup>` aims for when probing the rate limit of a scope.
+    Can be a range like ``[1, 3]``.
 
 
 .. _retry-after:
@@ -637,17 +651,12 @@ Additional settings
 
     Default:
 
-    .. code-block:: python
+    -   :exc:`~scrapy.exceptions.DownloadFailedError`
+    -   :exc:`~scrapy.exceptions.DownloadTimeoutError`
+    -   :exc:`~scrapy.exceptions.ResponseDataLossError`
 
-        [
-            "twisted.internet.defer.TimeoutError",
-            "twisted.internet.error.TimeoutError",
-            "twisted.internet.error.TCPTimedOutError",
-            "twisted.web.client.ResponseFailed",
-        ]
-
-    Exception classes that trigger backoff. Strings are interpreted as import
-    paths.
+    List of exception classes that trigger backoff when raised while
+    downloading a request. Strings are interpreted as import paths.
 
     .. seealso:: :setting:`RETRY_EXCEPTIONS`
 
@@ -655,46 +664,45 @@ Additional settings
 
     :setting:`BACKOFF_JITTER` (default: ``0.1``)
 
+    Random jitter applied to each backoff delay, as a fraction of the delay.
+    With the default value of ``0.1`` the delay is randomized by ±10%.
     Overrides :setting:`RANDOMIZE_DOWNLOAD_DELAY` during backoff.
 
 -   .. setting:: BACKOFF_MIN_DELAY
 
     :setting:`BACKOFF_MIN_DELAY` (default: ``1.0``)
 
-    Minimum delay during :ref:`backoff <backoff>`.
+    Delay, in seconds, applied on the first backoff step (and the minimum
+    delay during backoff).
 
 -   .. setting:: BACKOFF_WINDOW
 
     :setting:`BACKOFF_WINDOW` (default: ``60.0``)
 
-    During :ref:`backoff <backoff>`, after a non-backoff response is received,
-    do not take the next step in backoff reduction until this amount of time
-    has passed and no new backoff feedback has been received.
-
-    The number of seconds that need to pass since the last non-backoff response
-    without any other for the backoff to move towards the original throttling
-    configuration.
+    Time window, in seconds, used by :ref:`backoff <backoff>` and
+    :ref:`rampup <rampup>`. During backoff, a :ref:`throttling scope
+    <throttling-scopes>` must go this many seconds without a new backoff
+    trigger (an HTTP error code from :setting:`BACKOFF_HTTP_CODES` or an
+    exception from :setting:`BACKOFF_EXCEPTIONS`) before its delay decreases
+    by one :setting:`BACKOFF_DELAY_FACTOR` step toward the configured value.
+    A new trigger resets the countdown.
 
 -   .. setting:: DELAYED_REQUESTS_WARN_THRESHOLD
 
     :setting:`DELAYED_REQUESTS_WARN_THRESHOLD` (default: ``500``)
 
-    While throttled, requests in the :ref:`scheduler <topics-scheduler>` remain
-    in the scheduler.
+    Number of requests held back by :ref:`throttling <throttling>` at which
+    Scrapy logs a warning, to help detect throttling configurations that hold
+    back more requests than expected.
 
-    However, requests sent with :meth:`engine.download()
-    <scrapy.core.engine.ExecutionEngine.download>` bypass the scheduler. This
-    includes requests sent by some built-in :ref:`components
-    <topics-components>` and :ref:`inline requests <inline-requests>`.
-
-    When such requests are throttled, they are paused and kept in memory, along
+    While throttled, requests in the :ref:`scheduler <topics-scheduler>`
+    remain in the scheduler. However, requests sent with :meth:`engine.download()
+    <scrapy.core.engine.ExecutionEngine.download>` bypass the scheduler,
+    including requests sent by some built-in :ref:`components
+    <topics-components>` and :ref:`inline requests <inline-requests>`. When
+    such requests are throttled, they are paused and kept in memory, along
     with any run time context from the code that is sending them. If they
-    accumulate, they can become a memory issue that may require you to rethink
-    your throttling parameters or crawl strategy.
-
-    :setting:`DELAYED_REQUESTS_WARN_THRESHOLD` defines a threshold for such
-    requests. The first time that this many such requests are being throttled
-    at the same time, a warning is issued.
+    accumulate, they can become a memory issue.
 
 -   .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 
@@ -709,6 +717,30 @@ Additional settings
 
     If ``True``, ``0.5`` (i.e. ±50%) is used as the randomization factor. If
     ``False``, no randomization is applied.
+
+-   .. setting:: TARGET_RPM
+
+    :setting:`TARGET_RPM` (default: ``None``)
+
+    Target number of requests per minute *per domain*. It has no effect on its
+    own; it is read by :class:`~scrapy.addons.throttling.TargetRPMAddon`, which
+    must be enabled explicitly.
+
+-   .. setting:: THROTTLING_DEBUG
+
+    :setting:`THROTTLING_DEBUG` (default: ``False``)
+
+    Whether to log :ref:`throttling <throttling>` decisions (per-scope delays,
+    backoff steps and recoveries) for debugging.
+
+-   .. setting:: THROTTLING_SCOPE_MAX_IDLE
+
+    :setting:`THROTTLING_SCOPE_MAX_IDLE` (default: ``3600.0``)
+
+    Seconds of inactivity after which the state of a :ref:`throttling scope
+    <throttling-scopes>` is evicted from memory to bound memory usage on
+    long-running crawls. Set to ``0`` to never evict. Scopes in active backoff
+    are never evicted.
 
 
 .. _throttling-api:
