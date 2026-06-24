@@ -1,10 +1,13 @@
-# pylint: disable=unsubscriptable-object,unsupported-membership-test,use-implicit-booleaness-not-comparison
+# pylint: disable=unsubscriptable-object,unsupported-membership-test
 # (too many false positives)
 
+import logging
 from unittest import mock
 
 import pytest
 
+from scrapy.core.downloader.handlers.file import FileDownloadHandler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import (
     SETTINGS_PRIORITIES,
     BaseSettings,
@@ -12,8 +15,17 @@ from scrapy.settings import (
     SettingsAttribute,
     get_settings_priority,
 )
+from scrapy.settings import default_settings as scrapy_default_settings
+from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.test import get_crawler
 
 from . import default_settings
+
+NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES = {
+    "DOWNLOAD_HANDLERS_BASE",
+    "FEED_EXPORTERS_BASE",
+    "FEED_STORAGES_BASE",
+}
 
 
 class TestSettingsGlobalFuncs:
@@ -307,7 +319,7 @@ class TestBaseSettings:
         assert settings.getdict("TEST_DICT3", {"key1": 5}) == {"key1": 5}
         with pytest.raises(
             ValueError,
-            match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
+            match=r"dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
         ):
             settings.getdict("TEST_LIST1")
         with pytest.raises(
@@ -372,15 +384,15 @@ class TestBaseSettings:
                 "TEST_STRING": "a string",
                 "TEST_LIST": [1, 2],
                 "TEST_BOOLEAN": False,
-                "TEST_BASE": BaseSettings({1: 1, 2: 2}, "project"),
-                "TEST": BaseSettings({1: 10, 3: 30}, "default"),
-                "HASNOBASE": BaseSettings({3: 3000}, "default"),
+                "TEST_BASE": BaseSettings({"foo": 1, "bar": 2}, "project"),
+                "TEST": BaseSettings({"foo": 10, "baz": 30}, "default"),
+                "HASNOBASE": BaseSettings({"baz": 3000}, "default"),
             }
         )
         assert s.copy_to_dict() == {
-            "HASNOBASE": {3: 3000},
-            "TEST": {1: 10, 3: 30},
-            "TEST_BASE": {1: 1, 2: 2},
+            "HASNOBASE": {"baz": 3000},
+            "TEST": {"foo": 10, "baz": 30},
+            "TEST_BASE": {"foo": 1, "bar": 2},
             "TEST_LIST": [1, 2],
             "TEST_BOOLEAN": False,
             "TEST_STRING": "a string",
@@ -397,6 +409,199 @@ class TestBaseSettings:
         frozencopy = self.settings.frozencopy()
         assert frozencopy.frozen
         assert frozencopy is not self.settings
+
+    def test_getwithbase_for_dotted_keys(self):
+        settings = BaseSettings(
+            {
+                "FEED_EXPORTERS_BASE": BaseSettings({"json": "foo"}),
+                "FEED_EXPORTERS": BaseSettings({"csv.gz": "bar"}),
+            }
+        )
+        value = settings.getwithbase("FEED_EXPORTERS")
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == {
+            "json": "foo",
+            "csv.gz": "bar",
+        }
+
+    @pytest.mark.parametrize(
+        ("key", "exception"),
+        [
+            pytest.param(1, TypeError, id="type-error"),
+            pytest.param("foo", ValueError, id="value-error"),
+            pytest.param("csv.gz", NameError, id="name-error"),
+        ],
+    )
+    def test_get_component_priority_dict_with_base_handles_load_object_exceptions(
+        self, key, exception
+    ):
+        with pytest.raises(exception):
+            load_object(key)
+
+        settings = BaseSettings(
+            {
+                "FOO": BaseSettings({key: 1}),
+            }
+        )
+        value = settings.get_component_priority_dict_with_base("FOO")
+
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == {key: 1}
+
+    def test_get_component_priority_dict_with_base_override_none_by_type(self):
+        settings = BaseSettings()
+        setting_names = set()
+        for k, v in scrapy_default_settings.__dict__.items():
+            if (
+                not k.endswith("_BASE")
+                or k in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES
+            ):
+                continue
+            settings[k] = v
+            setting_name = k[: -len("_BASE")]
+            setting_names.add(setting_name)
+            settings[setting_name] = {
+                load_object(import_path): None for import_path in v
+            }
+        for setting_name in setting_names:
+            value = settings.get_component_priority_dict_with_base(setting_name)
+            assert not dict(value)
+
+    def test_get_component_priority_dict_with_base_override_value_by_type(self):
+        settings = BaseSettings()
+        setting_names = set()
+        value = 0
+        for k, v in scrapy_default_settings.__dict__.items():
+            if (
+                not k.endswith("_BASE")
+                or k in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES
+            ):
+                continue
+            settings[k] = v
+            setting_name = k[: -len("_BASE")]
+            setting_names.add(setting_name)
+            settings[setting_name] = {
+                load_object(import_path): value for import_path in v
+            }
+        for setting_name in setting_names:
+            assert (
+                settings.get_component_priority_dict_with_base(setting_name)
+                == settings[setting_name]
+            )
+
+    def test_getwithbase_for_non_component_priority_dicts(self):
+        settings = BaseSettings()
+        for base_name in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES:
+            base_value = getattr(scrapy_default_settings, base_name)
+            settings[base_name] = BaseSettings(base_value)
+            assert len(base_value) >= 2
+            keys = list(base_value)
+            values = list(base_value.values())
+            override = {keys[0]: values[1]}
+            expected = dict(base_value)
+            expected[keys[0]] = values[1]
+            name = base_name[: -len("_BASE")]
+            settings[name] = BaseSettings(override)
+            value = settings.getwithbase(name)
+            assert isinstance(value, BaseSettings)
+            assert dict(value) == expected
+
+    def test_get_component_priority_dict_with_base_warns_on_duplicate_import_paths(
+        self, caplog
+    ):
+        settings = BaseSettings()
+        settings["FOO"] = BaseSettings(
+            {
+                "scrapy.Request": 1,
+                "scrapy.http.Request": 2,
+            }
+        )
+        with caplog.at_level(logging.WARNING):
+            value = settings.get_component_priority_dict_with_base("FOO")
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == {"scrapy.http.Request": 2}
+        assert caplog.records, "Expected a warning to be logged"
+        msg = caplog.records[0].message
+        assert "scrapy.http.request.Request" in msg
+
+    def test_get_component_priority_dict_with_base_warns_on_duplicate_mixed_type_and_path(
+        self, caplog
+    ):
+        settings = BaseSettings()
+        settings["FOO"] = BaseSettings(
+            {Component1: 1, "tests.test_settings.Component1": 2}
+        )
+        with caplog.at_level(logging.WARNING):
+            value = settings.get_component_priority_dict_with_base("FOO")
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == {"tests.test_settings.Component1": 2}
+        assert caplog.records, "Expected a warning to be logged"
+        msg = caplog.records[0].message
+        assert "tests.test_settings.Component1" in msg
+
+    def test_getdictorlist(self):
+        settings = BaseSettings()
+
+        # No value and no default → {}
+        assert settings.getdictorlist("MISSING") == {}
+
+        # String: valid JSON dict
+        settings.set("S_DICT_STR", '{"key": "val"}')
+        assert settings.getdictorlist("S_DICT_STR") == {"key": "val"}
+
+        # String: valid JSON list
+        settings.set("S_LIST_STR", '["a", "b"]')
+        assert settings.getdictorlist("S_LIST_STR") == ["a", "b"]
+
+        # String: invalid JSON → comma-split fallback
+        settings.set("S_CSV", "a,b,c")
+        assert settings.getdictorlist("S_CSV") == ["a", "b", "c"]
+
+        # String: valid JSON but not dict or list → ValueError caught → comma-split
+        settings.set("S_JSON_NUMBER", "123")
+        assert settings.getdictorlist("S_JSON_NUMBER") == ["123"]
+
+        # Tuple → list
+        settings.set("S_TUPLE", ("x", "y"))
+        assert settings.getdictorlist("S_TUPLE") == ["x", "y"]
+
+        # Unsupported type → raises ValueError
+        settings.set("S_INT", 42)
+        with pytest.raises(ValueError, match="must be a dict, list, tuple, or string"):
+            settings.getdictorlist("S_INT")
+
+        # Dict value → deepcopy returned
+        settings.set("S_DICT", {"key": "val"})
+        assert settings.getdictorlist("S_DICT") == {"key": "val"}
+
+        # List value → deepcopy returned
+        settings.set("S_LIST", ["a", "b"])
+        assert settings.getdictorlist("S_LIST") == ["a", "b"]
+
+    def test_repr_pretty_(self):
+        settings = BaseSettings({"key": "value"})
+        mock_p = mock.Mock()
+
+        settings._repr_pretty_(mock_p, cycle=False)
+        assert mock_p.text.call_count == 1
+
+        mock_p.reset_mock()
+        settings._repr_pretty_(mock_p, cycle=True)
+        mock_p.text.assert_called_once_with(repr(settings))
+
+    def test_getwithbase_invalid_setting_name(self):
+        settings = BaseSettings()
+        with pytest.raises(
+            ValueError, match="Base setting key must be a string, got 123"
+        ):
+            settings.getwithbase(123)
+
+    def test_get_component_priority_dict_with_base_invalid_setting_name(self):
+        settings = BaseSettings()
+        with pytest.raises(
+            ValueError, match="Base setting key must be a string, got 123"
+        ):
+            settings.get_component_priority_dict_with_base(123)
 
 
 class TestSettings:
@@ -446,12 +651,8 @@ class TestSettings:
         assert mydict["key"] == "val"
 
     def test_passing_objects_as_values(self):
-        from scrapy.core.downloader.handlers.file import FileDownloadHandler
-        from scrapy.utils.misc import build_from_crawler
-        from scrapy.utils.test import get_crawler
-
         class TestPipeline:
-            def process_item(self, i, s):
+            def process_item(self, i):
                 return i
 
         settings = Settings(
@@ -471,7 +672,7 @@ class TestSettings:
         assert priority == 800
         assert mypipeline == TestPipeline
         assert isinstance(mypipeline(), TestPipeline)
-        assert mypipeline().process_item("item", None) == "item"
+        assert mypipeline().process_item("item") == "item"
 
         myhandler = settings.getdict("DOWNLOAD_HANDLERS").pop("ftp")
         assert myhandler == FileDownloadHandler
@@ -557,6 +758,24 @@ def test_remove_from_list(before, name, item, after):
         f"{settings[name]=} != {expected_settings[name]=}"
     )
     assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+def test_deprecated_dns_resolver_setting():
+    settings = Settings()
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The DNS_RESOLVER setting is deprecated",
+    ):
+        settings.get("DNS_RESOLVER")
+
+
+def test_deprecated_concurrent_requests_per_ip_setting():
+    settings = Settings({"CONCURRENT_REQUESTS_PER_IP": 1})
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
+    ):
+        settings.get("CONCURRENT_REQUESTS_PER_IP")
 
 
 class Component1:

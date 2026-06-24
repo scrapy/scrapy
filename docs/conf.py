@@ -26,14 +26,11 @@ author = "Scrapy developers"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "hoverxref.extension",
     "notfound.extension",
     "scrapydocs",
-    "sphinx.ext.autodoc",
+    "sphinx_scrapy",
     "scrapyfixautodoc",  # Must be after "sphinx.ext.autodoc"
     "sphinx.ext.coverage",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.viewcode",
     "sphinx_reredirects",
     "sphinx_rtd_dark_mode",
 ]
@@ -69,6 +66,14 @@ html_last_updated_fmt = "%b %d, %Y"
 html_css_files = [
     "custom.css",
 ]
+
+html_context = {
+    "display_github": True,
+    "github_user": "scrapy",
+    "github_repo": "scrapy",
+    "github_version": "master",
+    "conf_py_path": "/docs/",
+}
 
 # Set canonical URL from the Read the Docs Domain
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
@@ -120,7 +125,7 @@ coverage_ignore_pyobjects = [
     # The interface methods of duplicate request filtering classes are already
     # covered in the interface documentation part of the DUPEFILTER_CLASS
     # setting documentation.
-    r"^scrapy\.dupefilters\.[A-Z]\w*?\.(from_settings|request_seen|open|close|log)$",
+    r"^scrapy\.dupefilters\.[A-Z]\w*?\.(from_crawler|request_seen|open|close|log)$",
     # Private exception used by the command-line interface implementation.
     r"^scrapy\.exceptions\.UsageError",
     # Methods of BaseItemExporter subclasses are only documented in
@@ -147,21 +152,6 @@ autodoc_type_aliases = {
 # -- Options for the InterSphinx extension -----------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
 
-intersphinx_mapping = {
-    "attrs": ("https://www.attrs.org/en/stable/", None),
-    "coverage": ("https://coverage.readthedocs.io/en/latest", None),
-    "cryptography": ("https://cryptography.io/en/latest/", None),
-    "cssselect": ("https://cssselect.readthedocs.io/en/latest", None),
-    "itemloaders": ("https://itemloaders.readthedocs.io/en/latest/", None),
-    "parsel": ("https://parsel.readthedocs.io/en/latest/", None),
-    "pytest": ("https://docs.pytest.org/en/latest", None),
-    "python": ("https://docs.python.org/3", None),
-    "sphinx": ("https://www.sphinx-doc.org/en/master", None),
-    "tox": ("https://tox.wiki/en/latest/", None),
-    "twisted": ("https://docs.twisted.org/en/stable/", None),
-    "twistedapi": ("https://docs.twisted.org/en/stable/api/", None),
-    "w3lib": ("https://w3lib.readthedocs.io/en/latest", None),
-}
 intersphinx_disabled_reftypes: Sequence[str] = []
 
 # -- sphinx-reredirects -------------------------------------------------------
@@ -169,22 +159,24 @@ redirects = {
     "topics/autothrottle": "throttling.html",
 }
 
+# sphinx-scrapy ---------------------------------------------------------------
 
-# -- Options for sphinx-hoverxref extension ----------------------------------
-# https://sphinx-hoverxref.readthedocs.io/en/latest/configuration.html
+scrapy_intersphinx_enable = [
+    "attrs",
+    "coverage",
+    "cryptography",
+    "cssselect",
+    "form2request",
+    "itemloaders",
+    "parsel",
+    "pytest",
+    "scrapy-lint",
+    "sphinx",
+    "tox",
+    "twisted",
+    "twistedapi",
+    "w3lib",
+]
 
-hoverxref_auto_ref = True
-hoverxref_role_types = {
-    "class": "tooltip",
-    "command": "tooltip",
-    "confval": "tooltip",
-    "hoverxref": "tooltip",
-    "mod": "tooltip",
-    "ref": "tooltip",
-    "reqmeta": "tooltip",
-    "setting": "tooltip",
-    "signal": "tooltip",
-}
-hoverxref_roles = ["command", "reqmeta", "setting", "signal"]
-
+# -- Other options ------------------------------------------------------------
 default_dark_mode = False

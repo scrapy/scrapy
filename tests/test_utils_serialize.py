@@ -30,7 +30,7 @@ class TestJsonEncoder:
         dt_set = {dt}
         dt_sets = [dts]
 
-        for input, output in [
+        for input_, output in [
             ("foo", "foo"),
             (d, ds),
             (t, ts),
@@ -40,7 +40,7 @@ class TestJsonEncoder:
             (s, ss),
             (dt_set, dt_sets),
         ]:
-            assert encoder.encode(input) == json.dumps(output, sort_keys=True)
+            assert encoder.encode(input_) == json.dumps(output, sort_keys=True)
 
     def test_encode_deferred(self, encoder: ScrapyJSONEncoder) -> None:
         assert "Deferred" in encoder.encode(defer.Deferred())

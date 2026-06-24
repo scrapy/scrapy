@@ -10,10 +10,9 @@ from __future__ import annotations
 import copy
 import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
-from twisted.python.failure import Failure
-
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
@@ -26,6 +25,8 @@ from scrapy.utils.spider import iterate_spider_output
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
+    from twisted.python.failure import Failure
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -34,8 +35,8 @@ if TYPE_CHECKING:
 
 
 _T = TypeVar("_T")
-ProcessLinksT = Callable[[list[Link]], list[Link]]
-ProcessRequestT = Callable[[Request, Response], Optional[Request]]
+ProcessLinksT: TypeAlias = Callable[[list[Link]], list[Link]]
+ProcessRequestT: TypeAlias = Callable[[Request, Response], Request | None]
 
 
 def _identity(x: _T) -> _T:
@@ -46,7 +47,9 @@ def _identity_process_request(request: Request, response: Response) -> Request |
     return request
 
 
-def _get_method(method: Callable | str | None, spider: Spider) -> Callable | None:
+def _get_method(
+    method: Callable[..., Any] | str | None, spider: Spider
+) -> Callable[..., Any] | None:
     if callable(method):
         return method
     if isinstance(method, str):
@@ -81,12 +84,14 @@ class Rule:
     def _compile(self, spider: Spider) -> None:
         # this replaces method names with methods and we can't express this in type hints
         self.callback = cast("CallbackT", _get_method(self.callback, spider))
-        self.errback = cast(Callable[[Failure], Any], _get_method(self.errback, spider))
+        self.errback = cast(
+            "Callable[[Failure], Any]", _get_method(self.errback, spider)
+        )
         self.process_links = cast(
-            ProcessLinksT, _get_method(self.process_links, spider)
+            "ProcessLinksT", _get_method(self.process_links, spider)
         )
         self.process_request = cast(
-            ProcessRequestT, _get_method(self.process_request, spider)
+            "ProcessRequestT", _get_method(self.process_request, spider)
         )
 
 
@@ -100,11 +105,13 @@ class CrawlSpider(Spider):
         self._compile_rules()
         if method_is_overridden(self.__class__, CrawlSpider, "_parse_response"):
             warnings.warn(
-                f"The CrawlSpider._parse_response method, which the "
+                "The CrawlSpider._parse_response method, which the "
                 f"{global_object_name(self.__class__)} class overrides, is "
-                f"deprecated: it will be removed in future Scrapy releases. "
-                f"Please override the CrawlSpider.parse_with_rules method "
-                f"instead."
+                "deprecated: it will be removed in future Scrapy releases. "
+                "Please override the CrawlSpider.parse_with_rules method "
+                "instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
             )
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
@@ -116,7 +123,7 @@ class CrawlSpider(Spider):
         )
 
     def parse_start_url(self, response: Response, **kwargs: Any) -> Any:
-        return []
+        return ()
 
     def process_results(
         self, response: Response, results: Iterable[Any]
@@ -141,13 +148,13 @@ class CrawlSpider(Spider):
                 for lnk in rule.link_extractor.extract_links(response)
                 if lnk not in seen
             ]
-            for link in cast(ProcessLinksT, rule.process_links)(links):
+            for link in cast("ProcessLinksT", rule.process_links)(links):
                 seen.add(link)
                 request = self._build_request(rule_index, link)
-                yield cast(ProcessRequestT, rule.process_request)(request, response)
+                yield cast("ProcessRequestT", rule.process_request)(request, response)
 
     def _callback(self, response: Response, **cb_kwargs: Any) -> Any:
-        rule = self._rules[cast(int, response.meta["rule"])]
+        rule = self._rules[cast("int", response.meta["rule"])]
         return self.parse_with_rules(
             response,
             cast("CallbackT", rule.callback),
@@ -156,9 +163,9 @@ class CrawlSpider(Spider):
         )
 
     def _errback(self, failure: Failure) -> Iterable[Any]:
-        rule = self._rules[cast(int, failure.request.meta["rule"])]  # type: ignore[attr-defined]
+        rule = self._rules[cast("int", failure.request.meta["rule"])]  # type: ignore[attr-defined]
         return self._handle_failure(
-            failure, cast(Callable[[Failure], Any], rule.errback)
+            failure, cast("Callable[[Failure], Any]", rule.errback)
         )
 
     async def parse_with_rules(
@@ -193,6 +200,7 @@ class CrawlSpider(Spider):
             "The CrawlSpider._parse_response method is deprecated: "
             "it will be removed in future Scrapy releases. "
             "Please use the CrawlSpider.parse_with_rules method instead.",
+            ScrapyDeprecationWarning,
             stacklevel=2,
         )
         return self.parse_with_rules(response, callback, cb_kwargs, follow)
@@ -207,11 +215,19 @@ class CrawlSpider(Spider):
     def _compile_rules(self) -> None:
         self._rules = []
         for rule in self.rules:
-            self._rules.append(copy.copy(rule))
-            self._rules[-1]._compile(self)
+            copied_rule = copy.copy(rule)
+            copied_rule._compile(self)
+            self._rules.append(copied_rule)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider._follow_links = crawler.settings.getbool("CRAWLSPIDER_FOLLOW_LINKS")
+        if not spider._follow_links:
+            warnings.warn(
+                "The CRAWLSPIDER_FOLLOW_LINKS setting is deprecated."
+                " You can set follow=False in your rules to achieve the same effect.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return spider

@@ -28,7 +28,7 @@ if __name__ == "__main__":
     process = AsyncCrawlerProcess(
         settings={
             "RETRY_ENABLED": False,
-            "DNS_RESOLVER": "scrapy.resolver.CachingHostnameResolver",
+            "TWISTED_DNS_RESOLVER": "scrapy.resolver.CachingHostnameResolver",
         }
     )
     process.crawl(CachingHostnameResolverSpider, url=sys.argv[1])

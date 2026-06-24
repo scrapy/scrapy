@@ -3,13 +3,14 @@ from __future__ import annotations
 import subprocess
 import sys
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import urlencode
 
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
+from scrapy.utils.test import get_testenv
 
 if TYPE_CHECKING:
     import argparse
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class Command(ScrapyCommand):
-    default_settings = {
+    default_settings: ClassVar[dict[str, Any]] = {
         "LOG_LEVEL": "INFO",
         "LOGSTATS_INTERVAL": 1,
         "CLOSESPIDER_TIMEOUT": 10,
@@ -35,8 +36,6 @@ class Command(ScrapyCommand):
 
 class _BenchServer:
     def __enter__(self) -> None:
-        from scrapy.utils.test import get_testenv
-
         pargs = [sys.executable, "-u", "-m", "scrapy.utils.benchserver"]
         self.proc = subprocess.Popen(  # noqa: S603
             pargs, stdout=subprocess.PIPE, env=get_testenv()
@@ -44,7 +43,7 @@ class _BenchServer:
         assert self.proc.stdout
         self.proc.stdout.readline()
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore[no-untyped-def]
         self.proc.kill()
         self.proc.wait()
         time.sleep(0.2)

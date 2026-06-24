@@ -213,14 +213,16 @@ class TestCurlToRequestKwargs:
 
     def test_ignore_unknown_options(self):
         # case 1: ignore_unknown_options=True:
+        curl_command = "curl --bar --baz http://www.example.com"
+        expected_result = {"method": "GET", "url": "http://www.example.com"}
         with warnings.catch_warnings():  # avoid warning when executing tests
-            warnings.simplefilter("ignore")
-            curl_command = "curl --bar --baz http://www.example.com"
-            expected_result = {"method": "GET", "url": "http://www.example.com"}
+            warnings.filterwarnings(
+                "ignore", category=UserWarning, message="Unrecognized options:"
+            )
             assert curl_to_request_kwargs(curl_command) == expected_result
 
         # case 2: ignore_unknown_options=False (raise exception):
-        with pytest.raises(ValueError, match="Unrecognized options:.*--bar.*--baz"):
+        with pytest.raises(ValueError, match=r"Unrecognized options:.*--bar.*--baz"):
             curl_to_request_kwargs(
                 "curl --bar --baz http://www.example.com", ignore_unknown_options=False
             )

@@ -2,9 +2,9 @@ import dataclasses
 import os
 import random
 import time
-import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
+from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
 from posixpath import split
@@ -12,14 +12,15 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
+from unittest.mock import MagicMock
 from urllib.parse import urlparse
 
 import attr
 import pytest
 from itemadapter import ItemAdapter
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
+from twisted.internet.defer import Deferred
 
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
@@ -29,10 +30,12 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
-from scrapy.utils.test import (
-    get_crawler,
-)
-from tests.mockserver import MockFTPServer
+from scrapy.settings import Settings
+from scrapy.utils.asyncio import call_later
+from scrapy.utils.spider import DefaultSpider
+from scrapy.utils.test import get_crawler
+from tests.mockserver.ftp import MockFTPServer
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 from .test_pipeline_media import _mocked_download_func
 
@@ -40,7 +43,7 @@ from .test_pipeline_media import _mocked_download_func
 def get_gcs_content_and_delete(
     bucket: Any, path: str
 ) -> tuple[bytes, list[dict[str, str]], Any]:
-    from google.cloud import storage
+    from google.cloud import storage  # noqa: PLC0415
 
     client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
     bucket = client.get_bucket(bucket)
@@ -59,36 +62,60 @@ def get_ftp_content_and_delete(
     password: str,
     use_active_mode: bool = False,
 ) -> bytes:
-    from ftplib import FTP
+    with FTP() as ftp:
+        ftp.connect(host, port)
+        ftp.login(username, password)
+        if use_active_mode:
+            ftp.set_pasv(False)
+        ftp_data: list[bytes] = []
 
-    ftp = FTP()
-    ftp.connect(host, port)
-    ftp.login(username, password)
-    if use_active_mode:
-        ftp.set_pasv(False)
-    ftp_data: list[bytes] = []
+        def buffer_data(data: bytes) -> None:
+            ftp_data.append(data)
 
-    def buffer_data(data: bytes) -> None:
-        ftp_data.append(data)
-
-    ftp.retrbinary(f"RETR {path}", buffer_data)
-    dirname, filename = split(path)
-    ftp.cwd(dirname)
-    ftp.delete(filename)
+        ftp.retrbinary(f"RETR {path}", buffer_data)
+        dirname, filename = split(path)
+        ftp.cwd(dirname)
+        ftp.delete(filename)
     return b"".join(ftp_data)
 
 
-class TestFilesPipeline(unittest.TestCase):
-    def setUp(self):
+class DeferredFSFilesStore(FSFilesStore):
+    """A simple store with persist_file() returning a deferred."""
+
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        deferred = Deferred()
+        # short-hand super() doesn't work in nested functions
+        parent_persist_file = super().persist_file
+
+        def cb():
+            parent_persist_file(path, buf, info, meta=meta, headers=headers)
+            deferred.callback(None)
+
+        call_later(0.5, cb)
+        return deferred
+
+
+class TestFilesPipeline:
+    def setup_method(self):
         self.tempdir = mkdtemp()
         settings_dict = {"FILES_STORE": self.tempdir}
-        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
+        crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=_mocked_download_func)
         self.pipeline = FilesPipeline.from_crawler(crawler)
-        self.pipeline.download_func = _mocked_download_func
-        self.pipeline.open_spider(None)
+        self.pipeline.open_spider()
 
-    def tearDown(self):
+    def teardown_method(self):
         rmtree(self.tempdir)
+
+    def test_file_path_query_parameters(self):
+        file_path = self.pipeline.file_path
+
+        req1 = Request("http://foo.bar/baz.txt?fizz")
+        assert file_path(req1) == "full/a2b4913a62f65445aeae2bac08cd8c3b41d7195e.txt"
+
+        req2 = Request("http://foo.bar/get_img.foo?file=photo.jpg")
+        assert file_path(req2) == "full/7fc9461c9fd836515bea6983373097203a7d748e.jpg"
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
@@ -113,10 +140,10 @@ class TestFilesPipeline(unittest.TestCase):
         assert (
             file_path(
                 Request(
-                    "http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg"
+                    "http://www.dfsonline.co.uk/get_prod_image?img=status_0907_mdm.jpg"
                 )
             )
-            == "full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg"
+            == "full/c67f916ff9d542e822dedf38f9fcb146d1faba78.jpg"
         )
         assert (
             file_path(Request("http://www.dorma.co.uk/images/product_details/2532/"))
@@ -137,10 +164,10 @@ class TestFilesPipeline(unittest.TestCase):
         assert (
             file_path(
                 Request(
-                    "http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg.bohaha"
+                    "http://www.dfsonline.co.uk/get_prod_image?img=status_0907_mdm.jpg.bohaha"
                 )
             )
-            == "full/76c00cef2ef669ae65052661f68d451162829507"
+            == "full/e75f2fa260521b56f6b6a867447b8002d00b5841"
         )
         assert (
             file_path(
@@ -160,11 +187,11 @@ class TestFilesPipeline(unittest.TestCase):
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
-    @inlineCallbacks
-    def test_file_not_expired(self):
+    @coroutine_test
+    async def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
             mock.patch.object(
                 FSFilesStore,
@@ -176,22 +203,16 @@ class TestFilesPipeline(unittest.TestCase):
                 "get_media_requests",
                 return_value=[_prepare_request_object(item_url)],
             ),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = yield self.pipeline.process_item(item, None)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
 
-        for p in patchers:
-            p.stop()
-
-    @inlineCallbacks
-    def test_file_expired(self):
+    @coroutine_test
+    async def test_file_expired(self):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(
                 FSFilesStore,
                 "stat_file",
@@ -207,22 +228,16 @@ class TestFilesPipeline(unittest.TestCase):
                 return_value=[_prepare_request_object(item_url)],
             ),
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = yield self.pipeline.process_item(item, None)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
 
-        for p in patchers:
-            p.stop()
-
-    @inlineCallbacks
-    def test_file_cached(self):
+    @coroutine_test
+    async def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
-        patchers = [
+        with (
             mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
             mock.patch.object(
                 FSFilesStore,
@@ -238,16 +253,33 @@ class TestFilesPipeline(unittest.TestCase):
                 "get_media_requests",
                 return_value=[_prepare_request_object(item_url, flags=["cached"])],
             ),
-        ]
-        for p in patchers:
-            p.start()
-
-        result = yield self.pipeline.process_item(item, None)
+        ):
+            result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "cached"
 
-        for p in patchers:
-            p.stop()
+    @coroutine_test
+    async def test_async_store(self) -> None:
+        """Test that async persist_file() works and is awaited."""
+
+        self.pipeline.store = DeferredFSFilesStore(self.tempdir)
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        assert result["files"][0]["checksum"]
+        # check that the file was written by persist_file()
+        path = Path(self.tempdir) / result["files"][0]["path"]
+        assert path.exists()
+        assert path.read_bytes() == b"data"
 
     def test_file_path_from_item(self):
         """
@@ -264,6 +296,26 @@ class TestFilesPipeline(unittest.TestCase):
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         assert file_path(request, item=item) == "full/path-to-store-file"
+
+    @pytest.mark.parametrize(
+        "bad_type",
+        [
+            "http://example.com/file.pdf",
+            ("http://example.com/file.pdf",),
+            {"url": "http://example.com/file.pdf"},
+            123,
+            None,
+        ],
+    )
+    def test_rejects_non_list_file_urls(self, tmp_path, bad_type):
+        pipeline = FilesPipeline.from_crawler(
+            get_crawler(None, {"FILES_STORE": str(tmp_path)})
+        )
+        item = ItemWithFiles()
+        item["file_urls"] = bad_type
+
+        with pytest.raises(TypeError, match="file_urls must be a list of URLs"):
+            list(pipeline.get_media_requests(item, None))
 
 
 class TestFilesPipelineFieldsMixin(ABC):
@@ -330,11 +382,11 @@ class TestFilesPipelineFieldsItem(TestFilesPipelineFieldsMixin):
 class FilesPipelineTestDataClass:
     name: str
     # default fields
-    file_urls: list = dataclasses.field(default_factory=list)
-    files: list = dataclasses.field(default_factory=list)
+    file_urls: list[str] = dataclasses.field(default_factory=list)
+    files: list[dict[str, str]] = dataclasses.field(default_factory=list)
     # overridden fields
-    custom_file_urls: list = dataclasses.field(default_factory=list)
-    custom_files: list = dataclasses.field(default_factory=list)
+    custom_file_urls: list[str] = dataclasses.field(default_factory=list)
+    custom_files: list[dict[str, str]] = dataclasses.field(default_factory=list)
 
 
 class TestFilesPipelineFieldsDataClass(TestFilesPipelineFieldsMixin):
@@ -417,7 +469,7 @@ class TestFilesPipelineCustomSettings:
         """
         pipe_cls = self._generate_fake_pipeline()
         pipe = pipe_cls.from_crawler(get_crawler(None, {"FILES_STORE": tmp_path}))
-        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             custom_value = getattr(pipe, pipe_ins_attr)
             assert custom_value != self.default_cls_settings[pipe_attr]
             assert getattr(pipe, pipe_ins_attr) == getattr(pipe, pipe_attr)
@@ -448,7 +500,7 @@ class TestFilesPipelineCustomSettings:
         user_pipeline = UserDefinedFilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_cls_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_ins_attr) == custom_value
@@ -520,7 +572,7 @@ class TestFilesPipelineCustomSettings:
 
         pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
 
-        for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
+        for _, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_inst_attr) == expected_value
 
@@ -541,8 +593,8 @@ class TestFilesPipelineCustomSettings:
 
 
 @pytest.mark.requires_botocore
-class TestS3FilesStore(unittest.TestCase):
-    @inlineCallbacks
+class TestS3FilesStore:
+    @inline_callbacks_test
     def test_persist(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -553,7 +605,7 @@ class TestS3FilesStore(unittest.TestCase):
         content_type = "image/png"
 
         store = S3FilesStore(uri)
-        from botocore.stub import Stubber
+        from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
             stub.add_response(
@@ -582,7 +634,7 @@ class TestS3FilesStore(unittest.TestCase):
             # The call to read does not happen with Stubber
             assert buffer.method_calls == [mock.call.seek(0)]
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_stat(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -591,7 +643,7 @@ class TestS3FilesStore(unittest.TestCase):
         last_modified = datetime(2019, 12, 1)
 
         store = S3FilesStore(uri)
-        from botocore.stub import Stubber
+        from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
             stub.add_response(
@@ -618,8 +670,8 @@ class TestS3FilesStore(unittest.TestCase):
 @pytest.mark.skipif(
     "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
 )
-class TestGCSFilesStore(unittest.TestCase):
-    @inlineCallbacks
+class TestGCSFilesStore:
+    @inline_callbacks_test
     def test_persist(self):
         uri = os.environ.get("GCS_TEST_FILE_URI")
         if not uri:
@@ -644,13 +696,13 @@ class TestGCSFilesStore(unittest.TestCase):
         assert blob.content_type == "application/octet-stream"
         assert expected_policy in acl
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_blob_path_consistency(self):
         """Test to make sure that paths used to store files is the same as the one used to get
         already uploaded files.
         """
         try:
-            import google.cloud.storage  # noqa: F401
+            import google.cloud.storage  # noqa: F401,PLC0415
         except ModuleNotFoundError:
             pytest.skip("google-cloud-storage is not installed")
         with (
@@ -670,14 +722,18 @@ class TestGCSFilesStore(unittest.TestCase):
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
-class TestFTPFileStore(unittest.TestCase):
-    @inlineCallbacks
+class TestFTPFileStore:
+    @inline_callbacks_test
     def test_persist(self):
         data = b"TestFTPFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)
         meta = {"foo": "bar"}
         path = "full/filename"
         with MockFTPServer() as ftp_server:
+            # normally set via FilesPipeline.from_crawler()
+            FTPFilesStore.FTP_USERNAME = "anonymous"
+            FTPFilesStore.FTP_PASSWORD = "guest"
+
             store = FTPFilesStore(ftp_server.url("/"))
             empty_dict = yield store.stat_file(path, info=None)
             assert empty_dict == {}
@@ -703,13 +759,13 @@ class ItemWithFiles(Item):
     files = Field()
 
 
-def _create_item_with_files(*files):
+def _create_item_with_files(*files: str) -> ItemWithFiles:
     item = ItemWithFiles()
     item["file_urls"] = files
     return item
 
 
-def _prepare_request_object(item_url, flags=None):
+def _prepare_request_object(item_url: str, flags: list[str] | None = None) -> Request:
     return Request(
         item_url,
         meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},
@@ -729,43 +785,10 @@ class TestBuildFromCrawler:
         class Pipeline(FilesPipeline):
             pass
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe.store
-
-    def test_has_old_init(self):
-        class Pipeline(FilesPipeline):
-            def __init__(self, store_uri, download_func=None, settings=None):
-                super().__init__(store_uri, download_func, settings)
-                self._init_called = True
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 2
-            assert pipe._init_called
-
-    def test_has_from_settings(self):
-        class Pipeline(FilesPipeline):
-            _from_settings_called = False
-
-            @classmethod
-            def from_settings(cls, settings):
-                o = super().from_settings(settings)
-                o._from_settings_called = True
-                return o
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 3
-            assert pipe.store
-            assert pipe._from_settings_called
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe.store
 
     def test_has_from_crawler_and_init(self):
         class Pipeline(FilesPipeline):
@@ -779,10 +802,19 @@ class TestBuildFromCrawler:
                 o._from_crawler_called = True
                 return o
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe.store
-            assert pipe._from_crawler_called
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe.store
+        assert pipe._from_crawler_called
+
+
+@pytest.mark.parametrize("store", [None, ""])
+def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
+    settings = Settings()
+    settings.clear()
+    settings.set("FILES_STORE", store, priority="cmdline")
+    crawler = get_crawler(settings_dict=settings)
+
+    with pytest.raises(NotConfigured):
+        FilesPipeline.from_crawler(crawler)

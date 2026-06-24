@@ -2,14 +2,12 @@ import itertools
 from typing import Any
 from unittest.mock import patch
 
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
-
 from scrapy import Spider
-from scrapy.crawler import Crawler, CrawlerRunner
+from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerRunner
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.test import get_crawler, get_reactor_settings
+from tests.utils.decorators import inline_callbacks_test
 
 
 class SimpleAddon:
@@ -52,7 +50,7 @@ class TestAddon:
         assert settings["KEY3"] == "addon"
 
 
-class TestAddonManager(unittest.TestCase):
+class TestAddonManager:
     def test_load_settings(self):
         settings_dict = {
             "ADDONS": {"tests.test_addons.SimpleAddon": 0},
@@ -72,6 +70,37 @@ class TestAddonManager(unittest.TestCase):
         crawler = get_crawler(settings_dict=settings_dict)
         manager = crawler.addons
         assert not manager.addons
+
+    def test_notconfigured_with_args(self):
+        class NotConfiguredAddon:
+            def update_settings(self, settings):
+                raise NotConfigured("addon disabled reason")
+
+        settings_dict = {
+            "ADDONS": {NotConfiguredAddon: 0},
+        }
+        with patch("scrapy.addons.logger") as logger_mock:
+            crawler = get_crawler(settings_dict=settings_dict)
+        assert not crawler.addons.addons
+        logger_mock.warning.assert_called_once_with(
+            "Disabled %(clspath)s: %(eargs)s",
+            {"clspath": NotConfiguredAddon, "eargs": "addon disabled reason"},
+            extra={"crawler": crawler},
+        )
+
+    def test_no_update_settings(self):
+        class PreCrawlerOnlyAddon:
+            @classmethod
+            def update_pre_crawler_settings(cls, settings):
+                settings.set("PRE_CRAWLER_KEY", "value", priority="addon")
+
+        settings_dict = {
+            "ADDONS": {PreCrawlerOnlyAddon: 0},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        manager = crawler.addons
+        assert len(manager.addons) == 1
+        assert isinstance(manager.addons[0], PreCrawlerOnlyAddon)
 
     def test_load_settings_order(self):
         # Get three addons with different settings
@@ -110,9 +139,15 @@ class TestAddonManager(unittest.TestCase):
         crawler = get_crawler(settings_dict=settings_dict)
         assert crawler.settings.getint("KEY") == 15
 
+        runner_cls = (
+            CrawlerRunner
+            if settings_dict.get("TWISTED_REACTOR_ENABLED", True)
+            else AsyncCrawlerRunner
+        )
+
         settings = Settings(settings_dict)
         settings.set("KEY", 0, priority="default")
-        runner = CrawlerRunner(settings)
+        runner = runner_cls(settings)
         crawler = runner.create_crawler(Spider)
         crawler._apply_settings()
         assert crawler.settings.getint("KEY") == 15
@@ -124,44 +159,40 @@ class TestAddonManager(unittest.TestCase):
         }
         settings = Settings(settings_dict)
         settings.set("KEY", 0, priority="default")
-        runner = CrawlerRunner(settings)
+        runner = runner_cls(settings)
         crawler = runner.create_crawler(Spider)
+        crawler._apply_settings()
         assert crawler.settings.getint("KEY") == 20
 
     def test_fallback_workflow(self):
-        FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
+        FALLBACK_SETTING = "MY_FALLBACK_SCHEDULER"
 
         class AddonWithFallback:
             def update_settings(self, settings):
                 if not settings.get(FALLBACK_SETTING):
                     settings.set(
                         FALLBACK_SETTING,
-                        settings.getwithbase("DOWNLOAD_HANDLERS")["https"],
+                        settings.get("SCHEDULER"),
                         "addon",
                     )
-                settings["DOWNLOAD_HANDLERS"]["https"] = "AddonHandler"
+                settings["SCHEDULER"] = "AddonScheduler"
 
         settings_dict = {
             "ADDONS": {AddonWithFallback: 1},
         }
         crawler = get_crawler(settings_dict=settings_dict)
+        assert crawler.settings.get("SCHEDULER") == "AddonScheduler"
         assert (
-            crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"] == "AddonHandler"
-        )
-        assert (
-            crawler.settings.get(FALLBACK_SETTING)
-            == "scrapy.core.downloader.handlers.http.HTTPDownloadHandler"
+            crawler.settings.get(FALLBACK_SETTING) == "scrapy.core.scheduler.Scheduler"
         )
 
         settings_dict = {
             "ADDONS": {AddonWithFallback: 1},
-            "DOWNLOAD_HANDLERS": {"https": "UserHandler"},
+            "SCHEDULER": "UserScheduler",
         }
         crawler = get_crawler(settings_dict=settings_dict)
-        assert (
-            crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"] == "AddonHandler"
-        )
-        assert crawler.settings.get(FALLBACK_SETTING) == "UserHandler"
+        assert crawler.settings.get("SCHEDULER") == "AddonScheduler"
+        assert crawler.settings.get(FALLBACK_SETTING) == "UserScheduler"
 
     def test_logging_message(self):
         class LoggedAddon:
@@ -184,7 +215,7 @@ class TestAddonManager(unittest.TestCase):
                 extra={"crawler": crawler},
             )
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_enable_addon_in_spider(self):
         class MySpider(Spider):
             name = "myspider"
@@ -200,7 +231,12 @@ class TestAddonManager(unittest.TestCase):
         settings = Settings()
         settings.setdict(get_reactor_settings())
         settings.set("KEY", "default", priority="default")
-        runner = CrawlerRunner(settings)
+        runner_cls = (
+            CrawlerRunner
+            if settings.getbool("TWISTED_REACTOR_ENABLED", True)
+            else AsyncCrawlerRunner
+        )
+        runner = runner_cls(settings)
         crawler = runner.create_crawler(MySpider)
         assert crawler.settings.get("KEY") == "default"
         yield crawler.crawl()

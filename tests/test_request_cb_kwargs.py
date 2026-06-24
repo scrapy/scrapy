@@ -1,11 +1,10 @@
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
+from tests.utils.decorators import inline_callbacks_test
 
 
 class InjectArgumentsDownloaderMiddleware:
@@ -13,11 +12,11 @@ class InjectArgumentsDownloaderMiddleware:
     Make sure downloader middlewares are able to update the keyword arguments
     """
 
-    def process_request(self, request, spider):
+    def process_request(self, request):
         if request.callback.__name__ == "parse_downloader_mw":
             request.cb_kwargs["from_process_request"] = True
 
-    def process_response(self, request, response, spider):
+    def process_response(self, request, response):
         if request.callback.__name__ == "parse_downloader_mw":
             request.cb_kwargs["from_process_response"] = True
         return response
@@ -34,13 +33,13 @@ class InjectArgumentsSpiderMiddleware:
                 request.cb_kwargs["from_process_start"] = True
             yield request
 
-    def process_spider_input(self, response, spider):
+    def process_spider_input(self, response):
         request = response.request
         if request.callback.__name__ == "parse_spider_mw":
             request.cb_kwargs["from_process_spider_input"] = True
 
-    def process_spider_output(self, response, result, spider):
-        for element in result:
+    async def process_spider_output(self, response, result):
+        async for element in result:
             if (
                 isinstance(element, Request)
                 and element.callback.__name__ == "parse_spider_mw_2"
@@ -103,9 +102,7 @@ class KeywordArgumentsSpider(MockServerSpider):
             self.checks.append(kwargs["callback"] == "some_callback")
             self.crawler.stats.inc_value("boolean_checks", 3)
         elif response.url.endswith("/general_without"):
-            self.checks.append(
-                kwargs == {}  # pylint: disable=use-implicit-booleaness-not-comparison
-            )
+            self.checks.append(kwargs == {})
             self.crawler.stats.inc_value("boolean_checks")
 
     def parse_no_kwargs(self, response):
@@ -149,17 +146,17 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.crawler.stats.inc_value("boolean_checks", 1)
 
 
-class TestCallbackKeywordArguments(TestCase):
+class TestCallbackKeywordArguments:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_callback_kwargs(self):
         crawler = get_crawler(KeywordArgumentsSpider)
         with LogCapture() as log:

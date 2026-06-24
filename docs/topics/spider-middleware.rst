@@ -94,7 +94,7 @@ one or more of these methods:
             def process_start_requests(self, start, spider):
                 yield from start
 
-    .. method:: process_spider_input(response, spider)
+    .. method:: process_spider_input(response)
 
         This method is called for each response that goes through the spider
         middleware and into the spider, for processing.
@@ -116,52 +116,31 @@ one or more of these methods:
         :param response: the response being processed
         :type response: :class:`~scrapy.http.Response` object
 
-        :param spider: the spider for which this response is intended
-        :type spider: :class:`~scrapy.Spider` object
+    .. method:: process_spider_output(response, result)
+        :async:
 
+        This method is an :term:`asynchronous generator` called with the
+        results from the spider after the spider has processed the response.
 
-    .. method:: process_spider_output(response, result, spider)
-
-        This method is called with the results returned from the Spider, after
-        it has processed the response.
-
-        :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.Request` objects and :ref:`item objects
-        <topics-items>`.
-
-        .. versionchanged:: 2.7
-           This method may be defined as an :term:`asynchronous generator`, in
-           which case ``result`` is an :term:`asynchronous iterable`.
-
-        Consider defining this method as an :term:`asynchronous generator`,
-        which will be a requirement in a future version of Scrapy. However, if
-        you plan on sharing your spider middleware with other people, consider
-        either :ref:`enforcing Scrapy 2.7 <enforce-component-requirements>`
-        as a minimum requirement of your spider middleware, or :ref:`making
-        your spider middleware universal <universal-spider-middleware>` so that
-        it works with Scrapy versions earlier than Scrapy 2.7.
+        .. seealso:: :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
-        :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.Request` objects and
-          :ref:`item objects <topics-items>`
+        :param result: the results from the spider
+        :type result: an :term:`asynchronous iterable` of
+          :class:`~scrapy.Request` objects and :ref:`item objects
+          <topics-items>`
 
-        :param spider: the spider whose result is being processed
-        :type spider: :class:`~scrapy.Spider` object
-
-    .. method:: process_spider_output_async(response, result, spider)
+    .. method:: process_spider_output_async(response, result)
         :async:
 
-        .. versionadded:: 2.7
+        Alternative name for :meth:`process_spider_output` used when
+        implementing a :ref:`universal spider middleware
+        <universal-spider-middleware>`.
 
-        If defined, this method must be an :term:`asynchronous generator`,
-        which will be called instead of :meth:`process_spider_output` if
-        ``result`` is an :term:`asynchronous iterable`.
-
-    .. method:: process_spider_exception(response, exception, spider)
+    .. method:: process_spider_exception(response, exception)
 
         This method is called when a spider or :meth:`process_spider_output`
         method (from a previous spider middleware) raises an exception.
@@ -186,16 +165,41 @@ one or more of these methods:
         :param exception: the exception raised
         :type exception: :exc:`Exception` object
 
-        :param spider: the spider which raised the exception
-        :type spider: :class:`~scrapy.Spider` object
+
+.. _universal-spider-middleware:
+
+Universal spider middlewares
+----------------------------
+
+In Scrapy 2.6.3 and lower, ``process_spider_output()`` must be a *synchronous*
+generator.
+
+To support those versions and higher Scrapy versions in the same middleware,
+rename your asynchronous :meth:`~SpiderMiddleware.process_spider_output`
+method to :meth:`~SpiderMiddleware.process_spider_output_async`, and define a
+synchronous ``process_spider_output()`` method to be used by 2.6.3 and lower
+versions.
+
+For example:
+
+.. code-block:: python
+
+    class UniversalSpiderMiddleware:
+        async def process_spider_output_async(self, response, result):
+            async for r in result:
+                # ... do something with r
+                yield r
+
+        def process_spider_output(self, response, result):
+            for r in result:
+                # ... do something with r
+                yield r
 
 Base class for custom spider middlewares
 ----------------------------------------
 
 Scrapy provides a base class for custom spider middlewares. It's not required
-to use it but it can help with simplifying middleware implementations and
-reducing the amount of boilerplate code in :ref:`universal middlewares
-<universal-spider-middleware>`.
+to use it but it can help with simplifying middleware implementations.
 
 .. module:: scrapy.spidermiddlewares.base
 
@@ -354,7 +358,7 @@ Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 Acceptable values for REFERRER_POLICY
 *************************************
 
-- either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
+- either a path to a :class:`scrapy.spidermiddlewares.referer.ReferrerPolicy`
   subclass — a custom policy or one of the built-in ones (see classes below),
 - or one or more comma-separated standard W3C-defined string values,
 - or the special ``"scrapy-default"``.
@@ -372,6 +376,8 @@ String value                             Class name (as a string)
 `"strict-origin-when-cross-origin"`_     :class:`scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy`
 `"unsafe-url"`_                          :class:`scrapy.spidermiddlewares.referer.UnsafeUrlPolicy`
 =======================================  ========================================================================
+
+.. autoclass:: ReferrerPolicy
 
 .. autoclass:: DefaultReferrerPolicy
 .. warning::
@@ -415,6 +421,25 @@ String value                             Class name (as a string)
 .. _"origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin
 .. _"strict-origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin
 .. _"unsafe-url": https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url
+
+.. setting:: REFERRER_POLICIES
+
+REFERRER_POLICIES
+^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.14.2
+
+Default: ``{}``
+
+A dictionary mapping policy names to import paths of
+:class:`scrapy.spidermiddlewares.referer.ReferrerPolicy` subclasses, or
+``None`` to disable support for a given policy name.
+
+This allows overriding the policies triggered by the ``Referrer-Policy``
+response header.
+
+Use ``""`` to override the policy for responses with `no referrer policy
+<https://www.w3.org/TR/referrer-policy/#referrer-policy-empty-string>`__.
 
 
 StartSpiderMiddleware

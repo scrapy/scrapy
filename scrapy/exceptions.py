@@ -7,7 +7,10 @@ new exceptions here without documenting them there.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
 
 # Internal
 
@@ -49,9 +52,39 @@ class StopDownload(Exception):
     should be handled by the request errback. Note that 'fail' is a keyword-only argument.
     """
 
+    response: Response | None
+
     def __init__(self, *, fail: bool = True):
         super().__init__()
         self.fail = fail
+
+
+class DownloadConnectionRefusedError(Exception):
+    """Indicates that a connection was refused by the server."""
+
+
+class CannotResolveHostError(Exception):
+    """Indicates that the provided hostname cannot be resolved."""
+
+
+class DownloadTimeoutError(Exception):
+    """Indicates that a request download has timed out."""
+
+
+class DownloadCancelledError(Exception):
+    """Indicates that a request download was cancelled."""
+
+
+class DownloadFailedError(Exception):
+    """Indicates that a request download has failed."""
+
+
+class ResponseDataLossError(Exception):
+    """Indicates that Scrapy couldn't get a complete response."""
+
+
+class UnsupportedURLSchemeError(Exception):
+    """Indicates that the URL scheme is not supported."""
 
 
 # Items

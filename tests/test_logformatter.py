@@ -2,9 +2,7 @@ import logging
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase
 
 from scrapy.exceptions import DropItem
 from scrapy.http import Request, Response
@@ -12,8 +10,9 @@ from scrapy.item import Field, Item
 from scrapy.logformatter import LogFormatter
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
+from tests.utils.decorators import inline_callbacks_test
 
 
 class CustomItem(Item):
@@ -29,14 +28,14 @@ class TestLogFormatter:
         self.spider = Spider("default")
         self.spider.crawler = get_crawler()
 
-    def test_crawled_with_referer(self):
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
         assert logline == "Crawled (200) <GET http://www.example.com> (referer: None)"
 
-    def test_crawled_without_referer(self):
+    def test_crawled_with_referer(self):
         req = Request(
             "http://www.example.com", headers={"referer": "http://example.com"}
         )
@@ -110,7 +109,7 @@ class TestLogFormatter:
         assert logkws["level"] == unsupported_value
 
         with pytest.raises(TypeError):
-            logging.log(logkws["level"], "message")
+            logging.log(logkws["level"], "message")  # noqa: LOG015
 
     def test_dropitem_custom_log_level(self):
         item = {}
@@ -199,7 +198,7 @@ class TestLogformatterSubclass(TestLogFormatter):
         self.spider = Spider("default")
         self.spider.crawler = get_crawler(Spider)
 
-    def test_crawled_with_referer(self):
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
@@ -208,7 +207,7 @@ class TestLogformatterSubclass(TestLogFormatter):
             logline == "Crawled (200) <GET http://www.example.com> (referer: None) []"
         )
 
-    def test_crawled_without_referer(self):
+    def test_crawled_with_referer(self):
         req = Request(
             "http://www.example.com",
             headers={"referer": "http://example.com"},
@@ -247,24 +246,24 @@ class SkipMessagesLogFormatter(LogFormatter):
 class DropSomeItemsPipeline:
     drop = True
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         if self.drop:
             self.drop = False
             raise DropItem("Ignoring item")
         self.drop = True
 
 
-class TestShowOrSkipMessages(TestCase):
+class TestShowOrSkipMessages:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def setUp(self):
+    def setup_method(self):
         self.base_settings = {
             "LOG_LEVEL": "DEBUG",
             "ITEM_PIPELINES": {
@@ -272,7 +271,7 @@ class TestShowOrSkipMessages(TestCase):
             },
         }
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_show_messages(self):
         crawler = get_crawler(ItemSpider, self.base_settings)
         with LogCapture() as lc:
@@ -281,7 +280,7 @@ class TestShowOrSkipMessages(TestCase):
         assert "Crawled (200) <GET http://127.0.0.1:" in str(lc)
         assert "Dropped: Ignoring item" in str(lc)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_skip_messages(self):
         settings = self.base_settings.copy()
         settings["LOG_FORMATTER"] = SkipMessagesLogFormatter

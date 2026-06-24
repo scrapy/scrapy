@@ -1,7 +1,7 @@
 import copy
-import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, MutableMapping
+from typing import Any
 
 import pytest
 
@@ -20,7 +20,7 @@ from scrapy.utils.python import garbage_collect
 class TestCaseInsensitiveDictBase(ABC):
     @property
     @abstractmethod
-    def dict_class(self) -> type[MutableMapping]:
+    def dict_class(self) -> type[MutableMapping[str, Any]]:
         raise NotImplementedError
 
     def test_init_dict(self):
@@ -206,7 +206,7 @@ class TestCaseInsensitiveDictBase(ABC):
 
 
 class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
-    dict_class = CaseInsensitiveDict
+    dict_class = CaseInsensitiveDict  # type: ignore[assignment]
 
     def test_repr(self):
         d1 = self.dict_class({"foo": "bar"})
@@ -226,17 +226,11 @@ class TestCaselessDict(TestCaseInsensitiveDictBase):
     dict_class = CaselessDict
 
     def test_deprecation_message(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.filterwarnings("always", category=ScrapyDeprecationWarning)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"scrapy.utils.datatypes.CaselessDict is deprecated",
+        ):
             self.dict_class({"foo": "bar"})
-
-            assert len(caught) == 1
-            assert issubclass(caught[0].category, ScrapyDeprecationWarning)
-            assert (
-                str(caught[0].message)
-                == "scrapy.utils.datatypes.CaselessDict is deprecated,"
-                " please use scrapy.utils.datatypes.CaseInsensitiveDict instead"
-            )
 
 
 class TestSequenceExclude:
@@ -353,26 +347,26 @@ class TestLocalWeakReferencedCache:
         assert len(cache) == 0
 
     def test_cache_without_limit(self):
-        max = 10**4
+        maximum = 10**4
         cache = LocalWeakReferencedCache()
         refs = []
-        for x in range(max):
+        for x in range(maximum):
             refs.append(Request(f"https://example.org/{x}"))
             cache[refs[-1]] = x
-        assert len(cache) == max
+        assert len(cache) == maximum
         for i, r in enumerate(refs):
             assert r in cache
             assert cache[r] == i
         del r  # delete reference to the last object in the list  # pylint: disable=undefined-loop-variable
 
         # delete half of the objects, make sure that is reflected in the cache
-        for _ in range(max // 2):
+        for _ in range(maximum // 2):
             refs.pop()
 
         # PyPy takes longer to collect dead references
         garbage_collect()
 
-        assert len(cache) == max // 2
+        assert len(cache) == maximum // 2
         for i, r in enumerate(refs):
             assert r in cache
             assert cache[r] == i

@@ -40,6 +40,9 @@ class TestResponseTypes:
             retcls = responsetypes.from_content_disposition(source)
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
+    def test_from_content_disposition_no_filename(self):
+        assert responsetypes.from_content_disposition(b"attachment") is Response
+
     def test_from_content_type(self):
         mappings = [
             ("text/html; charset=UTF-8", HtmlResponse),

@@ -67,7 +67,7 @@ value of one of their fields:
                 self.year_to_exporter[year] = (exporter, xml_file)
             return self.year_to_exporter[year][0]
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             exporter = self._exporter_for_item(item)
             exporter.export_item(item)
             return item
@@ -93,24 +93,25 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-If you use :class:`~scrapy.Item` you can declare a serializer in the
-:ref:`field metadata <topics-items-fields>`. The serializer must be
-a callable which receives a value and returns its serialized form.
+Every :ref:`item type <item-types>` except :class:`dict` lets you declare a
+serializer in the :ref:`field metadata <topics-items-fields>`. The serializer
+must be a callable which receives a value and returns its serialized form.
 
 Example:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
 
 
     def serialize_price(value):
         return f"$ {str(value)}"
 
 
-    class Product(scrapy.Item):
-        name = scrapy.Field()
-        price = scrapy.Field(serializer=serialize_price)
+    @dataclass
+    class Product:
+        name: str
+        price: float = field(metadata={"serializer": serialize_price})
 
 
 2. Overriding the serialize_field() method
@@ -162,9 +163,6 @@ BaseItemExporter
    These features can be configured through the ``__init__`` method arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
-
-   .. versionadded:: 2.0
-      The *dont_fail* parameter.
 
    .. method:: export_item(item)
 

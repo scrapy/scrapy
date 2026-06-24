@@ -7,7 +7,9 @@ import pytest
 from scrapy import Request, Spider
 from scrapy.http import Response
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
+from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -18,7 +20,8 @@ def crawler() -> Crawler:
     return get_crawler(Spider)
 
 
-def test_trivial(crawler):
+@coroutine_test
+async def test_trivial(crawler: Crawler) -> None:
     class TrivialSpiderMiddleware(BaseSpiderMiddleware):
         pass
 
@@ -28,15 +31,14 @@ def test_trivial(crawler):
     test_req = Request("data:,")
     spider_output = [test_req, {"foo": "bar"}]
     for processed in [
-        list(
-            mw.process_spider_output(Response("data:,"), spider_output, crawler.spider)
-        ),
-        list(mw.process_start_requests(spider_output, crawler.spider)),
+        list(mw.process_spider_output(Response("data:,"), spider_output)),
+        await collect_asyncgen(mw.process_start(as_async_generator(spider_output))),
     ]:
         assert processed == [test_req, {"foo": "bar"}]
 
 
-def test_processed_request(crawler):
+@coroutine_test
+async def test_processed_request(crawler: Crawler) -> None:
     class ProcessReqSpiderMiddleware(BaseSpiderMiddleware):
         def get_processed_request(
             self, request: Request, response: Response | None
@@ -53,10 +55,8 @@ def test_processed_request(crawler):
     test_req3 = Request("data:3,")
     spider_output = [test_req1, {"foo": "bar"}, test_req2, test_req3]
     for processed in [
-        list(
-            mw.process_spider_output(Response("data:,"), spider_output, crawler.spider)
-        ),
-        list(mw.process_start_requests(spider_output, crawler.spider)),
+        list(mw.process_spider_output(Response("data:,"), spider_output)),
+        await collect_asyncgen(mw.process_start(as_async_generator(spider_output))),
     ]:
         assert len(processed) == 3
         assert isinstance(processed[0], Request)
@@ -66,7 +66,8 @@ def test_processed_request(crawler):
         assert processed[2].url == "data:30,"
 
 
-def test_processed_item(crawler):
+@coroutine_test
+async def test_processed_item(crawler: Crawler) -> None:
     class ProcessItemSpiderMiddleware(BaseSpiderMiddleware):
         def get_processed_item(self, item: Any, response: Response | None) -> Any:
             if item["foo"] == 2:
@@ -79,15 +80,14 @@ def test_processed_item(crawler):
     test_req = Request("data:,")
     spider_output = [{"foo": 1}, {"foo": 2}, test_req, {"foo": 3}]
     for processed in [
-        list(
-            mw.process_spider_output(Response("data:,"), spider_output, crawler.spider)
-        ),
-        list(mw.process_start_requests(spider_output, crawler.spider)),
+        list(mw.process_spider_output(Response("data:,"), spider_output)),
+        await collect_asyncgen(mw.process_start(as_async_generator(spider_output))),
     ]:
         assert processed == [{"foo": 1}, test_req, {"foo": 30}]
 
 
-def test_processed_both(crawler):
+@coroutine_test
+async def test_processed_both(crawler: Crawler) -> None:
     class ProcessBothSpiderMiddleware(BaseSpiderMiddleware):
         def get_processed_request(
             self, request: Request, response: Response | None
@@ -118,10 +118,8 @@ def test_processed_both(crawler):
         test_req3,
     ]
     for processed in [
-        list(
-            mw.process_spider_output(Response("data:,"), spider_output, crawler.spider)
-        ),
-        list(mw.process_start_requests(spider_output, crawler.spider)),
+        list(mw.process_spider_output(Response("data:,"), spider_output)),
+        await collect_asyncgen(mw.process_start(as_async_generator(spider_output))),
     ]:
         assert len(processed) == 4
         assert isinstance(processed[0], Request)

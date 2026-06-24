@@ -1,30 +1,21 @@
 from __future__ import annotations
 
 import json
-import warnings
 from hashlib import sha1
+from typing import Any
 from weakref import WeakKeyDictionary
 
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
     _fingerprint_cache,
     fingerprint,
-    request_authenticate,
     request_httprepr,
     request_to_curl,
 )
 from scrapy.utils.test import get_crawler
-
-
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-def test_request_authenticate():
-    r = Request("http://www.example.com")
-    request_authenticate(r, "someuser", "somepass")
-    assert r.headers["Authorization"] == b"Basic c29tZXVzZXI6c29tZXBhc3M="
 
 
 @pytest.mark.parametrize(
@@ -66,13 +57,17 @@ def test_request_httprepr_for_non_http_request(r: Request) -> None:
 
 
 class TestFingerprint:
-    function: staticmethod = staticmethod(fingerprint)
+    function: staticmethod[[Request], bytes] = staticmethod(fingerprint)
     cache: (
-        WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]]
-        | WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], str]]
+        WeakKeyDictionary[
+            Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
+        ]
+        | WeakKeyDictionary[
+            Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], str]
+        ]
     ) = _fingerprint_cache
-    default_cache_key = (None, False)
-    known_hashes: tuple[tuple[Request, bytes | str, dict], ...] = (
+    default_cache_key = (None, False, False)
+    known_hashes: tuple[tuple[Request, bytes | str, dict[str, Any]], ...] = (
         (
             Request("http://example.org"),
             b"xs\xd7\x0c3uj\x15\xfe\xd7d\x9b\xa9\t\xe0d\xbf\x9cXD",
@@ -201,6 +196,32 @@ class TestFingerprint:
         assert self.function(r2) != self.function(r2, keep_fragments=True)
         assert self.function(r1) != self.function(r2, keep_fragments=True)
 
+    def test_verbatim_url(self):
+        # verbatim_url requests skip URL canonicalization
+        r1 = Request(
+            "http://www.example.com/query?a=1&b=2", meta={"verbatim_url": True}
+        )
+        r2 = Request(
+            "http://www.example.com/query?b=2&a=1", meta={"verbatim_url": True}
+        )
+        assert self.function(r1) != self.function(r2)
+
+        # without verbatim_url, canonicalization makes query-param order irrelevant
+        r3 = Request("http://www.example.com/query?a=1&b=2")
+        r4 = Request("http://www.example.com/query?b=2&a=1")
+        assert self.function(r3) == self.function(r4)
+
+        # with verbatim_url, the fragment is always kept in the fingerprint
+        r5 = Request(
+            "http://www.example.com/test#fragment", meta={"verbatim_url": True}
+        )
+        r6 = Request("http://www.example.com/test", meta={"verbatim_url": True})
+        assert self.function(r5) != self.function(r6)
+
+        # keep_fragments parameter is ignored for verbatim_url requests
+        assert self.function(r5) == self.function(r5, keep_fragments=True)
+        assert self.function(r5) == self.function(r5, keep_fragments=False)
+
     def test_method_and_body(self):
         r1 = Request("http://www.example.com")
         r2 = Request("http://www.example.com", method="POST")
@@ -237,24 +258,12 @@ class TestFingerprint:
 
 
 class TestRequestFingerprinter:
-    def test_default_implementation(self):
+    def test_fingerprint(self):
         crawler = get_crawler()
         request = Request("https://example.com")
         assert crawler.request_fingerprinter.fingerprint(request) == fingerprint(
             request
         )
-
-    def test_deprecated_implementation(self):
-        settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-        }
-        with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(settings_dict=settings)
-        request = Request("https://example.com")
-        assert crawler.request_fingerprinter.fingerprint(request) == fingerprint(
-            request
-        )
-        assert logged_warnings
 
 
 class TestCustomRequestFingerprinter:
@@ -343,57 +352,6 @@ class TestCustomRequestFingerprinter:
         fingerprint = crawler.request_fingerprinter.fingerprint(request)
         assert fingerprint == settings["FINGERPRINT"]
 
-    def test_from_settings(self):
-        class RequestFingerprinter:
-            @classmethod
-            def from_settings(cls, settings):
-                return cls(settings)
-
-            def __init__(self, settings):
-                self._fingerprint = settings["FINGERPRINT"]
-
-            def fingerprint(self, request):
-                return self._fingerprint
-
-        settings = {
-            "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
-            "FINGERPRINT": b"fingerprint",
-        }
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-            crawler = get_crawler(settings_dict=settings)
-
-        request = Request("http://www.example.com")
-        fingerprint = crawler.request_fingerprinter.fingerprint(request)
-        assert fingerprint == settings["FINGERPRINT"]
-
-    def test_from_crawler_and_settings(self):
-        class RequestFingerprinter:
-            # This method is ignored due to the presence of from_crawler
-            @classmethod
-            def from_settings(cls, settings):
-                return cls(settings)
-
-            @classmethod
-            def from_crawler(cls, crawler):
-                return cls(crawler)
-
-            def __init__(self, crawler):
-                self._fingerprint = crawler.settings["FINGERPRINT"]
-
-            def fingerprint(self, request):
-                return self._fingerprint
-
-        settings = {
-            "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
-            "FINGERPRINT": b"fingerprint",
-        }
-        crawler = get_crawler(settings_dict=settings)
-
-        request = Request("http://www.example.com")
-        fingerprint = crawler.request_fingerprinter.fingerprint(request)
-        assert fingerprint == settings["FINGERPRINT"]
-
 
 class TestRequestToCurl:
     def _test_request(self, request_object, expected_curl_command):
@@ -453,5 +411,47 @@ class TestRequestToCurl:
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list_verbose(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[
+                {
+                    "name": b"foo",
+                    "value": b"bar",
+                    "domain": "example.com",
+                    "path": "/",
+                    "secure": True,
+                }
+            ],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list_verbose_non_string_value(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[
+                {
+                    "name": "foo",
+                    "value": 1,
+                    "domain": "example.com",
+                    "path": "/",
+                    "secure": True,
+                }
+            ],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=1'"
         )
         self._test_request(request_object, expected_curl_command)

@@ -17,11 +17,11 @@ class AsyncioReactorSpider(scrapy.Spider):
     }
 
 
-def log_task_exception(task: Task) -> None:
+def log_task_exception(task: Task[None]) -> None:
     try:
         task.result()
     except Exception:
-        logging.exception("Crawl task failed")
+        logging.exception("Crawl task failed")  # noqa: LOG015
 
 
 process = AsyncCrawlerProcess()

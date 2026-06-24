@@ -1,7 +1,6 @@
 import contextlib
 import shutil
 import sys
-import warnings
 from pathlib import Path
 from unittest import mock
 
@@ -137,50 +136,38 @@ class TestSpiderLoader:
             SpiderLoader.from_settings(settings)
 
     def test_bad_spider_modules_warning(self):
-        with warnings.catch_warnings(record=True) as w:
-            module = "tests.test_spiderloader.test_spiders.doesnotexist"
-            settings = Settings(
-                {"SPIDER_MODULES": [module], "SPIDER_LOADER_WARN_ONLY": True}
-            )
+        module = "tests.test_spiderloader.test_spiders.doesnotexist"
+        settings = Settings(
+            {"SPIDER_MODULES": [module], "SPIDER_LOADER_WARN_ONLY": True}
+        )
+        with pytest.warns(RuntimeWarning, match="Could not load spiders from module"):
             spider_loader = SpiderLoader.from_settings(settings)
-            if str(w[0].message).startswith("_SixMetaPathImporter"):
-                # needed on 3.10 because of https://github.com/benjaminp/six/issues/349,
-                # at least until all six versions we can import (including botocore.vendored.six)
-                # are updated to 1.16.0+
-                w.pop(0)
-            assert "Could not load spiders from module" in str(w[0].message)
 
-            spiders = spider_loader.list()
-            assert not spiders
+        spiders = spider_loader.list()
+        assert not spiders
 
     def test_syntax_error_exception(self):
         module = "tests.test_spiderloader.test_spiders.spider1"
+        settings = Settings({"SPIDER_MODULES": [module]})
         with mock.patch.object(SpiderLoader, "_load_spiders") as m:
             m.side_effect = SyntaxError
-            settings = Settings({"SPIDER_MODULES": [module]})
             with pytest.raises(SyntaxError):
                 SpiderLoader.from_settings(settings)
 
     def test_syntax_error_warning(self):
-        with (
-            warnings.catch_warnings(record=True) as w,
-            mock.patch.object(SpiderLoader, "_load_spiders") as m,
-        ):
+        module = "tests.test_spiderloader.test_spiders.spider1"
+        settings = Settings(
+            {"SPIDER_MODULES": [module], "SPIDER_LOADER_WARN_ONLY": True}
+        )
+        with mock.patch.object(SpiderLoader, "_load_spiders") as m:
             m.side_effect = SyntaxError
-            module = "tests.test_spiderloader.test_spiders.spider1"
-            settings = Settings(
-                {"SPIDER_MODULES": [module], "SPIDER_LOADER_WARN_ONLY": True}
-            )
-            spider_loader = SpiderLoader.from_settings(settings)
-            if str(w[0].message).startswith("_SixMetaPathImporter"):
-                # needed on 3.10 because of https://github.com/benjaminp/six/issues/349,
-                # at least until all six versions we can import (including botocore.vendored.six)
-                # are updated to 1.16.0+
-                w.pop(0)
-            assert "Could not load spiders from module" in str(w[0].message)
+            with pytest.warns(
+                RuntimeWarning, match="Could not load spiders from module"
+            ):
+                spider_loader = SpiderLoader.from_settings(settings)
 
-            spiders = spider_loader.list()
-            assert not spiders
+        spiders = spider_loader.list()
+        assert not spiders
 
 
 class TestDuplicateSpiderNameLoader:
@@ -190,21 +177,17 @@ class TestDuplicateSpiderNameLoader:
         # copy 1 spider module so as to have duplicate spider name
         shutil.copyfile(spiders_dir / "spider3.py", spiders_dir / "spider3dupe.py")
 
-        with warnings.catch_warnings(record=True) as w:
+        msg = r"""There are several spiders with the same name:
+
+  Spider3 named 'spider3' \(in test_spiders_xxx\.spider3\)
+
+  Spider3 named 'spider3' \(in test_spiders_xxx\.spider3dupe\)
+
+  This can cause unexpected behavior\."""
+        with pytest.warns(UserWarning, match=msg):
             spider_loader = SpiderLoader.from_settings(settings)
-
-            assert len(w) == 1
-            msg = str(w[0].message)
-            assert "several spiders with the same name" in msg
-            assert "'spider3'" in msg
-            assert msg.count("'spider3'") == 2
-
-            assert "'spider1'" not in msg
-            assert "'spider2'" not in msg
-            assert "'spider4'" not in msg
-
-            spiders = set(spider_loader.list())
-            assert spiders == {"spider1", "spider2", "spider3", "spider4"}
+        spiders = set(spider_loader.list())
+        assert spiders == {"spider1", "spider2", "spider3", "spider4"}
 
     def test_multiple_dupename_warning(self, spider_loader_env):
         settings, spiders_dir = spider_loader_env
@@ -213,23 +196,21 @@ class TestDuplicateSpiderNameLoader:
         shutil.copyfile(spiders_dir / "spider1.py", spiders_dir / "spider1dupe.py")
         shutil.copyfile(spiders_dir / "spider2.py", spiders_dir / "spider2dupe.py")
 
-        with warnings.catch_warnings(record=True) as w:
+        msg = r"""There are several spiders with the same name:
+
+  Spider1 named 'spider1' \(in test_spiders_xxx\.spider1\)
+
+  Spider1 named 'spider1' \(in test_spiders_xxx\.spider1dupe\)
+
+  Spider2 named 'spider2' \(in test_spiders_xxx\.spider2\)
+
+  Spider2 named 'spider2' \(in test_spiders_xxx\.spider2dupe\)
+
+  This can cause unexpected behavior\."""
+        with pytest.warns(UserWarning, match=msg):
             spider_loader = SpiderLoader.from_settings(settings)
-
-            assert len(w) == 1
-            msg = str(w[0].message)
-            assert "several spiders with the same name" in msg
-            assert "'spider1'" in msg
-            assert msg.count("'spider1'") == 2
-
-            assert "'spider2'" in msg
-            assert msg.count("'spider2'") == 2
-
-            assert "'spider3'" not in msg
-            assert "'spider4'" not in msg
-
-            spiders = set(spider_loader.list())
-            assert spiders == {"spider1", "spider2", "spider3", "spider4"}
+        spiders = set(spider_loader.list())
+        assert spiders == {"spider1", "spider2", "spider3", "spider4"}
 
 
 class CustomSpiderLoader(SpiderLoader):
@@ -252,3 +233,4 @@ def test_dummy_spider_loader(spider_loader_env):
     assert not spider_loader.list()
     with pytest.raises(KeyError):
         spider_loader.load("spider1")
+    assert not spider_loader.find_by_request(Request("http://example.com"))

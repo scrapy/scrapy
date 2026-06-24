@@ -1,14 +1,15 @@
 import pytest
 from twisted.conch.telnet import ITelnetProtocol
 from twisted.cred import credentials
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 
 from scrapy.extensions.telnet import TelnetConsole
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import inline_callbacks_test
+
+pytestmark = pytest.mark.requires_reactor  # TelnetConsole requires a reactor
 
 
-class TestTelnetExtension(unittest.TestCase):
+class TestTelnetExtension:
     def _get_console_and_portal(self, settings=None):
         crawler = get_crawler(settings_dict=settings)
         console = TelnetConsole(crawler)
@@ -22,7 +23,7 @@ class TestTelnetExtension(unittest.TestCase):
 
         return console, portal
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_bad_credentials(self):
         console, portal = self._get_console_and_portal()
         creds = credentials.UsernamePassword(b"username", b"password")
@@ -31,7 +32,7 @@ class TestTelnetExtension(unittest.TestCase):
             yield d
         console.stop_listening()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_good_credentials(self):
         console, portal = self._get_console_and_portal()
         creds = credentials.UsernamePassword(
@@ -41,7 +42,7 @@ class TestTelnetExtension(unittest.TestCase):
         yield d
         console.stop_listening()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_custom_credentials(self):
         settings = {
             "TELNETCONSOLE_USERNAME": "user",
@@ -52,3 +53,9 @@ class TestTelnetExtension(unittest.TestCase):
         d = portal.login(creds, None, ITelnetProtocol)
         yield d
         console.stop_listening()
+
+    def test_invalid_reversed_portrange(self):
+        settings = {"TELNETCONSOLE_PORT": [2, 1]}
+        console = TelnetConsole(get_crawler(settings_dict=settings))
+        with pytest.raises(ValueError, match=r"invalid portrange: \[2, 1\]"):
+            console.start_listening()

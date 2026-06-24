@@ -10,6 +10,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
+from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
@@ -52,25 +53,30 @@ class DepthMiddleware(BaseSpiderMiddleware):
         o.crawler = crawler
         return o
 
+    @_warn_spider_arg
     def process_spider_output(
-        self, response: Response, result: Iterable[Any], spider: Spider
+        self, response: Response, result: Iterable[Any], spider: Spider | None = None
     ) -> Iterable[Any]:
-        self._init_depth(response, spider)
-        yield from super().process_spider_output(response, result, spider)
+        self._init_depth(response)
+        yield from super().process_spider_output(response, result)
 
+    @_warn_spider_arg
     async def process_spider_output_async(
-        self, response: Response, result: AsyncIterator[Any], spider: Spider
+        self,
+        response: Response,
+        result: AsyncIterator[Any],
+        spider: Spider | None = None,
     ) -> AsyncIterator[Any]:
-        self._init_depth(response, spider)
-        async for o in super().process_spider_output_async(response, result, spider):
+        self._init_depth(response)
+        async for o in super().process_spider_output_async(response, result):
             yield o
 
-    def _init_depth(self, response: Response, spider: Spider) -> None:
+    def _init_depth(self, response: Response) -> None:
         # base case (depth=0)
         if "depth" not in response.meta:
             response.meta["depth"] = 0
             if self.verbose_stats:
-                self.stats.inc_value("request_depth_count/0", spider=spider)
+                self.stats.inc_value("request_depth_count/0")
 
     def get_processed_request(
         self, request: Request, response: Response | None
@@ -90,8 +96,6 @@ class DepthMiddleware(BaseSpiderMiddleware):
             )
             return None
         if self.verbose_stats:
-            self.stats.inc_value(
-                f"request_depth_count/{depth}", spider=self.crawler.spider
-            )
-        self.stats.max_value("request_depth_max", depth, spider=self.crawler.spider)
+            self.stats.inc_value(f"request_depth_count/{depth}")
+        self.stats.max_value("request_depth_max", depth)
         return request

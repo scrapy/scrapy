@@ -18,6 +18,7 @@ from scrapy.utils.asyncio import (
     call_later,
     create_looping_call,
 )
+from scrapy.utils.defer import _schedule_coro
 
 if TYPE_CHECKING:
     from twisted.internet.task import LoopingCall
@@ -86,38 +87,31 @@ class CloseSpider:
     def error_count(self, failure: Failure, response: Response, spider: Spider) -> None:
         self.counter["errorcount"] += 1
         if self.counter["errorcount"] == self.close_on["errorcount"]:
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_errorcount")
+            self._close_spider("closespider_errorcount")
 
     def page_count(self, response: Response, request: Request, spider: Spider) -> None:
         self.counter["pagecount"] += 1
         self.counter["pagecount_since_last_item"] += 1
         if self.counter["pagecount"] == self.close_on["pagecount"]:
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_pagecount")
+            self._close_spider("closespider_pagecount")
             return
         if self.close_on["pagecount_no_item"] and (
             self.counter["pagecount_since_last_item"]
             >= self.close_on["pagecount_no_item"]
         ):
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_pagecount_no_item")
+            self._close_spider("closespider_pagecount_no_item")
 
     def spider_opened(self, spider: Spider) -> None:
         assert self.crawler.engine
         self.task = call_later(
-            self.close_on["timeout"],
-            self.crawler.engine.close_spider,
-            spider,
-            "closespider_timeout",
+            self.close_on["timeout"], self._close_spider, "closespider_timeout"
         )
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
         self.counter["itemcount"] += 1
         self.counter["pagecount_since_last_item"] = 0
         if self.counter["itemcount"] == self.close_on["itemcount"]:
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_itemcount")
+            self._close_spider("closespider_itemcount")
 
     def spider_closed(self, spider: Spider) -> None:
         if self.task:
@@ -130,7 +124,7 @@ class CloseSpider:
             self.task_no_item = None
 
     def spider_opened_no_item(self, spider: Spider) -> None:
-        self.task_no_item = create_looping_call(self._count_items_produced, spider)
+        self.task_no_item = create_looping_call(self._count_items_produced)
         self.task_no_item.start(self.timeout_no_item, now=False)
 
         logger.info(
@@ -141,7 +135,7 @@ class CloseSpider:
     def item_scraped_no_item(self, item: Any, spider: Spider) -> None:
         self.items_in_period += 1
 
-    def _count_items_produced(self, spider: Spider) -> None:
+    def _count_items_produced(self) -> None:
         if self.items_in_period >= 1:
             self.items_in_period = 0
         else:
@@ -149,5 +143,8 @@ class CloseSpider:
                 f"Closing spider since no items were produced in the last "
                 f"{self.timeout_no_item} seconds."
             )
-            assert self.crawler.engine
-            self.crawler.engine.close_spider(spider, "closespider_timeout_no_item")
+            self._close_spider("closespider_timeout_no_item")
+
+    def _close_spider(self, reason: str) -> None:
+        assert self.crawler.engine
+        _schedule_coro(self.crawler.engine.close_spider_async(reason=reason))

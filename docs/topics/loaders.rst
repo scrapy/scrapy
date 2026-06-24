@@ -102,14 +102,13 @@ One approach to overcome this is to define items using the
 .. code-block:: python
 
     from dataclasses import dataclass, field
-    from typing import Optional
 
 
     @dataclass
     class InventoryItem:
-        name: Optional[str] = field(default=None)
-        price: Optional[float] = field(default=None)
-        stock: Optional[int] = field(default=None)
+        name: str | None = field(default=None)
+        price: float | None = field(default=None)
+        stock: int | None = field(default=None)
 
 
 .. _topics-loaders-processors:
@@ -174,9 +173,6 @@ with the data to be parsed, and return a parsed value. So you can use any
 function as input or output processor. The only requirement is that they must
 accept one (and only one) positional argument, which will be an iterable.
 
-.. versionchanged:: 2.0
-   Processors no longer need to be methods.
-
 .. note:: Both input and output processors must receive an iterable as their
    first argument. The output of those functions can be anything. The result of
    input processors will be appended to an internal list (in the Loader)
@@ -231,7 +227,8 @@ metadata. Here is an example:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
+
     from itemloaders.processors import Join, MapCompose, TakeFirst
     from w3lib.html import remove_tags
 
@@ -241,14 +238,21 @@ metadata. Here is an example:
             return value
 
 
-    class Product(scrapy.Item):
-        name = scrapy.Field(
-            input_processor=MapCompose(remove_tags),
-            output_processor=Join(),
+    @dataclass
+    class Product:
+        name: str | None = field(
+            default=None,
+            metadata={
+                "input_processor": MapCompose(remove_tags),
+                "output_processor": Join(),
+            },
         )
-        price = scrapy.Field(
-            input_processor=MapCompose(remove_tags, filter_price),
-            output_processor=TakeFirst(),
+        price: str | None = field(
+            default=None,
+            metadata={
+                "input_processor": MapCompose(remove_tags, filter_price),
+                "output_processor": TakeFirst(),
+            },
         )
 
 
@@ -455,4 +459,3 @@ organization of your Loaders collection - that's up to you and your project's
 needs.
 
 .. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
-.. _processors: https://itemloaders.readthedocs.io/en/latest/built-in-processors.html

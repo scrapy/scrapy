@@ -1,11 +1,9 @@
 import pytest
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy import Request, Spider, signals
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 
 class ItemSpider(Spider):
@@ -21,8 +19,8 @@ class ItemSpider(Spider):
         return {"index": response.meta["index"]}
 
 
-class TestMain(TestCase):
-    @deferred_f_from_coro_f
+class TestMain:
+    @coroutine_test
     async def test_scheduler_empty(self):
         crawler = get_crawler()
         calls = []
@@ -31,21 +29,21 @@ class TestMain(TestCase):
             calls.append(object())
 
         crawler.signals.connect(track_call, signals.scheduler_empty)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert len(calls) >= 1
 
 
-class TestMockServer(TestCase):
+class TestMockServer:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def setUp(self):
+    def setup_method(self):
         self.items = []
 
     async def _on_item_scraped(self, item):
@@ -53,7 +51,7 @@ class TestMockServer(TestCase):
         self.items.append(item)
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_simple_pipeline(self):
         crawler = get_crawler(ItemSpider)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)

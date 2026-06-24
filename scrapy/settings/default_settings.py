@@ -16,11 +16,208 @@ Scrapy developers, if you add a setting here remember to:
 import sys
 from importlib import import_module
 from pathlib import Path
+from typing import Any
+
+__all__ = [
+    "ADDONS",
+    "ASYNCIO_EVENT_LOOP",
+    "AUTOTHROTTLE_DEBUG",
+    "AUTOTHROTTLE_ENABLED",
+    "AUTOTHROTTLE_MAX_DELAY",
+    "AUTOTHROTTLE_START_DELAY",
+    "AUTOTHROTTLE_TARGET_CONCURRENCY",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_ENDPOINT_URL",
+    "AWS_REGION_NAME",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_USE_SSL",
+    "AWS_VERIFY",
+    "BOT_NAME",
+    "CLOSESPIDER_ERRORCOUNT",
+    "CLOSESPIDER_ITEMCOUNT",
+    "CLOSESPIDER_PAGECOUNT",
+    "CLOSESPIDER_PAGECOUNT_NO_ITEM",
+    "CLOSESPIDER_TIMEOUT",
+    "CLOSESPIDER_TIMEOUT_NO_ITEM",
+    "COMMANDS_MODULE",
+    "COMPRESSION_ENABLED",
+    "CONCURRENT_ITEMS",
+    "CONCURRENT_REQUESTS",
+    "CONCURRENT_REQUESTS_PER_DOMAIN",
+    "COOKIES_DEBUG",
+    "COOKIES_ENABLED",
+    "CRAWLSPIDER_FOLLOW_LINKS",
+    "DEFAULT_DROPITEM_LOG_LEVEL",
+    "DEFAULT_ITEM_CLASS",
+    "DEFAULT_REQUEST_HEADERS",
+    "DEPTH_LIMIT",
+    "DEPTH_PRIORITY",
+    "DEPTH_STATS_VERBOSE",
+    "DNSCACHE_ENABLED",
+    "DNSCACHE_SIZE",
+    "DNS_TIMEOUT",
+    "DOWNLOADER",
+    "DOWNLOADER_CLIENTCONTEXTFACTORY",
+    "DOWNLOADER_CLIENT_TLS_CIPHERS",
+    "DOWNLOADER_CLIENT_TLS_METHOD",
+    "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING",
+    "DOWNLOADER_MIDDLEWARES",
+    "DOWNLOADER_MIDDLEWARES_BASE",
+    "DOWNLOADER_STATS",
+    "DOWNLOAD_BIND_ADDRESS",
+    "DOWNLOAD_DELAY",
+    "DOWNLOAD_FAIL_ON_DATALOSS",
+    "DOWNLOAD_HANDLERS",
+    "DOWNLOAD_HANDLERS_BASE",
+    "DOWNLOAD_MAXSIZE",
+    "DOWNLOAD_SLOTS",
+    "DOWNLOAD_TIMEOUT",
+    "DOWNLOAD_TLS_MAX_VERSION",
+    "DOWNLOAD_TLS_MIN_VERSION",
+    "DOWNLOAD_VERIFY_CERTIFICATES",
+    "DOWNLOAD_WARNSIZE",
+    "DUPEFILTER_CLASS",
+    "DUPEFILTER_DEBUG",
+    "EDITOR",
+    "EXTENSIONS",
+    "EXTENSIONS_BASE",
+    "FEEDS",
+    "FEED_EXPORTERS",
+    "FEED_EXPORTERS_BASE",
+    "FEED_EXPORT_BATCH_ITEM_COUNT",
+    "FEED_EXPORT_ENCODING",
+    "FEED_EXPORT_FIELDS",
+    "FEED_EXPORT_INDENT",
+    "FEED_FORMAT",
+    "FEED_STORAGES",
+    "FEED_STORAGES_BASE",
+    "FEED_STORAGE_FTP_ACTIVE",
+    "FEED_STORAGE_GCS_ACL",
+    "FEED_STORAGE_S3_ACL",
+    "FEED_STORE_EMPTY",
+    "FEED_TEMPDIR",
+    "FEED_URI",
+    "FEED_URI_PARAMS",
+    "FILES_STORE",
+    "FILES_STORE_GCS_ACL",
+    "FILES_STORE_S3_ACL",
+    "FORCE_CRAWLER_PROCESS",
+    "FTP_PASSIVE_MODE",
+    "FTP_PASSWORD",
+    "FTP_USER",
+    "GCS_PROJECT_ID",
+    "HTTPAUTH_DOMAIN",
+    "HTTPAUTH_PASS",
+    "HTTPAUTH_USER",
+    "HTTPCACHE_ALWAYS_STORE",
+    "HTTPCACHE_DBM_MODULE",
+    "HTTPCACHE_DIR",
+    "HTTPCACHE_ENABLED",
+    "HTTPCACHE_EXPIRATION_SECS",
+    "HTTPCACHE_GZIP",
+    "HTTPCACHE_IGNORE_HTTP_CODES",
+    "HTTPCACHE_IGNORE_MISSING",
+    "HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS",
+    "HTTPCACHE_IGNORE_SCHEMES",
+    "HTTPCACHE_POLICY",
+    "HTTPCACHE_STORAGE",
+    "HTTPERROR_ALLOWED_CODES",
+    "HTTPERROR_ALLOW_ALL",
+    "HTTPPROXY_AUTH_ENCODING",
+    "HTTPPROXY_ENABLED",
+    "HTTPX_HTTP2_ENABLED",
+    "IMAGES_STORE",
+    "IMAGES_STORE_GCS_ACL",
+    "IMAGES_STORE_S3_ACL",
+    "ITEM_PIPELINES",
+    "ITEM_PIPELINES_BASE",
+    "ITEM_PROCESSOR",
+    "JOBDIR",
+    "LOGSTATS_INTERVAL",
+    "LOG_DATEFORMAT",
+    "LOG_ENABLED",
+    "LOG_ENCODING",
+    "LOG_FILE",
+    "LOG_FILE_APPEND",
+    "LOG_FORMAT",
+    "LOG_FORMATTER",
+    "LOG_LEVEL",
+    "LOG_SHORT_NAMES",
+    "LOG_STDOUT",
+    "LOG_VERSIONS",
+    "MAIL_FROM",
+    "MAIL_HOST",
+    "MAIL_PASS",
+    "MAIL_PORT",
+    "MAIL_SSL",
+    "MAIL_TLS",
+    "MAIL_USER",
+    "MEMDEBUG_ENABLED",
+    "MEMDEBUG_NOTIFY",
+    "MEMUSAGE_CHECK_INTERVAL_SECONDS",
+    "MEMUSAGE_ENABLED",
+    "MEMUSAGE_LIMIT_MB",
+    "MEMUSAGE_NOTIFY_MAIL",
+    "MEMUSAGE_WARNING_MB",
+    "METAREFRESH_ENABLED",
+    "METAREFRESH_IGNORE_TAGS",
+    "METAREFRESH_MAXDELAY",
+    "NEWSPIDER_MODULE",
+    "PERIODIC_LOG_DELTA",
+    "PERIODIC_LOG_STATS",
+    "PERIODIC_LOG_TIMING_ENABLED",
+    "RANDOMIZE_DOWNLOAD_DELAY",
+    "REACTOR_THREADPOOL_MAXSIZE",
+    "REDIRECT_ENABLED",
+    "REDIRECT_MAX_TIMES",
+    "REDIRECT_PRIORITY_ADJUST",
+    "REFERER_ENABLED",
+    "REFERRER_POLICIES",
+    "REFERRER_POLICY",
+    "REQUEST_FINGERPRINTER_CLASS",
+    "RETRY_ENABLED",
+    "RETRY_EXCEPTIONS",
+    "RETRY_GIVE_UP_LOG_LEVEL",
+    "RETRY_HTTP_CODES",
+    "RETRY_PRIORITY_ADJUST",
+    "RETRY_TIMES",
+    "ROBOTSTXT_OBEY",
+    "ROBOTSTXT_PARSER",
+    "ROBOTSTXT_USER_AGENT",
+    "SCHEDULER",
+    "SCHEDULER_DEBUG",
+    "SCHEDULER_DISK_QUEUE",
+    "SCHEDULER_MEMORY_QUEUE",
+    "SCHEDULER_PRIORITY_QUEUE",
+    "SCHEDULER_START_DISK_QUEUE",
+    "SCHEDULER_START_MEMORY_QUEUE",
+    "SCRAPER_SLOT_MAX_ACTIVE_SIZE",
+    "SPIDER_CONTRACTS",
+    "SPIDER_CONTRACTS_BASE",
+    "SPIDER_LOADER_CLASS",
+    "SPIDER_LOADER_WARN_ONLY",
+    "SPIDER_MIDDLEWARES",
+    "SPIDER_MIDDLEWARES_BASE",
+    "SPIDER_MODULES",
+    "STATSMAILER_RCPTS",
+    "STATS_CLASS",
+    "STATS_DUMP",
+    "TELNETCONSOLE_ENABLED",
+    "TELNETCONSOLE_HOST",
+    "TELNETCONSOLE_PASSWORD",
+    "TELNETCONSOLE_PORT",
+    "TELNETCONSOLE_USERNAME",
+    "TEMPLATES_DIR",
+    "TWISTED_DNS_RESOLVER",
+    "TWISTED_REACTOR",
+    "TWISTED_REACTOR_ENABLED",
+    "URLLENGTH_LIMIT",
+    "USER_AGENT",
+    "WARN_ON_GENERATOR_RETURN_VALUE",
+]
 
 ADDONS = {}
-
-AJAXCRAWL_ENABLED = False
-AJAXCRAWL_MAXSIZE = 32768
 
 ASYNCIO_EVENT_LOOP = None
 
@@ -30,12 +227,22 @@ AUTOTHROTTLE_MAX_DELAY = 60.0
 AUTOTHROTTLE_START_DELAY = 5.0
 AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 
+AWS_ACCESS_KEY_ID = None
+AWS_SECRET_ACCESS_KEY = None
+AWS_ENDPOINT_URL = None
+AWS_REGION_NAME = None
+AWS_SESSION_TOKEN = None
+AWS_USE_SSL = None
+AWS_VERIFY = None
+
 BOT_NAME = "scrapybot"
 
 CLOSESPIDER_ERRORCOUNT = 0
 CLOSESPIDER_ITEMCOUNT = 0
 CLOSESPIDER_PAGECOUNT = 0
 CLOSESPIDER_TIMEOUT = 0
+CLOSESPIDER_PAGECOUNT_NO_ITEM = 0
+CLOSESPIDER_TIMEOUT_NO_ITEM = 0
 
 COMMANDS_MODULE = ""
 
@@ -45,7 +252,6 @@ CONCURRENT_ITEMS = 100
 
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
-CONCURRENT_REQUESTS_PER_IP = 0
 
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
@@ -70,6 +276,8 @@ DNSCACHE_SIZE = 10000
 DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 DNS_TIMEOUT = 60
 
+DOWNLOAD_BIND_ADDRESS = None
+
 DOWNLOAD_DELAY = 0
 
 DOWNLOAD_FAIL_ON_DATALOSS = True
@@ -78,8 +286,8 @@ DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
     "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
     "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-    "http": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
-    "https": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
+    "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+    "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
     "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
 }
@@ -87,21 +295,21 @@ DOWNLOAD_HANDLERS_BASE = {
 DOWNLOAD_MAXSIZE = 1024 * 1024 * 1024  # 1024m
 DOWNLOAD_WARNSIZE = 32 * 1024 * 1024  # 32m
 
+DOWNLOAD_SLOTS = {}
+
 DOWNLOAD_TIMEOUT = 180  # 3mins
+
+DOWNLOAD_TLS_MAX_VERSION = None
+DOWNLOAD_TLS_MIN_VERSION = None
+
+DOWNLOAD_VERIFY_CERTIFICATES = False
 
 DOWNLOADER = "scrapy.core.downloader.Downloader"
 
-DOWNLOADER_CLIENTCONTEXTFACTORY = (
-    "scrapy.core.downloader.contextfactory.ScrapyClientContextFactory"
-)
+DOWNLOADER_CLIENTCONTEXTFACTORY = "SENTINEL"
 DOWNLOADER_CLIENT_TLS_CIPHERS = "DEFAULT"
-# Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
-
-DOWNLOADER_HTTPCLIENTFACTORY = (
-    "scrapy.core.downloader.webclient.ScrapyHTTPClientFactory"
-)
 
 DOWNLOADER_MIDDLEWARES = {}
 DOWNLOADER_MIDDLEWARES_BASE = {
@@ -113,7 +321,6 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
-    "scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware": 560,
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
@@ -127,6 +334,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
 DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
+DUPEFILTER_DEBUG = False
 
 EDITOR = "vi"
 if sys.platform == "win32":
@@ -135,6 +343,7 @@ if sys.platform == "win32":
 EXTENSIONS = {}
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
+    "scrapy.extensions.logcount.LogCount": 0,
     "scrapy.extensions.telnet.TelnetConsole": 0,
     "scrapy.extensions.memusage.MemoryUsage": 0,
     "scrapy.extensions.memdebug.MemoryDebugger": 0,
@@ -176,8 +385,10 @@ FEED_STORAGE_FTP_ACTIVE = False
 FEED_STORAGE_GCS_ACL = ""
 FEED_STORAGE_S3_ACL = ""
 FEED_TEMPDIR = None
+FEED_URI = None
 FEED_URI_PARAMS = None  # a function to extend uri arguments
 
+FILES_STORE = None
 FILES_STORE_GCS_ACL = ""
 FILES_STORE_S3_ACL = "private"
 
@@ -188,6 +399,10 @@ FTP_USER = "anonymous"
 FTP_PASSWORD = "guest"  # noqa: S105
 
 GCS_PROJECT_ID = None
+
+HTTPAUTH_USER = ""
+HTTPAUTH_PASS = ""
+HTTPAUTH_DOMAIN = None
 
 HTTPCACHE_ENABLED = False
 HTTPCACHE_ALWAYS_STORE = False
@@ -202,9 +417,15 @@ HTTPCACHE_IGNORE_SCHEMES = ["file"]
 HTTPCACHE_POLICY = "scrapy.extensions.httpcache.DummyPolicy"
 HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
+HTTPERROR_ALLOW_ALL = False
+HTTPERROR_ALLOWED_CODES = []
+
 HTTPPROXY_ENABLED = True
 HTTPPROXY_AUTH_ENCODING = "latin-1"
 
+HTTPX_HTTP2_ENABLED = False
+
+IMAGES_STORE = None
 IMAGES_STORE_GCS_ACL = ""
 IMAGES_STORE_S3_ACL = "private"
 
@@ -245,6 +466,8 @@ MAIL_HOST = "localhost"
 MAIL_PORT = 25
 MAIL_USER = None
 MAIL_PASS = None
+MAIL_SSL = False
+MAIL_TLS = False
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 MEMDEBUG_NOTIFY = []  # send memory debugging report by mail at engine shutdown
@@ -275,26 +498,26 @@ REDIRECT_PRIORITY_ADJUST = +2
 
 REFERER_ENABLED = True
 REFERRER_POLICY = "scrapy.spidermiddlewares.referer.DefaultReferrerPolicy"
+REFERRER_POLICIES = {}
 
 REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
-REQUEST_FINGERPRINTER_IMPLEMENTATION = "SENTINEL"
 
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
-    "twisted.internet.defer.TimeoutError",
-    "twisted.internet.error.TimeoutError",
-    "twisted.internet.error.DNSLookupError",
-    "twisted.internet.error.ConnectionRefusedError",
+    "scrapy.exceptions.CannotResolveHostError",
+    "scrapy.exceptions.DownloadConnectionRefusedError",
+    "scrapy.exceptions.DownloadFailedError",
+    "scrapy.exceptions.DownloadTimeoutError",
+    "scrapy.exceptions.ResponseDataLossError",
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    "twisted.internet.error.TCPTimedOutError",
-    "twisted.web.client.ResponseFailed",
     # OSError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]
+RETRY_GIVE_UP_LOG_LEVEL = "ERROR"
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
@@ -307,7 +530,7 @@ SCHEDULER = "scrapy.core.scheduler.Scheduler"
 SCHEDULER_DEBUG = False
 SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleLifoDiskQueue"
 SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.LifoMemoryQueue"
-SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
+SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.DownloaderAwarePriorityQueue"
 SCHEDULER_START_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
 SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
@@ -351,6 +574,9 @@ TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
+TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
+
+TWISTED_REACTOR_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 URLLENGTH_LIMIT = 2083
@@ -358,3 +584,19 @@ URLLENGTH_LIMIT = 2083
 USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org)"
 
 WARN_ON_GENERATOR_RETURN_VALUE = True
+
+
+def __getattr__(name: str) -> Any:
+    if name == "CONCURRENT_REQUESTS_PER_IP":
+        import warnings  # noqa: PLC0415
+
+        from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
+
+        warnings.warn(
+            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return 0
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
