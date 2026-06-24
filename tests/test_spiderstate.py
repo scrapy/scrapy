@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -60,9 +60,9 @@ async def test_spider_state_loaded_signal_fires(tmp_path: Path) -> None:
     crawler = get_crawler(Spider, {"JOBDIR": str(tmp_path)})
     ss = SpiderState.from_crawler(crawler)
 
-    received: list[dict] = []
+    received: list[dict[str, Any]] = []
 
-    def on_loaded(state: dict) -> None:
+    def on_loaded(state: dict[str, Any]) -> None:
         received.append(dict(state))
 
     crawler.signals.connect(on_loaded, signal=signals.spider_state_loaded, weak=False)
@@ -71,7 +71,7 @@ async def test_spider_state_loaded_signal_fires(tmp_path: Path) -> None:
     await ss._spider_opened(spider)
 
     assert received == [{}]
-    assert spider.state == {}
+    assert spider.state == {}  # type: ignore[attr-defined]
 
 
 @coroutine_test
@@ -81,11 +81,11 @@ async def test_spider_state_saving_signal_fires(tmp_path: Path) -> None:
 
     spider = Spider(name="default")
     await ss._spider_opened(spider)
-    spider.state["key"] = "value"
+    spider.state["key"] = "value"  # type: ignore[attr-defined]
 
-    saving_calls: list[dict] = []
+    saving_calls: list[dict[str, Any]] = []
 
-    def on_saving(state: dict) -> None:
+    def on_saving(state: dict[str, Any]) -> None:
         saving_calls.append(dict(state))
 
     crawler.signals.connect(on_saving, signal=signals.spider_state_saving, weak=False)

@@ -51,13 +51,15 @@ class SpiderState:
         self._load_state(spider)
         assert self.crawler is not None
         await self.crawler.signals.send_catch_log_async(
-            signals.spider_state_loaded, state=spider.state
+            signals.spider_state_loaded,
+            state=spider.state,  # type: ignore[attr-defined]
         )
 
     async def _spider_closed(self, spider: Spider) -> None:
         assert self.crawler is not None
         await self.crawler.signals.send_catch_log_async(
-            signals.spider_state_saving, state=spider.state
+            signals.spider_state_saving,
+            state=spider.state,  # type: ignore[attr-defined]
         )
         self._persist_state(spider)
 
@@ -71,7 +73,8 @@ class SpiderState:
         self._load_state(spider)
         assert self.crawler is not None
         self.crawler.signals.send_catch_log(
-            signals.spider_state_loaded, state=spider.state
+            signals.spider_state_loaded,
+            state=spider.state,  # type: ignore[attr-defined]
         )
 
     def spider_closed(self, spider: Spider) -> None:
@@ -83,7 +86,8 @@ class SpiderState:
         )
         assert self.crawler is not None
         self.crawler.signals.send_catch_log(
-            signals.spider_state_saving, state=spider.state
+            signals.spider_state_saving,
+            state=spider.state,  # type: ignore[attr-defined]
         )
         self._persist_state(spider)
 

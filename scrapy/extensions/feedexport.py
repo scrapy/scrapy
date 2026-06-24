@@ -523,7 +523,7 @@ class FeedExporter:
                 )
             )
 
-    async def _on_state_loaded(self, state: dict) -> None:
+    async def _on_state_loaded(self, state: dict[str, Any]) -> None:
         """Update initial batch-1 slots with the correct resumed batch IDs.
 
         Called via the spider_state_loaded signal after SpiderState has
@@ -533,6 +533,7 @@ class FeedExporter:
         feed_batch_ids: dict[str, int] = state.get("feed_batch_ids", {})
         if feed_batch_ids:
             spider = self.crawler.spider
+            assert spider is not None
             for slot in self.slots:
                 saved_id = feed_batch_ids.get(slot.uri_template, 0)
                 if saved_id == 0:
@@ -558,7 +559,7 @@ class FeedExporter:
                 signals.feed_slots_initialized, slots=self.slots
             )
 
-    def _on_state_saving(self, state: dict) -> None:
+    def _on_state_saving(self, state: dict[str, Any]) -> None:
         """Persist the current batch ID for each feed into spider.state.
 
         Called via the spider_state_saving signal before SpiderState writes
