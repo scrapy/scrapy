@@ -108,6 +108,7 @@ class FTPDownloadHandler(BaseDownloadHandler):
         client: FTPClient = await maybe_deferred_to_future(
             creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
         )
+        self.client = client
         filepath = unquote(parsed_url.path)
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         try:
@@ -121,8 +122,8 @@ class FTPDownloadHandler(BaseDownloadHandler):
             raise
         finally:
             protocol.close()
-            assert client.transport
-            client.transport.loseConnection()
+            if client.transport:
+                client.transport.loseConnection()
         headers = {"local filename": protocol.filename or b"", "size": protocol.size}
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
