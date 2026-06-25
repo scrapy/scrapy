@@ -361,6 +361,31 @@ All of these settings, except for :setting:`ASYNCIO_EVENT_LOOP`, are only used
 when the Twisted reactor is used, i.e. when :setting:`TWISTED_REACTOR_ENABLED`
 is ``True``.
 
+.. _logging-settings:
+
+Logging settings
+----------------
+
+**Logging settings** are settings that configure the global root logging
+handler installed by :func:`~scrapy.utils.log.configure_logging`.
+
+These settings can be defined from a spider. However, because only 1 root
+logging handler is active per process, these settings cannot use a different
+value per spider when :ref:`running multiple spiders in the same process
+<run-multiple-spiders>`.
+
+These settings are:
+
+-   :setting:`LOG_DATEFORMAT`
+-   :setting:`LOG_ENABLED`
+-   :setting:`LOG_ENCODING`
+-   :setting:`LOG_FILE`
+-   :setting:`LOG_FILE_APPEND`
+-   :setting:`LOG_FORMAT`
+-   :setting:`LOG_LEVEL`
+-   :setting:`LOG_SHORT_NAMES`
+-   :setting:`LOG_STDOUT`
+
 .. _topics-settings-ref:
 
 Built-in settings reference
@@ -480,6 +505,8 @@ Note that the event loop class must inherit from :class:`asyncio.AbstractEventLo
     :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will call
     :func:`asyncio.set_event_loop`, which will set the specified event loop
     as the current loop for the current OS thread.
+
+.. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
 .. setting:: BOT_NAME
 
@@ -662,6 +689,8 @@ Whether to enable DNS in-memory cache.
     :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
     either when :setting:`DNS_RESOLVER` is set to a different resolver.
 
+.. note:: This is a :ref:`reactor setting <reactor-settings>`.
+
 .. setting:: DNSCACHE_SIZE
 
 DNSCACHE_SIZE
@@ -670,6 +699,8 @@ DNSCACHE_SIZE
 Default: ``10000``
 
 DNS in-memory cache size, see :setting:`DNSCACHE_ENABLED`.
+
+.. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
 .. setting:: TWISTED_DNS_RESOLVER
 
@@ -688,6 +719,8 @@ take the :setting:`DNS_TIMEOUT` setting into account.
 .. note::
     This setting has no effect when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
+.. note:: This is a :ref:`reactor setting <reactor-settings>`.
+
 .. setting:: DNS_TIMEOUT
 
 DNS_TIMEOUT
@@ -702,6 +735,8 @@ Timeout for processing of DNS queries in seconds. Float is supported.
     :class:`~scrapy.resolver.CachingThreadedResolver`. It has no effect when
     :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
     either when :setting:`DNS_RESOLVER` is set to a different resolver.
+
+.. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
 .. setting:: DOWNLOADER
 
@@ -1442,6 +1477,8 @@ Default: ``True``
 
 Whether to enable logging.
 
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
 .. setting:: LOG_ENCODING
 
 LOG_ENCODING
@@ -1450,6 +1487,8 @@ LOG_ENCODING
 Default: ``'utf-8'``
 
 The encoding to use for logging.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_FILE
 
@@ -1460,6 +1499,8 @@ Default: ``None``
 
 File name to use for logging output. If ``None``, standard error will be used.
 
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
 .. setting:: LOG_FILE_APPEND
 
 LOG_FILE_APPEND
@@ -1469,6 +1510,8 @@ Default: ``True``
 
 If ``False``, the log file specified with :setting:`LOG_FILE` will be
 overwritten (discarding the output from previous runs, if any).
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_FORMAT
 
@@ -1481,6 +1524,8 @@ String for formatting log messages. Refer to the
 :ref:`Python logging documentation <logrecord-attributes>` for the whole
 list of available placeholders.
 
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
 .. setting:: LOG_DATEFORMAT
 
 LOG_DATEFORMAT
@@ -1492,6 +1537,8 @@ String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
 in :setting:`LOG_FORMAT`. Refer to the
 :ref:`Python datetime documentation <strftime-strptime-behavior>` for the
 whole list of available directives.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_FORMATTER
 
@@ -1512,6 +1559,8 @@ Default: ``'DEBUG'``
 Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING,
 INFO, DEBUG. For more info see :ref:`topics-logging`.
 
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
 .. setting:: LOG_STDOUT
 
 LOG_STDOUT
@@ -1523,6 +1572,8 @@ If ``True``, all standard output (and error) of your process will be redirected
 to the log. For example if you ``print('hello')`` it will appear in the Scrapy
 log.
 
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
 .. setting:: LOG_SHORT_NAMES
 
 LOG_SHORT_NAMES
@@ -1532,6 +1583,8 @@ Default: ``False``
 
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_VERSIONS
 
@@ -1694,6 +1747,8 @@ The maximum limit for Twisted Reactor thread pool size. This is common
 multi-purpose thread pool used by various Scrapy components. Threaded
 DNS Resolver, BlockingFeedStorage, S3FilesStore just to name a few. Increase
 this value if you're experiencing problems with insufficient blocking IO.
+
+.. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
@@ -1921,6 +1976,8 @@ Default: ``'scrapy.spiderloader.SpiderLoader'``
 The class that will be used for loading spiders, which must implement the
 :ref:`topics-api-spiderloader`.
 
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
+
 .. setting:: SPIDER_LOADER_WARN_ONLY
 
 SPIDER_LOADER_WARN_ONLY
@@ -1932,6 +1989,8 @@ By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MOD
 it will fail loudly if there is any ``ImportError`` or ``SyntaxError`` exception.
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. setting:: SPIDER_MIDDLEWARES
 
@@ -1977,6 +2036,8 @@ Example:
 .. code-block:: python
 
     SPIDER_MODULES = ["mybot.spiders_prod", "mybot.spiders_dev"]
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. setting:: STATS_CLASS
 
@@ -2049,7 +2110,7 @@ stopped) will not apply. This mode is currently experimental and may not be
 suitable for production use. It may also not be supported by 3rd-party code.
 See :ref:`asyncio-without-reactor` for more information about this mode.
 
-.. note:: This setting can't be set :ref:`per-spider <spider-settings>`.
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. versionadded:: 2.15.0
 
@@ -2156,6 +2217,7 @@ current platform.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
+.. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
 .. setting:: URLLENGTH_LIMIT
 
