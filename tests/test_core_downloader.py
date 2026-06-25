@@ -8,7 +8,7 @@ import pytest
 from pytest_twisted import async_yield_fixture
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol as TxProtocol
-from twisted.internet.ssl import optionsForClientTLS
+from twisted.internet.ssl import AcceptableCiphers, optionsForClientTLS
 from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
 from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
@@ -180,6 +180,49 @@ class TestContextFactory(TestContextFactoryBase):
         assert options & 0x4  # OP_LEGACY_SERVER_CONNECT
 
 
+class TestContextFactoryCiphers(TestContextFactoryBase):
+    async def _assert_factory_works(
+        self, server_url: str, client_context_factory: _ScrapyClientContextFactory
+    ) -> None:
+        s = "0123456789" * 10
+        body = await self.get_page(
+            server_url + "payload", client_context_factory, body=s
+        )
+        assert body == to_bytes(s)
+
+    def test_default(self) -> None:
+        """The default 'DEFAULT' value is passed to Twisted as is."""
+        crawler = get_crawler()
+        factory = build_from_crawler(_ScrapyClientContextFactory, crawler)
+        assert factory.tls_ciphers is not None
+        # OpenSSLAcceptableCiphers has no __eq__, so compare the parsed ciphers.
+        assert (
+            factory.tls_ciphers._ciphers  # type: ignore[attr-defined]
+            == AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")._ciphers  # type: ignore[attr-defined]
+        )
+        assert factory._get_cert_options_kwargs()["acceptableCiphers"] is not None
+
+    def test_custom(self) -> None:
+        crawler = get_crawler(
+            settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": "CAMELLIA256-SHA"}
+        )
+        factory = build_from_crawler(_ScrapyClientContextFactory, crawler)
+        assert factory.tls_ciphers is not None
+        assert (
+            factory.tls_ciphers._ciphers  # type: ignore[attr-defined]
+            == AcceptableCiphers.fromOpenSSLCipherString("CAMELLIA256-SHA")._ciphers  # type: ignore[attr-defined]
+        )
+
+    @coroutine_test
+    async def test_none(self, server_url: str) -> None:
+        """A None value enables the Twisted default ciphers."""
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": None})
+        factory = build_from_crawler(_ScrapyClientContextFactory, crawler)
+        assert factory.tls_ciphers is None
+        assert factory._get_cert_options_kwargs()["acceptableCiphers"] is None
+        await self._assert_factory_works(server_url, factory)
+
+
 class TestContextFactoryTLSMethod(TestContextFactoryBase):
     async def _assert_factory_works(
         self, server_url: str, client_context_factory: _ScrapyClientContextFactory
@@ -278,3 +321,10 @@ def test_deprecated_tls_module_names() -> None:
         match="scrapy.core.downloader.tls.openssl_methods is deprecated",
     ):
         assert isinstance(tls.openssl_methods, dict)
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="scrapy.core.downloader.tls.DEFAULT_CIPHERS is deprecated",
+    ):
+        assert tls.DEFAULT_CIPHERS._ciphers == (
+            AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")._ciphers
+        )

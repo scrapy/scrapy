@@ -17,7 +17,6 @@ from zope.interface.verify import verifyObject
 
 from scrapy.core.downloader.tls import (
     _TWISTED_VERSION_MAP,
-    DEFAULT_CIPHERS,
     _openssl_methods,
     _ScrapyClientTLSOptions,
     _ScrapyClientTLSOptions26,
@@ -68,11 +67,13 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         self.tls_min_version: TLSVersion | None = tls_min_version
         self.tls_max_version: TLSVersion | None = tls_max_version
         self.tls_verbose_logging: bool = tls_verbose_logging  # unused
-        self.tls_ciphers: AcceptableCiphers
-        if tls_ciphers:
-            self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
-        else:
-            self.tls_ciphers = DEFAULT_CIPHERS
+        # A None or empty value enables the Twisted default ciphers, which are
+        # stricter than the OpenSSL "DEFAULT" cipher list.
+        self.tls_ciphers: AcceptableCiphers | None = (
+            AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
+            if tls_ciphers
+            else None
+        )
         self._verify_certificates = verify_certificates
 
     @classmethod
