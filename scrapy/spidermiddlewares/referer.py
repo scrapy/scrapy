@@ -308,6 +308,12 @@ class RefererMiddleware(BaseSpiderMiddleware):
         # Reference: https://www.w3.org/TR/referrer-policy/#referrer-policy-empty-string
         self.policies[""] = NoReferrerWhenDowngradePolicy
         if settings is None:
+            warn(
+                "Instantiating RefererMiddleware without a 'settings' argument is "
+                "deprecated.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             return
         setting_policies = settings.getdict("REFERRER_POLICIES")
         for policy_name, policy_class_import_path in setting_policies.items():
