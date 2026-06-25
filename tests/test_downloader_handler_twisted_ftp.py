@@ -205,3 +205,83 @@ def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         FTPDownloadHandler.from_crawler(crawler)
+
+
+class TestFTPCleanup(TestFTPBase):
+    def _create_files(self, root: Path) -> None:
+        userdir = root / self.username
+        userdir.mkdir()
+        for filename, content in self.test_files:
+            (userdir / filename).write_bytes(content)
+
+    def _get_factory(self, root):
+        from twisted.protocols.ftp import FTPFactory, FTPRealm
+
+        realm = FTPRealm(anonymousRoot=str(root), userHome=str(root))
+        p = portal.Portal(realm)
+        users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
+        users_checker.addUser(self.username, self.password)
+        p.registerChecker(users_checker, credentials.IUsernamePassword)
+        return FTPFactory(portal=p)
+
+    @deferred_f_from_coro_f
+    async def test_lose_connection_called_on_success(
+        self, server_url: str
+    ) -> None:
+        from unittest.mock import patch
+
+        from scrapy.core.downloader.handlers.ftp import ReceivedDataProtocol
+
+        lose_calls: list[bool] = []
+        close_calls: list[bool] = []
+        original_close = ReceivedDataProtocol.close
+
+        def tracking_close(self):
+            close_calls.append(True)
+            original_close(self)
+
+        with patch.object(ReceivedDataProtocol, "close", tracking_close), patch(
+            "twisted.internet.tcp.Client.loseConnection"
+        ) as mock_lose:
+            mock_lose.side_effect = lambda: lose_calls.append(True)
+            crawler = get_crawler()
+            dh = build_from_crawler(FTPDownloadHandler, crawler)
+            request = Request(
+                url=server_url + "file.txt",
+                meta={"ftp_user": "scrapy", "ftp_password": "passwd"},
+            )
+            r = await dh.download_request(request)
+            assert r.status == 200
+            assert close_calls, "protocol.close() was not called"
+            assert lose_calls, "transport.loseConnection() was not called"
+
+    @deferred_f_from_coro_f
+    async def test_lose_connection_called_on_error(
+        self, server_url: str
+    ) -> None:
+        from unittest.mock import patch
+
+        from scrapy.core.downloader.handlers.ftp import ReceivedDataProtocol
+
+        lose_calls: list[bool] = []
+        close_calls: list[bool] = []
+        original_close = ReceivedDataProtocol.close
+
+        def tracking_close(self):
+            close_calls.append(True)
+            original_close(self)
+
+        with patch.object(ReceivedDataProtocol, "close", tracking_close), patch(
+            "twisted.internet.tcp.Client.loseConnection"
+        ) as mock_lose:
+            mock_lose.side_effect = lambda: lose_calls.append(True)
+            crawler = get_crawler()
+            dh = build_from_crawler(FTPDownloadHandler, crawler)
+            request = Request(
+                url=server_url + "nonexistent.txt",
+                meta={"ftp_user": "scrapy", "ftp_password": "passwd"},
+            )
+            r = await dh.download_request(request)
+            assert r.status == 404
+            assert close_calls, "protocol.close() was not called on error"
+            assert lose_calls, "transport.loseConnection() was not called on error"
