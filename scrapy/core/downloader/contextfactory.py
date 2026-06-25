@@ -67,8 +67,6 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         self.tls_min_version: TLSVersion | None = tls_min_version
         self.tls_max_version: TLSVersion | None = tls_max_version
         self.tls_verbose_logging: bool = tls_verbose_logging  # unused
-        # A None or empty value enables the Twisted default ciphers, which are
-        # stricter than the OpenSSL "DEFAULT" cipher list.
         self.tls_ciphers: AcceptableCiphers | None = (
             AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
             if tls_ciphers
