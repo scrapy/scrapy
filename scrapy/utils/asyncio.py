@@ -5,11 +5,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
+from collections.abc import AsyncIterator, Callable, Coroutine, Iterable, Sequence
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
-from twisted.internet.defer import Deferred
-from twisted.internet.task import LoopingCall
+from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.task import LoopingCall, deferLater
 from twisted.internet.threads import deferToThread
 
 from scrapy.utils.asyncgen import as_async_generator
@@ -311,3 +311,88 @@ async def run_in_thread(
     from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
     return await maybe_deferred_to_future(deferToThread(func, *args, **kwargs))
+
+
+async def sleep(seconds: float) -> None:
+    """Sleep for *seconds*, working in asyncio-reactor, non-asyncio-reactor,
+    and reactorless modes.
+
+    Uses :func:`asyncio.sleep` when asyncio is available, and
+    :func:`~twisted.internet.task.deferLater` otherwise.
+
+    .. versionadded:: VERSION
+    """
+    if is_asyncio_available():
+        await asyncio.sleep(seconds)
+    else:
+        from twisted.internet import reactor
+
+        # circular import
+        from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
+
+        await maybe_deferred_to_future(deferLater(reactor, seconds, lambda: None))
+
+
+async def wait_for_first(
+    deferreds: Sequence[Deferred[Any]],
+    *,
+    timeout: float | None = None,
+) -> tuple[set[Deferred[Any]], set[Deferred[Any]]]:
+    """Wait for the first of *deferreds* to fire, or until *timeout* seconds pass.
+
+    Returns ``(done, pending)`` — two sets partitioning the input
+    :class:`~twisted.internet.defer.Deferred` objects — mirroring the API of
+    :func:`asyncio.wait`.
+
+    Unfired deferreds in the ``pending`` set are neither cancelled nor
+    otherwise modified; the caller is responsible for any cleanup.
+
+    Returns ``(set(), set())`` immediately when *deferreds* is empty.
+
+    Works transparently in asyncio-reactor, non-asyncio-reactor, and
+    reactorless modes.
+
+    .. versionadded:: VERSION
+    """
+    if not deferreds:
+        return set(), set()
+
+    if is_asyncio_available():
+        # circular import
+        from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
+
+        future_to_deferred = {maybe_deferred_to_future(d): d for d in deferreds}
+        done_futures, pending_futures = await asyncio.wait(
+            list(future_to_deferred),
+            timeout=timeout,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        return (
+            {future_to_deferred[f] for f in done_futures},
+            {future_to_deferred[f] for f in pending_futures},
+        )
+
+    from twisted.internet import reactor
+
+    # circular import
+    from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
+
+    timeout_deferred = (
+        deferLater(reactor, timeout, lambda: None) if timeout is not None else None
+    )
+    waiter = DeferredList(
+        [*deferreds, *([] if timeout_deferred is None else [timeout_deferred])],
+        fireOnOneCallback=True,
+        fireOnOneErrback=True,
+        consumeErrors=True,
+    )
+    try:
+        await maybe_deferred_to_future(waiter)
+    finally:
+        if timeout_deferred is not None and not timeout_deferred.called:
+            timeout_deferred.cancel()
+
+    return (
+        {d for d in deferreds if d.called},
+        {d for d in deferreds if not d.called},
+    )

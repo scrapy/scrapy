@@ -45,6 +45,10 @@ The main throttling :ref:`settings <topics-settings>` are:
     Even if you have multiple slots, requests to the same domain cannot be sent
     more frequently than this delay.
 
+    To target a specific number of requests per minute (RPM) *per domain*, set
+    this to ``60 / RPM``. For example, ``DOWNLOAD_DELAY = 1.0`` for 60 RPM, or
+    ``DOWNLOAD_DELAY = 2.0`` for 30 RPM.
+
 -   .. setting:: DOWNLOAD_DELAY_PER_SLOT
 
     :setting:`DOWNLOAD_DELAY_PER_SLOT` (default: ``None``)
@@ -944,14 +948,6 @@ Additional settings
 
     If ``True``, ``0.5`` (i.e. ±50%) is used as the randomization factor. If
     ``False``, no randomization is applied.
-
--   .. setting:: TARGET_RPM
-
-    :setting:`TARGET_RPM` (default: ``None``)
-
-    Target number of requests per minute *per domain*. It has no effect on its
-    own; it is read by :class:`~scrapy.addons.throttling.TargetRPMAddon`, which
-    must be enabled explicitly.
 
 -   .. setting:: THROTTLING_DEBUG
 
