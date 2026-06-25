@@ -31,6 +31,7 @@ class AutoThrottle:
             "backoff settings instead: "
             "https://docs.scrapy.org/en/latest/topics/throttling.html",
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
 
         self.debug: bool = crawler.settings.getbool("AUTOTHROTTLE_DEBUG")

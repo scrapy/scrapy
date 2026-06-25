@@ -129,6 +129,13 @@ class ExecutionEngine:
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None
         ) = None
+        # Requests currently held by the throttling manager, waiting for their
+        # scopes to allow them through to the downloader.
+        self._throttling_waiting: set[Request] = set()
+        self._delayed_requests_warn_threshold: int = self.settings.getint(
+            "DELAYED_REQUESTS_WARN_THRESHOLD"
+        )
+        self._delayed_requests_warned: bool = False
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -351,6 +358,35 @@ class ExecutionEngine:
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
+            or self._throttling_needs_backout()
+        )
+
+    def _throttling_needs_backout(self) -> bool:
+        """Apply backpressure while requests are held by the throttling manager.
+
+        Requests waiting on throttling do not occupy a downloader concurrency
+        slot, so without this check the engine would keep draining the
+        scheduler into pending throttling waits. Count them together with the
+        in-flight requests against the global concurrency limit.
+        """
+        if not self._throttling_waiting:
+            return False
+        return (
+            len(self._throttling_waiting) + len(self.downloader.active)
+            >= self.downloader.total_concurrency
+        )
+
+    def _maybe_warn_delayed_requests(self) -> None:
+        if self._delayed_requests_warned:
+            return
+        if len(self._throttling_waiting) < self._delayed_requests_warn_threshold:
+            return
+        self._delayed_requests_warned = True
+        logger.warning(
+            f"There are {len(self._throttling_waiting)} requests held back by throttling. This may "
+            "indicate a throttling configuration that is too aggressive or a "
+            "site that is rate-limiting heavily. See DELAYED_REQUESTS_WARN_THRESHOLD.",
+            extra={"spider": self.spider},
         )
 
     def _remove_request(self, _: Any, request: Request) -> None:
@@ -426,6 +462,8 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
+        if self._throttling_waiting:  # requests held by the throttling manager
+            return False
         if self._start is not None:  # not all start requests are handled
             return False
         return not self._slot.scheduler.has_pending_requests()
@@ -482,6 +520,21 @@ class ExecutionEngine:
         return response_or_request
 
     @inlineCallbacks
+    def _acquire_throttling(
+        self, request: Request
+    ) -> Generator[Deferred[Any], Any, None]:
+        """Wait at the throttling gate before *request* is sent, tracking it as
+        held meanwhile."""
+        self._throttling_waiting.add(request)
+        self._maybe_warn_delayed_requests()
+        throttler = self.crawler.throttler
+        assert throttler is not None
+        try:
+            yield deferred_from_coro(throttler.acquire(request))
+        finally:
+            self._throttling_waiting.discard(request)
+
+    @inlineCallbacks
     def _download(
         self, request: Request
     ) -> Generator[Deferred[Any], Any, Response | Request]:
@@ -489,12 +542,19 @@ class ExecutionEngine:
         assert self.spider is not None
 
         self._slot.add_request(request)
+        throttler = self.crawler.throttler
+        assert throttler is not None
         try:
-            result: Response | Request
-            if self._downloader_fetch_needs_spider:
-                result = yield self.downloader.fetch(request, self.spider)
-            else:
-                result = yield self.downloader.fetch(request)
+            yield self._acquire_throttling(request)
+            try:
+                result: Response | Request
+                if self._downloader_fetch_needs_spider:
+                    result = yield self.downloader.fetch(request, self.spider)
+                else:
+                    result = yield self.downloader.fetch(request)
+            except Exception as exc:
+                yield deferred_from_coro(throttler.process_exception(request, exc))
+                raise
             if not isinstance(result, (Response, Request)):
                 raise TypeError(
                     f"Incorrect type: expected Response or Request, got {type(result)}: {result!r}"
@@ -502,6 +562,7 @@ class ExecutionEngine:
             if isinstance(result, Response):
                 if result.request is None:
                     result.request = request
+                yield deferred_from_coro(throttler.process_response(result))
                 logkws = self.logformatter.crawled(result.request, result, self.spider)
                 if logkws is not None:
                     logger.log(
@@ -515,6 +576,7 @@ class ExecutionEngine:
                 )
             return result
         finally:
+            throttler.release(request)
             self._slot.nextcall.schedule()
 
     def open_spider(

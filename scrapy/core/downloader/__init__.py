@@ -86,6 +86,8 @@ def _get_concurrency_delay(
     delay: float = settings.getfloat("DOWNLOAD_DELAY")
     if hasattr(spider, "download_delay"):
         delay = spider.download_delay
+    if settings.get("DOWNLOAD_DELAY_PER_SLOT") is not None:
+        delay = settings.getfloat("DOWNLOAD_DELAY_PER_SLOT")
 
     if hasattr(spider, "max_concurrent_requests"):  # pragma: no cover
         warn_on_deprecated_spider_attribute(

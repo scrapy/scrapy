@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from twisted.internet.defer import Deferred
 
+from scrapy import signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
@@ -98,7 +99,7 @@ class RobotsTxtMiddleware:
             assert self.crawler.stats
             try:
                 resp = await self.crawler.engine.download_async(robotsreq)
-                self._parse_robots(resp, netloc)
+                await self._parse_robots(resp, netloc, request)
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
                     logger.error(
@@ -115,13 +116,20 @@ class RobotsTxtMiddleware:
             return await maybe_deferred_to_future(parser)
         return parser
 
-    def _parse_robots(self, response: Response, netloc: str) -> None:
+    async def _parse_robots(
+        self, response: Response, netloc: str, request: Request
+    ) -> None:
         assert self.crawler.stats
         self.crawler.stats.inc_value("robotstxt/response_count")
         self.crawler.stats.inc_value(
             f"robotstxt/response_status_count/{response.status}"
         )
         rp = self._parserimpl.from_crawler(self.crawler, response.body)
+        await self.crawler.signals.send_catch_log_async(
+            signal=signals.robots_parsed,
+            robotparser=rp,
+            request=request,
+        )
         rp_dfd = self._parsers[netloc]
         assert isinstance(rp_dfd, Deferred)
         self._parsers[netloc] = rp
