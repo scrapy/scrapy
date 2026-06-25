@@ -128,6 +128,8 @@ def pytest_runtest_setup(item):
         "botocore",
         "boto3",
         "mitmproxy",
+        "keyring",
+        "dotenv",
     ]
 
     for module in optional_deps:
