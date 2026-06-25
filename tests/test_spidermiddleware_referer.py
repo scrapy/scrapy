@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spidermiddlewares.referer import (
@@ -1017,6 +1017,14 @@ class TestPolicyMethodResponseParamRename:
                 response=self.response, resp_or_url=self.response, request=self.request
             )
 
+    def test_missing_response(self):
+        with pytest.raises(TypeError, match="Missing required argument: 'response'"):
+            self.mw.policy(request=self.request)
+
+    def test_missing_request(self):
+        with pytest.raises(TypeError, match="Missing required argument: 'request'"):
+            self.mw.policy(response=self.response)
+
 
 @coroutine_test
 async def test_response_policy_only_supports_policy_names():
@@ -1115,3 +1123,36 @@ async def test_referer_policies_setting():
     ]
     assert len(output) == 1
     assert output[0].headers == {b"Referer": [b"https://python.org/"]}
+
+
+class TestReferrerPolicyHelpers:
+    def test_origin_referrer_local_scheme(self):
+        # A local scheme yields no referrer.
+        assert UnsafeUrlPolicy().origin_referrer("data:,foo") is None
+
+    def test_strip_url_empty(self):
+        assert UnsafeUrlPolicy().strip_url("") is None
+
+    def test_potentially_trustworthy_data_scheme(self):
+        assert UnsafeUrlPolicy().potentially_trustworthy("data:,foo") is False
+
+
+def test_default_policy():
+    crawler = get_crawler()
+    mw = build_from_crawler(RefererMiddleware, crawler)
+    assert mw.default_policy is DefaultReferrerPolicy
+
+
+def test_no_settings_constructor():
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="Instantiating RefererMiddleware without a 'settings' argument",
+    ):
+        mw = RefererMiddleware()
+    assert mw.default_policy is DefaultReferrerPolicy
+
+
+def test_not_configured_when_disabled():
+    crawler = get_crawler(settings_dict={"REFERER_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        build_from_crawler(RefererMiddleware, crawler)

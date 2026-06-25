@@ -213,3 +213,21 @@ def test_request_scheduled_invalid_domains():
         request = Request(f"https://{letter}.example")
         with pytest.raises(IgnoreRequest):
             mw.request_scheduled(request, crawler.spider)
+
+
+def test_repeated_offsite_domain():
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", allowed_domains=["example.com"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+    req1 = Request("http://other.org/1")
+    req2 = Request("http://other.org/2")
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(req1)
+    assert "other.org" in mw.domains_seen
+    assert crawler.stats.get_value("offsite/domains") == 1
+    assert crawler.stats.get_value("offsite/filtered") == 1
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(req2)
+    assert crawler.stats.get_value("offsite/domains") == 1  # not incremented again
+    assert crawler.stats.get_value("offsite/filtered") == 2
