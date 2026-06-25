@@ -197,8 +197,8 @@ class TestContextFactoryCiphers(TestContextFactoryBase):
         assert factory.tls_ciphers is not None
         # OpenSSLAcceptableCiphers has no __eq__, so compare the parsed ciphers.
         assert (
-            factory.tls_ciphers._ciphers  # type: ignore[attr-defined]
-            == AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")._ciphers  # type: ignore[attr-defined]
+            factory.tls_ciphers._ciphers
+            == AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")._ciphers
         )
         assert factory._get_cert_options_kwargs()["acceptableCiphers"] is not None
 
@@ -209,8 +209,8 @@ class TestContextFactoryCiphers(TestContextFactoryBase):
         factory = build_from_crawler(_ScrapyClientContextFactory, crawler)
         assert factory.tls_ciphers is not None
         assert (
-            factory.tls_ciphers._ciphers  # type: ignore[attr-defined]
-            == AcceptableCiphers.fromOpenSSLCipherString("CAMELLIA256-SHA")._ciphers  # type: ignore[attr-defined]
+            factory.tls_ciphers._ciphers
+            == AcceptableCiphers.fromOpenSSLCipherString("CAMELLIA256-SHA")._ciphers
         )
 
     @coroutine_test
