@@ -10,7 +10,7 @@ from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FileException
+from scrapy.pipelines.files import FileException, _MediaRequestFiltered
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.utils.defer import _defer_sleep_async
 from scrapy.utils.log import failure_to_exc_info
@@ -159,6 +159,19 @@ class TestBaseMediaPipeline:
         self.pipe.LOG_FAILED_RESULTS = False
         with LogCapture() as log:
             new_item = self.pipe.item_completed(results, item, self.info)
+        assert new_item is item
+        assert len(log.records) == 0
+
+    def test_item_completed_filtered_request_not_logged(self):
+        """Filtered media requests (e.g. offsite ones) are not logged as errors
+        by item_completed(), as they are not download errors."""
+        item = {"name": "name"}
+        fail = Failure(_MediaRequestFiltered("Filtered offsite request"))
+        results = [(True, 1), (False, fail)]
+
+        with LogCapture() as log:
+            new_item = self.pipe.item_completed(results, item, self.info)
+
         assert new_item is item
         assert len(log.records) == 0
 
