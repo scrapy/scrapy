@@ -381,6 +381,12 @@ class TestThrottlingScopeManager:
         scope.record_backoff(delay=backoff_delay, now=0.0)
         assert scope.can_send(now=0.0) == pytest.approx(expected)
 
+    def test_uncapped_backoff_delay(self):
+        # cap=False (used by trusted delay_scope() calls) ignores BACKOFF_MAX_DELAY.
+        scope = _scope_manager({"BACKOFF_MAX_DELAY": 10.0})
+        scope.record_backoff(delay=999.0, now=0.0, cap=False)
+        assert scope.can_send(now=0.0) == pytest.approx(999.0)
+
     def test_recovery_after_window(self):
         scope = _scope_manager(
             {
@@ -599,6 +605,69 @@ class TestThrottlingManagerReadiness:
         assert manager.time_until_ready(second) == pytest.approx(100.0, abs=1.0)
 
     @coroutine_test
+    async def test_throttling_delay_blocks_until_deadline(self):
+        manager = _manager({"THROTTLING_DEBUG": True})
+        request = Request("http://example.com/a", meta={"throttling_delay": 100.0})
+        await manager.get_scopes(request)
+        # The per-request delay holds back the request even though its scope is
+        # otherwise unconstrained.
+        assert manager.is_ready(request) is False
+        assert manager.time_until_ready(request) == pytest.approx(100.0, abs=1.0)
+        # The deadline is computed once and reused by later polls.
+        deadline = request.meta["_throttling_delay_deadline"]
+        assert manager.is_ready(request) is False
+        assert request.meta["_throttling_delay_deadline"] == deadline
+
+    @coroutine_test
+    async def test_throttling_delay_not_reapplied_once_consumed(self):
+        # A request whose delay was already honored (e.g. promoted out of a
+        # throttling-aware queue's holding area, or restored on resume) is
+        # ready, so it cannot re-block its scope set on a stale deadline.
+        manager = _manager()
+        request = Request(
+            "http://example.com/a",
+            meta={"throttling_delay": 100.0, "_throttling_delayed": True},
+        )
+        await manager.get_scopes(request)
+        assert manager.is_ready(request) is True
+        assert manager.get_request_delay(request) == 0.0
+
+    @coroutine_test
+    async def test_get_request_delay(self):
+        manager = _manager()
+        assert manager.get_request_delay(
+            Request("http://example.com/a", meta={"throttling_delay": 100.0})
+        ) == pytest.approx(100.0, abs=1.0)
+        # A request without a per-request delay is not held individually.
+        assert manager.get_request_delay(Request("http://example.com/b")) == 0.0
+
+    @coroutine_test
+    async def test_delay_scope(self):
+        manager = _manager(
+            {"THROTTLING_DEBUG": True, "RANDOMIZE_DOWNLOAD_DELAY": False}
+        )
+        request = Request("http://example.com/a")
+        await manager.get_scopes(request)
+        assert manager.is_ready(request) is True
+        # A component can delay a whole scope on demand, like a Retry-After
+        # response header does.
+        manager.delay_scope("example.com", 50.0)
+        assert manager.is_ready(request) is False
+        assert manager.time_until_ready(request) == pytest.approx(50.0, abs=1.0)
+
+    @coroutine_test
+    async def test_delay_scope_bypasses_max_delay(self):
+        # BACKOFF_MAX_DELAY caps untrusted input (headers), but delay_scope is a
+        # trusted call, so it may exceed the cap.
+        manager = _manager(
+            {"BACKOFF_MAX_DELAY": 30.0, "RANDOMIZE_DOWNLOAD_DELAY": False}
+        )
+        request = Request("http://example.com/a")
+        await manager.get_scopes(request)
+        manager.delay_scope("example.com", 1000.0)
+        assert manager.time_until_ready(request) == pytest.approx(1000.0, abs=1.0)
+
+    @coroutine_test
     async def test_reserve_blocks_on_concurrency(self):
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         first = Request("http://example.com/1")
@@ -783,21 +852,21 @@ class TestThrottlingManagerEdges:
         assert r2 in manager._reserved
 
     @coroutine_test
-    async def test_apply_request_delay(self):
+    async def test_delay_request(self):
         manager = _manager({"THROTTLING_DEBUG": True})
         request = Request("http://example.com/a", meta={"throttling_delay": 0.01})
-        await manager._apply_request_delay(request)
+        await manager._delay_request(request)
         assert request.meta["_throttling_delayed"] is True
         # A second call is a no-op (the request was already delayed).
-        await manager._apply_request_delay(request)
+        await manager._delay_request(request)
 
     @coroutine_test
-    async def test_apply_request_delay_without_debug(self):
+    async def test_delay_request_without_debug(self):
         # Same as above but with debug logging off, so the delay is applied
         # without emitting the debug message.
         manager = _manager()
         request = Request("http://example.com/a", meta={"throttling_delay": 0.01})
-        await manager._apply_request_delay(request)
+        await manager._delay_request(request)
         assert request.meta["_throttling_delayed"] is True
 
     @coroutine_test

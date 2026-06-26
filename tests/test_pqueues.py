@@ -369,6 +369,98 @@ class TestThrottlingAwarePriorityQueue:
         assert delay == pytest.approx(1000.0, abs=1.0)
 
     @coroutine_test
+    async def test_pop_holds_request_with_throttling_delay(self):
+        crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
+        queue = self._queue(crawler)
+        await self._push(
+            queue,
+            crawler,
+            Request("http://slow.com/1", meta={"throttling_delay": 1000.0}),
+        )
+        await self._push(queue, crawler, Request("http://fast.com/1"))
+        # The delayed request is held back even though its scope is otherwise
+        # unconstrained; the request without a delay is served.
+        popped = [queue.pop(), queue.pop()]
+        urls = [r.url if r else None for r in popped]
+        assert "http://fast.com/1" in urls
+        assert None in urls
+        assert len(queue) == 1
+        delay = queue.next_request_delay()
+        assert delay is not None
+        assert delay == pytest.approx(1000.0, abs=1.0)
+
+    @coroutine_test
+    async def test_delayed_request_does_not_block_scope_set(self):
+        crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
+        queue = self._queue(crawler)
+        # Both requests share the same (example.com) scope set; only the first
+        # carries a per-request delay.
+        await self._push(
+            queue,
+            crawler,
+            Request("http://example.com/slow", meta={"throttling_delay": 1000.0}),
+        )
+        await self._push(queue, crawler, Request("http://example.com/fast"))
+        # The delayed request is held aside, so the other request in the same
+        # scope set is served right away instead of being stuck behind it.
+        assert queue.pop().url == "http://example.com/fast"
+        # The delayed request is not lost, just not poppable yet.
+        assert queue.pop() is None
+        assert len(queue) == 1
+        assert queue.next_request_delay() == pytest.approx(1000.0, abs=1.0)
+
+    @coroutine_test
+    async def test_delayed_request_promoted_when_due(self):
+        crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
+        queue = self._queue(crawler)
+        request = Request("http://example.com/slow", meta={"throttling_delay": 1000.0})
+        await self._push(queue, crawler, request)
+        assert queue.pop() is None  # held back by its per-request delay
+        # Once the delay elapses the request is promoted into its scope-set
+        # queue, served, and flagged so the delay is not applied a second time.
+        queue._promote_ready(queue._delayed[0][0])
+        popped = queue.pop()
+        assert popped is request
+        assert popped.meta["_throttling_delayed"] is True
+        assert len(queue) == 0
+
+    @coroutine_test
+    async def test_delayed_request_persisted_on_close(self):
+        # With a JOBDIR (disk queue), a request held back by its per-request
+        # delay must not be lost on a graceful stop: close() flushes it to disk
+        # so it is restored on resume.
+        crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
+        temp_dir = tempfile.mkdtemp()
+        queue = build_from_crawler(
+            ThrottlingAwarePriorityQueue,
+            crawler,
+            downstream_queue_cls=PickleFifoDiskQueue,
+            key=temp_dir,
+        )
+        await self._push(
+            queue,
+            crawler,
+            Request("http://example.com/slow", meta={"throttling_delay": 1000.0}),
+        )
+        assert len(queue) == 1  # held in memory, not yet in any scope-set queue
+        state = queue.close()  # graceful stop
+
+        resumed = build_from_crawler(
+            ThrottlingAwarePriorityQueue,
+            crawler,
+            downstream_queue_cls=PickleFifoDiskQueue,
+            key=temp_dir,
+            startprios=state,
+        )
+        assert len(resumed) == 1
+        popped = resumed.pop()
+        assert popped is not None
+        assert popped.url == "http://example.com/slow"
+        # Its delay is marked consumed, so it does not re-block on resume.
+        assert popped.meta["_throttling_delayed"] is True
+        resumed.close()
+
+    @coroutine_test
     async def test_least_loaded_first(self):
         crawler = get_crawler(
             Spider,

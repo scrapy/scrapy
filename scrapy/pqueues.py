@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
 import logging
+import time
 from typing import TYPE_CHECKING, Protocol, cast
 
 from scrapy.utils.misc import build_from_crawler
@@ -455,9 +457,9 @@ def _scope_set_from_key(key: str) -> frozenset[ScopeID]:
 
 
 class ThrottlingAwarePriorityQueue:
-    """Priority queue that partitions requests by their full :ref:`throttling
-    scope set <throttling-scopes>` and only ever pops a request that can be
-    sent right now.
+    """Priority queue that only ever pops a request that can be sent right now
+    based on its :ref:`throttling scope set <throttling-scopes>` and
+    per-request :reqmeta:`throttling_delay`.
 
     The downstream queue class must support ``peek``.
 
@@ -520,6 +522,11 @@ class ThrottlingAwarePriorityQueue:
 
         # scope set -> priority queue
         self.pqueues: dict[frozenset[ScopeID], ScrapyPriorityQueue] = {}
+        # Min-heap of (deadline, seq, scope_set, request) for requests held back
+        # by a per-request throttling_delay; seq keeps ordering stable and
+        # avoids comparing requests when deadlines tie.
+        self._delayed: list[tuple[float, int, frozenset[ScopeID], Request]] = []
+        self._delayed_seq: int = 0
         if slot_startprios:
             for set_key, startprios in slot_startprios.items():
                 scope_set = _scope_set_from_key(set_key)
@@ -537,9 +544,51 @@ class ThrottlingAwarePriorityQueue:
         )
 
     def push(self, request: Request, scope_set: frozenset[ScopeID]) -> None:
+        now = time.monotonic()
+        self._promote_ready(now)
+        delay = self._throttler.get_request_delay(request, now)
+        if delay > 0:
+            self._delayed_seq += 1
+            heapq.heappush(
+                self._delayed, (now + delay, self._delayed_seq, scope_set, request)
+            )
+            return
+        self._push_to_queue(request, scope_set)
+
+    def _push_to_queue(self, request: Request, scope_set: frozenset[ScopeID]) -> None:
         if scope_set not in self.pqueues:
             self.pqueues[scope_set] = self.pqfactory(scope_set)
         self.pqueues[scope_set].push(request)
+
+    def _promote_ready(self, now: float) -> None:
+        """Move every held-back request whose per-request delay has elapsed into
+        its scope-set queue, where it competes normally for its scopes."""
+        while self._delayed and self._delayed[0][0] <= now:
+            self._release_delayed(heapq.heappop(self._delayed))
+
+    def _release_delayed(
+        self, entry: tuple[float, int, frozenset[ScopeID], Request]
+    ) -> None:
+        _, _, scope_set, request = entry
+        # The per-request delay has been honored (or the queue is closing), so
+        # mark it consumed: the request must not be delayed again, and on resume
+        # it must not re-block its scope set on a stale, no-longer-meaningful
+        # deadline.
+        request.meta["_throttling_delayed"] = True
+        try:
+            self._push_to_queue(request, scope_set)
+        except ValueError as e:
+            # A disk queue serializes on push; held-back requests defer that
+            # serialization until here, so a non-serializable one would
+            # otherwise raise while flushing on close and take the rest of the
+            # disk queue down with it. Drop it with a warning instead, matching
+            # how the scheduler handles unserializable requests at enqueue time.
+            logger.warning(
+                "Unable to serialize request: %(request)s - reason: %(reason)s",
+                {"request": request, "reason": e},
+                exc_info=True,
+                extra={"spider": getattr(self.crawler, "spider", None)},
+            )
 
     def _select(
         self,
@@ -553,6 +602,7 @@ class ThrottlingAwarePriorityQueue:
         :meth:`~scrapy.throttling.ThrottlingManagerProtocol.scope_load` over the
         scopes of the queue), i.e. by preferring the least-busy scopes.
         """
+        self._promote_ready(time.monotonic())
         best_sort_key: tuple[int, float] | None = None
         best: tuple[frozenset[ScopeID], ScrapyPriorityQueue] | None = None
         for scope_set, queue in self.pqueues.items():
@@ -588,6 +638,8 @@ class ThrottlingAwarePriorityQueue:
         return selected[1].peek()
 
     def next_request_delay(self) -> float | None:
+        now = time.monotonic()
+        self._promote_ready(now)
         delay: float | None = None
         for queue in self.pqueues.values():
             head = queue.peek()
@@ -600,9 +652,19 @@ class ThrottlingAwarePriorityQueue:
                 continue
             if delay is None or head_delay < delay:
                 delay = head_delay
+        # A request held back only by its own throttling_delay is not in any
+        # scope-set queue, so factor in when the earliest one is due.
+        if self._delayed:
+            next_delayed = max(0.0, self._delayed[0][0] - now)
+            if delay is None or next_delayed < delay:
+                delay = next_delayed
         return delay
 
     def close(self) -> dict[str, list[int]]:
+        # Flush held-back requests into their scope-set queues so they are
+        # persisted (and restored on resume) rather than lost.
+        while self._delayed:
+            self._release_delayed(heapq.heappop(self._delayed))
         active = {
             _scope_set_key(scope_set): queue.close()
             for scope_set, queue in self.pqueues.items()
@@ -611,7 +673,8 @@ class ThrottlingAwarePriorityQueue:
         return active
 
     def __len__(self) -> int:
-        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
+        queued = sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
+        return queued + len(self._delayed)
 
     def __contains__(self, scope_set: frozenset[ScopeID]) -> bool:
         return scope_set in self.pqueues

@@ -516,6 +516,33 @@ class TestThrottlingAwareScheduler:
         scheduler.close("finished")
 
     @coroutine_test
+    async def test_delayed_request_survives_jobdir_stop(self, tmp_path: Path) -> None:
+        # A request held back by its per-request throttling_delay must not be
+        # lost on a graceful stop when a JOBDIR is configured: it is flushed to
+        # the disk queue on close and restored on resume.
+        crawler = self._crawler(
+            {"JOBDIR": str(tmp_path), "RANDOMIZE_DOWNLOAD_DELAY": False}
+        )
+        scheduler = self._scheduler(crawler)
+        request = Request("http://a.com/slow", meta={"throttling_delay": 1000.0})
+        assert await scheduler.enqueue_request_async(request) is True
+        assert len(scheduler) == 1
+        # The delay holds it back, so nothing is dequeued before the stop.
+        assert scheduler.next_request() is None
+        scheduler.close("finished")
+
+        # Resume from the same JOBDIR: the request is still there and, having
+        # been held once, is now sendable.
+        resumed = self._scheduler(
+            self._crawler({"JOBDIR": str(tmp_path), "RANDOMIZE_DOWNLOAD_DELAY": False})
+        )
+        assert len(resumed) == 1
+        resumed_request = resumed.next_request()
+        assert resumed_request is not None
+        assert resumed_request.url == "http://a.com/slow"
+        resumed.close("finished")
+
+    @coroutine_test
     async def test_enqueue_async_filters_duplicates(self) -> None:
         crawler = self._crawler(
             {"DUPEFILTER_CLASS": "scrapy.dupefilters.RFPDupeFilter"}

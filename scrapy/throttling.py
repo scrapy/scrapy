@@ -323,10 +323,10 @@ class ThrottlingManagerProtocol(Protocol):
         *and* a concurrency slot is free in every scope.
 
         This is the synchronous, non-blocking counterpart of :meth:`acquire`,
-        used by a :ref:`throttling-aware scheduler <throttling-aware-scheduler>`
-        to decide whether a request can be dequeued now. It assumes the scopes
-        of *request* have already been resolved (e.g. by an earlier
-        :meth:`get_scopes` call at enqueue time).
+        used by a :ref:`throttling-aware scheduler
+        <throttling-aware-scheduler>` to decide whether a request can be
+        dequeued now. It assumes the scopes of *request* have already been
+        resolved (e.g. by an earlier :meth:`get_scopes` call at enqueue time).
         """
 
     def reserve(self, request: Request) -> None:
@@ -357,6 +357,31 @@ class ThrottlingManagerProtocol(Protocol):
         Used by a :ref:`throttling-aware scheduler
         <throttling-aware-scheduler>` to balance dequeuing across scopes,
         preferring the least-loaded ones.
+        """
+
+    def get_request_delay(self, request: Request, now: float | None = None) -> float:
+        """Return how many seconds *request* must still be held individually
+        because of its :reqmeta:`throttling_delay`, or ``0.0`` if it has none
+        or it has already elapsed. The one-time delay is started on the first
+        call.
+
+        Unlike a scope delay, this affects only *request*: a
+        :ref:`throttling-aware scheduler <throttling-aware-scheduler>` must
+        hold the request back on its own, **without** blocking other requests
+        that share its scopes.
+        """
+
+    def delay_scope(self, scope_id: str, delay: float) -> None:
+        """Hold back every request of the scope identified by *scope_id* for at
+        least *delay* seconds, counted as a :ref:`backoff <backoff>` trigger
+        for the scope.
+
+        This is the programmatic equivalent of a :ref:`Retry-After
+        <retry-after>` response header, available to any component through
+        :attr:`crawler.throttler <scrapy.crawler.Crawler.throttler>`. Unlike
+        those headers, *delay* is **not** capped at
+        :setting:`BACKOFF_MAX_DELAY`: that cap guards against untrusted input,
+        whereas a ``delay_scope`` call is trusted.
         """
 
     async def process_response(self, response: Response) -> None:
@@ -551,7 +576,7 @@ class ThrottlingManager:
             return
         now = time.monotonic()
         self._maybe_evict(now)
-        await self._apply_request_delay(request)
+        await self._delay_request(request)
         scope_values = list(iter_scope_values(await self.get_scopes(request)))
         if not scope_values:
             return
@@ -599,6 +624,8 @@ class ThrottlingManager:
 
     def is_ready(self, request: Request) -> bool:
         now = time.monotonic()
+        if self._request_delay_deadline(request, now) > now:
+            return False
         for scope_id, value in self._cached_scope_values(request):
             manager = self._get_scope_manager(scope_id)
             if manager.can_send(now=now, amount=value) > 0:
@@ -618,7 +645,7 @@ class ThrottlingManager:
 
     def time_until_ready(self, request: Request) -> float | None:
         now = time.monotonic()
-        wait = 0.0
+        wait = max(0.0, self._request_delay_deadline(request, now) - now)
         for scope_id, value in self._cached_scope_values(request):
             manager = self._get_scope_manager(scope_id)
             wait = max(wait, manager.can_send(now=now, amount=value))
@@ -632,6 +659,10 @@ class ThrottlingManager:
         if not limit:
             return 0.0
         return active / limit
+
+    def get_request_delay(self, request: Request, now: float | None = None) -> float:
+        now = time.monotonic() if now is None else now
+        return max(0.0, self._request_delay_deadline(request, now) - now)
 
     async def _wait_for_slot(self, managers: list[Any]) -> None:
         """Block until any of *managers* frees a concurrency slot.
@@ -649,7 +680,7 @@ class ThrottlingManager:
             if event in pending:
                 manager.discard_slot_event(event)
 
-    async def _apply_request_delay(self, request: Request) -> None:
+    async def _delay_request(self, request: Request) -> None:
         """Honor the :reqmeta:`throttling_delay` meta key by holding *request*
         for the requested number of seconds the first time it is processed."""
         delay = request.meta.get("throttling_delay")
@@ -659,6 +690,31 @@ class ThrottlingManager:
         if self._debug:
             logger.debug(f"Holding {request} for {delay:.2f}s (throttling_delay)")
         await sleep(float(delay))
+
+    def _request_delay_deadline(self, request: Request, now: float) -> float:
+        """Return the monotonic time before which *request* must not be sent due
+        to its :reqmeta:`throttling_delay`, or ``0.0`` if it has none.
+
+        This is the readiness-API counterpart of :meth:`_delay_request`:
+        a throttling-aware scheduler gates requests through :meth:`is_ready` and
+        :meth:`time_until_ready` instead of awaiting :meth:`acquire`, so the
+        delay is enforced by holding back the request until this deadline rather
+        than by sleeping. The deadline is computed once, the first time the
+        request reaches the gate, and stored so later polls reuse it.
+
+        A request whose delay has already been honored (the ``_throttling_delayed``
+        flag, also set by :meth:`_delay_request`) is never delayed again,
+        which keeps a resumed crawl from re-blocking on a stale deadline."""
+        delay = request.meta.get("throttling_delay")
+        if not delay or request.meta.get("_throttling_delayed"):
+            return 0.0
+        deadline = request.meta.get("_throttling_delay_deadline")
+        if deadline is None:
+            deadline = now + float(delay)
+            request.meta["_throttling_delay_deadline"] = deadline
+            if self._debug:
+                logger.debug(f"Holding {request} for {delay:.2f}s (throttling_delay)")
+        return deadline
 
     async def process_response(self, response: Response) -> None:
         data = await self.get_response_backoff(response)
@@ -752,6 +808,13 @@ class ThrottlingManager:
         manager.set_base_delay(capped)
         manager.set_concurrency(1)
 
+    def delay_scope(self, scope_id: ScopeID, delay: float) -> None:
+        if self._debug:
+            logger.debug(f"Delaying scope {scope_id} for {delay:.2f}s")
+        # Like a Retry-After / RateLimit-Reset header, this is a hard minimum
+        # delay; unlike those, it is trusted, so it bypasses BACKOFF_MAX_DELAY.
+        self._get_scope_manager(scope_id).record_backoff(delay=float(delay), cap=False)
+
     def _maybe_evict(self, now: float) -> None:
         if self._max_idle <= 0:
             return
@@ -823,13 +886,21 @@ class ThrottlingScopeManagerProtocol(Protocol):
         downloading, freeing its concurrency slot."""
 
     def record_backoff(
-        self, delay: float | None = None, now: float | None = None
+        self,
+        delay: float | None = None,
+        now: float | None = None,
+        cap: bool = True,
     ) -> None:
         """Apply a backoff to this scope.
 
         *delay*, when given, is a hard minimum delay in seconds (e.g. from a
         ``Retry-After`` header). When omitted, an exponential backoff step is
         applied instead.
+
+        *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`. It is ``True`` for
+        untrusted input such as response headers, and may be set to ``False``
+        for trusted, programmatic delays (see
+        :meth:`ThrottlingManagerProtocol.delay_scope`).
         """
 
     def reconcile_quota(
@@ -1128,7 +1199,10 @@ class ThrottlingScopeManager:
                 event.callback(None)
 
     def record_backoff(
-        self, delay: float | None = None, now: float | None = None
+        self,
+        delay: float | None = None,
+        now: float | None = None,
+        cap: bool = True,
     ) -> None:
         now = self._now(now)
         self._last_seen = now
@@ -1136,9 +1210,11 @@ class ThrottlingScopeManager:
         self._backoff_level += 1
         self._rampup_backoffs += 1
         if delay is not None:
-            hard = min(float(delay), self._max_delay)
+            hard = min(float(delay), self._max_delay) if cap else float(delay)
             self._in_backoff_until = now + hard
-            self._delay = min(max(self._delay, hard, self._min_delay), self._max_delay)
+            self._delay = max(self._delay, hard, self._min_delay)
+            if cap:
+                self._delay = min(self._delay, self._max_delay)
         else:
             grown = (
                 self._delay * self._delay_factor if self._delay > 0 else self._min_delay

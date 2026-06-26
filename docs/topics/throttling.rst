@@ -290,7 +290,6 @@ minimum delays (capped at :setting:`BACKOFF_MAX_DELAY`).
 
 .. seealso:: :setting:`REDIRECT_MAX_DELAY`
 
-
 .. _crawl-delay:
 
 robots.txt
@@ -313,6 +312,47 @@ If :setting:`THROTTLING_SCOPES` defines a different concurrency or delay, it
 will be respected, but a warning will be logged about the discrepancy with
 ``Crawl-Delay``. Set ``ignore_robots_txt`` to ``True`` to silence this warning.
 
+.. _delay-scope:
+
+Delaying a scope programmatically
+=================================
+
+You can delay a :ref:`throttling scope <throttling-scopes>` on demand through
+:meth:`crawler.throttler.delay_scope()
+<scrapy.throttling.ThrottlingManagerProtocol.delay_scope>`:
+
+.. code-block:: python
+
+    crawler.throttler.delay_scope("example.com", 30.0)
+
+This holds back every request of the scope for at least the given number of
+seconds, counted as a :ref:`backoff <backoff>` trigger.
+
+It is useful to react to situations that :ref:`automatic backoff <backoff>`
+cannot detect on its own, such as a soft block that comes back as a ``200``
+response. For example, a spider callback can slow down the whole domain when it
+detects a maintenance page, and reschedule the current request:
+
+.. code-block:: python
+
+    from scrapy import Request, Spider
+    from scrapy.utils.httpobj import urlparse_cached
+
+
+    class MySpider(Spider):
+        name = "myspider"
+        start_urls = ["https://example.com/"]
+
+        def parse(self, response):
+            if "under maintenance" in response.text:
+                scope = urlparse_cached(response).netloc
+                self.crawler.throttler.delay_scope(scope, 600.0)
+                yield response.request.replace(dont_filter=True)
+                return
+            # Normal parsing follows.
+
+Unlike :ref:`untrusted delays <rate-limiting-headers>`, this delay is **not**
+capped at :setting:`BACKOFF_MAX_DELAY`.
 
 .. _per-request-throttling:
 
@@ -373,6 +413,19 @@ regardless of its scopes, set the ``throttling_delay`` request metadata key:
 
 The delay is applied once, the first time the request reaches the throttling
 gate.
+
+``throttling_delay`` defines only the *earliest* time the request may be sent,
+not the exact time: once the delay elapses, the request still competes with
+every other pending request for its scopes. If you want it sent **as soon as**
+its delay elapses, give it a higher :attr:`~scrapy.Request.priority` too:
+
+.. code-block:: python
+
+    Request("https://example.com/slow", meta={"throttling_delay": 5.0}, priority=1)
+
+Without a higher priority, a backlog of requests ahead of it in a FIFO queue
+could keep it waiting well past the configured delay; a higher priority puts it
+at the front of the queue, so it goes out right after its delay.
 
 .. reqmeta:: throttling_dont_track
 
