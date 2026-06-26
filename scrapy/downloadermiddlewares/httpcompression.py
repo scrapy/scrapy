@@ -89,7 +89,12 @@ class HttpCompressionMiddleware:
         )
         if not self.keep_encoding_header:
             warnings.warn(
-                "Setting COMPRESSION_KEEP_ENCODING_HEADER=False is deprecated",
+                "COMPRESSION_KEEP_ENCODING_HEADER is False (its current default "
+                "value), so HttpCompressionMiddleware removes the "
+                "Content-Encoding header from decoded responses. This is "
+                "deprecated; set COMPRESSION_KEEP_ENCODING_HEADER to True to "
+                "keep that header, which will be the only supported behavior "
+                "in a future Scrapy version, and to silence this warning.",
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -124,7 +129,7 @@ class HttpCompressionMiddleware:
     ) -> Request | Response:
         if request.method == "HEAD":
             return response
-        if b"decoded" in response.flags:
+        if "decoded" in response.flags:
             return response
         content_encoding = response.headers.getlist("Content-Encoding")
         if not content_encoding:
@@ -132,7 +137,7 @@ class HttpCompressionMiddleware:
         max_size = request.meta.get("download_maxsize", self._max_size)
         warn_size = request.meta.get("download_warnsize", self._warn_size)
         try:
-            decoded_body, content_encoding = self._handle_encoding(
+            decoded_body, to_keep = self._handle_encoding(
                 response.body, content_encoding, max_size
             )
         except _DecompressionMaxSizeExceeded as e:
@@ -148,9 +153,11 @@ class HttpCompressionMiddleware:
                 f"({len(decoded_body)} B) is larger than the "
                 f"download warning size ({warn_size} B)."
             )
-        if content_encoding:
-            self._warn_unknown_encoding(response, content_encoding)
-        response.headers["Content-Encoding"] = content_encoding
+        if to_keep:
+            self._warn_unknown_encoding(response, to_keep)
+        # Drop the encodings that have been decoded so that the response class
+        # is guessed from the decoded body rather than from the compressed one.
+        response.headers["Content-Encoding"] = to_keep
         if self.stats:
             self.stats.inc_value(
                 "httpcompression/response_bytes",
@@ -165,9 +172,13 @@ class HttpCompressionMiddleware:
             # force recalculating the encoding until we make sure the
             # responsetypes guessing is reliable
             kwargs["encoding"] = None
-        kwargs["flags"] = [*response.flags, b"decoded"]
+        kwargs["flags"] = [*response.flags, "decoded"]
         response = response.replace(cls=respcls, **kwargs)
-        if not self.keep_encoding_header and not content_encoding:
+        if self.keep_encoding_header:
+            # Restore the original Content-Encoding header so that the spider
+            # can tell how the response body was encoded before decoding.
+            response.headers["Content-Encoding"] = content_encoding
+        elif not to_keep:
             del response.headers["Content-Encoding"]
         return response
 
