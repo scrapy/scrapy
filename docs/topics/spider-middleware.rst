@@ -355,6 +355,8 @@ Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
     using the special ``"referrer_policy"`` :ref:`Request.meta <topics-request-meta>` key,
     with the same acceptable values as for the ``REFERRER_POLICY`` setting.
 
+.. seealso:: :ref:`security-credential-leakage`
+
 Acceptable values for REFERRER_POLICY
 *************************************
 

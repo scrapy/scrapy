@@ -22,6 +22,8 @@ how to harden them along with the trade-offs involved.
     sources, whether the machine running Scrapy is exposed to a network you do
     not control, whether the data you handle is sensitive, and so on.
 
+.. _security-untrusted-responses:
+
 Treat responses as untrusted input
 ==================================
 
@@ -36,6 +38,8 @@ derived from the response itself.
 
 TLS connections
 ===============
+
+.. _security-certificate-verification:
 
 Certificate verification
 ------------------------
@@ -62,6 +66,8 @@ man-in-the-middle attacks), set:
 * **Con:** you can no longer scrape sites with misconfigured certificates
   without re-disabling verification for them.
 
+.. _security-tls-protocols-ciphers:
+
 Protocol versions and ciphers
 -----------------------------
 
@@ -84,6 +90,8 @@ ciphers:
 
 * **Con:** you can no longer connect to servers that only support the excluded
   ciphers.
+
+.. _security-unencrypted-protocols:
 
 Unencrypted protocols
 =====================
@@ -113,6 +121,8 @@ Note that disabling the ``http`` handler also prevents plain-HTTP requests that
 result from following an ``http://`` redirect or link, which is often the point
 of disabling it.
 
+.. _security-local-resources:
+
 Local and non-network resources
 ===============================
 
@@ -141,6 +151,8 @@ If you do not need them, disable these handlers:
 More generally, if you crawl URLs from untrusted sources, consider validating
 their schemes (and, where applicable, their hosts) before scheduling requests,
 to avoid server-side request forgery (SSRF) and similar issues.
+
+.. _security-telnet:
 
 Telnet console
 ==============
@@ -174,6 +186,8 @@ If you do not use the telnet console, disable it entirely:
 
 * **Con:** you can no longer :ref:`inspect and control a running crawler
   <topics-telnetconsole>` through it.
+
+.. _security-credential-leakage:
 
 Credential leakage across domains
 =================================
