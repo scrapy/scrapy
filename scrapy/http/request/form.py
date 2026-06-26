@@ -32,19 +32,61 @@ if TYPE_CHECKING:
 
     from scrapy.http.response.text import TextResponse
 
-warn(
-    "The entire scrapy.http.request.form module is deprecated. Use the "
-    "form2request library instead.",
-    ScrapyDeprecationWarning,
-    stacklevel=2,
-)
-
 FormdataVType: TypeAlias = str | Iterable[str]
 FormdataKVType: TypeAlias = tuple[str, FormdataVType]
 FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
 
 
 class FormRequest(Request):
+    """A :class:`~scrapy.Request` subclass with a ``formdata`` parameter that
+    url-encodes the given data and assigns it to the request, which makes it
+    convenient to send arbitrary form data via HTTP POST or GET without an HTML
+    ``<form>`` element to parse.
+
+    .. note:: To build a request from an HTML ``<form>`` element found in a
+       response, use :doc:`form2request <form2request:index>` instead. See
+       :ref:`form`.
+
+    The remaining arguments are the same as for the :class:`~scrapy.Request`
+    class and are not documented here.
+
+    :param formdata: a dictionary (or iterable of (key, value) tuples)
+       containing HTML form data which will be url-encoded. If
+       :attr:`~scrapy.Request.method` is not given and ``formdata`` is
+       provided, the method is set to ``"POST"`` and the data is assigned to
+       the request body; if the method is ``"GET"``, the data is added to the
+       URL query string instead.
+    :type formdata: dict or collections.abc.Iterable
+
+    To send data via HTTP POST, simulating an HTML form submission, return a
+    :class:`~scrapy.FormRequest` object from your spider:
+
+    .. skip: next
+    .. code-block:: python
+
+        return [
+            FormRequest(
+                url="http://www.example.com/post/action",
+                formdata={"name": "John Doe", "age": "27"},
+                callback=self.after_post,
+            )
+        ]
+
+    To send the data in the URL query string instead, use the ``GET`` method:
+
+    .. skip: next
+    .. code-block:: python
+
+        return [
+            FormRequest(
+                url="http://www.example.com/search",
+                method="GET",
+                formdata={"q": "keyword", "page": "1"},
+                callback=self.parse_results,
+            )
+        ]
+    """
+
     __slots__ = ()
 
     valid_form_methods: ClassVar[list[str]] = ["GET", "POST"]
@@ -84,6 +126,13 @@ class FormRequest(Request):
         formcss: str | None = None,
         **kwargs: Any,
     ) -> Self:
+        warn(
+            "FormRequest.from_response() is deprecated. Use the form2request "
+            "library instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
         kwargs.setdefault("encoding", response.encoding)
 
         if formcss is not None:
