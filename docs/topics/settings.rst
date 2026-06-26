@@ -762,6 +762,8 @@ implementation.
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers.
 
+.. seealso:: :ref:`security-tls-protocols-ciphers`
+
 .. setting:: DOWNLOAD_TLS_MAX_VERSION
 
 DOWNLOAD_TLS_MAX_VERSION
@@ -795,6 +797,8 @@ modern environments.
     by all 3rd-party handlers. Additionally, the set of supported TLS versions
     depends on the TLS implementation being used by the handler.
 
+.. seealso:: :ref:`security-tls-protocols-ciphers`
+
 .. setting:: DOWNLOAD_TLS_MIN_VERSION
 
 DOWNLOAD_TLS_MIN_VERSION
@@ -806,6 +810,8 @@ Use this setting to change the minimum version of the TLS protocol allowed to
 be used by Scrapy.
 
 See :setting:`DOWNLOAD_TLS_MAX_VERSION` for the details and limitations.
+
+.. seealso:: :ref:`security-tls-protocols-ciphers`
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -888,6 +894,9 @@ enabled in your project.
 
 See :setting:`DOWNLOAD_HANDLERS_BASE` for example format.
 
+.. seealso:: :ref:`security-unencrypted-protocols` and
+    :ref:`security-local-resources`
+
 .. setting:: DOWNLOAD_HANDLERS_BASE
 
 DOWNLOAD_HANDLERS_BASE
@@ -934,6 +943,9 @@ handler (without replacement), place this in your ``settings.py``:
     DOWNLOAD_HANDLERS = {
         "ftp": None,
     }
+
+.. seealso:: :ref:`security-unencrypted-protocols` and
+    :ref:`security-local-resources`
 
 
 
@@ -1068,6 +1080,8 @@ when making a request and abort the request if the verification fails.
     by all 3rd-party handlers. The exact behavior of a handler (e.g. whether
     certificate problems are logged when this setting is set to ``False``)
     depends on its implementation.
+
+.. seealso:: :ref:`security-certificate-verification`
 
 .. setting:: DUPEFILTER_CLASS
 
@@ -1937,6 +1951,8 @@ Default: ``True`` (``False`` when :setting:`TWISTED_REACTOR_ENABLED` is ``False`
 
 A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
 will be enabled (provided its extension is also enabled).
+
+.. seealso:: :ref:`security-telnet`
 
 .. setting:: TEMPLATES_DIR
 

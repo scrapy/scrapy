@@ -151,6 +151,7 @@ Solving specific problems
    topics/debug
    topics/contracts
    topics/practices
+   topics/security
    topics/broad-crawls
    topics/developer-tools
    topics/dynamic-content
@@ -174,6 +175,10 @@ Solving specific problems
 
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
+
+:doc:`topics/security`
+    Understand the security implications of Scrapy defaults and how to harden
+    them.
 
 :doc:`topics/broad-crawls`
     Tune Scrapy for crawling a lot domains in parallel.
