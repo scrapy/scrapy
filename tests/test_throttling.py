@@ -816,17 +816,6 @@ class TestThrottlingManagerEdges:
         # The still-pending m2 event is discarded from its waiter list.
         assert m2._slot_waiters == []
 
-    def test_scope_manager_protocol_defaults(self):
-        from scrapy.throttling import ThrottlingScopeManagerProtocol  # noqa: PLC0415
-
-        class _Concrete(ThrottlingScopeManagerProtocol):
-            pass
-
-        crawler = get_crawler()
-        # The protocol's default from_crawler()/__init__ are usable as-is.
-        instance = _Concrete.from_crawler(crawler, {"id": "example.com"})
-        assert isinstance(instance, _Concrete)
-
     @coroutine_test
     async def test_process_exception_applies_backoff(self):
         manager = _manager()

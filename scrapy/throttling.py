@@ -800,11 +800,9 @@ class ThrottlingScopeManagerProtocol(Protocol):
     """
 
     @classmethod
-    def from_crawler(cls, crawler: Crawler, config: dict[str, Any]) -> Self:
-        return cls(crawler, config)
+    def from_crawler(cls, crawler: Crawler, config: dict[str, Any]) -> Self: ...
 
-    def __init__(self, crawler: Crawler, config: dict[str, Any]) -> None:
-        pass
+    def __init__(self, crawler: Crawler, config: dict[str, Any]) -> None: ...
 
     def can_send(self, now: float | None = None, amount: float | None = None) -> float:
         """Return the number of seconds to wait before a request for this scope

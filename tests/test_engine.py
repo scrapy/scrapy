@@ -673,6 +673,7 @@ class TestEngineThrottling:
         engine.unpause()
         assert engine.paused is False
 
+    @pytest.mark.requires_reactor  # call_later() needs a reactor or asyncio loop
     def test_maybe_arm_throttling_wakeup_arms_timer(self, engine):
         scheduler = Mock()
         scheduler.has_pending_requests.return_value = True
