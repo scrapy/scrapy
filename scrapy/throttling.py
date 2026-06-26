@@ -5,6 +5,7 @@ import datetime as dt
 import logging
 import random
 import time
+from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Iterable
 from email.utils import parsedate_to_datetime
 from functools import wraps
@@ -45,7 +46,9 @@ def _parse_retry_after(response: Response) -> float | None:
         date = date.replace(tzinfo=dt.timezone.utc)
     now = dt.datetime.now(dt.timezone.utc)
     seconds_to_wait = (date - now).total_seconds()
-    return max(0, int(seconds_to_wait)) or None
+    # Keep sub-second precision (a date less than a second away must not be
+    # truncated to 0 and dropped); a past or present date yields no delay.
+    return max(0.0, seconds_to_wait) or None
 
 
 def _parse_ratelimit_reset(response: Response) -> float | None:
@@ -485,7 +488,12 @@ class ThrottlingManager:
         self._scopes_config: dict[str, dict[str, Any]] = crawler.settings.getdict(
             "THROTTLING_SCOPES"
         )
-        self._scope_managers: dict[ScopeID, ThrottlingScopeManagerProtocol] = {}
+        # Ordered by least-recently-used first (see _get_scope_manager), so the
+        # scope limit can evict the coldest idle scopes (see THROTTLING_SCOPE_LIMIT).
+        self._scope_managers: OrderedDict[ScopeID, ThrottlingScopeManagerProtocol] = (
+            OrderedDict()
+        )
+        self._scope_limit: int = crawler.settings.getint("THROTTLING_SCOPE_LIMIT")
         self._last_eviction: float | None = None
         # Concurrency slots reserved by acquire(), to be released once the
         # request finishes downloading.
@@ -585,17 +593,45 @@ class ThrottlingManager:
 
     def _get_scope_manager(self, scope_id: ScopeID) -> ThrottlingScopeManagerProtocol:
         manager = self._scope_managers.get(scope_id)
-        if manager is None:
-            config: dict[str, Any] = dict(self._scopes_config.get(scope_id, {}))
-            config.setdefault("id", scope_id)
-            manager_cls = (
-                load_object(config["manager"])
-                if "manager" in config
-                else self._default_scope_manager_cls
-            )
-            manager = build_from_crawler(manager_cls, self.crawler, config)
-            self._scope_managers[scope_id] = manager
+        if manager is not None:
+            # Mark as most-recently-used for the LRU scope limit.
+            self._scope_managers.move_to_end(scope_id)
+            return manager
+        config: dict[str, Any] = dict(self._scopes_config.get(scope_id, {}))
+        config.setdefault("id", scope_id)
+        manager_cls = (
+            load_object(config["manager"])
+            if "manager" in config
+            else self._default_scope_manager_cls
+        )
+        manager = cast(
+            "ThrottlingScopeManagerProtocol",
+            build_from_crawler(manager_cls, self.crawler, config),
+        )
+        self._scope_managers[scope_id] = manager
+        self._enforce_scope_limit(scope_id)
         return manager
+
+    def _enforce_scope_limit(self, keep: ScopeID) -> None:
+        """Evict least-recently-used idle scopes while the number of live scope
+        managers exceeds :setting:`THROTTLING_SCOPE_LIMIT` (``0`` disables the
+        limit).
+
+        LRU order is kept by :meth:`_get_scope_manager` moving each accessed
+        scope to the end, so the coldest scopes are at the front. Only scopes
+        that are idle (no in-flight requests and no active backoff) are evicted;
+        the just-created *keep* scope is never evicted. A scope evicted while
+        still throttling is simply recreated from its configuration the next
+        time it is needed.
+        """
+        if self._scope_limit <= 0 or len(self._scope_managers) <= self._scope_limit:
+            return
+        now = time.monotonic()
+        for scope_id in list(self._scope_managers):
+            if len(self._scope_managers) <= self._scope_limit:
+                break
+            if scope_id != keep and self._scope_managers[scope_id].is_idle(now, 0):
+                del self._scope_managers[scope_id]
 
     async def acquire(self, request: Request) -> None:
         # A throttling-aware scheduler reserves the request before handing it
@@ -1008,9 +1044,9 @@ class ThrottlingScopeManager:
     :ref:`backoff <backoff>`, :ref:`rampup <rampup>`, concurrency and
     :ref:`quotas <throttling-quotas>`:
 
-    -   A base :setting:`DOWNLOAD_DELAY`-style delay (``0`` by default, taken
-        from the scope ``"delay"`` config) is enforced between consecutive
-        requests for the scope.
+    -   A base delay (the scope ``"delay"`` config, defaulting to
+        :setting:`DOWNLOAD_DELAY`) is enforced between consecutive requests for
+        the scope.
 
     -   On a backoff trigger (a :setting:`BACKOFF_HTTP_CODES` response or a
         :setting:`BACKOFF_EXCEPTIONS` exception) the delay grows exponentially
@@ -1043,7 +1079,11 @@ class ThrottlingScopeManager:
         settings = crawler.settings
         backoff: dict[str, Any] = config.get("backoff", {})
         self._id: ScopeID = config.get("id", "")
-        self._base_delay: float = float(config.get("delay", 0.0))
+        # The per-scope delay defaults to DOWNLOAD_DELAY; a scope can override
+        # it with its own "delay" config (see THROTTLING_SCOPES).
+        self._base_delay: float = float(
+            config.get("delay", settings.getfloat("DOWNLOAD_DELAY"))
+        )
         self._randomize: bool = bool(
             config.get("randomize_delay", settings.getbool("RANDOMIZE_DOWNLOAD_DELAY"))
         )

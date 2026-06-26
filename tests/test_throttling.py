@@ -415,6 +415,32 @@ class TestThrottlingManager:
         assert "idle.example" not in manager._scope_managers
         assert "active.example" in manager._scope_managers
 
+    def test_scope_limit_evicts_least_recently_used(self):
+        manager = _manager({"THROTTLING_SCOPE_LIMIT": 2})
+        # Use three scopes in order; each send/done leaves them idle.
+        for scope_id in ("a.example", "b.example", "c.example"):
+            scope = manager._get_scope_manager(scope_id)
+            scope.record_sent(now=0.0)
+            scope.record_done(now=0.0)
+        # The limit caps live managers at 2, dropping the least-recently-used.
+        assert set(manager._scope_managers) == {"b.example", "c.example"}
+
+    def test_scope_limit_keeps_active_scopes(self):
+        manager = _manager({"THROTTLING_SCOPE_LIMIT": 1})
+        # Two scopes with in-flight requests cannot be evicted, so the limit is
+        # exceeded rather than dropping a scope that still tracks a live send.
+        for scope_id in ("a.example", "b.example"):
+            manager._get_scope_manager(scope_id).record_sent(now=0.0)
+        assert set(manager._scope_managers) == {"a.example", "b.example"}
+
+    def test_scope_limit_disabled(self):
+        manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})
+        for i in range(5):
+            scope = manager._get_scope_manager(f"{i}.example")
+            scope.record_sent(now=0.0)
+            scope.record_done(now=0.0)
+        assert len(manager._scope_managers) == 5
+
 
 class TestThrottlingScopeManager:
     def test_no_delay_by_default(self):
@@ -430,6 +456,21 @@ class TestThrottlingScopeManager:
         assert scope.can_send(now=10.0) == pytest.approx(2.0)
         assert scope.can_send(now=11.0) == pytest.approx(1.0)
         assert scope.can_send(now=12.0) == 0
+
+    def test_base_delay_defaults_to_download_delay(self):
+        # With no explicit scope "delay", the base delay is DOWNLOAD_DELAY.
+        scope = _scope_manager(
+            {"DOWNLOAD_DELAY": 2.0, "RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x"}
+        )
+        assert scope._base_delay == pytest.approx(2.0)
+
+    def test_scope_delay_overrides_download_delay(self):
+        # An explicit scope "delay" overrides DOWNLOAD_DELAY.
+        scope = _scope_manager(
+            {"DOWNLOAD_DELAY": 2.0, "RANDOMIZE_DOWNLOAD_DELAY": False},
+            {"id": "x", "delay": 0.0},
+        )
+        assert scope._base_delay == pytest.approx(0.0)
 
     def test_exponential_backoff(self):
         scope = _scope_manager(

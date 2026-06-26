@@ -63,24 +63,30 @@ The main throttling :ref:`settings <topics-settings>` are:
 
     The wait time is measured from when the previous request was sent.
 
-For example, with ``CONCURRENT_REQUESTS_PER_DOMAIN = 2``, ``DOWNLOAD_DELAY = 0.3``,
-and ``DOWNLOAD_DELAY_PER_SLOT = 1.0``, sending 3 requests to the same domain
-would result in:
+For example, with ``DOWNLOAD_DELAY = 1.0`` (and, by default, a single download
+slot per domain), requests to the same domain are sent at most once per second:
 
 .. code-block:: text
 
-    T=0.0s: Request 1 sent (slot 1)
-    T=0.3s: Request 2 sent (slot 2, respects same-domain delay)
-    T=0.6s: Request 3 must wait (same-domain delay satisfied, but slot 1 needs 1.0s)
-    T=1.0s: Request 3 sent (slot 1 can now be reused)
+    T=0.0s: Request 1 sent
+    T=1.0s: Request 2 sent
+    T=2.0s: Request 3 sent
+
+:setting:`DOWNLOAD_DELAY` (per :ref:`throttling scope <throttling-scopes>`) and
+:setting:`DOWNLOAD_DELAY_PER_SLOT` (per download slot) are enforced
+independently. By default each domain is both its own scope and its own
+download slot, so both apply to the same requests and the effective minimum
+spacing is the larger of the two; they only differ when requests are grouped
+into custom :ref:`scopes <throttling-scopes>` or download slots (via the
+``download_slot`` request meta key).
 
 When configuring these settings, note that:
 
 -   :setting:`CONCURRENT_REQUESTS` caps ``CONCURRENT_REQUESTS_PER_DOMAIN``.
 
--   If ``DOWNLOAD_DELAY`` ≥ response time, concurrency is effectively ``1``.
-    This happens because all slots must wait for the delay between requests,
-    preventing them from sending requests simultaneously.
+-   If ``DOWNLOAD_DELAY`` ≥ response time, concurrency is effectively ``1``,
+    because the next request to the domain is not sent until the delay elapses,
+    by which time the previous response has already arrived.
 
 .. [1] You can :ref:`customize <throttling-scopes>` how requests are grouped
     for throttling, but domain-based throttling works well in most cases. For
@@ -1060,6 +1066,23 @@ Additional settings
 
     Whether to log :ref:`throttling <throttling>` decisions (per-scope delays,
     backoff steps and recoveries) for debugging.
+
+-   .. setting:: THROTTLING_SCOPE_LIMIT
+
+    :setting:`THROTTLING_SCOPE_LIMIT` (default: ``100000``)
+
+    Maximum number of :ref:`throttling scope <throttling-scopes>` states kept
+    in memory at once, to bound memory usage on broad crawls that touch a large
+    number of scopes (e.g. domains).
+
+    When the limit is exceeded, the least-recently-used idle scopes are evicted
+    (an evicted scope is recreated from its configuration the next time it is
+    needed). Scopes with in-flight requests or in active backoff are never
+    evicted, so the limit may be temporarily exceeded if that many scopes are
+    busy at once. Set to ``0`` to disable the limit.
+
+    This complements :setting:`THROTTLING_SCOPE_MAX_IDLE`, which evicts scopes
+    by inactivity time rather than by count.
 
 -   .. setting:: THROTTLING_SCOPE_MAX_IDLE
 

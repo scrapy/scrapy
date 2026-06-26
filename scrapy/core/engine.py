@@ -380,11 +380,16 @@ class ExecutionEngine:
         if delay_fn is None or not scheduler.has_pending_requests():
             return
         delay = delay_fn()
-        if delay is None:
+        # ``delay`` is ``None`` when no pending request is time-blocked, and
+        # ``0`` when some request is ready right now but could not be sent (e.g.
+        # the downloader is at capacity). Neither case needs a timer: a freed
+        # slot already re-runs the loop from :meth:`_download`'s ``finally``,
+        # and arming a ``0``-second timer here would busy-loop the engine while
+        # the downloader stays full. Only a positive delay, i.e. a time-based
+        # gate that nothing else would wake us for, needs one.
+        if delay is None or delay <= 0:
             return
-        self._throttling_wakeup = call_later(
-            max(0.0, delay), self._slot.nextcall.schedule
-        )
+        self._throttling_wakeup = call_later(delay, self._slot.nextcall.schedule)
 
     def needs_backout(self) -> bool:
         """Returns ``True`` if no more requests can be sent at the moment, or

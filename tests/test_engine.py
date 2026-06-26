@@ -694,6 +694,18 @@ class TestEngineThrottling:
         engine._maybe_arm_throttling_wakeup()
         assert engine._throttling_wakeup is None
 
+    def test_maybe_arm_throttling_wakeup_zero_delay(self, engine):
+        # A 0 delay means a request is ready but could not be sent (e.g. the
+        # downloader is at capacity); arming a 0-second timer would busy-loop
+        # the engine, so no timer must be armed.
+        scheduler = Mock()
+        scheduler.has_pending_requests.return_value = True
+        scheduler.next_request_delay.return_value = 0.0
+        engine._slot = Mock()
+        engine._slot.scheduler = scheduler
+        engine._maybe_arm_throttling_wakeup()
+        assert engine._throttling_wakeup is None
+
     def test_warn_delayed_requests(self, engine):
         engine._delayed_requests_warn_threshold = 1
         engine._throttling_waiting = {Request("http://a.example")}

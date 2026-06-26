@@ -9,5 +9,12 @@ NEWSPIDER_MODULE = "$project_name.spiders"
 # User-Agent header:
 #USER_AGENT = "$project_name (+https://your-domain.example)"
 
+# Obey robots.txt rules:
+ROBOTSTXT_OBEY = True
+
+# Throttle crawls to be polite to websites:
+CONCURRENT_REQUESTS_PER_DOMAIN = 1
+DOWNLOAD_DELAY = 1
+
 # Set settings whose default value is deprecated to a future-proof value:
 FEED_EXPORT_ENCODING = "utf-8"
