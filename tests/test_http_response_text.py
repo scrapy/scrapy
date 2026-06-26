@@ -14,6 +14,13 @@ from tests.test_http_response import TestResponse
 class TestTextResponse(TestResponse):
     response_class = TextResponse
 
+    def test_follow_None_encoding(self):
+        # unlike the base Response, TextResponse.follow() falls back to the
+        # response encoding when encoding is None instead of raising
+        r = self.response_class("http://example.com", body=b"hello", encoding="cp1252")
+        req = r.follow("foo", encoding=None)
+        assert req.encoding == "cp1252"
+
     def test_replace(self):
         super().test_replace()
         r1 = self.response_class(
