@@ -135,6 +135,7 @@ class PolicyTestMixin:
     def test_dont_cache(self):
         with self._middleware() as mw:
             self.request.meta["dont_cache"] = True
+            assert mw.process_request(self.request) is None
             mw.process_response(self.request, self.response)
             assert mw.storage.retrieve_response(mw.crawler.spider, self.request) is None
 

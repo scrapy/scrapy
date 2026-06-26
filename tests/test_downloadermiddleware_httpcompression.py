@@ -11,7 +11,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -123,6 +123,22 @@ class TestHttpCompression:
             ),
             HttpCompressionMiddleware,
         )
+
+    def test_no_crawler_constructor(self):
+        with pytest.warns(ScrapyDeprecationWarning, match="HttpCompressionMiddleware"):
+            mw = HttpCompressionMiddleware()
+        buf = BytesIO()
+        with GzipFile(fileobj=buf, mode="wb") as f:
+            f.write(b"hello")
+        body = buf.getvalue()
+        request = Request("http://scrapytest.org")
+        response = Response(
+            "http://scrapytest.org",
+            body=body,
+            headers={"Content-Encoding": "gzip"},
+        )
+        newresponse = mw.process_response(request, response)
+        assert newresponse.body == b"hello"
 
     def test_process_request(self):
         request = Request("http://scrapytest.org")

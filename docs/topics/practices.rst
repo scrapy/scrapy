@@ -347,10 +347,10 @@ finishes before starting the next one:
     install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     react(deferred_f_from_coro_f(crawl))
 
-.. note:: When running multiple spiders in the same process, :ref:`reactor
-    settings <reactor-settings>` should not have a different value per spider.
-    Also, :ref:`pre-crawler settings <pre-crawler-settings>` cannot be defined
-    per spider.
+.. note:: When running multiple spiders in the same process, :ref:`logging
+    settings <logging-settings>` and :ref:`reactor settings <reactor-settings>`
+    should not have a different value per spider, and :ref:`pre-crawler
+    settings <pre-crawler-settings>` cannot be defined per spider.
 
 .. seealso:: :ref:`run-from-script`.
 
@@ -439,6 +439,14 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
+
+.. _static-analysis:
+
+Static analysis
+===============
+
+Consider using :doc:`scrapy-lint <scrapy-lint:index>`, a linter for Scrapy
+projects that detects common mistakes and anti-patterns.
 
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: https://www.scrapy.org/companies

@@ -158,6 +158,7 @@ scrapy_intersphinx_enable = [
     "itemloaders",
     "parsel",
     "pytest",
+    "scrapy-lint",
     "sphinx",
     "tox",
     "twisted",
