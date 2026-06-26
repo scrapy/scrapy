@@ -65,7 +65,7 @@ class AsyncDefPipeline:
 class AsyncDefAsyncioPipeline:
     async def process_item(self, item):
         d = Deferred()
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         loop.call_later(0, d.callback, None)
         await deferred_to_future(d)
         await asyncio.sleep(0.2)

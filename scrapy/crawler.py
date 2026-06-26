@@ -20,6 +20,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
+from scrapy.utils.asyncio import _get_running_or_installed_loop
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
     configure_logging,
@@ -587,10 +588,15 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         self.crawlers.discard(crawler)
         self.bootstrap_failed |= not getattr(crawler, "spider", None)
 
+    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
+        # The asyncio loop has been installed either by the user or by
+        # AsyncCrawlerProcess. It may not be running yet (e.g. when crawl() is
+        # called before AsyncCrawlerProcess.start()), so we cannot rely on
+        # asyncio.create_task() / get_running_loop() alone.
+        return _get_running_or_installed_loop()
+
     def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
-        # At this point the asyncio loop has been installed either by the user
-        # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
-        loop = asyncio.get_event_loop()
+        loop = self._get_event_loop()
         self.crawlers.add(crawler)
 
         task = loop.create_task(self._crawl_and_track(crawler, *args, **kwargs))
@@ -865,6 +871,14 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     def _stop_dfd(self) -> Deferred[Any]:
         return deferred_from_coro(self.stop())
 
+    def _get_event_loop(self) -> asyncio.AbstractEventLoop:
+        # In reactorless mode no reactor is installed, so the loop created in
+        # __init__() is the one to use (it isn't running yet when crawl() is
+        # called before start()).
+        if self._reactorless_loop is not None:
+            return self._reactorless_loop
+        return super()._get_event_loop()
+
     def start(
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
     ) -> None:
@@ -1046,7 +1060,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         from twisted.internet import reactor
 
         if stop_after_crawl:
-            loop = asyncio.get_event_loop()
+            loop = self._get_event_loop()
             join_task = loop.create_task(self.join())
             join_task.add_done_callback(self._stop_reactor)
 

@@ -9,8 +9,9 @@ from scrapy.crawler import AsyncCrawlerProcess
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-asyncio.set_event_loop(Loop())
-asyncioreactor.install(asyncio.get_event_loop())
+loop = Loop()
+asyncio.set_event_loop(loop)
+asyncioreactor.install(loop)
 
 
 class NoRequestsSpider(scrapy.Spider):

@@ -27,7 +27,7 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.asyncio import _get_running_or_installed_loop, is_asyncio_available
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
@@ -493,7 +493,7 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
     """
     if not is_asyncio_available():
         raise RuntimeError("deferred_to_future() requires AsyncioSelectorReactor.")
-    return d.asFuture(asyncio.get_event_loop())
+    return d.asFuture(_get_running_or_installed_loop())
 
 
 def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
@@ -535,8 +535,8 @@ def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
     if not is_asyncio_available():
         Deferred.fromCoroutine(coro)
         return
-    loop = asyncio.get_event_loop()
-    loop.create_task(coro)  # noqa: RUF006
+    loop = _get_running_or_installed_loop()
+    loop.create_task(coro)
 
 
 @overload
