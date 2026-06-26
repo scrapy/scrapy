@@ -204,13 +204,16 @@ def request_to_curl(request: Request) -> str:
     cookies = ""
     if request.cookies:
         if isinstance(request.cookies, dict):
-            cookie = "; ".join(f"{k}={v}" for k, v in request.cookies.items())
+            cookie = "; ".join(
+                f"{_cookie_value_to_unicode(k)}={_cookie_value_to_unicode(v)}"
+                for k, v in request.cookies.items()
+            )
             cookies = f"--cookie '{cookie}'"
         elif isinstance(request.cookies, list):
             cookie = "; ".join(
                 f"{_cookie_value_to_unicode(c['name'])}={_cookie_value_to_unicode(c['value'])}"
                 if "name" in c and "value" in c
-                else f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                else f"{_cookie_value_to_unicode(next(iter(c.keys())))}={_cookie_value_to_unicode(next(iter(c.values())))}"
                 for c in request.cookies
             )
             cookies = f"--cookie '{cookie}'"
