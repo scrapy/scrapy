@@ -264,6 +264,7 @@ def _no_reactor_crawler(monkeypatch: pytest.MonkeyPatch) -> Crawler:
     return crawler
 
 
+@pytest.mark.requires_reactor
 class TestShell:
     """Tests for :class:`~scrapy.shell.Shell` paths with no ``scrapy shell``
     command-line route: those reached through
@@ -295,7 +296,6 @@ class TestShell:
     def test_start_with_response(
         self, restore_sigint: None, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        # start(response=...) is the path inspect_response() takes.
         shell = Shell(get_crawler(), code="response.url")
         request = Request("data:,")
         response = Response("data:,", request=request)
@@ -317,6 +317,21 @@ class TestShell:
         assert signal.getsignal(signal.SIGINT) is sigint_handler
 
     @coroutine_test
+    async def test_open_spider_explicit_spider(self) -> None:
+        crawler = get_crawler()
+        crawler.engine = MagicMock()
+        crawler.engine.open_spider_async = AsyncMock()
+        shell = Shell(crawler)
+        spider = Spider("test")
+        await shell._open_spider(spider)
+        assert shell.spider is spider
+        assert crawler.spider is spider
+        crawler.engine.open_spider_async.assert_called_once_with(close_if_idle=False)
+
+
+@pytest.mark.only_asyncio
+class TestShellNoReactor:
+    @coroutine_test
     @patch("scrapy.shell.start_python_console")
     async def test_inspect_response_no_reactor(
         self,
@@ -329,15 +344,3 @@ class TestShell:
         response = Response("data:,", request=Request("data:,"))
         inspect_response(response, spider)
         mock_console.assert_called_once()
-
-    @coroutine_test
-    async def test_open_spider_explicit_spider(self) -> None:
-        crawler = get_crawler()
-        crawler.engine = MagicMock()  # type: ignore[assignment]
-        crawler.engine.open_spider_async = AsyncMock()
-        shell = Shell(crawler)
-        spider = Spider("test")
-        await shell._open_spider(spider)
-        assert shell.spider is spider
-        assert crawler.spider is spider
-        crawler.engine.open_spider_async.assert_called_once_with(close_if_idle=False)
