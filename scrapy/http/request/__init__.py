@@ -51,7 +51,7 @@ class VerboseCookie(TypedDict):
     secure: NotRequired[bool]
 
 
-CookiesT: TypeAlias = dict[str, str] | list[VerboseCookie]
+CookiesT: TypeAlias = dict[str | bytes, str | bytes] | list[VerboseCookie]
 
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
