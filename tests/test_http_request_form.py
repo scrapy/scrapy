@@ -294,6 +294,9 @@ class TestFormRequest(TestRequest):
         assert request.method == "GET"
         request = FormRequest.from_response(response, method="POST")
         assert request.method == "POST"
+        # an explicit method=None skips form-method normalization
+        request = FormRequest.from_response(response, method=None)
+        assert request.method == "NONE"
 
     def test_from_response_override_url(self):
         response = _buildresponse(

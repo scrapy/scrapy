@@ -24,6 +24,10 @@ class TestRequest:
         with pytest.raises(TypeError):
             self.request_class(123)
 
+        # priority argument must be an integer
+        with pytest.raises(TypeError, match="Request priority not an integer"):
+            self.request_class("http://www.example.com", priority="1")
+
         r = self.request_class("http://www.example.com")
         assert isinstance(r.url, str)
         assert r.url == "http://www.example.com"
@@ -273,6 +277,12 @@ class TestRequest:
         assert r4.body == b""
         assert r4.meta == {}
         assert r4.dont_filter is False
+
+        # the cls argument allows changing the resulting class
+        custom_request_cls = type("CustomRequest", (self.request_class,), {})
+        r5 = r1.replace(cls=custom_request_cls)
+        assert type(r5) is custom_request_cls
+        assert r5.url == r1.url
 
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method="POST")
