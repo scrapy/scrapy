@@ -540,6 +540,91 @@ class TestThrottlingScopeManager:
         assert scope._concurrency == 1
 
 
+class TestThrottlingManagerReadiness:
+    """The synchronous readiness API used by a throttling-aware scheduler."""
+
+    @coroutine_test
+    async def test_is_ready_unconstrained_scope(self):
+        manager = _manager()
+        request = Request("http://example.com/a")
+        # A scope with no configured delay/concurrency/quota is always ready.
+        assert await manager.get_scopes(request) == "example.com"
+        assert manager.is_ready(request) is True
+
+    @coroutine_test
+    async def test_is_ready_without_cached_scopes(self):
+        # is_ready falls back to synchronous resolution when get_scopes was not
+        # called first (e.g. for a request restored from disk).
+        manager = _manager()
+        request = Request("http://example.com/a")
+        assert manager.is_ready(request) is True
+
+    @coroutine_test
+    async def test_reserve_blocks_delay_scope(self):
+        manager = _manager(
+            {
+                "THROTTLING_SCOPES": {"example.com": {"delay": 100.0}},
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            }
+        )
+        first = Request("http://example.com/1")
+        second = Request("http://example.com/2")
+        await manager.get_scopes(first)
+        await manager.get_scopes(second)
+        assert manager.is_ready(first) is True
+        manager.reserve(first)
+        # The base delay now blocks any further request for the scope.
+        assert manager.is_ready(second) is False
+        assert manager.time_until_ready(second) == pytest.approx(100.0, abs=1.0)
+
+    @coroutine_test
+    async def test_reserve_blocks_on_concurrency(self):
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        first = Request("http://example.com/1")
+        second = Request("http://example.com/2")
+        await manager.get_scopes(first)
+        await manager.get_scopes(second)
+        manager.reserve(first)
+        assert manager.is_ready(second) is False
+        # Pure concurrency blocking is not time-gated.
+        assert manager.time_until_ready(second) is None
+        manager.release(first)
+        assert manager.is_ready(second) is True
+
+    @coroutine_test
+    async def test_acquire_noop_when_reserved(self):
+        manager = _manager(
+            {
+                "THROTTLING_SCOPES": {"example.com": {"delay": 100.0}},
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            }
+        )
+        request = Request("http://example.com/1")
+        await manager.get_scopes(request)
+        manager.reserve(request)
+        # A reserved request fast-paths through acquire() without re-recording
+        # the send or waiting for the delay.
+        await manager.acquire(request)
+        scope = manager._get_scope_manager("example.com")
+        assert scope._active == 1  # reserve recorded exactly one send
+
+    @coroutine_test
+    async def test_scope_load(self):
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 4}}})
+        assert manager.scope_load("example.com") == 0.0
+        request = Request("http://example.com/1")
+        await manager.get_scopes(request)
+        manager.reserve(request)
+        assert manager.scope_load("example.com") == pytest.approx(0.25)
+
+    def test_scope_load_falls_back_to_global_concurrency(self):
+        manager = _manager({"CONCURRENT_REQUESTS": 8})
+        # A scope with no explicit concurrency limit uses CONCURRENT_REQUESTS.
+        request = Request("http://example.com/1")
+        manager.reserve(request)
+        assert manager.scope_load("example.com") == pytest.approx(1 / 8)
+
+
 class TestThrottlingIntegration:
     @coroutine_test
     async def test_backoff_recorded_on_429(self, mockserver):

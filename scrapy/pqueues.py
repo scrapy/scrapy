@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
     from scrapy import Request
     from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
+    from scrapy.throttling import ScopeID, ThrottlingManagerProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -437,3 +439,179 @@ class DownloaderAwarePriorityQueue:
 
     def __contains__(self, slot: str) -> bool:
         return slot in self.pqueues
+
+
+def _scope_set_key(scope_set: frozenset[ScopeID]) -> str:
+    """Return a reversible, JSON-safe string key for *scope_set*.
+
+    Used both as the in-memory dict key encoding for the on-disk state and to
+    derive the per-scope-set subdirectory name. The encoding is
+    order-independent (the scope ids are sorted)."""
+    return json.dumps(sorted(scope_set))
+
+
+def _scope_set_from_key(key: str) -> frozenset[ScopeID]:
+    return frozenset(json.loads(key))
+
+
+class ThrottlingAwarePriorityQueue:
+    """Priority queue that partitions requests by their full :ref:`throttling
+    scope set <throttling-scopes>` and only ever pops a request that can be
+    sent right now.
+
+    The downstream queue class must support ``peek``.
+
+    Disk persistence
+    ================
+
+    .. warning:: The files that this class generates on disk are an
+        implementation detail, and may change without a warning in a future
+        version of Scrapy. Do not rely on the following information for
+        anything other than debugging purposes.
+
+    When instantiated with a non-empty *key* argument, *key* is used as a
+    persistence directory, and inside it this class creates a subdirectory per
+    scope set, named from a path-safe, order-independent encoding of its scope
+    ids.
+    """
+
+    @classmethod
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        downstream_queue_cls: type[QueueProtocol],
+        key: str,
+        startprios: dict[str, Iterable[int]] | None = None,
+        *,
+        start_queue_cls: type[QueueProtocol] | None = None,
+    ) -> Self:
+        return cls(
+            crawler,
+            downstream_queue_cls,
+            key,
+            startprios,
+            start_queue_cls=start_queue_cls,
+        )
+
+    def __init__(
+        self,
+        crawler: Crawler,
+        downstream_queue_cls: type[QueueProtocol],
+        key: str,
+        slot_startprios: dict[str, Iterable[int]] | None = None,
+        *,
+        start_queue_cls: type[QueueProtocol] | None = None,
+    ):
+        if slot_startprios and not isinstance(slot_startprios, dict):
+            raise ValueError(
+                "ThrottlingAwarePriorityQueue accepts ``slot_startprios`` as a "
+                f"dict; {slot_startprios.__class__!r} instance is passed. Most "
+                "likely, it means the state is created by an incompatible "
+                "priority queue. Only a crawl started with the same priority "
+                "queue class can be resumed."
+            )
+
+        assert crawler.throttler is not None
+        self._throttler: ThrottlingManagerProtocol = crawler.throttler
+        self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
+        self._start_queue_cls: type[QueueProtocol] | None = start_queue_cls
+        self.key: str = key
+        self.crawler: Crawler = crawler
+
+        # scope set -> priority queue
+        self.pqueues: dict[frozenset[ScopeID], ScrapyPriorityQueue] = {}
+        if slot_startprios:
+            for set_key, startprios in slot_startprios.items():
+                scope_set = _scope_set_from_key(set_key)
+                self.pqueues[scope_set] = self.pqfactory(scope_set, startprios)
+
+    def pqfactory(
+        self, scope_set: frozenset[ScopeID], startprios: Iterable[int] = ()
+    ) -> ScrapyPriorityQueue:
+        return ScrapyPriorityQueue(
+            self.crawler,
+            self.downstream_queue_cls,
+            self.key + "/" + _path_safe(_scope_set_key(scope_set)),
+            startprios,
+            start_queue_cls=self._start_queue_cls,
+        )
+
+    def push(self, request: Request, scope_set: frozenset[ScopeID]) -> None:
+        if scope_set not in self.pqueues:
+            self.pqueues[scope_set] = self.pqfactory(scope_set)
+        self.pqueues[scope_set].push(request)
+
+    def _select(
+        self,
+    ) -> tuple[frozenset[ScopeID], ScrapyPriorityQueue] | None:
+        """Return the sendable ``(scope_set, queue)`` pair to pop from, or
+        ``None`` if no queue can be popped from right now.
+
+        Among the sendable queues (those whose scope set can be sent right now),
+        the one whose head has the highest request priority is chosen; ties are
+        broken by ascending load (the maximum
+        :meth:`~scrapy.throttling.ThrottlingManagerProtocol.scope_load` over the
+        scopes of the queue), i.e. by preferring the least-busy scopes.
+        """
+        best_sort_key: tuple[int, float] | None = None
+        best: tuple[frozenset[ScopeID], ScrapyPriorityQueue] | None = None
+        for scope_set, queue in self.pqueues.items():
+            head = queue.peek()
+            if head is None or not self._throttler.is_ready(head):
+                continue
+            load = max(
+                (self._throttler.scope_load(scope_id) for scope_id in scope_set),
+                default=0.0,
+            )
+            sort_key = (queue.priority(head), load)
+            if best_sort_key is None or sort_key < best_sort_key:
+                best_sort_key = sort_key
+                best = (scope_set, queue)
+        return best
+
+    def pop(self) -> Request | None:
+        selected = self._select()
+        if selected is None:
+            return None
+        scope_set, queue = selected
+        request = queue.pop()
+        if request is not None:
+            self._throttler.reserve(request)
+        if len(queue) == 0:
+            del self.pqueues[scope_set]
+        return request
+
+    def peek(self) -> Request | None:
+        selected = self._select()
+        if selected is None:
+            return None
+        return selected[1].peek()
+
+    def next_request_delay(self) -> float | None:
+        delay: float | None = None
+        for queue in self.pqueues.values():
+            head = queue.peek()
+            if head is None:
+                continue
+            if self._throttler.is_ready(head):
+                return 0.0
+            head_delay = self._throttler.time_until_ready(head)
+            if head_delay is None:
+                continue
+            if delay is None or head_delay < delay:
+                delay = head_delay
+        return delay
+
+    def close(self) -> dict[str, list[int]]:
+        active = {
+            _scope_set_key(scope_set): queue.close()
+            for scope_set, queue in self.pqueues.items()
+        }
+        self.pqueues.clear()
+        return active
+
+    def __len__(self) -> int:
+        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
+
+    def __contains__(self, scope_set: frozenset[ScopeID]) -> bool:
+        return scope_set in self.pqueues

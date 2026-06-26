@@ -317,6 +317,48 @@ class ThrottlingManagerProtocol(Protocol):
         enforce a concurrency limit can let other requests through.
         """
 
+    def is_ready(self, request: Request) -> bool:
+        """Return whether every scope of *request* allows it to be sent right
+        now, i.e. all time-based gates (delay, backoff, quota window) are open
+        *and* a concurrency slot is free in every scope.
+
+        This is the synchronous, non-blocking counterpart of :meth:`acquire`,
+        used by a :ref:`throttling-aware scheduler <throttling-aware-scheduler>`
+        to decide whether a request can be dequeued now. It assumes the scopes
+        of *request* have already been resolved (e.g. by an earlier
+        :meth:`get_scopes` call at enqueue time).
+        """
+
+    def reserve(self, request: Request) -> None:
+        """Claim a send for *request*: record the send on every one of its
+        scopes and mark *request* as reserved, so that a later :meth:`acquire`
+        for it returns immediately without reserving again.
+
+        A :ref:`throttling-aware scheduler <throttling-aware-scheduler>` calls
+        this when it decides to dequeue *request* (after :meth:`is_ready`
+        returned ``True``). The reservation is released by :meth:`release`.
+        """
+
+    def time_until_ready(self, request: Request) -> float | None:
+        """Return the number of seconds until every time-based gate of
+        *request* would be open, or ``None`` if no time-based gate is currently
+        blocking it (only a concurrency slot could be).
+
+        Used by a :ref:`throttling-aware scheduler
+        <throttling-aware-scheduler>` to schedule a wakeup when all pending
+        requests are time-blocked.
+        """
+
+    def scope_load(self, scope_id: str) -> float:
+        """Return the current load of the scope identified by *scope_id*: its
+        active sends divided by its concurrency limit (or by the global
+        :setting:`CONCURRENT_REQUESTS` when the scope has no explicit limit).
+
+        Used by a :ref:`throttling-aware scheduler
+        <throttling-aware-scheduler>` to balance dequeuing across scopes,
+        preferring the least-loaded ones.
+        """
+
     async def process_response(self, response: Response) -> None:
         """Update the throttling state based on *response*."""
 
@@ -352,10 +394,14 @@ def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
             async def get_scopes(self, request):
                 return urlparse_cached(request).netloc
     """
-    cache: WeakKeyDictionary[Request, RequestScopes] = WeakKeyDictionary()
 
     @wraps(f)
     async def wrapper(self: Any, request: Request) -> RequestScopes:
+        cache: WeakKeyDictionary[Request, RequestScopes] | None = self.__dict__.get(
+            "_scope_cache"
+        )
+        if cache is None:
+            cache = self.__dict__["_scope_cache"] = WeakKeyDictionary()
         if request in cache:
             return cache[request]
         scopes = await f(self, request)
@@ -405,6 +451,7 @@ class ThrottlingManager:
             "THROTTLING_SCOPES"
         )
         self._scope_managers: dict[ScopeID, ThrottlingScopeManagerProtocol] = {}
+        self._global_concurrency: int = crawler.settings.getint("CONCURRENT_REQUESTS")
         self._last_eviction: float | None = None
         # Concurrency slots reserved by acquire(), to be released once the
         # request finishes downloading.
@@ -414,10 +461,36 @@ class ThrottlingManager:
 
     @scope_cache
     async def get_scopes(self, request: Request) -> RequestScopes:
+        return self._resolve_scopes_sync(request)
+
+    def _resolve_scopes_sync(self, request: Request) -> RequestScopes:
+        """Best-effort synchronous scope resolution.
+
+        It mirrors :meth:`get_scopes`, and is used by the synchronous
+        readiness methods (:meth:`is_ready`, :meth:`reserve`,
+        :meth:`time_until_ready`) when the cached result of an earlier
+        :meth:`get_scopes` call is not available (e.g. for a request restored
+        from disk). Subclasses whose :meth:`get_scopes` cannot be resolved
+        synchronously should rely on the enqueue-time cache instead.
+        """
         scopes = request.meta.get("throttling_scopes")
         if scopes is not None:
             return cast("RequestScopes", scopes)
         return urlparse_cached(request).netloc
+
+    def _cached_scope_values(
+        self, request: Request
+    ) -> list[tuple[ScopeID, float | None]]:
+        """Return the ``(scope_id, quota_amount)`` pairs of *request*, reading
+        the cache populated by :meth:`get_scopes` and falling back to
+        :meth:`_resolve_scopes_sync`."""
+        cache: WeakKeyDictionary[Request, RequestScopes] | None = self.__dict__.get(
+            "_scope_cache"
+        )
+        scopes = cache.get(request) if cache is not None else None
+        if scopes is None:
+            scopes = self._resolve_scopes_sync(request)
+        return list(iter_scope_values(scopes))
 
     async def get_initial_backoff(self) -> BackoffData:
         return None
@@ -472,6 +545,10 @@ class ThrottlingManager:
         return manager
 
     async def acquire(self, request: Request) -> None:
+        # A throttling-aware scheduler reserves the request before handing it
+        # to the engine, so there is nothing left to wait for or record here.
+        if request in self._reserved:
+            return
         now = time.monotonic()
         self._maybe_evict(now)
         await self._apply_request_delay(request)
@@ -517,6 +594,44 @@ class ThrottlingManager:
             return
         for manager, _ in managers:
             manager.record_done()
+
+    # -- Synchronous readiness API (used by a throttling-aware scheduler) ------
+
+    def is_ready(self, request: Request) -> bool:
+        now = time.monotonic()
+        for scope_id, value in self._cached_scope_values(request):
+            manager = self._get_scope_manager(scope_id)
+            if manager.can_send(now=now, amount=value) > 0:
+                return False
+            if manager.concurrency_blocked():
+                return False
+        return True
+
+    def reserve(self, request: Request) -> None:
+        managers = [
+            (self._get_scope_manager(scope_id), value)
+            for scope_id, value in self._cached_scope_values(request)
+        ]
+        for manager, value in managers:
+            manager.record_sent(amount=value)
+        self._reserved[request] = managers
+
+    def time_until_ready(self, request: Request) -> float | None:
+        now = time.monotonic()
+        wait = 0.0
+        for scope_id, value in self._cached_scope_values(request):
+            manager = self._get_scope_manager(scope_id)
+            wait = max(wait, manager.can_send(now=now, amount=value))
+        return wait if wait > 0 else None
+
+    def scope_load(self, scope_id: ScopeID) -> float:
+        manager = self._get_scope_manager(scope_id)
+        active: int = getattr(manager, "_active", 0)
+        concurrency: int | None = getattr(manager, "_concurrency", None)
+        limit = concurrency if concurrency is not None else self._global_concurrency
+        if not limit:
+            return 0.0
+        return active / limit
 
     async def _wait_for_slot(self, managers: list[Any]) -> None:
         """Block until any of *managers* frees a concurrency slot.
@@ -749,13 +864,13 @@ class ThrottlingScopeManagerProtocol(Protocol):
         Return ``False`` when no concurrency limit is enforced.
         """
 
-    def slot_event(self) -> Deferred:
+    def slot_event(self) -> Deferred[None]:
         """Return a :class:`~twisted.internet.defer.Deferred` that fires when
         a concurrency slot next becomes available (e.g. when
         :meth:`record_done` is called or the limit is raised via
         :meth:`set_concurrency`)."""
 
-    def discard_slot_event(self, event: Deferred) -> None:
+    def discard_slot_event(self, event: Deferred[None]) -> None:
         """Cancel a pending slot event returned by :meth:`slot_event`.
 
         Called by :class:`ThrottlingManager` when the wait ends without the

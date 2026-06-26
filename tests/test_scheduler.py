@@ -10,7 +10,7 @@ from unittest.mock import Mock
 import pytest
 
 from scrapy.core.downloader import Downloader
-from scrapy.core.scheduler import BaseScheduler, Scheduler
+from scrapy.core.scheduler import BaseScheduler, Scheduler, ThrottlingAwareScheduler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
@@ -406,3 +406,175 @@ class TestIncompatibility:
                 ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
             ):
                 self._incompatible()
+
+
+_THROTTLING_AWARE_PQ = "scrapy.pqueues.ThrottlingAwarePriorityQueue"
+
+
+class TestThrottlingAwareScheduler:
+    def _crawler(self, settings_dict: dict[str, Any] | None = None) -> Crawler:
+        settings = {
+            "SCHEDULER_PRIORITY_QUEUE": _THROTTLING_AWARE_PQ,
+            "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
+            **(settings_dict or {}),
+        }
+        return get_crawler(Spider, settings)
+
+    def _scheduler(self, crawler: Crawler) -> ThrottlingAwareScheduler:
+        spider = Spider(name="spider")
+        crawler.spider = spider
+        scheduler = ThrottlingAwareScheduler.from_crawler(crawler)
+        scheduler.open(spider)
+        return scheduler
+
+    @coroutine_test
+    async def test_enqueue_async_and_dequeue(self) -> None:
+        scheduler = self._scheduler(self._crawler())
+        assert await scheduler.enqueue_request_async(Request("http://a.com/1")) is True
+        assert scheduler.has_pending_requests()
+        assert len(scheduler) == 1
+        request = scheduler.next_request()
+        assert request is not None
+        assert request.url == "http://a.com/1"
+        assert scheduler.next_request() is None
+        assert not scheduler.has_pending_requests()
+        scheduler.close("finished")
+
+    def test_sync_enqueue_raises(self) -> None:
+        scheduler = self._scheduler(self._crawler())
+        with pytest.raises(RuntimeError, match="asynchronous enqueue path"):
+            scheduler.enqueue_request(Request("http://a.com/1"))
+        scheduler.close("finished")
+
+    def test_requires_throttling_aware_priority_queue(self) -> None:
+        crawler = self._crawler(
+            {"SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ScrapyPriorityQueue"}
+        )
+        spider = Spider(name="spider")
+        crawler.spider = spider
+        scheduler = ThrottlingAwareScheduler.from_crawler(crawler)
+        with pytest.raises(ValueError, match="throttling-aware priority queue"):
+            scheduler.open(spider)
+
+    @coroutine_test
+    async def test_delay_blocks_and_reports_delay(self) -> None:
+        crawler = self._crawler(
+            {
+                "THROTTLING_SCOPES": {"slow.com": {"delay": 1000.0}},
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            },
+        )
+        scheduler = self._scheduler(crawler)
+        await scheduler.enqueue_request_async(Request("http://slow.com/1"))
+        await scheduler.enqueue_request_async(Request("http://slow.com/2"))
+        # The first request is sendable; the second is blocked by the delay.
+        first = scheduler.next_request()
+        assert first is not None
+        assert scheduler.next_request() is None
+        assert scheduler.has_pending_requests()
+        assert scheduler.next_request_delay() == pytest.approx(1000.0, abs=1.0)
+        scheduler.close("finished")
+
+    @coroutine_test
+    async def test_no_delay_when_only_concurrency_blocked(self) -> None:
+        crawler = self._crawler(
+            {"THROTTLING_SCOPES": {"slow.com": {"concurrency": 1}}},
+        )
+        scheduler = self._scheduler(crawler)
+        await scheduler.enqueue_request_async(Request("http://slow.com/1"))
+        await scheduler.enqueue_request_async(Request("http://slow.com/2"))
+        assert scheduler.next_request() is not None
+        assert scheduler.next_request() is None
+        # A purely concurrency-blocked state has no time-based wakeup.
+        assert scheduler.next_request_delay() is None
+        scheduler.close("finished")
+
+    @coroutine_test
+    async def test_resume_from_disk(self, tmp_path: Path) -> None:
+        settings = {"JOBDIR": str(tmp_path)}
+        scheduler = self._scheduler(self._crawler(settings))
+        await scheduler.enqueue_request_async(Request("http://a.com/1"))
+        await scheduler.enqueue_request_async(Request("http://b.com/1"))
+        scheduler.close("shutdown")
+
+        scheduler2 = self._scheduler(self._crawler(settings))
+        assert len(scheduler2) == 2
+        urls = set()
+        while (request := scheduler2.next_request()) is not None:
+            urls.add(request.url)
+        assert urls == {"http://a.com/1", "http://b.com/1"}
+        scheduler2.close("finished")
+
+
+class TestIntegrationWithThrottlingAwareScheduler:
+    @inline_callbacks_test
+    def test_integration(self):
+        crawler = get_crawler(
+            spidercls=StartUrlsSpider,
+            settings_dict={
+                "SCHEDULER": "scrapy.core.scheduler.ThrottlingAwareScheduler",
+                "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlingAwarePriorityQueue",
+                "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
+            },
+        )
+        with MockServer() as mockserver:
+            url = mockserver.url("/status?n=200", is_secure=False)
+            start_urls = [url] * 6
+            yield crawler.crawl(start_urls)
+            assert crawler.stats.get_value("downloader/response_count") == len(
+                start_urls
+            )
+
+    @inline_callbacks_test
+    def test_integration_follow_requests(self):
+        # Exercises the engine's asynchronous enqueue path for requests yielded
+        # from a callback (not just start requests), and the idle guard that
+        # keeps the spider open while an enqueue is in flight.
+        class FollowSpider(Spider):
+            name = "follow"
+
+            def __init__(self, base_url, **kwargs):
+                self.base_url = base_url
+                super().__init__(**kwargs)
+
+            async def start(self):
+                yield Request(self.base_url + "/status?n=200")
+
+            def parse(self, response):
+                if b"follow" not in response.url.encode():
+                    yield Request(response.url + "&follow=1", callback=self.parse)
+
+        with MockServer() as mockserver:
+            base_url = mockserver.url("", is_secure=False).rstrip("/")
+            crawler = get_crawler(
+                spidercls=FollowSpider,
+                settings_dict={
+                    "SCHEDULER": "scrapy.core.scheduler.ThrottlingAwareScheduler",
+                    "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlingAwarePriorityQueue",
+                    "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
+                },
+            )
+            yield crawler.crawl(base_url=base_url)
+            assert crawler.stats.get_value("downloader/response_count") == 2
+
+    @inline_callbacks_test
+    def test_integration_with_delay(self):
+        # A small per-scope delay forces the engine to arm the throttling wakeup
+        # timer between requests; the crawl must still complete.
+        crawler = get_crawler(
+            spidercls=StartUrlsSpider,
+            settings_dict={
+                "SCHEDULER": "scrapy.core.scheduler.ThrottlingAwareScheduler",
+                "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlingAwarePriorityQueue",
+                "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+                "THROTTLING_SCOPES": {"127.0.0.1": {"delay": 0.05}},
+            },
+        )
+        with MockServer() as mockserver:
+            url = mockserver.url("/status?n=200", is_secure=False)
+            start_urls = [url] * 4
+            yield crawler.crawl(start_urls)
+            assert crawler.stats.get_value("downloader/response_count") == len(
+                start_urls
+            )

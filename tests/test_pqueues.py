@@ -6,12 +6,18 @@ import queuelib
 
 from scrapy.core.downloader import Downloader
 from scrapy.http.request import Request
-from scrapy.pqueues import DownloaderAwarePriorityQueue, ScrapyPriorityQueue
+from scrapy.pqueues import (
+    DownloaderAwarePriorityQueue,
+    ScrapyPriorityQueue,
+    ThrottlingAwarePriorityQueue,
+)
 from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
+from scrapy.throttling import iter_scopes
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.test_scheduler import MockDownloader
+from tests.utils.decorators import coroutine_test
 
 
 class TestPriorityQueue:
@@ -309,3 +315,107 @@ def test_pop_order(input_, output):
         actual_output_urls.append(request.url)
 
     assert actual_output_urls == expected_output_urls
+
+
+class TestThrottlingAwarePriorityQueue:
+    def _queue(self, crawler, key=""):
+        return build_from_crawler(
+            ThrottlingAwarePriorityQueue,
+            crawler,
+            downstream_queue_cls=FifoMemoryQueue,
+            key=key,
+        )
+
+    async def _push(self, queue, crawler, request):
+        scope_set = frozenset(iter_scopes(await crawler.throttler.get_scopes(request)))
+        queue.push(request, scope_set)
+
+    @coroutine_test
+    async def test_partitions_by_scope_set(self):
+        crawler = get_crawler(Spider)
+        queue = self._queue(crawler)
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        await self._push(queue, crawler, Request("http://a.com/2"))
+        await self._push(queue, crawler, Request("http://b.com/1"))
+        # Two distinct scope sets -> two internal queues, three requests.
+        assert len(queue.pqueues) == 2
+        assert len(queue) == 3
+
+    @coroutine_test
+    async def test_pop_skips_blocked_scope(self):
+        crawler = get_crawler(
+            Spider,
+            settings_dict={
+                "THROTTLING_SCOPES": {"slow.com": {"delay": 1000.0}},
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            },
+        )
+        queue = self._queue(crawler)
+        await self._push(queue, crawler, Request("http://slow.com/1"))
+        await self._push(queue, crawler, Request("http://slow.com/2"))
+        await self._push(queue, crawler, Request("http://fast.com/1"))
+        # The first slow request is sendable (no delay accrued yet); after it is
+        # popped (and reserved), the second slow request is blocked, but the
+        # fast one is still served.
+        popped = [queue.pop(), queue.pop(), queue.pop()]
+        urls = [r.url if r else None for r in popped]
+        assert "http://fast.com/1" in urls
+        assert "http://slow.com/1" in urls
+        # The blocked second slow request stays in the queue.
+        assert None in urls
+        assert len(queue) == 1
+        delay = queue.next_request_delay()
+        assert delay is not None
+        assert delay == pytest.approx(1000.0, abs=1.0)
+
+    @coroutine_test
+    async def test_least_loaded_first(self):
+        crawler = get_crawler(
+            Spider,
+            settings_dict={
+                "THROTTLING_SCOPES": {
+                    "a.com": {"concurrency": 4},
+                    "b.com": {"concurrency": 4},
+                }
+            },
+        )
+        queue = self._queue(crawler)
+        # Make a.com busier than b.com.
+        busy = Request("http://a.com/0")
+        await crawler.throttler.get_scopes(busy)
+        crawler.throttler.reserve(busy)
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        await self._push(queue, crawler, Request("http://b.com/1"))
+        # Equal priority, so the lower-load scope (b.com) is served first.
+        assert queue.pop().url == "http://b.com/1"
+
+    @coroutine_test
+    async def test_priority_beats_load(self):
+        crawler = get_crawler(
+            Spider,
+            settings_dict={
+                "THROTTLING_SCOPES": {
+                    "a.com": {"concurrency": 4},
+                    "b.com": {"concurrency": 4},
+                }
+            },
+        )
+        queue = self._queue(crawler)
+        # Make a.com busier than b.com.
+        busy = Request("http://a.com/0")
+        await crawler.throttler.get_scopes(busy)
+        crawler.throttler.reserve(busy)
+        # The a.com request has higher priority, and a.com still has room, so it
+        # is served first despite a.com being the busier scope.
+        await self._push(queue, crawler, Request("http://a.com/1", priority=10))
+        await self._push(queue, crawler, Request("http://b.com/1"))
+        assert queue.pop().url == "http://a.com/1"
+
+    @coroutine_test
+    async def test_empty_and_close(self):
+        crawler = get_crawler(Spider)
+        queue = self._queue(crawler)
+        assert queue.pop() is None
+        assert queue.next_request_delay() is None
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        assert queue.close() != {}

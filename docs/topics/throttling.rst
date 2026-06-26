@@ -459,15 +459,13 @@ path as a string):
 
     THROTTLING_MANAGER = "myproject.throttling.MyThrottlingManager"
 
-
-.. _multi-throttling-scopes:
+.. _multiple-throttling-scopes:
 
 Handling of multiple throttling scopes
 --------------------------------------
 
 When a request has multiple throttling scopes, it is not sent until all of its
 throttling scopes allow it.
-
 
 .. _throttling-quotas:
 
@@ -504,7 +502,6 @@ need to be exact).
 Everything else being equal, :class:`~scrapy.pqueues.ScrapyPriorityQueue` will
 prioritize requests that consume a higher portion of the available throttling
 quota, to minimize the risk of those requests getting stuck.
-
 
 .. _custom-throttling-scope-managers:
 
@@ -603,6 +600,28 @@ exponential backoff, similar to a fixed-window rate limiter:
         def is_idle(self, now, max_idle):
             return self.active == 0
 
+.. _throttling-aware-scheduler:
+
+Throttling-aware scheduling
+===========================
+
+By default, throttling is enforced at the engine, where a request waiting on
+its :ref:`throttling scopes <throttling-scopes>` holds a concurrency slot. In a
+crawl that mixes heavily-throttled scopes with unthrottled ones, this can let
+throttled requests starve unthrottled ones that could be sent right away
+(**head-of-line blocking**; Scrapy logs a warning, see
+:setting:`DELAYED_REQUESTS_WARN_THRESHOLD`).
+
+:class:`~scrapy.core.scheduler.ThrottlingAwareScheduler` avoids this. To enable
+it:
+
+.. code-block:: python
+    :caption: ``settings.py``
+
+    SCHEDULER = "scrapy.core.scheduler.ThrottlingAwareScheduler"
+    SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ThrottlingAwarePriorityQueue"
+
+.. autoclass:: scrapy.core.scheduler.ThrottlingAwareScheduler
 
 .. _throttling-examples:
 
@@ -822,8 +841,8 @@ window (:setting:`BACKOFF_WINDOW`). You can use :ref:`throttling quotas
 
 -   Implement a :ref:`throttling manager <custom-throttling-scopes>` that:
 
-    -   Sets a ``cost`` throttling scope on each request to some estimation based
-        e.g. on request URL parameters:
+    -   Sets a ``cost`` throttling scope on each request to some estimation
+        based e.g. on request URL parameters:
 
         .. code-block:: python
 
@@ -871,6 +890,35 @@ window (:setting:`BACKOFF_WINDOW`). You can use :ref:`throttling quotas
     This will allow you to spend up to 100.0 units of cost per time window
     (default: 60 seconds) before throttling kicks in.
 
+.. _throttling-per-ip:
+
+Per-IP concurrency limiting
+---------------------------
+
+A concurrency limit keyed by IP is just a throttling scope whose id is the
+request's IP, with a ``concurrency`` limit. A request then carries two scopes,
+its domain and its IP, and is only sent when **both** allow it (see
+:ref:`multiple-throttling-scopes`).
+
+-   Implement a :ref:`throttling manager <custom-throttling-scopes>` that adds
+    the request's IP as a second scope:
+
+    .. code-block:: python
+
+        import socket
+
+        from scrapy.throttling import ThrottlingManager, add_scope, scope_cache
+        from scrapy.utils.asyncio import run_in_thread
+        from scrapy.utils.httpobj import urlparse_cached
+
+
+        class IPThrottlingManager(ThrottlingManager):
+            @scope_cache
+            async def get_scopes(self, request):
+                scopes = await super().get_scopes(request)
+                host = urlparse_cached(request).hostname
+                address = await run_in_thread(socket.gethostbyname, host)
+                return add_scope(scopes, address)
 
 .. _throttling-settings:
 
@@ -1023,6 +1071,8 @@ API
     :member-order: bysource
 
 .. autoclass:: scrapy.throttling.ThrottlingScopeManager
+
+.. autoclass:: scrapy.pqueues.ThrottlingAwarePriorityQueue
 
 .. autoclass:: scrapy.throttling.ThrottlingScopeConfig
 
