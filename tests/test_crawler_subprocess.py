@@ -126,6 +126,16 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "TimeoutError" not in log
         assert "scrapy.exceptions.CannotResolveHostError" not in log
 
+    def test_dns_resolver_deprecated(self) -> None:
+        log = self.run_script("dns_resolver_deprecated.py")
+        assert "Spider closed (finished)" in log
+        assert "The DNS_RESOLVER setting is deprecated" in log
+
+    def test_dns_resolver_deprecated_twisted_dns_resolver(self) -> None:
+        log = self.run_script("dns_resolver_deprecated.py", "twisted-wins")
+        assert "Spider closed (finished)" in log
+        assert "The DNS_RESOLVER setting is deprecated" in log
+
     def test_twisted_reactor_asyncio(self) -> None:
         log = self.run_script("twisted_reactor_asyncio.py")
         assert "Spider closed (finished)" in log

@@ -687,6 +687,22 @@ def test_create_crawler_instance_consistent_with_spider_class() -> None:
     assert pre_built.settings["FOO"] == "runner"
 
 
+@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
+def test_create_crawler_rejects_spider_object(
+    runner_cls: type[CrawlerRunnerBase],
+) -> None:
+    runner = runner_cls()
+    with pytest.raises(ValueError, match="cannot be a spider object"):
+        runner.create_crawler(DefaultSpider())
+
+
+@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
+def test_crawl_rejects_spider_object(runner_cls: type[CrawlerRunnerBase]) -> None:
+    runner = runner_cls()
+    with pytest.raises(ValueError, match="cannot be a spider object"):
+        runner.crawl(DefaultSpider())
+
+
 class ExceptionSpider(scrapy.Spider):
     name = "exception"
 
