@@ -32,7 +32,7 @@ def _qs(req, encoding="utf-8", to_unicode=False):
 # many tests below that exercise it ignore the resulting deprecation warning.
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestFormRequest(TestRequest):
-    request_class = FormRequest  # type: ignore[assignment]
+    request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):
         first = to_unicode(first).split("&")
