@@ -334,6 +334,33 @@ class TestFilesPipeline:
         assert len(log.records) == 1
         assert log.records[0].levelname == "WARNING"
 
+    @coroutine_test
+    async def test_process_item_filtered_request(self):
+        """A filtered (e.g. offsite) media request is processed as a failed
+        result without being logged as an error with a traceback."""
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={
+                "response": IgnoreRequest("Filtered offsite request to 'example.com'")
+            },
+        )
+        with (
+            LogCapture() as log,
+            mock.patch.object(
+                FilesPipeline, "get_media_requests", return_value=[request]
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+
+        assert result["files"] == []
+        assert not any(r.levelname in ("WARNING", "ERROR") for r in log.records)
+        assert any(
+            "Filtered offsite request to 'example.com'" in r.getMessage()
+            for r in log.records
+        )
+
     @pytest.mark.parametrize(
         "bad_type",
         [
