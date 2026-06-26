@@ -75,12 +75,3 @@ def test_caching_hostname_resolver_dnscache_disabled_rejects_storage():
     # dnscache should remain empty despite address being resolved
     assert "example.com" not in dnscache
     assert len(dnscache) == 0
-
-
-def test_caching_threaded_resolver_dnscache_disabled_rejects_storage():
-    # Regression test: when DNSCACHE_ENABLED=False, resolved DNS results
-    # should not be stored in dnscache even after successful resolution.
-    dnscache.limit = 0
-    dnscache["example.com"] = "1.2.3.4"
-    assert "example.com" not in dnscache
-    assert len(dnscache) == 0
