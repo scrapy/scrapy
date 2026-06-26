@@ -521,6 +521,61 @@ class TestFeedExport(TestFeedExportBase):
         await self.assertExported(items, header, rows)
 
     @coroutine_test
+    async def test_pathlib_uri_with_placeholders(self):
+        feed_dir = Path(self.temp_dir, "pathlib_placeholders")
+        feed_dir.mkdir()
+        items = [self.MyItem({"foo": "bar1", "egg": "spam1"})]
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+
+            def parse(self, response):
+                yield from items
+
+        TestSpider.start_urls = [self.mockserver.url("/")]
+        settings = {
+            "FEEDS": {
+                feed_dir / "%(time)s.json": {"format": "json"},
+            },
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        files = list(feed_dir.iterdir())
+        assert len(files) == 1
+        assert "%(time)s" not in files[0].name
+        assert files[0].suffix == ".json"
+
+    @coroutine_test
+    async def test_pathlib_uri_with_spaces_and_unicode(self):
+        # A pathlib.Path key with spaces and non-ASCII characters must be kept
+        # verbatim (not percent-encoded), while %()s placeholders are still
+        # substituted. %(name)s resolves to the spider name deterministically,
+        # so the resulting file name can be asserted exactly.
+        feed_dir = Path(self.temp_dir, "pathlib_spaces_unicode")
+        feed_dir.mkdir()
+        items = [self.MyItem({"foo": "bar1", "egg": "spam1"})]
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+
+            def parse(self, response):
+                yield from items
+
+        TestSpider.start_urls = [self.mockserver.url("/")]
+        settings = {
+            "FEEDS": {
+                feed_dir / "out %(name)s ünïcode.json": {"format": "json"},
+            },
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        files = list(feed_dir.iterdir())
+        assert len(files) == 1
+        assert files[0].name == "out testspider ünïcode.json"
+
+    @coroutine_test
     async def test_export_no_items_not_store_empty(self):
         for fmt in ("json", "jsonlines", "xml", "csv"):
             settings = {
