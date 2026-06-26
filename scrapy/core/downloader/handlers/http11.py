@@ -545,7 +545,8 @@ class _ScrapyAgent:
                 expected_size, maxsize, request, expected=True
             )
             logger.warning(warning_msg)
-            txresponse._transport.loseConnection()
+            # Abort connection immediately.
+            txresponse._transport._producer.abortConnection()
             raise DownloadCancelledError(warning_msg)
 
         if warnsize and expected_size > warnsize:

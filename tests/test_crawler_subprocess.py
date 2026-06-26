@@ -215,6 +215,10 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("shutting down gracefully")
         p.expect_exact("Spider closed (shutdown)")
         p.wait()  # type: ignore[no-untyped-call]
+        if p.proc.stdin:
+            p.proc.stdin.close()
+        if p.proc.stdout:
+            p.proc.stdout.close()
 
     def test_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful()
@@ -232,6 +236,10 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
         p.wait()  # type: ignore[no-untyped-call]
+        if p.proc.stdin:
+            p.proc.stdin.close()
+        if p.proc.stdout:
+            p.proc.stdout.close()
 
     @coroutine_test
     async def test_shutdown_forced(self) -> None:

@@ -149,3 +149,12 @@ class TestAsyncioLoopingCall:
         with pytest.raises(TypeError):
             looping_call.start(0.1)
         assert not looping_call.running
+
+    @coroutine_test
+    async def test_looping_function_raises(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        looping_call = AsyncioLoopingCall(lambda: 1 / 0)
+        looping_call.start(0.1)
+        assert not looping_call.running
+        assert "Error calling the AsyncioLoopingCall function" in caplog.text
