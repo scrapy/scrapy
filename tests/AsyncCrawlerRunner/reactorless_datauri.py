@@ -17,7 +17,12 @@ class DataSpider(Spider):
 
 async def main() -> None:
     configure_logging()
-    runner = AsyncCrawlerRunner(settings={"TWISTED_REACTOR_ENABLED": False})
+    runner = AsyncCrawlerRunner(
+        settings={
+            "TWISTED_REACTOR_ENABLED": False,
+            "COMPRESSION_KEEP_ENCODING_HEADER": True,
+        }
+    )
     await runner.crawl(DataSpider)
 
 
