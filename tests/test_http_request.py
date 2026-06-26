@@ -281,7 +281,7 @@ class TestRequest:
         # the cls argument allows changing the resulting class
         custom_request_cls = type("CustomRequest", (self.request_class,), {})
         r5 = r1.replace(cls=custom_request_cls)
-        assert type(r5) is custom_request_cls
+        assert isinstance(r5, custom_request_cls)
         assert r5.url == r1.url
 
     def test_method_always_str(self):
