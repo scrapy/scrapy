@@ -17,9 +17,11 @@ from scrapy.throttling import (
     add_scope,
     iter_scope_values,
     iter_scopes,
+    scope_cache,
     update_scope_backoff,
 )
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 from tests.utils.decorators import coroutine_test
@@ -69,8 +71,8 @@ class TestThrottlingManager:
         manager = _manager()
         request = Request("http://example.com/a")
         first = await manager.get_scopes(request)
-        # A second call returns the cached value (same object identity for dicts,
-        # equal value for strings).
+        # get_scopes is deterministic per request, so a second call yields the
+        # same scopes.
         assert await manager.get_scopes(request) == first
 
     @coroutine_test
@@ -86,6 +88,80 @@ class TestThrottlingManager:
             "http://example.com/a", meta={"throttling_scopes": {"api": 2.0}}
         )
         assert await manager.get_scopes(request) == {"api": 2.0}
+
+    @coroutine_test
+    async def test_get_scopes_persisted_in_meta(self):
+        from scrapy.throttling import _RESOLVED_SCOPES_META_KEY  # noqa: PLC0415
+
+        manager = _manager()
+        request = Request("http://example.com/a")
+        scopes = await manager.get_scopes(request)
+        assert request.meta[_RESOLVED_SCOPES_META_KEY] == scopes
+
+    @coroutine_test
+    async def test_scope_cache_works_without_crawler(self):
+        # scope_cache only persists to meta; it needs nothing from the manager.
+        from scrapy.throttling import _RESOLVED_SCOPES_META_KEY  # noqa: PLC0415
+
+        class CrawlerlessManager:
+            @scope_cache
+            async def get_scopes(self, request):
+                return "scope"
+
+        request = Request("http://example.com/a")
+        assert await CrawlerlessManager().get_scopes(request) == "scope"
+        assert request.meta[_RESOLVED_SCOPES_META_KEY] == "scope"
+
+    @coroutine_test
+    async def test_backoff_reuses_persisted_scopes(self):
+        # Once get_scopes has resolved and persisted the scopes, the backoff
+        # path reuses them instead of resolving again.
+        calls = []
+
+        class CountingManager(ThrottlingManager):
+            @scope_cache
+            async def get_scopes(self, request):
+                calls.append(request.url)
+                return urlparse_cached(request).netloc
+
+        manager = CountingManager(
+            get_crawler(settings_dict={"BACKOFF_EXCEPTIONS": ["builtins.ValueError"]})
+        )
+        request = Request("http://example.com/a")
+        await manager.get_scopes(request)
+        assert calls == ["http://example.com/a"]
+        assert (
+            await manager.get_exception_backoff(request, ValueError()) == "example.com"
+        )
+        # No second resolution.
+        assert calls == ["http://example.com/a"]
+
+    @coroutine_test
+    async def test_get_scopes_survives_disk_roundtrip(self):
+        from scrapy.utils.request import request_from_dict  # noqa: PLC0415
+
+        manager = _manager()
+        request = Request(
+            "http://example.com/a", meta={"throttling_scopes": {"bucket": 3.0}}
+        )
+        await manager.get_scopes(request)
+        # A request restored from a disk queue is a fresh object; the synchronous
+        # readiness path must still recover its scopes (with quota values) from
+        # the persisted meta, without re-running get_scopes.
+        restored = request_from_dict(request.to_dict())
+        assert manager._cached_scope_values(restored) == [("bucket", 3.0)]
+
+    @coroutine_test
+    async def test_get_scopes_reresolved_after_cross_host_replace(self):
+        # A redirect built with Request.replace() copies meta (including the
+        # persisted scopes), but get_scopes always re-resolves (it never reads
+        # the persisted value back), so it must not reuse the original host's
+        # scopes.
+        manager = _manager()
+        request = Request("http://example.com/a")
+        assert await manager.get_scopes(request) == "example.com"
+        redirected = request.replace(url="http://other.example/a")
+        assert await manager.get_scopes(redirected) == "other.example"
 
     @coroutine_test
     async def test_get_initial_backoff_none(self):
@@ -324,6 +400,21 @@ class TestThrottlingManager:
         # even though it has been idle for longer than THROTTLING_SCOPE_MAX_IDLE.
         assert "example.com" in manager._scope_managers
 
+    def test_reserve_evicts_idle_scopes(self):
+        # A throttling-aware scheduler reserves every request before the engine
+        # reaches acquire() (which fast-paths reserved requests), so reserve()
+        # must be the hook that evicts idle scope managers; otherwise they pile
+        # up unbounded on broad crawls.
+        manager = _manager({"THROTTLING_SCOPE_MAX_IDLE": 1.0})
+        idle = manager._get_scope_manager("idle.example")
+        # Make it look long-idle: a finished send in the distant monotonic past.
+        idle.record_sent(now=0.0)
+        idle.record_done(now=0.0)
+        assert "idle.example" in manager._scope_managers
+        manager.reserve(Request("http://active.example/1"))
+        assert "idle.example" not in manager._scope_managers
+        assert "active.example" in manager._scope_managers
+
 
 class TestThrottlingScopeManager:
     def test_no_delay_by_default(self):
@@ -466,6 +557,34 @@ class TestThrottlingScopeManager:
         assert not event.called
         scope.record_done(now=0.0)
         assert event.called
+
+    def test_zero_backoff_window_recovers_at_once(self):
+        # A non-positive window must not make _recover spin forever; it recovers
+        # fully on the next can_send() instead.
+        scope = _scope_manager(settings={"BACKOFF_WINDOW": 0}, config={"id": "x"})
+        scope.record_backoff(now=0.0)
+        assert scope._backoff_level == 1
+        scope.can_send(now=10.0)
+        assert scope._backoff_level == 0
+        assert scope._delay == scope._base_delay
+
+    def test_zero_quota_window_keeps_quota_reset(self):
+        # A non-positive quota window must not make _maybe_reset_quota spin
+        # forever; the quota stays continuously reset instead.
+        scope = _scope_manager(config={"id": "x", "quota": 10.0, "window": 0})
+        scope.record_sent(now=0.0, amount=10.0)
+        assert scope.can_send(now=1.0, amount=5.0) == 0.0
+        assert scope._consumed == 0.0
+
+    def test_zero_window_disables_rampup(self):
+        # A non-positive window must not make _maybe_rampup spin forever; rampup
+        # is simply disabled.
+        scope = _scope_manager(
+            settings={"BACKOFF_WINDOW": 0}, config={"id": "x", "rampup": True}
+        )
+        scope.can_send(now=0.0)
+        scope.can_send(now=10_000.0)
+        assert scope._concurrency == scope._min_concurrency
 
     def test_set_concurrency_fires_slot_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
