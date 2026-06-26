@@ -30,6 +30,8 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy.http.request import CallbackT
+
 
 class MemoryScheduler(BaseScheduler):
     paused = False
@@ -519,6 +521,7 @@ class TestThrottlingAwareScheduler:
             {"DUPEFILTER_CLASS": "scrapy.dupefilters.RFPDupeFilter"}
         )
         scheduler = self._scheduler(crawler)
+        assert crawler.spider is not None
         crawler.spider.crawler = crawler  # the dupefilter logs via spider.crawler
         assert await scheduler.enqueue_request_async(Request("http://a.com/1")) is True
         # The same request is filtered out the second time around.
@@ -534,7 +537,9 @@ class TestThrottlingAwareScheduler:
         scheduler = self._scheduler(crawler)
         # A lambda callback cannot be serialized to disk, so the request falls
         # back to the in-memory queue and the failure is logged once.
-        request = Request("http://a.com/1", callback=lambda response: None)
+        request = Request(
+            "http://a.com/1", callback=cast("CallbackT", lambda response: None)
+        )
         with caplog.at_level(logging.WARNING, logger="scrapy.core.scheduler"):
             assert await scheduler.enqueue_request_async(request) is True
         assert "Unable to serialize request" in caplog.text
@@ -551,7 +556,9 @@ class TestThrottlingAwareScheduler:
         # tracked in stats without logging a warning.
         crawler = self._crawler({"JOBDIR": str(tmp_path)})
         scheduler = self._scheduler(crawler)
-        request = Request("http://a.com/1", callback=lambda response: None)
+        request = Request(
+            "http://a.com/1", callback=cast("CallbackT", lambda response: None)
+        )
         assert await scheduler.enqueue_request_async(request) is True
         assert crawler.stats is not None
         assert crawler.stats.get_value("scheduler/unserializable") == 1
