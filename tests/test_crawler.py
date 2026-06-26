@@ -3,8 +3,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import signal
+import threading
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+from unittest.mock import MagicMock
 
 import pytest
 from zope.interface.exceptions import MultipleInvalid
@@ -31,6 +34,9 @@ from scrapy.utils.log import (
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 BASE_SETTINGS: dict[str, Any] = {}
 
@@ -649,6 +655,145 @@ class TestAsyncCrawlerProcess(TestBaseCrawler):
     def test_crawler_process_accepts_None(self) -> None:
         runner = AsyncCrawlerProcess(install_root_handler=False)
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
+
+
+class TestAsyncCrawlerProcessReactorlessHelpers:
+    """Unit tests for the reactorless shutdown helpers of AsyncCrawlerProcess.
+
+    These cover defensive branches that guard against shutdown races and that
+    are not reachable through a full process run.
+    """
+
+    @staticmethod
+    def _bare_process(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> tuple[AsyncCrawlerProcess, list[Any]]:
+        # AsyncCrawlerProcess.__init__ has global side effects (it installs a
+        # reactor import hook and an asyncio event loop), so build a bare
+        # instance and set only the attributes these helpers read. The shutdown
+        # handlers installed by these helpers are recorded for assertions
+        # instead of touching the real process-wide signal handlers.
+        installed_handlers: list[Any] = []
+        monkeypatch.setattr(
+            "scrapy.crawler.install_shutdown_handlers",
+            lambda handler, *args, **kwargs: installed_handlers.append(handler),
+        )
+        return AsyncCrawlerProcess.__new__(AsyncCrawlerProcess), installed_handlers
+
+    @staticmethod
+    def _run_in_thread(target: Callable[[], None]) -> None:
+        # Run target in a dedicated thread so its event loop is not nested
+        # inside the event loop that may already be running the test session.
+        thread = threading.Thread(target=target)
+        thread.start()
+        thread.join()
+
+    def test_signal_shutdown_reactorless_without_loop(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, installed_handlers = self._bare_process(monkeypatch)
+        process._reactorless_loop = None
+        # No loop to schedule the shutdown task on, so it returns early, but it
+        # must still escalate the handler so a second signal forces a kill.
+        process._signal_shutdown_reactorless(signal.SIGINT, None)
+        assert installed_handlers == [process._signal_kill_reactorless]
+
+    def test_signal_kill_reactorless_without_loop(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, installed_handlers = self._bare_process(monkeypatch)
+        process._reactorless_loop = None
+        process._reactorless_main_task = None
+        # No loop to cancel the main task on, so it returns early, but it must
+        # still ignore any further signals.
+        process._signal_kill_reactorless(signal.SIGINT, None)
+        assert installed_handlers == [signal.SIG_IGN]
+
+    def test_signal_kill_reactorless_without_main_task(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, installed_handlers = self._bare_process(monkeypatch)
+        loop = MagicMock()
+        process._reactorless_loop = loop
+        process._reactorless_main_task = None
+        # No main task to cancel, so nothing is scheduled on the loop.
+        process._signal_kill_reactorless(signal.SIGINT, None)
+        assert installed_handlers == [signal.SIG_IGN]
+        loop.call_soon_threadsafe.assert_not_called()
+
+    def test_shutdown_graceful_reactorless_main_task_already_done(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        process._stop_after_crawl = False
+
+        async def noop() -> None:
+            return None
+
+        monkeypatch.setattr(process, "stop", noop)
+        monkeypatch.setattr(process, "join", noop)
+
+        def run() -> None:
+            loop = asyncio.new_event_loop()
+            try:
+                main_task: asyncio.Future[None] = loop.create_future()
+                main_task.set_result(None)
+                process._reactorless_main_task = main_task
+                # The main task is already done, so it is not cancelled.
+                loop.run_until_complete(process._shutdown_graceful_reactorless())
+                assert not main_task.cancelled()
+            finally:
+                loop.close()
+
+        self._run_in_thread(run)
+
+    def test_create_shutdown_task_closed_loop(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        loop = asyncio.new_event_loop()
+        loop.close()
+        process._reactorless_loop = loop
+        process._stop_after_crawl = True
+        # create_task() raises RuntimeError on a closed loop; the coroutine
+        # must be closed instead of leaking.
+        process._create_shutdown_task()
+
+    def test_cancel_all_tasks_logs_task_exception(self) -> None:
+        contexts: list[dict[str, Any]] = []
+        task_was_cancelled: list[bool] = []
+
+        def run() -> None:
+            loop = asyncio.new_event_loop()
+            loop.set_exception_handler(lambda _loop, context: contexts.append(context))
+
+            async def fail_on_cancel() -> None:
+                try:
+                    await asyncio.sleep(10)
+                except asyncio.CancelledError:
+                    raise RuntimeError("boom")
+
+            try:
+                task = loop.create_task(fail_on_cancel())
+                # Let the task start and suspend on the sleep so the
+                # cancellation is raised inside its body and turned into a
+                # RuntimeError rather than cancelling the task cleanly.
+                loop.run_until_complete(asyncio.sleep(0))
+                AsyncCrawlerProcess._cancel_all_tasks(loop)
+                task_was_cancelled.append(task.cancelled())
+            finally:
+                loop.close()
+
+        self._run_in_thread(run)
+
+        # The task raised instead of being cancelled, so its exception is
+        # reported to the loop exception handler.
+        assert task_was_cancelled == [False]
+        assert any(
+            context.get("message")
+            == "unhandled exception during AsyncCrawlerProcess shutdown"
+            for context in contexts
+        )
 
 
 @pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
