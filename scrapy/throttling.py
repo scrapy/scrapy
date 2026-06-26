@@ -1054,7 +1054,9 @@ class ThrottlingScopeManager:
                 self._rampup_min_delay, self._delay * self._rampup_delay_factor
             )
             self._base_delay = min(self._base_delay, self._delay)
-        elif self._concurrency is not None:
+        else:
+            # Rampup is only enabled with a concurrency limit set.
+            assert self._concurrency is not None
             self._concurrency += 1
 
     def _maybe_reset_quota(self, now: float) -> None:

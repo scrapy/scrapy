@@ -14,7 +14,7 @@ from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
-from scrapy.core.downloader import Downloader, Slot, tls
+from scrapy.core.downloader import Downloader, Slot, _get_concurrency_delay, tls
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
@@ -43,6 +43,31 @@ class TestSlot:
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
         assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
+
+
+class TestGetConcurrencyDelay:
+    def test_default(self):
+        crawler = get_crawler()
+        concurrency, delay = _get_concurrency_delay(
+            8, DefaultSpider(), crawler.settings
+        )
+        assert (concurrency, delay) == (8, 0.0)
+
+    def test_spider_download_delay(self):
+        crawler = get_crawler()
+        spider = DefaultSpider()
+        spider.download_delay = 2.5
+        _concurrency, delay = _get_concurrency_delay(8, spider, crawler.settings)
+        assert delay == 2.5
+
+    def test_download_delay_per_slot(self):
+        crawler = get_crawler(settings_dict={"DOWNLOAD_DELAY_PER_SLOT": 3.0})
+        # DOWNLOAD_DELAY_PER_SLOT takes precedence over both DOWNLOAD_DELAY and
+        # the spider's download_delay attribute.
+        spider = DefaultSpider()
+        spider.download_delay = 2.5
+        _concurrency, delay = _get_concurrency_delay(8, spider, crawler.settings)
+        assert delay == 3.0
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code

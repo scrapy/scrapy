@@ -173,3 +173,20 @@ class TestWaitForFirst:
         done, pending = await wait_for_first([fired], timeout=1)
         assert done == {fired}
         assert pending == set()
+
+    @coroutine_test
+    async def test_no_timeout(self):
+        # timeout=None -> no timeout deferred is created.
+        fired: Deferred[None] = Deferred()
+        fired.callback(None)
+        done, pending = await wait_for_first([fired])
+        assert done == {fired}
+        assert pending == set()
+
+    @coroutine_test
+    async def test_timeout_elapses(self):
+        # When the timeout fires first, every input deferred is still pending.
+        never: Deferred[None] = Deferred()
+        done, pending = await wait_for_first([never], timeout=0.01)
+        assert done == set()
+        assert pending == {never}

@@ -449,6 +449,43 @@ class TestThrottlingAwarePriorityQueue:
         assert queue.next_request_delay() is None
 
     @coroutine_test
+    async def test_next_request_delay_keeps_minimum(self):
+        crawler = get_crawler(
+            Spider,
+            settings_dict={
+                "THROTTLING_SCOPES": {
+                    "a.com": {"delay": 10.0},
+                    "b.com": {"delay": 1000.0},
+                },
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            },
+        )
+        queue = self._queue(crawler)
+        # Two requests per scope so a blocked head remains after the first one
+        # (sendable, since no delay has accrued yet) is popped and reserved.
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        await self._push(queue, crawler, Request("http://a.com/2"))
+        await self._push(queue, crawler, Request("http://b.com/1"))
+        await self._push(queue, crawler, Request("http://b.com/2"))
+        queue.pop()
+        queue.pop()
+        # Both scopes are now time-blocked; the smaller per-scope delay wins,
+        # so the larger one exercises the "not below the running minimum" branch.
+        delay = queue.next_request_delay()
+        assert delay == pytest.approx(10.0, abs=1.0)
+
+    @coroutine_test
+    async def test_pop_handles_drained_selected_queue(self):
+        crawler = get_crawler(Spider)
+        queue = self._queue(crawler)
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        inner = next(iter(queue.pqueues.values()))
+        # peek() still reports a sendable head, but pop() yields nothing: the
+        # request-is-None guard must not try to reserve a missing request.
+        inner.pop = lambda: None
+        assert queue.pop() is None
+
+    @coroutine_test
     async def test_contains(self):
         crawler = get_crawler(Spider)
         queue = self._queue(crawler)

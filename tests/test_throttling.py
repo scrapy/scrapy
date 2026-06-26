@@ -478,6 +478,16 @@ class TestThrottlingScopeManager:
         scope.record_done(now=0.0)
         assert not event.called
 
+    def test_fire_slot_waiters_skips_already_fired(self):
+        scope = _scope_manager(config={"id": "x", "concurrency": 1})
+        scope.record_sent(now=0.0)
+        event = scope.slot_event()
+        event.callback(None)  # fired out-of-band before the slot frees up
+        # record_done() fires the waiters; the already-fired one is skipped
+        # rather than called a second time (which would raise).
+        scope.record_done(now=0.0)
+        assert event.called
+
     def test_set_concurrency_respects_min(self):
         scope = _scope_manager(config={"id": "x", "min_concurrency": 3})
         scope.set_concurrency(1)
@@ -780,6 +790,42 @@ class TestThrottlingManagerEdges:
         assert request.meta["_throttling_delayed"] is True
         # A second call is a no-op (the request was already delayed).
         await manager._apply_request_delay(request)
+
+    @coroutine_test
+    async def test_apply_request_delay_without_debug(self):
+        # Same as above but with debug logging off, so the delay is applied
+        # without emitting the debug message.
+        manager = _manager()
+        request = Request("http://example.com/a", meta={"throttling_delay": 0.01})
+        await manager._apply_request_delay(request)
+        assert request.meta["_throttling_delayed"] is True
+
+    @coroutine_test
+    async def test_wait_for_slot_discards_unfired_events(self):
+        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
+
+        manager = _manager()
+        m1 = _scope_manager(config={"id": "a", "concurrency": 1})
+        m2 = _scope_manager(config={"id": "b", "concurrency": 1})
+        m1.record_sent(now=0.0)
+        m2.record_sent(now=0.0)
+        # Free m1's slot on the next tick so the wait wakes up with m1's event
+        # fired while m2's event is still pending.
+        call_later(0, m1.record_done)
+        await manager._wait_for_slot([m1, m2])
+        # The still-pending m2 event is discarded from its waiter list.
+        assert m2._slot_waiters == []
+
+    def test_scope_manager_protocol_defaults(self):
+        from scrapy.throttling import ThrottlingScopeManagerProtocol  # noqa: PLC0415
+
+        class _Concrete(ThrottlingScopeManagerProtocol):
+            pass
+
+        crawler = get_crawler()
+        # The protocol's default from_crawler()/__init__ are usable as-is.
+        instance = _Concrete.from_crawler(crawler, {"id": "example.com"})
+        assert isinstance(instance, _Concrete)
 
     @coroutine_test
     async def test_process_exception_applies_backoff(self):
