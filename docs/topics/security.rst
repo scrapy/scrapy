@@ -34,8 +34,11 @@ their input in an unsafe way, such as :func:`eval`, :func:`exec`, or
 :func:`pickle.loads`, and be careful when writing response data to paths
 derived from the response itself.
 
+TLS connections
+===============
+
 Certificate verification
-========================
+------------------------
 
 By default Scrapy does **not** verify the TLS certificate of HTTPS servers, as
 controlled by the :setting:`DOWNLOAD_VERIFY_CERTIFICATES` setting (default:
@@ -59,9 +62,28 @@ man-in-the-middle attacks), set:
 * **Con:** you can no longer scrape sites with misconfigured certificates
   without re-disabling verification for them.
 
-You can also restrict the TLS protocol versions that Scrapy accepts through the
+Protocol versions and ciphers
+-----------------------------
+
+You can restrict the TLS protocol versions that Scrapy accepts through the
 :setting:`DOWNLOAD_TLS_MIN_VERSION` and :setting:`DOWNLOAD_TLS_MAX_VERSION`
 settings, e.g. to reject obsolete protocol versions.
+
+By default Scrapy uses the OpenSSL ``DEFAULT`` cipher list
+(:setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`), which favors compatibility and still
+allows some older, weaker ciphers. Set it to ``None`` to instead use the curated
+cipher list of the underlying TLS implementation (Twisted), which excludes weak
+ciphers:
+
+.. code-block:: python
+
+    DOWNLOADER_CLIENT_TLS_CIPHERS = None
+
+* **Pro:** connections that would negotiate a weak cipher fail instead of
+  succeeding.
+
+* **Con:** you can no longer connect to servers that only support the excluded
+  ciphers.
 
 Unencrypted protocols
 =====================
