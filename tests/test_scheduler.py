@@ -26,6 +26,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from pathlib import Path
 
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
 
 class MemoryScheduler(BaseScheduler):
     paused = False
@@ -411,6 +414,16 @@ class TestIncompatibility:
 _THROTTLING_AWARE_PQ = "scrapy.pqueues.ThrottlingAwarePriorityQueue"
 
 
+class _NoPeekMemoryQueue:
+    """A memory queue class that does not implement ``peek``, used to check
+    that ThrottlingAwareScheduler rejects queues lacking peek support (e.g. when
+    queuelib is older than 1.6.1)."""
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
+        return cls()
+
+
 class TestThrottlingAwareScheduler:
     def _crawler(self, settings_dict: dict[str, Any] | None = None) -> Crawler:
         settings = {
@@ -454,6 +467,16 @@ class TestThrottlingAwareScheduler:
         crawler.spider = spider
         scheduler = ThrottlingAwareScheduler.from_crawler(crawler)
         with pytest.raises(ValueError, match="throttling-aware priority queue"):
+            scheduler.open(spider)
+
+    def test_requires_peek_supporting_queue(self) -> None:
+        crawler = self._crawler(
+            {"SCHEDULER_MEMORY_QUEUE": "tests.test_scheduler._NoPeekMemoryQueue"}
+        )
+        spider = Spider(name="spider")
+        crawler.spider = spider
+        scheduler = ThrottlingAwareScheduler.from_crawler(crawler)
+        with pytest.raises(ValueError, match="supports peek"):
             scheduler.open(spider)
 
     @coroutine_test

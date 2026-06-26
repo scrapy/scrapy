@@ -331,6 +331,10 @@ apply different throttling based on request priority.
 Use the ``throttling_scopes`` request metadata to assign requests to custom
 throttling groups:
 
+.. invisible-code-block: python
+
+    from scrapy.http import Request
+
 .. code-block:: python
 
     Request("https://api.example/", meta={"throttling_scopes": "api"})

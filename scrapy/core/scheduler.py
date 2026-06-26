@@ -500,6 +500,22 @@ class Scheduler(BaseScheduler):
             json.dump(state, f)
 
 
+def _queue_supports_peek(queue_cls: type) -> bool:
+    """Return whether *queue_cls* (a Scrapy queue class) is backed by an
+    underlying queue that really implements ``peek``.
+
+    Scrapy's queue wrappers in :mod:`scrapy.squeues` always define a ``peek``
+    method, but it merely delegates to the underlying queue class (e.g. a
+    queuelib one, which only gained ``peek`` in queuelib 1.6.1) and raises
+    :exc:`NotImplementedError` if that one lacks it. This checks the real
+    implementation by ignoring the delegating wrappers.
+    """
+    return any(
+        "peek" in base.__dict__ and base.__module__ != "scrapy.squeues"
+        for base in queue_cls.__mro__
+    )
+
+
 class ThrottlingAwareScheduler(Scheduler):
     """A :class:`Scheduler` that only ever hands the engine requests whose
     :ref:`throttling scopes <throttling-scopes>` allow them to be sent **right
@@ -535,6 +551,19 @@ class ThrottlingAwareScheduler(Scheduler):
                 f"scrapy.pqueues.ThrottlingAwarePriorityQueue, but the "
                 f"configured one ({type(self.mqs).__name__}) is not."
             )
+        for setting, pq in (
+            ("SCHEDULER_MEMORY_QUEUE", self.mqs),
+            ("SCHEDULER_DISK_QUEUE", self.dqs),
+        ):
+            if pq is None:
+                continue
+            queue_cls = getattr(pq, "downstream_queue_cls", None)
+            if queue_cls is not None and not _queue_supports_peek(queue_cls):
+                raise ValueError(
+                    f"{type(self).__name__} requires {setting} to be set to a "
+                    f"queue class that supports peek(), but the configured one "
+                    f"({queue_cls.__name__}) does not."
+                )
         assert self.crawler is not None
         assert self.crawler.throttler is not None
         self._throttler: ThrottlingManagerProtocol = self.crawler.throttler
