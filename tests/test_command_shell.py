@@ -222,9 +222,20 @@ class TestInteractiveShell:
         (config_home / "scrapy.cfg").write_text("[settings]\nshell = python\n")
         env = os.environ.copy()
         self._isolate_config(env, config_home)
-        out = self._run_interactive_shell(env)
-        assert "Traceback" not in out
-        assert ">>>" in out
+        args = (sys.executable, "-m", "scrapy.cmdline", "shell")
+        logfile = BytesIO()
+        p = PopenSpawn(args, env=env, timeout=10)
+        p.logfile_read = logfile
+        p.expect_exact("Available Scrapy objects")
+        # The standard Python shell never imports IPython, whereas the IPython
+        # shell (the default when installed) does; this confirms the configured
+        # shell=python was honored, regardless of platform-specific prompts.
+        p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
+        p.expect_exact("IPYMODULE False")
+        p.sendeof()
+        p.wait()  # type: ignore[no-untyped-call]
+        logfile.seek(0)
+        assert "Traceback" not in logfile.read().decode()
 
     def test_shell_default_shells(self, tmp_path: Path) -> None:
         config_home = tmp_path / "config"
