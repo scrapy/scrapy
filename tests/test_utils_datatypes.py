@@ -310,7 +310,6 @@ class TestLocalCache:
             assert cache[str(x)] == x
 
     def test_cache_with_zero_limit(self):
-        # limit=0 means cache is disabled, no items should be stored
         cache = LocalCache(limit=0)
         cache["a"] = 1
         cache["b"] = 2
