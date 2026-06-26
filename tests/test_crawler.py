@@ -693,14 +693,14 @@ def test_create_crawler_rejects_spider_object(
 ) -> None:
     runner = runner_cls()
     with pytest.raises(ValueError, match="cannot be a spider object"):
-        runner.create_crawler(DefaultSpider())
+        runner.create_crawler(DefaultSpider())  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
 def test_crawl_rejects_spider_object(runner_cls: type[CrawlerRunnerBase]) -> None:
     runner = runner_cls()
     with pytest.raises(ValueError, match="cannot be a spider object"):
-        runner.crawl(DefaultSpider())
+        runner.crawl(DefaultSpider())  # type: ignore[arg-type]
 
 
 class ExceptionSpider(scrapy.Spider):
