@@ -56,9 +56,7 @@ def test_caching_hostname_resolver_no_addresses_not_cached():
 
 
 def test_caching_hostname_resolver_dnscache_disabled_rejects_storage():
-    # Regression test for LocalCache(limit=0) rejecting storage
-    # when DNSCACHE_ENABLED=False. _CachingResolutionReceiver writes
-    # directly to dnscache, so we verify nothing is stored.
+
     def fake_resolve(receiver, *_):
         receiver.resolutionBegan(Mock())
         receiver.addressResolved(Mock())
@@ -68,10 +66,8 @@ def test_caching_hostname_resolver_dnscache_disabled_rejects_storage():
     reactor = Mock()
     reactor.nameResolver.resolveHostName.side_effect = fake_resolve
 
-    # cache_size=0 simulates DNSCACHE_ENABLED=False
     resolver = CachingHostnameResolver(reactor, cache_size=0)
     resolver.resolveHostName(Mock(), "example.com")
 
-    # dnscache should remain empty despite address being resolved
     assert "example.com" not in dnscache
     assert len(dnscache) == 0
