@@ -499,6 +499,59 @@ class Base:
                 ),
             ]
 
+        def test_tags_attrs_wildcard_and_deny(self):
+            html = b"""
+            <html><body>
+            <a href="a.html">a</a>
+            <div data-url="div.html">div</div>
+            <span href="span.html">span</span>
+            <p data-url="p.html">p</p>
+            </body></html>
+            """
+            response = HtmlResponse("http://example.com/index.html", body=html)
+
+            def urls(**kwargs):
+                lx = self.extractor_cls(**kwargs)
+                return [link.url for link in lx.extract_links(response)]
+
+            # Default behavior is unchanged: only the listed tags and attributes.
+            assert urls() == ["http://example.com/a.html"]
+
+            # "*" as a tag matches every tag.
+            assert urls(tags="*") == [
+                "http://example.com/a.html",
+                "http://example.com/span.html",
+            ]
+
+            # "*" as an attribute matches every attribute.
+            assert urls(tags="*", attrs="*") == [
+                "http://example.com/a.html",
+                "http://example.com/div.html",
+                "http://example.com/span.html",
+                "http://example.com/p.html",
+            ]
+
+            # deny_tags excludes tags from the wildcard.
+            assert urls(tags="*", attrs="*", deny_tags="div") == [
+                "http://example.com/a.html",
+                "http://example.com/span.html",
+                "http://example.com/p.html",
+            ]
+
+            # deny_attrs excludes attributes from the wildcard.
+            assert urls(tags="*", attrs="*", deny_attrs="data-url") == [
+                "http://example.com/a.html",
+                "http://example.com/span.html",
+            ]
+
+            # deny_tags also applies when tags are listed explicitly.
+            assert urls(tags=("a", "span"), attrs="*", deny_tags="span") == [
+                "http://example.com/a.html",
+            ]
+
+            # The wildcard for one parameter is independent of the other.
+            assert urls(tags="a", attrs="*") == ["http://example.com/a.html"]
+
         def test_xhtml(self):
             xhtml = b"""
     <?xml version="1.0"?>
