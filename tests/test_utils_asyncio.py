@@ -13,6 +13,8 @@ from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     _parallel_asyncio,
     is_asyncio_available,
+    sleep,
+    wait_for_first,
 )
 from tests.utils.decorators import coroutine_test
 
@@ -149,3 +151,25 @@ class TestAsyncioLoopingCall:
         with pytest.raises(TypeError):
             looping_call.start(0.1)
         assert not looping_call.running
+
+
+class TestSleep:
+    @coroutine_test
+    async def test_sleep(self):
+        # A zero-second sleep completes without error under any reactor mode.
+        await sleep(0)
+
+
+class TestWaitForFirst:
+    @coroutine_test
+    async def test_empty(self):
+        # No deferreds -> two empty sets, returned immediately.
+        assert await wait_for_first([]) == (set(), set())
+
+    @coroutine_test
+    async def test_returns_done_deferred(self):
+        fired: Deferred[None] = Deferred()
+        fired.callback(None)
+        done, pending = await wait_for_first([fired], timeout=1)
+        assert done == {fired}
+        assert pending == set()

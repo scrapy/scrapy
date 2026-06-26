@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import deque
@@ -510,6 +511,50 @@ class TestThrottlingAwareScheduler:
         assert scheduler.next_request() is None
         # A purely concurrency-blocked state has no time-based wakeup.
         assert scheduler.next_request_delay() is None
+        scheduler.close("finished")
+
+    @coroutine_test
+    async def test_enqueue_async_filters_duplicates(self) -> None:
+        crawler = self._crawler(
+            {"DUPEFILTER_CLASS": "scrapy.dupefilters.RFPDupeFilter"}
+        )
+        scheduler = self._scheduler(crawler)
+        crawler.spider.crawler = crawler  # the dupefilter logs via spider.crawler
+        assert await scheduler.enqueue_request_async(Request("http://a.com/1")) is True
+        # The same request is filtered out the second time around.
+        assert await scheduler.enqueue_request_async(Request("http://a.com/1")) is False
+        assert len(scheduler) == 1
+        scheduler.close("finished")
+
+    @coroutine_test
+    async def test_enqueue_async_unserializable_falls_back_to_memory(
+        self, tmp_path: Path, caplog
+    ) -> None:
+        crawler = self._crawler({"JOBDIR": str(tmp_path), "SCHEDULER_DEBUG": True})
+        scheduler = self._scheduler(crawler)
+        # A lambda callback cannot be serialized to disk, so the request falls
+        # back to the in-memory queue and the failure is logged once.
+        request = Request("http://a.com/1", callback=lambda response: None)
+        with caplog.at_level(logging.WARNING, logger="scrapy.core.scheduler"):
+            assert await scheduler.enqueue_request_async(request) is True
+        assert "Unable to serialize request" in caplog.text
+        assert crawler.stats is not None
+        assert crawler.stats.get_value("scheduler/unserializable") == 1
+        assert crawler.stats.get_value("scheduler/enqueued/memory") == 1
+        scheduler.close("finished")
+
+    @coroutine_test
+    async def test_enqueue_async_unserializable_without_debug(
+        self, tmp_path: Path
+    ) -> None:
+        # Same fallback as above, but with SCHEDULER_DEBUG off the failure is
+        # tracked in stats without logging a warning.
+        crawler = self._crawler({"JOBDIR": str(tmp_path)})
+        scheduler = self._scheduler(crawler)
+        request = Request("http://a.com/1", callback=lambda response: None)
+        assert await scheduler.enqueue_request_async(request) is True
+        assert crawler.stats is not None
+        assert crawler.stats.get_value("scheduler/unserializable") == 1
         scheduler.close("finished")
 
     @coroutine_test

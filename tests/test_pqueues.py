@@ -419,3 +419,53 @@ class TestThrottlingAwarePriorityQueue:
         assert queue.next_request_delay() is None
         await self._push(queue, crawler, Request("http://a.com/1"))
         assert queue.close() != {}
+
+    @coroutine_test
+    async def test_peek(self):
+        crawler = get_crawler(Spider)
+        queue = self._queue(crawler)
+        assert queue.peek() is None
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        head = queue.peek()
+        assert head is not None
+        assert head.url == "http://a.com/1"
+        # peek() does not consume the request.
+        assert len(queue) == 1
+
+    @coroutine_test
+    async def test_next_request_delay_zero_when_ready(self):
+        crawler = get_crawler(Spider)
+        queue = self._queue(crawler)
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        # A sendable head means no wait is needed.
+        assert queue.next_request_delay() == 0.0
+
+    @coroutine_test
+    async def test_next_request_delay_ignores_empty_queues(self):
+        crawler = get_crawler(Spider)
+        queue = self._queue(crawler)
+        # An empty (but still registered) internal queue is skipped.
+        queue.pqueues[frozenset({"a.com"})] = queue.pqfactory(frozenset({"a.com"}))
+        assert queue.next_request_delay() is None
+
+    @coroutine_test
+    async def test_contains(self):
+        crawler = get_crawler(Spider)
+        queue = self._queue(crawler)
+        scope_set = frozenset(
+            iter_scopes(await crawler.throttler.get_scopes(Request("http://a.com/1")))
+        )
+        assert scope_set not in queue
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        assert scope_set in queue
+
+    def test_non_dict_slot_startprios(self):
+        crawler = get_crawler(Spider)
+        with pytest.raises(ValueError, match="slot_startprios"):
+            build_from_crawler(
+                ThrottlingAwarePriorityQueue,
+                crawler,
+                downstream_queue_cls=FifoMemoryQueue,
+                key="",
+                startprios=[1, 2, 3],
+            )
