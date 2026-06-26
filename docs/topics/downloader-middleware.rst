@@ -379,6 +379,8 @@ that this risks leaking credentials to unrelated domains.
 This setting must be explicitly configured whenever :setting:`HTTPAUTH_USER`
 or :setting:`HTTPAUTH_PASS` is set.
 
+.. seealso:: :ref:`security-credential-leakage`
+
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
 
