@@ -20,7 +20,9 @@ if TYPE_CHECKING:
 
 
 class JsonRequest(Request):
-    attributes: tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
+    __slots__ = ("_dumps_kwargs",)
+
+    attributes: tuple[str, ...] = (*Request.attributes, "dumps_kwargs")
 
     def __init__(
         self, *args: Any, dumps_kwargs: dict[str, Any] | None = None, **kwargs: Any
@@ -29,12 +31,14 @@ class JsonRequest(Request):
         dumps_kwargs.setdefault("sort_keys", True)
         self._dumps_kwargs: dict[str, Any] = dumps_kwargs
 
-        body_passed = kwargs.get("body", None) is not None
+        body_passed = kwargs.get("body") is not None
         data: Any = kwargs.pop("data", None)
         data_passed: bool = data is not None
 
         if body_passed and data_passed:
-            warnings.warn("Both body and data passed. data will be ignored")
+            warnings.warn(
+                "Both body and data passed. data will be ignored", stacklevel=2
+            )
         elif not body_passed and data_passed:
             kwargs["body"] = self._dumps(data)
             if "method" not in kwargs:
@@ -61,12 +65,14 @@ class JsonRequest(Request):
     def replace(
         self, *args: Any, cls: type[Request] | None = None, **kwargs: Any
     ) -> Request:
-        body_passed = kwargs.get("body", None) is not None
+        body_passed = kwargs.get("body") is not None
         data: Any = kwargs.pop("data", None)
         data_passed: bool = data is not None
 
         if body_passed and data_passed:
-            warnings.warn("Both body and data passed. data will be ignored")
+            warnings.warn(
+                "Both body and data passed. data will be ignored", stacklevel=2
+            )
         elif not body_passed and data_passed:
             kwargs["body"] = self._dumps(data)
 

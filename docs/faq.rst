@@ -82,9 +82,17 @@ to steal from us!
 Does Scrapy work with HTTP proxies?
 -----------------------------------
 
-Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
-Proxy downloader middleware. See
+Yes. Support for HTTP proxies is provided through the HTTP Proxy downloader
+middleware. See
 :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`.
+
+Does Scrapy work with SOCKS proxies?
+------------------------------------
+
+Yes, when using
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. See
+:class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` and the
+handler documentation.
 
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
@@ -96,30 +104,13 @@ How can I simulate a user login in my spider?
 
 See :ref:`topics-request-response-ref-request-userlogin`.
 
+
 .. _faq-bfo-dfo:
 
 Does Scrapy crawl in breadth-first or depth-first order?
 --------------------------------------------------------
 
-By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
-basically means that it crawls in `DFO order`_. This order is more convenient
-in most cases.
-
-If you do want to crawl in true `BFO order`_, you can do it by
-setting the following settings:
-
-.. code-block:: python
-
-    DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
-    SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
-
-While pending requests are below the configured values of
-:setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
-:setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
-concurrently. As a result, the first few requests of a crawl rarely follow the
-desired order. Lowering those settings to ``1`` enforces the desired order, but
-it significantly slows down the crawl as a whole.
+:ref:`DFO by default, but other orders are possible <request-order>`.
 
 
 My Scrapy crawler has memory leaks. What can I do?
@@ -361,21 +352,26 @@ method for this purpose. For example:
 
     from copy import deepcopy
 
-    from itemadapter import is_item, ItemAdapter
+    from itemadapter import ItemAdapter
+    from scrapy import Request
 
 
     class MultiplyItemsMiddleware:
-        def process_spider_output(self, response, result, spider):
-            for item in result:
-                if is_item(item):
-                    adapter = ItemAdapter(item)
-                    for _ in range(adapter["multiply_by"]):
-                        yield deepcopy(item)
+        def process_spider_output(self, response, result):
+            for item_or_request in result:
+                if isinstance(item_or_request, Request):
+                    continue
+                adapter = ItemAdapter(item)
+                for _ in range(adapter["multiply_by"]):
+                    yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?
 -----------------------------------
 
-Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Yes, but when using
+:class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` or
+:class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` you need to
+set :setting:`TWISTED_DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
 Note that by doing so, you lose the ability to set a specific timeout for DNS requests
 (the value of the :setting:`DNS_TIMEOUT` setting is ignored).
 
@@ -410,7 +406,7 @@ How can I make a blank request?
 -------------------------------
 
 .. code-block:: python
-    
+
     from scrapy import Request
 
 
@@ -433,7 +429,3 @@ See :issue:`2680`.
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
-.. _user agents: https://en.wikipedia.org/wiki/User_agent
-.. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
-.. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
-.. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search

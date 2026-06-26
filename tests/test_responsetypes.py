@@ -1,5 +1,3 @@
-import unittest
-
 from scrapy.http import (
     Headers,
     HtmlResponse,
@@ -11,7 +9,7 @@ from scrapy.http import (
 from scrapy.responsetypes import responsetypes
 
 
-class ResponseTypesTest(unittest.TestCase):
+class TestResponseTypes:
     def test_from_filename(self):
         mappings = [
             ("data.bin", Response),
@@ -41,6 +39,9 @@ class ResponseTypesTest(unittest.TestCase):
         for source, cls in mappings:
             retcls = responsetypes.from_content_disposition(source)
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+
+    def test_from_content_disposition_no_filename(self):
+        assert responsetypes.from_content_disposition(b"attachment") is Response
 
     def test_from_content_type(self):
         mappings = [
@@ -123,10 +124,4 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_custom_mime_types_loaded(self):
         # check that mime.types files shipped with scrapy are loaded
-        self.assertEqual(
-            responsetypes.mimetypes.guess_type("x.scrapytest")[0], "x-scrapy/test"
-        )
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert responsetypes.mimetypes.guess_type("x.scrapytest")[0] == "x-scrapy/test"

@@ -5,12 +5,13 @@ import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 from urllib.parse import urlparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
+from scrapy.spiderloader import get_spider_loader
 from scrapy.utils.template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
@@ -45,8 +46,8 @@ def verify_url_scheme(url: str) -> str:
 
 
 class Command(ScrapyCommand):
-    requires_project = False
-    default_settings = {"LOG_ENABLED": False}
+    requires_crawler_process = False
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[options] <name> <domain>"
@@ -92,6 +93,7 @@ class Command(ScrapyCommand):
         )
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
+        assert self.settings is not None
         if opts.list:
             self._list_templates()
             return
@@ -127,6 +129,7 @@ class Command(ScrapyCommand):
         url: str,
         template_name: str,
     ) -> dict[str, Any]:
+        assert self.settings is not None
         capitalized_module = "".join(s.capitalize() for s in module.split("_"))
         return {
             "project_name": self.settings.get("BOT_NAME"),
@@ -144,9 +147,10 @@ class Command(ScrapyCommand):
         name: str,
         url: str,
         template_name: str,
-        template_file: str | os.PathLike,
+        template_file: str | os.PathLike[str],
     ) -> None:
         """Generate the spider module, based on the given template"""
+        assert self.settings is not None
         tvars = self._generate_template_variables(module, name, url, template_name)
         if self.settings.get("NEWSPIDER_MODULE"):
             spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
@@ -154,7 +158,7 @@ class Command(ScrapyCommand):
             spiders_dir = Path(spiders_module.__file__).parent.resolve()
         else:
             spiders_module = None
-            spiders_dir = Path(".")
+            spiders_dir = Path()
         spider_file = f"{spiders_dir / module}.py"
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
@@ -169,17 +173,24 @@ class Command(ScrapyCommand):
         template_file = Path(self.templates_dir, f"{template}.tmpl")
         if template_file.exists():
             return template_file
-        print(f"Unable to find template: {template}\n")
-        print('Use "scrapy genspider --list" to see all available templates.')
+        print(
+            f"Unable to find template: {template}\n",
+            'Use "scrapy genspider --list" to see all available templates.',
+        )
         return None
 
     def _list_templates(self) -> None:
-        print("Available templates:")
-        for file in sorted(Path(self.templates_dir).iterdir()):
-            if file.suffix == ".tmpl":
-                print(f"  {file.stem}")
+        print(
+            "Available templates:\n",
+            "\n".join(
+                f"  {file.stem}"
+                for file in sorted(Path(self.templates_dir).iterdir())
+                if file.suffix == ".tmpl"
+            ),
+        )
 
     def _spider_exists(self, name: str) -> bool:
+        assert self.settings is not None
         if not self.settings.get("NEWSPIDER_MODULE"):
             # if run as a standalone command and file with same filename already exists
             path = Path(name + ".py")
@@ -188,23 +199,22 @@ class Command(ScrapyCommand):
                 return True
             return False
 
-        assert (
-            self.crawler_process is not None
-        ), "crawler_process must be set before calling run"
-
+        spider_loader = get_spider_loader(self.settings)
         try:
-            spidercls = self.crawler_process.spider_loader.load(name)
+            spidercls = spider_loader.load(name)
         except KeyError:
             pass
         else:
             # if spider with same name exists
-            print(f"Spider {name!r} already exists in module:")
-            print(f"  {spidercls.__module__}")
+            print(
+                f"Spider {name!r} already exists in module:\n",
+                f"  {spidercls.__module__}",
+            )
             return True
 
         # a file with the same name exists in the target directory
         spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
-        spiders_dir = Path(cast(str, spiders_module.__file__)).parent
+        spiders_dir = Path(cast("str", spiders_module.__file__)).parent
         spiders_dir_abs = spiders_dir.resolve()
         path = spiders_dir_abs / (name + ".py")
         if path.exists():
@@ -215,6 +225,7 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self) -> str:
+        assert self.settings is not None
         return str(
             Path(
                 self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),

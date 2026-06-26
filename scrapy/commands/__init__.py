@@ -7,33 +7,52 @@ from __future__ import annotations
 import argparse
 import builtins
 import os
+import warnings
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from twisted.python import failure
 
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
+from scrapy.utils.deprecate import method_is_overridden
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from scrapy.crawler import Crawler, CrawlerProcess
+    from scrapy.crawler import Crawler, CrawlerProcessBase
+    from scrapy.settings import Settings
 
 
-class ScrapyCommand:
+class ScrapyCommand(ABC):
     requires_project: bool = False
-    crawler_process: CrawlerProcess | None = None
+    requires_crawler_process: bool = True
+    crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
 
     # default settings to be used for this command instead of global defaults
-    default_settings: dict[str, Any] = {}
+    default_settings: ClassVar[dict[str, Any]] = {}
 
     exitcode: int = 0
 
     def __init__(self) -> None:
-        self.settings: Any = None  # set in scrapy.cmdline
+        self.settings: Settings | None = None  # set in scrapy.cmdline
+        if method_is_overridden(self.__class__, ScrapyCommand, "help"):
+            warnings.warn(
+                "The ScrapyCommand.help() method is deprecated and overriding "
+                f"it, as the {global_object_name(self.__class__)} class does, "
+                "has no effect; override long_desc() instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
-    def set_crawler(self, crawler: Crawler) -> None:
+    def set_crawler(self, crawler: Crawler) -> None:  # pragma: no cover
+        warnings.warn(
+            "ScrapyCommand.set_crawler() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         if hasattr(self, "_crawler"):
             raise RuntimeError("crawler already set")
         self._crawler: Crawler = crawler
@@ -44,6 +63,7 @@ class ScrapyCommand:
         """
         return ""
 
+    @abstractmethod
     def short_desc(self) -> str:
         """
         A short description of the command
@@ -58,16 +78,18 @@ class ScrapyCommand:
         return self.short_desc()
 
     def help(self) -> str:
-        """An extensive help for the command. It will be shown when using the
-        "help" command. It can contain newlines since no post-formatting will
-        be applied to its contents.
-        """
+        warnings.warn(
+            "ScrapyCommand.help() is deprecated, use long_desc() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return self.long_desc()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         """
         Populate option parse with options available for this command
         """
+        assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
         group.add_argument(
             "--logfile", metavar="FILE", help="log file. if omitted stderr will be used"
@@ -100,10 +122,13 @@ class ScrapyCommand:
         group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
         except ValueError:
-            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
+            raise UsageError(
+                "Invalid -s value, use -s NAME=VALUE", print_help=False
+            ) from None
 
         if opts.logfile:
             self.settings.set("LOG_ENABLED", True, priority="cmdline")
@@ -124,6 +149,7 @@ class ScrapyCommand:
         if opts.pdb:
             failure.startDebugMode()
 
+    @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         """
         Entry point for running commands
@@ -168,8 +194,11 @@ class BaseRunSpiderCommand(ScrapyCommand):
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
+            raise UsageError(
+                "Invalid -a value, use -a NAME=VALUE", print_help=False
+            ) from None
         if opts.output or opts.overwrite_output:
+            assert self.settings is not None
             feeds = feed_process_params_from_cli(
                 self.settings,
                 opts.output,
@@ -211,7 +240,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         headings = [
             i for i in range(len(part_strings)) if part_strings[i].endswith(":\n")
         ]
-        for index in headings[::-1]:
+        for index in reversed(headings):
             char = "-" if "Global Options" in part_strings[index] else "="
             part_strings[index] = part_strings[index][:-2].title()
             underline = "".join(["\n", (char * len(part_strings[index])), "\n"])

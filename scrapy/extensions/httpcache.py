@@ -7,7 +7,7 @@ from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from pathlib import Path
 from time import time
-from typing import IO, TYPE_CHECKING, Any, cast
+from typing import IO, TYPE_CHECKING, Any, Concatenate, cast
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
@@ -23,13 +23,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from types import ModuleType
 
-    # typing.Concatenate requires Python 3.10
-    from typing_extensions import Concatenate
-
     from scrapy.http.request import Request
     from scrapy.settings import BaseSettings
     from scrapy.spiders import Spider
-    from scrapy.utils.request import RequestFingerprinter
+    from scrapy.utils.request import RequestFingerprinterProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -89,10 +86,7 @@ class RFC2616Policy:
             return False
         cc = self._parse_cachecontrol(request)
         # obey user-agent directive "Cache-Control: no-store"
-        if b"no-store" in cc:
-            return False
-        # Any other is eligible for caching
-        return True
+        return b"no-store" not in cc
 
     def should_cache_response(self, response: Response, request: Request) -> bool:
         # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
@@ -112,10 +106,10 @@ class RFC2616Policy:
         if b"max-age" in cc or b"Expires" in response.headers:
             return True
         # Firefox fallbacks this statuses to one year expiration if none is set
-        if response.status in (300, 301, 308):
+        if response.status in {300, 301, 308}:
             return True
         # Other statuses without expiration requires at least one validator
-        if response.status in (200, 203, 401):
+        if response.status in {200, 203, 401}:
             return b"Last-Modified" in response.headers or b"ETag" in response.headers
         # Any other is probably not eligible for caching
         # Makes no sense to cache responses that does not contain expiration
@@ -222,7 +216,7 @@ class RFC2616Policy:
             return (date - lastmodified) / 10
 
         # This request can be cached indefinitely
-        if response.status in (300, 301, 308):
+        if response.status in {300, 301, 308}:
             return self.MAXAGE
 
         # Insufficient information to compute freshness lifetime
@@ -268,7 +262,9 @@ class DbmCacheStorage:
         )
 
         assert spider.crawler.request_fingerprinter
-        self._fingerprinter: RequestFingerprinter = spider.crawler.request_fingerprinter
+        self._fingerprinter: RequestFingerprinterProtocol = (
+            spider.crawler.request_fingerprinter
+        )
 
     def close_spider(self, spider: Spider) -> None:
         self.db.close()
@@ -308,7 +304,7 @@ class DbmCacheStorage:
         if 0 < self.expiration_secs < time() - float(ts):
             return None  # expired
 
-        return cast(dict[str, Any], pickle.loads(db[f"{key}_data"]))  # noqa: S301
+        return cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
 
 
 class FilesystemCacheStorage:
@@ -317,7 +313,9 @@ class FilesystemCacheStorage:
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
         # https://github.com/python/mypy/issues/10740
-        self._open: Callable[Concatenate[str | os.PathLike, str, ...], IO[bytes]] = (
+        self._open: Callable[
+            Concatenate[str | os.PathLike[str], str, ...], IO[bytes]
+        ] = (
             gzip.open if self.use_gzip else open  # type: ignore[assignment]
         )
 
@@ -390,7 +388,7 @@ class FilesystemCacheStorage:
         if 0 < self.expiration_secs < time() - mtime:
             return None  # expired
         with self._open(metapath, "rb") as f:
-            return cast(dict[str, Any], pickle.load(f))  # noqa: S301
+            return cast("dict[str, Any]", pickle.load(f))  # noqa: S301
 
 
 def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:

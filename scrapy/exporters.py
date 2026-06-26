@@ -8,6 +8,7 @@ import csv
 import marshal
 import pickle
 import pprint
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
 from typing import TYPE_CHECKING, Any
@@ -25,17 +26,17 @@ if TYPE_CHECKING:
 
 __all__ = [
     "BaseItemExporter",
-    "PprintItemExporter",
-    "PickleItemExporter",
     "CsvItemExporter",
-    "XmlItemExporter",
-    "JsonLinesItemExporter",
     "JsonItemExporter",
+    "JsonLinesItemExporter",
     "MarshalItemExporter",
+    "PickleItemExporter",
+    "PprintItemExporter",
+    "XmlItemExporter",
 ]
 
 
-class BaseItemExporter:
+class BaseItemExporter(ABC):
     def __init__(self, *, dont_fail: bool = False, **kwargs: Any):
         self._kwargs: dict[str, Any] = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
@@ -54,6 +55,7 @@ class BaseItemExporter:
         if not dont_fail and options:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
+    @abstractmethod
     def export_item(self, item: Any) -> None:
         raise NotImplementedError
 
@@ -63,10 +65,10 @@ class BaseItemExporter:
         serializer: Callable[[Any], Any] = field.get("serializer", lambda x: x)
         return serializer(value)
 
-    def start_exporting(self) -> None:
+    def start_exporting(self) -> None:  # noqa: B027
         pass
 
-    def finish_exporting(self) -> None:
+    def finish_exporting(self) -> None:  # noqa: B027
         pass
 
     def _get_serialized_fields(
@@ -81,10 +83,7 @@ class BaseItemExporter:
             include_empty = self.export_empty_fields
 
         if self.fields_to_export is None:
-            if include_empty:
-                field_iter = item.field_names()
-            else:
-                field_iter = item.keys()
+            field_iter = item.field_names() if include_empty else item.keys()
         elif isinstance(self.fields_to_export, Mapping):
             if include_empty:
                 field_iter = self.fields_to_export.items()
@@ -172,7 +171,15 @@ class XmlItemExporter(BaseItemExporter):
         super().__init__(**kwargs)
         if not self.encoding:
             self.encoding = "utf-8"
-        self.xg = XMLGenerator(file, encoding=self.encoding)
+        # copied from xml.sax.saxutils._gettextwriter()
+        self.stream = TextIOWrapper(
+            file,
+            encoding=self.encoding,
+            errors="xmlcharrefreplace",
+            newline="\n",
+            write_through=True,
+        )
+        self.xg = XMLGenerator(self.stream, encoding=self.encoding)
 
     def _beautify_newline(self, new_item: bool = False) -> None:
         if self.indent is not None and (self.indent > 0 or new_item):
@@ -200,6 +207,7 @@ class XmlItemExporter(BaseItemExporter):
     def finish_exporting(self) -> None:
         self.xg.endElement(self.root_element)
         self.xg.endDocument()
+        self.stream.detach()  # Avoid closing the wrapped file.
 
     def _export_xml_field(self, name: str, serialized_value: Any, depth: int) -> None:
         self._beautify_indent(depth=depth)
@@ -359,12 +367,12 @@ class PythonItemExporter(BaseItemExporter):
     def _serialize_value(self, value: Any) -> Any:
         if isinstance(value, Item):
             return self.export_item(value)
+        if isinstance(value, (str, bytes)):
+            return to_unicode(value, encoding=self.encoding)
         if is_item(value):
             return dict(self._serialize_item(value))
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        if isinstance(value, (str, bytes)):
-            return to_unicode(value, encoding=self.encoding)
         return value
 
     def _serialize_item(self, item: Any) -> Iterable[tuple[str | bytes, Any]]:

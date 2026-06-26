@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator, Iterable
 from functools import wraps
 from inspect import getmembers
 from types import CoroutineType
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 from unittest import TestCase, TestResult
 
 from scrapy.http import Request, Response
@@ -27,7 +27,7 @@ class Contract:
     request_cls: type[Request] | None = None
     name: str
 
-    def __init__(self, method: Callable, *args: Any):
+    def __init__(self, method: Callable[..., Any], *args: Any):
         self.testcase_pre = _create_testcase(method, f"@{self.name} pre-hook")
         self.testcase_post = _create_testcase(method, f"@{self.name} post-hook")
         self.args: tuple[Any, ...] = args
@@ -51,8 +51,10 @@ class Contract:
                     results.addSuccess(self.testcase_pre)
                 cb_result = cb(response, **cb_kwargs)
                 if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                    if isinstance(cb_result, CoroutineType):
+                        cb_result.close()
                     raise TypeError("Contracts don't support async callbacks")
-                return list(cast(Iterable[Any], iterate_spider_output(cb_result)))
+                return list(cast("Iterable[Any]", iterate_spider_output(cb_result)))
 
             request.callback = wrapper
 
@@ -67,8 +69,10 @@ class Contract:
             def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
                 cb_result = cb(response, **cb_kwargs)
                 if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                    if isinstance(cb_result, CoroutineType):
+                        cb_result.close()
                     raise TypeError("Contracts don't support async callbacks")
-                output = list(cast(Iterable[Any], iterate_spider_output(cb_result)))
+                output = list(cast("Iterable[Any]", iterate_spider_output(cb_result)))
                 try:
                     results.startTest(self.testcase_post)
                     self.post_process(output)
@@ -90,7 +94,7 @@ class Contract:
 
 
 class ContractsManager:
-    contracts: dict[str, type[Contract]] = {}
+    contracts: ClassVar[dict[str, type[Contract]]] = {}
 
     def __init__(self, contracts: Iterable[type[Contract]]):
         for contract in contracts:
@@ -105,11 +109,11 @@ class ContractsManager:
 
         return methods
 
-    def extract_contracts(self, method: Callable) -> list[Contract]:
+    def extract_contracts(self, method: Callable[..., Any]) -> list[Contract]:
         contracts: list[Contract] = []
         assert method.__doc__ is not None
-        for line in method.__doc__.split("\n"):
-            line = line.strip()
+        for line_ in method.__doc__.split("\n"):
+            line = line_.strip()
 
             if line.startswith("@"):
                 m = re.match(r"@(\w+)\s*(.*)", line)
@@ -125,7 +129,7 @@ class ContractsManager:
     def from_spider(self, spider: Spider, results: TestResult) -> list[Request | None]:
         requests: list[Request | None] = []
         for method in self.tested_methods_from_spidercls(type(spider)):
-            bound_method = spider.__getattribute__(method)
+            bound_method = getattr(spider, method)
             try:
                 requests.append(self.from_method(bound_method, results))
             except Exception:
@@ -134,7 +138,9 @@ class ContractsManager:
 
         return requests
 
-    def from_method(self, method: Callable, results: TestResult) -> Request | None:
+    def from_method(
+        self, method: Callable[..., Any], results: TestResult
+    ) -> Request | None:
         contracts = self.extract_contracts(method)
         if contracts:
             request_cls = Request
@@ -170,7 +176,7 @@ class ContractsManager:
         return None
 
     def _clean_req(
-        self, request: Request, method: Callable, results: TestResult
+        self, request: Request, method: Callable[..., Any], results: TestResult
     ) -> None:
         """stop the request from returning objects and records any errors"""
 
@@ -181,7 +187,7 @@ class ContractsManager:
         def cb_wrapper(response: Response, **cb_kwargs: Any) -> None:
             try:
                 output = cb(response, **cb_kwargs)
-                output = list(cast(Iterable[Any], iterate_spider_output(output)))
+                output = list(cast("Iterable[Any]", iterate_spider_output(output)))
             except Exception:
                 case = _create_testcase(method, "callback")
                 results.addError(case, sys.exc_info())
@@ -189,17 +195,17 @@ class ContractsManager:
         def eb_wrapper(failure: Failure) -> None:
             case = _create_testcase(method, "errback")
             exc_info = failure.type, failure.value, failure.getTracebackObject()
-            results.addError(case, exc_info)
+            results.addError(case, exc_info)  # type: ignore[arg-type]
 
         request.callback = cb_wrapper
         request.errback = eb_wrapper
 
 
-def _create_testcase(method: Callable, desc: str) -> TestCase:
+def _create_testcase(method: Callable[..., Any], desc: str) -> TestCase:
     spider = method.__self__.name  # type: ignore[attr-defined]
 
     class ContractTestCase(TestCase):
-        def __str__(_self) -> str:
+        def __str__(_self) -> str:  # pylint: disable=no-self-argument
             return f"[{spider}] {method.__name__} ({desc})"
 
     name = f"{spider}_{method.__name__}"

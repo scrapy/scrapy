@@ -12,10 +12,11 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AnyStr,
+    Concatenate,
     NoReturn,
+    TypeAlias,
     TypedDict,
     TypeVar,
-    Union,
     overload,
 )
 
@@ -27,20 +28,19 @@ from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.url import escape_ajax
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
     from twisted.python.failure import Failure
 
-    # typing.Concatenate requires Python 3.10
     # typing.NotRequired and typing.Self require Python 3.11
-    from typing_extensions import Concatenate, NotRequired, Self
+    from typing_extensions import NotRequired, Self
 
+    # circular import
     from scrapy.http import Response
 
-    CallbackT = Callable[Concatenate[Response, ...], Any]
+    CallbackT: TypeAlias = Callable[Concatenate[Response, ...], Any]
 
 
 class VerboseCookie(TypedDict):
@@ -51,7 +51,7 @@ class VerboseCookie(TypedDict):
     secure: NotRequired[bool]
 
 
-CookiesT = Union[dict[str, str], list[VerboseCookie]]
+CookiesT: TypeAlias = dict[str, str] | list[VerboseCookie]
 
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
@@ -59,7 +59,7 @@ RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
     """When assigned to the ``callback`` parameter of
-    :class:`~scrapy.http.Request`, it indicates that the request is not meant
+    :class:`~scrapy.Request`, it indicates that the request is not meant
     to have a spider callback at all.
 
     For example:
@@ -83,31 +83,42 @@ def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
 
 class Request(object_ref):
     """Represents an HTTP request, which is usually generated in a Spider and
-    executed by the Downloader, thus generating a :class:`Response`.
+    executed by the Downloader, thus generating a :class:`~scrapy.http.Response`.
     """
 
+    __attrs_and_slots = ("callback", "dont_filter", "errback", "method", "priority")
     attributes: tuple[str, ...] = (
         "url",
-        "callback",
-        "method",
         "headers",
         "body",
         "cookies",
         "meta",
         "encoding",
-        "priority",
-        "dont_filter",
-        "errback",
         "flags",
         "cb_kwargs",
+        *__attrs_and_slots,
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
-    ``__init__`` method.
+    ``__init__()`` method.
 
-    Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
+    Currently used by :meth:`.Request.replace`, :meth:`.Request.to_dict` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
+
+    __slots__ = (
+        "__weakref__",
+        "_body",
+        "_cb_kwargs",
+        "_cookies",
+        "_encoding",
+        "_flags",
+        "_headers",
+        "_meta",
+        "_url",
+        *__attrs_and_slots,
+    )
+    del __attrs_and_slots
 
     def __init__(
         self,
@@ -127,10 +138,21 @@ class Request(object_ref):
     ) -> None:
         self._encoding: str = encoding  # this one has to be set first
         self.method: str = str(method).upper()
+        self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._set_url(url)
         self._set_body(body)
         if not isinstance(priority, int):
             raise TypeError(f"Request priority not an integer: {priority!r}")
+
+        #: Default: ``0``
+        #:
+        #: Value that the :ref:`scheduler <topics-scheduler>` may use for
+        #: request prioritization.
+        #:
+        #: Built-in schedulers prioritize requests with a higher priority
+        #: value.
+        #:
+        #: Negative values are allowed.
         self.priority: int = priority
 
         if not (callable(callback) or callback is None):
@@ -139,16 +161,80 @@ class Request(object_ref):
             )
         if not (callable(errback) or errback is None):
             raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
+
+        #: :class:`~collections.abc.Callable` to parse the
+        #: :class:`~scrapy.http.Response` to this request once received.
+        #:
+        #: The callable must expect the response as its first parameter, and
+        #: support any additional keyword arguments set through
+        #: :attr:`cb_kwargs`.
+        #:
+        #: In addition to an arbitrary callable, the following values are also
+        #: supported:
+        #:
+        #: -   ``None`` (default), which indicates that the
+        #:     :meth:`~scrapy.Spider.parse` method of the spider must be used.
+        #:
+        #: -   :func:`~scrapy.http.request.NO_CALLBACK`.
+        #:
+        #: If an unhandled exception is raised during request or response
+        #: processing, i.e. by a :ref:`spider middleware
+        #: <topics-spider-middleware>`, :ref:`downloader middleware
+        #: <topics-downloader-middleware>` or download handler
+        #: (:setting:`DOWNLOAD_HANDLERS`), :attr:`errback` is called instead.
+        #:
+        #: .. tip::
+        #:     :class:`~scrapy.spidermiddlewares.httperror.HttpErrorMiddleware`
+        #:     raises exceptions for non-2xx responses by default, sending them
+        #:     to the :attr:`errback` instead.
+        #:
+        #: .. seealso::
+        #:     :ref:`topics-request-response-ref-request-callback-arguments`
         self.callback: CallbackT | None = callback
+
+        #: :class:`~collections.abc.Callable` to handle exceptions raised
+        #: during request or response processing.
+        #:
+        #: The callable must expect a :exc:`~twisted.python.failure.Failure` as
+        #: its first parameter.
+        #:
+        #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
-        self.cookies: CookiesT = cookies or {}
-        self.headers: Headers = Headers(headers or {}, encoding=encoding)
+        self._cookies: CookiesT | None = cookies or None
+        self._headers: Headers | None = (
+            Headers(headers, encoding=encoding) if headers else None
+        )
+
+        #: Whether this request may be filtered out by :ref:`components
+        #: <topics-components>` that support filtering out requests (``False``,
+        #: default), or those components should not filter out this request
+        #: (``True``).
+        #:
+        #: The following built-in components check this attribute:
+        #:
+        #: -   The :ref:`scheduler <topics-scheduler>` uses it to skip
+        #:     duplicate request filtering (see
+        #:     :setting:`DUPEFILTER_CLASS`). When set to ``True``, the
+        #:     request is not checked against the duplicate filter,
+        #:     allowing requests that would otherwise be considered duplicates
+        #:     to be scheduled multiple times.
+        #: -   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`
+        #:     uses it to allow requests to domains not in
+        #:     :attr:`~scrapy.Spider.allowed_domains`. To skip only the offsite
+        #:     filter without affecting other components, consider using the
+        #:     :reqmeta:`allow_offsite` request meta key instead.
+        #:
+        #: Third-party components may also use this attribute to decide whether
+        #: to filter out a request.
+        #:
+        #: When defining the start URLs of a spider through
+        #: :attr:`~scrapy.Spider.start_urls`, this attribute is enabled by
+        #: default. See :meth:`~scrapy.Spider.start`.
         self.dont_filter: bool = dont_filter
 
-        self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._cb_kwargs: dict[str, Any] | None = dict(cb_kwargs) if cb_kwargs else None
-        self.flags: list[str] = [] if flags is None else list(flags)
+        self._flags: list[str] | None = list(flags) if flags else None
 
     @property
     def cb_kwargs(self) -> dict[str, Any]:
@@ -166,12 +252,17 @@ class Request(object_ref):
     def url(self) -> str:
         return self._url
 
+    def _url_is_verbatim(self) -> bool:
+        return bool(self._meta and self._meta.get("verbatim_url"))
+
     def _set_url(self, url: str) -> None:
         if not isinstance(url, str):
             raise TypeError(f"Request url must be str, got {type(url).__name__}")
 
-        s = safe_url_string(url, self.encoding)
-        self._url = escape_ajax(s)
+        if self._url_is_verbatim():
+            self._url = url
+        else:
+            self._url = safe_url_string(url, self.encoding)
 
         if (
             "://" not in self._url
@@ -185,11 +276,48 @@ class Request(object_ref):
         return self._body
 
     def _set_body(self, body: str | bytes | None) -> None:
-        self._body = b"" if body is None else to_bytes(body, self.encoding)
+        self._body = b"" if not body else to_bytes(body, self.encoding)
 
     @property
     def encoding(self) -> str:
         return self._encoding
+
+    @property
+    def flags(self) -> list[str]:
+        if self._flags is None:
+            self._flags = []
+        return self._flags
+
+    @flags.setter
+    def flags(self, value: list[str] | None) -> None:
+        self._flags = value
+
+    @property
+    def cookies(self) -> CookiesT:
+        if self._cookies is None:
+            self._cookies = {}
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, value: CookiesT | None) -> None:
+        self._cookies = value
+
+    @property
+    def headers(self) -> Headers:
+        if self._headers is None:
+            self._headers = Headers(encoding=self.encoding)
+        return self._headers
+
+    @headers.setter
+    def headers(
+        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None
+    ) -> None:
+        if isinstance(value, Headers):
+            self._headers = value
+        else:
+            self._headers = (
+                Headers(value, encoding=self.encoding) if value is not None else None
+            )
 
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
@@ -233,7 +361,7 @@ class Request(object_ref):
         finding unknown options call this method by passing
         ``ignore_unknown_options=False``.
 
-        .. caution:: Using :meth:`from_curl` from :class:`~scrapy.http.Request`
+        .. caution:: Using :meth:`from_curl` from :class:`~scrapy.Request`
                      subclasses, such as :class:`~scrapy.http.JsonRequest`, or
                      :class:`~scrapy.http.XmlRpcRequest`, as well as having
                      :ref:`downloader middlewares <topics-downloader-middleware>`
@@ -244,7 +372,7 @@ class Request(object_ref):
                      :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`,
                      or
                      :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`,
-                     may modify the :class:`~scrapy.http.Request` object.
+                     may modify the :class:`~scrapy.Request` object.
 
         To translate a cURL command into a Scrapy request,
         you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.

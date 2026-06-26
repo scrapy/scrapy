@@ -24,7 +24,7 @@ class Link:
                     of the anchor tag.
     """
 
-    __slots__ = ["url", "text", "fragment", "nofollow"]
+    __slots__ = ["fragment", "nofollow", "text", "url"]
 
     def __init__(
         self, url: str, text: str = "", fragment: str = "", nofollow: bool = False
@@ -39,7 +39,7 @@ class Link:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Link):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self.url == other.url
             and self.text == other.text

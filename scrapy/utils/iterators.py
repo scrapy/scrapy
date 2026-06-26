@@ -71,7 +71,7 @@ def xmliter(obj: Response | str | bytes, nodename: str) -> Iterator[Selector]:
         nodetext = (
             document_header
             + match.group().replace(
-                nodename, f'{nodename} {" ".join(namespaces.values())}', 1
+                nodename, f"{nodename} {' '.join(namespaces.values())}", 1
             )
             + header_end
         )
@@ -147,12 +147,12 @@ class _StreamReader:
     def _read_string(self, n: int = 65535) -> bytes:
         s, e = self._ptr, self._ptr + n
         self._ptr = e
-        return cast(bytes, self._text)[s:e]
+        return cast("bytes", self._text)[s:e]
 
     def _read_unicode(self, n: int = 65535) -> bytes:
         s, e = self._ptr, self._ptr + n
         self._ptr = e
-        return cast(str, self._text)[s:e].encode("utf-8")
+        return cast("str", self._text)[s:e].encode("utf-8")
 
 
 def csviter(
@@ -177,7 +177,7 @@ def csviter(
     quotechar is the character used to enclosure fields on the given obj.
     """
 
-    if encoding is not None:
+    if encoding is not None:  # pragma: no cover
         warn(
             "The encoding argument of csviter() is ignored and will be removed"
             " in a future Scrapy version.",
@@ -212,7 +212,7 @@ def csviter(
                 },
             )
             continue
-        yield dict(zip(headers, row))
+        yield dict(zip(headers, row, strict=False))
 
 
 @overload

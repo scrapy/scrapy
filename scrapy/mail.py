@@ -23,6 +23,7 @@ from twisted.internet.defer import Deferred
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
+from scrapy.utils.reactorless import is_reactorless
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -35,7 +36,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,14 @@ def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
     return to_bytes(text)
 
 
+warnings.warn(
+    "The scrapy.mail module is deprecated and will be removed in a future release. "
+    "Please use a dedicated Python mail library instead.",
+    stacklevel=2,
+    category=ScrapyDeprecationWarning,
+)
+
+
 class MailSender:
     def __init__(
         self,
@@ -64,6 +72,8 @@ class MailSender:
         smtpssl: bool = False,
         debug: bool = False,
     ):
+        if is_reactorless():  # pragma: no cover
+            raise RuntimeError(f"{type(self).__name__} requires a Twisted reactor.")
         self.smtphost: str = smtphost
         self.smtpport: int = smtpport
         self.smtpuser: bytes | None = _to_bytes_or_none(smtpuser)
@@ -74,20 +84,8 @@ class MailSender:
         self.debug: bool = debug
 
     @classmethod
-    def from_settings(cls, settings: BaseSettings) -> Self:
-        warnings.warn(
-            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return cls._from_settings(settings)
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls._from_settings(crawler.settings)
-
-    @classmethod
-    def _from_settings(cls, settings: BaseSettings) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:  # pragma: no cover
+        settings = crawler.settings
         return cls(
             smtphost=settings["MAIL_HOST"],
             mailfrom=settings["MAIL_FROM"],
@@ -111,11 +109,9 @@ class MailSender:
     ) -> Deferred[None] | None:
         from twisted.internet import reactor
 
-        msg: MIMEBase
-        if attachs:
-            msg = MIMEMultipart()
-        else:
-            msg = MIMENonMultipart(*mimetype.split("/", 1))
+        msg: MIMEBase = (
+            MIMEMultipart() if attachs else MIMENonMultipart(*mimetype.split("/", 1))
+        )
 
         to = list(arg_to_iter(to))
         cc = list(arg_to_iter(cc))
@@ -225,7 +221,8 @@ class MailSender:
     def _create_sender_factory(
         self, to_addrs: list[str], msg: IO[bytes], d: Deferred[Any]
     ) -> ESMTPSenderFactory:
-        from twisted.mail.smtp import ESMTPSenderFactory
+        # imports twisted.internet.reactor
+        from twisted.mail.smtp import ESMTPSenderFactory  # noqa: PLC0415
 
         factory_keywords: dict[str, Any] = {
             "heloFallback": True,

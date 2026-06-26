@@ -54,19 +54,18 @@ class CookieJar:
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
             if "." not in req_host:
-                hosts += [req_host + ".local"]
+                hosts.append(req_host + ".local")
         else:
             hosts = [req_host]
 
         cookies = []
         for host in hosts:
             if host in self.jar._cookies:  # type: ignore[attr-defined]
-                cookies += self.jar._cookies_for_domain(host, wreq)  # type: ignore[attr-defined]
+                cookies.extend(self.jar._cookies_for_domain(host, wreq))  # type: ignore[attr-defined]
 
         attrs = self.jar._cookie_attrs(cookies)  # type: ignore[attr-defined]
-        if attrs:
-            if not wreq.has_header("Cookie"):
-                wreq.add_unredirected_header("Cookie", "; ".join(attrs))
+        if attrs and not wreq.has_header("Cookie"):
+            wreq.add_unredirected_header("Cookie", "; ".join(attrs))
 
         self.processed += 1
         if self.processed % self.check_expired_frequency == 0:
@@ -162,7 +161,7 @@ class WrappedRequest:
         HTML document, and the user had no option to approve the automatic
         fetching of the image, this should be true.
         """
-        return cast(bool, self.request.meta.get("is_unverifiable", False))
+        return cast("bool", self.request.meta.get("is_unverifiable", False))
 
     @property
     def full_url(self) -> str:
@@ -182,7 +181,7 @@ class WrappedRequest:
 
     @property
     def origin_req_host(self) -> str:
-        return cast(str, urlparse_cached(self.request).hostname)
+        return cast("str", urlparse_cached(self.request).hostname)
 
     def has_header(self, name: str) -> bool:
         return name in self.request.headers

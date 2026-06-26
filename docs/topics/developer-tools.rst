@@ -280,7 +280,7 @@ In more complex websites, it could be difficult to easily reproduce the
 requests, as we could need to add ``headers`` or ``cookies`` to make it work.
 In those cases you can export the requests in `cURL <https://curl.se/>`_
 format, by right-clicking on each of them in the network tool and using the
-:meth:`~scrapy.Request.from_curl()` method to generate an equivalent
+:meth:`~scrapy.Request.from_curl` method to generate an equivalent
 request:
 
 .. code-block:: python
@@ -317,4 +317,3 @@ to identifying the correct request and replicating it in your spider.
 .. _quotes.toscrape.com/scroll: https://quotes.toscrape.com/scroll
 .. _quotes.toscrape.com/api/quotes?page=10: https://quotes.toscrape.com/api/quotes?page=10
 .. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
-
