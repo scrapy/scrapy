@@ -381,21 +381,25 @@ class TestCookiesMiddleware:
         assert self.mw.process_request(req3) is None
         self.assertCookieValEqual(req3.headers["Cookie"], "a=new; c=d; e=f")
 
-    def test_request_cookies_encoding(self):
-        # 1) UTF8-encoded bytes
-        req1 = Request("http://example.org", cookies={"a": "á".encode()})
-        assert self.mw.process_request(req1) is None
-        self.assertCookieValEqual(req1.headers["Cookie"], b"a=\xc3\xa1")
-
-        # 2) Non UTF8-encoded bytes
-        req2 = Request("http://example.org", cookies={"a": "á".encode("latin1")})
-        assert self.mw.process_request(req2) is None
-        self.assertCookieValEqual(req2.headers["Cookie"], b"a=\xc3\xa1")
-
-        # 3) String
-        req3 = Request("http://example.org", cookies={"a": "á"})
-        assert self.mw.process_request(req3) is None
-        self.assertCookieValEqual(req3.headers["Cookie"], b"a=\xc3\xa1")
+    @pytest.mark.parametrize(
+        "cookies",
+        [
+            # UTF8-encoded bytes
+            {"a": "á".encode()},
+            # non UTF8-encoded bytes
+            {"a": "á".encode("latin1")},
+            # string
+            {"a": "á"},
+            # key as bytes
+            {b"a": "á"},
+            # key and value as bytes
+            {b"a": "á".encode()},
+        ],
+    )
+    def test_request_cookies_encoding(self, cookies: CookiesT) -> None:
+        req = Request("http://example.org", cookies=cookies)
+        assert self.mw.process_request(req) is None
+        self.assertCookieValEqual(req.headers["Cookie"], b"a=\xc3\xa1")
 
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_request_headers_cookie_encoding(self):
