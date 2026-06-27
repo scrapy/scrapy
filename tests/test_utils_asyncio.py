@@ -72,7 +72,7 @@ class TestParallelAsyncio:
         for length in [20, 50, 100]:
             parallel_count = [0]
             max_parallel_count = [0]
-            results = []
+            results: list[int] = []
             ait = self.get_async_iterable(length)
             await _parallel_asyncio(
                 ait,
@@ -91,7 +91,7 @@ class TestParallelAsyncio:
         for length in [20, 50, 100]:
             parallel_count = [0]
             max_parallel_count = [0]
-            results = []
+            results: list[int] = []
             ait = self.get_async_iterable_with_delays(length)
             await _parallel_asyncio(
                 ait,

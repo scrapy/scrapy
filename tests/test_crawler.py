@@ -523,6 +523,7 @@ class TestCrawlerLogging:
             }
 
             async def start(self):
+                assert crawler.stats
                 info_count_start = crawler.stats.get_value("log_count/INFO")
                 logging.debug("debug message")  # noqa: LOG015
                 logging.info("info message")  # noqa: LOG015

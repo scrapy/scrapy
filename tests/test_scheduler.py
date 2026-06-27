@@ -379,13 +379,14 @@ class TestIntegrationWithDownloaderAwareInMemory:
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)
+            assert self.crawler.stats
             assert self.crawler.stats.get_value("downloader/response_count") == len(
                 start_urls
             )
 
 
 class TestIncompatibility:
-    def _incompatible(self):
+    def _incompatible(self) -> None:
         settings = {
             "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.DownloaderAwarePriorityQueue",
             "CONCURRENT_REQUESTS_PER_IP": 1,
