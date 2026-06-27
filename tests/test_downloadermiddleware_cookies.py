@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 
 import pytest
 from testfixtures import LogCapture
@@ -8,6 +9,7 @@ from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
+from scrapy.http.request import CookiesT, VerboseCookie
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import _to_verbose_cookies
 from scrapy.utils.spider import DefaultSpider
@@ -16,23 +18,25 @@ from scrapy.utils.test import get_crawler
 UNSET = object()
 
 
-def _cookie_to_set_cookie_value(cookie):
+def _cookie_to_set_cookie_value(cookie: VerboseCookie) -> str | None:
     """Given a cookie defined as a dictionary with name and value keys, and
     optional path and domain keys, return the equivalent string that can be
     associated to a ``Set-Cookie`` header."""
     decoded = {}
     for key in ("name", "value", "path", "domain"):
-        if cookie.get(key) is None:
-            if key in ("name", "value"):
+        value = cookie.get(key)
+        if value is None:
+            if key in {"name", "value"}:
                 return None
             continue
-        if isinstance(cookie[key], (bool, float, int, str)):
-            decoded[key] = str(cookie[key])
+        if isinstance(value, (bool, float, int, str)):
+            decoded[key] = str(value)
         else:
+            assert isinstance(value, bytes)
             try:
-                decoded[key] = cookie[key].decode("utf8")
+                decoded[key] = value.decode("utf8")
             except UnicodeDecodeError:
-                decoded[key] = cookie[key].decode("latin1", errors="replace")
+                decoded[key] = value.decode("latin1", errors="replace")
 
     cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
     for key, value in decoded.items():  # path, domain
@@ -40,7 +44,7 @@ def _cookie_to_set_cookie_value(cookie):
     return cookie_str
 
 
-def _cookies_to_set_cookie_list(cookies):
+def _cookies_to_set_cookie_list(cookies: CookiesT) -> Iterable[str]:
     """Given a group of cookie defined either as a dictionary or as a list of
     dictionaries (i.e. in a format supported by the cookies parameter of
     Request), return the equivalent list of strings that can be associated to a
