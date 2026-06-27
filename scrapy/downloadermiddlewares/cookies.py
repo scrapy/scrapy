@@ -12,7 +12,7 @@ from scrapy.http.cookies import CookieJar
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
-from scrapy.utils.request import _decode_cookie
+from scrapy.utils.request import _decode_cookie, _to_verbose_cookies
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -159,11 +159,7 @@ class CookiesMiddleware:
         """
         if not request.cookies:
             return ()
-        cookies: Iterable[VerboseCookie]
-        if isinstance(request.cookies, dict):
-            cookies = tuple({"name": k, "value": v} for k, v in request.cookies.items())
-        else:
-            cookies = request.cookies
+        cookies: Iterable[VerboseCookie] = _to_verbose_cookies(request.cookies)
         for cookie in cookies:
             cookie.setdefault("secure", urlparse_cached(request).scheme == "https")
         formatted = filter(None, (self._format_cookie(c, request) for c in cookies))

@@ -9,6 +9,7 @@ from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.utils.python import to_bytes
+from scrapy.utils.request import _to_verbose_cookies
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
@@ -46,9 +47,13 @@ def _cookies_to_set_cookie_list(cookies):
     ``Set-Cookie`` header."""
     if not cookies:
         return []
-    if isinstance(cookies, dict):
-        cookies = ({"name": k, "value": v} for k, v in cookies.items())
-    return filter(None, (_cookie_to_set_cookie_value(cookie) for cookie in cookies))
+    return filter(
+        None,
+        (
+            _cookie_to_set_cookie_value(cookie)
+            for cookie in _to_verbose_cookies(cookies)
+        ),
+    )
 
 
 class TestCookiesMiddleware:

@@ -26,8 +26,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
-    from scrapy.http.request import VerboseCookie
-
+    from scrapy.http.request import CookiesT, VerboseCookie
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +183,16 @@ def _get_method(obj: Any, name: Any) -> Any:
         raise ValueError(f"Method {name!r} not found in: {obj}") from None
 
 
+def _to_verbose_cookies(cookies: CookiesT) -> list[VerboseCookie]:
+    """Return a list of verbose cookies from ``request.cookies``.
+
+    The list of dicts form is returned as is, the dict one is converted first.
+    """
+    if isinstance(cookies, dict):
+        return [{"name": k, "value": v} for k, v in cookies.items()]
+    return cookies
+
+
 def _decode_cookie(cookie: VerboseCookie, request: Request) -> dict[str, str] | None:
     """Return a dict with non-flag verbose cookie values converted to strings.
 
@@ -231,20 +240,14 @@ def request_to_curl(request: Request) -> str:
     )
 
     url = request.url
-    cookies = ""
-    if request.cookies:
-        cookie_list: list[VerboseCookie] = (
-            [{"name": k, "value": v} for k, v in request.cookies.items()]
-            if isinstance(request.cookies, dict)
-            else request.cookies
-        )
-        pairs = [
-            f"{decoded['name']}={decoded['value']}"
-            for c in cookie_list
-            if (decoded := _decode_cookie(c, request)) is not None
-        ]
-        if pairs:
-            cookies = f"--cookie '{'; '.join(pairs)}'"
+
+    cookie_list: list[VerboseCookie] = _to_verbose_cookies(request.cookies)
+    pairs = [
+        f"{decoded['name']}={decoded['value']}"
+        for c in cookie_list
+        if (decoded := _decode_cookie(c, request)) is not None
+    ]
+    cookies = f"--cookie '{'; '.join(pairs)}'" if pairs else ""
 
     curl_cmd = f"curl -X {method} {url} {data} {headers} {cookies}".strip()
     return " ".join(curl_cmd.split())
