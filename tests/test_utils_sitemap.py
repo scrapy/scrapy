@@ -316,16 +316,25 @@ def test_xml_entity_expansion():
 def test_sitemap_non_string_tag():
     """Regression test for non-string elem.tag crashing _get_tag_name.
 
-    When parsing malformed XML with recover=True and resolve_entities=False,
-    libxml2 can produce nodes whose .tag is not a string (e.g. a Cython
-    function). _get_tag_name must handle this gracefully instead of raising
+    With recover=True and resolve_entities=False, libxml2 >= 2.14.6 (used
+    by lxml >= 6.1.1) preserves undeclared entity reference nodes whose
+    .tag is a non-string `Cython function` object instead of a str.
+    _get_tag_name must handle this gracefully instead of raising
     AttributeError.
     """
     from base64 import b64decode
 
+    # Malformed binary XML that triggers the entity reference code path in
+    # newer libxml2. Simple entity references (e.g. &k;) are silently
+    # dropped by older libxml2 and don't exercise the same path.
     data = b64decode(
         "PHVybGluaz48dXI8dXJsPgAAAAAAAAAEaW5rIHhtbG5zOnhodG1sPSJoZGwiIGhyZWY9ImhsPjxsaW4mazsiaGxybGtuazx4aHRtbDpsaW5rIHhtbG5zOnhodG1sPSJoZGwiIGhyZWY9ImhsaW5rbCIgaHJlZj0iaGw+PHhodG1sZGxzZXQ+"
     )
-    # Must not raise AttributeError
     results = list(Sitemap(data))
     assert isinstance(results, list)
+
+
+def test_get_tag_name_non_string_tag():
+    """_get_tag_name must handle non-string .tag directly."""
+    elem = type("_Elem", (), {"tag": len})()
+    assert Sitemap._get_tag_name(elem) == ""
