@@ -61,11 +61,13 @@ def _cookies_to_set_cookie_list(cookies: CookiesT) -> Iterable[str]:
 
 
 class TestCookiesMiddleware:
-    def assertCookieValEqual(self, first, second, msg=None):
-        def split_cookies(cookies):
+    @staticmethod
+    def assertCookieValEqual(first: bytes | str | None, second: bytes | str) -> None:
+        def split_cookies(cookies: bytes | str) -> list[bytes]:
             return sorted([s.strip() for s in to_bytes(cookies).split(b";")])
 
-        assert split_cookies(first) == split_cookies(second), msg
+        assert first is not None
+        assert split_cookies(first) == split_cookies(second)
 
     def setup_method(self):
         crawler = get_crawler(DefaultSpider)
