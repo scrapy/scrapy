@@ -41,7 +41,7 @@ from scrapy.utils.defer import (
     maybe_deferred_to_future,
 )
 from scrapy.utils.deprecate import argument_is_required
-from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
+from scrapy.utils.log import failure_to_exc_info, log_crawler, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
@@ -274,7 +274,8 @@ class ExecutionEngine:
         """
         assert self._start is not None
         try:
-            item_or_request = await anext(self._start)
+            with log_crawler(self.crawler):
+                item_or_request = await anext(self._start)
         except StopAsyncIteration:
             self._start = None
         except Exception as exception:

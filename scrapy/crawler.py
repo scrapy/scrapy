@@ -25,6 +25,7 @@ from scrapy.utils.log import (
     configure_logging,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
+    log_crawler,
     log_reactor_info,
     log_scrapy_info,
 )
@@ -184,18 +185,19 @@ class Crawler:
             )
         self.crawling = self._started = True
 
-        try:
-            self.spider = self._create_spider(*args, **kwargs)
-            self._apply_settings()
-            self._update_root_log_handler()
-            self.engine = self._create_engine()
-            yield deferred_from_coro(self.engine.open_spider_async())
-            yield deferred_from_coro(self.engine.start_async())
-        except Exception:
-            self.crawling = False
-            if self.engine is not None:
-                yield deferred_from_coro(self.engine.close_async())
-            raise
+        with log_crawler(self):
+            try:
+                self.spider = self._create_spider(*args, **kwargs)
+                self._apply_settings()
+                self._update_root_log_handler()
+                self.engine = self._create_engine()
+                yield deferred_from_coro(self.engine.open_spider_async())
+                yield deferred_from_coro(self.engine.start_async())
+            except Exception:
+                self.crawling = False
+                if self.engine is not None:
+                    yield deferred_from_coro(self.engine.close_async())
+                raise
 
     async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
         """Start the crawler by instantiating its spider class with the given
@@ -214,18 +216,19 @@ class Crawler:
             )
         self.crawling = self._started = True
 
-        try:
-            self.spider = self._create_spider(*args, **kwargs)
-            self._apply_settings()
-            self._update_root_log_handler()
-            self.engine = self._create_engine()
-            await self.engine.open_spider_async()
-            await self.engine.start_async()
-        except Exception:
-            self.crawling = False
-            if self.engine is not None:
-                await self.engine.close_async()
-            raise
+        with log_crawler(self):
+            try:
+                self.spider = self._create_spider(*args, **kwargs)
+                self._apply_settings()
+                self._update_root_log_handler()
+                self.engine = self._create_engine()
+                await self.engine.open_spider_async()
+                await self.engine.start_async()
+            except Exception:
+                self.crawling = False
+                if self.engine is not None:
+                    await self.engine.close_async()
+                raise
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
         return self.spidercls.from_crawler(self, *args, **kwargs)
@@ -248,11 +251,12 @@ class Crawler:
 
         .. versionadded:: 2.14
         """
-        if self.crawling:
-            self.crawling = False
-            assert self.engine
-            if self.engine.running:
-                await self.engine.stop_async()
+        with log_crawler(self):
+            if self.crawling:
+                self.crawling = False
+                assert self.engine
+                if self.engine.running:
+                    await self.engine.stop_async()
 
     @staticmethod
     def _get_component(

@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 import pprint
 import sys
-from collections.abc import MutableMapping
+from collections.abc import Iterator, MutableMapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from logging.config import dictConfig
 from typing import TYPE_CHECKING, Any, cast
 
@@ -23,6 +25,20 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+_log_crawler: ContextVar[Crawler | None] = ContextVar("log_crawler", default=None)
+
+
+@contextmanager
+def log_crawler(crawler: Crawler) -> Iterator[None]:
+    token = _log_crawler.set(crawler)
+    try:
+        yield
+    finally:
+        _log_crawler.reset(token)
+
+
+def get_log_crawler() -> Crawler | None:
+    return _log_crawler.get()
 
 
 def failure_to_exc_info(
@@ -239,14 +255,24 @@ class LogCounterHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         record_crawler = getattr(record, "crawler", None)
+
+        record_spider = getattr(record, "spider", None)
+        if record_crawler is None:
+            record_crawler = getattr(record_spider, "crawler", None)
+
+        if record_crawler is None:
+            record_crawler = get_log_crawler()
+
         if record_crawler is not None and record_crawler is not self.crawler:
             return
 
-        record_spider = getattr(record, "spider", None)
-        record_spider_crawler = getattr(record_spider, "crawler", None)
         if (
-            record_spider_crawler is not None
-            and record_spider_crawler is not self.crawler
+            record_crawler is None
+            and sum(
+                isinstance(handler, LogCounterHandler)
+                for handler in logging.root.handlers
+            )
+            > 1
         ):
             return
 
