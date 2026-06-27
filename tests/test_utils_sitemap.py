@@ -311,3 +311,21 @@ def test_xml_entity_expansion():
     """
     )
     assert list(s) == [{"loc": "http://127.0.0.1:8000/"}]
+
+
+def test_sitemap_non_string_tag():
+    """Regression test for non-string elem.tag crashing _get_tag_name.
+
+    When parsing malformed XML with recover=True and resolve_entities=False,
+    libxml2 can produce nodes whose .tag is not a string (e.g. a Cython
+    function). _get_tag_name must handle this gracefully instead of raising
+    AttributeError.
+    """
+    from base64 import b64decode
+
+    data = b64decode(
+        "PHVybGluaz48dXI8dXJsPgAAAAAAAAAEaW5rIHhtbG5zOnhodG1sPSJoZGwiIGhyZWY9ImhsPjxsaW4mazsiaGxybGtuazx4aHRtbDpsaW5rIHhtbG5zOnhodG1sPSJoZGwiIGhyZWY9ImhsaW5rbCIgaHJlZj0iaGw+PHhodG1sZGxzZXQ+"
+    )
+    # Must not raise AttributeError
+    results = list(Sitemap(data))
+    assert isinstance(results, list)
