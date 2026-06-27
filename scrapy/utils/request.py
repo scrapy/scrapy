@@ -195,8 +195,10 @@ def _decode_cookie(cookie: VerboseCookie, request: Request) -> dict[str, str] | 
         value = cookie.get(key)
         if value is None:
             if key in {"name", "value"}:
-                msg = f"Invalid cookie found in request {request}: {cookie} ('{key}' is missing)"
-                logger.warning(msg)
+                logger.warning(
+                    f"Invalid cookie found in request {request}:"
+                    f" {cookie} ('{key}' is missing)"
+                )
                 return None
             continue
         if isinstance(value, (bool, float, int, str)):
@@ -207,9 +209,7 @@ def _decode_cookie(cookie: VerboseCookie, request: Request) -> dict[str, str] | 
                 decoded[key] = value.decode("utf8")
             except UnicodeDecodeError:
                 logger.warning(
-                    "Non UTF-8 encoded cookie found in request %s: %s",
-                    request,
-                    cookie,
+                    f"Non UTF-8 encoded cookie found in request {request}: {cookie}",
                 )
                 decoded[key] = value.decode("latin1", errors="replace")
     return decoded
