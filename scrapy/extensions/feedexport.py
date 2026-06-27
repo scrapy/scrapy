@@ -15,6 +15,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Coroutine
 from datetime import datetime, timezone
+from functools import cached_property
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
@@ -197,10 +198,6 @@ class S3FeedStorage(BlockingFeedStorage):
         session_token: str | None = None,
         region_name: str | None = None,
     ):
-        try:
-            import boto3.session  # noqa: PLC0415
-        except ImportError:
-            raise NotConfigured("missing boto3 library") from None
         u = urlparse(uri)
         assert u.hostname
         self.bucketname: str = u.hostname
@@ -211,16 +208,6 @@ class S3FeedStorage(BlockingFeedStorage):
         self.acl: str | None = acl
         self.endpoint_url: str | None = endpoint_url
         self.region_name: str | None = region_name
-
-        boto3_session = boto3.session.Session()
-        self.s3_client = boto3_session.client(
-            "s3",
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            aws_session_token=self.session_token,
-            endpoint_url=self.endpoint_url,
-            region_name=self.region_name,
-        )
 
         if feed_options and feed_options.get("overwrite", True) is False:
             logger.warning(
@@ -246,6 +233,27 @@ class S3FeedStorage(BlockingFeedStorage):
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
             region_name=crawler.settings["AWS_REGION_NAME"] or None,
             feed_options=feed_options,
+        )
+
+    # We use lazy initialization for the S3 client because some S3
+    # credentials expire with time, so delaying their first use to the first
+    # time we start uploading data significantly reduces the chance of those
+    # credentials expiring too early.
+    @cached_property
+    def s3_client(self):
+        try:
+            import boto3.session  # noqa: PLC0415
+        except ImportError:
+            raise NotConfigured("missing boto3 library") from None
+
+        boto3_session = boto3.session.Session()
+        return boto3_session.client(
+            "s3",
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            aws_session_token=self.session_token,
+            endpoint_url=self.endpoint_url,
+            region_name=self.region_name,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
