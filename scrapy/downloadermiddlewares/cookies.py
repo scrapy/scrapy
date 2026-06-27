@@ -12,6 +12,7 @@ from scrapy.http.cookies import CookieJar
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
+from scrapy.utils.request import _decode_cookie
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -134,29 +135,10 @@ class CookiesMiddleware:
         Given a dict consisting of cookie components, return its string representation.
         Decode from bytes if necessary.
         """
-        decoded = {}
+        decoded = _decode_cookie(cookie, request)
+        if decoded is None:
+            return None
         flags = set()
-        for key in ("name", "value", "path", "domain"):
-            value = cookie.get(key)
-            if value is None:
-                if key in {"name", "value"}:
-                    msg = f"Invalid cookie found in request {request}: {cookie} ('{key}' is missing)"
-                    logger.warning(msg)
-                    return None
-                continue
-            if isinstance(value, (bool, float, int, str)):
-                decoded[key] = str(value)
-            else:
-                assert isinstance(value, bytes)
-                try:
-                    decoded[key] = value.decode("utf8")
-                except UnicodeDecodeError:
-                    logger.warning(
-                        "Non UTF-8 encoded cookie found in request %s: %s",
-                        request,
-                        cookie,
-                    )
-                    decoded[key] = value.decode("latin1", errors="replace")
         for flag in ("secure",):
             value = cookie.get(flag, _UNSET)
             if value is _UNSET or not value:

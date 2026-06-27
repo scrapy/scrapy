@@ -410,7 +410,7 @@ class TestCookiesMiddleware:
         Invalid cookies are logged as warnings and discarded
         """
         with LogCapture(
-            "scrapy.downloadermiddlewares.cookies",
+            "scrapy.utils.request",
             propagate=False,
             level=logging.INFO,
         ) as lc:
@@ -425,19 +425,19 @@ class TestCookiesMiddleware:
             assert self.mw.process_request(req3) is None
             lc.check(
                 (
-                    "scrapy.downloadermiddlewares.cookies",
+                    "scrapy.utils.request",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/1>:"
                     " {'value': 'bar', 'secure': False} ('name' is missing)",
                 ),
                 (
-                    "scrapy.downloadermiddlewares.cookies",
+                    "scrapy.utils.request",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/2>:"
                     " {'name': 'foo', 'secure': False} ('value' is missing)",
                 ),
                 (
-                    "scrapy.downloadermiddlewares.cookies",
+                    "scrapy.utils.request",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/3>:"
                     " {'name': 'foo', 'value': None, 'secure': False} ('value' is missing)",
