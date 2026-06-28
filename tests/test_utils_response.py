@@ -321,3 +321,21 @@ def test_open_in_browser_raises_for_unsupported_response_type():
     response = Response("http://www.example.com", body=b"binary")
     with pytest.raises(TypeError):
         open_in_browser(response, _openfunc=lambda _: True)
+
+
+def test_get_base_url_beyond_4096_chars():
+    """get_base_url must find <base href> even when it appears after
+    the first 4096 characters of the response body.
+
+    Regression test for https://github.com/scrapy/scrapy/issues/3017
+    """
+    # Build a body where the base tag is past the 4096-char mark by
+    # padding with an HTML comment before the <head>.
+    padding = "<!-- " + "x" * 4100 + " -->"
+    body = (
+        f"<html>{padding}"
+        f'<head><base href="http://www.example.com/img/"></head>'
+        f"<body>content</body></html>"
+    ).encode()
+    resp = HtmlResponse("http://www.example.com", body=body)
+    assert get_base_url(resp) == "http://www.example.com/img/"
