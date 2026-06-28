@@ -35,6 +35,12 @@ from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
+try:
+    import boto3.session
+except ImportError:
+    raise NotConfigured("missing boto3 library") from None
+
+
 if TYPE_CHECKING:
     from _typeshed import OpenBinaryMode
 
@@ -198,10 +204,6 @@ class S3FeedStorage(BlockingFeedStorage):
         session_token: str | None = None,
         region_name: str | None = None,
     ):
-        try:
-            import boto3.session  # noqa: PLC0415
-        except ImportError:
-            raise NotConfigured("missing boto3 library") from None
         u = urlparse(uri)
         assert u.hostname
         self.bucketname: str = u.hostname
