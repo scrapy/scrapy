@@ -66,13 +66,13 @@ def get_crawler(
     will be used to populate the crawler settings with a project level
     priority.
     """
-    # When needed, useful settings can be added here, e.g. ones that prevent
-    # deprecation warnings.
     settings: dict[str, Any] = {
         "TELNETCONSOLE_ENABLED": False,
         **get_reactor_settings(),
         **(settings_dict or {}),
     }
+    if prevent_warnings:
+        settings.setdefault("THROTTLING_SCOPE_CONCURRENCY", 8)
     runner: CrawlerRunnerBase
     if is_reactor_installed():
         runner = CrawlerRunner(settings)

@@ -166,6 +166,22 @@ class BaseSettings(MutableMapping[str, Any]):
                 stacklevel=2,
             )
 
+        if name == "THROTTLING_SCOPE_CONCURRENCY":
+            per_domain_prio = self.getpriority("CONCURRENT_REQUESTS_PER_DOMAIN") or 0
+            new_prio = self.getpriority(name) or 0
+            if (
+                per_domain_prio > SETTINGS_PRIORITIES["default"]
+                and new_prio <= SETTINGS_PRIORITIES["default"]
+            ):
+                warnings.warn(
+                    "The CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated, use "
+                    "THROTTLING_SCOPE_CONCURRENCY instead.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+                per_domain_val = self["CONCURRENT_REQUESTS_PER_DOMAIN"]
+                return per_domain_val if per_domain_val is not None else default
+
         return self[name] if self[name] is not None else default
 
     def getbool(self, name: str, default: bool = False) -> bool:

@@ -98,6 +98,8 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
+        self._warn_on_deprecated_default_settings()
+        self._apply_spider_download_delay()
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
@@ -156,6 +158,46 @@ class Crawler:
         logger.info(
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
+
+    def _apply_spider_download_delay(self) -> None:
+        spider = self.spider if self.spider is not None else self.spidercls
+        if not hasattr(spider, "download_delay"):
+            return
+        delay_prio = self.settings.getpriority("DOWNLOAD_DELAY") or 0
+        if delay_prio >= SETTINGS_PRIORITIES["spider"]:
+            warnings.warn(
+                "The 'download_delay' spider attribute is deprecated. "
+                "It is also being ignored because DOWNLOAD_DELAY is already set "
+                "at spider or higher priority. Remove the 'download_delay' "
+                "attribute from your spider.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        else:
+            warnings.warn(
+                "The 'download_delay' spider attribute is deprecated. Use the "
+                "DOWNLOAD_DELAY setting or per-domain THROTTLING_SCOPES instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self.settings.set(
+                "DOWNLOAD_DELAY", spider.download_delay, priority="spider"
+            )
+
+    def _warn_on_deprecated_default_settings(self) -> None:
+        default_priority = SETTINGS_PRIORITIES["default"]
+        for setting_name, current_default, future_default in (
+            ("THROTTLING_SCOPE_CONCURRENCY", 8, 1),
+        ):
+            if self.settings.getpriority(setting_name) == default_priority:
+                warnings.warn(
+                    f"The default value of {setting_name} will change from "
+                    f"{current_default!r} to {future_default!r} in a future "
+                    f"Scrapy version. Explicitly set {setting_name} in your "
+                    f"settings to silence this warning.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=3,
+                )
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.

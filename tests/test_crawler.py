@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import warnings
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -80,6 +81,60 @@ class TestCrawler(TestBaseCrawler):
 
         assert not settings.frozen
         assert crawler.settings.frozen
+
+    @pytest.mark.parametrize(
+        ("setting_name", "current_default", "future_default"),
+        [
+            ("THROTTLING_SCOPE_CONCURRENCY", 8, 1),
+        ],
+    )
+    def test_deprecated_default_settings_warn(
+        self, setting_name: str, current_default: Any, future_default: Any
+    ) -> None:
+        crawler = Crawler(DefaultSpider)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=rf"The default value of {setting_name} will change from {current_default!r} to {future_default!r}",
+        ):
+            crawler._apply_settings()
+
+    @pytest.mark.parametrize(
+        ("setting_name", "current_default"),
+        [
+            ("THROTTLING_SCOPE_CONCURRENCY", 8),
+        ],
+    )
+    def test_deprecated_default_settings_no_warn_when_set(
+        self, setting_name: str, current_default: int
+    ) -> None:
+        crawler = Crawler(DefaultSpider, {setting_name: current_default})
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            crawler._apply_settings()
+
+    def test_spider_download_delay_deprecated(self) -> None:
+        class DelaySpider(DefaultSpider):
+            download_delay = 2.5
+
+        crawler = Crawler(DelaySpider, {"THROTTLING_SCOPE_CONCURRENCY": 8})
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="'download_delay' spider attribute"
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getfloat("DOWNLOAD_DELAY") == 2.5
+
+    def test_spider_download_delay_overridden_by_setting(self) -> None:
+        class DelaySpider(DefaultSpider):
+            download_delay = 2.5
+
+        crawler = Crawler(DelaySpider, {"THROTTLING_SCOPE_CONCURRENCY": 8})
+        crawler.settings.set("DOWNLOAD_DELAY", 5.0, priority="spider")
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="'download_delay' spider attribute.*being ignored",
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getfloat("DOWNLOAD_DELAY") == 5.0
 
     def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})

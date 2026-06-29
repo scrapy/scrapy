@@ -570,8 +570,12 @@ class TestThrottlingScopeManager:
         scope.record_backoff(now=0.0)
         assert scope._delay == pytest.approx(3.0)
 
-    def test_no_scope_concurrency_limit_by_default(self):
+    def test_default_scope_concurrency(self):
         scope = _scope_manager()
+        assert scope._concurrency == 8
+
+    def test_no_scope_concurrency_limit_when_zero(self):
+        scope = _scope_manager(settings={"THROTTLING_SCOPE_CONCURRENCY": 0})
         assert scope._concurrency is None
         for _ in range(100):
             scope.record_sent(now=0.0)

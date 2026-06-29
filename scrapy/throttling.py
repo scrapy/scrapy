@@ -5,6 +5,7 @@ import datetime as dt
 import logging
 import random
 import time
+import warnings
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Iterable
 from email.utils import parsedate_to_datetime
@@ -16,6 +17,7 @@ from twisted.internet.defer import Deferred
 from typing_extensions import NotRequired, Self
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncio import sleep, wait_for_first
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -352,6 +354,15 @@ class ThrottlingManagerProtocol(Protocol):
         requests are time-blocked.
         """
 
+    def get_slot_key(self, request: Request) -> str:
+        """Return a single string key for *request*, derived from its scopes.
+
+        For a single scope this is the scope ID itself; for multiple scopes
+        the sorted scope IDs are joined with ``"+"``.  This is the synchronous
+        counterpart of :meth:`get_scopes`, used wherever a plain string key is
+        needed (e.g. scheduler priority queues).
+        """
+
     def get_scope_load(self, scope_id: str) -> float:
         """Return the current load of the scope identified by *scope_id*: its
         active sends divided by its concurrency limit (or by the global
@@ -519,7 +530,21 @@ class ThrottlingManager:
         scopes = request.meta.get("throttling_scopes")
         if scopes is not None:
             return cast("RequestScopes", scopes)
+        download_slot = request.meta.get("download_slot")
+        if download_slot is not None:
+            warnings.warn(
+                "The 'download_slot' request meta key is deprecated. Use "
+                "'throttling_scopes' instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            return download_slot
         return urlparse_cached(request).netloc
+
+    def get_slot_key(self, request: Request) -> str:
+        scopes = self._resolve_scopes_sync(request)
+        scope_ids = sorted(iter_scopes(scopes))
+        return "+".join(scope_ids) if scope_ids else ""
 
     def _cached_scope_values(
         self, request: Request
@@ -1121,7 +1146,7 @@ class ThrottlingScopeManager:
         elif self._rampup_enabled:
             self._concurrency = self._min_concurrency
         else:
-            self._concurrency = None
+            self._concurrency = settings.getint("THROTTLING_SCOPE_CONCURRENCY") or None
         # Used as the load denominator when the scope enforces no explicit
         # concurrency limit (see get_load()).
         self._global_concurrency: int = settings.getint("CONCURRENT_REQUESTS")

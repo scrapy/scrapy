@@ -4,7 +4,6 @@ from unittest.mock import Mock
 import pytest
 import queuelib
 
-from scrapy.core.downloader import Downloader
 from scrapy.http.request import Request
 from scrapy.pqueues import (
     DownloaderAwarePriorityQueue,
@@ -192,22 +191,22 @@ class TestDownloaderAwarePriorityQueue:
         # No active downloads are tracked in the downloader, so every slot has
         # the same score and tie-breaking must not starve a slot.
         req_a1 = Request("https://example.org/a1")
-        req_a1.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_a1.meta["throttling_scopes"] = "slot-a"
         req_b1 = Request("https://example.org/b1")
-        req_b1.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
+        req_b1.meta["throttling_scopes"] = "slot-b"
         req_a2 = Request("https://example.org/a2")
-        req_a2.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_a2.meta["throttling_scopes"] = "slot-a"
         req_b2 = Request("https://example.org/b2")
-        req_b2.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
+        req_b2.meta["throttling_scopes"] = "slot-b"
 
         for request in (req_a1, req_b1, req_a2, req_b2):
             self.queue.push(request)
 
         slots = [
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
         ]
 
         assert slots == ["slot-a", "slot-b", "slot-a", "slot-b"]
@@ -216,48 +215,49 @@ class TestDownloaderAwarePriorityQueue:
         # If the selected slot becomes empty, rotation should continue from
         # that slot marker to avoid restarting from the smallest slot.
         req_a1 = Request("https://example.org/a1")
-        req_a1.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_a1.meta["throttling_scopes"] = "slot-a"
         req_a2 = Request("https://example.org/a2")
-        req_a2.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_a2.meta["throttling_scopes"] = "slot-a"
         req_b1 = Request("https://example.org/b1")
-        req_b1.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
+        req_b1.meta["throttling_scopes"] = "slot-b"
         req_c1 = Request("https://example.org/c1")
-        req_c1.meta[Downloader.DOWNLOAD_SLOT] = "slot-c"
+        req_c1.meta["throttling_scopes"] = "slot-c"
 
         for request in (req_a1, req_a2, req_b1, req_c1):
             self.queue.push(request)
 
         slots = [
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
-            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
         ]
 
         assert slots == ["slot-a", "slot-b", "slot-c", "slot-a"]
 
     def test_pop_prefers_slot_with_fewer_active_downloads(self):
-        downloader = self.queue._downloader_interface.downloader
+        throttler = self.queue._downloader_interface._throttler
+        assert throttler is not None
 
         req_a = Request("https://example.org/a")
-        req_a.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_a.meta["throttling_scopes"] = "slot-a"
         req_b = Request("https://example.org/b")
-        req_b.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
+        req_b.meta["throttling_scopes"] = "slot-b"
         req_c = Request("https://example.org/c")
-        req_c.meta[Downloader.DOWNLOAD_SLOT] = "slot-c"
+        req_c.meta["throttling_scopes"] = "slot-c"
 
         for req in (req_a, req_b, req_c):
             self.queue.push(req)
 
-        downloader.increment("slot-a")
-        downloader.increment("slot-c")
+        throttler._get_scope_manager("slot-a")._active = 1
+        throttler._get_scope_manager("slot-c")._active = 1
 
         popped = self.queue.pop()
         assert popped.url == req_b.url
 
     def test_contains(self):
         req = Request("https://example.org/")
-        req.meta[Downloader.DOWNLOAD_SLOT] = "example-slot"
+        req.meta["throttling_scopes"] = "example-slot"
         assert "example-slot" not in self.queue
         self.queue.push(req)
         assert "example-slot" in self.queue

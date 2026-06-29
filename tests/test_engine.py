@@ -856,7 +856,7 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         crawler.engine = engine
         await engine.open_spider_async()
-        del engine.downloader.slots
+        engine.downloader.close = Mock(side_effect=Exception("close failed"))
         await engine.close_spider_async()
         assert "Downloader close failure" in caplog.text
 

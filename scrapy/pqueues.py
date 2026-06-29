@@ -268,18 +268,20 @@ class DownloaderInterface:
     def __init__(self, crawler: Crawler):
         assert crawler.engine
         self.downloader: Downloader = crawler.engine.downloader
+        self._throttler: ThrottlingManagerProtocol | None = crawler.throttler
 
-    def stats(self, possible_slots: Iterable[str]) -> list[tuple[int, str]]:
-        return [(self._active_downloads(slot), slot) for slot in possible_slots]
+    def stats(self, possible_slots: Iterable[str]) -> list[tuple[float, str]]:
+        return [(self._slot_load(slot), slot) for slot in possible_slots]
 
     def get_slot_key(self, request: Request) -> str:
+        if self._throttler is not None:
+            return self._throttler.get_slot_key(request)
         return self.downloader.get_slot_key(request)
 
-    def _active_downloads(self, slot: str) -> int:
-        """Return a number of requests in a Downloader for a given slot"""
-        if slot not in self.downloader.slots:
-            return 0
-        return len(self.downloader.slots[slot].active)
+    def _slot_load(self, slot: str) -> float:
+        if self._throttler is not None:
+            return self._throttler.get_scope_load(slot)
+        return 0.0
 
 
 class DownloaderAwarePriorityQueue:
@@ -363,19 +365,19 @@ class DownloaderAwarePriorityQueue:
             for slot, startprios in slot_startprios.items():
                 self.pqueues[slot] = self.pqfactory(slot, startprios)
 
-    def _next_slot(self, stats: list[tuple[int, str]], *, update_state: bool) -> str:
+    def _next_slot(self, stats: list[tuple[float, str]], *, update_state: bool) -> str:
         last = self._last_selected_slot
-        min_active: int | None = None
+        min_load: float | None = None
         best_slot: str | None = None
         best_slot_after_last: str | None = None
-        for active, slot in stats:
-            if min_active is None or active < min_active:
-                min_active = active
+        for load, slot in stats:
+            if min_load is None or load < min_load:
+                min_load = load
                 best_slot = slot
                 best_slot_after_last = None
                 if last is not None and slot > last:
                     best_slot_after_last = slot
-            elif active == min_active:
+            elif load == min_load:
                 if best_slot is None or slot < best_slot:
                     best_slot = slot
                 if (

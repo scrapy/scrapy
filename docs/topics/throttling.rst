@@ -38,47 +38,14 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 -   .. setting:: DOWNLOAD_DELAY
 
-    :setting:`DOWNLOAD_DELAY` (default: ``1`` (:ref:`fallback <default-settings>`: ``0``))
+    :setting:`DOWNLOAD_DELAY` (default: ``1``
+    (:ref:`fallback <default-settings>`: ``0``))
 
     Minimum seconds between any two requests to the same domain.
-
-    Even if you have multiple slots, requests to the same domain cannot be sent
-    more frequently than this delay.
 
     To target a specific number of requests per minute (RPM) *per domain*, set
     this to ``60 / RPM``. For example, ``DOWNLOAD_DELAY = 1.0`` for 60 RPM, or
     ``DOWNLOAD_DELAY = 2.0`` for 30 RPM.
-
--   .. setting:: DOWNLOAD_DELAY_PER_SLOT
-
-    :setting:`DOWNLOAD_DELAY_PER_SLOT` (default: ``None``)
-
-    Minimum seconds to wait between two consecutive requests sent to the same
-    download slot. Unlike :setting:`DOWNLOAD_DELAY`, which applies per domain
-    (:ref:`throttling scope <throttling-scopes>`), this delay is per slot.
-
-    When ``None`` (default), the per-slot delay falls back to
-    :setting:`DOWNLOAD_DELAY`, preserving the historical behavior where
-    :setting:`DOWNLOAD_DELAY` was enforced per slot.
-
-    The wait time is measured from when the previous request was sent.
-
-For example, with ``DOWNLOAD_DELAY = 1.0`` (and, by default, a single download
-slot per domain), requests to the same domain are sent at most once per second:
-
-.. code-block:: text
-
-    T=0.0s: Request 1 sent
-    T=1.0s: Request 2 sent
-    T=2.0s: Request 3 sent
-
-:setting:`DOWNLOAD_DELAY` (per :ref:`throttling scope <throttling-scopes>`) and
-:setting:`DOWNLOAD_DELAY_PER_SLOT` (per download slot) are enforced
-independently. By default each domain is both its own scope and its own
-download slot, so both apply to the same requests and the effective minimum
-spacing is the larger of the two; they only differ when requests are grouped
-into custom :ref:`scopes <throttling-scopes>` or download slots (via the
-``download_slot`` request meta key).
 
 When configuring these settings, note that:
 
