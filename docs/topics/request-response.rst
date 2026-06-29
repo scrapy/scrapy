@@ -63,7 +63,7 @@ Request objects
 
         .. invisible-code-block: python
 
-            from scrapy.http import Request
+            from scrapy import Request
 
         1. Using a dict:
 
