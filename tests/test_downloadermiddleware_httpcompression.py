@@ -558,6 +558,35 @@ class TestHttpCompression:
 
         self._test_compression_bomb_setting("zstd")
 
+    def test_compression_bomb_logs_warnsize_before_ignoring(self):
+        settings = {"DOWNLOAD_MAXSIZE": 1_000_000, "DOWNLOAD_WARNSIZE": 500_000}
+        crawler = get_crawler(Spider, settings_dict=settings)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+        response = self._getresponse("bomb-gzip")
+
+        with (
+            LogCapture(
+                "scrapy.downloadermiddlewares.httpcompression",
+                propagate=False,
+                level=WARNING,
+            ) as log,
+            pytest.raises(IgnoreRequest),
+        ):
+            mw.process_response(response.request, response)
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                "WARNING",
+                (
+                    "<200 http://scrapytest.org/> body size after "
+                    "decompression (1048576 B so far) is larger than the "
+                    "download warning size (500000 B)."
+                ),
+            ),
+        )
+
     def _test_compression_bomb_spider_attr(self, compression_id):
         class DownloadMaxSizeSpider(Spider):
             download_maxsize = 1_000_000

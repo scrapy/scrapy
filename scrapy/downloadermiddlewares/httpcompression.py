@@ -123,6 +123,12 @@ class HttpCompressionMiddleware:
                     response.body, content_encoding, max_size
                 )
             except _DecompressionMaxSizeExceeded as e:
+                if warn_size and e.decompressed_size >= warn_size:
+                    logger.warning(
+                        f"{response} body size after decompression "
+                        f"({e.decompressed_size} B so far) is larger than the "
+                        f"download warning size ({warn_size} B)."
+                    )
                 raise IgnoreRequest(
                     f"Ignored response {response} because its body "
                     f"({len(response.body)} B compressed, "
