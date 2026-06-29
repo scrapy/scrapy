@@ -401,6 +401,19 @@ class TestRequestToCurl:
         )
         self._test_request(request_object, expected_curl_command)
 
+    def test_cookies_dict_bytes(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies={b"foo": b"bar"},
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
     def test_cookies_list(self):
         request_object = Request(
             "https://www.httpbin.org/post",
@@ -453,5 +466,18 @@ class TestRequestToCurl:
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=1'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list_bytes_nonstandard_key(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[{b"foo": b"bar"}],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
         )
         self._test_request(request_object, expected_curl_command)
