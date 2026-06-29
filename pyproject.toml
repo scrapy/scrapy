@@ -456,3 +456,9 @@ convention = "pep257"
 
 [tool.sphinx-scrapy]
 python-version = "3.14"  # Keep in sync with .github/workflows/checks.yml.
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "twisted>=26.4.0",
+]

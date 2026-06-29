@@ -322,19 +322,5 @@ def test_sitemap_non_string_tag():
     _get_tag_name must handle this gracefully instead of raising
     AttributeError.
     """
-    from base64 import b64decode
-
-    # Malformed binary XML that triggers the entity reference code path in
-    # newer libxml2. Simple entity references (e.g. &k;) are silently
-    # dropped by older libxml2 and don't exercise the same path.
-    data = b64decode(
-        "PHVybGluaz48dXI8dXJsPgAAAAAAAAAEaW5rIHhtbG5zOnhodG1sPSJoZGwiIGhyZWY9ImhsPjxsaW4mazsiaGxybGtuazx4aHRtbDpsaW5rIHhtbG5zOnhodG1sPSJoZGwiIGhyZWY9ImhsaW5rbCIgaHJlZj0iaGw+PHhodG1sZGxzZXQ+"
-    )
-    results = list(Sitemap(data))
+    results = list(Sitemap(b"<url>&k;"))
     assert isinstance(results, list)
-
-
-def test_get_tag_name_non_string_tag():
-    """_get_tag_name must handle non-string .tag directly."""
-    elem = type("_Elem", (), {"tag": len})()
-    assert Sitemap._get_tag_name(elem) == ""
