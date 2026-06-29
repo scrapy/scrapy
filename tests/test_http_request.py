@@ -100,6 +100,21 @@ class TestRequest:
         r = self.request_class(url="http://www.scrapy.org/path")
         assert r.url == "http://www.scrapy.org/path"
 
+    def test_url_empty_path_with_query(self):
+        # #6574: an http(s) url with a host and a query or fragment but no path
+        # must keep a leading "/" so the request line is "/?..." and not "?...",
+        # which some servers reject with a 400.
+        r = self.request_class(url="http://www.scrapy.org?url=x")
+        assert r.url == "http://www.scrapy.org/?url=x"
+        r = self.request_class(url="http://www.scrapy.org#frag")
+        assert r.url == "http://www.scrapy.org/#frag"
+        # a host with no query or fragment is left unchanged
+        r = self.request_class(url="http://www.scrapy.org")
+        assert r.url == "http://www.scrapy.org"
+        # an existing path is untouched
+        r = self.request_class(url="http://www.scrapy.org/p?url=x")
+        assert r.url == "http://www.scrapy.org/p?url=x"
+
     def test_url_quoting(self):
         r = self.request_class(url="http://www.scrapy.org/blank%20space")
         assert r.url == "http://www.scrapy.org/blank%20space"
