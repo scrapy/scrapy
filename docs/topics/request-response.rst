@@ -23,6 +23,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 
 Request objects
 ===============
+
 .. autoclass:: scrapy.Request
 
     :param url: the URL of this request
@@ -62,13 +63,13 @@ Request objects
 
         .. invisible-code-block: python
 
-            import scrapy
+            from scrapy import Request
 
         1. Using a dict:
 
         .. code-block:: python
 
-            request_with_cookies = scrapy.Request(
+            request_with_cookies = Request(
                 url="http://www.example.com",
                 cookies={"currency": "USD", "country": "UY"},
             )
@@ -77,7 +78,7 @@ Request objects
 
         .. code-block:: python
 
-            request_with_cookies = scrapy.Request(
+            request_with_cookies = Request(
                 url="https://www.example.com",
                 cookies=[
                     {
