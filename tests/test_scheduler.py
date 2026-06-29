@@ -498,7 +498,7 @@ class TestThrottlingAwareScheduler:
         assert first is not None
         assert scheduler.next_request() is None
         assert scheduler.has_pending_requests()
-        assert scheduler.next_request_delay() == pytest.approx(1000.0, abs=1.0)
+        assert scheduler.get_next_request_delay() == pytest.approx(1000.0, abs=1.0)
         scheduler.close("finished")
 
     @coroutine_test
@@ -512,7 +512,7 @@ class TestThrottlingAwareScheduler:
         assert scheduler.next_request() is not None
         assert scheduler.next_request() is None
         # A purely concurrency-blocked state has no time-based wakeup.
-        assert scheduler.next_request_delay() is None
+        assert scheduler.get_next_request_delay() is None
         scheduler.close("finished")
 
     @coroutine_test

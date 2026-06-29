@@ -140,7 +140,7 @@ class ExecutionEngine:
         self._scheduling: int = 0
         # A coalesced wakeup timer, armed when a throttling-aware scheduler
         # reports that all pending requests are time-blocked (see
-        # ``next_request_delay``).
+        # ``get_next_request_delay``).
         self._throttling_wakeup: CallLaterResult | None = None
         self._delayed_requests_warn_threshold: int = self.settings.getint(
             "DELAYED_REQUESTS_WARN_THRESHOLD"
@@ -376,7 +376,7 @@ class ExecutionEngine:
         """
         assert self._slot is not None
         scheduler = self._slot.scheduler
-        delay_fn = getattr(scheduler, "next_request_delay", None)
+        delay_fn = getattr(scheduler, "get_next_request_delay", None)
         if delay_fn is None or not scheduler.has_pending_requests():
             return
         delay = delay_fn()
@@ -433,7 +433,7 @@ class ExecutionEngine:
         # scheduler instead of in _throttling_waiting, so it does not hit this
         # path; recommend it only when it is not already in use.
         scheduler = self._slot.scheduler if self._slot is not None else None
-        if scheduler is None or not hasattr(scheduler, "next_request_delay"):
+        if scheduler is None or not hasattr(scheduler, "get_next_request_delay"):
             recommendation = (
                 " Consider switching to scrapy.core.scheduler.ThrottlingAwareScheduler."
             )

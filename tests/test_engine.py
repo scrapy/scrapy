@@ -677,7 +677,7 @@ class TestEngineThrottling:
     def test_maybe_arm_throttling_wakeup_arms_timer(self, engine):
         scheduler = Mock()
         scheduler.has_pending_requests.return_value = True
-        scheduler.next_request_delay.return_value = 5.0
+        scheduler.get_next_request_delay.return_value = 5.0
         engine._slot = Mock()
         engine._slot.scheduler = scheduler
         engine._maybe_arm_throttling_wakeup()
@@ -688,7 +688,7 @@ class TestEngineThrottling:
     def test_maybe_arm_throttling_wakeup_no_delay(self, engine):
         scheduler = Mock()
         scheduler.has_pending_requests.return_value = True
-        scheduler.next_request_delay.return_value = None
+        scheduler.get_next_request_delay.return_value = None
         engine._slot = Mock()
         engine._slot.scheduler = scheduler
         engine._maybe_arm_throttling_wakeup()
@@ -700,7 +700,7 @@ class TestEngineThrottling:
         # the engine, so no timer must be armed.
         scheduler = Mock()
         scheduler.has_pending_requests.return_value = True
-        scheduler.next_request_delay.return_value = 0.0
+        scheduler.get_next_request_delay.return_value = 0.0
         engine._slot = Mock()
         engine._slot.scheduler = scheduler
         engine._maybe_arm_throttling_wakeup()
@@ -710,7 +710,7 @@ class TestEngineThrottling:
         engine._delayed_requests_warn_threshold = 1
         engine._throttling_waiting = {Request("http://a.example")}
         engine._slot = Mock()
-        # A scheduler without next_request_delay is not throttling-aware, so the
+        # A scheduler without get_next_request_delay is not throttling-aware, so the
         # warning recommends switching to one.
         engine._slot.scheduler = Mock(spec=BaseScheduler)
         with LogCapture() as log:
@@ -726,7 +726,7 @@ class TestEngineThrottling:
         engine._delayed_requests_warn_threshold = 1
         engine._throttling_waiting = {Request("http://a.example")}
         engine._slot = Mock()
-        # A throttling-aware scheduler (one with next_request_delay) holds
+        # A throttling-aware scheduler (one with get_next_request_delay) holds
         # throttled requests itself, so no switch is recommended.
         engine._slot.scheduler = Mock()
         with LogCapture() as log:

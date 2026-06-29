@@ -603,7 +603,7 @@ class ThrottlingAwarePriorityQueue:
         Among the sendable queues (those whose scope set can be sent right now),
         the one whose head has the highest request priority is chosen; ties are
         broken by ascending load (the maximum
-        :meth:`~scrapy.throttling.ThrottlingManagerProtocol.scope_load` over the
+        :meth:`~scrapy.throttling.ThrottlingManagerProtocol.get_scope_load` over the
         scopes of the queue), i.e. by preferring the least-busy scopes.
         """
         self._promote_ready(time.monotonic())
@@ -614,7 +614,7 @@ class ThrottlingAwarePriorityQueue:
             if head is None or not self._throttler.is_ready(head):
                 continue
             load = max(
-                (self._throttler.scope_load(scope_id) for scope_id in scope_set),
+                (self._throttler.get_scope_load(scope_id) for scope_id in scope_set),
                 default=0.0,
             )
             sort_key = (queue.priority(head), load)
@@ -641,7 +641,7 @@ class ThrottlingAwarePriorityQueue:
             return None
         return selected[1].peek()
 
-    def next_request_delay(self) -> float | None:
+    def get_next_request_delay(self) -> float | None:
         now = time.monotonic()
         self._promote_ready(now)
         delay: float | None = None
@@ -651,7 +651,7 @@ class ThrottlingAwarePriorityQueue:
                 continue
             if self._throttler.is_ready(head):
                 return 0.0
-            head_delay = self._throttler.time_until_ready(head)
+            head_delay = self._throttler.get_time_until_ready(head)
             if head_delay is None:
                 continue
             if delay is None or head_delay < delay:

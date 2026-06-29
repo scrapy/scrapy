@@ -762,7 +762,7 @@ class TestThrottlingManagerReadiness:
         manager.reserve(first)
         # The base delay now blocks any further request for the scope.
         assert manager.is_ready(second) is False
-        assert manager.time_until_ready(second) == pytest.approx(100.0, abs=1.0)
+        assert manager.get_time_until_ready(second) == pytest.approx(100.0, abs=1.0)
 
     @coroutine_test
     async def test_throttling_delay_blocks_until_deadline(self):
@@ -772,7 +772,7 @@ class TestThrottlingManagerReadiness:
         # The per-request delay holds back the request even though its scope is
         # otherwise unconstrained.
         assert manager.is_ready(request) is False
-        assert manager.time_until_ready(request) == pytest.approx(100.0, abs=1.0)
+        assert manager.get_time_until_ready(request) == pytest.approx(100.0, abs=1.0)
         # The deadline is computed once and reused by later polls.
         deadline = request.meta["_throttling_delay_deadline"]
         assert manager.is_ready(request) is False
@@ -813,7 +813,7 @@ class TestThrottlingManagerReadiness:
         # response header does.
         manager.delay_scope("example.com", 50.0)
         assert manager.is_ready(request) is False
-        assert manager.time_until_ready(request) == pytest.approx(50.0, abs=1.0)
+        assert manager.get_time_until_ready(request) == pytest.approx(50.0, abs=1.0)
 
     @coroutine_test
     async def test_delay_scope_bypasses_max_delay(self):
@@ -825,7 +825,7 @@ class TestThrottlingManagerReadiness:
         request = Request("http://example.com/a")
         await manager.get_scopes(request)
         manager.delay_scope("example.com", 1000.0)
-        assert manager.time_until_ready(request) == pytest.approx(1000.0, abs=1.0)
+        assert manager.get_time_until_ready(request) == pytest.approx(1000.0, abs=1.0)
 
     @coroutine_test
     async def test_reserve_blocks_on_concurrency(self):
@@ -837,7 +837,7 @@ class TestThrottlingManagerReadiness:
         manager.reserve(first)
         assert manager.is_ready(second) is False
         # Pure concurrency blocking is not time-gated.
-        assert manager.time_until_ready(second) is None
+        assert manager.get_time_until_ready(second) is None
         manager.release(first)
         assert manager.is_ready(second) is True
 
@@ -859,20 +859,20 @@ class TestThrottlingManagerReadiness:
         assert scope._active == 1  # reserve recorded exactly one send
 
     @coroutine_test
-    async def test_scope_load(self):
+    async def test_get_scope_load(self):
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 4}}})
-        assert manager.scope_load("example.com") == 0.0
+        assert manager.get_scope_load("example.com") == 0.0
         request = Request("http://example.com/1")
         await manager.get_scopes(request)
         manager.reserve(request)
-        assert manager.scope_load("example.com") == pytest.approx(0.25)
+        assert manager.get_scope_load("example.com") == pytest.approx(0.25)
 
-    def test_scope_load_falls_back_to_global_concurrency(self):
+    def test_get_scope_load_falls_back_to_global_concurrency(self):
         manager = _manager({"CONCURRENT_REQUESTS": 8})
         # A scope with no explicit concurrency limit uses CONCURRENT_REQUESTS.
         request = Request("http://example.com/1")
         manager.reserve(request)
-        assert manager.scope_load("example.com") == pytest.approx(1 / 8)
+        assert manager.get_scope_load("example.com") == pytest.approx(1 / 8)
 
 
 class TestParseRateHeaders:
@@ -971,11 +971,11 @@ class TestThrottlingManagerEdges:
         await manager.acquire(request)
         assert request not in manager._reserved
 
-    def test_scope_load_without_concurrency_limit(self):
+    def test_get_scope_load_without_concurrency_limit(self):
         manager = _manager({"CONCURRENT_REQUESTS": 0})
         # CONCURRENT_REQUESTS is 0, so the load denominator is 0 and the load is
         # reported as 0 instead of raising.
-        assert manager.scope_load("example.com") == 0.0
+        assert manager.get_scope_load("example.com") == 0.0
 
     @coroutine_test
     async def test_acquire_logs_and_waits_for_delay(self):

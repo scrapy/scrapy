@@ -544,7 +544,7 @@ class ThrottlingAwareScheduler(Scheduler):
 
     def open(self, spider: Spider) -> Deferred[None] | None:
         result = super().open(spider)
-        if not hasattr(self.mqs, "next_request_delay"):
+        if not hasattr(self.mqs, "get_next_request_delay"):
             raise ValueError(
                 f"{type(self).__name__} requires SCHEDULER_PRIORITY_QUEUE to be "
                 f"set to a throttling-aware priority queue such as "
@@ -619,7 +619,7 @@ class ThrottlingAwareScheduler(Scheduler):
             return False
         return True
 
-    def next_request_delay(self) -> float | None:
+    def get_next_request_delay(self) -> float | None:
         """Return the minimum number of seconds until some pending request
         becomes sendable because a time-based throttling gate opens, or
         ``None`` if no pending request is time-blocked.
@@ -630,6 +630,6 @@ class ThrottlingAwareScheduler(Scheduler):
         delays = [
             delay
             for pq in (self.mqs, self.dqs)
-            if pq is not None and (delay := pq.next_request_delay()) is not None  # type: ignore[attr-defined]
+            if pq is not None and (delay := pq.get_next_request_delay()) is not None  # type: ignore[attr-defined]
         ]
         return min(delays) if delays else None

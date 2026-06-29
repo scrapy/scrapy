@@ -364,7 +364,7 @@ class TestThrottlingAwarePriorityQueue:
         # The blocked second slow request stays in the queue.
         assert None in urls
         assert len(queue) == 1
-        delay = queue.next_request_delay()
+        delay = queue.get_next_request_delay()
         assert delay is not None
         assert delay == pytest.approx(1000.0, abs=1.0)
 
@@ -385,7 +385,7 @@ class TestThrottlingAwarePriorityQueue:
         assert "http://fast.com/1" in urls
         assert None in urls
         assert len(queue) == 1
-        delay = queue.next_request_delay()
+        delay = queue.get_next_request_delay()
         assert delay is not None
         assert delay == pytest.approx(1000.0, abs=1.0)
 
@@ -407,7 +407,7 @@ class TestThrottlingAwarePriorityQueue:
         # The delayed request is not lost, just not poppable yet.
         assert queue.pop() is None
         assert len(queue) == 1
-        assert queue.next_request_delay() == pytest.approx(1000.0, abs=1.0)
+        assert queue.get_next_request_delay() == pytest.approx(1000.0, abs=1.0)
 
     @coroutine_test
     async def test_delayed_request_promoted_when_due(self):
@@ -508,7 +508,7 @@ class TestThrottlingAwarePriorityQueue:
         crawler = get_crawler(Spider)
         queue = self._queue(crawler)
         assert queue.pop() is None
-        assert queue.next_request_delay() is None
+        assert queue.get_next_request_delay() is None
         await self._push(queue, crawler, Request("http://a.com/1"))
         assert queue.close() != {}
 
@@ -525,23 +525,23 @@ class TestThrottlingAwarePriorityQueue:
         assert len(queue) == 1
 
     @coroutine_test
-    async def test_next_request_delay_zero_when_ready(self):
+    async def test_get_next_request_delay_zero_when_ready(self):
         crawler = get_crawler(Spider)
         queue = self._queue(crawler)
         await self._push(queue, crawler, Request("http://a.com/1"))
         # A sendable head means no wait is needed.
-        assert queue.next_request_delay() == 0.0
+        assert queue.get_next_request_delay() == 0.0
 
     @coroutine_test
-    async def test_next_request_delay_ignores_empty_queues(self):
+    async def test_get_next_request_delay_ignores_empty_queues(self):
         crawler = get_crawler(Spider)
         queue = self._queue(crawler)
         # An empty (but still registered) internal queue is skipped.
         queue.pqueues[frozenset({"a.com"})] = queue.pqfactory(frozenset({"a.com"}))
-        assert queue.next_request_delay() is None
+        assert queue.get_next_request_delay() is None
 
     @coroutine_test
-    async def test_next_request_delay_keeps_minimum(self):
+    async def test_get_next_request_delay_keeps_minimum(self):
         crawler = get_crawler(
             Spider,
             settings_dict={
@@ -563,7 +563,7 @@ class TestThrottlingAwarePriorityQueue:
         queue.pop()
         # Both scopes are now time-blocked; the smaller per-scope delay wins,
         # so the larger one exercises the "not below the running minimum" branch.
-        delay = queue.next_request_delay()
+        delay = queue.get_next_request_delay()
         assert delay == pytest.approx(10.0, abs=1.0)
 
     @coroutine_test

@@ -342,7 +342,7 @@ class ThrottlingManagerProtocol(Protocol):
         returned ``True``). The reservation is released by :meth:`release`.
         """
 
-    def time_until_ready(self, request: Request) -> float | None:
+    def get_time_until_ready(self, request: Request) -> float | None:
         """Return the number of seconds until every time-based gate of
         *request* would be open, or ``None`` if no time-based gate is currently
         blocking it (only a concurrency slot could be).
@@ -352,7 +352,7 @@ class ThrottlingManagerProtocol(Protocol):
         requests are time-blocked.
         """
 
-    def scope_load(self, scope_id: str) -> float:
+    def get_scope_load(self, scope_id: str) -> float:
         """Return the current load of the scope identified by *scope_id*: its
         active sends divided by its concurrency limit (or by the global
         :setting:`CONCURRENT_REQUESTS` when the scope has no explicit limit).
@@ -510,7 +510,7 @@ class ThrottlingManager:
 
         It backs :meth:`get_scopes` and is also the fallback for the synchronous
         readiness methods (:meth:`is_ready`, :meth:`reserve`,
-        :meth:`time_until_ready`) when no scopes were persisted on
+        :meth:`get_time_until_ready`) when no scopes were persisted on
         ``request.meta`` by an earlier :meth:`get_scopes` call (which normally
         happens at enqueue time and survives disk restores; see
         :func:`scope_cache`). Subclasses whose :meth:`get_scopes` cannot be
@@ -712,7 +712,7 @@ class ThrottlingManager:
             manager.record_sent(amount=value)
         self._reserved[request] = managers
 
-    def time_until_ready(self, request: Request) -> float | None:
+    def get_time_until_ready(self, request: Request) -> float | None:
         now = time.monotonic()
         wait = max(0.0, self._request_delay_deadline(request, now) - now)
         for scope_id, value in self._cached_scope_values(request):
@@ -720,8 +720,8 @@ class ThrottlingManager:
             wait = max(wait, manager.can_send(now=now, amount=value))
         return wait if wait > 0 else None
 
-    def scope_load(self, scope_id: ScopeID) -> float:
-        return self._get_scope_manager(scope_id).load()
+    def get_scope_load(self, scope_id: ScopeID) -> float:
+        return self._get_scope_manager(scope_id).get_load()
 
     def get_request_delay(self, request: Request, now: float | None = None) -> float:
         now = time.monotonic() if now is None else now
@@ -760,7 +760,7 @@ class ThrottlingManager:
 
         This is the readiness-API counterpart of :meth:`_delay_request`:
         a throttling-aware scheduler gates requests through :meth:`is_ready` and
-        :meth:`time_until_ready` instead of awaiting :meth:`acquire`, so the
+        :meth:`get_time_until_ready` instead of awaiting :meth:`acquire`, so the
         delay is enforced by holding back the request until this deadline rather
         than by sleeping. The deadline is computed once, the first time the
         request reaches the gate, and stored so later polls reuse it.
@@ -996,7 +996,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
         Return ``False`` when no concurrency limit is enforced.
         """
 
-    def load(self) -> float:
+    def get_load(self) -> float:
         """Return the current load of this scope: a non-negative number, with
         ``1.0`` meaning "as busy as its concurrency limit allows".
 
@@ -1123,7 +1123,7 @@ class ThrottlingScopeManager:
         else:
             self._concurrency = None
         # Used as the load denominator when the scope enforces no explicit
-        # concurrency limit (see load()).
+        # concurrency limit (see get_load()).
         self._global_concurrency: int = settings.getint("CONCURRENT_REQUESTS")
 
         # Quota.
@@ -1281,7 +1281,7 @@ class ThrottlingScopeManager:
     def concurrency_blocked(self) -> bool:
         return self._concurrency is not None and self._active >= self._concurrency
 
-    def load(self) -> float:
+    def get_load(self) -> float:
         limit = (
             self._concurrency
             if self._concurrency is not None
