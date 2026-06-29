@@ -13,6 +13,7 @@ concurrency:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       PYTEST_ADDOPTS: -n auto
     strategy:
