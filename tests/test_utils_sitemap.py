@@ -320,4 +320,5 @@ def test_sitemap_non_string_tag():
     _get_tag_name must handle this gracefully instead of raising
     AttributeError.
     """
-    list(Sitemap(b"<url>&k;"))
+    results = list(Sitemap(b"<url>&k;"))
+    assert results == []
