@@ -6,6 +6,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
+from unittest import mock
 
 import pytest
 
@@ -47,7 +48,6 @@ class TestBase:
         settings = {
             "HTTPCACHE_ENABLED": True,
             "HTTPCACHE_DIR": self.tmpdir,
-            "HTTPCACHE_EXPIRATION_SECS": 1,
             "HTTPCACHE_IGNORE_HTTP_CODES": [],
             "HTTPCACHE_POLICY": self.policy_class,
             "HTTPCACHE_STORAGE": self.storage_class,
@@ -94,7 +94,7 @@ class StorageTestMixin:
     """Mixin containing storage-specific test methods."""
 
     def test_storage(self):
-        with self._storage() as (storage, crawler):
+        with self._storage(HTTPCACHE_EXPIRATION_SECS=1) as (storage, crawler):
             request2 = self.request.copy()
             assert storage.retrieve_response(crawler.spider, request2) is None
 
@@ -103,15 +103,17 @@ class StorageTestMixin:
             assert isinstance(response2, HtmlResponse)  # content-type header
             self.assertEqualResponse(self.response, response2)
 
-            time.sleep(2)  # wait for cache to expire
-            assert storage.retrieve_response(crawler.spider, request2) is None
+            expired = time.time() + storage.expiration_secs + 1
+            with mock.patch("scrapy.extensions.httpcache.time", return_value=expired):
+                assert storage.retrieve_response(crawler.spider, request2) is None
 
     def test_storage_never_expire(self):
         with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as (storage, crawler):
             assert storage.retrieve_response(crawler.spider, self.request) is None
             storage.store_response(crawler.spider, self.request, self.response)
-            time.sleep(0.5)  # give the chance to expire
-            assert storage.retrieve_response(crawler.spider, self.request)
+            future = time.time() + 10**6
+            with mock.patch("scrapy.extensions.httpcache.time", return_value=future):
+                assert storage.retrieve_response(crawler.spider, self.request)
 
     def test_storage_no_content_type_header(self):
         """Test that the response body is used to get the right response class
