@@ -314,13 +314,10 @@ def test_xml_entity_expansion():
 
 
 def test_sitemap_non_string_tag():
-    """Regression test for non-string elem.tag crashing _get_tag_name.
-
-    With recover=True and resolve_entities=False, libxml2 >= 2.14.6 (used
+    """With recover=True and resolve_entities=False, libxml2 >= 2.14.6 (used
     by lxml >= 6.1.1) preserves undeclared entity reference nodes whose
-    .tag is a non-string `Cython function` object instead of a str.
+    .tag is a non-string ``Cython function`` object instead of a ``str``.
     _get_tag_name must handle this gracefully instead of raising
     AttributeError.
     """
-    results = list(Sitemap(b"<url>&k;"))
-    assert isinstance(results, list)
+    list(Sitemap(b"<url>&k;"))
