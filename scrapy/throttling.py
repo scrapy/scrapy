@@ -28,6 +28,7 @@ from scrapy.utils.misc import build_from_crawler, load_object
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
+    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -208,7 +209,7 @@ def _classify_scope(scope_id: ScopeID) -> str:
     return "other"
 
 
-def _default_scope_concurrency(settings: Any, scope_id: ScopeID) -> int:
+def _default_scope_concurrency(settings: BaseSettings, scope_id: ScopeID) -> int:
     """Return the default concurrency for *scope_id* based on its
     :func:`kind <_classify_scope>`.
 
@@ -348,16 +349,18 @@ class ThrottlingManagerProtocol(Protocol):
             those scopes are currently exhausted.
 
         -   A dict with scope names as keys and dict values. Dict values
-            support the following keys:
+            support the following keys (matching :class:`BackoffScopeData`):
 
             -   ``"delay"``: a float indicating how many seconds to wait before
                 sending another request for the scope.
 
-            -   ``"quota"``: a float indicating the remaining :ref:`throttling
-                quota <throttling-quotas>`.
+            -   ``"remaining"``: a float indicating the remaining
+                :ref:`throttling quota <throttling-quotas>` of the scope.
 
-            If ``"quota"`` is not specified, the resource is considered
-            exhausted.
+            -   ``"consumed"``: a float indicating how much of the scope's
+                quota has already been consumed.
+
+            An empty dict marks the scope as currently exhausted.
 
         For example:
 
@@ -366,7 +369,7 @@ class ThrottlingManagerProtocol(Protocol):
             return {
                 "scope1": {"delay": 5.0},
                 "scope2": {},
-                "scope3": {"quota": 42.0},
+                "scope3": {"remaining": 42.0},
             }
         """
 
@@ -488,6 +491,10 @@ class ThrottlingManagerProtocol(Protocol):
         directly (e.g. an adaptive-delay extension).
         """
 
+    def get_scope_manager(self, scope_id: str) -> ThrottlingScopeManagerProtocol:
+        """Return the :class:`ThrottlingScopeManagerProtocol` instance handling
+        the scope identified by *scope_id*, creating it if necessary."""
+
     async def process_response(self, response: Response) -> None:
         """Update the throttling state based on *response*."""
 
@@ -592,7 +599,28 @@ class ThrottlingManager:
         self._scopes_config: dict[str, dict[str, Any]] = crawler.settings.getdict(
             "THROTTLING_SCOPES"
         )
-        # Ordered by least-recently-used first (see _get_scope_manager), so the
+        # Cheap pre-filter for the backoff methods: the union of the global
+        # triggers and every per-scope override. A response whose status (or an
+        # exception type) is not in the union cannot trigger backoff for any
+        # scope, so its scopes need not be resolved (see get_response_backoff
+        # and get_exception_backoff). Each scope still makes the final decision
+        # via its own triggers_backoff_* methods.
+        self._any_backoff_http_codes: set[int] = set(self._backoff_http_codes)
+        self._any_backoff_exceptions: tuple[type[BaseException], ...] = (
+            self._backoff_exceptions
+        )
+        for scope_config in self._scopes_config.values():
+            backoff = scope_config.get("backoff") or {}
+            if "http_codes" in backoff:
+                self._any_backoff_http_codes.update(
+                    int(code) for code in backoff["http_codes"]
+                )
+            if "exceptions" in backoff:
+                self._any_backoff_exceptions += tuple(
+                    load_object(exc) if isinstance(exc, str) else exc
+                    for exc in backoff["exceptions"]
+                )
+        # Ordered by least-recently-used first (see get_scope_manager), so the
         # scope limit can evict the coldest idle scopes (see THROTTLING_SCOPE_LIMIT).
         self._scope_managers: OrderedDict[ScopeID, ThrottlingScopeManagerProtocol] = (
             OrderedDict()
@@ -631,7 +659,7 @@ class ThrottlingManager:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            return download_slot
+            return cast("RequestScopes", download_slot)
         netloc = urlparse_cached(request).netloc
         if self._per_ip:
             # Best-effort, mirroring the legacy per-IP downloader slots: use the
@@ -686,12 +714,21 @@ class ThrottlingManager:
         assert response.request is not None
         if response.request.meta.get("throttling_dont_track"):
             return None
-        if response.status not in self._backoff_http_codes:
+        if response.status not in self._any_backoff_http_codes:
             return None
         scopes = await self._scopes(response.request)
+        matched = [
+            scope
+            for scope in iter_scopes(scopes)
+            if self.get_scope_manager(scope).triggers_backoff_for_status(
+                response.status
+            )
+        ]
+        if not matched:
+            return None
         if delay := self.get_response_delay(response):
-            scopes = {scope: {"delay": delay} for scope in iter_scopes(scopes)}
-        return scopes
+            return {scope: {"delay": delay} for scope in matched}
+        return matched
 
     def get_response_delay(self, response: Response) -> float | None:
         """Return the throttling delay requested by the response."""
@@ -711,13 +748,19 @@ class ThrottlingManager:
     ) -> BackoffData:
         if request.meta.get("throttling_dont_track"):
             return None
-        if isinstance(exception, self._backoff_exceptions):
-            return await self._scopes(request)
-        return None
+        if not isinstance(exception, self._any_backoff_exceptions):
+            return None
+        scopes = await self._scopes(request)
+        matched = [
+            scope
+            for scope in iter_scopes(scopes)
+            if self.get_scope_manager(scope).triggers_backoff_for_exception(exception)
+        ]
+        return matched or None
 
     # -- Scope-state coordination (called from the request lifecycle) --------
 
-    def _get_scope_manager(self, scope_id: ScopeID) -> ThrottlingScopeManagerProtocol:
+    def get_scope_manager(self, scope_id: ScopeID) -> ThrottlingScopeManagerProtocol:
         manager = self._scope_managers.get(scope_id)
         if manager is not None:
             # Mark as most-recently-used for the LRU scope limit.
@@ -743,7 +786,7 @@ class ThrottlingManager:
         managers exceeds :setting:`THROTTLING_SCOPE_LIMIT` (``0`` disables the
         limit).
 
-        LRU order is kept by :meth:`_get_scope_manager` moving each accessed
+        LRU order is kept by :meth:`get_scope_manager` moving each accessed
         scope to the end, so the coldest scopes are at the front. Only scopes
         that are idle (no in-flight requests and no active backoff) are evicted;
         the just-created *keep* scope is never evicted. A scope evicted while
@@ -771,7 +814,7 @@ class ThrottlingManager:
         if not scope_values:
             return
         managers = [
-            (self._get_scope_manager(scope_id), value)
+            (self.get_scope_manager(scope_id), value)
             for scope_id, value in scope_values
         ]
         while True:
@@ -817,7 +860,7 @@ class ThrottlingManager:
         if self._request_delay_deadline(request, now) > now:
             return False
         for scope_id, value in self._cached_scope_values(request):
-            manager = self._get_scope_manager(scope_id)
+            manager = self.get_scope_manager(scope_id)
             if manager.can_send(now=now, amount=value) > 0:
                 return False
             if manager.concurrency_blocked():
@@ -831,7 +874,7 @@ class ThrottlingManager:
         # up on broad crawls.
         self._maybe_evict(time.monotonic())
         managers = [
-            (self._get_scope_manager(scope_id), value)
+            (self.get_scope_manager(scope_id), value)
             for scope_id, value in self._cached_scope_values(request)
         ]
         for manager, value in managers:
@@ -842,12 +885,12 @@ class ThrottlingManager:
         now = time.monotonic()
         wait = max(0.0, self._request_delay_deadline(request, now) - now)
         for scope_id, value in self._cached_scope_values(request):
-            manager = self._get_scope_manager(scope_id)
+            manager = self.get_scope_manager(scope_id)
             wait = max(wait, manager.can_send(now=now, amount=value))
         return wait if wait > 0 else None
 
     def get_scope_load(self, scope_id: ScopeID) -> float:
-        return self._get_scope_manager(scope_id).get_load()
+        return self.get_scope_manager(scope_id).get_load()
 
     def get_request_delay(self, request: Request, now: float | None = None) -> float:
         now = time.monotonic() if now is None else now
@@ -921,7 +964,7 @@ class ThrottlingManager:
         else:
             items = ((scope_id, None) for scope_id in iter_scopes(data))
         for scope_id, entry in items:
-            manager = self._get_scope_manager(scope_id)
+            manager = self.get_scope_manager(scope_id)
             delay = consumed = remaining = None
             if isinstance(entry, dict):
                 delay = entry.get("delay")
@@ -993,7 +1036,7 @@ class ThrottlingManager:
             return
         if self._debug:
             logger.debug(f"robots.txt Crawl-delay for scope {scope_id}: {capped}s")
-        manager = self._get_scope_manager(scope_id)
+        manager = self.get_scope_manager(scope_id)
         manager.set_base_delay(capped)
         manager.set_concurrency(1)
 
@@ -1002,13 +1045,13 @@ class ThrottlingManager:
             logger.debug(f"Delaying scope {scope_id} for {delay:.2f}s")
         # Like a Retry-After / RateLimit-Reset header, this is a hard minimum
         # delay; unlike those, it is trusted, so it bypasses BACKOFF_MAX_DELAY.
-        self._get_scope_manager(scope_id).record_backoff(delay=float(delay), cap=False)
+        self.get_scope_manager(scope_id).record_backoff(delay=float(delay), cap=False)
 
     def get_scope_delay(self, scope_id: ScopeID) -> float:
-        return self._get_scope_manager(scope_id).get_base_delay()
+        return self.get_scope_manager(scope_id).get_base_delay()
 
     def set_scope_delay(self, scope_id: ScopeID, delay: float) -> None:
-        self._get_scope_manager(scope_id).set_base_delay(
+        self.get_scope_manager(scope_id).set_base_delay(
             float(delay), only_increase=False
         )
 
@@ -1110,6 +1153,26 @@ class ThrottlingScopeManagerProtocol(Protocol):
         scope with the actual *consumed* amount (or the *remaining* amount)
         reported for a request, correcting the estimate used by
         :meth:`record_sent`."""
+
+    def triggers_backoff_for_status(self, status: int) -> bool:
+        """Return whether a response with the given *status* triggers backoff
+        for this scope (defaults to :setting:`BACKOFF_HTTP_CODES`)."""
+
+    def triggers_backoff_for_exception(self, exception: BaseException) -> bool:
+        """Return whether *exception* triggers backoff for this scope (defaults
+        to :setting:`BACKOFF_EXCEPTIONS`)."""
+
+    def get_delay(self) -> float:
+        """Return the current effective delay of this scope, in seconds,
+        including any active backoff (unlike :meth:`get_base_delay`)."""
+
+    def get_jitter(self) -> float | list[float]:
+        """Return the magnitude of the random variation applied to the delay
+        (the per-scope override of :setting:`RANDOMIZE_DOWNLOAD_DELAY`)."""
+
+    def get_concurrency(self) -> int | None:
+        """Return the maximum number of concurrent requests allowed for this
+        scope, or ``None`` when the scope enforces no explicit limit."""
 
     def get_base_delay(self) -> float:
         """Return the base (non-backoff) delay of this scope, in seconds."""
@@ -1239,6 +1302,19 @@ class ThrottlingScopeManager:
         )
         self._backoff_jitter: float | list[float] = backoff.get(
             "jitter", settings.getfloat("BACKOFF_JITTER")
+        )
+        # Which responses/exceptions trigger backoff for this scope. Each
+        # defaults to the matching global BACKOFF_* setting (see
+        # triggers_backoff_for_status / triggers_backoff_for_exception).
+        self._backoff_http_codes: set[int] = {
+            int(code)
+            for code in backoff.get(
+                "http_codes", settings.getlist("BACKOFF_HTTP_CODES")
+            )
+        }
+        self._backoff_exceptions: tuple[type[BaseException], ...] = tuple(
+            load_object(exc) if isinstance(exc, str) else exc
+            for exc in backoff.get("exceptions", settings.getlist("BACKOFF_EXCEPTIONS"))
         )
         self._window: float = settings.getfloat("BACKOFF_WINDOW")
         self._min_concurrency: int = int(config.get("min_concurrency", 1))
@@ -1492,6 +1568,21 @@ class ThrottlingScopeManager:
             self._consumed = max(0.0, self._quota - float(remaining))
         elif consumed is not None:
             self._consumed = max(0.0, self._consumed + float(consumed))
+
+    def triggers_backoff_for_status(self, status: int) -> bool:
+        return status in self._backoff_http_codes
+
+    def triggers_backoff_for_exception(self, exception: BaseException) -> bool:
+        return isinstance(exception, self._backoff_exceptions)
+
+    def get_delay(self) -> float:
+        return self._delay
+
+    def get_jitter(self) -> float | list[float]:
+        return self._jitter
+
+    def get_concurrency(self) -> int | None:
+        return self._concurrency
 
     def get_base_delay(self) -> float:
         return self._base_delay

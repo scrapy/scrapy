@@ -613,10 +613,7 @@ TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
 THROTTLING_MANAGER = "scrapy.throttling.ThrottlingManager"
 THROTTLING_SCOPE_MANAGER = "scrapy.throttling.ThrottlingScopeManager"
-THROTTLING_SCOPES = {
-    "books.toscrape.com": {"concurrency": 16, "delay": 0.1},
-    "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
-}
+THROTTLING_SCOPES = {}
 THROTTLING_WINDOW = 60.0
 THROTTLING_ROBOTSTXT_OBEY = True
 THROTTLING_ROBOTSTXT_MAX_DELAY = 60.0

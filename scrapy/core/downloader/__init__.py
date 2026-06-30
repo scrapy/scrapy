@@ -86,18 +86,18 @@ class _DeprecatedSlotView:
     @property
     def delay(self) -> float:
         if self._scope is not None:
-            return self._scope._delay  # type: ignore[union-attr]
+            return self._scope.get_delay()
         return 0.0
 
     @delay.setter
     def delay(self, value: float) -> None:
         if self._scope is not None:
-            self._scope._delay = value  # type: ignore[union-attr]
+            self._scope.set_base_delay(value, only_increase=False)
 
     @property
     def randomize_delay(self) -> bool:
         if self._scope is not None:
-            return bool(self._scope._jitter)  # type: ignore[union-attr]
+            return bool(self._scope.get_jitter())
         return False
 
     @property
@@ -109,11 +109,13 @@ class _DeprecatedSlotView:
             stacklevel=2,
         )
         if self._scope is not None:
-            return self._scope._concurrency or 0  # type: ignore[union-attr]
+            return self._scope.get_concurrency() or 0
         return 0
 
     def free_transfer_slots(self) -> int:
-        concurrency = self._scope._concurrency if self._scope is not None else 0  # type: ignore[union-attr]
+        concurrency = (
+            self._scope.get_concurrency() or 0 if self._scope is not None else 0
+        )
         return concurrency - len(self.transferring)
 
     def download_delay(self) -> float:
@@ -132,7 +134,7 @@ class _DeprecatedSlotView:
         return f"_DeprecatedSlotView({self._key!r})"
 
 
-class _DeprecatedSlotsView(Mapping):
+class _DeprecatedSlotsView(Mapping[str, _DeprecatedSlotView]):
     """Deprecated mapping view of active downloads, keyed by slot name."""
 
     __slots__ = ("_downloader", "_throttler")
@@ -152,7 +154,7 @@ class _DeprecatedSlotsView(Mapping):
         if key not in self._active_keys():
             raise KeyError(key)
         scope = (
-            self._throttler._get_scope_manager(key)
+            self._throttler.get_scope_manager(key)
             if self._throttler is not None
             else None
         )
@@ -238,7 +240,7 @@ class Downloader:
     ) -> tuple[str, _DeprecatedSlotView]:
         key = self._get_slot_key(request)
         scope = (
-            self.crawler.throttler._get_scope_manager(key)
+            self.crawler.throttler.get_scope_manager(key)
             if self.crawler.throttler is not None
             else None
         )

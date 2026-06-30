@@ -16,5 +16,12 @@ ROBOTSTXT_OBEY = True
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
 DOWNLOAD_DELAY = 1
 
+# Crawl the tutorial websites faster, overriding the polite defaults above only
+# for these domains (remove this once you crawl your own sites):
+THROTTLING_SCOPES = {
+    "books.toscrape.com": {"concurrency": 16, "delay": 0.1},
+    "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
+}
+
 # Set settings whose default value is deprecated to a future-proof value:
 FEED_EXPORT_ENCODING = "utf-8"

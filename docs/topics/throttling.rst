@@ -72,11 +72,11 @@ The :setting:`THROTTLING_SCOPES` setting allows you to customize throttling
 behavior for specific domains [1]_.
 
 It is a dict that maps scope names to
-:class:`~scrapy.throttling.ThrottlingScopeConfig` dicts.
+:class:`~scrapy.throttling.ThrottlingScopeConfig` dicts. It is empty by default.
 
-Its default value allows faster crawling of the testing websites used during
-the :ref:`tutorial <intro-tutorial>` while maintaining conservative defaults
-for other domains:
+:command:`startproject` scaffolds an entry for the testing websites used during
+the :ref:`tutorial <intro-tutorial>`, so that they are crawled faster while the
+:ref:`conservative defaults <basic-throttling>` still apply to other domains:
 
 .. code-block:: python
 
