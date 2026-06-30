@@ -273,9 +273,25 @@ markers = [
     "requires_internet: marks tests that need real Internet access",
 ]
 filterwarnings = [
+    "error",
     "ignore::DeprecationWarning:twisted.web.static",
-    # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
-    "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
+    # Twisted leaves the listening socket open after a failed bind
+    # (CannotListenError): https://github.com/twisted/twisted/issues/6108
+    # The asyncio reactor likewise leaves client sockets and transports open on
+    # teardown. These surface as unraisable exceptions during finalization; the
+    # message wording varies across Python versions (sometimes there is no
+    # "Exception ignored ..." prefix at all), so match on the object repr.
+    "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
+    "ignore:.*calling deallocator <function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
+    # files open; the resulting warning surfaces at an arbitrary GC point.
+    "ignore:.*<_io\\.FileIO name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    # pyftpdlib imports the deprecated asyncore/asynchat modules on Python < 3.12.
+    "ignore:The async(ore|hat) module is deprecated:DeprecationWarning",
+    # Old w3lib (min env) compiles a regex with inline flags not at the start.
+    "ignore:Flags not at the start of the expression:DeprecationWarning",
+    # Old Twisted (min env) calls the deprecated threading.currentThread().
+    "ignore:currentThread\\(\\) is deprecated:DeprecationWarning",
 ]
 
 [tool.ruff.lint]

@@ -212,6 +212,10 @@ class TestInteractiveShell:
         p.expect_exact("Available Scrapy objects")
         p.sendeof()
         p.wait()  # type: ignore[no-untyped-call]
+        if p.proc.stdin:
+            p.proc.stdin.close()
+        if p.proc.stdout:
+            p.proc.stdout.close()
         logfile.seek(0)
         return logfile.read().decode()
 
@@ -238,6 +242,10 @@ class TestInteractiveShell:
         p.expect_exact("IPYMODULE False")
         p.sendeof()
         p.wait()  # type: ignore[no-untyped-call]
+        if p.proc.stdin:
+            p.proc.stdin.close()
+        if p.proc.stdout:
+            p.proc.stdout.close()
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
