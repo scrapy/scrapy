@@ -523,7 +523,7 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
 
             async def parse(self, response):
                 deferred = some_dfd_helper()
-                result = await deferred_to_future(deferred)
+                result = await maybe_deferred_to_future(deferred)
     """
     if not is_asyncio_available():
         return d

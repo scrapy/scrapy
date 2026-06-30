@@ -67,8 +67,9 @@ def get_retry_request(
     and :ref:`stats <topics-stats>`, and to provide extra logging context (see
     :func:`logging.debug`).
 
-    *reason* is a string or an :class:`Exception` object that indicates the
-    reason why the request needs to be retried. It is used to name retry stats.
+    *reason* is a string, an :class:`Exception` subclass or an
+    :class:`Exception` object that indicates the reason why the request needs
+    to be retried. It is used to name retry stats.
 
     *max_retry_times* is a number that determines the maximum number of times
     that *request* can be retried. If not specified or ``None``, the number is
