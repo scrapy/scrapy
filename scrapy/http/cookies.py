@@ -137,8 +137,8 @@ class _DummyLock:
 
 class WrappedRequest:
     """Wraps a :class:`scrapy.Request` class with methods defined by
-    :class:`urllib.request.Request` class to interact with
-    :class:`http.cookiejar.CookieJar` class.
+    the :class:`urllib.request.Request` class to interact with
+    the :class:`http.cookiejar.CookieJar` class.
     """
 
     def __init__(self, request: Request):

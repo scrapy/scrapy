@@ -172,7 +172,8 @@ async def _send_catch_log_asyncio(
 
     Returns a coroutine that completes once all signal handlers have finished.
 
-    This function an installed asyncio reactor or a running asyncio event loop.
+    This function requires an installed asyncio reactor or a running asyncio
+    event loop.
 
     .. versionadded:: 2.14
     """
