@@ -42,23 +42,16 @@ class Selector(_ParselSelector, object_ref):
     ``response`` isn't available. Using ``text`` and ``response`` together is
     undefined behavior.
 
-    ``type`` defines the selector type, it can be ``"html"``, ``"xml"``, ``"json"``
-    or ``None`` (default).
+    ``type`` defines the selector type, it can be ``"html"``, ``"xml"``,
+    ``"json"``, ``"text"`` or ``None`` (default). It's passed to
+    :class:`parsel.Selector` and its meaning is defined there. However, when
+    ``type`` is ``None``, it is set to ``"xml"`` for an
+    :class:`~scrapy.http.XmlResponse` and to ``"html"`` otherwise before
+    passing it to :class:`parsel.Selector`.
 
-    If ``type`` is ``None``, the selector automatically chooses the best type
-    based on ``response`` type (see below), or defaults to ``"html"`` in case it
-    is used together with ``text``.
-
-    If ``type`` is ``None`` and a ``response`` is passed, the selector type is
-    inferred from the response type as follows:
-
-    * ``"html"`` for :class:`~scrapy.http.HtmlResponse` type
-    * ``"xml"`` for :class:`~scrapy.http.XmlResponse` type
-    * ``"json"`` for :class:`~scrapy.http.TextResponse` type
-    * ``"html"`` for anything else
-
-    Otherwise, if ``type`` is set, the selector type will be forced and no
-    detection will occur.
+    .. note:: JSON selector support requires ``parsel`` 1.8.0 or higher. With
+       older versions setting ``type`` to ``"json"`` or ``"text"`` is not
+       supported.
     """
 
     __slots__ = ["response"]
