@@ -278,7 +278,8 @@ to wait between requests.
 If :setting:`ROBOTSTXT_OBEY` and :setting:`THROTTLING_ROBOTSTXT_OBEY` are
 ``True`` (default), valid ``Crawl-Delay`` directives override
 :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`.
-Concurrency is set to ``1`` and delay is set to the value of ``Crawl-Delay``, capped at
+Concurrency is set to ``1`` and the delay is raised to at least the
+``Crawl-Delay`` value (a larger configured delay is kept), capped at
 :setting:`THROTTLING_ROBOTSTXT_MAX_DELAY` (default: ``60.0``).
 
 If :setting:`THROTTLING_SCOPES` defines a different concurrency or delay, it
@@ -896,6 +897,13 @@ positive number to enable this built in: the throttler adds the IP of each
 request, resolved from the DNS cache, as a second scope, limited to that many
 concurrent requests. IP scopes whose ``concurrency`` is left unset default to
 :setting:`CONCURRENT_REQUESTS_PER_IP`.
+
+.. note:: Enabling :setting:`CONCURRENT_REQUESTS_PER_IP` requires the
+    :ref:`throttling-aware scheduler <throttling-aware-scheduler>`. The default
+    :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` does not support it
+    and raises an error at start up if it is set, so switch
+    :setting:`SCHEDULER` and :setting:`SCHEDULER_PRIORITY_QUEUE` as shown
+    there.
 
 For finer control (e.g. resolving IPs that are not in the DNS cache yet, or
 grouping several hosts under one address), implement a :ref:`throttling manager

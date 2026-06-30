@@ -12,7 +12,6 @@ from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.resolver import dnscache
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import _defer_sleep_async, deferred_from_coro
 from scrapy.utils.deprecate import create_deprecated_class
@@ -181,7 +180,6 @@ class Downloader:
         self._transferring: set[Request] = set()
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
-        self.ip_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS_PER_IP")
         self.middleware: DownloaderMiddlewareManager = (
             DownloaderMiddlewareManager.from_crawler(crawler)
         )
@@ -253,10 +251,10 @@ class Downloader:
         return self.get_slot_key(request)
 
     def get_slot_key(self, request: Request) -> str:
-        key = urlparse_cached(request).netloc or ""
-        if self.ip_concurrency:
-            key = dnscache.get(key, key)
-        return key
+        # Per-IP grouping (CONCURRENT_REQUESTS_PER_IP) is now a throttling scope
+        # handled by the throttler, not a downloader slot key; this fallback (used
+        # only when no throttler is set) keys by domain alone.
+        return urlparse_cached(request).netloc or ""
 
     async def _enqueue_request(self, request: Request) -> Response:
         key = self._get_slot_key(request)

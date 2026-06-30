@@ -1095,7 +1095,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
             },
             "rampup": {
                 "backoff_target": 1,
-                "delay_factor": 0.8,
+                "delay_factor": 0.5,
                 "min_delay": 0.05,
             },
         }
