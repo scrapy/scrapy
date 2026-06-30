@@ -152,7 +152,9 @@ class LocalCache(OrderedDict[_KT, _VT]):
         self.limit: int | None = limit
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
-        if self.limit:
+        if self.limit is not None:
+            if self.limit == 0:
+                return
             while len(self) >= self.limit:
                 self.popitem(last=False)
         super().__setitem__(key, value)

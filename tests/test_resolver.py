@@ -53,3 +53,21 @@ def test_caching_hostname_resolver_no_addresses_not_cached():
     resolver.resolveHostName(Mock(), "example.com")
 
     assert "example.com" not in dnscache
+
+
+def test_caching_hostname_resolver_dnscache_disabled_rejects_storage():
+
+    def fake_resolve(receiver, *_):
+        receiver.resolutionBegan(Mock())
+        receiver.addressResolved(Mock())
+        receiver.resolutionComplete()
+        return receiver
+
+    reactor = Mock()
+    reactor.nameResolver.resolveHostName.side_effect = fake_resolve
+
+    resolver = CachingHostnameResolver(reactor, cache_size=0)
+    resolver.resolveHostName(Mock(), "example.com")
+
+    assert "example.com" not in dnscache
+    assert len(dnscache) == 0
