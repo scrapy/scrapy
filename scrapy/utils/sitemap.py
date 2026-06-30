@@ -99,6 +99,8 @@ class Sitemap:
     def _get_tag_name(elem: lxml.etree._Element) -> str:
         if TYPE_CHECKING:
             assert isinstance(elem.tag, str)
+        if not isinstance(elem.tag, str):
+            return ""
         _, _, localname = elem.tag.partition("}")
         return localname or elem.tag
 
