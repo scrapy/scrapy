@@ -57,6 +57,18 @@ def _canonicalize_link_url(link: Link) -> str:
     return canonicalize_url(link.url, keep_fragments=True)
 
 
+def _name_matches(allowed: set[str], denied: set[str], name: str) -> bool:
+    """Return whether a tag or attribute *name* should be considered.
+
+    A name matches when it is allowed and not denied. A name is allowed if it is
+    listed in *allowed*, or if *allowed* contains the ``"*"`` wildcard, which
+    matches every name. *denied* has precedence over *allowed*.
+    """
+    if name in denied:
+        return False
+    return "*" in allowed or name in allowed
+
+
 class LxmlParserLinkExtractor:
     def __init__(
         self,
@@ -162,6 +174,126 @@ _RegexOrSeveral: TypeAlias = _Regex | Iterable[_Regex]
 
 
 class LxmlLinkExtractor:
+    r"""LxmlLinkExtractor is the recommended link extractor with handy filtering
+    options. It is implemented using lxml's robust HTMLParser.
+
+    :param allow: a single regular expression (or list of regular expressions)
+        that the (absolute) urls must match in order to be extracted. If not
+        given (or empty), it will match all links.
+    :type allow: str or list
+
+    :param deny: a single regular expression (or list of regular expressions)
+        that the (absolute) urls must match in order to be excluded (i.e. not
+        extracted). It has precedence over the ``allow`` parameter. If not
+        given (or empty) it won't exclude any links.
+    :type deny: str or list
+
+    :param allow_domains: a single value or a list of string containing
+        domains which will be considered for extracting the links
+    :type allow_domains: str or list
+
+    :param deny_domains: a single value or a list of strings containing
+        domains which won't be considered for extracting the links
+    :type deny_domains: str or list
+
+    :param deny_extensions: a single value or list of strings containing
+        extensions that should be ignored when extracting links.
+        If not given, it will default to
+        :data:`scrapy.linkextractors.IGNORED_EXTENSIONS`.
+    :type deny_extensions: list
+
+    :param restrict_xpaths: is an XPath (or list of XPath's) which defines
+        regions inside the response where links should be extracted from.
+        If given, only the text selected by those XPath will be scanned for
+        links.
+    :type restrict_xpaths: str or list
+
+    :param restrict_css: a CSS selector (or list of selectors) which defines
+        regions inside the response where links should be extracted from.
+        Has the same behaviour as ``restrict_xpaths``.
+    :type restrict_css: str or list
+
+    :param restrict_text: a single regular expression (or list of regular
+        expressions) that the link's text must match in order to be extracted.
+        If not given (or empty), it will match all links. If a list of regular
+        expressions is given, the link will be extracted if it matches at least
+        one.
+    :type restrict_text: str or list
+
+    :param tags: a tag or a list of tags to consider when extracting links.
+        Defaults to ``('a', 'area')``. Use ``'*'`` to consider every tag.
+    :type tags: str or list
+
+    :param attrs: an attribute or list of attributes which should be considered
+        when looking for links to extract (only for those tags specified in the
+        ``tags`` parameter). Defaults to ``('href',)``. Use ``'*'`` to consider
+        every attribute.
+    :type attrs: list
+
+    :param deny_tags: a tag or a list of tags that should not be considered when
+        extracting links. It has precedence over the ``tags`` parameter, so it
+        can be combined with ``tags='*'`` to consider every tag except a few.
+        Defaults to ``()`` (no tag is excluded).
+
+        .. versionadded:: VERSION
+    :type deny_tags: str or list
+
+    :param deny_attrs: an attribute or a list of attributes that should not be
+        considered when looking for links to extract. It has precedence over the
+        ``attrs`` parameter, so it can be combined with ``attrs='*'`` to consider
+        every attribute except a few. Defaults to ``()`` (no attribute is
+        excluded).
+
+        .. versionadded:: VERSION
+    :type deny_attrs: str or list
+
+    :param canonicalize: canonicalize each extracted url (using
+        w3lib.url.canonicalize_url). Defaults to ``False``.
+        Note that canonicalize_url is meant for duplicate checking;
+        it can change the URL visible at server side, so the response can be
+        different for requests with canonicalized and raw URLs. If you're
+        using LinkExtractor to follow links it is more robust to
+        keep the default ``canonicalize=False``.
+    :type canonicalize: bool
+
+    :param unique: whether duplicate filtering should be applied to extracted
+        links.
+    :type unique: bool
+
+    :param process_value: a function which receives each value extracted from
+        the tag and attributes scanned and can modify the value and return a
+        new one, or return ``None`` to ignore the link altogether. If not
+        given, ``process_value`` defaults to ``lambda x: x``.
+
+        .. highlight:: html
+
+        For example, to extract links from this code::
+
+            <a href="javascript:goToPage('../other/page.html'); return false">Link text</a>
+
+        .. highlight:: python
+
+        You can use the following function in ``process_value``:
+
+        .. code-block:: python
+
+            def process_value(value):
+                m = re.search(r"javascript:goToPage\('(.*?)'", value)
+                if m:
+                    return m.group(1)
+
+    :type process_value: collections.abc.Callable
+
+    :param strip: whether to strip whitespaces from extracted attributes.
+        According to HTML5 standard, leading and trailing whitespaces
+        must be stripped from ``href`` attributes of ``<a>``, ``<area>``
+        and many other elements, ``src`` attribute of ``<img>``, ``<iframe>``
+        elements, etc., so LinkExtractor strips space chars by default.
+        Set ``strip=False`` to turn it off (e.g. if you're extracting urls
+        from elements or attributes which allow leading/trailing whitespaces).
+    :type strip: bool
+    """
+
     _csstranslator = HTMLTranslator()
 
     def __init__(
@@ -180,11 +312,17 @@ class LxmlLinkExtractor:
         restrict_css: str | Iterable[str] = (),
         strip: bool = True,
         restrict_text: _RegexOrSeveral | None = None,
+        deny_tags: str | Iterable[str] = (),
+        deny_attrs: str | Iterable[str] = (),
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
+        deny_tags, deny_attrs = (
+            set(arg_to_iter(deny_tags)),
+            set(arg_to_iter(deny_attrs)),
+        )
         self.link_extractor = LxmlParserLinkExtractor(
-            tag=partial(operator.contains, tags),
-            attr=partial(operator.contains, attrs),
+            tag=partial(_name_matches, tags, deny_tags),
+            attr=partial(_name_matches, attrs, deny_attrs),
             unique=unique,
             process=process_value,
             strip=strip,
