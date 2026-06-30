@@ -117,8 +117,8 @@ def strip_url(
     - ``strip_credentials`` removes "user:password@"
     - ``strip_default_port`` removes ":80" (resp. ":443", ":21")
       from http:// (resp. https://, ftp://) URLs
-    - ``origin_only`` replaces path component with "/", also dropping
-      query and fragment components ; it also strips credentials
+    - ``origin_only`` replaces the  path component with "/", also dropping
+      the query component; it also strips credentials
     - ``strip_fragment`` drops any #fragment component
     """
 

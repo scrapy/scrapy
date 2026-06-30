@@ -75,7 +75,7 @@ if TYPE_CHECKING:
 # running event loop.
 #
 # Side note: it should be possible to remove _request_deferred() by using
-# engine.download_async() instead of engine.schedule(), losing the usual stuff
+# engine.download_async() instead of engine.crawl(), losing the usual stuff
 # like spider middlewares (none of which should be important).
 #
 # Other architecture problems:
@@ -188,7 +188,8 @@ class Shell:
     async def _schedule(self, request: Request, spider: Spider | None) -> Response:
         """Send the request to the engine, wait for the result.
 
-        Runs in the reactor thread.
+        Runs in the reactor thread when using the reactor, or in the asyncio
+        event loop thread otherwise.
         """
         if not self.spider:
             await self._open_spider(spider)

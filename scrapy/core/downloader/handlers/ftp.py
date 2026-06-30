@@ -2,9 +2,9 @@
 An asynchronous FTP file download handler for scrapy which somehow emulates an http response.
 
 FTP connection parameters are passed using the request meta field:
-- ftp_user (required)
-- ftp_password (required)
-- ftp_passive (by default, enabled) sets FTP connection passive mode
+- ftp_user (optional, falls back to FTP_USER)
+- ftp_password (optional, falls back to FTP_PASSWORD)
+- ftp_passive (optional, falls back to FTP_PASSIVE_MODE) sets FTP connection passive mode
 - ftp_local_filename
         - If not given, file data will come in the response.body, as a normal scrapy Response,
         which will imply that the entire file will be on memory.
