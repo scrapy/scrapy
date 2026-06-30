@@ -1,10 +1,6 @@
-"""
-XPath selectors based on lxml
-"""
-
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from parsel import Selector as _ParselSelector
 
@@ -18,13 +14,10 @@ __all__ = ["Selector", "SelectorList"]
 _NOT_SET = object()
 
 
-def _st(response: TextResponse | None, st: str | None) -> str:
-    if st is None:
-        return "xml" if isinstance(response, XmlResponse) else "html"
-    return st
+SelectorType = Literal["html", "xml", "json", "text"]
 
 
-def _response_from_text(text: str | bytes, st: str | None) -> TextResponse:
+def _response_from_text(text: str | bytes, st: SelectorType | None) -> TextResponse:
     rt: type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
     return rt(url="about:blank", encoding="utf-8", body=to_bytes(text, "utf-8"))
 
@@ -75,7 +68,7 @@ class Selector(_ParselSelector, object_ref):
         self,
         response: TextResponse | None = None,
         text: str | None = None,
-        type: str | None = None,  # noqa: A002
+        type: SelectorType | None = None,  # noqa: A002
         root: Any | None = _NOT_SET,
         **kwargs: Any,
     ):
@@ -84,10 +77,11 @@ class Selector(_ParselSelector, object_ref):
                 f"{self.__class__.__name__}.__init__() received both response and text"
             )
 
-        st = _st(response, type)
+        if type is None:
+            type = "xml" if isinstance(response, XmlResponse) else "html"  # noqa: A001
 
         if text is not None:
-            response = _response_from_text(text, st)
+            response = _response_from_text(text, type)
 
         if response is not None:
             text = response.text
@@ -98,4 +92,4 @@ class Selector(_ParselSelector, object_ref):
         if root is not _NOT_SET:
             kwargs["root"] = root
 
-        super().__init__(text=text, type=st, **kwargs)
+        super().__init__(text=text, type=type, **kwargs)
