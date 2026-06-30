@@ -92,6 +92,31 @@ def is_asyncio_available() -> bool:
     return is_asyncio_reactor_installed()
 
 
+def _get_running_or_installed_loop() -> asyncio.AbstractEventLoop:
+    """Return the asyncio event loop that Scrapy uses, even if it isn't running.
+
+    If an asyncio event loop is running in the current thread, it's returned.
+    Otherwise the event loop of the installed asyncio reactor is returned (the
+    reactor may not be running yet, e.g. while scheduling work before
+    :meth:`AsyncCrawlerProcess.start()
+    <scrapy.crawler.AsyncCrawlerProcess.start>`).
+
+    This is meant to replace :func:`asyncio.get_event_loop`, which is deprecated
+    and raises a :exc:`RuntimeError` on Python 3.14 and later when there is no
+    current event loop. It must only be called when an asyncio event loop is
+    running or an asyncio reactor is installed (i.e. when
+    :func:`is_asyncio_available` returns ``True``).
+    """
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop: the asyncio reactor's loop is installed but not
+        # running yet (or it runs in a different thread).
+        from twisted.internet import reactor
+
+        return reactor._asyncioEventloop  # type: ignore[no-any-return]
+
+
 async def _parallel_asyncio(
     iterable: Iterable[_T] | AsyncIterator[_T],
     count: int,
@@ -175,7 +200,7 @@ class AsyncioLoopingCall:
         self._start_time = time.monotonic()
         if now:
             self._call()
-        loop = asyncio.get_event_loop()
+        loop = _get_running_or_installed_loop()
         self._task = loop.create_task(self._loop())
 
     def _to_sleep(self) -> float:
@@ -243,7 +268,7 @@ def call_later(
     .. versionadded:: 2.14.0
     """
     if is_asyncio_available():
-        loop = asyncio.get_event_loop()
+        loop = _get_running_or_installed_loop()
         return CallLaterResult.from_asyncio(loop.call_later(delay, func, *args))
 
     from twisted.internet import reactor
