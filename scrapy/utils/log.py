@@ -248,8 +248,7 @@ def logformatter_adapter(
 ) -> tuple[int, str, dict[str, Any] | tuple[Any, ...]]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
-    and adapts it into a tuple of positional arguments for logger.log calls,
-    handling backward compatibility as well.
+    and adapts it into a tuple of positional arguments for logger.log calls.
     """
 
     level = logkws.get("level", logging.INFO)

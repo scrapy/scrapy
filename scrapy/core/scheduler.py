@@ -133,10 +133,10 @@ class Scheduler(BaseScheduler):
     (:setting:`SCHEDULER_PRIORITY_QUEUE`) that sort requests by
     :attr:`~scrapy.http.Request.priority`.
 
-    By default, a single, memory-based priority queue is used for all requests.
-    When using :setting:`JOBDIR`, a disk-based priority queue is also created,
+    By default, memory-based priority queues are used for all requests.
+    When using :setting:`JOBDIR`, disk-based priority queues are also created,
     and only unserializable requests are stored in the memory-based priority
-    queue. For a given priority value, requests in memory take precedence over
+    queues. For a given priority value, requests in memory take precedence over
     requests in disk.
 
     Each priority queue stores requests in separate internal queues, one per
@@ -343,7 +343,7 @@ class Scheduler(BaseScheduler):
     def open(self, spider: Spider) -> Deferred[None] | None:
         """
         (1) initialize the memory queue
-        (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
+        (2) initialize the disk queue if the ``jobdir`` argument wasn't empty
         (3) return the result of the dupefilter's ``open`` method
         """
         self.spider: Spider = spider

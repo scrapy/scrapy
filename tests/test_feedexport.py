@@ -746,7 +746,7 @@ class TestFeedExport(TestFeedExportBase):
         ]
 
         formats = {
-            "csv": b"baz,egg,foo\r\n,spam1,bar1\r\n",
+            "csv": b"foo,egg,baz\r\nbar1,spam1,\r\n",
             "json": b'[\n{"hello": "world2", "foo": "bar2"}\n]',
             "jsonlines": (
                 b'{"foo": "bar1", "egg": "spam1"}\n{"hello": "world2", "foo": "bar2"}\n'

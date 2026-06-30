@@ -131,7 +131,7 @@ class AutoThrottle:
         # It works better with problematic sites.
         new_delay = max(target_delay, new_delay)
 
-        # Make sure self.mindelay <= new_delay <= self.max_delay
+        # Make sure self.mindelay <= new_delay <= self.maxdelay
         new_delay = min(max(self.mindelay, new_delay), self.maxdelay)
 
         # Dont adjust delay if response status != 200 and new delay is smaller

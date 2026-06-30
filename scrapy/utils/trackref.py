@@ -4,9 +4,7 @@ references to live object instances.
 If you want live objects for a particular class to be tracked, you only have to
 subclass from object_ref (instead of object).
 
-About performance: This library has a minimal performance impact when enabled,
-and no performance penalty at all when disabled (as object_ref becomes just an
-alias to object in that case).
+This library has a minimal performance impact.
 
 .. note:: PyPy uses a tracing garbage collector, so objects may
     remain in the ``live_refs`` longer than expected, even after they
