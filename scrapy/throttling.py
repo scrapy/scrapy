@@ -528,7 +528,7 @@ def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
     .. code-block:: python
 
         from scrapy.utils.httpobj import urlparse_cached
-        from scrapy.utils.throttling import scope_cache
+        from scrapy.throttling import scope_cache
 
 
         class MyThrottlingManager:

@@ -74,14 +74,15 @@ behavior for specific domains [1]_.
 It is a dict that maps scope names to
 :class:`~scrapy.throttling.ThrottlingScopeConfig` dicts.
 
-Its default value allows faster crawling of the testing website using during
+Its default value allows faster crawling of the testing websites used during
 the :ref:`tutorial <intro-tutorial>` while maintaining conservative defaults
 for other domains:
 
 .. code-block:: python
 
     THROTTLING_SCOPES = {
-        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.0},
+        "books.toscrape.com": {"concurrency": 16, "delay": 0.1},
+        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
     }
 
 Additional keys like ``"jitter"`` and ``"backoff"`` can be used here and are
@@ -132,8 +133,7 @@ How backoff works
 -----------------
 
 Every :ref:`throttling scope <throttling-scopes>` keeps a current delay that
-starts at its configured value (``0`` by default, or :setting:`DOWNLOAD_DELAY`
-for the default per-domain scopes).
+starts at its configured ``"delay"`` (:setting:`DOWNLOAD_DELAY` by default).
 
 A **backoff trigger** is a response whose status code is in
 :setting:`BACKOFF_HTTP_CODES` or a download exception whose type is in
@@ -533,10 +533,6 @@ method, define a :class:`dict` where keys are throttling scopes and values are
 :class:`float` values that indicate the expected quota consumption (it does not
 need to be exact).
 
-Everything else being equal, :class:`~scrapy.pqueues.ScrapyPriorityQueue` will
-prioritize requests that consume a higher portion of the available throttling
-quota, to minimize the risk of those requests getting stuck.
-
 .. _custom-throttling-scope-managers:
 
 Customizing throttling scope managers
@@ -575,64 +571,22 @@ setting:
         },
     }
 
-A scope manager only needs to implement the
-:class:`~scrapy.throttling.ThrottlingScopeManagerProtocol`. For example, the
-following manager enforces a fixed quota per time window without any delay or
-exponential backoff, similar to a fixed-window rate limiter:
+Most custom scope managers subclass the default
+:class:`~scrapy.throttling.ThrottlingScopeManager` and override only the methods
+whose behavior they want to change; implementing the
+:class:`~scrapy.throttling.ThrottlingScopeManagerProtocol` from scratch is also
+supported. For example, this manager disables exponential :ref:`backoff
+<backoff>`, so a scope relies solely on its configured delay and quota:
 
 .. code-block:: python
     :caption: ``myproject/throttling.py``
 
-    import time
+    from scrapy.throttling import ThrottlingScopeManager
 
 
-    class FixedWindowScopeManager:
-        def __init__(self, crawler, config):
-            self.limit = config["quota"]
-            self.window = config.get("window", 60.0)
-            self.reset_at = None
-            self.used = 0.0
-            self.active = 0
-
-        @classmethod
-        def from_crawler(cls, crawler, config):
-            return cls(crawler, config)
-
-        def can_send(self, now=None, amount=None):
-            now = now if now is not None else time.monotonic()
-            if self.reset_at is not None and now >= self.reset_at:
-                self.reset_at, self.used = None, 0.0
-            if self.used and self.used + (amount or 0) > self.limit:
-                return self.reset_at - now
-            return 0.0
-
-        def record_sent(self, now=None, amount=None):
-            now = now if now is not None else time.monotonic()
-            if self.reset_at is None:
-                self.reset_at = now + self.window
-            self.used += amount or 0
-            self.active += 1
-
-        def record_done(self, now=None):
-            self.active = max(0, self.active - 1)
-
-        def record_backoff(self, delay=None, now=None):
-            pass  # this manager does not back off
-
-        def reconcile_quota(self, consumed=None, remaining=None, now=None):
-            if remaining is not None:
-                self.used = max(0.0, self.limit - remaining)
-            elif consumed is not None:
-                self.used = max(0.0, self.used + consumed)
-
-        def set_base_delay(self, delay):
-            pass
-
-        def set_concurrency(self, concurrency):
-            pass
-
-        def is_idle(self, now, max_idle):
-            return self.active == 0
+    class FixedWindowScopeManager(ThrottlingScopeManager):
+        def record_backoff(self, *args, **kwargs):
+            pass  # never back off
 
 .. _throttling-aware-scheduler:
 
@@ -685,12 +639,13 @@ Alternative approaches include:
         :caption: ``settings.py``
 
         import tldextract
+        from scrapy.throttling import ThrottlingManager, scope_cache
         from scrapy.utils.httpobj import urlparse_cached
 
 
-        class MyThrottlingManager:
-
-            def get_request_scopes(self, request):
+        class MyThrottlingManager(ThrottlingManager):
+            @scope_cache
+            async def get_scopes(self, request):
                 extracted = tldextract.extract(request.url)
                 if extracted.domain and extracted.suffix:
                     return f"{extracted.domain}.{extracted.suffix}"
@@ -715,12 +670,13 @@ Alternative approaches include:
         :caption: ``settings.py``
 
         import tldextract
+        from scrapy.throttling import ThrottlingManager, scope_cache
         from scrapy.utils.httpobj import urlparse_cached
 
 
-        class MyThrottlingManager:
-
-            def get_request_scopes(self, request):
+        class MyThrottlingManager(ThrottlingManager):
+            @scope_cache
+            async def get_scopes(self, request):
                 extracted = tldextract.extract(request.url)
                 if not (extracted.domain and extracted.suffix):
                     return urlparse_cached(request).netloc
@@ -870,7 +826,7 @@ Cost-capped throttling
 
 Imagine you are using an API that charges different requests differently, e.g.
 based on the features used, and you want to limit how much you spend per time
-window (:setting:`BACKOFF_WINDOW`). You can use :ref:`throttling quotas
+window (:setting:`THROTTLING_WINDOW`). You can use :ref:`throttling quotas
 <throttling-quotas>` for that:
 
 -   Implement a :ref:`throttling manager <custom-throttling-scopes>` that:
@@ -1149,6 +1105,8 @@ API
 .. autoclass:: scrapy.throttling.ThrottlingScopeConfig
 
 .. autoclass:: scrapy.throttling.BackoffConfig
+
+.. autoclass:: scrapy.throttling.RampupConfig
 
 .. autofunction:: scrapy.throttling.scope_cache
 .. autofunction:: scrapy.throttling.add_scope

@@ -85,6 +85,12 @@ class Crawler:
         self.logformatter: LogFormatter | None = None
         self.request_fingerprinter: RequestFingerprinterProtocol | None = None
         self.throttler: ThrottlingManagerProtocol | None = None
+        """The throttling manager of this crawler, an instance of
+        :setting:`THROTTLING_MANAGER`.
+
+        It is ``None`` until the crawl starts. Components can use it to inspect
+        or drive :ref:`throttling <throttling>` at run time, e.g. through
+        :meth:`~scrapy.throttling.ThrottlingManagerProtocol.delay_scope`."""
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
