@@ -575,7 +575,11 @@ class TestThrottlingScopeManager:
         assert scope._concurrency == 8
 
     def test_no_scope_concurrency_limit_when_zero(self):
-        scope = _scope_manager(settings={"THROTTLING_SCOPE_CONCURRENCY": 0})
+        # THROTTLING_SCOPE_CONCURRENCY governs scopes that are neither a domain
+        # nor an IP (here a bare "custom" group name).
+        scope = _scope_manager(
+            settings={"THROTTLING_SCOPE_CONCURRENCY": 0}, config={"id": "custom"}
+        )
         assert scope._concurrency is None
         for _ in range(100):
             scope.record_sent(now=0.0)

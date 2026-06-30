@@ -98,7 +98,6 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
-        self._warn_on_deprecated_default_settings()
         self._apply_spider_download_delay()
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
@@ -183,21 +182,6 @@ class Crawler:
             self.settings.set(
                 "DOWNLOAD_DELAY", spider.download_delay, priority="spider"
             )
-
-    def _warn_on_deprecated_default_settings(self) -> None:
-        default_priority = SETTINGS_PRIORITIES["default"]
-        for setting_name, current_default, future_default in (
-            ("THROTTLING_SCOPE_CONCURRENCY", 8, 1),
-        ):
-            if self.settings.getpriority(setting_name) == default_priority:
-                warnings.warn(
-                    f"The default value of {setting_name} will change from "
-                    f"{current_default!r} to {future_default!r} in a future "
-                    f"Scrapy version. Explicitly set {setting_name} in your "
-                    f"settings to silence this warning.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=3,
-                )
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import contextlib
 import datetime as dt
+import ipaddress
 import logging
 import random
+import re
 import time
 import warnings
 from collections import OrderedDict
@@ -18,6 +20,7 @@ from typing_extensions import NotRequired, Self
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.resolver import dnscache
 from scrapy.utils.asyncio import sleep, wait_for_first
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -146,6 +149,59 @@ def iter_scope_values(scopes: RequestScopes) -> Iterable[tuple[ScopeID, float | 
         return
     for scope in scopes:
         yield scope, None
+
+
+# A DNS hostname with at least one dot, e.g. "books.toscrape.com"; labels are
+# alphanumeric (plus hyphens, not at the edges) and an optional trailing dot
+# marks a fully-qualified name.
+_HOSTNAME_RE = re.compile(
+    r"(?i)^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+\.?$"
+)
+
+
+def _classify_scope(scope_id: ScopeID) -> str:
+    """Classify *scope_id* as ``"ip"``, ``"domain"`` or ``"other"`` to pick its
+    default concurrency setting (see :func:`_default_scope_concurrency`).
+
+    A scope that parses as an IP address is ``"ip"``; one that *looks like* a
+    DNS hostname with at least one dot is ``"domain"``; anything else (custom
+    group names, single labels like ``"localhost"``) is ``"other"``.
+    """
+    host = scope_id
+    if host.startswith("[") and "]" in host:  # bracketed IPv6, e.g. "[::1]:80"
+        host = host[1 : host.index("]")]
+    with contextlib.suppress(ValueError):
+        ipaddress.ip_address(host)
+        return "ip"
+    # Drop a trailing ":port" for the hostname check (an IPv4 "host:port" is
+    # re-tested as an IP below).
+    if host.count(":") == 1:
+        host = host.rsplit(":", 1)[0]
+    with contextlib.suppress(ValueError):
+        ipaddress.ip_address(host)
+        return "ip"
+    if "." in host and _HOSTNAME_RE.match(host):
+        return "domain"
+    return "other"
+
+
+def _default_scope_concurrency(settings: Any, scope_id: ScopeID) -> int:
+    """Return the default concurrency for *scope_id* based on its
+    :func:`kind <_classify_scope>`.
+
+    Domain scopes default to :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, IP
+    scopes to :setting:`CONCURRENT_REQUESTS_PER_IP` (falling back to the
+    per-domain value when per-IP limiting is off, so IP-literal crawls are not
+    left unbounded), and any other scope to :setting:`THROTTLING_SCOPE_CONCURRENCY`.
+    """
+    kind = _classify_scope(scope_id)
+    if kind == "ip":
+        return settings.getint("CONCURRENT_REQUESTS_PER_IP") or settings.getint(
+            "CONCURRENT_REQUESTS_PER_DOMAIN"
+        )
+    if kind == "domain":
+        return settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
+    return settings.getint("THROTTLING_SCOPE_CONCURRENCY")
 
 
 def _to_scope_dict(collection: Any, default: Callable[[], Any]) -> dict[ScopeID, Any]:
@@ -398,6 +454,17 @@ class ThrottlingManagerProtocol(Protocol):
         whereas a ``delay_scope`` call is trusted.
         """
 
+    def get_scope_delay(self, scope_id: str) -> float:
+        """Return the current base (non-backoff) delay of *scope_id*, in seconds."""
+
+    def set_scope_delay(self, scope_id: str, delay: float) -> None:
+        """Set the base (non-backoff) delay of *scope_id* to *delay* seconds.
+
+        Unlike :meth:`delay_scope`, this both raises and lowers the delay and is
+        not counted as backoff; it lets a component drive the scope delay
+        directly (e.g. an adaptive-delay extension).
+        """
+
     async def process_response(self, response: Response) -> None:
         """Update the throttling state based on *response*."""
 
@@ -480,6 +547,9 @@ class ThrottlingManager:
             load_object(cls) for cls in crawler.settings.getlist("BACKOFF_EXCEPTIONS")
         )
         self._debug = crawler.settings.getbool("THROTTLING_DEBUG")
+        # When set, each request also gets an IP scope (its resolved address),
+        # enforced alongside its domain scope (see _resolve_scopes_sync).
+        self._per_ip: int = crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP")
         self._max_idle = crawler.settings.getfloat("THROTTLING_SCOPE_MAX_IDLE")
         self._robotstxt_obey = crawler.settings.getbool(
             "ROBOTSTXT_OBEY"
@@ -539,7 +609,15 @@ class ThrottlingManager:
                 stacklevel=2,
             )
             return download_slot
-        return urlparse_cached(request).netloc
+        netloc = urlparse_cached(request).netloc
+        if self._per_ip:
+            # Best-effort, mirroring the legacy per-IP downloader slots: use the
+            # cached resolved address if available, else fall back to the domain
+            # scope alone (the IP is not known until the host is resolved).
+            ip = dnscache.get(netloc)
+            if isinstance(ip, str) and ip != netloc:
+                return (netloc, ip)
+        return netloc
 
     def get_slot_key(self, request: Request) -> str:
         scopes = self._resolve_scopes_sync(request)
@@ -903,6 +981,14 @@ class ThrottlingManager:
         # delay; unlike those, it is trusted, so it bypasses BACKOFF_MAX_DELAY.
         self._get_scope_manager(scope_id).record_backoff(delay=float(delay), cap=False)
 
+    def get_scope_delay(self, scope_id: ScopeID) -> float:
+        return self._get_scope_manager(scope_id).get_base_delay()
+
+    def set_scope_delay(self, scope_id: ScopeID, delay: float) -> None:
+        self._get_scope_manager(scope_id).set_base_delay(
+            float(delay), only_increase=False
+        )
+
     def _maybe_evict(self, now: float) -> None:
         if self._max_idle <= 0:
             return
@@ -1002,11 +1088,15 @@ class ThrottlingScopeManagerProtocol(Protocol):
         reported for a request, correcting the estimate used by
         :meth:`record_sent`."""
 
-    def set_base_delay(self, delay: float) -> None:
-        """Raise the base (non-backoff) delay of this scope to *delay* seconds.
+    def get_base_delay(self) -> float:
+        """Return the base (non-backoff) delay of this scope, in seconds."""
 
-        It never lowers the configured base delay; it is used to honor external
-        hints such as a robots.txt ``Crawl-delay`` directive.
+    def set_base_delay(self, delay: float, *, only_increase: bool = True) -> None:
+        """Set the base (non-backoff) delay of this scope to *delay* seconds.
+
+        By default it only raises the delay, to honor external hints such as a
+        robots.txt ``Crawl-delay`` directive. Pass ``only_increase=False`` to
+        also allow lowering it.
         """
 
     def set_concurrency(self, concurrency: int) -> None:
@@ -1146,7 +1236,7 @@ class ThrottlingScopeManager:
         elif self._rampup_enabled:
             self._concurrency = self._min_concurrency
         else:
-            self._concurrency = settings.getint("THROTTLING_SCOPE_CONCURRENCY") or None
+            self._concurrency = _default_scope_concurrency(settings, self._id) or None
         # Used as the load denominator when the scope enforces no explicit
         # concurrency limit (see get_load()).
         self._global_concurrency: int = settings.getint("CONCURRENT_REQUESTS")
@@ -1374,10 +1464,15 @@ class ThrottlingScopeManager:
         elif consumed is not None:
             self._consumed = max(0.0, self._consumed + float(consumed))
 
-    def set_base_delay(self, delay: float) -> None:
-        if delay <= self._base_delay:
+    def get_base_delay(self) -> float:
+        return self._base_delay
+
+    def set_base_delay(self, delay: float, *, only_increase: bool = True) -> None:
+        if only_increase and delay <= self._base_delay:
             return
         self._base_delay = delay
+        # Reflect the change in the effective delay unless a backoff is raising
+        # it above the base right now.
         if self._backoff_level == 0:
             self._delay = delay
 

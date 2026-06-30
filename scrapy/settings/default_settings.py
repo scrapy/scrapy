@@ -16,7 +16,6 @@ Scrapy developers, if you add a setting here remember to:
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Any
 
 __all__ = [
     "ADDONS",
@@ -45,6 +44,7 @@ __all__ = [
     "CONCURRENT_ITEMS",
     "CONCURRENT_REQUESTS",
     "CONCURRENT_REQUESTS_PER_DOMAIN",
+    "CONCURRENT_REQUESTS_PER_IP",
     "COOKIES_DEBUG",
     "COOKIES_ENABLED",
     "CRAWLSPIDER_FOLLOW_LINKS",
@@ -265,6 +265,7 @@ CONCURRENT_ITEMS = 100
 
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
+CONCURRENT_REQUESTS_PER_IP = 0
 
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
@@ -597,7 +598,7 @@ THROTTLING_SCOPES = {}
 THROTTLING_WINDOW = 60.0
 THROTTLING_ROBOTSTXT_OBEY = True
 THROTTLING_ROBOTSTXT_MAX_DELAY = 60.0
-THROTTLING_SCOPE_CONCURRENCY = 8
+THROTTLING_SCOPE_CONCURRENCY = 1
 THROTTLING_SCOPE_LIMIT = 100000
 THROTTLING_SCOPE_MAX_IDLE = 3600.0
 THROTTLING_DEBUG = False
@@ -613,19 +614,3 @@ URLLENGTH_LIMIT = 2083
 USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org)"
 
 WARN_ON_GENERATOR_RETURN_VALUE = True
-
-
-def __getattr__(name: str) -> Any:
-    if name == "CONCURRENT_REQUESTS_PER_IP":
-        import warnings  # noqa: PLC0415
-
-        from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
-
-        warnings.warn(
-            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return 0
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

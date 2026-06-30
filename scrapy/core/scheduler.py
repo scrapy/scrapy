@@ -211,9 +211,8 @@ class Scheduler(BaseScheduler):
     -------------------------
 
     While pending requests are below the configured values of
-    :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
-    or :setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
-    concurrently.
+    :setting:`CONCURRENT_REQUESTS` or :setting:`THROTTLING_SCOPE_CONCURRENCY`,
+    those requests are sent concurrently.
 
     As a result, the first few requests of a crawl may not follow the desired
     order. Lowering those settings to ``1`` enforces the desired order except

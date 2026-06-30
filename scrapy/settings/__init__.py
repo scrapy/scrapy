@@ -149,15 +149,6 @@ class BaseSettings(MutableMapping[str, Any]):
         :param default: the value to return if no setting is found
         :type default: object
         """
-        if name == "CONCURRENT_REQUESTS_PER_IP" and (
-            isinstance(self[name], int) and self[name] != 0
-        ):
-            warnings.warn(
-                "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
         if name == "DNS_RESOLVER":
             warnings.warn(
                 "The DNS_RESOLVER setting is deprecated, please use "
@@ -165,22 +156,6 @@ class BaseSettings(MutableMapping[str, Any]):
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-
-        if name == "THROTTLING_SCOPE_CONCURRENCY":
-            per_domain_prio = self.getpriority("CONCURRENT_REQUESTS_PER_DOMAIN") or 0
-            new_prio = self.getpriority(name) or 0
-            if (
-                per_domain_prio > SETTINGS_PRIORITIES["default"]
-                and new_prio <= SETTINGS_PRIORITIES["default"]
-            ):
-                warnings.warn(
-                    "The CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated, use "
-                    "THROTTLING_SCOPE_CONCURRENCY instead.",
-                    ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-                per_domain_val = self["CONCURRENT_REQUESTS_PER_DOMAIN"]
-                return per_domain_val if per_domain_val is not None else default
 
         return self[name] if self[name] is not None else default
 

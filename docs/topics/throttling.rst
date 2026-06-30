@@ -26,9 +26,9 @@ throttling limits, as do ``toscrape.com`` and ``books.toscrape.com``.
 
 The main throttling :ref:`settings <topics-settings>` are:
 
--   .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
+-   .. setting:: THROTTLING_SCOPE_CONCURRENCY
 
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (default: ``1`` (:ref:`fallback <default-settings>`: ``8``))
+    :setting:`THROTTLING_SCOPE_CONCURRENCY` (default: ``1`` (:ref:`fallback <default-settings>`: ``8``))
 
     Maximum number of simultaneous requests per domain.
 
@@ -49,7 +49,7 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 When configuring these settings, note that:
 
--   :setting:`CONCURRENT_REQUESTS` caps ``CONCURRENT_REQUESTS_PER_DOMAIN``.
+-   :setting:`CONCURRENT_REQUESTS` caps :setting:`THROTTLING_SCOPE_CONCURRENCY`.
 
 -   If ``DOWNLOAD_DELAY`` ≥ response time, concurrency is effectively ``1``,
     because the next request to the domain is not sent until the delay elapses,
@@ -277,7 +277,7 @@ to wait between requests.
 
 If :setting:`ROBOTSTXT_OBEY` and :setting:`THROTTLING_ROBOTSTXT_OBEY` are
 ``True`` (default), valid ``Crawl-Delay`` directives override
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`. Concurrency
+:setting:`THROTTLING_SCOPE_CONCURRENCY` and :setting:`DOWNLOAD_DELAY`. Concurrency
 is set to ``1`` and delay is set to the value of ``Crawl-Delay``, capped at
 :setting:`THROTTLING_ROBOTSTXT_MAX_DELAY` (default: ``60.0``).
 
@@ -440,9 +440,8 @@ Its keys are scope names and its values are
 following keys:
 
 ``concurrency`` (:class:`int`)
-    Maximum number of concurrent requests for the scope. When unset, the
-    per-domain concurrency (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`) applies
-    instead.
+    Maximum number of concurrent requests for the scope. When unset,
+    :setting:`THROTTLING_SCOPE_CONCURRENCY` applies instead.
 
 ``min_concurrency`` (:class:`int`)
     Concurrency floor that :ref:`backoff <backoff>` and :ref:`rampup <rampup>`
