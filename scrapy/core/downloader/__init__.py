@@ -97,7 +97,7 @@ class _DeprecatedSlotView:
     @property
     def randomize_delay(self) -> bool:
         if self._scope is not None:
-            return self._scope._randomize  # type: ignore[union-attr]
+            return bool(self._scope._jitter)  # type: ignore[union-attr]
         return False
 
     @property

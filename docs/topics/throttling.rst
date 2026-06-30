@@ -26,9 +26,9 @@ throttling limits, as do ``toscrape.com`` and ``books.toscrape.com``.
 
 The main throttling :ref:`settings <topics-settings>` are:
 
--   .. setting:: THROTTLING_SCOPE_CONCURRENCY
+-   .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
-    :setting:`THROTTLING_SCOPE_CONCURRENCY` (default: ``1`` (:ref:`fallback <default-settings>`: ``8``))
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (default: ``8``)
 
     Maximum number of simultaneous requests per domain.
 
@@ -49,7 +49,7 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 When configuring these settings, note that:
 
--   :setting:`CONCURRENT_REQUESTS` caps :setting:`THROTTLING_SCOPE_CONCURRENCY`.
+-   :setting:`CONCURRENT_REQUESTS` caps :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`.
 
 -   If ``DOWNLOAD_DELAY`` ≥ response time, concurrency is effectively ``1``,
     because the next request to the domain is not sent until the delay elapses,
@@ -277,8 +277,8 @@ to wait between requests.
 
 If :setting:`ROBOTSTXT_OBEY` and :setting:`THROTTLING_ROBOTSTXT_OBEY` are
 ``True`` (default), valid ``Crawl-Delay`` directives override
-:setting:`THROTTLING_SCOPE_CONCURRENCY` and :setting:`DOWNLOAD_DELAY`. Concurrency
-is set to ``1`` and delay is set to the value of ``Crawl-Delay``, capped at
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`.
+Concurrency is set to ``1`` and delay is set to the value of ``Crawl-Delay``, capped at
 :setting:`THROTTLING_ROBOTSTXT_MAX_DELAY` (default: ``60.0``).
 
 If :setting:`THROTTLING_SCOPES` defines a different concurrency or delay, it
@@ -440,8 +440,10 @@ Its keys are scope names and its values are
 following keys:
 
 ``concurrency`` (:class:`int`)
-    Maximum number of concurrent requests for the scope. When unset,
-    :setting:`THROTTLING_SCOPE_CONCURRENCY` applies instead.
+    Maximum number of concurrent requests for the scope. When unset, the
+    default depends on the kind of scope: :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
+    for domain scopes, :setting:`CONCURRENT_REQUESTS_PER_IP` for IP scopes, and
+    :setting:`THROTTLING_SCOPE_CONCURRENCY` for any other scope.
 
 ``min_concurrency`` (:class:`int`)
     Concurrency floor that :ref:`backoff <backoff>` and :ref:`rampup <rampup>`
@@ -452,7 +454,10 @@ following keys:
     :setting:`DOWNLOAD_DELAY`.
 
 ``jitter`` (:class:`float` or 2-:class:`list`)
-    Per-scope override of :setting:`RANDOMIZE_DOWNLOAD_DELAY`.
+    Magnitude of the random variation applied to ``delay``; the per-scope
+    override of :setting:`RANDOMIZE_DOWNLOAD_DELAY`. ``0`` disables it, ``0.5``
+    means ±50% (the default when :setting:`RANDOMIZE_DOWNLOAD_DELAY` is on), and
+    a ``[low, high]`` pair multiplies the delay by ``1 + uniform(low, high)``.
 
 ``quota`` (:class:`float`)
     Maximum :ref:`quota <throttling-quotas>` consumed per ``window``.
@@ -924,30 +929,39 @@ window (:setting:`BACKOFF_WINDOW`). You can use :ref:`throttling quotas
 Per-IP concurrency limiting
 ---------------------------
 
-A concurrency limit keyed by IP is just a throttling scope whose id is the
-request's IP, with a ``concurrency`` limit. A request then carries two scopes,
-its domain and its IP, and is only sent when **both** allow it (see
-:ref:`multiple-throttling-scopes`).
+.. setting:: CONCURRENT_REQUESTS_PER_IP
 
--   Implement a :ref:`throttling manager <custom-throttling-scopes>` that adds
-    the request's IP as a second scope:
+A concurrency limit keyed by IP is a throttling scope whose id is the request's
+IP. A request then carries two scopes, its domain and its IP, and is only sent
+when **both** allow it (see :ref:`multiple-throttling-scopes`).
 
-    .. code-block:: python
+Set :setting:`CONCURRENT_REQUESTS_PER_IP` (default: ``0``, disabled) to a
+positive number to enable this built in: the throttler adds the IP of each
+request, resolved from the DNS cache, as a second scope, limited to that many
+concurrent requests. IP scopes whose ``concurrency`` is left unset default to
+:setting:`CONCURRENT_REQUESTS_PER_IP`.
 
-        import socket
+For finer control (e.g. resolving IPs that are not in the DNS cache yet, or
+grouping several hosts under one address), implement a :ref:`throttling manager
+<custom-throttling-scopes>` that adds the request's IP as a second scope
+instead:
 
-        from scrapy.throttling import ThrottlingManager, add_scope, scope_cache
-        from scrapy.utils.asyncio import run_in_thread
-        from scrapy.utils.httpobj import urlparse_cached
+.. code-block:: python
+
+    import socket
+
+    from scrapy.throttling import ThrottlingManager, add_scope, scope_cache
+    from scrapy.utils.asyncio import run_in_thread
+    from scrapy.utils.httpobj import urlparse_cached
 
 
-        class IPThrottlingManager(ThrottlingManager):
-            @scope_cache
-            async def get_scopes(self, request):
-                scopes = await super().get_scopes(request)
-                host = urlparse_cached(request).hostname
-                address = await run_in_thread(socket.gethostbyname, host)
-                return add_scope(scopes, address)
+    class IPThrottlingManager(ThrottlingManager):
+        @scope_cache
+        async def get_scopes(self, request):
+            scopes = await super().get_scopes(request)
+            host = urlparse_cached(request).hostname
+            address = await run_in_thread(socket.gethostbyname, host)
+            return add_scope(scopes, address)
 
 .. _throttling-settings:
 
@@ -1033,6 +1047,18 @@ Additional settings
     Whether to log :ref:`throttling <throttling>` decisions (per-scope delays,
     backoff steps and recoveries) for debugging.
 
+-   .. setting:: THROTTLING_SCOPE_CONCURRENCY
+
+    :setting:`THROTTLING_SCOPE_CONCURRENCY` (default: ``1``)
+
+    Default maximum number of concurrent requests for :ref:`throttling scopes
+    <throttling-scopes>` that are neither domains nor IPs, e.g. custom scopes
+    added by a :ref:`custom throttling manager <custom-throttling-scopes>`.
+
+    Domain and IP scopes use :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+    :setting:`CONCURRENT_REQUESTS_PER_IP` instead. A scope ``concurrency`` set
+    in :setting:`THROTTLING_SCOPES` overrides this.
+
 -   .. setting:: THROTTLING_SCOPE_LIMIT
 
     :setting:`THROTTLING_SCOPE_LIMIT` (default: ``100000``)
@@ -1068,7 +1094,7 @@ The ``AutoThrottle`` extension is deprecated in favor of the throttling and
 :ref:`backoff <backoff>` system described here, which is always active and does
 not need to be enabled.
 
-Setting :setting:`AUTOTHROTTLE_ENABLED` to ``True`` still works but logs a
+Setting ``AUTOTHROTTLE_ENABLED`` to ``True`` still works but logs a
 deprecation warning. To migrate, drop the ``AUTOTHROTTLE_*`` settings and use
 the following equivalents:
 

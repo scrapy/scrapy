@@ -1106,7 +1106,7 @@ class TestThrottlingScopeManagerEdges:
             config={"id": "x", "backoff": {"jitter": [0.0, 0.0]}, "min_delay": 1.0}
         )
         # A [low, high] jitter range of [0, 0] leaves the value unchanged.
-        assert scope._apply_jitter(4.0) == pytest.approx(4.0)
+        assert scope._apply_jitter(4.0, scope._backoff_jitter) == pytest.approx(4.0)
 
     def test_effective_delay_randomized(self):
         scope = _scope_manager(

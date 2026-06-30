@@ -3261,7 +3261,7 @@ New features
 -   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
     :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
-    via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
+    via the new ``DOWNLOAD_SLOTS`` setting. (:issue:`5328`)
 
 -   Added :meth:`.TextResponse.jmespath`, a shortcut for JMESPath selectors
     available since parsel_ 1.8.1. (:issue:`5894`, :issue:`5915`)
@@ -7448,7 +7448,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
 
   - Item loaders now support nested loaders (:issue:`1467`).
   - ``FormRequest.from_response`` improvements (:issue:`1382`, :issue:`1137`).
-  - Added setting :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` and improved
+  - Added setting ``AUTOTHROTTLE_TARGET_CONCURRENCY`` and improved
     AutoThrottle docs (:issue:`1324`).
   - Added ``response.text`` to get body as unicode (:issue:`1730`).
   - Anonymous S3 connections (:issue:`1358`).
@@ -8651,7 +8651,7 @@ Scrapy changes:
 
 - added :ref:`topics-contracts`, a mechanism for testing spiders in a formal/reproducible way
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
-- documented ``scrapy.extensions.throttle.AutoThrottle`` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
+- documented ``scrapy.extensions.throttle.AutoThrottle`` and added to extensions installed by default. You still need to enable it with ``AUTOTHROTTLE_ENABLED``
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
 - added a ``process_start_requests()`` method to spider middlewares
 - dropped Signals singleton. Signals should now be accessed through the Crawler.signals attribute. See the signals documentation for more info.

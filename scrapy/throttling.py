@@ -92,6 +92,20 @@ class BackoffConfig(TypedDict, total=False):
     jitter: float | list[float]
 
 
+class RampupConfig(TypedDict, total=False):
+    """Per-scope override of the rampup settings.
+
+    Used as the value of the ``"rampup"`` key of :class:`ThrottlingScopeConfig`
+    entries when fine-tuning rampup beyond a plain ``True``. Any key left out
+    falls back to its default (or, for ``backoff_target``, to
+    :setting:`RAMPUP_BACKOFF_TARGET`).
+    """
+
+    backoff_target: float | list[float]
+    delay_factor: float
+    min_delay: float
+
+
 class ThrottlingScopeConfig(TypedDict, total=False):
     """Accepted keys of :setting:`THROTTLING_SCOPES` entries.
 
@@ -105,16 +119,25 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     """Floor. Never drop below this during backoff/rampup."""
 
     delay: float
+
     jitter: float | list[float]
+    """Magnitude of the random variation applied to ``delay``; the per-scope
+    override of :setting:`RANDOMIZE_DOWNLOAD_DELAY` (``0`` disables it, ``0.5``
+    means ±50%)."""
+
     quota: float
     window: float
-    rampup: bool
+    rampup: bool | RampupConfig
 
     manager: str | type
     """Import path or class of a custom :setting:`THROTTLING_SCOPE_MANAGER` for
     this scope."""
 
     backoff: BackoffConfig
+
+    ignore_robots_txt: bool
+    """Silence the warning logged when this configuration is more aggressive
+    than a robots.txt ``Crawl-delay``."""
 
 
 ScopeID = str
@@ -1199,8 +1222,11 @@ class ThrottlingScopeManager:
         self._base_delay: float = float(
             config.get("delay", settings.getfloat("DOWNLOAD_DELAY"))
         )
-        self._randomize: bool = bool(
-            config.get("randomize_delay", settings.getbool("RANDOMIZE_DOWNLOAD_DELAY"))
+        # Magnitude of the random variation applied to the (non-backoff) delay.
+        # Defaults to RANDOMIZE_DOWNLOAD_DELAY's historical ±50% when delay
+        # randomization is on, or to no variation when it is off.
+        self._jitter: float | list[float] = config.get(
+            "jitter", 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
         )
         self._delay_factor: float = float(
             backoff.get("delay_factor", settings.getfloat("BACKOFF_DELAY_FACTOR"))
@@ -1211,7 +1237,7 @@ class ThrottlingScopeManager:
         self._min_delay: float = float(
             backoff.get("min_delay", settings.getfloat("BACKOFF_MIN_DELAY"))
         )
-        self._jitter: float | list[float] = backoff.get(
+        self._backoff_jitter: float | list[float] = backoff.get(
             "jitter", settings.getfloat("BACKOFF_JITTER")
         )
         self._window: float = settings.getfloat("BACKOFF_WINDOW")
@@ -1272,17 +1298,18 @@ class ThrottlingScopeManager:
             return float(value[0]), float(value[1])
         return float(value), float(value)
 
-    def _apply_jitter(self, value: float) -> float:
-        if isinstance(self._jitter, (list, tuple)):
-            low, high = self._jitter[0], self._jitter[1]
+    @staticmethod
+    def _apply_jitter(value: float, jitter: float | list[float]) -> float:
+        if isinstance(jitter, (list, tuple)):
+            low, high = jitter[0], jitter[1]
             return value * (1 + random.uniform(low, high))  # noqa: S311
-        if not self._jitter:
+        if not jitter:
             return value
-        return value * random.uniform(1 - self._jitter, 1 + self._jitter)  # noqa: S311
+        return value * random.uniform(1 - jitter, 1 + jitter)  # noqa: S311
 
     def _effective_delay(self) -> float:
-        if self._backoff_level == 0 and self._randomize and self._delay > 0:
-            return random.uniform(0.5 * self._delay, 1.5 * self._delay)  # noqa: S311
+        if self._backoff_level == 0 and self._delay > 0:
+            return self._apply_jitter(self._delay, self._jitter)
         return self._delay
 
     def _recover(self, now: float) -> None:
@@ -1447,7 +1474,9 @@ class ThrottlingScopeManager:
             )
             grown = max(self._min_delay, grown)
             grown = min(grown, self._max_delay)
-            self._delay = min(self._apply_jitter(grown), self._max_delay)
+            self._delay = min(
+                self._apply_jitter(grown, self._backoff_jitter), self._max_delay
+            )
         self._next_allowed_time = now + self._delay
 
     def reconcile_quota(

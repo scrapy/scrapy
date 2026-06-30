@@ -882,6 +882,46 @@ Default: ``True``
 
 Whether to enable downloader stats collection.
 
+.. setting:: DOWNLOAD_BIND_ADDRESS
+
+DOWNLOAD_BIND_ADDRESS
+---------------------
+
+Default: ``None``
+
+The default local outgoing address for download-handler connections.
+
+This setting can be either:
+
+- a host address as a string (e.g. ``"127.0.0.2"``), in which case the local
+  port is chosen automatically, or
+
+- a ``(host, port)`` tuple (e.g. ``("127.0.0.2", 50000)``) to bind to both a
+  specific local interface and a specific local port.
+
+For example:
+
+.. code-block:: python
+
+    # Bind to this local address
+    DOWNLOAD_BIND_ADDRESS = "127.0.0.2"
+
+.. code-block:: python
+
+    # Bind to this local address and local port
+    DOWNLOAD_BIND_ADDRESS = ("127.0.0.2", 5000)
+
+If set, built-in HTTP download handlers use this value by default.
+Set the :reqmeta:`bindaddress` request meta key to override it for a specific
+request.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Specifying the port is unsupported by
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+
 .. setting:: DOWNLOAD_HANDLERS
 
 DOWNLOAD_HANDLERS
