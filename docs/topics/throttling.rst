@@ -28,7 +28,8 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 -   .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (default: ``8``)
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (default: ``1``
+    (:ref:`fallback <default-settings>`: ``8``))
 
     Maximum number of simultaneous requests per domain.
 
