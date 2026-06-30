@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from io import StringIO
 from shutil import copytree
 from typing import TYPE_CHECKING
@@ -418,6 +419,33 @@ class TestViewCommand:
         command.add_options(parser)
         assert command.short_desc() == "Open URL in browser, as seen by Scrapy"
         assert "URL using the Scrapy downloader and show its" in command.long_desc()
+
+
+class TestEditCommand(TestProjectBase):
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell editor script"
+    )
+    def test_edit(self, proj_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider = proj_path / self.project_name / "spiders" / "example.py"
+        edited = proj_path / "edited.txt"
+        editor = proj_path / "fake-editor.sh"
+        # Records the file it is asked to open ($2) into the file given as $1.
+        editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
+        editor.chmod(0o755)
+        monkeypatch.setenv("EDITOR", f"{editor} {edited}")
+
+        assert call("genspider", "example", "example.com", cwd=proj_path) == 0
+        returncode, _, err = proc("edit", "example", cwd=proj_path)
+
+        assert returncode == 0, err
+        assert (proj_path / edited.read_text(encoding="utf-8")).resolve() == (
+            spider.resolve()
+        )
+
+    def test_edit_spider_not_found(self, proj_path: Path) -> None:
+        returncode, _, err = proc("edit", "nonexistent", cwd=proj_path)
+        assert returncode == 1
+        assert "Spider not found: nonexistent" in err
 
 
 class TestHelpMessage(TestProjectBase):

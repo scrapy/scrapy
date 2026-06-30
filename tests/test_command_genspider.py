@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
 
 from tests.test_commands import TestProjectBase
 from tests.utils.cmdline import call, proc
+
+
+def write_recording_editor(editor: Path) -> None:
+    """Create an executable editor script that writes the path it is asked to
+    open (its last argument) into the file given as its first argument."""
+    editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
+    editor.chmod(0o755)
 
 
 def find_in_file(filename: Path, regex: str) -> re.Match[str] | None:
@@ -62,6 +70,28 @@ class TestGenspiderCommand(TestProjectBase):
     def test_dump(self, proj_path: Path) -> None:
         assert call("genspider", "--dump=basic", cwd=proj_path) == 0
         assert call("genspider", "-d", "basic", cwd=proj_path) == 0
+
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell editor script"
+    )
+    def test_edit(self, proj_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider = proj_path / self.project_name / "spiders" / "example2.py"
+        edited = proj_path / "edited.txt"
+        editor = proj_path / "fake-editor.sh"
+        write_recording_editor(editor)
+        # The extra argument exercises shlex-splitting of the EDITOR value.
+        monkeypatch.setenv("EDITOR", f"{editor} {edited}")
+
+        returncode, _, err = proc(
+            "genspider", "--edit", "example2", "example2.com", cwd=proj_path
+        )
+
+        assert returncode == 0, err
+        assert "ModuleNotFoundError" not in err
+        assert spider.exists()
+        assert (proj_path / edited.read_text(encoding="utf-8")).resolve() == (
+            spider.resolve()
+        )
 
     def test_same_name_as_project(self, proj_path: Path) -> None:
         assert call("genspider", self.project_name, cwd=proj_path) == 2
@@ -167,6 +197,26 @@ class TestGenspiderStandaloneCommand:
     def test_generate_standalone_spider(self, tmp_path: Path) -> None:
         call("genspider", "example", "example.com", cwd=tmp_path)
         assert Path(tmp_path, "example.py").exists()
+
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell editor script"
+    )
+    def test_edit(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider = tmp_path / "example.py"
+        edited = tmp_path / "edited.txt"
+        editor = tmp_path / "fake-editor.sh"
+        write_recording_editor(editor)
+        monkeypatch.setenv("EDITOR", f"{editor} {edited}")
+
+        returncode, _, err = proc(
+            "genspider", "--edit", "example", "example.com", cwd=tmp_path
+        )
+
+        assert returncode == 0, err
+        assert spider.exists()
+        assert (tmp_path / edited.read_text(encoding="utf-8")).resolve() == (
+            spider.resolve()
+        )
 
     @pytest.mark.parametrize("force", [True, False])
     def test_same_name_as_existing_file(self, force: bool, tmp_path: Path) -> None:
