@@ -424,6 +424,42 @@ class Base:
             lx = self.extractor_cls(attrs=None)
             assert lx.extract_links(self.response) == []
 
+            lx = self.extractor_cls(attrs=False)
+            assert lx.extract_links(self.response) == []
+
+            lx = self.extractor_cls(
+                attrs=True, tags=("a", "area", "img"), deny_extensions=()
+            )
+            assert lx.extract_links(self.response) == [
+                Link(url="http://example.com/sample1.html", text=""),
+                Link(url="http://example.com/sample1", text=""),
+                Link(url="http://example.com/sample2.html", text="sample 2"),
+                Link(url="http://example.com/sample2.jpg", text=""),
+                Link(url="http://example.com/sample2", text=""),
+                Link(url="http://example.com/sample3.html", text="sample 3 text"),
+                Link(url="http://example.com/sample%203", text="sample 3 text"),
+                Link(
+                    url="http://example.com/sample3.html#foo",
+                    text="sample 3 repetition with fragment",
+                ),
+                Link(url="http://www.google.com/something", text=""),
+                Link(url="http://example.com/innertag.html", text="inner tag"),
+                Link(url=page4_url, text="href with whitespaces"),
+            ]
+
+            lx = self.extractor_cls(
+                attrs=True,
+                tags=("a", "area", "img"),
+                deny_attrs=("href",),
+                deny_extensions=(),
+            )
+            assert lx.extract_links(self.response) == [
+                Link(url="http://example.com/sample1", text=""),
+                Link(url="http://example.com/sample2.jpg", text=""),
+                Link(url="http://example.com/sample2", text=""),
+                Link(url="http://example.com/sample%203", text="sample 3 text"),
+            ]
+
         def test_tags(self):
             html = (
                 b'<html><area href="sample1.html"></area>'
@@ -432,6 +468,9 @@ class Base:
             response = HtmlResponse("http://example.com/index.html", body=html)
 
             lx = self.extractor_cls(tags=None)
+            assert lx.extract_links(response) == []
+
+            lx = self.extractor_cls(tags=False)
             assert lx.extract_links(response) == []
 
             lx = self.extractor_cls()
@@ -455,6 +494,34 @@ class Base:
             )
             assert lx.extract_links(response) == [
                 Link(url="http://example.com/sample2.html", text="sample 2"),
+                Link(url="http://example.com/sample2.jpg", text=""),
+            ]
+
+            lx = self.extractor_cls(
+                tags=True,
+                attrs=(
+                    "href",
+                    "src",
+                ),
+                deny_extensions=(),
+            )
+            assert lx.extract_links(response) == [
+                Link(url="http://example.com/sample1.html", text=""),
+                Link(url="http://example.com/sample2.html", text="sample 2"),
+                Link(url="http://example.com/sample2.jpg", text=""),
+            ]
+
+            lx = self.extractor_cls(
+                tags=True,
+                attrs=(
+                    "href",
+                    "src",
+                ),
+                deny_tags=("a",),
+                deny_extensions=(),
+            )
+            assert lx.extract_links(response) == [
+                Link(url="http://example.com/sample1.html", text=""),
                 Link(url="http://example.com/sample2.jpg", text=""),
             ]
 
@@ -494,6 +561,102 @@ class Base:
                 Link(
                     url="http://example.com/get?id=2",
                     text="Item 2",
+                    fragment="",
+                    nofollow=False,
+                ),
+            ]
+
+            lx = self.extractor_cls(tags=None, attrs=None)
+            assert lx.extract_links(response) == []
+
+            lx = self.extractor_cls(tags=False, attrs=False)
+            assert lx.extract_links(response) == []
+
+            lx = self.extractor_cls(tags=True, attrs=True)
+            assert lx.extract_links(response) == [
+                Link(
+                    url="http://example.com/item1",
+                    text="Item 1",
+                    fragment="",
+                    nofollow=False,
+                ),
+                Link(
+                    url="http://example.com/get?id=1",
+                    text="Item 1",
+                    fragment="",
+                    nofollow=False,
+                ),
+                Link(
+                    url="http://example.com/index.html",
+                    text="Item 1",
+                    fragment="",
+                    nofollow=False,
+                ),
+                Link(
+                    url="http://example.com/item2",
+                    text="Item 2",
+                    fragment="",
+                    nofollow=False,
+                ),
+                Link(
+                    url="http://example.com/get?id=2",
+                    text="Item 2",
+                    fragment="",
+                    nofollow=False,
+                ),
+            ]
+
+            lx = self.extractor_cls(
+                tags=True,
+            )
+            assert lx.extract_links(response) == [
+                Link(
+                    url="http://example.com/index.html",
+                    text="Item 1",
+                    fragment="",
+                    nofollow=False,
+                ),
+            ]
+
+            lx = self.extractor_cls(
+                attrs=True,
+            )
+            assert lx.extract_links(response) == [
+                Link(
+                    url="http://example.com/index.html",
+                    text="Item 1",
+                    fragment="",
+                    nofollow=False,
+                ),
+            ]
+
+            lx = self.extractor_cls(tags=True, attrs=True, deny_attrs=("id",))
+            assert lx.extract_links(response) == [
+                Link(
+                    url="http://example.com/get?id=1",
+                    text="Item 1",
+                    fragment="",
+                    nofollow=False,
+                ),
+                Link(
+                    url="http://example.com/index.html",
+                    text="Item 1",
+                    fragment="",
+                    nofollow=False,
+                ),
+                Link(
+                    url="http://example.com/get?id=2",
+                    text="Item 2",
+                    fragment="",
+                    nofollow=False,
+                ),
+            ]
+
+            lx = self.extractor_cls(tags=True, attrs=True, deny_tags=("div",))
+            assert lx.extract_links(response) == [
+                Link(
+                    url="http://example.com/index.html",
+                    text="Item 1",
                     fragment="",
                     nofollow=False,
                 ),
