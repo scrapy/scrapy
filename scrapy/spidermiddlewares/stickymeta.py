@@ -1,31 +1,48 @@
+"""
+Sticky Meta Params Spider Middleware
+
+See documentation in docs/topics/spider-middleware.rst
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Request
+from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.http import Request, Response
 
 
-class StickyMetaParamsMiddleware:
-    """Forward a configurable list of meta keys through subsequent requests"""
+class StickyMetaParamsMiddleware(BaseSpiderMiddleware):
+    """Copy a configurable list of :attr:`Request.meta <scrapy.http.Request.meta>`
+    keys from a response into the follow-up requests of its callback.
+
+    The keys to copy are read from the :setting:`STICKY_META_KEYS` setting.
+    Keys already present in a follow-up request are not overwritten.
+    """
+
+    def __init__(self, sticky_meta_keys: list[str]):  # pylint: disable=super-init-not-called
+        self.sticky_meta_keys: list[str] = sticky_meta_keys
 
     @classmethod
-    def from_crawler(cls, crawler):
-        keys_to_sticky = crawler.settings.getlist('STICKY_META_KEYS')
-        if not keys_to_sticky:
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        sticky_meta_keys = crawler.settings.getlist("STICKY_META_KEYS")
+        if not sticky_meta_keys:
             raise NotConfigured
-        return cls(keys_to_sticky)
+        return cls(sticky_meta_keys)
 
-    def __init__(self, keys_to_sticky):
-        self.keys_to_sticky = keys_to_sticky
-
-    def process_spider_output(self, response, result, spider):
-        sticky_meta = {
-            k: response.meta[k]
-            for k in self.keys_to_sticky
-            if k in response.meta
-        }
-        for r in result:
-            if not isinstance(r, Request):
-                yield r
-                continue
-            for k, v in sticky_meta.items():
-                if k not in r.meta:
-                    r.meta[k] = v
-            yield r
+    def get_processed_request(
+        self, request: Request, response: Response | None
+    ) -> Request | None:
+        if response is None:
+            return request
+        for key in self.sticky_meta_keys:
+            if key in response.meta and key not in request.meta:
+                request.meta[key] = response.meta[key]
+        return request
