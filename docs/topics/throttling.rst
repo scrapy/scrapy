@@ -165,6 +165,14 @@ full speed gradually once it recovers. To keep a scope hovering around a target
 rate instead of repeatedly probing and backing off, enable :ref:`rampup
 <rampup>`.
 
+Backoff triggers are detected by the
+:class:`~scrapy.downloadermiddlewares.backoff.BackoffMiddleware`, a built-in
+:ref:`downloader middleware <topics-downloader-middleware>` enabled by default.
+Any component can also trigger backoff programmatically for arbitrary scopes —
+e.g. based on the response body of a specific site — through
+:meth:`crawler.throttler.back_off()
+<scrapy.throttling.ThrottlingManagerProtocol.back_off>`.
+
 .. _per-scope-backoff:
 
 Per-scope backoff configuration
@@ -793,32 +801,43 @@ to:
                     target_domain = urlparse(target_url).netloc
                     return add_scope(scopes, target_domain)
 
-    -   Can differentiate between exhaustion of the target website and
-        exhaustion of the API itself. For example:
+-   Add a :ref:`downloader middleware <topics-downloader-middleware>` that
+    differentiates between exhaustion of the target website and exhaustion of
+    the API itself. The API returns ``200`` even when the target website
+    rate-limits it, reporting the upstream status in a header; the middleware
+    backs off the **target-website** scope (not the API scope) in that case,
+    reusing the scope's own :meth:`~scrapy.throttling.ThrottlingScopeManagerProtocol.triggers_backoff_for_status`
+    check:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            from scrapy.throttling import ThrottlingManager
-            from scrapy.utils.httpobj import urlparse_cached
+        from scrapy.throttling import iter_scopes
+        from scrapy.utils.httpobj import urlparse_cached
 
 
-            class MyThrottlingManager(ThrottlingManager):
-                async def get_response_backoff(self, response):
-                    if (
-                        urlparse_cached(response.request).netloc != "api.toscrape.com"
-                        or response.status != 200
-                    ):
-                        return await super().get_response_backoff(response)
-                    upstream_status_code = int(
+        class UpstreamBackoffMiddleware:
+            def __init__(self, crawler):
+                self.throttler = crawler.throttler
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls(crawler)
+
+            def process_response(self, request, response, spider):
+                if urlparse_cached(request).netloc == "api.toscrape.com":
+                    upstream_status = int(
                         response.headers.get("X-Upstream-Status-Code", b"200")
                     )
-                    upstream_response = response.__class__(
-                        response.url,
-                        status=upstream_status_code,
-                        headers=response.headers,
-                        body=response.body,
-                    )
-                    return await super().get_response_backoff(upstream_response)
+                    scopes = [
+                        scope
+                        for scope in iter_scopes(self.throttler.get_resolved_scopes(request))
+                        if scope != "api.toscrape.com"
+                        and self.throttler.get_scope_manager(scope).triggers_backoff_for_status(
+                            upstream_status
+                        )
+                    ]
+                    self.throttler.back_off(scopes)
+                return response
 
 
 .. _cost-smoothing-throttling:
@@ -851,23 +870,27 @@ window (:setting:`THROTTLING_WINDOW`). You can use :ref:`throttling quotas
                         return scopes
                     return add_scope(scopes, "cost", estimate_request_cost(request))
 
-    -   Reconciles the estimated cost with the actual cost reported by the
-        response, so that the quota tracks real spending:
+-   Add a :ref:`downloader middleware <topics-downloader-middleware>` that
+    reconciles the estimated cost with the actual cost reported by the
+    response, so that the quota tracks real spending:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            from scrapy.throttling import ThrottlingManager, update_scope_backoff
+        class CostReconcileMiddleware:
+            def __init__(self, crawler):
+                self.throttler = crawler.throttler
 
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls(crawler)
 
-            class MyThrottlingManager(ThrottlingManager):
-                async def get_response_backoff(self, response):
-                    backoff = await super().get_response_backoff(response)
-                    if response.headers.get("X-Actual-Cost") is None:
-                        return backoff
-                    estimated = estimate_request_cost(response.request)
+            def process_response(self, request, response, spider):
+                if response.headers.get("X-Actual-Cost") is not None:
+                    estimated = estimate_request_cost(request)
                     actual = float(response.headers[b"X-Actual-Cost"])
                     # Report the difference between actual and estimated cost.
-                    return update_scope_backoff(backoff, "cost", consumed=actual - estimated)
+                    self.throttler.reconcile_quota("cost", consumed=actual - estimated)
+                return response
 
 -   Use the :setting:`THROTTLING_SCOPES` setting to set a maximum cost per time
     window:
@@ -1101,7 +1124,6 @@ API
     :member-order: bysource
 
 .. autoclass:: scrapy.throttling.ThrottlingManager
-    :members: get_response_delay
 
 .. autoclass:: scrapy.throttling.ThrottlingScopeManagerProtocol
     :members:
@@ -1119,4 +1141,3 @@ API
 
 .. autofunction:: scrapy.throttling.scope_cache
 .. autofunction:: scrapy.throttling.add_scope
-.. autofunction:: scrapy.throttling.update_scope_backoff

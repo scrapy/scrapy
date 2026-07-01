@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import datetime as dt
 import ipaddress
 import logging
 import random
@@ -10,13 +9,12 @@ import time
 import warnings
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Iterable
-from email.utils import parsedate_to_datetime
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, TypeVar, cast
 from weakref import WeakKeyDictionary
 
 from twisted.internet.defer import Deferred
-from typing_extensions import NotRequired, Self
+from typing_extensions import Self
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -27,54 +25,11 @@ from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
-    from scrapy.http import Request, Response
+    from scrapy.http import Request
     from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
-
-
-def _parse_retry_after(response: Response) -> float | None:
-    raw = response.headers.get("Retry-After")
-    if not raw:
-        return None
-    try:
-        value = raw.decode("utf-8").strip()
-    except UnicodeDecodeError:
-        return None
-    if value.isdigit():
-        return float(value)  # seconds
-    try:
-        date = parsedate_to_datetime(value)
-    except (TypeError, ValueError, OverflowError):
-        return None
-    if date.tzinfo is None:
-        date = date.replace(tzinfo=dt.timezone.utc)
-    now = dt.datetime.now(dt.timezone.utc)
-    seconds_to_wait = (date - now).total_seconds()
-    # Keep sub-second precision (a date less than a second away must not be
-    # truncated to 0 and dropped); a past or present date yields no delay.
-    return max(0.0, seconds_to_wait) or None
-
-
-def _parse_ratelimit_reset(response: Response) -> float | None:
-    raw = response.headers.get("RateLimit-Reset")
-    if not raw:
-        return None
-    try:
-        value = raw.decode("utf-8").strip()
-    except UnicodeDecodeError:
-        return None
-    try:
-        return float(value)
-    except ValueError:
-        return None
-
-
-class BackoffScopeData(TypedDict):
-    delay: NotRequired[float]
-    consumed: NotRequired[float]
-    remaining: NotRequired[float]
 
 
 class BackoffConfig(TypedDict, total=False):
@@ -142,7 +97,6 @@ class ThrottlingScopeConfig(TypedDict, total=False):
 
 
 ScopeID = str
-BackoffData = None | ScopeID | Iterable[ScopeID] | dict[ScopeID, BackoffScopeData]
 RequestScopes = None | ScopeID | Iterable[ScopeID] | dict[ScopeID, float | None]
 
 
@@ -285,36 +239,6 @@ def add_scope(
     return scopes
 
 
-def update_scope_backoff(
-    backoff: BackoffData,
-    scope: ScopeID,
-    /,
-    *,
-    delay: float | None = None,
-    consumed: float | None = None,
-) -> BackoffData:
-    """Add *scope* to *backoff* or update its existing entry with the given
-    parameters.
-
-    This is a utility function to help extending the output of
-    :meth:`~ThrottlingManagerProtocol.get_initial_backoff`,
-    :meth:`~ThrottlingManagerProtocol.get_response_backoff` or
-    :meth:`~ThrottlingManagerProtocol.get_exception_backoff`, e.g. in
-    :class:`ThrottlingManager` subclasses.
-    """
-    if delay is None and consumed is None:
-        return cast("BackoffData", _add_bare_scope(backoff, scope, {}))
-    backoff = _to_scope_dict(backoff, dict)
-    entry = backoff.setdefault(scope, {})
-    if not isinstance(entry, dict):
-        raise TypeError(f"Scope {scope!r} has a non-dict value in {backoff!r}")
-    if delay is not None:
-        entry["delay"] = delay
-    if consumed is not None:
-        entry["consumed"] = consumed
-    return backoff
-
-
 class ThrottlingManagerProtocol(Protocol):
     """A protocol for :setting:`THROTTLING_MANAGER` :ref:`components
     <topics-components>`."""
@@ -328,64 +252,17 @@ class ThrottlingManagerProtocol(Protocol):
         keys and :ref:`throttling quotas <throttling-quotas>` as values.
         """
 
-    async def get_initial_backoff(self) -> BackoffData:
-        """Return the initial throttling data.
+    def get_resolved_scopes(self, request: Request) -> RequestScopes:
+        """Return the :ref:`throttling scopes <throttling-scopes>` under which
+        *request* was (or will be) sent, without re-resolving them.
 
-        This method is called before the first request is sent, and it should
-        be used to provide an initial throttling state, to be used before it is
-        updated with later calls to :meth:`get_response_backoff` and
-        :meth:`get_exception_backoff`.
-
-        **Return values:**
-
-        You may return any of the following:
-
-        -   ``None``: no throttling data to report.
-
-        -   A string: a single scope name, indicating that the scope is
-            currently exhausted.
-
-        -   An iterable of strings: multiple scope names, indicating that
-            those scopes are currently exhausted.
-
-        -   A dict with scope names as keys and dict values. Dict values
-            support the following keys (matching :class:`BackoffScopeData`):
-
-            -   ``"delay"``: a float indicating how many seconds to wait before
-                sending another request for the scope.
-
-            -   ``"remaining"``: a float indicating the remaining
-                :ref:`throttling quota <throttling-quotas>` of the scope.
-
-            -   ``"consumed"``: a float indicating how much of the scope's
-                quota has already been consumed.
-
-            An empty dict marks the scope as currently exhausted.
-
-        For example:
-
-        .. code-block:: python
-
-            return {
-                "scope1": {"delay": 5.0},
-                "scope2": {},
-                "scope3": {"remaining": 42.0},
-            }
-        """
-
-    async def get_response_backoff(self, response: Response) -> BackoffData:
-        """Return a throttling data update based on *response*.
-
-        It supports the same return values as :meth:`get_initial_backoff`.
-        """
-
-    async def get_exception_backoff(
-        self, request: Request, exception: Exception
-    ) -> BackoffData:
-        """Return a throttling data update based on *exception* and the
-        *request* that caused it.
-
-        It supports the same return values as :meth:`get_initial_backoff`.
+        This is the synchronous counterpart of :meth:`get_scopes`: it returns
+        the scopes resolved earlier (e.g. at enqueue or :meth:`acquire` time)
+        and persisted on ``request.meta``, falling back to a best-effort
+        synchronous resolution only if none were persisted. Use it, rather than
+        :meth:`get_scopes`, to attribute a response or exception to the very
+        scopes the request was sent under — e.g. from a downloader middleware or
+        a spider callback that wants to :meth:`back_off` based on the response.
         """
 
     async def acquire(self, request: Request) -> None:
@@ -467,17 +344,62 @@ class ThrottlingManagerProtocol(Protocol):
         that share its scopes.
         """
 
+    def back_off(
+        self,
+        scopes: RequestScopes,
+        *,
+        delay: float | None = None,
+        cap: bool = True,
+    ) -> None:
+        """Register a :ref:`backoff <backoff>` trigger for each of *scopes*.
+
+        This is the general-purpose way to make a scope slow down, available to
+        any component through :attr:`crawler.throttler
+        <scrapy.crawler.Crawler.throttler>`. The built-in :class:`backoff
+        middleware <scrapy.downloadermiddlewares.backoff.BackoffMiddleware>`
+        calls it for :setting:`BACKOFF_HTTP_CODES` responses and
+        :setting:`BACKOFF_EXCEPTIONS` exceptions, but a downloader middleware or
+        spider callback can call it too (e.g. to back off based on the response
+        body of a specific site).
+
+        *scopes* accepts the same shapes as the output of :meth:`get_scopes`
+        (typically the result of :meth:`get_resolved_scopes` for a request).
+
+        When *delay* is ``None`` an exponential backoff step is applied; when
+        given, *delay* is a hard minimum delay in seconds (e.g. from a
+        :ref:`Retry-After <retry-after>` header). *cap* limits *delay* to
+        :setting:`BACKOFF_MAX_DELAY`; set it to ``False`` for trusted,
+        programmatic delays.
+        """
+
     def delay_scope(self, scope_id: str, delay: float) -> None:
         """Hold back every request of the scope identified by *scope_id* for at
         least *delay* seconds, counted as a :ref:`backoff <backoff>` trigger
         for the scope.
 
-        This is the programmatic equivalent of a :ref:`Retry-After
-        <retry-after>` response header, available to any component through
-        :attr:`crawler.throttler <scrapy.crawler.Crawler.throttler>`. Unlike
-        those headers, *delay* is **not** capped at
-        :setting:`BACKOFF_MAX_DELAY`: that cap guards against untrusted input,
-        whereas a ``delay_scope`` call is trusted.
+        This is shorthand for :meth:`back_off(scope_id, delay=delay,
+        cap=False) <back_off>`: the programmatic equivalent of a
+        :ref:`Retry-After <retry-after>` response header. Unlike those headers,
+        *delay* is **not** capped at :setting:`BACKOFF_MAX_DELAY`: that cap
+        guards against untrusted input, whereas a ``delay_scope`` call is
+        trusted.
+        """
+
+    def reconcile_quota(
+        self,
+        scopes: RequestScopes,
+        *,
+        consumed: float | None = None,
+        remaining: float | None = None,
+    ) -> None:
+        """Reconcile the :ref:`throttling quota <throttling-quotas>` of each of
+        *scopes* with an actually *consumed* amount (a delta to add) or a
+        *remaining* amount (an absolute value), correcting the estimate used
+        when requests were sent.
+
+        Like :meth:`back_off`, this is meant to be called from a downloader
+        middleware or spider callback that learns the real quota cost of a
+        request from its response.
         """
 
     def get_scope_delay(self, scope_id: str) -> float:
@@ -495,12 +417,6 @@ class ThrottlingManagerProtocol(Protocol):
         """Return the :class:`ThrottlingScopeManagerProtocol` instance handling
         the scope identified by *scope_id*, creating it if necessary."""
 
-    async def process_response(self, response: Response) -> None:
-        """Update the throttling state based on *response*."""
-
-    async def process_exception(self, request: Request, exception: Exception) -> None:
-        """Update the throttling state based on a download *exception*."""
-
 
 _GetScopesMethod = TypeVar(
     "_GetScopesMethod", bound=Callable[..., Awaitable[RequestScopes]]
@@ -517,9 +433,10 @@ def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
     implementations that persists the resolved scopes on ``request.meta``.
 
     The readers of the resolved scopes — the synchronous readiness API of a
-    :ref:`throttling-aware scheduler <throttling-aware-scheduler>` and the
-    backoff methods — read this persisted value instead of resolving the scopes
-    again, so they stay cheap and consistent, and it survives a request being
+    :ref:`throttling-aware scheduler <throttling-aware-scheduler>` and
+    :meth:`~ThrottlingManagerProtocol.get_resolved_scopes` — read this persisted
+    value instead of resolving the scopes again, so they stay cheap and
+    consistent, and it survives a request being
     serialized to and restored from a :ref:`disk queue <topics-jobs>` (which is
     what lets the readiness API resolve the scopes of a restored request
     synchronously).
@@ -570,12 +487,6 @@ class ThrottlingManager:
 
     def __init__(self, crawler: Crawler) -> None:
         self.crawler = crawler
-        self._backoff_http_codes = {
-            int(code) for code in crawler.settings.getlist("BACKOFF_HTTP_CODES")
-        }
-        self._backoff_exceptions = tuple(
-            load_object(cls) for cls in crawler.settings.getlist("BACKOFF_EXCEPTIONS")
-        )
         self._debug = crawler.settings.getbool("THROTTLING_DEBUG")
         # When set, each request also gets an IP scope (its resolved address),
         # enforced alongside its domain scope (see _resolve_scopes_sync).
@@ -599,27 +510,6 @@ class ThrottlingManager:
         self._scopes_config: dict[str, dict[str, Any]] = crawler.settings.getdict(
             "THROTTLING_SCOPES"
         )
-        # Cheap pre-filter for the backoff methods: the union of the global
-        # triggers and every per-scope override. A response whose status (or an
-        # exception type) is not in the union cannot trigger backoff for any
-        # scope, so its scopes need not be resolved (see get_response_backoff
-        # and get_exception_backoff). Each scope still makes the final decision
-        # via its own triggers_backoff_* methods.
-        self._any_backoff_http_codes: set[int] = set(self._backoff_http_codes)
-        self._any_backoff_exceptions: tuple[type[BaseException], ...] = (
-            self._backoff_exceptions
-        )
-        for scope_config in self._scopes_config.values():
-            backoff = scope_config.get("backoff") or {}
-            if "http_codes" in backoff:
-                self._any_backoff_http_codes.update(
-                    int(code) for code in backoff["http_codes"]
-                )
-            if "exceptions" in backoff:
-                self._any_backoff_exceptions += tuple(
-                    load_object(exc) if isinstance(exc, str) else exc
-                    for exc in backoff["exceptions"]
-                )
         # Ordered by least-recently-used first (see get_scope_manager), so the
         # scope limit can evict the coldest idle scopes (see THROTTLING_SCOPE_LIMIT).
         self._scope_managers: OrderedDict[ScopeID, ThrottlingScopeManagerProtocol] = (
@@ -675,88 +565,28 @@ class ThrottlingManager:
         scope_ids = sorted(iter_scopes(scopes))
         return "+".join(scope_ids) if scope_ids else ""
 
-    def _cached_scope_values(
-        self, request: Request
-    ) -> list[tuple[ScopeID, float | None]]:
-        """Return the ``(scope_id, quota_amount)`` pairs of *request*, reading
-        the scopes persisted on ``request.meta`` by :meth:`get_scopes` (via
-        :func:`scope_cache`) and falling back to :meth:`_resolve_scopes_sync`.
+    def get_resolved_scopes(self, request: Request) -> RequestScopes:
+        """Return the scopes under which *request* was (or will be) sent,
+        reusing those persisted on ``request.meta`` by an earlier
+        :meth:`get_scopes` call (see :func:`scope_cache`) and falling back to
+        :meth:`_resolve_scopes_sync` only when none were persisted.
 
-        The persisted value is authoritative here: a request reaching the
-        readiness API has already been enqueued and filed under the queue for
-        these very scopes.
-        """
-        if _RESOLVED_SCOPES_META_KEY in request.meta:
-            scopes = cast("RequestScopes", request.meta[_RESOLVED_SCOPES_META_KEY])
-        else:
-            scopes = self._resolve_scopes_sync(request)
-        return list(iter_scope_values(scopes))
-
-    async def _scopes(self, request: Request) -> RequestScopes:
-        """Return the scopes of *request*, reusing those persisted on
-        ``request.meta`` by an earlier :meth:`get_scopes` call (see
-        :func:`scope_cache`) and resolving them only as a fallback.
-
-        Used by the backoff methods so that a request whose scopes were already
-        resolved (at enqueue time, or by :meth:`acquire`) is not resolved again
-        — which, for a request restored from a disk queue, would also risk
-        attributing the backoff to different scopes than the ones it was sent
-        under.
+        The persisted value is authoritative: a request reaching a reader of
+        this method (the readiness API, or a component reacting to its response)
+        has already been enqueued and, for a request restored from a disk queue,
+        re-resolving could attribute it to different scopes than the ones it was
+        sent under.
         """
         if _RESOLVED_SCOPES_META_KEY in request.meta:
             return cast("RequestScopes", request.meta[_RESOLVED_SCOPES_META_KEY])
-        return await self.get_scopes(request)
+        return self._resolve_scopes_sync(request)
 
-    async def get_initial_backoff(self) -> BackoffData:
-        return None
-
-    async def get_response_backoff(self, response: Response) -> BackoffData:
-        assert response.request is not None
-        if response.request.meta.get("throttling_dont_track"):
-            return None
-        if response.status not in self._any_backoff_http_codes:
-            return None
-        scopes = await self._scopes(response.request)
-        matched = [
-            scope
-            for scope in iter_scopes(scopes)
-            if self.get_scope_manager(scope).triggers_backoff_for_status(
-                response.status
-            )
-        ]
-        if not matched:
-            return None
-        if delay := self.get_response_delay(response):
-            return {scope: {"delay": delay} for scope in matched}
-        return matched
-
-    def get_response_delay(self, response: Response) -> float | None:
-        """Return the throttling delay requested by the response."""
-        retry_after = _parse_retry_after(response)
-        ratelimit_reset = _parse_ratelimit_reset(response)
-        if retry_after is None and ratelimit_reset is None:
-            return None
-        if retry_after is not None and ratelimit_reset is not None:
-            return max(retry_after, ratelimit_reset)
-        if retry_after is not None:
-            return retry_after
-        assert ratelimit_reset is not None
-        return ratelimit_reset
-
-    async def get_exception_backoff(
-        self, request: Request, exception: Exception
-    ) -> BackoffData:
-        if request.meta.get("throttling_dont_track"):
-            return None
-        if not isinstance(exception, self._any_backoff_exceptions):
-            return None
-        scopes = await self._scopes(request)
-        matched = [
-            scope
-            for scope in iter_scopes(scopes)
-            if self.get_scope_manager(scope).triggers_backoff_for_exception(exception)
-        ]
-        return matched or None
+    def _cached_scope_values(
+        self, request: Request
+    ) -> list[tuple[ScopeID, float | None]]:
+        """Return the ``(scope_id, quota_amount)`` pairs of *request*, from the
+        scopes returned by :meth:`get_resolved_scopes`."""
+        return list(iter_scope_values(self.get_resolved_scopes(request)))
 
     # -- Scope-state coordination (called from the request lifecycle) --------
 
@@ -948,42 +778,29 @@ class ThrottlingManager:
                 logger.debug(f"Holding {request} for {delay:.2f}s (throttling_delay)")
         return deadline
 
-    async def process_response(self, response: Response) -> None:
-        data = await self.get_response_backoff(response)
-        self._apply_backoff(data)
-
-    async def process_exception(self, request: Request, exception: Exception) -> None:
-        data = await self.get_exception_backoff(request, exception)
-        self._apply_backoff(data)
-
-    def _apply_backoff(self, data: BackoffData) -> None:
-        if data is None:
-            return
-        if isinstance(data, dict):
-            items: Iterable[tuple[ScopeID, Any]] = data.items()
-        else:
-            items = ((scope_id, None) for scope_id in iter_scopes(data))
-        for scope_id, entry in items:
-            manager = self.get_scope_manager(scope_id)
-            delay = consumed = remaining = None
-            if isinstance(entry, dict):
-                delay = entry.get("delay")
-                consumed = entry.get("consumed")
-                remaining = entry.get("remaining")
-            # A dict entry that only reports quota usage reconciles the quota
-            # without counting as a backoff trigger.
-            quota_only = (
-                isinstance(entry, dict)
-                and delay is None
-                and (consumed is not None or remaining is not None)
-            )
-            if consumed is not None or remaining is not None:
-                manager.reconcile_quota(consumed=consumed, remaining=remaining)
-            if quota_only:
-                continue
+    def back_off(
+        self,
+        scopes: RequestScopes,
+        *,
+        delay: float | None = None,
+        cap: bool = True,
+    ) -> None:
+        for scope_id in iter_scopes(scopes):
             if self._debug:
                 logger.debug(f"Backoff for scope {scope_id} (delay: {delay})")
-            manager.record_backoff(delay=delay)
+            self.get_scope_manager(scope_id).record_backoff(delay=delay, cap=cap)
+
+    def reconcile_quota(
+        self,
+        scopes: RequestScopes,
+        *,
+        consumed: float | None = None,
+        remaining: float | None = None,
+    ) -> None:
+        for scope_id in iter_scopes(scopes):
+            self.get_scope_manager(scope_id).reconcile_quota(
+                consumed=consumed, remaining=remaining
+            )
 
     def _on_robots_parsed(self, robotparser: Any, request: Request) -> None:
         """Honor a robots.txt ``Crawl-delay`` on the :signal:`robots_parsed`
@@ -1049,11 +866,9 @@ class ThrottlingManager:
         manager.set_concurrency(1)
 
     def delay_scope(self, scope_id: ScopeID, delay: float) -> None:
-        if self._debug:
-            logger.debug(f"Delaying scope {scope_id} for {delay:.2f}s")
         # Like a Retry-After / RateLimit-Reset header, this is a hard minimum
         # delay; unlike those, it is trusted, so it bypasses BACKOFF_MAX_DELAY.
-        self.get_scope_manager(scope_id).record_backoff(delay=float(delay), cap=False)
+        self.back_off(scope_id, delay=float(delay), cap=False)
 
     def get_scope_delay(self, scope_id: ScopeID) -> float:
         return self.get_scope_manager(scope_id).get_base_delay()

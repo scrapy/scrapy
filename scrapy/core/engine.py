@@ -627,15 +627,11 @@ class ExecutionEngine:
         assert throttler is not None
         try:
             yield self._acquire_throttling(request)
-            try:
-                result: Response | Request
-                if self._downloader_fetch_needs_spider:
-                    result = yield self.downloader.fetch(request, self.spider)
-                else:
-                    result = yield self.downloader.fetch(request)
-            except Exception as exc:
-                yield deferred_from_coro(throttler.process_exception(request, exc))
-                raise
+            result: Response | Request
+            if self._downloader_fetch_needs_spider:
+                result = yield self.downloader.fetch(request, self.spider)
+            else:
+                result = yield self.downloader.fetch(request)
             if not isinstance(result, (Response, Request)):
                 raise TypeError(
                     f"Incorrect type: expected Response or Request, got {type(result)}: {result!r}"
@@ -643,7 +639,6 @@ class ExecutionEngine:
             if isinstance(result, Response):
                 if result.request is None:
                     result.request = request
-                yield deferred_from_coro(throttler.process_response(result))
                 logkws = self.logformatter.crawled(result.request, result, self.spider)
                 if logkws is not None:
                     logger.log(

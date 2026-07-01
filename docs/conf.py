@@ -144,7 +144,6 @@ coverage_ignore_pyobjects = [
 
 # -- Options for the autodoc extension ----------------------------------------
 autodoc_type_aliases = {
-    "BackoffData": "BackoffData",
     "RequestScopes": "RequestScopes",
 }
 
