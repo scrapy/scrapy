@@ -8,6 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import inspect
+from urllib.parse import urlsplit, urlunsplit
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -263,6 +264,9 @@ class Request(object_ref):
             self._url = url
         else:
             self._url = safe_url_string(url, self.encoding)
+            parts = urlsplit(self._url)
+            if parts.netloc and not parts.path and parts.query:
+                self._url = urlunsplit(parts._replace(path="/"))
 
         if (
             "://" not in self._url

@@ -100,6 +100,16 @@ class TestRequest:
         r = self.request_class(url="http://www.scrapy.org/path")
         assert r.url == "http://www.scrapy.org/path"
 
+    def test_url_empty_path_with_query(self):
+        r = self.request_class(url="http://www.scrapy.org?foo=bar")
+        assert r.url == "http://www.scrapy.org/?foo=bar"
+
+        r = self.request_class(
+            url="http://www.scrapy.org?foo=bar",
+            meta={"verbatim_url": True},
+        )
+        assert r.url == "http://www.scrapy.org?foo=bar"
+
     def test_url_quoting(self):
         r = self.request_class(url="http://www.scrapy.org/blank%20space")
         assert r.url == "http://www.scrapy.org/blank%20space"
