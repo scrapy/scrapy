@@ -1695,6 +1695,11 @@ Backward-incompatible changes
     ``process_start_requests()`` has been replaced by ``process_start()``.
     (:issue:`6729`)
 
+-   ``scrapy.core.spidermw.SpiderMiddlewareManager.scrape_response()``, which
+    is intended for internal use, now returns a deferred whose result is a
+    ``MutableAsyncChain`` instead of the previous callback output shape.
+    (:issue:`6787`)
+
 -   The now-deprecated ``start_requests()`` method, when it returns an iterable
     instead of being defined as a generator, is now executed *after* the
     :ref:`scheduler <topics-scheduler>` instance has been created.
