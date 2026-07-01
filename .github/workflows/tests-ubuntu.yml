@@ -83,6 +83,17 @@ jobs:
           env:
             TOXENV: mitmproxy
 
+        # 3.15 pre-release
+        - python-version: "3.15.0-beta.2"
+          env:
+            TOXENV: py
+        - python-version: "3.15.0-beta.2"
+          env:
+            TOXENV: default-reactor
+        - python-version: "3.15.0-beta.2"
+          env:
+            TOXENV: no-reactor
+
     steps:
     - uses: actions/checkout@v6
 
@@ -92,7 +103,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install system libraries
-      if: contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'min')
+      if: contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'min') || contains(matrix.python-version, '3.15')
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
