@@ -71,9 +71,6 @@ class ThrottlingScopeConfig(TypedDict, total=False):
 
     concurrency: int
 
-    min_concurrency: int
-    """Floor. Never drop below this during backoff/rampup."""
-
     delay: float
 
     jitter: float | list[float]
@@ -875,14 +872,6 @@ class ThrottlingManager:
             conflicts.append(f"delay={config['delay']!r} < Crawl-delay {capped}")
         if config.get("concurrency") is not None and int(config["concurrency"]) > 1:
             conflicts.append(f"concurrency={config['concurrency']!r} > 1")
-        # A min_concurrency floor above 1 keeps the scope above the single-slot
-        # concurrency that a Crawl-delay implies, since set_concurrency(1) is
-        # clamped back up to it.
-        if (
-            config.get("min_concurrency") is not None
-            and int(config["min_concurrency"]) > 1
-        ):
-            conflicts.append(f"min_concurrency={config['min_concurrency']!r} > 1")
         if conflicts:
             logger.warning(
                 f"Throttling scope {scope_id!r} is configured with {' and '.join(conflicts)}, "
@@ -1120,7 +1109,7 @@ class ThrottlingScopeManager:
 
     -   When the scope is configured with a ``"concurrency"`` limit (or with
         ``"rampup"``), no more than that many requests are allowed in flight at
-        once, never dropping below the ``"min_concurrency"`` floor.
+        once.
 
     -   When the scope sets ``"rampup": True``, throughput is increased every
         :setting:`BACKOFF_WINDOW` that stays under :setting:`RAMPUP_BACKOFF_TARGET`
@@ -1176,7 +1165,6 @@ class ThrottlingScopeManager:
             for exc in backoff.get("exceptions", settings.getlist("BACKOFF_EXCEPTIONS"))
         )
         self._window: float = settings.getfloat("BACKOFF_WINDOW")
-        self._min_concurrency: int = int(config.get("min_concurrency", 1))
 
         # Rampup.
         rampup = config.get("rampup")
@@ -1197,7 +1185,8 @@ class ThrottlingScopeManager:
         if configured_concurrency is not None:
             self._concurrency: int | None = int(configured_concurrency)
         elif self._rampup_enabled:
-            self._concurrency = self._min_concurrency
+            # Rampup starts conservative at a single slot and probes upward.
+            self._concurrency = 1
         else:
             self._concurrency = _default_scope_concurrency(settings, self._id) or None
         # Used as the load denominator when the scope enforces no explicit
@@ -1239,9 +1228,16 @@ class ThrottlingScopeManager:
         return value * random.uniform(1 - jitter, 1 + jitter)  # noqa: S311
 
     def _effective_delay(self) -> float:
-        if self._backoff_level == 0 and self._delay > 0:
-            return self._apply_jitter(self._delay, self._jitter)
-        return self._delay
+        # ``self._delay`` is the deterministic delay (the base delay, or the
+        # bounded exponential value while backing off); jitter is applied here,
+        # per use, so successive delays spread out without compounding and
+        # without piling probability mass on the min/max bounds (which clipping
+        # a jittered value would do). While backing off, the backoff jitter
+        # applies; otherwise the plain delay jitter does.
+        if self._delay <= 0:
+            return self._delay
+        jitter = self._backoff_jitter if self._backoff_level > 0 else self._jitter
+        return self._apply_jitter(self._delay, jitter)
 
     def _recover(self, now: float) -> None:
         if self._backoff_level == 0 or self._last_backoff_time is None:
@@ -1321,9 +1317,13 @@ class ThrottlingScopeManager:
             self._consumed = 0.0
 
     def can_send(self, now: float | None = None, amount: float | None = None) -> float:
+        # can_send() only refreshes passive, time-based state (backoff recovery
+        # and the quota window) to reflect the current time; it performs no
+        # active throughput probing. That way a readiness check (is_ready() /
+        # get_time_until_ready()) has no side effect on the send rate: rampup
+        # only advances on an actual send, from record_sent().
         now = self._now(now)
         self._recover(now)
-        self._maybe_rampup(now)
         self._maybe_reset_quota(now)
         waits = [0.0]
         if self._in_backoff_until is not None:
@@ -1348,6 +1348,9 @@ class ThrottlingScopeManager:
         self._last_seen = now
         if self._in_backoff_until is not None and now >= self._in_backoff_until:
             self._in_backoff_until = None
+        # An actual send is the cue to probe for more throughput (rampup),
+        # rather than a mere readiness check; see can_send().
+        self._maybe_rampup(now)
         self._next_allowed_time = now + self._effective_delay()
         self._active += 1
         if self._quota is not None and amount is not None:
@@ -1412,12 +1415,11 @@ class ThrottlingScopeManager:
             hard = min(float(delay), self._max_delay) if cap else float(delay)
             self._in_backoff_until = now + hard
         grown = self._delay * self._delay_factor if self._delay > 0 else self._min_delay
-        grown = max(self._min_delay, grown)
-        grown = min(grown, self._max_delay)
-        self._delay = min(
-            self._apply_jitter(grown, self._backoff_jitter), self._max_delay
-        )
-        self._next_allowed_time = now + self._delay
+        # Store the deterministic, bounded delay; jitter is applied per use in
+        # _effective_delay(), so it neither compounds across successive backoff
+        # steps nor concentrates on BACKOFF_MIN_DELAY / BACKOFF_MAX_DELAY.
+        self._delay = min(max(self._min_delay, grown), self._max_delay)
+        self._next_allowed_time = now + self._effective_delay()
 
     def reconcile_quota(
         self,
@@ -1461,7 +1463,7 @@ class ThrottlingScopeManager:
             self._delay = delay
 
     def set_concurrency(self, concurrency: int) -> None:
-        self._concurrency = max(self._min_concurrency, int(concurrency))
+        self._concurrency = max(1, int(concurrency))
         self._fire_slot_waiters()
 
     def is_idle(self, now: float, max_idle: float) -> bool:

@@ -231,8 +231,8 @@ setting:
 For every :setting:`BACKOFF_WINDOW` that stays **below**
 :setting:`RAMPUP_BACKOFF_TARGET` backoff triggers, rampup increases throughput
 one step: it first lowers the delay, and once the delay reaches its minimum it
-raises the concurrency limit above the ``"min_concurrency"`` floor of the
-scope. Windows that reach or exceed the target do not ramp up; the rate is
+raises the concurrency limit of the scope. Windows that reach or exceed the
+target do not ramp up; the rate is
 reduced by normal :ref:`backoff <backoff>` (which grows the delay) instead.
 Rampup only ever probes upward, so the rate settles around the most throughput
 a scope allows while triggering fewer than :setting:`RAMPUP_BACKOFF_TARGET`
@@ -459,10 +459,6 @@ following keys:
     default depends on the kind of scope: :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
     for domain scopes, :setting:`CONCURRENT_REQUESTS_PER_IP` for IP scopes, and
     :setting:`THROTTLING_SCOPE_CONCURRENCY` for any other scope.
-
-``min_concurrency`` (:class:`int`)
-    Concurrency floor that :ref:`backoff <backoff>` and :ref:`rampup <rampup>`
-    never drop below. Defaults to ``1``.
 
 ``delay`` (:class:`float`)
     Minimum seconds between requests for the scope. Defaults to
