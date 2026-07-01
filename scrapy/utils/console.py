@@ -3,13 +3,17 @@ from __future__ import annotations
 import code
 from collections.abc import Callable
 from functools import wraps
+from logging import getLogger
 from typing import TYPE_CHECKING, Any
+
+from scrapy.utils.reactor import is_asyncio_reactor_installed
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 EmbedFuncT = Callable[..., None]
 KnownShellsT = dict[str, Callable[..., EmbedFuncT]]
+logger = getLogger(__name__)
 
 
 def _embed_ipython_shell(
@@ -30,6 +34,20 @@ def _embed_ipython_shell(
     @wraps(_embed_ipython_shell)
     def wrapper(namespace: dict[str, Any] = namespace or {}, banner: str = "") -> None:
         config = load_default_config()  # type: ignore[no-untyped-call]
+        try:
+            asyncio_reactor = is_asyncio_reactor_installed()
+        except RuntimeError:
+            asyncio_reactor = False
+        if asyncio_reactor:
+            try:
+                import nest_asyncio  # noqa: PLC0415
+            except ImportError:
+                logger.warning(
+                    "Install nest-asyncio to use the IPython shell with the "
+                    "asyncio reactor."
+                )
+                return
+            nest_asyncio.apply()
         # Always use .instance() to ensure _instance propagation to all parents
         # this is needed for <TAB> completion works well for new imports
         # and clear the instance to always have the fresh env
