@@ -713,6 +713,7 @@ Those are:
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
+* :reqmeta:`dont_throttle`
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
@@ -733,7 +734,6 @@ Those are:
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
 * :reqmeta:`throttling_delay`
-* :reqmeta:`throttling_dont_track`
 * :reqmeta:`throttling_scopes`
 * :reqmeta:`verbatim_url`
 

@@ -174,22 +174,7 @@ For a list of the components enabled by default (and their orders) see the
 BackoffMiddleware
 -----------------
 
-.. module:: scrapy.downloadermiddlewares.backoff
-   :synopsis: Backoff Downloader Middleware
-
-.. class:: BackoffMiddleware
-
-   This middleware feeds download outcomes into :ref:`throttling <throttling>`:
-   for every response matching :setting:`BACKOFF_HTTP_CODES` and every download
-   exception matching :setting:`BACKOFF_EXCEPTIONS`, it makes the request's
-   :ref:`throttling scopes <throttling-scopes>` :ref:`back off <backoff>`.
-
-   It runs below
-   :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` so that it
-   observes rate-limiting responses (``429``, ``503``, …) before they are
-   turned into retries.
-
-   See :ref:`throttling` for details.
+.. autoclass:: scrapy.downloadermiddlewares.backoff.BackoffMiddleware
 
 .. _cookies-mw:
 

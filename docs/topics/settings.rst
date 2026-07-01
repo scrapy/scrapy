@@ -861,7 +861,7 @@ Default:
         "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
         "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
-        "scrapy.downloadermiddlewares.backoff.BackoffMiddleware": 630,
+        "scrapy.downloadermiddlewares.backoff.BackoffMiddleware": 650,
         "scrapy.downloadermiddlewares.cookies.CookiesMiddleware": 700,
         "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 750,
         "scrapy.downloadermiddlewares.stats.DownloaderStats": 850,
@@ -2038,7 +2038,6 @@ See :ref:`asyncio-without-reactor` for more information about this mode.
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. versionadded:: 2.15.0
-
 
 .. setting:: TWISTED_REACTOR
 

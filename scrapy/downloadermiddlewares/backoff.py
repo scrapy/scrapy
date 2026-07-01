@@ -69,9 +69,7 @@ class BackoffMiddleware:
     <throttling>` to back off the request's scopes through its
     :meth:`~scrapy.throttling.ThrottlingManagerProtocol.back_off` API.
 
-    It sits below :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`
-    in :setting:`DOWNLOADER_MIDDLEWARES_BASE` so it sees rate-limiting responses
-    (429, 503, …) before the retry middleware turns them into new requests.
+    See :ref:`throttling` for details.
     """
 
     def __init__(self, crawler: Crawler):
@@ -118,7 +116,7 @@ class BackoffMiddleware:
         if (
             response.status not in self._http_codes
             or "cached" in response.flags
-            or request.meta.get("throttling_dont_track")
+            or request.meta.get("dont_throttle")
         ):
             return response
         matched = [
@@ -139,7 +137,7 @@ class BackoffMiddleware:
         exception: Exception,
         spider: scrapy.Spider | None = None,
     ) -> None:
-        if request.meta.get("throttling_dont_track") or not isinstance(
+        if request.meta.get("dont_throttle") or not isinstance(
             exception, self._exceptions
         ):
             return

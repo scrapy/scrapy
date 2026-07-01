@@ -10,7 +10,6 @@ A Scrapy component is any class whose objects are built using
 That includes the classes that you may assign to the following settings:
 
 - :setting:`ADDONS`
-- :setting:`TWISTED_DNS_RESOLVER`
 - :setting:`DOWNLOAD_HANDLERS`
 - :setting:`DOWNLOADER_MIDDLEWARES`
 - :setting:`DUPEFILTER_CLASS`
@@ -27,6 +26,7 @@ That includes the classes that you may assign to the following settings:
 - :setting:`SPIDER_MIDDLEWARES`
 - :setting:`THROTTLING_MANAGER`
 - :setting:`THROTTLING_SCOPE_MANAGER`
+- :setting:`TWISTED_DNS_RESOLVER`
 
 Third-party Scrapy components may also let you define additional Scrapy
 components, usually configurable through :ref:`settings <topics-settings>`, to

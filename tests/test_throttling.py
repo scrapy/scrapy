@@ -275,7 +275,7 @@ class TestThrottlingManager:
     @coroutine_test
     async def test_response_backoff_dont_track(self):
         manager = _manager()
-        response = _response(status=429, meta={"throttling_dont_track": True})
+        response = _response(status=429, meta={"dont_throttle": True})
         assert await manager.get_response_backoff(response) is None
 
     @pytest.mark.parametrize(
@@ -295,7 +295,7 @@ class TestThrottlingManager:
     @coroutine_test
     async def test_exception_backoff_dont_track(self):
         manager = _manager()
-        request = Request("http://example.com", meta={"throttling_dont_track": True})
+        request = Request("http://example.com", meta={"dont_throttle": True})
         assert (
             await manager.get_exception_backoff(request, DownloadTimeoutError()) is None
         )

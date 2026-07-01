@@ -61,7 +61,6 @@ When configuring these settings, note that:
     more complex domain grouping strategies, see
     :ref:`alternative-domain-throttling`.
 
-
 .. setting:: THROTTLING_SCOPES
 
 .. _per-domain-throttling:
@@ -88,7 +87,6 @@ the :ref:`tutorial <intro-tutorial>`, so that they are crawled faster while the
 
 Additional keys like ``"jitter"`` and ``"backoff"`` can be used here and are
 covered later on.
-
 
 .. _backoff:
 
@@ -417,7 +415,7 @@ Without a higher priority, a backlog of requests ahead of it in a FIFO queue
 could keep it waiting well past the configured delay; a higher priority puts it
 at the front of the queue, so it goes out right after its delay.
 
-.. reqmeta:: throttling_dont_track
+.. reqmeta:: dont_throttle
 
 Excluding a request from throttling state
 -----------------------------------------
@@ -425,12 +423,12 @@ Excluding a request from throttling state
 Some requests (authentication flows, one-off API calls, file downloads) should
 not influence throttling state even if they get a :setting:`BACKOFF_HTTP_CODES`
 response or raise a :setting:`BACKOFF_EXCEPTIONS` exception. Set the
-``throttling_dont_track`` request metadata key to ``True`` to process such a
+:reqmeta:`dont_throttle` request metadata key to ``True`` to process such a
 request normally without letting its outcome trigger :ref:`backoff <backoff>`:
 
 .. code-block:: python
 
-    Request("https://example.com/login", meta={"throttling_dont_track": True})
+    Request("https://example.com/login", meta={"dont_throttle": True})
 
 .. _throttling-scopes:
 
@@ -1079,47 +1077,6 @@ Additional settings
     <throttling-scopes>` is evicted from memory to bound memory usage on
     long-running crawls. Set to ``0`` to never evict. Scopes in active backoff
     are never evicted.
-
-.. _autothrottle-migration:
-
-Migrating from AutoThrottle
-===========================
-
-The ``AutoThrottle`` extension is deprecated in favor of the throttling and
-:ref:`backoff <backoff>` system described here, which is always active and does
-not need to be enabled.
-
-Setting ``AUTOTHROTTLE_ENABLED`` to ``True`` still works but logs a
-deprecation warning. To migrate, drop the ``AUTOTHROTTLE_*`` settings and use
-the following equivalents:
-
-.. list-table::
-    :header-rows: 1
-
-    * - AutoThrottle
-      - Throttling
-    * - ``AUTOTHROTTLE_ENABLED = True``
-      - No equivalent; throttling is always active.
-    * - ``AUTOTHROTTLE_START_DELAY``
-      - :setting:`DOWNLOAD_DELAY`
-    * - ``AUTOTHROTTLE_MAX_DELAY``
-      - :setting:`BACKOFF_MAX_DELAY`
-    * - ``AUTOTHROTTLE_TARGET_CONCURRENCY``
-      - :ref:`rampup <rampup>` (``"rampup": True``)
-    * - ``AUTOTHROTTLE_DEBUG = True``
-      - :setting:`THROTTLING_DEBUG` ``= True``
-    * - ``autothrottle_dont_adjust_delay`` (request meta)
-      - :reqmeta:`throttling_dont_track` (request meta)
-
-AutoThrottle adjusted the delay of each download slot based on response
-latency. The new system does not measure latency; instead, it reacts to
-explicit rate-limit signals (:setting:`BACKOFF_HTTP_CODES`,
-:setting:`BACKOFF_EXCEPTIONS`, :ref:`Retry-After / RateLimit-Reset
-<rate-limiting-headers>`) and, with :ref:`rampup <rampup>`, probes for the
-fastest rate a scope tolerates. If you specifically need latency-based control,
-implement a custom :ref:`throttling scope manager
-<custom-throttling-scope-managers>`.
-
 
 .. _throttling-api:
 
