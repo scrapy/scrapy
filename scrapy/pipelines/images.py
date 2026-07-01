@@ -1,9 +1,3 @@
-"""
-Images Pipeline
-
-See documentation in topics/media-pipeline.rst
-"""
-
 from __future__ import annotations
 
 import functools

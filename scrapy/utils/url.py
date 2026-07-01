@@ -1,8 +1,3 @@
-"""
-This module contains general purpose URL functions not found in the standard
-library.
-"""
-
 from __future__ import annotations
 
 import re
