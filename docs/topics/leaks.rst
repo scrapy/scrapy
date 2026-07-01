@@ -60,15 +60,21 @@ in control.
 Debugging memory leaks with ``trackref``
 ========================================
 
+.. skip: start
+
 :mod:`trackref` is a module provided by Scrapy to debug the most common cases of
 memory leaks. It basically tracks the references to all live Request,
 Response, Item, Spider and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
-alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
+alias to the :func:`~scrapy.utils.trackref.print_live_refs` function:
+
+.. code-block:: bash
 
     telnet localhost 6023
+
+.. code-block:: pycon
 
     >>> prefs()
     Live References
@@ -76,7 +82,7 @@ alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
     ExampleSpider                       1   oldest: 15s ago
     HtmlResponse                       10   oldest: 1s ago
     Selector                            2   oldest: 0s ago
-    FormRequest                       878   oldest: 7s ago
+    Request                           878   oldest: 7s ago
 
 As you can see, that report also shows the "age" of the oldest object in each
 class. If you're running multiple spiders per process chances are you can
@@ -114,7 +120,9 @@ a priori, of course) by using the ``trackref`` tool.
 
 After the crawler is running for a few minutes and we notice its memory usage
 has grown a lot, we can enter its telnet console and check the live
-references::
+references:
+
+.. code-block:: pycon
 
     >>> prefs()
     Live References
@@ -134,31 +142,37 @@ generating the leaks (passing response references inside requests).
 Sometimes extra information about live objects can be helpful.
 Let's check the oldest response:
 
->>> from scrapy.utils.trackref import get_oldest
->>> r = get_oldest('HtmlResponse')
->>> r.url
-'http://www.somenastyspider.com/product.php?pid=123'
+.. code-block:: pycon
+
+    >>> from scrapy.utils.trackref import get_oldest
+    >>> r = get_oldest("HtmlResponse")
+    >>> r.url
+    'http://www.somenastyspider.com/product.php?pid=123'
 
 If you want to iterate over all objects, instead of getting the oldest one, you
 can use the :func:`scrapy.utils.trackref.iter_all` function:
 
->>> from scrapy.utils.trackref import iter_all
->>> [r.url for r in iter_all('HtmlResponse')]
-['http://www.somenastyspider.com/product.php?pid=123',
- 'http://www.somenastyspider.com/product.php?pid=584',
-...]
+.. code-block:: pycon
+
+    >>> from scrapy.utils.trackref import iter_all
+    >>> [r.url for r in iter_all("HtmlResponse")]
+    ['http://www.somenastyspider.com/product.php?pid=123',
+    'http://www.somenastyspider.com/product.php?pid=584',
+    ...]
 
 Too many spiders?
 -----------------
 
 If your project has too many spiders executed in parallel,
-the output of :func:`prefs()` can be difficult to read.
+the output of :func:`prefs` can be difficult to read.
 For this reason, that function has a ``ignore`` argument which can be used to
-ignore a particular class (and all its subclases). For
+ignore a particular class (and all its subclasses). For
 example, this won't show any live references to spiders:
 
->>> from scrapy.spiders import Spider
->>> prefs(ignore=Spider)
+.. code-block:: pycon
+
+    >>> from scrapy.spiders import Spider
+    >>> prefs(ignore=Spider)
 
 .. module:: scrapy.utils.trackref
    :synopsis: Track references of live objects
@@ -193,6 +207,8 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
     ``None`` if none is found. Use :func:`print_live_refs` first to get a list
     of all tracked live objects per class name.
 
+.. skip: end
+
 .. _topics-leaks-muppy:
 
 Debugging memory leaks with muppy
@@ -216,30 +232,35 @@ If you use ``pip``, you can install muppy with the following command::
 Here's an example to view all Python objects available in
 the heap using muppy:
 
->>> from pympler import muppy
->>> all_objects = muppy.get_objects()
->>> len(all_objects)
-28667
->>> from pympler import summary
->>> suml = summary.summarize(all_objects)
->>> summary.print_(suml)
-                               types |   # objects |   total size
-==================================== | =========== | ============
-                         <class 'str |        9822 |      1.10 MB
-                        <class 'dict |        1658 |    856.62 KB
-                        <class 'type |         436 |    443.60 KB
-                        <class 'code |        2974 |    419.56 KB
-          <class '_io.BufferedWriter |           2 |    256.34 KB
-                         <class 'set |         420 |    159.88 KB
-          <class '_io.BufferedReader |           1 |    128.17 KB
-          <class 'wrapper_descriptor |        1130 |     88.28 KB
-                       <class 'tuple |        1304 |     86.57 KB
-                     <class 'weakref |        1013 |     79.14 KB
-  <class 'builtin_function_or_method |         958 |     67.36 KB
-           <class 'method_descriptor |         865 |     60.82 KB
-                 <class 'abc.ABCMeta |          62 |     59.96 KB
-                        <class 'list |         446 |     58.52 KB
-                         <class 'int |        1425 |     43.20 KB
+.. skip: start
+.. code-block:: pycon
+
+    >>> from pympler import muppy
+    >>> all_objects = muppy.get_objects()
+    >>> len(all_objects)
+    28667
+    >>> from pympler import summary
+    >>> suml = summary.summarize(all_objects)
+    >>> summary.print_(suml)
+                                   types |   # objects |   total size
+    ==================================== | =========== | ============
+                             <class 'str |        9822 |      1.10 MB
+                            <class 'dict |        1658 |    856.62 KB
+                            <class 'type |         436 |    443.60 KB
+                            <class 'code |        2974 |    419.56 KB
+              <class '_io.BufferedWriter |           2 |    256.34 KB
+                             <class 'set |         420 |    159.88 KB
+              <class '_io.BufferedReader |           1 |    128.17 KB
+              <class 'wrapper_descriptor |        1130 |     88.28 KB
+                           <class 'tuple |        1304 |     86.57 KB
+                         <class 'weakref |        1013 |     79.14 KB
+      <class 'builtin_function_or_method |         958 |     67.36 KB
+               <class 'method_descriptor |         865 |     60.82 KB
+                     <class 'abc.ABCMeta |          62 |     59.96 KB
+                            <class 'list |         446 |     58.52 KB
+                             <class 'int |        1425 |     43.20 KB
+
+.. skip: end
 
 For more info about muppy, refer to the `muppy documentation`_.
 

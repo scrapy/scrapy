@@ -38,10 +38,13 @@ the end of the exporting process
 
 Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses multiple
 Item Exporters to group scraped items to different files according to the
-value of one of their fields::
+value of one of their fields:
+
+.. code-block:: python
 
     from itemadapter import ItemAdapter
     from scrapy.exporters import XmlItemExporter
+
 
     class PerYearXmlExportPipeline:
         """Distribute items across multiple XML files according to their 'year' field"""
@@ -56,15 +59,15 @@ value of one of their fields::
 
         def _exporter_for_item(self, item):
             adapter = ItemAdapter(item)
-            year = adapter['year']
+            year = adapter["year"]
             if year not in self.year_to_exporter:
-                xml_file = open(f'{year}.xml', 'wb')
+                xml_file = open(f"{year}.xml", "wb")
                 exporter = XmlItemExporter(xml_file)
                 exporter.start_exporting()
                 self.year_to_exporter[year] = (exporter, xml_file)
             return self.year_to_exporter[year][0]
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             exporter = self._exporter_for_item(item)
             exporter.export_item(item)
             return item
@@ -90,40 +93,47 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-If you use :class:`~scrapy.Item` you can declare a serializer in the
-:ref:`field metadata <topics-items-fields>`. The serializer must be
-a callable which receives a value and returns its serialized form.
+Every :ref:`item type <item-types>` except :class:`dict` lets you declare a
+serializer in the :ref:`field metadata <topics-items-fields>`. The serializer
+must be a callable which receives a value and returns its serialized form.
 
-Example::
+Example:
 
-    import scrapy
+.. code-block:: python
+
+    from dataclasses import dataclass, field
+
 
     def serialize_price(value):
-        return f'$ {str(value)}'
+        return f"$ {str(value)}"
 
-    class Product(scrapy.Item):
-        name = scrapy.Field()
-        price = scrapy.Field(serializer=serialize_price)
+
+    @dataclass
+    class Product:
+        name: str
+        price: float = field(metadata={"serializer": serialize_price})
 
 
 2. Overriding the serialize_field() method
 ------------------------------------------
 
-You can also override the :meth:`~BaseItemExporter.serialize_field()` method to
+You can also override the :meth:`~BaseItemExporter.serialize_field` method to
 customize how your field value will be exported.
 
-Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
+Make sure you call the base class :meth:`~BaseItemExporter.serialize_field` method
 after your custom code.
 
-Example::
+Example:
 
-      from scrapy.exporter import XmlItemExporter
+.. code-block:: python
+
+      from scrapy.exporters import XmlItemExporter
+
 
       class ProductXmlExporter(XmlItemExporter):
-
           def serialize_field(self, field, name, value):
-              if name == 'price':
-                  return f'$ {str(value)}'
+              if name == "price":
+                  return f"$ {str(value)}"
               return super().serialize_field(field, name, value)
 
 .. _topics-exporters-reference:
@@ -132,10 +142,13 @@ Built-in Item Exporters reference
 =================================
 
 Here is a list of the Item Exporters bundled with Scrapy. Some of them contain
-output examples, which assume you're exporting these two items::
+output examples, which assume you're exporting these two items:
 
-    Item(name='Color TV', price='1200')
-    Item(name='DVD player', price='200')
+.. skip: next
+.. code-block:: python
+
+    Item(name="Color TV", price="1200")
+    Item(name="DVD player", price="200")
 
 BaseItemExporter
 ----------------
@@ -150,9 +163,6 @@ BaseItemExporter
    These features can be configured through the ``__init__`` method arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
-
-   .. versionadded:: 2.0
-      The *dont_fail* parameter.
 
    .. method:: export_item(item)
 
@@ -212,7 +222,7 @@ BaseItemExporter
       .. [1] Not all exporters respect the specified field order.
       .. [2] When using :ref:`item objects <item-types>` that do not expose
              all their possible fields, exporters that do not support exporting
-             a different subset of fields per item will only export the fields 
+             a different subset of fields per item will only export the fields
              found in the first item exported.
 
    .. attribute:: export_empty_fields

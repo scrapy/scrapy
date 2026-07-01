@@ -1,0 +1,21 @@
+import scrapy
+from scrapy.crawler import AsyncCrawlerProcess
+
+
+class NoRequestsSpider(scrapy.Spider):
+    name = "no_request"
+
+    async def start(self):
+        return
+        yield
+
+
+process = AsyncCrawlerProcess(
+    settings={
+        "TWISTED_REACTOR_ENABLED": False,
+        "TELNETCONSOLE_ENABLED": False,
+    }
+)
+
+process.crawl(NoRequestsSpider)
+process.start()

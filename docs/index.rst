@@ -33,7 +33,7 @@ Having trouble? We'd like to help!
 .. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
-.. _Scrapy Discord: https://discord.gg/mv3yErfpvq
+.. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
 
 
 First steps
@@ -128,24 +128,16 @@ Built-in services
 
    topics/logging
    topics/stats
-   topics/email
    topics/telnetconsole
-   topics/webservice
 
 :doc:`topics/logging`
-    Learn how to use Python's builtin logging on Scrapy.
+    Learn how to use Python's built-in logging on Scrapy.
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
 
-:doc:`topics/email`
-    Send email notifications when certain events occur.
-
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
-
-:doc:`topics/webservice`
-    Monitor and control a crawler using a web service.
 
 
 Solving specific problems
@@ -159,6 +151,7 @@ Solving specific problems
    topics/debug
    topics/contracts
    topics/practices
+   topics/security
    topics/broad-crawls
    topics/developer-tools
    topics/dynamic-content
@@ -182,6 +175,10 @@ Solving specific problems
 
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
+
+:doc:`topics/security`
+    Understand the security implications of Scrapy defaults and how to harden
+    them.
 
 :doc:`topics/broad-crawls`
     Tune Scrapy for crawling a lot domains in parallel.
@@ -226,17 +223,23 @@ Extending Scrapy
    :hidden:
 
    topics/architecture
+   topics/addons
    topics/downloader-middleware
    topics/spider-middleware
    topics/extensions
-   topics/api
    topics/signals
    topics/scheduler
    topics/exporters
+   topics/download-handlers
+   topics/components
+   topics/api
 
 
 :doc:`topics/architecture`
     Understand the Scrapy architecture.
+
+:doc:`topics/addons`
+    Enable and configure third-party extensions.
 
 :doc:`topics/downloader-middleware`
     Customize how pages get requested and downloaded.
@@ -247,9 +250,6 @@ Extending Scrapy
 :doc:`topics/extensions`
     Extend Scrapy with your custom functionality
 
-:doc:`topics/api`
-    Use it on extensions and middlewares to extend Scrapy functionality
-
 :doc:`topics/signals`
     See all available signals and how to work with them.
 
@@ -258,6 +258,16 @@ Extending Scrapy
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
+
+:doc:`topics/download-handlers`
+    Customize how requests are downloaded or add support for new URL schemes.
+
+:doc:`topics/components`
+    Learn the common API and some good practices when building custom Scrapy
+    components.
+
+:doc:`topics/api`
+    Use it on extensions and middlewares to extend Scrapy functionality.
 
 
 All the rest

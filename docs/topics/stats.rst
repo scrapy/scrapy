@@ -30,10 +30,11 @@ Common Stats Collector uses
 ===========================
 
 Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
-attribute. Here is an example of an extension that access stats::
+attribute. Here is an example of an extension that access stats:
+
+.. code-block:: python
 
     class ExtensionThatAccessStats:
-
         def __init__(self, stats):
             self.stats = stats
 
@@ -41,31 +42,47 @@ attribute. Here is an example of an extension that access stats::
         def from_crawler(cls, crawler):
             return cls(crawler.stats)
 
-Set stat value::
+.. skip: start
 
-    stats.set_value('hostname', socket.gethostname())
+Set stat value:
 
-Increment stat value::
+.. code-block:: python
 
-    stats.inc_value('custom_count')
+    stats.set_value("hostname", socket.gethostname())
 
-Set stat value only if greater than previous::
+Increment stat value:
 
-    stats.max_value('max_items_scraped', value)
+.. code-block:: python
 
-Set stat value only if lower than previous::
+    stats.inc_value("custom_count")
 
-    stats.min_value('min_free_memory_percent', value)
+Set stat value only if greater than previous:
+
+.. code-block:: python
+
+    stats.max_value("max_items_scraped", value)
+
+Set stat value only if lower than previous:
+
+.. code-block:: python
+
+    stats.min_value("min_free_memory_percent", value)
 
 Get stat value:
 
->>> stats.get_value('custom_count')
-1
+.. code-block:: pycon
+
+    >>> stats.get_value("custom_count")
+    1
 
 Get all stats:
 
->>> stats.get_stats()
-{'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+.. code-block:: pycon
+
+    >>> stats.get_stats()
+    {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+
+.. skip: end
 
 Available Stats Collectors
 ==========================
@@ -73,7 +90,7 @@ Available Stats Collectors
 Besides the basic :class:`StatsCollector` there are other Stats Collectors
 available in Scrapy which extend the basic Stats Collector. You can select
 which Stats Collector to use through the :setting:`STATS_CLASS` setting. The
-default Stats Collector used is the :class:`MemoryStatsCollector`. 
+default Stats Collector used is the :class:`MemoryStatsCollector`.
 
 .. currentmodule:: scrapy.statscollectors
 
@@ -104,4 +121,3 @@ DummyStatsCollector
     setting, to disable stats collect in order to improve performance. However,
     the performance penalty of stats collection is usually marginal compared to
     other Scrapy workload like parsing pages.
-
