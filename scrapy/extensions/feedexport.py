@@ -473,7 +473,7 @@ class FeedExporter:
             )
             uri = self.settings["FEED_URI"]
             # handle pathlib.Path objects
-            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
+            uri = str(uri.absolute()) if isinstance(uri, Path) else str(uri)
             feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -485,9 +485,9 @@ class FeedExporter:
         for settings_uri, feed_options in self.settings.getdict("FEEDS").items():
             # handle pathlib.Path objects
             uri = (
-                str(settings_uri)
-                if not isinstance(settings_uri, Path)
-                else settings_uri.absolute().as_uri()
+                str(settings_uri.absolute())
+                if isinstance(settings_uri, Path)
+                else str(settings_uri)
             )
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
