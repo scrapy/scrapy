@@ -2033,6 +2033,7 @@ Default:
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+        "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     }
 
 A dict containing the spider middlewares enabled by default in Scrapy, and
