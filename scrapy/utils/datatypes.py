@@ -1,8 +1,6 @@
 """
 This module contains data types used by Scrapy which are not included in the
 Python Standard Library.
-
-This module must not depend on any module outside the Standard Library.
 """
 
 from __future__ import annotations

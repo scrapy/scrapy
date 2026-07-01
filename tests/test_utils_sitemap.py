@@ -311,3 +311,14 @@ def test_xml_entity_expansion():
     """
     )
     assert list(s) == [{"loc": "http://127.0.0.1:8000/"}]
+
+
+def test_sitemap_non_string_tag():
+    """With recover=True and resolve_entities=False, libxml2 >= 2.14.6 (used
+    by lxml >= 6.1.1) preserves undeclared entity reference nodes whose
+    .tag is a non-string ``Cython function`` object instead of a ``str``.
+    _get_tag_name must handle this gracefully instead of raising
+    AttributeError.
+    """
+    results = list(Sitemap(b"<url>&k;"))
+    assert results == []

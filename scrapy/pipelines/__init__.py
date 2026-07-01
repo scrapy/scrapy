@@ -1,7 +1,7 @@
 """
 Item pipeline
 
-See documentation in docs/item-pipeline.rst
+See documentation in docs/topics/item-pipeline.rst
 """
 
 from __future__ import annotations

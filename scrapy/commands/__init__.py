@@ -95,7 +95,7 @@ class ScrapyCommand(ABC):
     def long_desc(self) -> str:
         """A long description of the command. Return short description when not
         available. It cannot contain newlines since contents will be formatted
-        by optparser which removes newlines and wraps text.
+        by argparse which removes newlines and wraps text.
         """
         return self.short_desc()
 
