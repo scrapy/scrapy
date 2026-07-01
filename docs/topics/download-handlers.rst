@@ -173,7 +173,7 @@ of this package for more information.
 H2DownloadHandler
 -----------------
 
-.. note:: Requires the :ref:`http2 <extras>` extra.
+.. note:: Requires the :ref:`twisted-http2 <extras>` extra.
 
 .. autoclass:: scrapy.core.downloader.handlers.http2.H2DownloadHandler
 
@@ -291,6 +291,10 @@ HttpxDownloadHandler
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 or HTTP/2 protocol for them.
 
+It's implemented using the httpx_ library.
+
+.. _httpx: https://www.python-httpx.org/
+
 If you want to use this handler you need to replace the default ones for the
 ``http`` and ``https`` schemes:
 
@@ -312,8 +316,8 @@ Features and limitations
 
 =========================== =======================================
 HTTP proxies                Yes
-SOCKS proxies               Yes (SOCKS5; requires ``httpx[socks]``)
-HTTP/2                      Yes (requires ``httpx[http2]``)
+SOCKS proxies               Yes (SOCKS5)
+HTTP/2                      Yes
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
 TLS implementation          Standard library ``ssl``
@@ -332,8 +336,7 @@ HTTPX_HTTP2_ENABLED
 
 Default: ``False``
 
-Whether to enable HTTP/2 support in this handler. Requires installing
-``httpx[http2]``.
+Whether to enable HTTP/2 support in this handler.
 
 .. versionadded:: VERSION
 
@@ -394,3 +397,7 @@ S3DownloadHandler
 | :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
 This handler supports ``s3://bucket/path`` S3 URIs.
+
+It's implemented using the botocore_ library.
+
+.. _botocore: https://github.com/boto/botocore

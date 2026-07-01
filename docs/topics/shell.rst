@@ -22,21 +22,27 @@ invaluable tool for developing and debugging your spiders.
 Configuring the shell
 =====================
 
-With the :ref:`ipython <extras>` extra, the Scrapy shell will use IPython_
-instead of the :term:`REPL`. IPython provides smart auto-completion, colorized
+With the :ref:`ptpython <extras>` extra, the Scrapy shell will use ptpython_
+instead of the :term:`REPL`. ptpython provides syntax highlighting, smart
+auto-completion, and more.
+
+Failing that, with the :ref:`ipython <extras>` extra, the Scrapy shell will
+use IPython_ instead. IPython provides smart auto-completion, colorized
 output, and more.
 
 Scrapy also has support for `bpython`_ via the :ref:`bpython <extras>` extra,
-and will try to use it where IPython is unavailable.
+and will try to use it where neither ptpython nor IPython is available.
 
 Through Scrapy's settings you can configure it to use any one of
-``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
-are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
-variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
+``ptpython``, ``ipython``, ``bpython`` or the standard ``python`` shell,
+regardless of which are installed. This is done by setting the
+``SCRAPY_PYTHON_SHELL`` environment variable; or by defining it in your
+:ref:`scrapy.cfg <topics-config-settings>`::
 
     [settings]
     shell = bpython
 
+.. _ptpython: https://github.com/prompt-toolkit/ptpython
 .. _IPython: https://ipython.org/
 .. _bpython: https://bpython-interpreter.org/
 
