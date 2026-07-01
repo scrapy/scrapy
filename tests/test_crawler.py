@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from unittest.mock import MagicMock
 
 import pytest
+from twisted.internet.defer import Deferred
 from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
@@ -560,6 +561,126 @@ class TestCrawlerLogging:
         assert crawler.stats.get_value("log_count/WARNING") == 1
         assert info_count == 1
         assert crawler.stats.get_value("log_count/DEBUG", 0) == 0
+
+    @coroutine_test
+    async def test_log_counter_scope_isolated_between_crawlers(self) -> None:
+        barrier: Deferred[None] = Deferred()
+        counts: dict[str, int] = {}
+        opened = 0
+        root_level = logging.root.level
+
+        class BaseSpider(scrapy.Spider):
+            custom_settings = {
+                "LOG_LEVEL": "INFO",
+                "EXTENSIONS": {
+                    "scrapy.extensions.logstats.LogStats": None,
+                    "scrapy.extensions.telnet.TelnetConsole": None,
+                },
+            }
+            start_urls = ["data:,test"]
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                crawler.signals.connect(
+                    spider.spider_opened, signal=scrapy.signals.spider_opened
+                )
+                return spider
+
+            def spider_opened(self, spider) -> None:
+                nonlocal opened
+                opened += 1
+                if opened == 2 and not barrier.called:
+                    barrier.callback(None)
+
+            async def parse(self, response):
+                await maybe_deferred_to_future(barrier)
+                logging.info("info message")  # noqa: LOG015
+                assert self.crawler.stats
+                counts[self.name] = self.crawler.stats.get_value("log_count/INFO")
+                return []
+
+        class Spider1(BaseSpider):
+            name = "spider1"
+
+        class Spider2(BaseSpider):
+            name = "spider2"
+
+        try:
+            logging.root.setLevel(logging.INFO)
+            runner = CrawlerRunner()
+            crawler1 = runner.create_crawler(Spider1)
+            crawler2 = runner.create_crawler(Spider2)
+            d1 = runner.crawl(crawler1)
+            d2 = runner.crawl(crawler2)
+            await maybe_deferred_to_future(d1)
+            await maybe_deferred_to_future(d2)
+        finally:
+            logging.root.setLevel(root_level)
+
+        assert counts == {"spider1": 1, "spider2": 1}
+
+    @coroutine_test
+    async def test_log_counter_scope_isolated_between_crawlers_in_start(
+        self,
+    ) -> None:
+        barrier: Deferred[None] = Deferred()
+        counts: dict[str, int] = {}
+        opened = 0
+        root_level = logging.root.level
+
+        class BaseSpider(scrapy.Spider):
+            custom_settings = {
+                "LOG_LEVEL": "INFO",
+                "EXTENSIONS": {
+                    "scrapy.extensions.logstats.LogStats": None,
+                    "scrapy.extensions.telnet.TelnetConsole": None,
+                },
+            }
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                crawler.signals.connect(
+                    spider.spider_opened, signal=scrapy.signals.spider_opened
+                )
+                return spider
+
+            def spider_opened(self, spider) -> None:
+                nonlocal opened
+                opened += 1
+                if opened == 2 and not barrier.called:
+                    barrier.callback(None)
+
+            async def start(self):
+                await maybe_deferred_to_future(barrier)
+                logging.info("info message")  # noqa: LOG015
+                yield scrapy.Request("data:,test", dont_filter=True)
+
+            async def parse(self, response):
+                assert self.crawler.stats
+                counts[self.name] = self.crawler.stats.get_value("log_count/INFO")
+                return []
+
+        class Spider1(BaseSpider):
+            name = "spider1"
+
+        class Spider2(BaseSpider):
+            name = "spider2"
+
+        try:
+            logging.root.setLevel(logging.INFO)
+            runner = CrawlerRunner()
+            crawler1 = runner.create_crawler(Spider1)
+            crawler2 = runner.create_crawler(Spider2)
+            d1 = runner.crawl(crawler1)
+            d2 = runner.crawl(crawler2)
+            await maybe_deferred_to_future(d1)
+            await maybe_deferred_to_future(d2)
+        finally:
+            logging.root.setLevel(root_level)
+
+        assert counts == {"spider1": 1, "spider2": 1}
 
     def test_spider_custom_settings_log_append(self, tmp_path: Path) -> None:
         log_file = Path(tmp_path, "log.txt")
