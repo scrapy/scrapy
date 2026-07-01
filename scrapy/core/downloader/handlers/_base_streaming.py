@@ -84,19 +84,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
             crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         )
         self._proxy_auth_encoding: str = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
-        # these are useful for many handlers but used in different ways by them
         self._pool_size_total: int = crawler.settings.getint("CONCURRENT_REQUESTS")
-        scope_concurrencies = [
-            scope["concurrency"]
-            for scope in crawler.settings.getdict("THROTTLING_SCOPES").values()
-            if "concurrency" in scope
-        ]
-        self._pool_size_per_host: int = max(
-            [
-                crawler.settings.getint("THROTTLING_SCOPE_CONCURRENCY"),
-                *scope_concurrencies,
-            ]
-        )
 
     @staticmethod
     @abstractmethod

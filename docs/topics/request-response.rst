@@ -732,6 +732,8 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`throttling_delay`
+* :reqmeta:`throttling_dont_track`
 * :reqmeta:`throttling_scopes`
 * :reqmeta:`verbatim_url`
 

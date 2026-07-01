@@ -1025,6 +1025,14 @@ class ThrottlingManager:
             conflicts.append(f"delay={config['delay']!r} < Crawl-delay {capped}")
         if config.get("concurrency") is not None and int(config["concurrency"]) > 1:
             conflicts.append(f"concurrency={config['concurrency']!r} > 1")
+        # A min_concurrency floor above 1 keeps the scope above the single-slot
+        # concurrency that a Crawl-delay implies, since set_concurrency(1) is
+        # clamped back up to it.
+        if (
+            config.get("min_concurrency") is not None
+            and int(config["min_concurrency"]) > 1
+        ):
+            conflicts.append(f"min_concurrency={config['min_concurrency']!r} > 1")
         if conflicts:
             logger.warning(
                 f"Throttling scope {scope_id!r} is configured with {' and '.join(conflicts)}, "
@@ -1421,11 +1429,17 @@ class ThrottlingScopeManager:
         if self._rampup_window_start is None:
             self._rampup_window_start = now
             return
-        while now - self._rampup_window_start >= self._window:
-            self._rampup_window_start += self._window
-            if self._rampup_backoffs < self._rampup_target[0]:
-                self._rampup_step()
-            self._rampup_backoffs = 0
+        if now - self._rampup_window_start < self._window:
+            return
+        # Catch up with elapsed time but apply at most one ramp step per call: a
+        # scope that stayed idle for several windows must not ramp up
+        # cumulatively once it becomes active again (that would collapse the
+        # delay or jump the concurrency limit by several steps at once).
+        elapsed_windows = int((now - self._rampup_window_start) // self._window)
+        self._rampup_window_start += elapsed_windows * self._window
+        if self._rampup_backoffs < self._rampup_target[0]:
+            self._rampup_step()
+        self._rampup_backoffs = 0
 
     def _rampup_step(self) -> None:
         # Backoff in progress: let it recover before probing again.
