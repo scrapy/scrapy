@@ -2033,6 +2033,7 @@ Default:
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+        "scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware": 1000,
     }
 
 A dict containing the spider middlewares enabled by default in Scrapy, and
@@ -2077,6 +2078,59 @@ Dump the :ref:`Scrapy stats <topics-stats>` (to the Scrapy log) once the spider
 finishes.
 
 For more info see: :ref:`topics-stats`.
+
+.. setting:: STICKY_META_KEYS
+
+STICKY_META_KEYS
+----------------
+
+Default: ``[]`` (empty list)
+
+The :attr:`Request.meta <scrapy.http.Request.meta>` keys to copy automatically
+from a response into the follow-up requests yielded by its callback, handled by
+:class:`~scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware`.
+
+Metadata keys already set on a follow-up request are not overwritten.
+
+For example, the following spider::
+
+    class MySpider(Spider):
+        name = "myspider"
+
+        async def start(self):
+            start_url = "https://toscrape.com/"
+            yield Request(start_url, meta={"start_url": start_url})
+
+        def parse(self, response):
+            for a in response.css("a"):
+                yield response.follow(
+                    a,
+                    meta={"start_url": response.meta["start_url"]},
+                )
+            yield {
+                "url": response.url,
+                "start_url": response.meta["start_url"],
+            }
+
+can be rewritten as follows using the :setting:`STICKY_META_KEYS` setting::
+
+    class MySpider(Spider):
+        name = "myspider"
+        custom_settings = {
+            "STICKY_META_KEYS": ["start_url"],
+        }
+
+        async def start(self):
+            start_url = "https://toscrape.com/"
+            yield Request(start_url, meta={"start_url": start_url})
+
+        def parse(self, response):
+            for a in response.css("a"):
+                yield response.follow(a)
+            yield {
+                "url": response.url,
+                "start_url": response.meta["start_url"],
+            }
 
 .. setting:: TELNETCONSOLE_ENABLED
 

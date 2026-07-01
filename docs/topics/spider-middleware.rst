@@ -452,6 +452,19 @@ StartSpiderMiddleware
 .. autoclass:: StartSpiderMiddleware
 
 
+StickyMetaParamsMiddleware
+--------------------------
+
+.. module:: scrapy.spidermiddlewares.stickymeta
+   :synopsis: Sticky Meta Params Spider Middleware
+
+.. autoclass:: StickyMetaParamsMiddleware
+
+   Allows copying some request metadata into follow-up requests automatically.
+
+   See the :setting:`STICKY_META_KEYS` setting.
+
+
 UrlLengthMiddleware
 -------------------
 
