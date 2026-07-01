@@ -173,6 +173,8 @@ of this package for more information.
 H2DownloadHandler
 -----------------
 
+.. note:: Requires the :ref:`twisted-http2 <extras>` extra.
+
 .. autoclass:: scrapy.core.downloader.handlers.http2.H2DownloadHandler
 
 | Supported scheme: ``https``.
@@ -184,9 +186,6 @@ This handler supports ``https://host/path`` URLs and uses the HTTP/2 protocol
 for them.
 
 It's implemented using :mod:`twisted.web.client` and the ``h2`` library.
-
-For this handler to work you need to install the ``Twisted[http2]`` extra
-dependency.
 
 If you want to use this handler you need to replace the default one for the
 ``https`` scheme:
@@ -273,8 +272,12 @@ Other limitations:
 
 -   HTTPS proxies to HTTPS destinations are not supported.
 
+.. _httpx-handler:
+
 HttpxDownloadHandler
 --------------------
+
+.. note:: Requires the :ref:`httpx <extras>` extra.
 
 .. versionadded:: 2.15.0
 
@@ -288,7 +291,9 @@ HttpxDownloadHandler
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 or HTTP/2 protocol for them.
 
-It's implemented using the ``httpx`` library and needs it to be installed.
+It's implemented using the httpx_ library.
+
+.. _httpx: https://www.python-httpx.org/
 
 If you want to use this handler you need to replace the default ones for the
 ``http`` and ``https`` schemes:
@@ -311,8 +316,8 @@ Features and limitations
 
 =========================== =======================================
 HTTP proxies                Yes
-SOCKS proxies               Yes (SOCKS5; requires ``httpx[socks]``)
-HTTP/2                      Yes (requires ``httpx[http2]``)
+SOCKS proxies               Yes (SOCKS5)
+HTTP/2                      Yes
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
 TLS implementation          Standard library ``ssl``
@@ -331,8 +336,7 @@ HTTPX_HTTP2_ENABLED
 
 Default: ``False``
 
-Whether to enable HTTP/2 support in this handler. The ``httpx[http2]`` extra
-needs to be installed if you want to enable this setting.
+Whether to enable HTTP/2 support in this handler.
 
 .. versionadded:: VERSION
 
@@ -378,8 +382,12 @@ This handler supports ``ftp://host/path`` FTP URIs.
 
 It's implemented using :mod:`twisted.protocols.ftp`.
 
+.. _s3-handler:
+
 S3DownloadHandler
 -----------------
+
+.. note:: Requires the :ref:`s3 <extras>` extra.
 
 .. autoclass:: scrapy.core.downloader.handlers.s3.S3DownloadHandler
 
@@ -390,4 +398,6 @@ S3DownloadHandler
 
 This handler supports ``s3://bucket/path`` S3 URIs.
 
-It's implemented using the ``botocore`` library and needs it to be installed.
+It's implemented using the botocore_ library.
+
+.. _botocore: https://github.com/boto/botocore
