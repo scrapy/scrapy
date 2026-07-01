@@ -633,10 +633,13 @@ class ExecutionEngine:
         assert self._slot is not None  # typing
         assert self.spider is not None
 
-        self._slot.add_request(request)
         throttler = self.crawler.throttler
         assert throttler is not None
+        # A throttling-aware scheduler reserves the request (a concurrency slot)
+        # before handing it here, so everything past this point runs inside the
+        # try/finally that releases it, even if add_request() were to raise.
         try:
+            self._slot.add_request(request)
             yield self._acquire_throttling(request)
             result: Response | Request
             if self._downloader_fetch_needs_spider:

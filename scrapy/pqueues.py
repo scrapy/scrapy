@@ -603,6 +603,8 @@ class ThrottlingAwarePriorityQueue:
                 exc_info=True,
                 extra={"spider": getattr(self.crawler, "spider", None)},
             )
+            if self.crawler.stats is not None:
+                self.crawler.stats.inc_value("scheduler/unserializable")
 
     def _select(
         self,

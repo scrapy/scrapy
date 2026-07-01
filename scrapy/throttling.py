@@ -511,8 +511,8 @@ class ThrottlingManager:
         self._default_scope_manager_cls = load_object(
             crawler.settings["THROTTLING_SCOPE_MANAGER"]
         )
-        self._scopes_config: dict[str, dict[str, Any]] = crawler.settings.getdict(
-            "THROTTLING_SCOPES"
+        self._scopes_config: dict[str, dict[str, Any]] = self._merge_download_slots(
+            crawler.settings
         )
         # Ordered by least-recently-used first (see get_scope_manager), so the
         # scope limit can evict the coldest idle scopes (see THROTTLING_SCOPE_LIMIT).
@@ -526,6 +526,35 @@ class ThrottlingManager:
         self._reserved: WeakKeyDictionary[
             Request, list[tuple[ThrottlingScopeManagerProtocol, float | None]]
         ] = WeakKeyDictionary()
+
+    @staticmethod
+    def _merge_download_slots(settings: BaseSettings) -> dict[str, dict[str, Any]]:
+        """Return the effective per-scope configuration, merging the deprecated
+        :setting:`DOWNLOAD_SLOTS` setting into :setting:`THROTTLING_SCOPES`.
+
+        Each ``DOWNLOAD_SLOTS`` entry is translated to a throttling scope keyed
+        by the same slot name (the default manager keys domain scopes by
+        ``netloc``, which is what download slots used too): ``concurrency`` and
+        ``delay`` map directly, and the ``randomize_delay`` boolean maps to a
+        ``jitter`` magnitude (the historical ±50%, or none). An explicit
+        ``THROTTLING_SCOPES`` entry for the same scope takes precedence over the
+        translated one. The deprecation warning is emitted by the downloader.
+        """
+        scopes: dict[str, dict[str, Any]] = {
+            scope_id: dict(config)
+            for scope_id, config in settings.getdict("THROTTLING_SCOPES").items()
+        }
+        for slot_id, slot_config in settings.getdict("DOWNLOAD_SLOTS").items():
+            translated: dict[str, Any] = {}
+            if "concurrency" in slot_config:
+                translated["concurrency"] = slot_config["concurrency"]
+            if "delay" in slot_config:
+                translated["delay"] = slot_config["delay"]
+            if "randomize_delay" in slot_config:
+                translated["jitter"] = 0.5 if slot_config["randomize_delay"] else 0.0
+            # An explicit THROTTLING_SCOPES entry wins over the translated one.
+            scopes[slot_id] = {**translated, **scopes.get(slot_id, {})}
+        return scopes
 
     @scope_cache
     async def get_scopes(self, request: Request) -> RequestScopes:
