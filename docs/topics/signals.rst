@@ -60,6 +60,8 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 .. skip: next
 .. code-block:: python
 
+    import json
+
     import scrapy
     import treq
 

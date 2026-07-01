@@ -90,9 +90,10 @@ to figure these settings out automatically.
 .. note::
 
     This is using :ref:`feed exports <topics-feed-exports>` to generate the
-    JSON file, you can easily change the export format (XML or CSV, for example) or the
-    storage backend (FTP or `Amazon S3`_, for example).  You can also write an
-    :ref:`item pipeline <topics-item-pipeline>` to store the items in a database.
+    JSON Lines file, you can easily change the export format (XML or CSV, for
+    example) or the storage backend (FTP or `Amazon S3`_, for example). You can
+    also write an :ref:`item pipeline <topics-item-pipeline>` to store the
+    items in a database.
 
 
 .. _topics-whatelse:

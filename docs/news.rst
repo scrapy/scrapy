@@ -711,7 +711,7 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
--   Added a new setting, :setting:`REFERER_POLICIES`, to allow customizing
+-   Added a new setting, :setting:`REFERRER_POLICIES`, to allow customizing
     supported referrer policies.
 
 Bug fixes
@@ -5722,7 +5722,7 @@ The following changes may impact custom priority queue classes:
 
     *   A new keyword parameter has been added: ``key``. It is a string
         that is always an empty string for memory queues and indicates the
-        :setting:`JOB_DIR` value for disk queues.
+        :setting:`JOBDIR` value for disk queues.
 
     *   The parameter for disk queues that contains data from the previous
         crawl, ``startprios`` or ``slot_startprios``, is now passed as a
@@ -6276,7 +6276,7 @@ New features
     ``scrapy.pqueues.DownloaderAwarePriorityQueue``, may be
     :ref:`enabled <broad-crawls-scheduler-priority-queue>` for a significant
     scheduling improvement on crawls targeting multiple web domains, at the
-    cost of no :setting:`CONCURRENT_REQUESTS_PER_IP` support (:issue:`3520`)
+    cost of no ``CONCURRENT_REQUESTS_PER_IP`` support (:issue:`3520`)
 
 *   A new :attr:`.Request.cb_kwargs` attribute
     provides a cleaner way to pass keyword arguments to callback methods
@@ -8755,7 +8755,7 @@ New features and settings
 - In request errbacks, offending requests are now received in ``failure.request`` attribute (:rev:`2738`)
 - Big downloader refactoring to support per domain/ip concurrency limits (:rev:`2732`)
    - ``CONCURRENT_REQUESTS_PER_SPIDER`` setting has been deprecated and replaced by:
-      - :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, :setting:`CONCURRENT_REQUESTS_PER_IP`
+      - :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, ``CONCURRENT_REQUESTS_PER_IP``
    - check the documentation for more details
 - Added builtin caching DNS resolver (:rev:`2728`)
 - Moved Amazon AWS-related components/extensions (SQS spider queue, SimpleDB stats collector) to a separate project: [scaws](https://github.com/scrapinghub/scaws) (:rev:`2706`, :rev:`2714`)

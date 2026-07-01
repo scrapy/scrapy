@@ -619,6 +619,7 @@ Default:
         "file": "scrapy.extensions.feedexport.FileFeedStorage",
         "stdout": "scrapy.extensions.feedexport.StdoutFeedStorage",
         "s3": "scrapy.extensions.feedexport.S3FeedStorage",
+        "gs": "scrapy.extensions.feedexport.GCSFeedStorage",
         "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 

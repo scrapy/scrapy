@@ -285,7 +285,8 @@ consume a lot of memory.
 In order to avoid parsing all the entire feed at once in memory, you can use
 the :func:`~scrapy.utils.iterators.xmliter_lxml` and
 :func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
-:class:`~scrapy.spiders.XMLFeedSpider` uses.
+:class:`~scrapy.spiders.XMLFeedSpider` and
+:class:`~scrapy.spiders.CSVFeedSpider` use.
 
 .. autofunction:: scrapy.utils.iterators.xmliter_lxml
 
@@ -360,10 +361,11 @@ method for this purpose. For example:
         def process_spider_output(self, response, result):
             for item_or_request in result:
                 if isinstance(item_or_request, Request):
+                    yield item_or_request
                     continue
-                adapter = ItemAdapter(item)
+                adapter = ItemAdapter(item_or_request)
                 for _ in range(adapter["multiply_by"]):
-                    yield deepcopy(item)
+                    yield deepcopy(item_or_request)
 
 Does Scrapy support IPv6 addresses?
 -----------------------------------
