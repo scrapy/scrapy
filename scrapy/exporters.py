@@ -71,6 +71,27 @@ class BaseItemExporter(ABC):
     def finish_exporting(self) -> None:  # noqa: B027
         pass
 
+    def _serialize_nested_items(
+        self, value: Any, default_value: Any, include_empty: bool | None
+    ) -> Any:
+        def serialize_iterable(it: Iterable[Any]) -> list[Any]:
+            return [
+                self._serialize_nested_items(x, default_value, include_empty)
+                for x in it
+            ]
+
+        if is_item(value) and not isinstance(value, dict):
+            return dict(
+                self._get_serialized_fields(value, default_value, include_empty)
+            )
+        if is_listlike(value):
+            if isinstance(value, dict):
+                serialized_list = serialize_iterable(value.items())
+            else:
+                serialized_list = serialize_iterable(value)
+            return type(value)(serialized_list)
+        return value
+
     def _get_serialized_fields(
         self, item: Any, default_value: Any = None, include_empty: bool | None = None
     ) -> Iterable[tuple[str, Any]]:
@@ -103,7 +124,13 @@ class BaseItemExporter(ABC):
                 item_field, output_field = field_name
             if item_field in item:
                 field_meta = item.get_field_meta(item_field)
-                value = self.serialize_field(field_meta, output_field, item[item_field])
+                value = self.serialize_field(
+                    field_meta,
+                    output_field,
+                    self._serialize_nested_items(
+                        item[item_field], default_value, include_empty
+                    ),
+                )
             else:
                 value = default_value
 
