@@ -23,4 +23,4 @@ class SleepingSpider(scrapy.Spider):
 process = CrawlerProcess(settings={})
 
 process.crawl(SleepingSpider)
-process.start()
+process.start(stop_after_crawl="--no-stop" not in sys.argv)
