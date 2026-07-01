@@ -96,6 +96,7 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
+        self._warn_on_deprecated_default_settings()
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
@@ -150,6 +151,23 @@ class Crawler:
         logger.info(
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
+
+    def _warn_on_deprecated_default_settings(self) -> None:
+        default_priority = SETTINGS_PRIORITIES["default"]
+        for setting_name, current_default, future_default in (
+            ("CONCURRENT_REQUESTS_PER_DOMAIN", 8, 1),
+            ("DOWNLOAD_DELAY", 0, 1),
+            ("ROBOTSTXT_OBEY", False, True),
+        ):
+            if self.settings.getpriority(setting_name) == default_priority:
+                warnings.warn(
+                    f"The default value of {setting_name} will change from "
+                    f"{current_default!r} to {future_default!r} in a future "
+                    f"Scrapy version. Explicitly set {setting_name} in your "
+                    f"settings to silence this warning.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=3,
+                )
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.
