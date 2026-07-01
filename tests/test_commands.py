@@ -332,9 +332,10 @@ class MySpider(scrapy.Spider):
             assert self.ASYNC_MSG in err
             assert (
                 "The installed reactor (twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
-                " does not match the requested one"
+                f" does not match the one requested by spider {spider!r}"
                 " (twisted.internet.selectreactor.SelectReactor)"
             ) in err
+            assert "FORCE_CRAWLER_PROCESS=True" in err
 
     def test_project_asyncio_spider_settings_select_forced(
         self, proj_path: Path
