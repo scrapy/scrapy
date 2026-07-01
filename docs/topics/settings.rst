@@ -305,6 +305,9 @@ These settings cannot be :ref:`set from a spider <spider-settings>`.
 
 These settings are:
 
+-   :setting:`ADDONS`
+-   :setting:`COMMANDS_MODULE`
+-   :setting:`FORCE_CRAWLER_PROCESS`
 -   :setting:`TWISTED_REACTOR_ENABLED`
 -   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
     spider loader class, e.g. :setting:`SPIDER_MODULES` and
@@ -408,6 +411,8 @@ Default: ``{}``
 
 A dict containing paths to the add-ons enabled in your project and their
 priorities. For more information, see :ref:`topics-addons`.
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. setting:: AWS_ACCESS_KEY_ID
 
@@ -520,6 +525,17 @@ project name). This name will be used for the logging too.
 
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
+
+.. setting:: COMMANDS_MODULE
+
+COMMANDS_MODULE
+---------------
+
+Default: ``""``
+
+The module where Scrapy will look for custom commands.
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. setting:: CONCURRENT_ITEMS
 
@@ -1376,6 +1392,8 @@ If ``True``, these commands will always use
 
 Set this to ``True`` if you want to set :setting:`TWISTED_REACTOR` to a
 non-default value in :ref:`per-spider settings <spider-settings>`.
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. setting:: FTP_PASSIVE_MODE
 
