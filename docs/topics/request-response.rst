@@ -238,6 +238,9 @@ Request objects
         Also mind that the :meth:`copy` and :meth:`replace` request methods
         :doc:`shallow-copy <library/copy>` request metadata.
 
+        .. seealso:: :class:`~scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware`
+            for a built-in middleware that warns about this issue at run time.
+
     .. autoattribute:: dont_filter
 
     .. autoattribute:: Request.attributes
