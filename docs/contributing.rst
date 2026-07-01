@@ -323,9 +323,10 @@ deprecation removals are documented in the :ref:`release notes <news>`.
 Tests
 =====
 
-Tests are implemented using the :doc:`Twisted unit-testing framework
-<twisted:development/test-standard>`. Running tests requires
-:doc:`tox <tox:index>`.
+Tests are implemented using pytest_. Running tests requires :doc:`tox
+<tox:index>`.
+
+.. _pytest: https://pytest.org
 
 .. _running-tests:
 

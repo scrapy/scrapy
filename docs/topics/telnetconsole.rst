@@ -36,9 +36,9 @@ disable it if you want. For more information about the extension itself see
 How to access the telnet console
 ================================
 
-The telnet console listens in the TCP port defined in the
-:setting:`TELNETCONSOLE_PORT` setting, which defaults to ``6023``. To access
-the console you need to type::
+The telnet console listens on the first available TCP port from the range
+defined in the :setting:`TELNETCONSOLE_PORT` setting, which defaults to
+``[6023, 6073]``. To access the console you need to type::
 
     telnet localhost 6023
     Trying localhost...

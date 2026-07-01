@@ -46,7 +46,7 @@ previous (or subsequent) middleware being applied.
 If you want to disable a builtin middleware (the ones defined in
 :setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
 in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
-value.  For example, if you want to disable the off-site middleware:
+value.  For example, if you want to disable the referer middleware:
 
 .. code-block:: python
 

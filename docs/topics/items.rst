@@ -376,7 +376,9 @@ Creating dicts from items:
     >>> dict(product)  # create a dict from all populated values
     {'price': 1000, 'name': 'Desktop PC'}
 
-    Creating items from dicts:
+Creating items from dicts:
+
+.. code-block:: pycon
 
     >>> Product({"name": "Laptop PC", "price": 1500})
     Product(price=1500, name='Laptop PC')

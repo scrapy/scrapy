@@ -409,77 +409,6 @@ Default: ``{}``
 A dict containing paths to the add-ons enabled in your project and their
 priorities. For more information, see :ref:`topics-addons`.
 
-.. setting:: AWS_ACCESS_KEY_ID
-
-AWS_ACCESS_KEY_ID
------------------
-
-Default: ``None``
-
-The AWS access key used by code that requires access to `Amazon Web services`_,
-such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
-
-.. setting:: AWS_SECRET_ACCESS_KEY
-
-AWS_SECRET_ACCESS_KEY
----------------------
-
-Default: ``None``
-
-The AWS secret key used by code that requires access to `Amazon Web services`_,
-such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
-
-.. setting:: AWS_SESSION_TOKEN
-
-AWS_SESSION_TOKEN
------------------
-
-Default: ``None``
-
-The AWS security token used by code that requires access to `Amazon Web services`_,
-such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
-`temporary security credentials`_.
-
-.. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
-
-.. setting:: AWS_ENDPOINT_URL
-
-AWS_ENDPOINT_URL
-----------------
-
-Default: ``None``
-
-Endpoint URL used for S3-like storage, for example Minio or s3.scality.
-
-.. setting:: AWS_USE_SSL
-
-AWS_USE_SSL
------------
-
-Default: ``None``
-
-Use this option if you want to disable SSL connection for communication with
-S3 or S3-like storage. By default SSL will be used.
-
-.. setting:: AWS_VERIFY
-
-AWS_VERIFY
-----------
-
-Default: ``None``
-
-Verify SSL connection between Scrapy and S3 or S3-like storage. By default
-SSL verification will occur.
-
-.. setting:: AWS_REGION_NAME
-
-AWS_REGION_NAME
----------------
-
-Default: ``None``
-
-The name of the region associated with the AWS client.
-
 .. setting:: ASYNCIO_EVENT_LOOP
 
 ASYNCIO_EVENT_LOOP
@@ -507,6 +436,77 @@ Note that the event loop class must inherit from :class:`asyncio.AbstractEventLo
     as the current loop for the current OS thread.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
+
+.. setting:: AWS_ACCESS_KEY_ID
+
+AWS_ACCESS_KEY_ID
+-----------------
+
+Default: ``None``
+
+The AWS access key used by code that requires access to `Amazon Web services`_,
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
+
+.. setting:: AWS_ENDPOINT_URL
+
+AWS_ENDPOINT_URL
+----------------
+
+Default: ``None``
+
+Endpoint URL used for S3-like storage, for example Minio or s3.scality.
+
+.. setting:: AWS_REGION_NAME
+
+AWS_REGION_NAME
+---------------
+
+Default: ``None``
+
+The name of the region associated with the AWS client.
+
+.. setting:: AWS_SECRET_ACCESS_KEY
+
+AWS_SECRET_ACCESS_KEY
+---------------------
+
+Default: ``None``
+
+The AWS secret key used by code that requires access to `Amazon Web services`_,
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
+
+.. setting:: AWS_SESSION_TOKEN
+
+AWS_SESSION_TOKEN
+-----------------
+
+Default: ``None``
+
+The AWS security token used by code that requires access to `Amazon Web services`_,
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
+`temporary security credentials`_.
+
+.. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
+
+.. setting:: AWS_USE_SSL
+
+AWS_USE_SSL
+-----------
+
+Default: ``None``
+
+Use this option if you want to disable SSL connection for communication with
+S3 or S3-like storage. By default SSL will be used.
+
+.. setting:: AWS_VERIFY
+
+AWS_VERIFY
+----------
+
+Default: ``None``
+
+Verify SSL connection between Scrapy and S3 or S3-like storage. By default
+SSL verification will occur.
 
 .. setting:: BOT_NAME
 
@@ -593,7 +593,7 @@ When writing an item pipeline, you can force a different log level by setting
 DEFAULT_ITEM_CLASS
 ------------------
 
-Default: ``'scrapy.Item'``
+Default: ``'scrapy.item.Item'``
 
 The default class that will be used for instantiating items in the :ref:`the
 Scrapy shell <topics-shell>`.
@@ -687,7 +687,7 @@ Whether to enable DNS in-memory cache.
     :class:`~scrapy.resolver.CachingThreadedResolver` and
     :class:`~scrapy.resolver.CachingHostnameResolver`. It has no effect when
     :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
-    either when :setting:`DNS_RESOLVER` is set to a different resolver.
+    either when :setting:`TWISTED_DNS_RESOLVER` is set to a different resolver.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
@@ -699,25 +699,6 @@ DNSCACHE_SIZE
 Default: ``10000``
 
 DNS in-memory cache size, see :setting:`DNSCACHE_ENABLED`.
-
-.. note:: This is a :ref:`reactor setting <reactor-settings>`.
-
-.. setting:: TWISTED_DNS_RESOLVER
-
-TWISTED_DNS_RESOLVER
---------------------
-
-Default: ``'scrapy.resolver.CachingThreadedResolver'``
-
-The class to be used by Twisted to resolve DNS names. The default
-``scrapy.resolver.CachingThreadedResolver`` supports specifying a timeout for
-DNS requests via the :setting:`DNS_TIMEOUT` setting, but works only with IPv4
-addresses. Scrapy provides an alternative resolver,
-``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
-take the :setting:`DNS_TIMEOUT` setting into account.
-
-.. note::
-    This setting has no effect when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
@@ -734,7 +715,7 @@ Timeout for processing of DNS queries in seconds. Float is supported.
     This setting is only used by
     :class:`~scrapy.resolver.CachingThreadedResolver`. It has no effect when
     :setting:`TWISTED_REACTOR_ENABLED` is ``False``, and may have no effect
-    either when :setting:`DNS_RESOLVER` is set to a different resolver.
+    either when :setting:`TWISTED_DNS_RESOLVER` is set to a different resolver.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
@@ -1323,6 +1304,7 @@ Default:
 
     {
         "scrapy.extensions.corestats.CoreStats": 0,
+        "scrapy.extensions.logcount.LogCount": 0,
         "scrapy.extensions.telnet.TelnetConsole": 0,
         "scrapy.extensions.memusage.MemoryUsage": 0,
         "scrapy.extensions.memdebug.MemoryDebugger": 0,
@@ -1345,6 +1327,8 @@ and the :ref:`list of available extensions <topics-extensions-ref>`.
 FEED_TEMPDIR
 ------------
 
+Default: ``None``
+
 The Feed Temp dir allows you to set a custom folder to save crawler
 temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
@@ -1353,6 +1337,8 @@ temporary files before uploading with :ref:`FTP feed storage <topics-feed-storag
 
 FEED_STORAGE_GCS_ACL
 --------------------
+
+Default: ``""``
 
 The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
 For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://docs.cloud.google.com/storage/docs/access-control/lists>`_.
@@ -1622,6 +1608,8 @@ The following special items are also supported:
 
 -   ``Python``
 
+-   ``pyOpenSSL``
+
 .. setting:: LOGSTATS_INTERVAL
 
 LOGSTATS_INTERVAL
@@ -1749,7 +1737,7 @@ significant similarities in the time between their requests.
 
 The randomization policy is the same used by `wget`_ ``--random-wait`` option.
 
-If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
+If :setting:`DOWNLOAD_DELAY` is zero this option has no effect.
 
 .. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
@@ -1810,7 +1798,7 @@ The parser backend to use for parsing ``robots.txt`` files. For more information
 .. setting:: ROBOTSTXT_USER_AGENT
 
 ROBOTSTXT_USER_AGENT
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 
 Default: ``None``
 
@@ -1965,6 +1953,8 @@ Default:
 
     {
         "scrapy.contracts.default.UrlContract": 1,
+        "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
+        "scrapy.contracts.default.MetadataContract": 1,
         "scrapy.contracts.default.ReturnsContract": 2,
         "scrapy.contracts.default.ScrapesContract": 3,
     }
@@ -2029,6 +2019,7 @@ Default:
 .. code-block:: python
 
     {
+        "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 25,
         "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
@@ -2103,6 +2094,25 @@ command.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
+
+.. setting:: TWISTED_DNS_RESOLVER
+
+TWISTED_DNS_RESOLVER
+--------------------
+
+Default: ``'scrapy.resolver.CachingThreadedResolver'``
+
+The class to be used by Twisted to resolve DNS names. The default
+``scrapy.resolver.CachingThreadedResolver`` supports specifying a timeout for
+DNS requests via the :setting:`DNS_TIMEOUT` setting, but works only with IPv4
+addresses. Scrapy provides an alternative resolver,
+``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
+take the :setting:`DNS_TIMEOUT` setting into account.
+
+.. note::
+    This setting has no effect when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
+
+.. note:: This is a :ref:`reactor setting <reactor-settings>`.
 
 .. setting:: TWISTED_REACTOR_ENABLED
 
@@ -2245,7 +2255,7 @@ URLLENGTH_LIMIT
 
 Default: ``2083``
 
-Scope: ``spidermiddlewares.urllength``
+Scope: ``scrapy.spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs.
 
