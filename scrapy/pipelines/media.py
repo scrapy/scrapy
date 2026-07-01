@@ -55,6 +55,12 @@ FileInfoOrError: TypeAlias = (
 logger = logging.getLogger(__name__)
 
 
+def _media_request_filtered(failure: Failure) -> bool:
+    from scrapy.pipelines.files import _MediaRequestFiltered  # noqa: PLC0415
+
+    return isinstance(failure.value, _MediaRequestFiltered)
+
+
 class MediaPipeline(ABC):
     LOG_FAILED_RESULTS: bool = True
 
@@ -193,7 +199,8 @@ class MediaPipeline(ABC):
                 result = await self._check_media_to_download(request, info, item=item)
         except Exception:
             result = Failure()
-            logger.exception(result)
+            if not _media_request_filtered(result):
+                logger.exception(result)
         self._cache_result_and_execute_waiters(result, fp, info)
         return await maybe_deferred_to_future(wad)  # it must return wad at last
 
@@ -304,6 +311,8 @@ class MediaPipeline(ABC):
             for ok, value in results:
                 if not ok:
                     assert isinstance(value, Failure)
+                    if _media_request_filtered(value):
+                        continue
                     logger.error(
                         "%(class)s found errors processing %(item)s",
                         {"class": self.__class__.__name__, "item": item},

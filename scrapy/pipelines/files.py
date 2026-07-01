@@ -79,6 +79,17 @@ class FileException(Exception):
     """General media error exception"""
 
 
+class _MediaRequestFiltered(FileException):
+    """Raised internally by media pipelines when a media request is filtered
+    out (e.g. as an offsite request) instead of being downloaded.
+
+    It is a subclass of :exc:`FileException` for backward compatibility, but
+    unlike an actual download error it is logged at the ``DEBUG`` level and
+    without a traceback, since filtering a request is expected behavior rather
+    than an error.
+    """
+
+
 class StatInfo(TypedDict, total=False):
     checksum: str
     last_modified: float
@@ -597,20 +608,20 @@ class FilesPipeline(MediaPipeline):
     def media_failed(
         self, failure: Failure, request: Request, info: MediaPipeline.SpiderInfo
     ) -> NoReturn:
-        if not isinstance(failure.value, IgnoreRequest):
-            referer = referer_str(request)
-            logger.warning(
-                "File (unknown-error): Error downloading %(medianame)s from "
-                "%(request)s referred in <%(referer)s>: %(exception)s",
-                {
-                    "medianame": self.MEDIA_NAME,
-                    "request": request,
-                    "referer": referer,
-                    "exception": failure.value,
-                },
+        referer = referer_str(request)
+        if isinstance(failure.value, IgnoreRequest):
+            logger.debug(
+                f"File (filtered): Not downloading {self.MEDIA_NAME} from "
+                f"{request} referred in <{referer}>: {failure.value}",
                 extra={"spider": info.spider},
             )
+            raise _MediaRequestFiltered(str(failure.value)) from failure.value
 
+        logger.warning(
+            f"File (unknown-error): Error downloading {self.MEDIA_NAME} from "
+            f"{request} referred in <{referer}>: {failure.value}",
+            extra={"spider": info.spider},
+        )
         raise FileException
 
     async def media_downloaded(

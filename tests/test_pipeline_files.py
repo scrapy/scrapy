@@ -1,6 +1,7 @@
 import dataclasses
 import os
 import random
+import re
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -18,17 +19,21 @@ from urllib.parse import urlparse
 import attr
 import pytest
 from itemadapter import ItemAdapter
+from testfixtures import LogCapture
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
+    FileException,
     FilesPipeline,
     FSFilesStore,
     FTPFilesStore,
     GCSFilesStore,
     S3FilesStore,
+    _MediaRequestFiltered,
 )
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
@@ -296,6 +301,65 @@ class TestFilesPipeline:
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         assert file_path(request, item=item) == "full/path-to-store-file"
+
+    def test_media_failed_filtered_request(self):
+        """A filtered media request (IgnoreRequest) is reported as a
+        _MediaRequestFiltered exception and logged at the DEBUG level, instead
+        of as a download error with a traceback."""
+        request = Request("http://example.com/file.pdf")
+        reason = "Filtered offsite request to 'example.com'"
+        failure = Failure(IgnoreRequest(reason))
+
+        with (
+            LogCapture() as log,
+            pytest.raises(_MediaRequestFiltered, match=re.escape(reason)),
+        ):
+            self.pipeline.media_failed(failure, request, self.pipeline.spiderinfo)
+
+        assert len(log.records) == 1
+        record = log.records[0]
+        assert record.levelname == "DEBUG"
+        assert record.exc_info is None
+        assert reason in record.getMessage()
+
+    def test_media_failed_download_error(self):
+        """A genuine download error is reported as a FileException and logged as
+        a warning."""
+        request = Request("http://example.com/file.pdf")
+        failure = Failure(Exception("boom"))
+
+        with LogCapture() as log, pytest.raises(FileException):
+            self.pipeline.media_failed(failure, request, self.pipeline.spiderinfo)
+
+        assert len(log.records) == 1
+        assert log.records[0].levelname == "WARNING"
+
+    @coroutine_test
+    async def test_process_item_filtered_request(self):
+        """A filtered (e.g. offsite) media request is processed as a failed
+        result without being logged as an error with a traceback."""
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url,
+            meta={
+                "response": IgnoreRequest("Filtered offsite request to 'example.com'")
+            },
+        )
+        with (
+            LogCapture() as log,
+            mock.patch.object(
+                FilesPipeline, "get_media_requests", return_value=[request]
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+
+        assert result["files"] == []
+        assert not any(r.levelname in ("WARNING", "ERROR") for r in log.records)
+        assert any(
+            "Filtered offsite request to 'example.com'" in r.getMessage()
+            for r in log.records
+        )
 
     @pytest.mark.parametrize(
         "bad_type",
