@@ -238,10 +238,14 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
+        # Mirror pop(): at a given priority it drains the regular queue before
+        # the start queue, so peek() must report the regular head first for the
+        # two to agree on "the next request" (a throttling-aware queue relies on
+        # this to check readiness of the exact request pop() will return).
         try:
-            queue = self._start_queues[self.curprio]
-        except KeyError:
             queue = self.queues[self.curprio]
+        except KeyError:
+            queue = self._start_queues[self.curprio]
         # Protocols can't declare optional members
         return cast("Request", queue.peek())  # type: ignore[attr-defined]
 

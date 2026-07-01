@@ -57,7 +57,7 @@ class RampupConfig(TypedDict, total=False):
     :setting:`RAMPUP_BACKOFF_TARGET`).
     """
 
-    backoff_target: float | list[float]
+    backoff_target: float
     delay_factor: float
     min_delay: float
 
@@ -365,24 +365,28 @@ class ThrottlingManagerProtocol(Protocol):
         *scopes* accepts the same shapes as the output of :meth:`get_scopes`
         (typically the result of :meth:`get_resolved_scopes` for a request).
 
-        When *delay* is ``None`` an exponential backoff step is applied; when
-        given, *delay* is a hard minimum delay in seconds (e.g. from a
-        :ref:`Retry-After <retry-after>` header). *cap* limits *delay* to
-        :setting:`BACKOFF_MAX_DELAY`; set it to ``False`` for trusted,
-        programmatic delays.
+        An exponential backoff step is always applied to the scope's delay.
+        When *delay* is given, the scope is *additionally* held back for at
+        least *delay* seconds before its next request: a one-time gate (e.g.
+        from a :ref:`Retry-After <retry-after>` header), not a change to the
+        steady-state delay. *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`;
+        set it to ``False`` for trusted, programmatic delays.
         """
 
     def delay_scope(self, scope_id: str, delay: float) -> None:
-        """Hold back every request of the scope identified by *scope_id* for at
-        least *delay* seconds, counted as a :ref:`backoff <backoff>` trigger
-        for the scope.
+        """Hold back the scope identified by *scope_id* for at least *delay*
+        seconds before its next request, and register a :ref:`backoff
+        <backoff>` trigger for the scope.
+
+        Like a :ref:`Retry-After <retry-after>` response header, this is a
+        one-time delay (the scope's steady-state delay grows by one backoff
+        step and then recovers), not a permanent one; call it again to keep a
+        scope slowed down for longer.
 
         This is shorthand for :meth:`back_off(scope_id, delay=delay,
-        cap=False) <back_off>`: the programmatic equivalent of a
-        :ref:`Retry-After <retry-after>` response header. Unlike those headers,
-        *delay* is **not** capped at :setting:`BACKOFF_MAX_DELAY`: that cap
-        guards against untrusted input, whereas a ``delay_scope`` call is
-        trusted.
+        cap=False) <back_off>`. Unlike a ``Retry-After`` header, *delay* is
+        **not** capped at :setting:`BACKOFF_MAX_DELAY`: that cap guards against
+        untrusted input, whereas a ``delay_scope`` call is trusted.
         """
 
     def reconcile_quota(
@@ -866,8 +870,9 @@ class ThrottlingManager:
         manager.set_concurrency(1)
 
     def delay_scope(self, scope_id: ScopeID, delay: float) -> None:
-        # Like a Retry-After / RateLimit-Reset header, this is a hard minimum
-        # delay; unlike those, it is trusted, so it bypasses BACKOFF_MAX_DELAY.
+        # Like a Retry-After / RateLimit-Reset header, this gates the scope's
+        # next request by delay seconds (a one-time hold, not a steady-state
+        # delay); unlike those, it is trusted, so it bypasses BACKOFF_MAX_DELAY.
         self.back_off(scope_id, delay=float(delay), cap=False)
 
     def get_scope_delay(self, scope_id: ScopeID) -> float:
@@ -1076,8 +1081,10 @@ class ThrottlingScopeManager:
         :setting:`BACKOFF_EXCEPTIONS` exception) the delay grows exponentially
         by :setting:`BACKOFF_DELAY_FACTOR`, bounded by :setting:`BACKOFF_MIN_DELAY`
         and :setting:`BACKOFF_MAX_DELAY`, with :setting:`BACKOFF_JITTER` applied.
-        A ``Retry-After`` / ``RateLimit-Reset`` delay is honored as a hard
-        minimum (capped at :setting:`BACKOFF_MAX_DELAY`).
+        A ``Retry-After`` / ``RateLimit-Reset`` delay additionally holds the
+        scope back until that time before its next request (a one-time gate,
+        capped at :setting:`BACKOFF_MAX_DELAY`), without becoming the
+        steady-state delay.
 
     -   After :setting:`BACKOFF_WINDOW` seconds without a new trigger, the delay
         recovers one step at a time back towards the base delay.
@@ -1146,8 +1153,10 @@ class ThrottlingScopeManager:
         rampup = config.get("rampup")
         self._rampup_enabled: bool = bool(rampup)
         rampup_config: dict[str, Any] = rampup if isinstance(rampup, dict) else {}
-        self._rampup_target: tuple[float, float] = self._parse_target(
-            rampup_config.get("backoff_target", settings.get("RAMPUP_BACKOFF_TARGET"))
+        self._rampup_target: float = float(
+            rampup_config.get(
+                "backoff_target", settings.getfloat("RAMPUP_BACKOFF_TARGET")
+            )
         )
         self._rampup_delay_factor: float = float(rampup_config.get("delay_factor", 0.5))
         self._rampup_min_delay: float = float(rampup_config.get("min_delay", 0.0))
@@ -1190,12 +1199,6 @@ class ThrottlingScopeManager:
     @staticmethod
     def _now(now: float | None) -> float:
         return time.monotonic() if now is None else now
-
-    @staticmethod
-    def _parse_target(value: Any) -> tuple[float, float]:
-        if isinstance(value, (list, tuple)):
-            return float(value[0]), float(value[1])
-        return float(value), float(value)
 
     @staticmethod
     def _apply_jitter(value: float, jitter: float | list[float]) -> float:
@@ -1252,7 +1255,7 @@ class ThrottlingScopeManager:
         # delay or jump the concurrency limit by several steps at once).
         elapsed_windows = int((now - self._rampup_window_start) // self._window)
         self._rampup_window_start += elapsed_windows * self._window
-        if self._rampup_backoffs < self._rampup_target[0]:
+        if self._rampup_backoffs < self._rampup_target:
             self._rampup_step()
         self._rampup_backoffs = 0
 
@@ -1261,10 +1264,12 @@ class ThrottlingScopeManager:
         if self._backoff_level > 0:
             return
         if self._delay > self._rampup_min_delay:
+            # Lower only the effective delay while probing for headroom; the
+            # configured base delay is left untouched so it stays the recovery
+            # target on backoff and the value reported by get_base_delay().
             self._delay = max(
                 self._rampup_min_delay, self._delay * self._rampup_delay_factor
             )
-            self._base_delay = min(self._base_delay, self._delay)
         else:
             # Rampup is only enabled with a concurrency limit set.
             assert self._concurrency is not None
@@ -1368,20 +1373,21 @@ class ThrottlingScopeManager:
         self._backoff_level += 1
         self._rampup_backoffs += 1
         if delay is not None:
+            # A hard delay (e.g. a Retry-After header) is a one-time gate: hold
+            # the scope back for at least this long *once*, matching the HTTP
+            # semantics of "do not retry before this time". It is deliberately
+            # not turned into the steady-state inter-request delay; the delay
+            # still grows by one exponential step below (and recovers over
+            # BACKOFF_WINDOW), so a small Retry-After does not become a long
+            # standing delay for every later request.
             hard = min(float(delay), self._max_delay) if cap else float(delay)
             self._in_backoff_until = now + hard
-            self._delay = max(self._delay, hard, self._min_delay)
-            if cap:
-                self._delay = min(self._delay, self._max_delay)
-        else:
-            grown = (
-                self._delay * self._delay_factor if self._delay > 0 else self._min_delay
-            )
-            grown = max(self._min_delay, grown)
-            grown = min(grown, self._max_delay)
-            self._delay = min(
-                self._apply_jitter(grown, self._backoff_jitter), self._max_delay
-            )
+        grown = self._delay * self._delay_factor if self._delay > 0 else self._min_delay
+        grown = max(self._min_delay, grown)
+        grown = min(grown, self._max_delay)
+        self._delay = min(
+            self._apply_jitter(grown, self._backoff_jitter), self._max_delay
+        )
         self._next_allowed_time = now + self._delay
 
     def reconcile_quota(

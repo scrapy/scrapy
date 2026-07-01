@@ -140,12 +140,7 @@ A **backoff trigger** is a response whose status code is in
 :setting:`BACKOFF_HTTP_CODES` or a download exception whose type is in
 :setting:`BACKOFF_EXCEPTIONS`. On each trigger:
 
-#.  If the response carries a :ref:`Retry-After or RateLimit-Reset
-    <rate-limiting-headers>` value, that value (capped at
-    :setting:`BACKOFF_MAX_DELAY`) is honored as a hard minimum: no request is
-    sent for the scope until it elapses.
-
-#.  Otherwise the delay grows exponentially:
+#.  The delay grows exponentially:
 
     .. code-block:: text
 
@@ -153,6 +148,13 @@ A **backoff trigger** is a response whose status code is in
 
     :setting:`BACKOFF_JITTER` is then applied so that requests that backed off
     together do not retry in lockstep.
+
+#.  If the response carries a :ref:`Retry-After or RateLimit-Reset
+    <rate-limiting-headers>` value, the scope is *also* held back until that
+    time (capped at :setting:`BACKOFF_MAX_DELAY`) before its next request. This
+    is a one-time gate, on top of the exponential step above: it honors the
+    header for the next request without turning a short header value into a
+    long-standing delay for every later request.
 
 **Recovery** is linear: after a scope goes a full :setting:`BACKOFF_WINDOW`
 without a new trigger, its delay drops by one :setting:`BACKOFF_DELAY_FACTOR`
@@ -227,17 +229,16 @@ setting:
 
     Target number of backoff responses per :setting:`BACKOFF_WINDOW` that
     :ref:`rampup <rampup>` aims for when probing the rate limit of a scope.
-    Can be a range like ``[1, 3]``.
 
 For every :setting:`BACKOFF_WINDOW` that stays **below**
 :setting:`RAMPUP_BACKOFF_TARGET` backoff triggers, rampup increases throughput
 one step: it first lowers the delay, and once the delay reaches its minimum it
 raises the concurrency limit above the ``"min_concurrency"`` floor of the
-scope. Windows that hit the target hold the current rate, and windows that
-exceed it let normal :ref:`backoff <backoff>` reduce the rate. The result is a
-rate that converges on roughly :setting:`RAMPUP_BACKOFF_TARGET` rate-limit
-responses per window — the most throughput a scope allows without being
-penalized.
+scope. Windows that reach or exceed the target do not ramp up; the rate is
+reduced by normal :ref:`backoff <backoff>` (which grows the delay) instead.
+Rampup only ever probes upward, so the rate settles around the most throughput
+a scope allows while triggering fewer than :setting:`RAMPUP_BACKOFF_TARGET`
+rate-limit responses per window.
 
 Rampup behavior can be fine-tuned per scope by giving ``"rampup"`` a dict
 instead of ``True``:
@@ -248,7 +249,7 @@ instead of ``True``:
     THROTTLING_SCOPES = {
         "api.toscrape.com": {
             "rampup": {
-                "backoff_target": [1, 3],  # overrides RAMPUP_BACKOFF_TARGET
+                "backoff_target": 1,  # overrides RAMPUP_BACKOFF_TARGET
                 "delay_factor": 0.5,  # multiply the delay by this on each ramp-up step
                 "min_delay": 0.05,  # do not ramp the delay below this
             },
@@ -267,8 +268,9 @@ Servers may include `Retry-After
 or `RateLimit-Reset
 <https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#name-ratelimit-reset>`__
 headers to indicate when you should make your next request. These headers are
-respected automatically during :ref:`backoff <backoff>`, using their values as
-minimum delays (capped at :setting:`BACKOFF_MAX_DELAY`).
+respected automatically during :ref:`backoff <backoff>`: the scope's next
+request is held back until the indicated time (capped at
+:setting:`BACKOFF_MAX_DELAY`), on top of the usual exponential backoff step.
 
 .. seealso:: :setting:`REDIRECT_MAX_DELAY`
 
@@ -304,12 +306,17 @@ You can delay a :ref:`throttling scope <throttling-scopes>` on demand through
 :meth:`crawler.throttler.delay_scope()
 <scrapy.throttling.ThrottlingManagerProtocol.delay_scope>`:
 
+.. skip: next
+
 .. code-block:: python
 
     crawler.throttler.delay_scope("example.com", 30.0)
 
-This holds back every request of the scope for at least the given number of
-seconds, counted as a :ref:`backoff <backoff>` trigger.
+This holds back the scope's next request for at least the given number of
+seconds and registers a :ref:`backoff <backoff>` trigger. Like a
+``Retry-After`` header, it is a one-time delay rather than a permanent one (the
+scope's delay also grows by one backoff step and then recovers); call it again,
+e.g. on each matching response, to keep a scope slowed down for longer.
 
 It is useful to react to situations that :ref:`automatic backoff <backoff>`
 cannot detect on its own, such as a soft block that comes back as a ``200``

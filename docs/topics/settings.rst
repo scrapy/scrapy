@@ -861,6 +861,7 @@ Default:
         "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
         "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
+        "scrapy.downloadermiddlewares.backoff.BackoffMiddleware": 630,
         "scrapy.downloadermiddlewares.cookies.CookiesMiddleware": 700,
         "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 750,
         "scrapy.downloadermiddlewares.stats.DownloaderStats": 850,
@@ -1255,6 +1256,7 @@ Default:
         "scrapy.extensions.feedexport.FeedExporter": 0,
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
+        "scrapy.extensions.throttle.AutoThrottle": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their

@@ -283,6 +283,12 @@ class ExecutionEngine:
 
     def unpause(self) -> None:
         self.paused = False
+        # pause() cancels the coalesced throttling wakeup and the loop stops
+        # re-running itself while paused, so re-run it here: this re-arms the
+        # wakeup and keeps a crawl held only by a time-based throttling gate
+        # (nothing in flight to re-run the loop from _download) from stalling.
+        if self._slot is not None:
+            self._slot.nextcall.schedule()
 
     async def _process_start_next(self) -> None:
         """Processes the next item or request from Spider.start().
@@ -553,8 +559,13 @@ class ExecutionEngine:
             )
 
     async def _enqueue_request_async(self, request: Request) -> None:
-        assert self._slot is not None
+        # The counter is incremented in _schedule_request before this coroutine
+        # is scheduled, so it must be decremented here even on an early exit,
+        # otherwise spider_is_idle() never reports idle. The slot can be torn
+        # down (spider stopping) between the increment and this running.
         try:
+            if self._slot is None:
+                return
             stored = await self._slot.scheduler.enqueue_request_async(request)  # type: ignore[attr-defined]
             if not stored:
                 self.signals.send_catch_log(
