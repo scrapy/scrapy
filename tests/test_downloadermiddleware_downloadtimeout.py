@@ -35,3 +35,9 @@ class TestDownloadTimeoutMiddleware:
         req.meta["download_timeout"] = 1
         assert mw.process_request(req) is None
         assert req.meta.get("download_timeout") == 1
+
+    def test_zero_download_timeout(self):
+        req, spider, mw = self.get_request_spider_mw({"DOWNLOAD_TIMEOUT": 0})
+        mw.spider_opened(spider)
+        assert mw.process_request(req) is None
+        assert req.meta.get("download_timeout") is None

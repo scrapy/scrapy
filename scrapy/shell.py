@@ -30,7 +30,6 @@ from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import load_object
-from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
 
 if TYPE_CHECKING:
@@ -76,8 +75,8 @@ if TYPE_CHECKING:
 # running event loop.
 #
 # Side note: it should be possible to remove _request_deferred() by using
-# engine.download() instead of engine.schedule(), losing the usual stuff like
-# spider middlewares (none of which should be important).
+# engine.download_async() instead of engine.crawl(), losing the usual stuff
+# like spider middlewares (none of which should be important).
 #
 # Other architecture problems:
 # * scrapy.cmdline.execute() creates an AsyncCrawlerProcess instance which
@@ -189,12 +188,9 @@ class Shell:
     async def _schedule(self, request: Request, spider: Spider | None) -> Response:
         """Send the request to the engine, wait for the result.
 
-        Runs in the reactor thread.
+        Runs in the reactor thread when using the reactor, or in the asyncio
+        event loop thread otherwise.
         """
-        if self._use_reactor and is_asyncio_reactor_installed():
-            # set the asyncio event loop for the current thread
-            event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
-            set_asyncio_event_loop(event_loop_path)
         if not self.spider:
             await self._open_spider(spider)
         assert self.crawler.engine is not None

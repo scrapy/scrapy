@@ -39,6 +39,10 @@ for additional schemes and to replace or disable default ones:
         "sftp": "my.download_handlers.SftpHandler",
     }
 
+.. seealso:: :ref:`security-unencrypted-protocols` and
+    :ref:`security-local-resources`, for the security implications of the
+    default ``http``, ``ftp``, ``file`` and ``data`` handlers.
+
 Replacing HTTP(S) download handlers
 -----------------------------------
 

@@ -153,7 +153,7 @@ sphinx-rtd-theme==3.1.0
     # via
     #   -r docs/requirements.in
     #   sphinx-rtd-dark-mode
-sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@568cf4279dd1f7da4068fa291c8725bab57cfe98
+sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@c0b2ac815afc3cb8857d575cecb5d55c05e6b737
     # via -r docs/requirements.in
 sphinx-sitemap==2.9.0
     # via sphinx-scrapy

@@ -14,7 +14,7 @@ from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
-from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner
+from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerRunner
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
@@ -342,7 +342,7 @@ with multiples lines
         assert "responses" in crawler.spider.meta
         assert "failures" not in crawler.spider.meta
         # start() doesn't set Referer header
-        echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][2].body))
+        echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][0].body))
         assert "Referer" not in echo0["headers"]
         # following request sets Referer to the source request url
         echo1 = json.loads(to_unicode(crawler.spider.meta["responses"][1].body))
@@ -390,7 +390,7 @@ with multiples lines
         est = [x for sublist in est for x in sublist]  # flatten
         est = [x.lstrip().rstrip() for x in est]
         it = iter(est)
-        s = dict(zip(it, it, strict=False))
+        s = dict(zip(it, it, strict=True))
 
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == "1"
@@ -432,7 +432,7 @@ with multiples lines
     async def test_crawlerrunner_accepts_crawler(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        crawler = get_crawler(SimpleSpider)
+        crawler = Crawler(SimpleSpider, get_reactor_settings())
         runner = CrawlerRunner()
         with caplog.at_level(logging.DEBUG):
             await maybe_deferred_to_future(
@@ -715,6 +715,9 @@ class TestCrawlSpider:
         assert isinstance(crawler.spider, SingleRequestSpider)
         assert crawler.spider.meta["responses"][0].certificate is None
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
     @pytest.mark.parametrize(
         "url",
         [

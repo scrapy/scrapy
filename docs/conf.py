@@ -159,6 +159,7 @@ scrapy_intersphinx_enable = [
     "parsel",
     "pytest",
     "pypug",
+    "scrapy-lint",
     "sphinx",
     "tox",
     "twisted",

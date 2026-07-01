@@ -1,7 +1,7 @@
 """
 Scrapy Item
 
-See documentation in docs/topics/item.rst
+See documentation in docs/topics/items.rst
 """
 
 from __future__ import annotations
@@ -25,6 +25,25 @@ class Field(dict[str, Any]):
     """Container of field metadata"""
 
 
+def _ordered_field_names(cls: type) -> list[str]:
+    """Return the names of the :class:`Field` attributes of *cls* in definition
+    order.
+
+    Fields declared in base classes come first, ordered from the topmost base
+    to the most derived class. Within each class, fields keep their definition
+    order. A field redefined in a subclass keeps the position of its first
+    definition.
+    """
+    names: list[str] = []
+    seen: set[str] = set()
+    for base in reversed(cls.__mro__):
+        for name, value in vars(base).items():
+            if isinstance(value, Field) and name not in seen:
+                seen.add(name)
+                names.append(name)
+    return names
+
+
 class ItemMeta(ABCMeta):
     """Metaclass_ of :class:`Item` that handles field definitions.
 
@@ -39,13 +58,9 @@ class ItemMeta(ABCMeta):
         _class = super().__new__(mcs, "x_" + class_name, new_bases, attrs)
 
         fields = getattr(_class, "fields", {})
-        new_attrs = {}
-        for n in dir(_class):
-            v = getattr(_class, n)
-            if isinstance(v, Field):
-                fields[n] = v
-            elif n in attrs:
-                new_attrs[n] = attrs[n]
+        for n in _ordered_field_names(_class):
+            fields[n] = getattr(_class, n)
+        new_attrs = {n: v for n, v in attrs.items() if not isinstance(v, Field)}
 
         new_attrs["fields"] = fields
         new_attrs["_class"] = _class
@@ -80,6 +95,14 @@ class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
     #: those populated. The keys are the field names and the values are the
     #: :class:`Field` objects used in the :ref:`Item declaration
     #: <topics-items-declaring>`.
+    #:
+    #: Fields are kept in definition order: fields declared in base classes
+    #: come first, followed by fields declared in subclasses, and a field
+    #: redefined in a subclass keeps the position of its first definition.
+    #:
+    #: .. versionchanged:: VERSION
+    #:    Fields are now returned in definition order rather than alphabetical
+    #:    order.
     fields: dict[str, Field]
 
     def __init__(self, *args: Any, **kwargs: Any):

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, cast
 from urllib.parse import urlparse
 from warnings import warn
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 from scrapy.utils.misc import load_object
@@ -92,7 +92,7 @@ class ReferrerPolicy(ABC):
         )
 
     def origin(self, url: str) -> str | None:
-        """Return serialized origin (scheme, host, path) for a request or response URL."""
+        """Return serialized origin (scheme, host, port) for a request or response URL."""
         return self.strip_url(url, origin_only=True)
 
     def potentially_trustworthy(self, url: str) -> bool:
@@ -308,6 +308,12 @@ class RefererMiddleware(BaseSpiderMiddleware):
         # Reference: https://www.w3.org/TR/referrer-policy/#referrer-policy-empty-string
         self.policies[""] = NoReferrerWhenDowngradePolicy
         if settings is None:
+            warn(
+                "Instantiating RefererMiddleware without a 'settings' argument is "
+                "deprecated.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             return
         setting_policies = settings.getdict("REFERRER_POLICIES")
         for policy_name, policy_class_import_path in setting_policies.items():
@@ -349,7 +355,7 @@ class RefererMiddleware(BaseSpiderMiddleware):
             response = kwargs.pop("resp_or_url")
             warn(
                 "Passing 'resp_or_url' is deprecated, use 'response' instead.",
-                DeprecationWarning,
+                ScrapyDeprecationWarning,
                 stacklevel=2,
             )
         if response is None:
@@ -360,7 +366,7 @@ class RefererMiddleware(BaseSpiderMiddleware):
             warn(
                 "Passing a response URL to RefererMiddleware.policy() instead "
                 "of a Response object is deprecated.",
-                DeprecationWarning,
+                ScrapyDeprecationWarning,
                 stacklevel=2,
             )
         allow_import_path = True

@@ -9,7 +9,9 @@ its documentation in: docs/topics/link-extractors.rst
 class Link:
     """Link objects represent an extracted link by the LinkExtractor.
 
-    Using the anchor tag sample below to illustrate the parameters::
+    Using the anchor tag sample below to illustrate the parameters:
+
+    .. code-block:: html
 
             <a href="https://example.com/nofollow.html#foo" rel="nofollow">Dont follow this one</a>
 
@@ -39,7 +41,7 @@ class Link:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Link):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self.url == other.url
             and self.text == other.text

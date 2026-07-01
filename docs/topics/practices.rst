@@ -347,10 +347,10 @@ finishes before starting the next one:
     install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     react(deferred_f_from_coro_f(crawl))
 
-.. note:: When running multiple spiders in the same process, :ref:`reactor
-    settings <reactor-settings>` should not have a different value per spider.
-    Also, :ref:`pre-crawler settings <pre-crawler-settings>` cannot be defined
-    per spider.
+.. note:: When running multiple spiders in the same process, :ref:`logging
+    settings <logging-settings>` and :ref:`reactor settings <reactor-settings>`
+    should not have a different value per spider, and :ref:`pre-crawler
+    settings <pre-crawler-settings>` cannot be defined per spider.
 
 .. seealso:: :ref:`run-from-script`.
 
@@ -387,6 +387,26 @@ crawl::
     curl http://scrapy2.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=2
     curl http://scrapy3.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=3
 
+.. _large-project-startup:
+
+Reducing startup time in large projects
+=======================================
+
+When running a spider with ``scrapy crawl``, Scrapy loads all modules listed in
+:setting:`SPIDER_MODULES` to find the target spider. In large projects with
+many spiders, this can noticeably increase startup time and memory usage.
+
+To avoid loading every spider module, override :setting:`SPIDER_MODULES` on the
+command line to point only to the module that contains the spider you want to
+run:
+
+.. code-block:: shell
+
+    scrapy crawl myspider -s SPIDER_MODULES=myproject.spiders.myspider
+
+Because :setting:`SPIDER_MODULES` is a list setting, you can include multiple
+modules by separating them with commas.
+
 .. _bans:
 
 Avoiding getting banned
@@ -419,6 +439,14 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
+
+.. _static-analysis:
+
+Static analysis
+===============
+
+Consider using :doc:`scrapy-lint <scrapy-lint:index>`, a linter for Scrapy
+projects that detects common mistakes and anti-patterns.
 
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: https://www.scrapy.org/companies

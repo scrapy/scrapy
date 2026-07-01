@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from io import StringIO
 from shutil import copytree
 from typing import TYPE_CHECKING
@@ -12,6 +13,7 @@ import pytest
 import scrapy
 from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
 from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
 from tests.utils.cmdline import call, proc
@@ -26,6 +28,50 @@ class EmptyCommand(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         pass
+
+
+class TestHelpDeprecation:
+    def test_calling_help_is_deprecated(self) -> None:
+        command = EmptyCommand()
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"ScrapyCommand\.help\(\) is deprecated, use long_desc\(\) instead\.",
+        ):
+            result = command.help()
+        # help() still delegates to long_desc() for backward compatibility.
+        assert result == command.long_desc()
+
+    def test_overriding_help_is_deprecated(self) -> None:
+        class HelpCommand(ScrapyCommand):
+            def short_desc(self) -> str:
+                return ""
+
+            def run(self, args: list[str], opts: argparse.Namespace) -> None:
+                pass
+
+            def help(self) -> str:
+                return "custom help"
+
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"The ScrapyCommand\.help\(\) method is deprecated and "
+            r"overriding it, as the .*HelpCommand class does, has no effect; "
+            r"override long_desc\(\) instead\.",
+        ):
+            HelpCommand()
+
+    def test_not_overriding_help_does_not_warn(self, recwarn) -> None:
+        # Commands that do not override help() must not emit the
+        # override-deprecation warning when instantiated, including subclasses
+        # several levels below ScrapyCommand (as the built-in commands are).
+        class SubCommand(EmptyCommand):
+            pass
+
+        EmptyCommand()
+        SubCommand()
+        assert not [
+            w for w in recwarn.list if issubclass(w.category, ScrapyDeprecationWarning)
+        ]
 
 
 class TestCommandSettings:
@@ -214,9 +260,7 @@ class MySpider(scrapy.Spider):
         self._append_settings(proj_path / self.project_name, "TWISTED_REACTOR = None\n")
 
         self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
-        self._assert_spider_asyncio_fail(
-            self.NORMAL_MSG, proj_path, "aiosp", "-s", "TWISTED_REACTOR="
-        )
+        self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
 
     def test_spider_settings_asyncio(self, proj_path: Path) -> None:
         """The reactor is set via the spider settings to the asyncio value.
@@ -375,6 +419,33 @@ class TestViewCommand:
         command.add_options(parser)
         assert command.short_desc() == "Open URL in browser, as seen by Scrapy"
         assert "URL using the Scrapy downloader and show its" in command.long_desc()
+
+
+class TestEditCommand(TestProjectBase):
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell editor script"
+    )
+    def test_edit(self, proj_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider = proj_path / self.project_name / "spiders" / "example.py"
+        edited = proj_path / "edited.txt"
+        editor = proj_path / "fake-editor.sh"
+        # Records the file it is asked to open ($2) into the file given as $1.
+        editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
+        editor.chmod(0o755)
+        monkeypatch.setenv("EDITOR", f"{editor} {edited}")
+
+        assert call("genspider", "example", "example.com", cwd=proj_path) == 0
+        returncode, _, err = proc("edit", "example", cwd=proj_path)
+
+        assert returncode == 0, err
+        assert (proj_path / edited.read_text(encoding="utf-8")).resolve() == (
+            spider.resolve()
+        )
+
+    def test_edit_spider_not_found(self, proj_path: Path) -> None:
+        returncode, _, err = proc("edit", "nonexistent", cwd=proj_path)
+        assert returncode == 1
+        assert "Spider not found: nonexistent" in err
 
 
 class TestHelpMessage(TestProjectBase):
