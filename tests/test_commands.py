@@ -89,6 +89,7 @@ class TestCommandSettings:
             args=["-s", f"FEEDS={feeds_json}", "spider.py"]
         )
         self.command.process_options(args, opts)
+        assert self.command.settings is not None
         assert isinstance(self.command.settings["FEEDS"], scrapy.settings.BaseSettings)
         assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
 

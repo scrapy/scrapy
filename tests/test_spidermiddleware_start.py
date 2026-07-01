@@ -1,9 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.start import StartSpiderMiddleware
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class TestMiddleware:
@@ -12,7 +19,7 @@ class TestMiddleware:
         crawler = get_crawler(Spider)
         mw = build_from_crawler(StartSpiderMiddleware, crawler)
 
-        async def start():
+        async def start() -> AsyncIterator[Request]:
             yield Request("data:,1")
             yield Request("data:,2", meta={"is_start_request": True})
             yield Request("data:,2", meta={"is_start_request": False})

@@ -38,7 +38,7 @@ def test_open_in_browser():
 
     resp = Response(url, body=body)
     with pytest.raises(TypeError):
-        open_in_browser(resp, debug=True)  # pylint: disable=unexpected-keyword-arg
+        open_in_browser(resp, _openfunc=browser_open)  # type: ignore[arg-type]
 
 
 def test_get_meta_refresh():
@@ -320,4 +320,4 @@ def test_open_in_browser_text_response_uses_txt_extension():
 def test_open_in_browser_raises_for_unsupported_response_type():
     response = Response("http://www.example.com", body=b"binary")
     with pytest.raises(TypeError):
-        open_in_browser(response, _openfunc=lambda _: True)
+        open_in_browser(response, _openfunc=lambda _: True)  # type: ignore[arg-type]

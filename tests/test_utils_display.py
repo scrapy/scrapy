@@ -1,8 +1,15 @@
+from __future__ import annotations
+
 import builtins
 from io import StringIO
+from typing import TYPE_CHECKING
 from unittest import mock
 
 from scrapy.utils.display import pformat, pprint
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+    from types import ModuleType
 
 value = {"a": 1}
 colorized_strings = {
@@ -77,14 +84,19 @@ def test_pformat_no_pygments(isatty):
 
     real_import = builtins.__import__
 
-    def mock_import(name, globals_, locals_, fromlist, level):
+    def mock_import(
+        name: str,
+        globals_: Mapping[str, object] | None = None,
+        locals_: Mapping[str, object] | None = None,
+        fromlist: Sequence[str] | None = (),
+        level: int = 0,
+    ) -> ModuleType:
         if "pygments" in name:
             raise ImportError
         return real_import(name, globals_, locals_, fromlist, level)
 
-    builtins.__import__ = mock_import
-    assert pformat(value) == plain_string
-    builtins.__import__ = real_import
+    with mock.patch("builtins.__import__", mock_import):
+        assert pformat(value) == plain_string
 
 
 def test_pprint():
