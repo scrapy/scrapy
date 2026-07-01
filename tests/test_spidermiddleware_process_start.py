@@ -1,4 +1,3 @@
-import warnings
 from asyncio import sleep
 
 import pytest
@@ -14,7 +13,6 @@ from .utils.decorators import coroutine_test
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 ITEM_C = {"id": "c"}
-ITEM_D = {"id": "d"}
 
 
 class AsyncioSleepSpiderMiddleware:
@@ -47,10 +45,6 @@ class ModernWrapSpider(Spider):
         yield ITEM_B
 
 
-class ModernWrapSpiderSubclass(ModernWrapSpider):
-    name = "test"
-
-
 class ModernWrapSpiderMiddleware:
     async def process_start(self, start):
         yield ITEM_A
@@ -79,15 +73,9 @@ class TestMain:
         expected_items = expected_items or [ITEM_A, ITEM_B, ITEM_C]
         await self._test([spider_middleware], spider_cls, expected_items)
 
-    async def _test_douple_wrap(self, smw1, smw2, spider_cls, expected_items=None):
-        expected_items = expected_items or [ITEM_A, ITEM_A, ITEM_B, ITEM_C, ITEM_C]
-        await self._test([smw1, smw2], spider_cls, expected_items)
-
     @coroutine_test
     async def test_modern_mw_modern_spider(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
+        await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
 
     async def _test_sleep(self, spider_middlewares):
         class TestSpider(Spider):

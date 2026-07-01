@@ -1,13 +1,13 @@
-# pylint: disable=unsubscriptable-object,unsupported-membership-test,use-implicit-booleaness-not-comparison
+# pylint: disable=unsubscriptable-object,unsupported-membership-test
 # (too many false positives)
 
 import logging
-import warnings
 from unittest import mock
 
 import pytest
 
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import (
     SETTINGS_PRIORITIES,
     BaseSettings,
@@ -539,6 +539,56 @@ class TestBaseSettings:
         msg = caplog.records[0].message
         assert "tests.test_settings.Component1" in msg
 
+    def test_getdictorlist(self):
+        settings = BaseSettings()
+
+        # No value and no default → {}
+        assert settings.getdictorlist("MISSING") == {}
+
+        # String: valid JSON dict
+        settings.set("S_DICT_STR", '{"key": "val"}')
+        assert settings.getdictorlist("S_DICT_STR") == {"key": "val"}
+
+        # String: valid JSON list
+        settings.set("S_LIST_STR", '["a", "b"]')
+        assert settings.getdictorlist("S_LIST_STR") == ["a", "b"]
+
+        # String: invalid JSON → comma-split fallback
+        settings.set("S_CSV", "a,b,c")
+        assert settings.getdictorlist("S_CSV") == ["a", "b", "c"]
+
+        # String: valid JSON but not dict or list → ValueError caught → comma-split
+        settings.set("S_JSON_NUMBER", "123")
+        assert settings.getdictorlist("S_JSON_NUMBER") == ["123"]
+
+        # Tuple → list
+        settings.set("S_TUPLE", ("x", "y"))
+        assert settings.getdictorlist("S_TUPLE") == ["x", "y"]
+
+        # Unsupported type → raises ValueError
+        settings.set("S_INT", 42)
+        with pytest.raises(ValueError, match="must be a dict, list, tuple, or string"):
+            settings.getdictorlist("S_INT")
+
+        # Dict value → deepcopy returned
+        settings.set("S_DICT", {"key": "val"})
+        assert settings.getdictorlist("S_DICT") == {"key": "val"}
+
+        # List value → deepcopy returned
+        settings.set("S_LIST", ["a", "b"])
+        assert settings.getdictorlist("S_LIST") == ["a", "b"]
+
+    def test_repr_pretty_(self):
+        settings = BaseSettings({"key": "value"})
+        mock_p = mock.Mock()
+
+        settings._repr_pretty_(mock_p, cycle=False)
+        assert mock_p.text.call_count == 1
+
+        mock_p.reset_mock()
+        settings._repr_pretty_(mock_p, cycle=True)
+        mock_p.text.assert_called_once_with(repr(settings))
+
     def test_getwithbase_invalid_setting_name(self):
         settings = BaseSettings()
         with pytest.raises(
@@ -710,15 +760,22 @@ def test_remove_from_list(before, name, item, after):
     assert settings.getpriority(name) == expected_settings.getpriority(name)
 
 
-def test_deprecated_concurrent_requests_per_ip_setting():
-    with warnings.catch_warnings(record=True) as warns:
-        settings = Settings({"CONCURRENT_REQUESTS_PER_IP": 1})
-        settings.get("CONCURRENT_REQUESTS_PER_IP")
+def test_deprecated_dns_resolver_setting():
+    settings = Settings()
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The DNS_RESOLVER setting is deprecated",
+    ):
+        settings.get("DNS_RESOLVER")
 
-    assert (
-        str(warns[0].message)
-        == "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead."
-    )
+
+def test_deprecated_concurrent_requests_per_ip_setting():
+    settings = Settings({"CONCURRENT_REQUESTS_PER_IP": 1})
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
+    ):
+        settings.get("CONCURRENT_REQUESTS_PER_IP")
 
 
 class Component1:

@@ -75,7 +75,7 @@ class HostResolution:
     def __init__(self, name: str):
         self.name: str = name
 
-    def cancel(self) -> None:
+    def cancel(self) -> None:  # pragma: no cover
         raise NotImplementedError
 
 

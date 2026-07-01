@@ -29,6 +29,8 @@ disable it if you want. For more information about the extension itself see
 .. note::
     This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
+.. seealso:: :ref:`security-telnet`
+
 .. highlight:: none
 
 How to access the telnet console
@@ -189,6 +191,8 @@ TELNETCONSOLE_HOST
 Default: ``'127.0.0.1'``
 
 The interface the telnet console should listen on
+
+.. seealso:: :ref:`security-telnet`
 
 
 .. setting:: TELNETCONSOLE_USERNAME

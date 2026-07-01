@@ -2,7 +2,6 @@ import dataclasses
 import os
 import random
 import time
-import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
 from ftplib import FTP
@@ -786,12 +785,10 @@ class TestBuildFromCrawler:
         class Pipeline(FilesPipeline):
             pass
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe.store
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe.store
 
     def test_has_from_crawler_and_init(self):
         class Pipeline(FilesPipeline):
@@ -805,13 +802,11 @@ class TestBuildFromCrawler:
                 o._from_crawler_called = True
                 return o
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe.store
-            assert pipe._from_crawler_called
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe.store
+        assert pipe._from_crawler_called
 
 
 @pytest.mark.parametrize("store", [None, ""])

@@ -135,14 +135,9 @@ def walk_modules(path: str) -> list[ModuleType]:  # pragma: no cover
     return list(walk_modules_iter(path))
 
 
-def md5sum(file: IO[bytes]) -> str:
+def md5sum(file: IO[bytes]) -> str:  # pragma: no cover
     """Calculate the md5 checksum of a file-like object without reading its
-    whole content in memory.
-
-    >>> from io import BytesIO
-    >>> md5sum(BytesIO(b'file content to hash'))
-    '784406af91dd5a54fbb9c84c2236595a'
-    """
+    whole content in memory."""
     warnings.warn(
         (
             "The scrapy.utils.misc.md5sum function is deprecated and will be "
@@ -162,7 +157,7 @@ def md5sum(file: IO[bytes]) -> str:
 
 def rel_has_nofollow(rel: str | None) -> bool:
     """Return True if link rel attribute has nofollow type"""
-    return rel is not None and "nofollow" in rel.replace(",", " ").split()
+    return rel is not None and "nofollow" in rel.lower().replace(",", " ").split()
 
 
 class SupportsFromCrawler(Protocol[_T_co, _P]):

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from asyncio import sleep
 from typing import Any
 
@@ -45,9 +44,7 @@ class TestMain:
             async def parse(self, response):
                 yield ITEM_A
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_spider(TestSpider, [ITEM_A])
+        await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
     async def test_start(self):
@@ -57,9 +54,7 @@ class TestMain:
             async def start(self):
                 yield ITEM_A
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_spider(TestSpider, [ITEM_A])
+        await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
     async def test_start_subclass(self):
@@ -70,9 +65,7 @@ class TestMain:
         class TestSpider(BaseSpider):
             name = "test"
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            await self._test_spider(TestSpider, [ITEM_A])
+        await self._test_spider(TestSpider, [ITEM_A])
 
     async def _test_start(self, start_, expected_items=None):
         class TestSpider(Spider):

@@ -63,7 +63,7 @@ Request objects
 
         .. invisible-code-block: python
 
-            from scrapy.http import Request
+            from scrapy import Request
 
         1. Using a dict:
 
@@ -910,6 +910,11 @@ Request subclasses
 
 Here is the list of built-in :class:`~scrapy.Request` subclasses. You can also subclass
 it to implement your own custom functionality.
+
+FormRequest
+-----------
+
+.. autoclass:: scrapy.FormRequest
 
 JsonRequest
 -----------

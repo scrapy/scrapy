@@ -126,6 +126,16 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "TimeoutError" not in log
         assert "scrapy.exceptions.CannotResolveHostError" not in log
 
+    def test_dns_resolver_deprecated(self) -> None:
+        log = self.run_script("dns_resolver_deprecated.py")
+        assert "Spider closed (finished)" in log
+        assert "The DNS_RESOLVER setting is deprecated" in log
+
+    def test_dns_resolver_deprecated_twisted_dns_resolver(self) -> None:
+        log = self.run_script("dns_resolver_deprecated.py", "twisted-wins")
+        assert "Spider closed (finished)" in log
+        assert "The DNS_RESOLVER setting is deprecated" in log
+
     def test_twisted_reactor_asyncio(self) -> None:
         log = self.run_script("twisted_reactor_asyncio.py")
         assert "Spider closed (finished)" in log
@@ -205,9 +215,11 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Spider closed (finished)" in log
         assert "The value of FOO is 42" in log
 
-    def _test_shutdown_graceful(self, script: str = "sleeping.py") -> None:
+    def _test_shutdown_graceful(
+        self, script: str = "sleeping.py", *extra_args: str
+    ) -> None:
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
-        args = self.get_script_args(script, "3")
+        args = self.get_script_args(script, "3", *extra_args)
         p = PopenSpawn(args, timeout=5, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
@@ -215,6 +227,10 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("shutting down gracefully")
         p.expect_exact("Spider closed (shutdown)")
         p.wait()  # type: ignore[no-untyped-call]
+        if p.proc.stdin:
+            p.proc.stdin.close()
+        if p.proc.stdout:
+            p.proc.stdout.close()
 
     def test_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful()
@@ -232,10 +248,17 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
         p.wait()  # type: ignore[no-untyped-call]
+        if p.proc.stdin:
+            p.proc.stdin.close()
+        if p.proc.stdout:
+            p.proc.stdout.close()
 
     @coroutine_test
     async def test_shutdown_forced(self) -> None:
         await self._test_shutdown_forced()
+
+    def test_shutdown_graceful_no_stop(self) -> None:
+        self._test_shutdown_graceful("sleeping.py", "--no-stop")
 
 
 class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
@@ -420,6 +443,17 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     @coroutine_test
     async def test_shutdown_forced(self) -> None:
         await self._test_shutdown_forced("reactorless_sleeping.py")
+
+    def test_shutdown_graceful_reactorless_no_stop(self) -> None:
+        self._test_shutdown_graceful("reactorless_sleeping.py", "--no-stop")
+
+    def test_asyncio_enabled_reactor_same_loop_default(self) -> None:
+        log = self.run_script("asyncio_enabled_reactor_same_loop_default.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
 
 
 class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):

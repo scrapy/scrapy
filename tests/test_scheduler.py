@@ -12,6 +12,7 @@ import pytest
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import BaseScheduler, Scheduler
 from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
@@ -396,7 +397,11 @@ class TestIncompatibility:
 
     def test_incompatibility(self):
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore")
+            warnings.filterwarnings(
+                "ignore",
+                category=ScrapyDeprecationWarning,
+                message="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
+            )
             with pytest.raises(
                 ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
             ):

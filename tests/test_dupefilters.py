@@ -3,8 +3,8 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from warnings import catch_warnings
 
+import pytest
 from testfixtures import LogCapture
 
 from scrapy.core.scheduler import Scheduler
@@ -86,7 +86,7 @@ class TestRFPDupeFilter:
                 df.close("finished")
 
             df2 = _get_dupefilter(settings={"JOBDIR": path}, open_=False)
-            assert df != df2
+            assert df is not df2
             try:
                 df2.open()
                 assert df2.request_seen(r1)
@@ -260,11 +260,8 @@ class TestBaseDupeFilter:
         dupefilter = _get_dupefilter(
             settings={"DUPEFILTER_CLASS": BaseDupeFilter},
         )
-        with catch_warnings(record=True) as warning_list:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Calling BaseDupeFilter\.log\(\) is deprecated.",
+        ):
             dupefilter.log(None, None)
-        assert len(warning_list) == 1
-        assert (
-            str(warning_list[0].message)
-            == "Calling BaseDupeFilter.log() is deprecated."
-        )
-        assert warning_list[0].category == ScrapyDeprecationWarning

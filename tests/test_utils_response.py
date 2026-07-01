@@ -23,7 +23,7 @@ def _read_browser_output(burl: str):
 
 
 def test_open_in_browser():
-    url = "http:///www.example.com/some/page.html"
+    url = "http://www.example.com/some/page.html"
     body = (
         b"<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
     )

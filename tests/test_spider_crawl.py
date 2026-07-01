@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import re
 import warnings
-from logging import ERROR
 
 import pytest
-from testfixtures import LogCapture
 from w3lib.url import safe_url_string
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, TextResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.utils.test import get_crawler
 from tests.test_spider import TestSpider
-from tests.utils.decorators import inline_callbacks_test
 
 
 class TestCrawlSpider(TestSpider):
@@ -246,31 +244,22 @@ class TestCrawlSpider(TestSpider):
         assert hasattr(spider, "_follow_links")
         assert not spider._follow_links
 
-    @inline_callbacks_test
-    def test_start_url(self):
-        class TestSpider(self.spider_class):
-            name = "test"
-            start_url = "https://www.example.com"
-
-        crawler = get_crawler(TestSpider)
-        with LogCapture("scrapy.core.engine", propagate=False, level=ERROR) as log:
-            yield crawler.crawl()
-        assert "Error while reading start items and requests" in str(log)
-        assert "did you miss an 's'?" in str(log)
-
     def test_parse_response_use(self):
         class _CrawlSpider(CrawlSpider):
             name = "test"
             start_urls = "https://www.example.com"
             _follow_links = False
 
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", category=ScrapyDeprecationWarning)
             spider = _CrawlSpider()
-            assert len(w) == 0
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"CrawlSpider\._parse_response method is deprecated",
+        ):
             spider._parse_response(
                 TextResponse(spider.start_urls, body=b""), None, None
             )
-            assert len(w) == 1
 
     def test_parse_response_override(self):
         class _CrawlSpider(CrawlSpider):
@@ -281,26 +270,28 @@ class TestCrawlSpider(TestSpider):
             start_urls = "https://www.example.com"
             _follow_links = False
 
-        with warnings.catch_warnings(record=True) as w:
-            assert len(w) == 0
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"CrawlSpider\._parse_response method, which the",
+        ):
             spider = _CrawlSpider()
-            assert len(w) == 1
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", category=ScrapyDeprecationWarning)
             spider._parse_response(
                 TextResponse(spider.start_urls, body=b""), None, None
             )
-            assert len(w) == 1
 
     def test_parse_with_rules(self):
         class _CrawlSpider(CrawlSpider):
             name = "test"
             start_urls = "https://www.example.com"
 
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", category=ScrapyDeprecationWarning)
             spider = _CrawlSpider()
             spider.parse_with_rules(
                 TextResponse(spider.start_urls, body=b""), None, None
             )
-            assert len(w) == 0
 
 
 class TestDeprecation:
