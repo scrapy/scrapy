@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy import Request
-    from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
     from scrapy.throttling import ScopeID, ThrottlingManagerProtocol
 
@@ -271,22 +270,17 @@ class ScrapyPriorityQueue:
 
 class DownloaderInterface:
     def __init__(self, crawler: Crawler):
-        assert crawler.engine
-        self.downloader: Downloader = crawler.engine.downloader
-        self._throttler: ThrottlingManagerProtocol | None = crawler.throttler
+        assert crawler.throttler is not None
+        self._throttler: ThrottlingManagerProtocol = crawler.throttler
 
     def stats(self, possible_slots: Iterable[str]) -> list[tuple[float, str]]:
         return [(self._slot_load(slot), slot) for slot in possible_slots]
 
     def get_slot_key(self, request: Request) -> str:
-        if self._throttler is not None:
-            return self._throttler.get_slot_key(request)
-        return self.downloader.get_slot_key(request)
+        return self._throttler.get_slot_key(request)
 
     def _slot_load(self, slot: str) -> float:
-        if self._throttler is not None:
-            return self._throttler.get_scope_load(slot)
-        return 0.0
+        return self._throttler.get_scope_load(slot)
 
 
 class DownloaderAwarePriorityQueue:

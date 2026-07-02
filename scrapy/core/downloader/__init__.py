@@ -26,7 +26,10 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
-    from scrapy.throttling import ThrottlingScopeManagerProtocol
+    from scrapy.throttling import (
+        ThrottlingManagerProtocol,
+        ThrottlingScopeManagerProtocol,
+    )
 
 
 @dataclass(slots=True, eq=False)
@@ -56,7 +59,7 @@ class _DeprecatedSlotView:
         self,
         downloader: Downloader,
         key: str,
-        scope: ThrottlingScopeManagerProtocol | None,
+        scope: ThrottlingScopeManagerProtocol,
     ) -> None:
         self._downloader = downloader
         self._key = key
@@ -84,20 +87,15 @@ class _DeprecatedSlotView:
 
     @property
     def delay(self) -> float:
-        if self._scope is not None:
-            return self._scope.get_delay()
-        return 0.0
+        return self._scope.get_delay()
 
     @delay.setter
     def delay(self, value: float) -> None:
-        if self._scope is not None:
-            self._scope.set_base_delay(value, only_increase=False)
+        self._scope.set_base_delay(value, only_increase=False)
 
     @property
     def randomize_delay(self) -> bool:
-        if self._scope is not None:
-            return bool(self._scope.get_jitter())
-        return False
+        return bool(self._scope.get_jitter())
 
     @property
     def concurrency(self) -> int:
@@ -107,14 +105,10 @@ class _DeprecatedSlotView:
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        if self._scope is not None:
-            return self._scope.get_concurrency() or 0
-        return 0
+        return self._scope.get_concurrency() or 0
 
     def free_transfer_slots(self) -> int:
-        concurrency = (
-            self._scope.get_concurrency() or 0 if self._scope is not None else 0
-        )
+        concurrency = self._scope.get_concurrency() or 0
         return concurrency - len(self.transferring)
 
     def download_delay(self) -> float:
@@ -138,7 +132,9 @@ class _DeprecatedSlotsView(Mapping[str, _DeprecatedSlotView]):
 
     __slots__ = ("_downloader", "_throttler")
 
-    def __init__(self, downloader: Downloader, throttler: Any) -> None:
+    def __init__(
+        self, downloader: Downloader, throttler: ThrottlingManagerProtocol
+    ) -> None:
         self._downloader = downloader
         self._throttler = throttler
 
@@ -152,11 +148,7 @@ class _DeprecatedSlotsView(Mapping[str, _DeprecatedSlotView]):
     def __getitem__(self, key: str) -> _DeprecatedSlotView:
         if key not in self._active_keys():
             raise KeyError(key)
-        scope = (
-            self._throttler.get_scope_manager(key)
-            if self._throttler is not None
-            else None
-        )
+        scope = self._throttler.get_scope_manager(key)
         return _DeprecatedSlotView(self._downloader, key, scope)
 
     def __iter__(self) -> Iterator[str]:
@@ -193,16 +185,6 @@ class Downloader:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            for slot_settings in self.per_slot_settings.values():
-                for deprecated_key in ("concurrency", "delay", "randomize_delay"):
-                    if deprecated_key in slot_settings:
-                        warnings.warn(
-                            f"The '{deprecated_key}' key in DOWNLOAD_SLOTS is deprecated."
-                            " Use THROTTLING_SCOPES to configure per-domain settings"
-                            " instead.",
-                            category=ScrapyDeprecationWarning,
-                            stacklevel=2,
-                        )
 
     @inlineCallbacks
     @_warn_spider_arg
@@ -230,6 +212,7 @@ class Downloader:
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
+        assert self.crawler.throttler is not None
         return _DeprecatedSlotsView(self, self.crawler.throttler)
 
     @_warn_spider_arg
@@ -237,22 +220,18 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> tuple[str, _DeprecatedSlotView]:
         key = self._get_slot_key(request)
-        scope = (
-            self.crawler.throttler.get_scope_manager(key)
-            if self.crawler.throttler is not None
-            else None
-        )
+        assert self.crawler.throttler is not None
+        scope = self.crawler.throttler.get_scope_manager(key)
         return key, _DeprecatedSlotView(self, key, scope)
 
     def _get_slot_key(self, request: Request) -> str:
-        throttler = self.crawler.throttler
-        if throttler is not None:
-            return throttler.get_slot_key(request)
-        return self.get_slot_key(request)
+        assert self.crawler.throttler is not None
+        return self.crawler.throttler.get_slot_key(request)
 
     def get_slot_key(self, request: Request) -> str:
-        # This fallback is used only when no throttler is set; it mirrors the
-        # historical keying (an explicit download_slot wins, else the domain).
+        # Retained as public backward-compatible API. It mirrors the historical
+        # keying (an explicit download_slot wins, else the domain); the slot key
+        # used at run time comes from the throttler (see _get_slot_key()).
         meta_slot: str | None = request.meta.get(self.DOWNLOAD_SLOT)
         if meta_slot is not None:
             return meta_slot

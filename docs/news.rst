@@ -1173,7 +1173,7 @@ Deprecations
     (:issue:`7005`, :issue:`7043`)
 
 -   The ``CONCURRENT_REQUESTS_PER_IP`` setting is deprecated, use
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` instead.
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` instead.
     (:issue:`6917`, :issue:`6921`)
 
 -   The ``scrapy.core.downloader.handlers.http`` module is deprecated. You
@@ -1505,7 +1505,7 @@ Scrapy 2.13.3 (2025-07-02)
 --------------------------
 
 -   Changed the values for :setting:`DOWNLOAD_DELAY` (from ``0`` to ``1``) and
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (from ``8`` to ``1``) in the
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` (from ``8`` to ``1``) in the
     default project template.
     (:issue:`6597`, :issue:`6918`, :issue:`6923`)
 
@@ -3259,7 +3259,7 @@ New features
 ~~~~~~~~~~~~
 
 -   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` and
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
     via the new ``DOWNLOAD_SLOTS`` setting. (:issue:`5328`)
 
@@ -8753,7 +8753,7 @@ New features and settings
 - In request errbacks, offending requests are now received in ``failure.request`` attribute (:rev:`2738`)
 - Big downloader refactoring to support per domain/ip concurrency limits (:rev:`2732`)
    - ``CONCURRENT_REQUESTS_PER_SPIDER`` setting has been deprecated and replaced by:
-      - :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, ``CONCURRENT_REQUESTS_PER_IP``
+      - :setting:`CONCURRENT_REQUESTS`, ``CONCURRENT_REQUESTS_PER_DOMAIN``, ``CONCURRENT_REQUESTS_PER_IP``
    - check the documentation for more details
 - Added builtin caching DNS resolver (:rev:`2728`)
 - Moved Amazon AWS-related components/extensions (SQS spider queue, SimpleDB stats collector) to a separate project: [scaws](https://github.com/scrapinghub/scaws) (:rev:`2706`, :rev:`2714`)

@@ -73,10 +73,10 @@ class AutoThrottle:
         self, response: Response, request: Request, spider: Spider
     ) -> None:
         throttler = self.crawler.throttler
+        assert throttler is not None
         latency = request.meta.get("download_latency")
         if (
             latency is None
-            or throttler is None
             or request.meta.get("autothrottle_dont_adjust_delay", False) is True
         ):
             return

@@ -56,7 +56,6 @@ async def test_concurrency_key_deprecated():
         downloader = Downloader(crawler)
     messages = [str(w.message) for w in warns]
     assert any("DOWNLOAD_SLOTS setting is deprecated" in m for m in messages)
-    assert any("'concurrency' key in DOWNLOAD_SLOTS" in m for m in messages)
     downloader._get_slot(Request("https://example.com"))
     downloader.close()
 
@@ -115,7 +114,6 @@ async def test_delay_deprecated():
         downloader = Downloader(crawler)
     messages = [str(w.message) for w in warns]
     assert any("DOWNLOAD_SLOTS setting is deprecated" in m for m in messages)
-    assert any("'delay' key in DOWNLOAD_SLOTS" in m for m in messages)
     downloader._get_slot(Request("https://example.com"))
     downloader.close()
 
