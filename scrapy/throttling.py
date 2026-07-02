@@ -473,7 +473,7 @@ def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
         class MyThrottlingManager:
             @scope_cache
             async def get_scopes(self, request):
-                return urlparse_cached(request).netloc
+                return urlparse_cached(request).hostname or ""
     """
 
     @wraps(f)
@@ -542,8 +542,8 @@ class ThrottlingManager:
         :setting:`DOWNLOAD_SLOTS` setting into :setting:`THROTTLING_SCOPES`.
 
         Each ``DOWNLOAD_SLOTS`` entry is translated to a throttling scope keyed
-        by the same slot name (the default manager keys domain scopes by
-        ``netloc``, which is what download slots used too): ``concurrency`` and
+        by the same slot name (the default manager keys domain scopes by host
+        name, which is what download slots used too): ``concurrency`` and
         ``delay`` map directly, and the ``randomize_delay`` boolean maps to a
         ``jitter`` magnitude (the historical ±50%, or none). An explicit
         ``THROTTLING_SCOPES`` entry for the same scope takes precedence over the
@@ -592,7 +592,7 @@ class ThrottlingManager:
                 stacklevel=2,
             )
             return cast("RequestScopes", download_slot)
-        return urlparse_cached(request).netloc
+        return urlparse_cached(request).hostname or ""
 
     def get_slot_key(self, request: Request) -> str:
         scopes = self._resolve_scopes_sync(request)
@@ -852,7 +852,9 @@ class ThrottlingManager:
         except Exception:  # pragma: no cover - backend-specific failures
             return
         if delay:
-            self.apply_robots_crawl_delay(urlparse_cached(request).netloc, delay)
+            self.apply_robots_crawl_delay(
+                urlparse_cached(request).hostname or "", delay
+            )
 
     def apply_robots_crawl_delay(self, scope_id: ScopeID, delay: float) -> None:
         """Honor a robots.txt ``Crawl-delay`` directive of *delay* seconds for

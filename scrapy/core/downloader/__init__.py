@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import random
 import warnings
+from collections import deque
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import inlineCallbacks
@@ -30,15 +32,46 @@ if TYPE_CHECKING:
         ThrottlingManagerProtocol,
         ThrottlingScopeManagerProtocol,
     )
+    from scrapy.utils.asyncio import CallLaterResult
 
 
 @dataclass(slots=True, eq=False)
 class _Slot:
     """Downloader slot"""
 
+    concurrency: int
+    delay: float
+    randomize_delay: bool
+
     active: set[Request] = field(default_factory=set, init=False, repr=False)
+    queue: deque[tuple[Request, Deferred[Response]]] = field(
+        default_factory=deque, init=False, repr=False
+    )
     transferring: set[Request] = field(default_factory=set, init=False, repr=False)
     lastseen: float = field(default=0, init=False, repr=False)
+    latercall: CallLaterResult | None = field(default=None, init=False, repr=False)
+
+    def free_transfer_slots(self) -> int:
+        return self.concurrency - len(self.transferring)
+
+    def download_delay(self) -> float:
+        if self.randomize_delay:
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # noqa: S311
+        return self.delay
+
+    def close(self) -> None:
+        if self.latercall:
+            self.latercall.cancel()
+            self.latercall = None
+
+    def __str__(self) -> str:
+        return (
+            f"<downloader.Slot concurrency={self.concurrency!r} "
+            f"delay={self.delay:.2f} randomize_delay={self.randomize_delay!r} "
+            f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
+            f"len(transferring)={len(self.transferring)} "
+            f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
+        )
 
 
 Slot = create_deprecated_class(
@@ -206,6 +239,26 @@ class Downloader:
         return len(self.active) >= self.total_concurrency
 
     @property
+    def domain_concurrency(self) -> int:
+        warnings.warn(
+            "Downloader.domain_concurrency is deprecated. Per-domain concurrency "
+            "limits are now managed by the throttling system.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
+
+    @property
+    def randomize_delay(self) -> bool:
+        warnings.warn(
+            "Downloader.randomize_delay is deprecated. Delay randomization is now "
+            "managed by the throttling system.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.settings.getbool("RANDOMIZE_DOWNLOAD_DELAY")
+
+    @property
     def slots(self) -> _DeprecatedSlotsView:
         warnings.warn(
             "Downloader.slots is deprecated. Use the throttling manager API instead.",
@@ -235,7 +288,7 @@ class Downloader:
         meta_slot: str | None = request.meta.get(self.DOWNLOAD_SLOT)
         if meta_slot is not None:
             return meta_slot
-        return urlparse_cached(request).netloc or ""
+        return urlparse_cached(request).hostname or ""
 
     async def _enqueue_request(self, request: Request) -> Response:
         key = self._get_slot_key(request)
