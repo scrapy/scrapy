@@ -93,7 +93,7 @@ class TestScopeConcurrencyBridge:
     def test_warns_flip_when_neither_set(self) -> None:
         with pytest.warns(
             ScrapyDeprecationWarning,
-            match="THROTTLING_SCOPE_CONCURRENCY will change",
+            match="Once CONCURRENT_REQUESTS_PER_DOMAIN is removed",
         ):
             get_crawler(prevent_warnings=False)
 
@@ -116,7 +116,7 @@ class TestScopeConcurrencyBridge:
             )
         messages = [str(w.message) for w in recorded]
         assert not any(
-            "THROTTLING_SCOPE_CONCURRENCY will change" in m for m in messages
+            "Once CONCURRENT_REQUESTS_PER_DOMAIN is removed" in m for m in messages
         )
         assert not any(
             "CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated" in m

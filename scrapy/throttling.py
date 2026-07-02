@@ -168,7 +168,14 @@ def _default_scope_concurrency(settings: BaseSettings) -> int:
 def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
     """Warn about the concurrency settings bridged by
     :func:`_default_scope_concurrency`. Call once per crawl (see
-    :meth:`ThrottlingManager.__init__`)."""
+    :meth:`ThrottlingManager.__init__`).
+
+    When :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is set explicitly, warn that
+    it is deprecated. When neither concurrency setting is set explicitly, warn
+    that the effective per-scope concurrency is still the deprecated setting's
+    value (kept for backward compatibility) and will drop to
+    :setting:`THROTTLING_SCOPE_CONCURRENCY`'s default once the deprecated
+    setting is removed, so users can pin it explicitly."""
     default_priority = SETTINGS_PRIORITIES["default"]
     domain_priority = settings.getpriority("CONCURRENT_REQUESTS_PER_DOMAIN")
     scope_priority = settings.getpriority("THROTTLING_SCOPE_CONCURRENCY")
@@ -184,10 +191,23 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
     elif not scope_set:
         current = settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
         future = settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+        # This warning only makes sense while the two defaults differ. If the
+        # default of the deprecated CONCURRENT_REQUESTS_PER_DOMAIN is lowered to
+        # match THROTTLING_SCOPE_CONCURRENCY before this branch is merged, the
+        # message becomes nonsensical ("will change from 1 to 1"); fail loudly
+        # here so it is revisited rather than shipping a bogus warning.
+        assert current != future, (
+            "CONCURRENT_REQUESTS_PER_DOMAIN and THROTTLING_SCOPE_CONCURRENCY now "
+            "share the same default; drop this warn-then-flip warning."
+        )
         warnings.warn(
-            f"The default value of THROTTLING_SCOPE_CONCURRENCY will change "
-            f"from {current} to {future} in a future Scrapy version. Set "
-            f"THROTTLING_SCOPE_CONCURRENCY explicitly to silence this warning.",
+            f"The effective per-scope (per-domain) concurrency is {current}, "
+            f"the default of the deprecated CONCURRENT_REQUESTS_PER_DOMAIN "
+            f"setting, which is still respected for backward compatibility. "
+            f"Once CONCURRENT_REQUESTS_PER_DOMAIN is removed, it will drop to "
+            f"{future}, the default of THROTTLING_SCOPE_CONCURRENCY. Set "
+            f"THROTTLING_SCOPE_CONCURRENCY explicitly to choose a value and "
+            f"silence this warning.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
