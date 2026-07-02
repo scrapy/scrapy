@@ -949,6 +949,15 @@ its domain and its IP, and is only sent when **both** allow it (see
 
 Additional settings
 ===================
+-   .. setting:: BACKOFF_ENABLED
+
+    :setting:`BACKOFF_ENABLED` (default: ``True``)
+
+    Whether to enable the :class:`~scrapy.downloadermiddlewares.backoff.BackoffMiddleware`,
+    which drives :ref:`backoff <backoff>` from download outcomes. Set it to
+    ``False`` to disable backoff without having to remove the middleware from
+    :setting:`DOWNLOADER_MIDDLEWARES`.
+
 -   .. setting:: BACKOFF_EXCEPTIONS
 
     :setting:`BACKOFF_EXCEPTIONS`

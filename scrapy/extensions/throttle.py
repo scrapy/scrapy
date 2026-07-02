@@ -83,7 +83,10 @@ class AutoThrottle:
 
         # AutoThrottle predates throttling scopes, so it adjusts the delay of
         # the request's domain scope, matching its historical per-domain slots.
-        scope_id = urlparse_cached(request).netloc
+        # Key by hostname (not netloc) to match the default ThrottlingManager
+        # scope, so the adjusted delay applies to the scope actually enforced
+        # even for non-default ports.
+        scope_id = urlparse_cached(request).hostname or ""
         olddelay = self._scope_delay(throttler, scope_id)
         newdelay = self._adjust_delay(olddelay, latency, response)
         throttler.set_scope_delay(scope_id, newdelay)

@@ -33,6 +33,7 @@ __all__ = [
     "AWS_USE_SSL",
     "AWS_VERIFY",
     "BACKOFF_DELAY_FACTOR",
+    "BACKOFF_ENABLED",
     "BACKOFF_EXCEPTIONS",
     "BACKOFF_HTTP_CODES",
     "BACKOFF_JITTER",
@@ -255,6 +256,7 @@ AWS_USE_SSL = None
 AWS_VERIFY = None
 
 BACKOFF_DELAY_FACTOR = 2.0
+BACKOFF_ENABLED = True
 BACKOFF_EXCEPTIONS = [
     "scrapy.exceptions.DownloadFailedError",
     "scrapy.exceptions.DownloadTimeoutError",

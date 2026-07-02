@@ -5,6 +5,7 @@ import logging
 from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING
 
+from scrapy.exceptions import NotConfigured
 from scrapy.throttling import iter_scopes
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.misc import load_object
@@ -69,10 +70,15 @@ class BackoffMiddleware:
     <throttling>` to back off the request's scopes through its
     :meth:`~scrapy.throttling.ThrottlingManagerProtocol.back_off` API.
 
+    It is enabled by default; set :setting:`BACKOFF_ENABLED` to ``False`` to
+    disable it without removing it from :setting:`DOWNLOADER_MIDDLEWARES`.
+
     See :ref:`throttling` for details.
     """
 
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("BACKOFF_ENABLED"):
+            raise NotConfigured
         # Throttling is a core, always-on subsystem: THROTTLING_MANAGER has a
         # non-None default and is instantiated before the downloader is built,
         # so crawler.throttler is always set here (the engine likewise asserts

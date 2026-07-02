@@ -268,7 +268,7 @@ class ScrapyPriorityQueue:
         )
 
 
-class DownloaderInterface:
+class _DownloaderInterface:
     def __init__(self, crawler: Crawler):
         assert crawler.throttler is not None
         self._throttler: ThrottlingManagerProtocol = crawler.throttler
@@ -347,7 +347,7 @@ class DownloaderAwarePriorityQueue:
                 "queue class can be resumed."
             )
 
-        self._downloader_interface: DownloaderInterface = DownloaderInterface(crawler)
+        self._downloader_interface: _DownloaderInterface = _DownloaderInterface(crawler)
         self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
         self._start_queue_cls: type[QueueProtocol] | None = start_queue_cls
         self.key: str = key
