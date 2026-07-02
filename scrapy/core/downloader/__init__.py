@@ -251,9 +251,7 @@ class Downloader:
         return self.get_slot_key(request)
 
     def get_slot_key(self, request: Request) -> str:
-        # Per-IP grouping (CONCURRENT_REQUESTS_PER_IP) is now a throttling scope
-        # handled by the throttler, not a downloader slot key; this fallback (used
-        # only when no throttler is set) keys by domain alone.
+        # This fallback (used only when no throttler is set) keys by domain.
         return urlparse_cached(request).netloc or ""
 
     async def _enqueue_request(self, request: Request) -> Response:

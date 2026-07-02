@@ -769,6 +769,15 @@ def test_deprecated_dns_resolver_setting():
         settings.get("DNS_RESOLVER")
 
 
+def test_deprecated_concurrent_requests_per_ip_setting():
+    settings = Settings({"CONCURRENT_REQUESTS_PER_IP": 1})
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
+    ):
+        settings.get("CONCURRENT_REQUESTS_PER_IP")
+
+
 class Component1:
     pass
 

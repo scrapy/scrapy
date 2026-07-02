@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import contextlib
-import ipaddress
 import logging
 import random
-import re
 import time
 import warnings
 from collections import OrderedDict
@@ -18,7 +16,7 @@ from typing_extensions import Self
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.resolver import dnscache
+from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.asyncio import sleep, wait_for_first
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -134,57 +132,65 @@ def iter_scope_values(scopes: RequestScopes) -> Iterable[tuple[ScopeID, float | 
         yield scope, None
 
 
-# A DNS hostname with at least one dot, e.g. "books.toscrape.com"; labels are
-# alphanumeric (plus hyphens, not at the edges) and an optional trailing dot
-# marks a fully-qualified name.
-_HOSTNAME_RE = re.compile(
-    r"(?i)^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+\.?$"
-)
+def _default_scope_concurrency(settings: BaseSettings) -> int:
+    """Return the default concurrency of a throttling scope that does not set
+    its own ``concurrency``.
 
-
-def _classify_scope(scope_id: ScopeID) -> str:
-    """Classify *scope_id* as ``"ip"``, ``"domain"`` or ``"other"`` to pick its
-    default concurrency setting (see :func:`_default_scope_concurrency`).
-
-    A scope that parses as an IP address is ``"ip"``; one that *looks like* a
-    DNS hostname with at least one dot is ``"domain"``; anything else (custom
-    group names, single labels like ``"localhost"``) is ``"other"``.
+    This is :setting:`THROTTLING_SCOPE_CONCURRENCY`, except that the deprecated
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is bridged in when set at a
+    higher :ref:`priority <populating-settings>`. When neither is set
+    explicitly, the historical :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` value is
+    kept for backward compatibility (its default flips to
+    :setting:`THROTTLING_SCOPE_CONCURRENCY` in a future version; see
+    :func:`_warn_on_deprecated_concurrency`).
     """
-    host = scope_id
-    if host.startswith("[") and "]" in host:  # bracketed IPv6, e.g. "[::1]:80"
-        host = host[1 : host.index("]")]
-    with contextlib.suppress(ValueError):
-        ipaddress.ip_address(host)
-        return "ip"
-    # Drop a trailing ":port" for the hostname check (an IPv4 "host:port" is
-    # re-tested as an IP below).
-    if host.count(":") == 1:
-        host = host.rsplit(":", 1)[0]
-    with contextlib.suppress(ValueError):
-        ipaddress.ip_address(host)
-        return "ip"
-    if "." in host and _HOSTNAME_RE.match(host):
-        return "domain"
-    return "other"
-
-
-def _default_scope_concurrency(settings: BaseSettings, scope_id: ScopeID) -> int:
-    """Return the default concurrency for *scope_id* based on its
-    :func:`kind <_classify_scope>`.
-
-    Domain scopes default to :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, IP
-    scopes to :setting:`CONCURRENT_REQUESTS_PER_IP` (falling back to the
-    per-domain value when per-IP limiting is off, so IP-literal crawls are not
-    left unbounded), and any other scope to :setting:`THROTTLING_SCOPE_CONCURRENCY`.
-    """
-    kind = _classify_scope(scope_id)
-    if kind == "ip":
-        return settings.getint("CONCURRENT_REQUESTS_PER_IP") or settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
-        )
-    if kind == "domain":
+    default_priority = SETTINGS_PRIORITIES["default"]
+    # An unset setting has no priority (``None``); treat it as below "default"
+    # so it never wins over one that is at least at its default value.
+    domain_priority = settings.getpriority("CONCURRENT_REQUESTS_PER_DOMAIN")
+    domain_priority = (
+        default_priority - 1 if domain_priority is None else domain_priority
+    )
+    scope_priority = settings.getpriority("THROTTLING_SCOPE_CONCURRENCY")
+    scope_priority = default_priority - 1 if scope_priority is None else scope_priority
+    if domain_priority > scope_priority:
+        return settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
+    if scope_priority > domain_priority:
+        return settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+    # Equal priority: on an explicit (higher-than-default) tie the new setting
+    # wins; when neither is set (both at "default") keep the historical
+    # per-domain value so existing behavior is preserved.
+    if domain_priority <= default_priority:
         return settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
     return settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+
+
+def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
+    """Warn about the concurrency settings bridged by
+    :func:`_default_scope_concurrency`. Call once per crawl (see
+    :meth:`ThrottlingManager.__init__`)."""
+    default_priority = SETTINGS_PRIORITIES["default"]
+    domain_priority = settings.getpriority("CONCURRENT_REQUESTS_PER_DOMAIN")
+    scope_priority = settings.getpriority("THROTTLING_SCOPE_CONCURRENCY")
+    domain_set = domain_priority is not None and domain_priority > default_priority
+    scope_set = scope_priority is not None and scope_priority > default_priority
+    if domain_set:
+        warnings.warn(
+            "The CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated, use "
+            "THROTTLING_SCOPE_CONCURRENCY instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+    elif not scope_set:
+        current = settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
+        future = settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+        warnings.warn(
+            f"The default value of THROTTLING_SCOPE_CONCURRENCY will change "
+            f"from {current} to {future} in a future Scrapy version. Set "
+            f"THROTTLING_SCOPE_CONCURRENCY explicitly to silence this warning.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
 
 
 def _to_scope_dict(collection: Any, default: Callable[[], Any]) -> dict[ScopeID, Any]:
@@ -496,10 +502,8 @@ class ThrottlingManager:
 
     def __init__(self, crawler: Crawler) -> None:
         self.crawler = crawler
+        _warn_on_deprecated_concurrency(crawler.settings)
         self._debug = crawler.settings.getbool("THROTTLING_DEBUG")
-        # When set, each request also gets an IP scope (its resolved address),
-        # enforced alongside its domain scope (see _resolve_scopes_sync).
-        self._per_ip: int = crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP")
         self._max_idle = crawler.settings.getfloat("THROTTLING_SCOPE_MAX_IDLE")
         self._robotstxt_obey = crawler.settings.getbool(
             "ROBOTSTXT_OBEY"
@@ -588,15 +592,7 @@ class ThrottlingManager:
                 stacklevel=2,
             )
             return cast("RequestScopes", download_slot)
-        netloc = urlparse_cached(request).netloc
-        if self._per_ip:
-            # Best-effort, mirroring the legacy per-IP downloader slots: use the
-            # cached resolved address if available, else fall back to the domain
-            # scope alone (the IP is not known until the host is resolved).
-            ip = dnscache.get(netloc)
-            if isinstance(ip, str) and ip != netloc:
-                return (netloc, ip)
-        return netloc
+        return urlparse_cached(request).netloc
 
     def get_slot_key(self, request: Request) -> str:
         scopes = self._resolve_scopes_sync(request)
@@ -1196,7 +1192,7 @@ class ThrottlingScopeManager:
             # Rampup starts conservative at a single slot and probes upward.
             self._concurrency = 1
         else:
-            self._concurrency = _default_scope_concurrency(settings, self._id) or None
+            self._concurrency = _default_scope_concurrency(settings) or None
         # Used as the load denominator when the scope enforces no explicit
         # concurrency limit (see get_load()).
         self._global_concurrency: int = settings.getint("CONCURRENT_REQUESTS")

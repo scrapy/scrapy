@@ -5,6 +5,7 @@ import logging
 import re
 import signal
 import threading
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 from unittest.mock import MagicMock
@@ -50,6 +51,77 @@ def get_raw_crawler(
     settings.setdict(get_reactor_settings())
     settings.setdict(settings_dict or {})
     return Crawler(spidercls or DefaultSpider, settings)
+
+
+class TestScopeConcurrencyBridge:
+    """CONCURRENT_REQUESTS_PER_DOMAIN is deprecated and bridged into
+    THROTTLING_SCOPE_CONCURRENCY by setting priority (see
+    scrapy.throttling._default_scope_concurrency)."""
+
+    @staticmethod
+    def _resolve(settings: Settings) -> int:
+        from scrapy.throttling import _default_scope_concurrency  # noqa: PLC0415
+
+        return _default_scope_concurrency(settings)
+
+    def test_neither_set_preserves_per_domain_default(self) -> None:
+        # Neither setting overridden: keep the historical per-domain default.
+        assert self._resolve(Settings()) == 8
+
+    def test_per_domain_overrides(self) -> None:
+        settings = Settings()
+        settings.set("CONCURRENT_REQUESTS_PER_DOMAIN", 4, priority="project")
+        assert self._resolve(settings) == 4
+
+    def test_scope_concurrency_overrides(self) -> None:
+        settings = Settings()
+        settings.set("THROTTLING_SCOPE_CONCURRENCY", 4, priority="project")
+        assert self._resolve(settings) == 4
+
+    def test_new_setting_wins_on_non_default_tie(self) -> None:
+        settings = Settings()
+        settings.set("CONCURRENT_REQUESTS_PER_DOMAIN", 4, priority="project")
+        settings.set("THROTTLING_SCOPE_CONCURRENCY", 9, priority="project")
+        assert self._resolve(settings) == 9
+
+    def test_higher_priority_deprecated_setting_wins(self) -> None:
+        settings = Settings()
+        settings.set("THROTTLING_SCOPE_CONCURRENCY", 9, priority="project")
+        settings.set("CONCURRENT_REQUESTS_PER_DOMAIN", 4, priority="cmdline")
+        assert self._resolve(settings) == 4
+
+    def test_warns_flip_when_neither_set(self) -> None:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="THROTTLING_SCOPE_CONCURRENCY will change",
+        ):
+            get_crawler(prevent_warnings=False)
+
+    def test_warns_deprecated_when_per_domain_set(self) -> None:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated",
+        ):
+            get_crawler(
+                settings_dict={"CONCURRENT_REQUESTS_PER_DOMAIN": 4},
+                prevent_warnings=False,
+            )
+
+    def test_no_concurrency_warning_when_scope_set(self) -> None:
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always")
+            get_crawler(
+                settings_dict={"THROTTLING_SCOPE_CONCURRENCY": 4},
+                prevent_warnings=False,
+            )
+        messages = [str(w.message) for w in recorded]
+        assert not any(
+            "THROTTLING_SCOPE_CONCURRENCY will change" in m for m in messages
+        )
+        assert not any(
+            "CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated" in m
+            for m in messages
+        )
 
 
 class TestBaseCrawler:

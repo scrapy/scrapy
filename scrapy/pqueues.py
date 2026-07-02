@@ -344,10 +344,7 @@ class DownloaderAwarePriorityQueue:
     ):
         if crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP") != 0:
             raise ValueError(
-                f'"{self.__class__}" does not support CONCURRENT_REQUESTS_PER_IP. '
-                "Set SCHEDULER_PRIORITY_QUEUE to "
-                "'scrapy.pqueues.ThrottlingAwarePriorityQueue' (along with the "
-                "matching SCHEDULER) to use per-IP concurrency limiting."
+                f'"{self.__class__}" does not support CONCURRENT_REQUESTS_PER_IP'
             )
 
         if slot_startprios and not isinstance(slot_startprios, dict):
