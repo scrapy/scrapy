@@ -1,9 +1,3 @@
-"""
-MemoryUsage extension
-
-See documentation in docs/topics/extensions.rst
-"""
-
 from __future__ import annotations
 
 import logging

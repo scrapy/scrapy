@@ -1,10 +1,3 @@
-"""
-This module implements the JsonRequest class which is a more convenient class
-(than Request) to generate JSON Requests.
-
-See documentation in docs/topics/request-response.rst
-"""
-
 from __future__ import annotations
 
 import copy
