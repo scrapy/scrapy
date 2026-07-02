@@ -105,7 +105,8 @@ The key settings are:
 
     :setting:`BACKOFF_HTTP_CODES` (default: ``[429, 502, 503, 504, 520, 521, 522, 523, 524]``)
 
-    HTTP response status codes that trigger backoff.
+    HTTP response status codes that trigger backoff. Can be overridden per
+    scope with the ``http_codes`` key (see :ref:`per-scope-backoff`).
 
 -   .. setting:: BACKOFF_DELAY_FACTOR
 
@@ -136,7 +137,10 @@ starts at its configured ``"delay"`` (:setting:`DOWNLOAD_DELAY` by default).
 
 A **backoff trigger** is a response whose status code is in
 :setting:`BACKOFF_HTTP_CODES` or a download exception whose type is in
-:setting:`BACKOFF_EXCEPTIONS`. On each trigger:
+:setting:`BACKOFF_EXCEPTIONS`. Both can be :ref:`overridden per scope
+<per-scope-backoff>` (through the ``http_codes`` and ``exceptions`` keys), so
+the same response or exception may trigger backoff for one scope and not for
+another. On each trigger:
 
 #.  The delay grows exponentially:
 
@@ -198,7 +202,13 @@ The global ``BACKOFF_*`` settings can be overridden per scope with the
         },
     }
 
-Any key left out falls back to the matching global ``BACKOFF_*`` setting.
+Every key overrides the matching global ``BACKOFF_*`` setting for that scope
+(``http_codes`` overrides :setting:`BACKOFF_HTTP_CODES`, ``exceptions``
+overrides :setting:`BACKOFF_EXCEPTIONS`, ``delay_factor`` overrides
+:setting:`BACKOFF_DELAY_FACTOR`, and so on), and any key left out falls back to
+it. So a scope can, for example, treat an extra status code as a backoff
+trigger, or stop treating one of the defaults as a trigger, independently of
+every other scope.
 
 .. _rampup:
 
@@ -967,7 +977,9 @@ Additional settings
     -   :exc:`~scrapy.exceptions.ResponseDataLossError`
 
     List of exception classes that trigger backoff when raised while
-    downloading a request. Strings are interpreted as import paths.
+    downloading a request. Strings are interpreted as import paths. Can be
+    overridden per scope with the ``exceptions`` key (see
+    :ref:`per-scope-backoff`).
 
     .. seealso:: :setting:`RETRY_EXCEPTIONS`
 
