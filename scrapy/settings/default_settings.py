@@ -16,7 +16,6 @@ Scrapy developers, if you add a setting here remember to:
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Any
 
 __all__ = [
     "ADDONS",
@@ -33,6 +32,13 @@ __all__ = [
     "AWS_SESSION_TOKEN",
     "AWS_USE_SSL",
     "AWS_VERIFY",
+    "BACKOFF_DELAY_FACTOR",
+    "BACKOFF_EXCEPTIONS",
+    "BACKOFF_HTTP_CODES",
+    "BACKOFF_JITTER",
+    "BACKOFF_MAX_DELAY",
+    "BACKOFF_MIN_DELAY",
+    "BACKOFF_WINDOW",
     "BOT_NAME",
     "CLOSESPIDER_ERRORCOUNT",
     "CLOSESPIDER_ITEMCOUNT",
@@ -45,12 +51,14 @@ __all__ = [
     "CONCURRENT_ITEMS",
     "CONCURRENT_REQUESTS",
     "CONCURRENT_REQUESTS_PER_DOMAIN",
+    "CONCURRENT_REQUESTS_PER_IP",
     "COOKIES_DEBUG",
     "COOKIES_ENABLED",
     "CRAWLSPIDER_FOLLOW_LINKS",
     "DEFAULT_DROPITEM_LOG_LEVEL",
     "DEFAULT_ITEM_CLASS",
     "DEFAULT_REQUEST_HEADERS",
+    "DELAYED_REQUESTS_WARN_THRESHOLD",
     "DEPTH_LIMIT",
     "DEPTH_PRIORITY",
     "DEPTH_STATS_VERBOSE",
@@ -167,9 +175,11 @@ __all__ = [
     "PERIODIC_LOG_DELTA",
     "PERIODIC_LOG_STATS",
     "PERIODIC_LOG_TIMING_ENABLED",
+    "RAMPUP_BACKOFF_TARGET",
     "RANDOMIZE_DOWNLOAD_DELAY",
     "REACTOR_THREADPOOL_MAXSIZE",
     "REDIRECT_ENABLED",
+    "REDIRECT_MAX_DELAY",
     "REDIRECT_MAX_TIMES",
     "REDIRECT_PRIORITY_ADJUST",
     "REFERER_ENABLED",
@@ -209,6 +219,16 @@ __all__ = [
     "TELNETCONSOLE_PORT",
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
+    "THROTTLING_DEBUG",
+    "THROTTLING_MANAGER",
+    "THROTTLING_ROBOTSTXT_MAX_DELAY",
+    "THROTTLING_ROBOTSTXT_OBEY",
+    "THROTTLING_SCOPES",
+    "THROTTLING_SCOPE_CONCURRENCY",
+    "THROTTLING_SCOPE_LIMIT",
+    "THROTTLING_SCOPE_MANAGER",
+    "THROTTLING_SCOPE_MAX_IDLE",
+    "THROTTLING_WINDOW",
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
@@ -235,6 +255,19 @@ AWS_SESSION_TOKEN = None
 AWS_USE_SSL = None
 AWS_VERIFY = None
 
+BACKOFF_DELAY_FACTOR = 2.0
+BACKOFF_EXCEPTIONS = [
+    "scrapy.exceptions.DownloadFailedError",
+    "scrapy.exceptions.DownloadTimeoutError",
+    "scrapy.exceptions.ResponseDataLossError",
+]
+BACKOFF_HTTP_CODES = [429, 502, 503, 504, 520, 521, 522, 523, 524]
+BACKOFF_JITTER = 0.1
+BACKOFF_MAX_DELAY = 300.0
+BACKOFF_MIN_DELAY = 1.0
+BACKOFF_WINDOW = 60.0
+
+
 BOT_NAME = "scrapybot"
 
 CLOSESPIDER_ERRORCOUNT = 0
@@ -252,6 +285,7 @@ CONCURRENT_ITEMS = 100
 
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
+CONCURRENT_REQUESTS_PER_IP = 0
 
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
@@ -266,6 +300,8 @@ DEFAULT_REQUEST_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en",
 }
+
+DELAYED_REQUESTS_WARN_THRESHOLD = 500
 
 DEPTH_LIMIT = 0
 DEPTH_PRIORITY = 0
@@ -324,6 +360,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
+    "scrapy.downloadermiddlewares.backoff.BackoffMiddleware": 650,
     "scrapy.downloadermiddlewares.cookies.CookiesMiddleware": 700,
     "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 750,
     "scrapy.downloadermiddlewares.stats.DownloaderStats": 850,
@@ -488,11 +525,14 @@ PERIODIC_LOG_DELTA = None
 PERIODIC_LOG_STATS = None
 PERIODIC_LOG_TIMING_ENABLED = False
 
+RAMPUP_BACKOFF_TARGET = 1
+
 RANDOMIZE_DOWNLOAD_DELAY = True
 
 REACTOR_THREADPOOL_MAXSIZE = 10
 
 REDIRECT_ENABLED = True
+REDIRECT_MAX_DELAY = 120.0
 REDIRECT_MAX_TIMES = 20  # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
@@ -574,9 +614,21 @@ TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
+THROTTLING_MANAGER = "scrapy.throttling.ThrottlingManager"
+THROTTLING_SCOPE_MANAGER = "scrapy.throttling.ThrottlingScopeManager"
+THROTTLING_SCOPES = {}
+THROTTLING_WINDOW = 60.0
+THROTTLING_ROBOTSTXT_OBEY = True
+THROTTLING_ROBOTSTXT_MAX_DELAY = 60.0
+THROTTLING_SCOPE_CONCURRENCY = 1
+THROTTLING_SCOPE_LIMIT = 100000
+THROTTLING_SCOPE_MAX_IDLE = 3600.0
+THROTTLING_DEBUG = False
+
 TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
+
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 URLLENGTH_LIMIT = 2083
@@ -584,19 +636,3 @@ URLLENGTH_LIMIT = 2083
 USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org)"
 
 WARN_ON_GENERATOR_RETURN_VALUE = True
-
-
-def __getattr__(name: str) -> Any:
-    if name == "CONCURRENT_REQUESTS_PER_IP":
-        import warnings  # noqa: PLC0415
-
-        from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
-
-        warnings.warn(
-            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return 0
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

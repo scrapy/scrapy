@@ -502,6 +502,25 @@ headers_received
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.Spider` object
 
+robots_parsed
+~~~~~~~~~~~~~
+
+.. signal:: robots_parsed
+.. function:: robots_parsed(robotparser, request)
+
+    Sent by
+    :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after it
+    downloads and parses a ``robots.txt`` file, for the host that *request*
+    targets.
+
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+    :param robotparser: the parser holding the parsed ``robots.txt`` contents
+    :type robotparser: :class:`~scrapy.robotstxt.RobotParser` object
+
+    :param request: the request that triggered the ``robots.txt`` download
+    :type request: :class:`~scrapy.Request` object
+
 
 Response signals
 ----------------

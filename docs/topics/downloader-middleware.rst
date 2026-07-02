@@ -169,6 +169,13 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
+.. _backoff-mw:
+
+BackoffMiddleware
+-----------------
+
+.. autoclass:: scrapy.downloadermiddlewares.backoff.BackoffMiddleware
+
 .. _cookies-mw:
 
 CookiesMiddleware
@@ -941,6 +948,22 @@ Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
 If maximum redirections are exceeded, the request is aborted and ignored.
+
+.. setting:: REDIRECT_MAX_DELAY
+
+REDIRECT_MAX_DELAY
+^^^^^^^^^^^^^^^^^^
+
+Default: ``120.0``
+
+If a redirect response provides a ``Retry-After`` header, the redirect is only
+followed after the specified delay. This setting caps that delay to a specific
+number of seconds. Set to ``0.0`` to disable these delays altogether.
+
+Note that redirect delays only affect the request being redirected, they do not
+delay other requests to the same domain. ``Retry-After`` only does that during
+:ref:`backoff <retry-after>`.
+
 
 MetaRefreshMiddleware
 ---------------------

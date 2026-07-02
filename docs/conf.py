@@ -31,6 +31,7 @@ extensions = [
     "sphinx_scrapy",
     "scrapyfixautodoc",  # Must be after "sphinx.ext.autodoc"
     "sphinx.ext.coverage",
+    "sphinx_reredirects",
     "sphinx_rtd_dark_mode",
 ]
 
@@ -141,11 +142,20 @@ coverage_ignore_pyobjects = [
     r"^scrapy\.linkextractors\.lxmlhtml\.LxmlParserLinkExtractor",
 ]
 
+# -- Options for the autodoc extension ----------------------------------------
+autodoc_type_aliases = {
+    "RequestScopes": "RequestScopes",
+}
 
 # -- Options for the InterSphinx extension -----------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
 
 intersphinx_disabled_reftypes: Sequence[str] = []
+
+# -- sphinx-reredirects -------------------------------------------------------
+redirects = {
+    "topics/autothrottle": "throttling.html",
+}
 
 # sphinx-scrapy ---------------------------------------------------------------
 

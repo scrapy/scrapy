@@ -67,7 +67,7 @@ def get_crawler(
     priority.
     """
     # When needed, useful settings can be added here, e.g. ones that prevent
-    # deprecation warnings.
+    # deprecation warnings (see prevent_warnings).
     settings: dict[str, Any] = {
         "TELNETCONSOLE_ENABLED": False,
         **get_reactor_settings(),

@@ -87,6 +87,30 @@ class TestCrawler(TestBaseCrawler):
         assert not settings.frozen
         assert crawler.settings.frozen
 
+    def test_spider_download_delay_deprecated(self) -> None:
+        class DelaySpider(DefaultSpider):
+            download_delay = 2.5
+
+        crawler = Crawler(DelaySpider)
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="'download_delay' spider attribute"
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getfloat("DOWNLOAD_DELAY") == 2.5
+
+    def test_spider_download_delay_overridden_by_setting(self) -> None:
+        class DelaySpider(DefaultSpider):
+            download_delay = 2.5
+
+        crawler = Crawler(DelaySpider)
+        crawler.settings.set("DOWNLOAD_DELAY", 5.0, priority="spider")
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="'download_delay' spider attribute.*being ignored",
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getfloat("DOWNLOAD_DELAY") == 5.0
+
     def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         assert crawler.settings["foo"] == "bar"

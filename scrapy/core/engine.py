@@ -31,6 +31,7 @@ from scrapy.exceptions import (
 from scrapy.http import Request, Response
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
+    call_later,
     create_looping_call,
     is_asyncio_available,
 )
@@ -57,6 +58,7 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings, Settings
     from scrapy.signalmanager import SignalManager
     from scrapy.spiders import Spider
+    from scrapy.utils.asyncio import CallLaterResult
 
 
 logger = logging.getLogger(__name__)
@@ -129,6 +131,21 @@ class ExecutionEngine:
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None
         ) = None
+        # Requests currently held by the throttling manager, waiting for their
+        # scopes to allow them through to the downloader.
+        self._throttling_waiting: set[Request] = set()
+        # Number of in-flight asynchronous enqueue operations (see
+        # ``_enqueue_request_async``), so the spider is not considered idle
+        # while a request is still on its way into the scheduler.
+        self._scheduling: int = 0
+        # A coalesced wakeup timer, armed when a throttling-aware scheduler
+        # reports that all pending requests are time-blocked (see
+        # ``get_next_request_delay``).
+        self._throttling_wakeup: CallLaterResult | None = None
+        self._delayed_requests_warn_threshold: int = self.settings.getint(
+            "DELAYED_REQUESTS_WARN_THRESHOLD"
+        )
+        self._delayed_requests_warned: bool = False
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -262,9 +279,16 @@ class ExecutionEngine:
 
     def pause(self) -> None:
         self.paused = True
+        self._cancel_throttling_wakeup()
 
     def unpause(self) -> None:
         self.paused = False
+        # pause() cancels the coalesced throttling wakeup and the loop stops
+        # re-running itself while paused, so re-run it here: this re-arms the
+        # wakeup and keeps a crawl held only by a time-based throttling gate
+        # (nothing in flight to re-run the loop from _download) from stalling.
+        if self._slot is not None:
+            self._slot.nextcall.schedule()
 
     async def _process_start_next(self) -> None:
         """Processes the next item or request from Spider.start().
@@ -331,12 +355,47 @@ class ExecutionEngine:
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
+        self._cancel_throttling_wakeup()
+
         while not self.needs_backout():
             if not self._start_scheduled_request():
                 break
 
+        self._maybe_arm_throttling_wakeup()
+
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
+
+    def _cancel_throttling_wakeup(self) -> None:
+        if self._throttling_wakeup is not None:
+            self._throttling_wakeup.cancel()
+            self._throttling_wakeup = None
+
+    def _maybe_arm_throttling_wakeup(self) -> None:
+        """Arm a single coalesced wakeup when the scheduler is throttling-aware
+        and reports that every pending request is time-blocked.
+
+        Concurrency-blocked states do not need this: a freed slot already
+        re-runs the loop from :meth:`_download`'s ``finally``. Only time-based
+        gates (delay, backoff, quota windows) need a timer, since nothing else
+        would re-run the loop while they are closed.
+        """
+        assert self._slot is not None
+        scheduler = self._slot.scheduler
+        delay_fn = getattr(scheduler, "get_next_request_delay", None)
+        if delay_fn is None or not scheduler.has_pending_requests():
+            return
+        delay = delay_fn()
+        # ``delay`` is ``None`` when no pending request is time-blocked, and
+        # ``0`` when some request is ready right now but could not be sent (e.g.
+        # the downloader is at capacity). Neither case needs a timer: a freed
+        # slot already re-runs the loop from :meth:`_download`'s ``finally``,
+        # and arming a ``0``-second timer here would busy-loop the engine while
+        # the downloader stays full. Only a positive delay, i.e. a time-based
+        # gate that nothing else would wake us for, needs one.
+        if delay is None or delay <= 0:
+            return
+        self._throttling_wakeup = call_later(delay, self._slot.nextcall.schedule)
 
     def needs_backout(self) -> bool:
         """Returns ``True`` if no more requests can be sent at the moment, or
@@ -351,6 +410,43 @@ class ExecutionEngine:
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
+            or self._throttling_needs_backout()
+        )
+
+    def _throttling_needs_backout(self) -> bool:
+        """Apply backpressure while requests are held by the throttling manager.
+
+        Requests waiting on throttling do not occupy a downloader concurrency
+        slot, so without this check the engine would keep draining the
+        scheduler into pending throttling waits. Count them together with the
+        in-flight requests against the global concurrency limit.
+        """
+        if not self._throttling_waiting:
+            return False
+        return (
+            len(self._throttling_waiting) + len(self.downloader.active)
+            >= self.downloader.total_concurrency
+        )
+
+    def _maybe_warn_delayed_requests(self) -> None:
+        if self._delayed_requests_warned:
+            return
+        if len(self._throttling_waiting) < self._delayed_requests_warn_threshold:
+            return
+        self._delayed_requests_warned = True
+        recommendation = ""
+        # A throttling-aware scheduler holds throttled requests in the
+        # scheduler instead of in _throttling_waiting, so it does not hit this
+        # path; recommend it only when it is not already in use.
+        scheduler = self._slot.scheduler if self._slot is not None else None
+        if scheduler is None or not hasattr(scheduler, "get_next_request_delay"):
+            recommendation = (
+                " Consider switching to scrapy.core.scheduler.ThrottlingAwareScheduler."
+            )
+        logger.warning(
+            f"There are {len(self._throttling_waiting)} requests held back by "
+            f"throttling. See DELAYED_REQUESTS_WARN_THRESHOLD.{recommendation}",
+            extra={"spider": self.spider},
         )
 
     def _remove_request(self, _: Any, request: Request) -> None:
@@ -426,6 +522,10 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
+        if self._throttling_waiting:  # requests held by the throttling manager
+            return False
+        if self._scheduling:  # requests still on their way into the scheduler
+            return False
         if self._start is not None:  # not all start requests are handled
             return False
         return not self._slot.scheduler.has_pending_requests()
@@ -438,6 +538,7 @@ class ExecutionEngine:
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request) -> None:
+        assert self._slot is not None  # typing
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
@@ -447,10 +548,39 @@ class ExecutionEngine:
         for _, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
-        if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
+        scheduler = self._slot.scheduler
+        if hasattr(scheduler, "enqueue_request_async"):
+            self._scheduling += 1
+            _schedule_coro(self._enqueue_request_async(request))
+            return
+        if not scheduler.enqueue_request(request):
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=self.spider
             )
+
+    async def _enqueue_request_async(self, request: Request) -> None:
+        # The counter is incremented in _schedule_request before this coroutine
+        # is scheduled, so it must be decremented here even on an early exit,
+        # otherwise spider_is_idle() never reports idle. The slot can be torn
+        # down (spider stopping) between the increment and this running.
+        try:
+            if self._slot is None:
+                return
+            stored = await self._slot.scheduler.enqueue_request_async(request)  # type: ignore[attr-defined]
+            if not stored:
+                self.signals.send_catch_log(
+                    signals.request_dropped, request=request, spider=self.spider
+                )
+        except Exception:
+            logger.error(
+                "Error while enqueuing request",
+                exc_info=True,
+                extra={"spider": self.spider},
+            )
+        finally:
+            self._scheduling -= 1
+        if self._slot is not None:
+            self._slot.nextcall.schedule()
 
     def download(self, request: Request) -> Deferred[Response]:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
@@ -482,14 +612,35 @@ class ExecutionEngine:
         return response_or_request
 
     @inlineCallbacks
+    def _acquire_throttling(
+        self, request: Request
+    ) -> Generator[Deferred[Any], Any, None]:
+        """Wait at the throttling gate before *request* is sent, tracking it as
+        held meanwhile."""
+        self._throttling_waiting.add(request)
+        self._maybe_warn_delayed_requests()
+        throttler = self.crawler.throttler
+        assert throttler is not None
+        try:
+            yield deferred_from_coro(throttler.acquire(request))
+        finally:
+            self._throttling_waiting.discard(request)
+
+    @inlineCallbacks
     def _download(
         self, request: Request
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         assert self._slot is not None  # typing
         assert self.spider is not None
 
-        self._slot.add_request(request)
+        throttler = self.crawler.throttler
+        assert throttler is not None
+        # A throttling-aware scheduler reserves the request (a concurrency slot)
+        # before handing it here, so everything past this point runs inside the
+        # try/finally that releases it, even if add_request() were to raise.
         try:
+            self._slot.add_request(request)
+            yield self._acquire_throttling(request)
             result: Response | Request
             if self._downloader_fetch_needs_spider:
                 result = yield self.downloader.fetch(request, self.spider)
@@ -515,6 +666,7 @@ class ExecutionEngine:
                 )
             return result
         finally:
+            throttler.release(request)
             self._slot.nextcall.schedule()
 
     def open_spider(
@@ -612,6 +764,8 @@ class ExecutionEngine:
         logger.info(
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
         )
+
+        self._cancel_throttling_wakeup()
 
         try:
             await self._slot.close()

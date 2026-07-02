@@ -1,39 +1,32 @@
-import time
 from typing import Any
+from urllib.parse import urlparse
 
 import pytest
 
 from scrapy import Request
-from scrapy.core.downloader import Downloader, Slot
+from scrapy.core.downloader import Downloader
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider
-from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.decorators import coroutine_test
 
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
     name = "downloader_slots"
 
     custom_settings = {
-        "DOWNLOAD_DELAY": 1,
-        "RANDOMIZE_DOWNLOAD_DELAY": False,
         "DOWNLOAD_SLOTS": {
-            "quotes.toscrape.com": {
-                "concurrency": 1,
-                "delay": 2,
-                "randomize_delay": False,
-                "throttle": False,
-            },
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+            "quotes.toscrape.com": {"concurrency": 1},
+            "books.toscrape.com": {"concurrency": 2},
         },
     }
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         assert self.mockserver
-        self.default_slot = self.mockserver.host
+        self.default_slot = urlparse(self.mockserver.url("/")).netloc
         self.times: dict[str, list[float]] = {}
 
     async def start(self):
@@ -45,65 +38,86 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
     def parse(self, response):
         slot = response.meta.get("download_slot", self.default_slot)
-        self.times[slot].append(time.time())
+        self.times[slot].append(response.meta.get("download_latency"))
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
         yield Request(url, callback=self.not_parse, meta={"download_slot": slot})
 
     def not_parse(self, response):
         slot = response.meta.get("download_slot", self.default_slot)
-        self.times[slot].append(time.time())
-
-
-class TestCrawl:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    @inline_callbacks_test
-    def test_delay(self):
-        crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
-        yield crawler.crawl(mockserver=self.mockserver)
-        slots = crawler.engine.downloader.slots
-        times = crawler.spider.times
-        tolerance = 0.3
-
-        delays_real = {k: v[1] - v[0] for k, v in times.items()}
-        error_delta = {
-            k: 1 - min(delays_real[k], v.delay) / max(delays_real[k], v.delay)
-            for k, v in slots.items()
-        }
-
-        assert max(list(error_delta.values())) < tolerance
+        self.times[slot].append(response.meta.get("download_latency"))
 
 
 @coroutine_test
-async def test_params():
-    params = {
-        "concurrency": 1,
-        "delay": 2,
-        "randomize_delay": False,
-    }
-    settings = {
-        "DOWNLOAD_SLOTS": {
-            "example.com": params,
-        },
-    }
+async def test_concurrency_key_deprecated():
+    settings = {"DOWNLOAD_SLOTS": {"example.com": {"concurrency": 3}}}
     crawler = get_crawler(DefaultSpider, settings_dict=settings)
+    crawler.spider = crawler._create_spider()
+    with pytest.warns(ScrapyDeprecationWarning) as warns:
+        downloader = Downloader(crawler)
+    messages = [str(w.message) for w in warns]
+    assert any("DOWNLOAD_SLOTS setting is deprecated" in m for m in messages)
+    assert any("'concurrency' key in DOWNLOAD_SLOTS" in m for m in messages)
+    downloader._get_slot(Request("https://example.com"))
+    downloader.close()
+
+
+@coroutine_test
+async def test_download_slots_deprecated():
+    settings = {"DOWNLOAD_SLOTS": {"example.com": {"concurrency": 2}}}
+    crawler = get_crawler(DefaultSpider, settings_dict=settings)
+    crawler.spider = crawler._create_spider()
+    with pytest.warns(
+        ScrapyDeprecationWarning, match="DOWNLOAD_SLOTS setting is deprecated"
+    ):
+        Downloader(crawler).close()
+
+
+@coroutine_test
+async def test_slots_deprecated():
+    crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
     request = Request("https://example.com")
-    _, actual = downloader._get_slot(request)
+    request.meta[Downloader.DOWNLOAD_SLOT] = "example.com"
+    downloader.active.add(request)
+    with pytest.warns(ScrapyDeprecationWarning, match="Downloader.slots is deprecated"):
+        slot = downloader.slots.get("example.com")
+    assert slot is not None
+    assert isinstance(slot.active, set)
+    assert request in slot.active
+    downloader.active.discard(request)
     downloader.close()
-    expected = Slot(**params)
-    for param in params:
-        assert getattr(expected, param) == getattr(actual, param), (
-            f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
-        )
+
+
+@coroutine_test
+async def test_download_slot_meta_deprecated():
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    request.meta["download_slot"] = "custom"
+    with pytest.warns(
+        ScrapyDeprecationWarning, match="'download_slot' request meta key is deprecated"
+    ):
+        key, _ = downloader._get_slot(request)
+    downloader.close()
+    assert key == "custom"
+
+
+@coroutine_test
+async def test_delay_deprecated():
+    settings = {
+        "DOWNLOAD_SLOTS": {"example.com": {"delay": 2, "randomize_delay": False}}
+    }
+    crawler = get_crawler(DefaultSpider, settings_dict=settings)
+    crawler.spider = crawler._create_spider()
+    with pytest.warns(ScrapyDeprecationWarning) as warns:
+        downloader = Downloader(crawler)
+    messages = [str(w.message) for w in warns]
+    assert any("DOWNLOAD_SLOTS setting is deprecated" in m for m in messages)
+    assert any("'delay' key in DOWNLOAD_SLOTS" in m for m in messages)
+    downloader._get_slot(Request("https://example.com"))
+    downloader.close()
 
 
 @coroutine_test
@@ -122,7 +136,7 @@ async def test_get_slot_deprecated_spider_arg():
     downloader.close()
 
     assert key1 == key2
-    assert slot1 == slot2
+    assert slot1._key == slot2._key
 
 
 @pytest.mark.parametrize(
@@ -132,6 +146,7 @@ async def test_get_slot_deprecated_spider_arg():
         "scrapy.pqueues.DownloaderAwarePriorityQueue",
     ],
 )
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 @coroutine_test
 async def test_none_slot_with_priority_queue(
     mockserver: MockServer, priority_queue_class: str

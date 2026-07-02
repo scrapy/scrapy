@@ -46,6 +46,7 @@ if TYPE_CHECKING:
 
     from scrapy.logformatter import LogFormatter
     from scrapy.statscollectors import StatsCollector
+    from scrapy.throttling import ThrottlingManagerProtocol
     from scrapy.utils.request import RequestFingerprinterProtocol
 
 
@@ -83,6 +84,13 @@ class Crawler:
         self.stats: StatsCollector | None = None
         self.logformatter: LogFormatter | None = None
         self.request_fingerprinter: RequestFingerprinterProtocol | None = None
+        self.throttler: ThrottlingManagerProtocol | None = None
+        """The throttling manager of this crawler, an instance of
+        :setting:`THROTTLING_MANAGER`.
+
+        It is ``None`` until the crawl starts. Components can use it to inspect
+        or drive :ref:`throttling <throttling>` at run time, e.g. through
+        :meth:`~scrapy.throttling.ThrottlingManagerProtocol.delay_scope`."""
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
@@ -96,6 +104,7 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
+        self._apply_spider_download_delay()
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
@@ -103,6 +112,10 @@ class Crawler:
 
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
+            self,
+        )
+        self.throttler = build_from_crawler(
+            load_object(self.settings["THROTTLING_MANAGER"]),
             self,
         )
 
@@ -150,6 +163,31 @@ class Crawler:
         logger.info(
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
+
+    def _apply_spider_download_delay(self) -> None:
+        spider = self.spider if self.spider is not None else self.spidercls
+        if not hasattr(spider, "download_delay"):
+            return
+        delay_prio = self.settings.getpriority("DOWNLOAD_DELAY") or 0
+        if delay_prio >= SETTINGS_PRIORITIES["spider"]:
+            warnings.warn(
+                "The 'download_delay' spider attribute is deprecated. "
+                "It is also being ignored because DOWNLOAD_DELAY is already set "
+                "at spider or higher priority. Remove the 'download_delay' "
+                "attribute from your spider.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        else:
+            warnings.warn(
+                "The 'download_delay' spider attribute is deprecated. Use the "
+                "DOWNLOAD_DELAY setting or per-domain THROTTLING_SCOPES instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self.settings.set(
+                "DOWNLOAD_DELAY", spider.download_delay, priority="spider"
+            )
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.

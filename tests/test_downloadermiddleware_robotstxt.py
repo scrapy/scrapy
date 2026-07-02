@@ -8,6 +8,7 @@ import pytest
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python import failure
 
+from scrapy import signals
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
 from scrapy.exceptions import CannotResolveHostError, IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
@@ -27,6 +28,7 @@ class TestRobotsTxtMiddleware:
         self.crawler: mock.MagicMock = mock.MagicMock()
         self.crawler.settings = Settings()
         self.crawler.engine.download_async = mock.AsyncMock()
+        self.crawler.signals.send_catch_log_async = mock.AsyncMock(return_value=[])
 
     def teardown_method(self):
         del self.crawler
@@ -73,6 +75,22 @@ Disallow: /some/randome/page.html
         await self.assertIgnored(
             Request("http://site.local/wiki/Käyttäjä:"), middleware
         )
+
+    @coroutine_test
+    async def test_robotstxt_emits_robots_parsed_signal(self):
+        crawler = self._get_successful_crawler()
+        middleware = RobotsTxtMiddleware(crawler)
+        request = Request("http://site.local/allowed")
+        await self.assertNotIgnored(request, middleware)
+        calls = [
+            kwargs
+            for _, kwargs in crawler.signals.send_catch_log_async.call_args_list
+            if kwargs.get("signal") is signals.robots_parsed
+        ]
+        assert len(calls) == 1
+        assert calls[0]["request"] is request
+        assert calls[0]["robotparser"] is not None
+        assert "crawler" not in calls[0]
 
     @coroutine_test
     async def test_robotstxt_multiple_reqs(self) -> None:

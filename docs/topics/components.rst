@@ -9,37 +9,24 @@ A Scrapy component is any class whose objects are built using
 
 That includes the classes that you may assign to the following settings:
 
--   :setting:`ADDONS`
-
--   :setting:`TWISTED_DNS_RESOLVER`
-
--   :setting:`DOWNLOAD_HANDLERS`
-
--   :setting:`DOWNLOADER_MIDDLEWARES`
-
--   :setting:`DUPEFILTER_CLASS`
-
--   :setting:`EXTENSIONS`
-
--   :setting:`FEED_EXPORTERS`
-
--   :setting:`FEED_STORAGES`
-
--   :setting:`ITEM_PIPELINES`
-
--   :setting:`SCHEDULER`
-
--   :setting:`SCHEDULER_DISK_QUEUE`
-
--   :setting:`SCHEDULER_MEMORY_QUEUE`
-
--   :setting:`SCHEDULER_PRIORITY_QUEUE`
-
--   :setting:`SCHEDULER_START_DISK_QUEUE`
-
--   :setting:`SCHEDULER_START_MEMORY_QUEUE`
-
--   :setting:`SPIDER_MIDDLEWARES`
+- :setting:`ADDONS`
+- :setting:`DOWNLOAD_HANDLERS`
+- :setting:`DOWNLOADER_MIDDLEWARES`
+- :setting:`DUPEFILTER_CLASS`
+- :setting:`EXTENSIONS`
+- :setting:`FEED_EXPORTERS`
+- :setting:`FEED_STORAGES`
+- :setting:`ITEM_PIPELINES`
+- :setting:`SCHEDULER`
+- :setting:`SCHEDULER_DISK_QUEUE`
+- :setting:`SCHEDULER_MEMORY_QUEUE`
+- :setting:`SCHEDULER_PRIORITY_QUEUE`
+- :setting:`SCHEDULER_START_DISK_QUEUE`
+- :setting:`SCHEDULER_START_MEMORY_QUEUE`
+- :setting:`SPIDER_MIDDLEWARES`
+- :setting:`THROTTLING_MANAGER`
+- :setting:`THROTTLING_SCOPE_MANAGER`
+- :setting:`TWISTED_DNS_RESOLVER`
 
 Third-party Scrapy components may also let you define additional Scrapy
 components, usually configurable through :ref:`settings <topics-settings>`, to
