@@ -251,7 +251,11 @@ class Downloader:
         return self.get_slot_key(request)
 
     def get_slot_key(self, request: Request) -> str:
-        # This fallback (used only when no throttler is set) keys by domain.
+        # This fallback is used only when no throttler is set; it mirrors the
+        # historical keying (an explicit download_slot wins, else the domain).
+        meta_slot: str | None = request.meta.get(self.DOWNLOAD_SLOT)
+        if meta_slot is not None:
+            return meta_slot
         return urlparse_cached(request).netloc or ""
 
     async def _enqueue_request(self, request: Request) -> Response:

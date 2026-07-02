@@ -16,7 +16,6 @@ Scrapy developers, if you add a setting here remember to:
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Any
 
 __all__ = [
     "ADDONS",
@@ -635,19 +634,3 @@ URLLENGTH_LIMIT = 2083
 USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org)"
 
 WARN_ON_GENERATOR_RETURN_VALUE = True
-
-
-def __getattr__(name: str) -> Any:
-    if name == "CONCURRENT_REQUESTS_PER_IP":
-        import warnings  # noqa: PLC0415
-
-        from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
-
-        warnings.warn(
-            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return 0
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

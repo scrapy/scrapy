@@ -105,6 +105,7 @@ class Crawler:
 
         self.addons.load_settings(self.settings)
         self._apply_spider_download_delay()
+        self._apply_spider_max_concurrent_requests()
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
@@ -187,6 +188,41 @@ class Crawler:
             )
             self.settings.set(
                 "DOWNLOAD_DELAY", spider.download_delay, priority="spider"
+            )
+
+    def _apply_spider_max_concurrent_requests(self) -> None:
+        spider = self.spider if self.spider is not None else self.spidercls
+        if not hasattr(spider, "max_concurrent_requests"):
+            return
+        # Historically this attribute overrode the per-domain slot concurrency,
+        # which is now THROTTLING_SCOPE_CONCURRENCY (see
+        # scrapy.throttling._default_scope_concurrency). The old deprecation
+        # message pointed at CONCURRENT_REQUESTS, but that never matched its
+        # actual per-domain effect.
+        concurrency_prio = (
+            self.settings.getpriority("THROTTLING_SCOPE_CONCURRENCY") or 0
+        )
+        if concurrency_prio >= SETTINGS_PRIORITIES["spider"]:
+            warnings.warn(
+                "The 'max_concurrent_requests' spider attribute is deprecated. "
+                "It is also being ignored because THROTTLING_SCOPE_CONCURRENCY is "
+                "already set at spider or higher priority. Remove the "
+                "'max_concurrent_requests' attribute from your spider.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        else:
+            warnings.warn(
+                "The 'max_concurrent_requests' spider attribute is deprecated. Use "
+                "the THROTTLING_SCOPE_CONCURRENCY setting or per-domain "
+                "THROTTLING_SCOPES instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self.settings.set(
+                "THROTTLING_SCOPE_CONCURRENCY",
+                spider.max_concurrent_requests,
+                priority="spider",
             )
 
     def _apply_reactorless_default_settings(self) -> None:
