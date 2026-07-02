@@ -130,6 +130,10 @@ Any other named parameter gets replaced by the spider attribute of the same
 name. For example, ``%(site_id)s`` would get replaced by the ``spider.site_id``
 attribute the moment the feed is being created.
 
+Only named parameters like these (and the ``%%`` escape) are replaced. Any
+other ``%`` character, e.g. in a percent-encoded part of the URI such as an
+FTP password containing ``%23``, is left untouched.
+
 Here are some examples to illustrate:
 
 -   Store in FTP using one directory per spider:

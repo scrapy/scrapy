@@ -51,6 +51,25 @@ UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
 ]
 
+_URI_TEMPLATE_PLACEHOLDER = re.compile(
+    r"%(?:%|\(\w+\)[-#0 +]*(?:\d+)?(?:\.\d+)?[diouxXeEfFgGcrsa])"
+)
+
+
+def _format_uri_template(uri_template: str, params: dict[str, Any]) -> str:
+    """Substitute named printf-style placeholders (e.g. ``%(time)s``) and
+    ``%%`` in a feed URI template.
+
+    Unlike plain ``uri_template % params``, any other percent sequence, such
+    as a percent-encoded character in a URI (e.g. ``%23``), is left untouched
+    instead of being interpreted as a format specifier (#5794).
+    """
+
+    def substitute(match: re.Match[str]) -> str:
+        return match.group(0) % params
+
+    return _URI_TEMPLATE_PLACEHOLDER.sub(substitute, uri_template)
+
 
 class ItemFilter:
     """
@@ -514,7 +533,7 @@ class FeedExporter:
             self.slots.append(
                 self._start_new_batch(
                     batch_id=1,
-                    uri=uri % uri_params,
+                    uri=_format_uri_template(uri, uri_params),
                     feed_options=feed_options,
                     spider=spider,
                     uri_template=uri,
@@ -639,7 +658,7 @@ class FeedExporter:
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,
-                        uri=slot.uri_template % uri_params,
+                        uri=_format_uri_template(slot.uri_template, uri_params),
                         feed_options=self.feeds[slot.uri_template],
                         spider=spider,
                         uri_template=slot.uri_template,
