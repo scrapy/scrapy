@@ -1044,6 +1044,14 @@ Additional settings
     <throttling-scopes>` that are neither domains nor IPs, e.g. custom scopes
     added by a :ref:`custom throttling manager <custom-throttling-scopes>`.
 
+    A scope counts as a domain only if it looks like a hostname with at least
+    one dot, so single-label hosts such as ``localhost`` (or intranet host
+    names) fall in this category and default to
+    :setting:`THROTTLING_SCOPE_CONCURRENCY` rather than
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. Raise it, or give the host an
+    explicit ``concurrency`` in :setting:`THROTTLING_SCOPES`, if you need more
+    concurrency against such hosts (e.g. a local development server).
+
     Domain and IP scopes use :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
     :setting:`CONCURRENT_REQUESTS_PER_IP` instead. A scope ``concurrency`` set
     in :setting:`THROTTLING_SCOPES` overrides this.
@@ -1101,3 +1109,4 @@ API
 
 .. autofunction:: scrapy.throttling.scope_cache
 .. autofunction:: scrapy.throttling.add_scope
+.. autofunction:: scrapy.throttling.iter_scopes

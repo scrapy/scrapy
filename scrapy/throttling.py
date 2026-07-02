@@ -98,6 +98,14 @@ RequestScopes = None | ScopeID | Iterable[ScopeID] | dict[ScopeID, float | None]
 
 
 def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
+    """Iterate over the scope IDs of *scopes*, whatever its form.
+
+    :class:`~ThrottlingManagerProtocol.get_scopes` (and
+    :meth:`~ThrottlingManagerProtocol.get_resolved_scopes`) may return a single
+    scope ID, an iterable of them, a ``{scope_id: quota}`` mapping, or ``None``;
+    this helper normalizes any of those into an iterable of scope IDs, e.g. to
+    react to a request's scopes in a custom middleware.
+    """
     if scopes is None:
         return ()
     if isinstance(scopes, str):
