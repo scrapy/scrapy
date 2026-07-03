@@ -6,9 +6,8 @@ from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
-from scrapy.throttling import iter_scopes
+from scrapy.throttling import _load_exceptions, iter_scopes
 from scrapy.utils.decorators import _warn_spider_arg
-from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -94,19 +93,15 @@ class BackoffMiddleware:
         self._http_codes: set[int] = {
             int(code) for code in settings.getlist("BACKOFF_HTTP_CODES")
         }
-        self._exceptions: tuple[type[BaseException], ...] = tuple(
-            load_object(exc) if isinstance(exc, str) else exc
-            for exc in settings.getlist("BACKOFF_EXCEPTIONS")
+        self._exceptions: tuple[type[BaseException], ...] = _load_exceptions(
+            settings.getlist("BACKOFF_EXCEPTIONS")
         )
         for scope_config in settings.getdict("THROTTLING_SCOPES").values():
             backoff = scope_config.get("backoff") or {}
             if "http_codes" in backoff:
                 self._http_codes.update(int(code) for code in backoff["http_codes"])
             if "exceptions" in backoff:
-                self._exceptions += tuple(
-                    load_object(exc) if isinstance(exc, str) else exc
-                    for exc in backoff["exceptions"]
-                )
+                self._exceptions += _load_exceptions(backoff["exceptions"])
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

@@ -132,6 +132,14 @@ def iter_scope_values(scopes: RequestScopes) -> Iterable[tuple[ScopeID, float | 
         yield scope, None
 
 
+def _load_exceptions(exceptions: Iterable[Any]) -> tuple[type[BaseException], ...]:
+    """Resolve *exceptions* (exception classes or their import paths) to a tuple
+    of exception classes."""
+    return tuple(
+        load_object(exc) if isinstance(exc, str) else exc for exc in exceptions
+    )
+
+
 def _default_scope_concurrency(settings: BaseSettings) -> int:
     """Return the default concurrency of a throttling scope that does not set
     its own ``concurrency``.
@@ -1186,9 +1194,8 @@ class ThrottlingScopeManager:
                 "http_codes", settings.getlist("BACKOFF_HTTP_CODES")
             )
         }
-        self._backoff_exceptions: tuple[type[BaseException], ...] = tuple(
-            load_object(exc) if isinstance(exc, str) else exc
-            for exc in backoff.get("exceptions", settings.getlist("BACKOFF_EXCEPTIONS"))
+        self._backoff_exceptions: tuple[type[BaseException], ...] = _load_exceptions(
+            backoff.get("exceptions", settings.getlist("BACKOFF_EXCEPTIONS"))
         )
         self._window: float = settings.getfloat("BACKOFF_WINDOW")
 

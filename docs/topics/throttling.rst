@@ -667,9 +667,7 @@ Alternative approaches include:
             @scope_cache
             async def get_scopes(self, request):
                 extracted = tldextract.extract(request.url)
-                if extracted.domain and extracted.suffix:
-                    return f"{extracted.domain}.{extracted.suffix}"
-                return urlparse_cached(request).netloc
+                return extracted.registered_domain or urlparse_cached(request).netloc
 
 
         THROTTLING_MANAGER = MyThrottlingManager
@@ -698,18 +696,10 @@ Alternative approaches include:
             @scope_cache
             async def get_scopes(self, request):
                 extracted = tldextract.extract(request.url)
-                if not (extracted.domain and extracted.suffix):
+                if not extracted.registered_domain:
                     return urlparse_cached(request).netloc
-                scopes = set()
-                registrable_domain = f"{extracted.domain}.{extracted.suffix}"
-                scopes.add(registrable_domain)
-                if extracted.subdomain:
-                    subdomain_parts = extracted.subdomain.split(".")
-                    for i in range(len(subdomain_parts)):
-                        subdomain = ".".join(subdomain_parts[i:])
-                        full_domain = f"{subdomain}.{registrable_domain}"
-                        scopes.add(full_domain)
-                return scopes
+                # The registrable domain, plus the full host for a subdomain.
+                return {extracted.registered_domain, extracted.fqdn}
 
 
         THROTTLING_MANAGER = MyThrottlingManager

@@ -104,8 +104,14 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
-        self._apply_spider_download_delay()
-        self._apply_spider_max_concurrent_requests()
+        self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
+        # 'max_concurrent_requests' historically overrode the per-domain slot
+        # concurrency, which is now THROTTLING_SCOPE_CONCURRENCY (see
+        # scrapy.throttling._default_scope_concurrency); the old deprecation
+        # message pointed at CONCURRENT_REQUESTS, which never matched that.
+        self._apply_deprecated_spider_attr(
+            "max_concurrent_requests", "THROTTLING_SCOPE_CONCURRENCY"
+        )
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
@@ -165,65 +171,29 @@ class Crawler:
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
 
-    def _apply_spider_download_delay(self) -> None:
+    def _apply_deprecated_spider_attr(self, attr: str, setting: str) -> None:
+        """Bridge a deprecated spider attribute onto *setting*, warning about
+        the deprecation (and about being ignored when *setting* is already set
+        at spider or higher priority)."""
         spider = self.spider if self.spider is not None else self.spidercls
-        if not hasattr(spider, "download_delay"):
+        if not hasattr(spider, attr):
             return
-        delay_prio = self.settings.getpriority("DOWNLOAD_DELAY") or 0
-        if delay_prio >= SETTINGS_PRIORITIES["spider"]:
+        if (self.settings.getpriority(setting) or 0) >= SETTINGS_PRIORITIES["spider"]:
             warnings.warn(
-                "The 'download_delay' spider attribute is deprecated. "
-                "It is also being ignored because DOWNLOAD_DELAY is already set "
-                "at spider or higher priority. Remove the 'download_delay' "
-                "attribute from your spider.",
+                f"The {attr!r} spider attribute is deprecated. It is also being "
+                f"ignored because {setting} is already set at spider or higher "
+                f"priority. Remove the {attr!r} attribute from your spider.",
                 category=ScrapyDeprecationWarning,
-                stacklevel=2,
+                stacklevel=3,
             )
-        else:
-            warnings.warn(
-                "The 'download_delay' spider attribute is deprecated. Use the "
-                "DOWNLOAD_DELAY setting or per-domain THROTTLING_SCOPES instead.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            self.settings.set(
-                "DOWNLOAD_DELAY", spider.download_delay, priority="spider"
-            )
-
-    def _apply_spider_max_concurrent_requests(self) -> None:
-        spider = self.spider if self.spider is not None else self.spidercls
-        if not hasattr(spider, "max_concurrent_requests"):
             return
-        # Historically this attribute overrode the per-domain slot concurrency,
-        # which is now THROTTLING_SCOPE_CONCURRENCY (see
-        # scrapy.throttling._default_scope_concurrency). The old deprecation
-        # message pointed at CONCURRENT_REQUESTS, but that never matched its
-        # actual per-domain effect.
-        concurrency_prio = (
-            self.settings.getpriority("THROTTLING_SCOPE_CONCURRENCY") or 0
+        warnings.warn(
+            f"The {attr!r} spider attribute is deprecated. Use the {setting} "
+            f"setting or per-domain THROTTLING_SCOPES instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=3,
         )
-        if concurrency_prio >= SETTINGS_PRIORITIES["spider"]:
-            warnings.warn(
-                "The 'max_concurrent_requests' spider attribute is deprecated. "
-                "It is also being ignored because THROTTLING_SCOPE_CONCURRENCY is "
-                "already set at spider or higher priority. Remove the "
-                "'max_concurrent_requests' attribute from your spider.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-        else:
-            warnings.warn(
-                "The 'max_concurrent_requests' spider attribute is deprecated. Use "
-                "the THROTTLING_SCOPE_CONCURRENCY setting or per-domain "
-                "THROTTLING_SCOPES instead.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            self.settings.set(
-                "THROTTLING_SCOPE_CONCURRENCY",
-                spider.max_concurrent_requests,
-                priority="spider",
-            )
+        self.settings.set(setting, getattr(spider, attr), priority="spider")
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.
