@@ -274,15 +274,6 @@ class Downloader:
         assert self.crawler.throttler is not None
         return _DeprecatedSlotsView(self, self.crawler.throttler)
 
-    @_warn_spider_arg
-    def _get_slot(
-        self, request: Request, spider: Spider | None = None
-    ) -> tuple[str, _DeprecatedSlotView]:
-        key = self._get_slot_key(request)
-        assert self.crawler.throttler is not None
-        scope = self.crawler.throttler.get_scope_manager(key)
-        return key, _DeprecatedSlotView(self, key, scope)
-
     def _get_slot_key(self, request: Request) -> str:
         assert self.crawler.throttler is not None
         return self.crawler.throttler.get_slot_key(request)

@@ -22,13 +22,21 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _parse_retry_after(response: Response) -> float | None:
-    raw = response.headers.get("Retry-After")
+def _decoded_header(response: Response, name: str) -> str | None:
+    """Return the stripped UTF-8 value of the *name* header of *response*, or
+    ``None`` if it is absent or not valid UTF-8."""
+    raw = response.headers.get(name)
     if not raw:
         return None
     try:
-        value = raw.decode("utf-8").strip()
+        return raw.decode("utf-8").strip()
     except UnicodeDecodeError:
+        return None
+
+
+def _parse_retry_after(response: Response) -> float | None:
+    value = _decoded_header(response, "Retry-After")
+    if value is None:
         return None
     if value.isdigit():
         return float(value)  # seconds
@@ -46,12 +54,8 @@ def _parse_retry_after(response: Response) -> float | None:
 
 
 def _parse_ratelimit_reset(response: Response) -> float | None:
-    raw = response.headers.get("RateLimit-Reset")
-    if not raw:
-        return None
-    try:
-        value = raw.decode("utf-8").strip()
-    except UnicodeDecodeError:
+    value = _decoded_header(response, "RateLimit-Reset")
+    if value is None:
         return None
     try:
         return float(value)
@@ -151,7 +155,6 @@ class BackoffMiddleware:
         ]
         if matched:
             self._throttler.back_off(matched)
-        return
 
     @staticmethod
     def _response_delay(response: Response) -> float | None:
