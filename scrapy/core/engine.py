@@ -138,14 +138,18 @@ class ExecutionEngine:
         # ``_enqueue_request_async``), so the spider is not considered idle
         # while a request is still on its way into the scheduler.
         self._scheduling: int = 0
-        # A coalesced wakeup timer, armed when a throttling-aware scheduler
-        # reports that all pending requests are time-blocked (see
-        # ``get_next_request_delay``).
-        self._throttling_wakeup: CallLaterResult | None = None
-        self._delayed_requests_warn_threshold: int = self.settings.getint(
-            "DELAYED_REQUESTS_WARN_THRESHOLD"
-        )
-        self._delayed_requests_warned: bool = False
+        # A coalesced wakeup timer, armed when the scheduler reports (through
+        # ``get_next_request_delay``) that every pending request is time-blocked.
+        self._delay_wakeup: CallLaterResult | None = None
+        # The scheduler's ``get_next_request_delay`` bound method, cached once
+        # per crawl in ``open_spider_async`` (``None`` if the scheduler does not
+        # expose one). Used both to arm the wakeup timer and to tell whether the
+        # scheduler holds time-blocked requests itself.
+        self._get_next_request_delay: Callable[[], float | None] | None = None
+        # Whether the scheduler exposes enqueue_request_async, cached once per
+        # crawl in ``open_spider_async``; checked for every scheduled request.
+        self._scheduler_enqueues_async: bool = False
+        self._throttling_backout_warned: bool = False
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -279,14 +283,14 @@ class ExecutionEngine:
 
     def pause(self) -> None:
         self.paused = True
-        self._cancel_throttling_wakeup()
+        self._cancel_delay_wakeup()
 
     def unpause(self) -> None:
         self.paused = False
-        # pause() cancels the coalesced throttling wakeup and the loop stops
+        # pause() cancels the coalesced delay wakeup and the loop stops
         # re-running itself while paused, so re-run it here: this re-arms the
-        # wakeup and keeps a crawl held only by a time-based throttling gate
-        # (nothing in flight to re-run the loop from _download) from stalling.
+        # wakeup and keeps a crawl held only by a time-based gate (nothing in
+        # flight to re-run the loop from _download) from stalling.
         if self._slot is not None:
             self._slot.nextcall.schedule()
 
@@ -355,25 +359,25 @@ class ExecutionEngine:
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
-        self._cancel_throttling_wakeup()
+        self._cancel_delay_wakeup()
 
         while not self.needs_backout():
             if not self._start_scheduled_request():
                 break
 
-        self._maybe_arm_throttling_wakeup()
+        self._maybe_arm_delay_wakeup()
 
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
 
-    def _cancel_throttling_wakeup(self) -> None:
-        if self._throttling_wakeup is not None:
-            self._throttling_wakeup.cancel()
-            self._throttling_wakeup = None
+    def _cancel_delay_wakeup(self) -> None:
+        if self._delay_wakeup is not None:
+            self._delay_wakeup.cancel()
+            self._delay_wakeup = None
 
-    def _maybe_arm_throttling_wakeup(self) -> None:
-        """Arm a single coalesced wakeup when the scheduler is throttling-aware
-        and reports that every pending request is time-blocked.
+    def _maybe_arm_delay_wakeup(self) -> None:
+        """Arm a single coalesced wakeup when the scheduler reports that every
+        pending request is time-blocked.
 
         Concurrency-blocked states do not need this: a freed slot already
         re-runs the loop from :meth:`_download`'s ``finally``. Only time-based
@@ -381,21 +385,19 @@ class ExecutionEngine:
         would re-run the loop while they are closed.
         """
         assert self._slot is not None
-        scheduler = self._slot.scheduler
-        delay_fn = getattr(scheduler, "get_next_request_delay", None)
-        if delay_fn is None or not scheduler.has_pending_requests():
+        if (
+            self._get_next_request_delay is None
+            or not self._slot.scheduler.has_pending_requests()
+        ):
             return
-        delay = delay_fn()
-        # ``delay`` is ``None`` when no pending request is time-blocked, and
-        # ``0`` when some request is ready right now but could not be sent (e.g.
-        # the downloader is at capacity). Neither case needs a timer: a freed
-        # slot already re-runs the loop from :meth:`_download`'s ``finally``,
-        # and arming a ``0``-second timer here would busy-loop the engine while
-        # the downloader stays full. Only a positive delay, i.e. a time-based
-        # gate that nothing else would wake us for, needs one.
+        # A positive delay means a time-based gate nothing else would wake us
+        # for. ``None`` (nothing time-blocked) and ``0`` (something is ready but
+        # could not be sent, e.g. the downloader is full) are handled elsewhere:
+        # a freed slot re-runs the loop, and a ``0``-second timer would busy-loop.
+        delay = self._get_next_request_delay()
         if delay is None or delay <= 0:
             return
-        self._throttling_wakeup = call_later(delay, self._slot.nextcall.schedule)
+        self._delay_wakeup = call_later(delay, self._slot.nextcall.schedule)
 
     def needs_backout(self) -> bool:
         """Returns ``True`` if no more requests can be sent at the moment, or
@@ -423,29 +425,28 @@ class ExecutionEngine:
         """
         if not self._throttling_waiting:
             return False
-        return (
+        if (
             len(self._throttling_waiting) + len(self.downloader.active)
-            >= self.downloader.total_concurrency
-        )
+            < self.downloader.total_concurrency
+        ):
+            return False
+        self._maybe_warn_throttling_backout()
+        return True
 
-    def _maybe_warn_delayed_requests(self) -> None:
-        if self._delayed_requests_warned:
+    def _maybe_warn_throttling_backout(self) -> None:
+        if self._throttling_backout_warned:
             return
-        if len(self._throttling_waiting) < self._delayed_requests_warn_threshold:
+        # A throttling-aware scheduler holds time-blocked requests itself instead
+        # of letting them pile up in _throttling_waiting and back-pressure the
+        # engine here, so the warning does not apply when one is in use.
+        if self._get_next_request_delay is not None:
             return
-        self._delayed_requests_warned = True
-        recommendation = ""
-        # A throttling-aware scheduler holds throttled requests in the
-        # scheduler instead of in _throttling_waiting, so it does not hit this
-        # path; recommend it only when it is not already in use.
-        scheduler = self._slot.scheduler if self._slot is not None else None
-        if scheduler is None or not hasattr(scheduler, "get_next_request_delay"):
-            recommendation = (
-                " Consider switching to scrapy.core.scheduler.ThrottlingAwareScheduler."
-            )
+        self._throttling_backout_warned = True
         logger.warning(
-            f"There are {len(self._throttling_waiting)} requests held back by "
-            f"throttling. See DELAYED_REQUESTS_WARN_THRESHOLD.{recommendation}",
+            "Throttling is holding requests back and they are now consuming the "
+            "global concurrency budget while they wait for a free slot. Consider "
+            "switching to scrapy.core.scheduler.ThrottlingAwareScheduler, which "
+            "holds throttled requests without consuming concurrency slots.",
             extra={"spider": self.spider},
         )
 
@@ -549,7 +550,7 @@ class ExecutionEngine:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
         scheduler = self._slot.scheduler
-        if hasattr(scheduler, "enqueue_request_async"):
+        if self._scheduler_enqueues_async:
             self._scheduling += 1
             _schedule_coro(self._enqueue_request_async(request))
             return
@@ -559,10 +560,9 @@ class ExecutionEngine:
             )
 
     async def _enqueue_request_async(self, request: Request) -> None:
-        # The counter is incremented in _schedule_request before this coroutine
-        # is scheduled, so it must be decremented here even on an early exit,
-        # otherwise spider_is_idle() never reports idle. The slot can be torn
-        # down (spider stopping) between the increment and this running.
+        # _scheduling is incremented in _schedule_request before this coroutine
+        # is scheduled, so it must be decremented on every path (hence finally),
+        # otherwise spider_is_idle() never reports idle.
         try:
             if self._slot is None:
                 return
@@ -618,7 +618,6 @@ class ExecutionEngine:
         """Wait at the throttling gate before *request* is sent, tracking it as
         held meanwhile."""
         self._throttling_waiting.add(request)
-        self._maybe_warn_delayed_requests()
         throttler = self.crawler.throttler
         assert throttler is not None
         try:
@@ -689,6 +688,10 @@ class ExecutionEngine:
         self.spider = self.crawler.spider
         nextcall = CallLaterOnce(self._start_scheduled_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
+        self._get_next_request_delay = getattr(
+            scheduler, "get_next_request_delay", None
+        )
+        self._scheduler_enqueues_async = hasattr(scheduler, "enqueue_request_async")
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
         self._start = await self.scraper.spidermw.process_start()
         if hasattr(scheduler, "open") and (d := scheduler.open(self.crawler.spider)):
@@ -765,7 +768,7 @@ class ExecutionEngine:
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
         )
 
-        self._cancel_throttling_wakeup()
+        self._cancel_delay_wakeup()
 
         try:
             await self._slot.close()

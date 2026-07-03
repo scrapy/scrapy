@@ -617,8 +617,8 @@ By default, throttling is enforced at the engine, where a request waiting on
 its :ref:`throttling scopes <throttling-scopes>` holds a concurrency slot. In a
 crawl that mixes heavily-throttled scopes with unthrottled ones, this can let
 throttled requests starve unthrottled ones that could be sent right away
-(**head-of-line blocking**; Scrapy logs a warning, see
-:setting:`DELAYED_REQUESTS_WARN_THRESHOLD`).
+(**head-of-line blocking**; Scrapy logs a warning the first time throttled
+requests start consuming the global concurrency budget while they wait).
 
 :class:`~scrapy.core.scheduler.ThrottlingAwareScheduler` avoids this. To enable
 it:
@@ -991,23 +991,6 @@ Additional settings
     exception from :setting:`BACKOFF_EXCEPTIONS`) before its delay decreases
     by one :setting:`BACKOFF_DELAY_FACTOR` step toward the configured value.
     A new trigger resets the countdown.
-
--   .. setting:: DELAYED_REQUESTS_WARN_THRESHOLD
-
-    :setting:`DELAYED_REQUESTS_WARN_THRESHOLD` (default: ``500``)
-
-    Number of requests held back by :ref:`throttling <throttling>` at which
-    Scrapy logs a warning, to help detect throttling configurations that hold
-    back more requests than expected.
-
-    While throttled, requests in the :ref:`scheduler <topics-scheduler>`
-    remain in the scheduler. However, requests sent with :meth:`engine.download()
-    <scrapy.core.engine.ExecutionEngine.download>` bypass the scheduler,
-    including requests sent by some built-in :ref:`components
-    <topics-components>` and :ref:`inline requests <inline-requests>`. When
-    such requests are throttled, they are paused and kept in memory, along
-    with any run time context from the code that is sending them. If they
-    accumulate, they can become a memory issue.
 
 -   .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 

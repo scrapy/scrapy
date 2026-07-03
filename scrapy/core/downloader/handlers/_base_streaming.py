@@ -85,6 +85,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         )
         self._proxy_auth_encoding: str = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
         self._pool_size_total: int = crawler.settings.getint("CONCURRENT_REQUESTS")
+        self._pool_size_per_host: int = self._max_per_host_concurrency(crawler.settings)
 
     @staticmethod
     @abstractmethod

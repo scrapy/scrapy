@@ -663,74 +663,69 @@ class TestEngineThrottling:
         yield engine
         engine.downloader.close()
 
-    def test_pause_cancels_throttling_wakeup(self, engine):
+    def test_pause_cancels_delay_wakeup(self, engine):
         wakeup = Mock()
-        engine._throttling_wakeup = wakeup
+        engine._delay_wakeup = wakeup
         engine.pause()
         assert engine.paused is True
         wakeup.cancel.assert_called_once_with()
-        assert engine._throttling_wakeup is None
+        assert engine._delay_wakeup is None
         engine.unpause()
         assert engine.paused is False
 
     @pytest.mark.requires_reactor  # call_later() needs a reactor or asyncio loop
-    def test_maybe_arm_throttling_wakeup_arms_timer(self, engine):
-        scheduler = Mock()
-        scheduler.has_pending_requests.return_value = True
-        scheduler.get_next_request_delay.return_value = 5.0
+    def test_maybe_arm_delay_wakeup_arms_timer(self, engine):
+        engine._get_next_request_delay = lambda: 5.0
         engine._slot = Mock()
-        engine._slot.scheduler = scheduler
-        engine._maybe_arm_throttling_wakeup()
-        assert engine._throttling_wakeup is not None
+        engine._slot.scheduler.has_pending_requests.return_value = True
+        engine._maybe_arm_delay_wakeup()
+        assert engine._delay_wakeup is not None
         # Cancel the scheduled reactor call so it does not leak into other tests.
-        engine._cancel_throttling_wakeup()
+        engine._cancel_delay_wakeup()
 
-    def test_maybe_arm_throttling_wakeup_no_delay(self, engine):
-        scheduler = Mock()
-        scheduler.has_pending_requests.return_value = True
-        scheduler.get_next_request_delay.return_value = None
+    def test_maybe_arm_delay_wakeup_no_delay(self, engine):
+        engine._get_next_request_delay = lambda: None
         engine._slot = Mock()
-        engine._slot.scheduler = scheduler
-        engine._maybe_arm_throttling_wakeup()
-        assert engine._throttling_wakeup is None
+        engine._slot.scheduler.has_pending_requests.return_value = True
+        engine._maybe_arm_delay_wakeup()
+        assert engine._delay_wakeup is None
 
-    def test_maybe_arm_throttling_wakeup_zero_delay(self, engine):
+    def test_maybe_arm_delay_wakeup_zero_delay(self, engine):
         # A 0 delay means a request is ready but could not be sent (e.g. the
         # downloader is at capacity); arming a 0-second timer would busy-loop
         # the engine, so no timer must be armed.
-        scheduler = Mock()
-        scheduler.has_pending_requests.return_value = True
-        scheduler.get_next_request_delay.return_value = 0.0
+        engine._get_next_request_delay = lambda: 0.0
         engine._slot = Mock()
-        engine._slot.scheduler = scheduler
-        engine._maybe_arm_throttling_wakeup()
-        assert engine._throttling_wakeup is None
+        engine._slot.scheduler.has_pending_requests.return_value = True
+        engine._maybe_arm_delay_wakeup()
+        assert engine._delay_wakeup is None
 
-    def test_warn_delayed_requests(self, engine):
-        engine._delayed_requests_warn_threshold = 1
-        engine._throttling_waiting = {Request("http://a.example")}
+    def test_maybe_arm_delay_wakeup_not_supported(self, engine):
+        # A scheduler without get_next_request_delay never arms a timer.
+        engine._get_next_request_delay = None
         engine._slot = Mock()
-        # A scheduler without get_next_request_delay is not throttling-aware, so the
-        # warning recommends switching to one.
-        engine._slot.scheduler = Mock(spec=BaseScheduler)
+        engine._slot.scheduler.has_pending_requests.return_value = True
+        engine._maybe_arm_delay_wakeup()
+        assert engine._delay_wakeup is None
+
+    def test_maybe_warn_throttling_backout(self, engine):
+        # A scheduler without get_next_request_delay is not throttling-aware, so
+        # the warning recommends switching to one.
+        engine._get_next_request_delay = None
         with LogCapture() as log:
-            engine._maybe_warn_delayed_requests()
+            engine._maybe_warn_throttling_backout()
             # A second call is a no-op (the warning is emitted only once).
-            engine._maybe_warn_delayed_requests()
-        assert engine._delayed_requests_warned is True
-        log_text = str(log)
-        assert "requests held back by throttling" in log_text
-        assert log_text.count("ThrottlingAwareScheduler") == 1
+            engine._maybe_warn_throttling_backout()
+        assert engine._throttling_backout_warned is True
+        assert str(log).count("ThrottlingAwareScheduler") == 1
 
-    def test_warn_delayed_requests_throttling_aware(self, engine):
-        engine._delayed_requests_warn_threshold = 1
-        engine._throttling_waiting = {Request("http://a.example")}
-        engine._slot = Mock()
+    def test_maybe_warn_throttling_backout_throttling_aware(self, engine):
         # A throttling-aware scheduler (one with get_next_request_delay) holds
-        # throttled requests itself, so no switch is recommended.
-        engine._slot.scheduler = Mock()
+        # throttled requests itself, so no warning is emitted.
+        engine._get_next_request_delay = lambda: None
         with LogCapture() as log:
-            engine._maybe_warn_delayed_requests()
+            engine._maybe_warn_throttling_backout()
+        assert engine._throttling_backout_warned is False
         assert "ThrottlingAwareScheduler" not in str(log)
 
     def test_spider_is_idle_false_while_scheduling(self, engine):

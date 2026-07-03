@@ -92,22 +92,8 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         from twisted.internet import reactor
 
         self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
-        # Keep enough persistent connections per host to match the highest
-        # per-host concurrency the throttler may admit: the per-domain limit,
-        # the default "other"-scope limit, and any explicit THROTTLING_SCOPES
-        # concurrency. Per-scope concurrency can grow beyond this at runtime
-        # (rampup); the excess simply uses non-persistent connections.
-        scope_concurrencies = [
-            scope["concurrency"]
-            for scope in crawler.settings.getdict("THROTTLING_SCOPES").values()
-            if "concurrency" in scope
-        ]
-        self._pool.maxPersistentPerHost = max(
-            [
-                crawler.settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN"),
-                crawler.settings.getint("THROTTLING_SCOPE_CONCURRENCY"),
-                *scope_concurrencies,
-            ]
+        self._pool.maxPersistentPerHost = self._max_per_host_concurrency(
+            crawler.settings
         )
         self._pool._factory.noisy = False
 

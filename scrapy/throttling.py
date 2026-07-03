@@ -207,6 +207,36 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
         )
 
 
+def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
+    """Warn about configured concurrency limits that exceed
+    :setting:`CONCURRENT_REQUESTS`. Call once per crawl (see
+    :meth:`ThrottlingManager.__init__`).
+
+    :setting:`CONCURRENT_REQUESTS` caps the total number of requests in flight,
+    so a per-scope (or per-domain) concurrency limit above it can never be
+    reached. Rampup is not flagged: it has no configured ceiling and simply
+    grows toward :setting:`CONCURRENT_REQUESTS`.
+    """
+    global_concurrency = settings.getint("CONCURRENT_REQUESTS")
+    offenders: list[str] = [
+        f"{name}={settings.getint(name)}"
+        for name in ("CONCURRENT_REQUESTS_PER_DOMAIN", "THROTTLING_SCOPE_CONCURRENCY")
+        if settings.getint(name) > global_concurrency
+    ]
+    offenders += [
+        f"THROTTLING_SCOPES[{scope_id!r}]['concurrency']={config['concurrency']}"
+        for scope_id, config in settings.getdict("THROTTLING_SCOPES").items()
+        if config.get("concurrency") is not None
+        and int(config["concurrency"]) > global_concurrency
+    ]
+    if offenders:
+        logger.warning(
+            f"The following concurrency settings exceed CONCURRENT_REQUESTS "
+            f"({global_concurrency}), which caps the total number of requests in "
+            f"flight, so they cannot be reached: {', '.join(offenders)}."
+        )
+
+
 def _to_scope_dict(scopes: RequestScopes) -> dict[ScopeID, float | None]:
     """Normalize *scopes* (``None``, a scope id, an iterable of scope ids or a
     ``{scope_id: quota}`` dict) into a ``{scope_id: quota}`` dict, using ``None``
@@ -505,6 +535,7 @@ class ThrottlingManager:
     def __init__(self, crawler: Crawler) -> None:
         self.crawler = crawler
         _warn_on_deprecated_concurrency(crawler.settings)
+        _warn_on_unachievable_concurrency(crawler.settings)
         self._debug = crawler.settings.getbool("THROTTLING_DEBUG")
         self._max_idle = crawler.settings.getfloat("THROTTLING_SCOPE_MAX_IDLE")
         self._robotstxt_obey = crawler.settings.getbool(

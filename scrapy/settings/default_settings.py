@@ -58,7 +58,6 @@ __all__ = [
     "DEFAULT_DROPITEM_LOG_LEVEL",
     "DEFAULT_ITEM_CLASS",
     "DEFAULT_REQUEST_HEADERS",
-    "DELAYED_REQUESTS_WARN_THRESHOLD",
     "DEPTH_LIMIT",
     "DEPTH_PRIORITY",
     "DEPTH_STATS_VERBOSE",
@@ -299,8 +298,6 @@ DEFAULT_REQUEST_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en",
 }
-
-DELAYED_REQUESTS_WARN_THRESHOLD = 500
 
 DEPTH_LIMIT = 0
 DEPTH_PRIORITY = 0
