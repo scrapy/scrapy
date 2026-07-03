@@ -166,9 +166,14 @@ until it is back to the configured value. A new trigger resets the countdown.
 
 This exponential-increase / linear-decrease pattern, similar to TCP congestion
 control, makes a scope back off quickly when a server is unhappy and return to
-full speed gradually once it recovers. To keep a scope hovering around a target
-rate instead of repeatedly probing and backing off, enable :ref:`rampup
-<rampup>`.
+full speed gradually once it recovers.
+
+Backoff only ever *tightens* a scope, and recovery never goes past the
+configured value: the delay can grow above the configured ``"delay"`` and then
+recover back down to it, but never below it, and backoff never raises the
+concurrency limit. So set the ``"delay"`` and ``"concurrency"`` you actually
+want for a scope; backoff makes things gentler from there when a server pushes
+back, and returns to those values once it recovers.
 
 Backoff triggers are detected by the
 :class:`~scrapy.downloadermiddlewares.backoff.BackoffMiddleware`, a built-in
@@ -210,61 +215,6 @@ overrides :setting:`BACKOFF_EXCEPTIONS`, ``delay_factor`` overrides
 it. So a scope can, for example, treat an extra status code as a backoff
 trigger, or stop treating one of the defaults as a trigger, independently of
 every other scope.
-
-.. _rampup:
-
-Rampup
-======
-
-When using APIs that charge per request, like web scraping APIs, you often want
-to maximize throughput while staying within rate limits. To do that, set
-``"rampup"`` to ``True`` in :setting:`THROTTLING_SCOPES`:
-
-.. code-block:: python
-    :caption: ``settings.py``
-
-    THROTTLING_SCOPES = {
-        "api.toscrape.com": {
-            "rampup": True,
-        },
-    }
-
-Rampup increases concurrency or lowers delay as needed based on the following
-setting:
-
--   .. setting:: RAMPUP_BACKOFF_TARGET
-
-    :setting:`RAMPUP_BACKOFF_TARGET` (default: ``1``)
-
-    Target number of backoff responses per :setting:`BACKOFF_WINDOW` that
-    :ref:`rampup <rampup>` aims for when probing the rate limit of a scope.
-
-For every :setting:`BACKOFF_WINDOW` that stays **below**
-:setting:`RAMPUP_BACKOFF_TARGET` backoff triggers, rampup increases throughput
-one step: it first lowers the delay, and once the delay reaches its minimum it
-raises the concurrency limit of the scope. Windows that reach or exceed the
-target do not ramp up; the rate is
-reduced by normal :ref:`backoff <backoff>` (which grows the delay) instead.
-Rampup only ever probes upward, so the rate settles around the most throughput
-a scope allows while triggering fewer than :setting:`RAMPUP_BACKOFF_TARGET`
-rate-limit responses per window.
-
-Rampup behavior can be fine-tuned per scope by giving ``"rampup"`` a dict
-instead of ``True``:
-
-.. code-block:: python
-    :caption: ``settings.py``
-
-    THROTTLING_SCOPES = {
-        "api.toscrape.com": {
-            "rampup": {
-                "backoff_target": 1,  # overrides RAMPUP_BACKOFF_TARGET
-                "delay_factor": 0.5,  # multiply the delay by this on each ramp-up step
-                "min_delay": 0.05,  # do not ramp the delay below this
-            },
-        },
-    }
-
 
 .. _retry-after:
 .. _rate-limiting-headers:
@@ -485,9 +435,6 @@ following keys:
 ``window`` (:class:`float`)
     Quota window in seconds. Defaults to :setting:`THROTTLING_WINDOW`.
 
-``rampup`` (:class:`bool` or :class:`dict`)
-    Enables :ref:`rampup <rampup>` for the scope.
-
 ``backoff`` (:class:`~scrapy.throttling.BackoffConfig`)
     Per-scope :ref:`backoff overrides <per-scope-backoff>`.
 
@@ -572,11 +519,10 @@ as a string):
     THROTTLING_SCOPE_MANAGER = "myproject.throttling.MyThrottlingScopeManager"
 
 For each throttling scope, an instance of this class is created to manage any
-gradual :ref:`backoff <backoff>` or :ref:`rampup <rampup>` required at run
-time.
+gradual :ref:`backoff <backoff>` required at run time.
 
 You can implement your own throttling scope manager if you wish to change the
-backoff or rampup behavior beyond what settings allow.
+backoff behavior beyond what settings allow.
 
 You can also define a custom throttling scope manager for a specific throttling
 scope by setting the ``"manager"`` key in the :setting:`THROTTLING_SCOPES`
@@ -984,9 +930,9 @@ Additional settings
 
     :setting:`BACKOFF_WINDOW` (default: ``60.0``)
 
-    Time window, in seconds, used by :ref:`backoff <backoff>` and
-    :ref:`rampup <rampup>`. During backoff, a :ref:`throttling scope
-    <throttling-scopes>` must go this many seconds without a new backoff
+    Time window, in seconds, used by :ref:`backoff <backoff>`. A
+    :ref:`throttling scope <throttling-scopes>` must go this many seconds
+    without a new backoff
     trigger (an HTTP error code from :setting:`BACKOFF_HTTP_CODES` or an
     exception from :setting:`BACKOFF_EXCEPTIONS`) before its delay decreases
     by one :setting:`BACKOFF_DELAY_FACTOR` step toward the configured value.
@@ -1061,8 +1007,6 @@ API
 .. autoclass:: scrapy.throttling.ThrottlingScopeConfig
 
 .. autoclass:: scrapy.throttling.BackoffConfig
-
-.. autoclass:: scrapy.throttling.RampupConfig
 
 .. autofunction:: scrapy.throttling.scope_cache
 .. autofunction:: scrapy.throttling.add_scope

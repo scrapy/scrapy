@@ -46,20 +46,6 @@ class BackoffConfig(TypedDict, total=False):
     jitter: float | list[float]
 
 
-class RampupConfig(TypedDict, total=False):
-    """Per-scope override of the rampup settings.
-
-    Used as the value of the ``"rampup"`` key of :class:`ThrottlingScopeConfig`
-    entries when fine-tuning rampup beyond a plain ``True``. Any key left out
-    falls back to its default (or, for ``backoff_target``, to
-    :setting:`RAMPUP_BACKOFF_TARGET`).
-    """
-
-    backoff_target: float
-    delay_factor: float
-    min_delay: float
-
-
 class ThrottlingScopeConfig(TypedDict, total=False):
     """Accepted keys of :setting:`THROTTLING_SCOPES` entries.
 
@@ -78,7 +64,6 @@ class ThrottlingScopeConfig(TypedDict, total=False):
 
     quota: float
     window: float
-    rampup: bool | RampupConfig
 
     manager: str | type
     """Import path or class of a custom :setting:`THROTTLING_SCOPE_MANAGER` for
@@ -214,8 +199,7 @@ def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
 
     :setting:`CONCURRENT_REQUESTS` caps the total number of requests in flight,
     so a per-scope (or per-domain) concurrency limit above it can never be
-    reached. Rampup is not flagged: it has no configured ceiling and simply
-    grows toward :setting:`CONCURRENT_REQUESTS`.
+    reached.
     """
     global_concurrency = settings.getint("CONCURRENT_REQUESTS")
     offenders: list[str] = [
@@ -991,11 +975,6 @@ class ThrottlingScopeManagerProtocol(Protocol):
                 "min_delay": 5.0,
                 "jitter": [0.01, 0.33],
             },
-            "rampup": {
-                "backoff_target": 1,
-                "delay_factor": 0.5,
-                "min_delay": 0.05,
-            },
         }
 
     """
@@ -1128,8 +1107,8 @@ class ThrottlingScopeManager:
     """The default :setting:`THROTTLING_SCOPE_MANAGER` class.
 
     It implements a per-scope state machine covering delay, exponential
-    :ref:`backoff <backoff>`, :ref:`rampup <rampup>`, concurrency and
-    :ref:`quotas <throttling-quotas>`:
+    :ref:`backoff <backoff>`, concurrency and :ref:`quotas
+    <throttling-quotas>`:
 
     -   A base delay (the scope ``"delay"`` config, defaulting to
         :setting:`DOWNLOAD_DELAY`) is enforced between consecutive requests for
@@ -1147,14 +1126,8 @@ class ThrottlingScopeManager:
     -   After :setting:`BACKOFF_WINDOW` seconds without a new trigger, the delay
         recovers one step at a time back towards the base delay.
 
-    -   When the scope is configured with a ``"concurrency"`` limit (or with
-        ``"rampup"``), no more than that many requests are allowed in flight at
-        once.
-
-    -   When the scope sets ``"rampup": True``, throughput is increased every
-        :setting:`BACKOFF_WINDOW` that stays under :setting:`RAMPUP_BACKOFF_TARGET`
-        backoff triggers, first by lowering the delay and then by raising the
-        concurrency limit.
+    -   When the scope is configured with a ``"concurrency"`` limit, no more
+        than that many requests are allowed in flight at once.
 
     -   When the scope is configured with a ``"quota"``, no more than that much
         quota is consumed per ``"window"`` (default: :setting:`THROTTLING_WINDOW`).
@@ -1208,27 +1181,12 @@ class ThrottlingScopeManager:
         )
         self._window: float = settings.getfloat("BACKOFF_WINDOW")
 
-        # Rampup.
-        rampup = config.get("rampup")
-        self._rampup_enabled: bool = bool(rampup)
-        rampup_config: dict[str, Any] = rampup if isinstance(rampup, dict) else {}
-        self._rampup_target: float = float(
-            rampup_config.get(
-                "backoff_target", settings.getfloat("RAMPUP_BACKOFF_TARGET")
-            )
-        )
-        self._rampup_delay_factor: float = float(rampup_config.get("delay_factor", 0.5))
-        self._rampup_min_delay: float = float(rampup_config.get("min_delay", 0.0))
-
         # Concurrency. ``None`` means no scope-level limit (the downloader slots
         # enforce concurrency instead); a limit is only set when configured
-        # explicitly or implied by rampup.
+        # explicitly.
         configured_concurrency = config.get("concurrency")
         if configured_concurrency is not None:
             self._concurrency: int | None = int(configured_concurrency)
-        elif self._rampup_enabled:
-            # Rampup starts conservative at a single slot and probes upward.
-            self._concurrency = 1
         else:
             self._concurrency = _default_scope_concurrency(settings) or None
         # Used as the load denominator when the scope enforces no explicit
@@ -1253,8 +1211,6 @@ class ThrottlingScopeManager:
         self._slot_waiters: list[Deferred[None]] = []
         self._consumed: float = 0.0
         self._quota_window_start: float | None = None
-        self._rampup_window_start: float | None = None
-        self._rampup_backoffs: int = 0
 
     @staticmethod
     def _now(now: float | None) -> float:
@@ -1316,45 +1272,6 @@ class ThrottlingScopeManager:
                 break
             self._delay = max(self._base_delay, self._delay / self._delay_factor)
 
-    def _maybe_rampup(self, now: float) -> None:
-        """Increase throughput once per :setting:`BACKOFF_WINDOW` that stays
-        under :setting:`RAMPUP_BACKOFF_TARGET` backoff triggers."""
-        if not self._rampup_enabled:
-            return
-        if self._window <= 0:
-            # No window: no rampup cadence to step (would spin).
-            return
-        if self._rampup_window_start is None:
-            self._rampup_window_start = now
-            return
-        if now - self._rampup_window_start < self._window:
-            return
-        # Catch up with elapsed time but apply at most one ramp step per call: a
-        # scope that stayed idle for several windows must not ramp up
-        # cumulatively once it becomes active again (that would collapse the
-        # delay or jump the concurrency limit by several steps at once).
-        elapsed_windows = int((now - self._rampup_window_start) // self._window)
-        self._rampup_window_start += elapsed_windows * self._window
-        if self._rampup_backoffs < self._rampup_target:
-            self._rampup_step()
-        self._rampup_backoffs = 0
-
-    def _rampup_step(self) -> None:
-        # Backoff in progress: let it recover before probing again.
-        if self._backoff_level > 0:
-            return
-        if self._delay > self._rampup_min_delay:
-            # Lower only the effective delay while probing for headroom; the
-            # configured base delay is left untouched so it stays the recovery
-            # target on backoff and the value reported by get_base_delay().
-            self._delay = max(
-                self._rampup_min_delay, self._delay * self._rampup_delay_factor
-            )
-        else:
-            # Rampup is only enabled with a concurrency limit set.
-            assert self._concurrency is not None
-            self._concurrency += 1
-
     def _maybe_reset_quota(self, now: float) -> None:
         if self._quota is None:
             return
@@ -1372,10 +1289,7 @@ class ThrottlingScopeManager:
 
     def can_send(self, now: float | None = None, amount: float | None = None) -> float:
         # can_send() only refreshes passive, time-based state (backoff recovery
-        # and the quota window) to reflect the current time; it performs no
-        # active throughput probing. That way a readiness check (is_ready() /
-        # get_time_until_ready()) has no side effect on the send rate: rampup
-        # only advances on an actual send, from record_sent().
+        # and the quota window) to reflect the current time.
         now = self._now(now)
         self._recover(now)
         self._maybe_reset_quota(now)
@@ -1402,9 +1316,6 @@ class ThrottlingScopeManager:
         self._last_seen = now
         if self._in_backoff_until is not None and now >= self._in_backoff_until:
             self._in_backoff_until = None
-        # An actual send is the cue to probe for more throughput (rampup),
-        # rather than a mere readiness check; see can_send().
-        self._maybe_rampup(now)
         self._next_allowed_time = now + self._effective_delay()
         self._active += 1
         if self._quota is not None and amount is not None:
@@ -1457,7 +1368,6 @@ class ThrottlingScopeManager:
         self._last_seen = now
         self._last_backoff_time = now
         self._backoff_level += 1
-        self._rampup_backoffs += 1
         if delay is not None:
             # A hard delay (e.g. a Retry-After header) is a one-time gate: hold
             # the scope back for at least this long *once*, matching the HTTP

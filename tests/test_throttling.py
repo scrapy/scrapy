@@ -638,16 +638,6 @@ class TestThrottlingScopeManager:
         assert scope.can_send(now=1.0, amount=5.0) == 0.0
         assert scope._consumed == 0.0
 
-    def test_zero_window_disables_rampup(self):
-        # A non-positive window must not make _maybe_rampup spin forever; rampup
-        # is simply disabled.
-        scope = _scope_manager(
-            settings={"BACKOFF_WINDOW": 0}, config={"id": "x", "rampup": True}
-        )
-        scope.can_send(now=0.0)
-        scope.can_send(now=10_000.0)
-        assert scope._concurrency == scope._min_concurrency
-
     def test_set_concurrency_fires_slot_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
         scope.record_sent(now=0.0)
@@ -710,42 +700,6 @@ class TestThrottlingScopeManager:
         scope.record_sent(now=0.0, amount=2.0)
         scope.reconcile_quota(remaining=3.0, now=0.0)
         assert scope._consumed == pytest.approx(7.0)
-
-    def test_rampup_lowers_delay_when_quiet(self):
-        scope = _scope_manager(
-            {"BACKOFF_WINDOW": 10.0, "RANDOMIZE_DOWNLOAD_DELAY": False},
-            {
-                "id": "x",
-                "delay": 4.0,
-                "rampup": {"delay_factor": 0.5, "min_delay": 0.5},
-            },
-        )
-        scope.can_send(now=0.0)  # start the rampup window
-        # A quiet window (no backoff) lowers the delay.
-        scope.can_send(now=10.0)
-        assert scope._delay == pytest.approx(2.0)
-        scope.can_send(now=20.0)
-        assert scope._delay == pytest.approx(1.0)
-
-    def test_rampup_raises_concurrency_at_min_delay(self):
-        scope = _scope_manager(
-            {"BACKOFF_WINDOW": 10.0},
-            {"id": "x", "delay": 0.0, "rampup": True, "min_concurrency": 1},
-        )
-        assert scope._concurrency == 1
-        scope.can_send(now=0.0)
-        scope.can_send(now=10.0)
-        assert scope._concurrency == 2
-
-    def test_rampup_holds_when_target_met(self):
-        scope = _scope_manager(
-            {"BACKOFF_WINDOW": 10.0, "RAMPUP_BACKOFF_TARGET": 1},
-            {"id": "x", "delay": 0.0, "rampup": True, "min_concurrency": 1},
-        )
-        scope.can_send(now=0.0)
-        scope.record_backoff(now=1.0)  # one trigger == target -> hold, do not probe
-        scope.can_send(now=10.0)
-        assert scope._concurrency == 1
 
 
 class TestThrottlingManagerReadiness:
@@ -1129,12 +1083,6 @@ class TestThrottlingScopeManagerEdges:
         # A randomized base delay lands within [0.5, 1.5] * delay.
         assert 1.0 <= scope.can_send(now=0.0) <= 3.0
 
-    def test_rampup_target_as_range(self):
-        scope = _scope_manager(
-            config={"id": "x", "rampup": {"backoff_target": [1, 3]}},
-        )
-        assert scope._rampup_target == (1.0, 3.0)
-
     def test_record_done_without_active(self):
         scope = _scope_manager(config={"id": "x"})
         # Calling record_done() with nothing in flight is a harmless no-op.
@@ -1159,14 +1107,6 @@ class TestThrottlingScopeManagerEdges:
         scope.set_base_delay(0.5)
         assert scope._base_delay == 0.5
         assert scope._delay == backoff_delay
-
-    def test_rampup_step_held_during_backoff(self):
-        scope = _scope_manager(config={"id": "x", "delay": 4.0, "rampup": True})
-        scope._backoff_level = 1
-        before = scope._delay
-        scope._rampup_step()
-        # A rampup probe is skipped while a backoff is in progress.
-        assert scope._delay == before
 
     def test_record_sent_clears_expired_backoff(self):
         scope = _scope_manager(config={"id": "x"})
