@@ -7,10 +7,10 @@ from urllib.parse import urljoin, urlparse
 from w3lib.url import safe_url_string
 
 from scrapy import signals
-from scrapy.downloadermiddlewares.backoff import _parse_retry_after
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
 from scrapy.spidermiddlewares.referer import RefererMiddleware
+from scrapy.utils._headers import _parse_retry_after
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import global_object_name

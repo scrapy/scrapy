@@ -162,9 +162,6 @@ class _DeprecatedSlotView:
     def __repr__(self) -> str:
         return f"_DeprecatedSlotView({self._key!r})"
 
-    def __str__(self) -> str:
-        return f"_DeprecatedSlotView({self._key!r})"
-
 
 class _DeprecatedSlotsView(Mapping[str, _DeprecatedSlotView]):
     """Deprecated mapping view of active downloads, keyed by slot name."""

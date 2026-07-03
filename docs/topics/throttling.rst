@@ -75,15 +75,15 @@ behavior for specific domains [1]_.
 It is a dict that maps scope names to
 :class:`~scrapy.throttling.ThrottlingScopeConfig` dicts. It is empty by default.
 
-:command:`startproject` scaffolds an entry for the testing websites used during
-the :ref:`tutorial <intro-tutorial>`, so that they are crawled faster while the
-:ref:`conservative defaults <basic-throttling>` still apply to other domains:
+:command:`startproject` scaffolds a commented-out example entry, so that you can
+uncomment and edit it to crawl domains you own (or that are meant for scraping)
+faster, while the :ref:`conservative defaults <basic-throttling>` still apply to
+other domains:
 
 .. code-block:: python
 
     THROTTLING_SCOPES = {
-        "books.toscrape.com": {"concurrency": 16, "delay": 0.1},
-        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
+        "example.com": {"concurrency": 16, "delay": 0.1},
     }
 
 Additional keys like ``"jitter"`` and ``"backoff"`` can be used here and are

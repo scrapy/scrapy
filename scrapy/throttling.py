@@ -1277,8 +1277,7 @@ class ThrottlingScopeManager:
         if self._backoff_level == 0 or self._last_backoff_time is None:
             return
         if self._window <= 0:
-            # A non-positive window has no recovery cadence to step through (and
-            # would spin forever on a zero-length step), so recover at once.
+            # No window: no recovery cadence to step (would spin); recover at once.
             self._backoff_level = 0
             self._delay = self._base_delay
             self._in_backoff_until = None
@@ -1300,8 +1299,7 @@ class ThrottlingScopeManager:
         if not self._rampup_enabled:
             return
         if self._window <= 0:
-            # No window means no cadence to ramp up on (and a zero-length step
-            # would spin forever).
+            # No window: no rampup cadence to step (would spin).
             return
         if self._rampup_window_start is None:
             self._rampup_window_start = now
@@ -1338,8 +1336,7 @@ class ThrottlingScopeManager:
         if self._quota is None:
             return
         if self._quota_window <= 0:
-            # A non-positive window has no reset cadence to step through (and
-            # would spin forever on a zero-length step), so keep it reset.
+            # No window: no reset cadence to step (would spin); keep it reset.
             self._consumed = 0.0
             self._quota_window_start = now
             return
