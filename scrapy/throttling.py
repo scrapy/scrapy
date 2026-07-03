@@ -19,7 +19,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.asyncio import sleep, wait_for_first
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.misc import _load_objects, build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -124,14 +124,6 @@ def iter_scope_values(scopes: RequestScopes) -> Iterable[tuple[ScopeID, float | 
         return
     for scope in scopes:
         yield scope, None
-
-
-def _load_exceptions(exceptions: Iterable[Any]) -> tuple[type[BaseException], ...]:
-    """Resolve *exceptions* (exception classes or their import paths) to a tuple
-    of exception classes."""
-    return tuple(
-        load_object(exc) if isinstance(exc, str) else exc for exc in exceptions
-    )
 
 
 def _effective_priority(settings: BaseSettings, name: str) -> int:
@@ -1180,7 +1172,7 @@ class ThrottlingScopeManager:
                 "http_codes", settings.getlist("BACKOFF_HTTP_CODES")
             )
         }
-        self._backoff_exceptions: tuple[type[BaseException], ...] = _load_exceptions(
+        self._backoff_exceptions: tuple[type[BaseException], ...] = _load_objects(
             backoff.get("exceptions", settings.getlist("BACKOFF_EXCEPTIONS"))
         )
         self._window: float = settings.getfloat("BACKOFF_WINDOW")

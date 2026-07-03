@@ -237,10 +237,6 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
-        # Mirror pop(): at a given priority it drains the regular queue before
-        # the start queue, so peek() must report the regular head first for the
-        # two to agree on "the next request" (a throttling-aware queue relies on
-        # this to check readiness of the exact request pop() will return).
         try:
             queue = self.queues[self.curprio]
         except KeyError:
@@ -509,17 +505,17 @@ class ThrottlingAwarePriorityQueue:
         self.key: str = key
         self.crawler: Crawler = crawler
 
-        # scope set -> priority queue
         self.pqueues: dict[frozenset[ScopeID], ScrapyPriorityQueue] = {}
-        # Min-heap of (deadline, seq, scope_set, request) for requests held back
-        # by a per-request throttling_delay; seq keeps ordering stable and
-        # avoids comparing requests when deadlines tie.
-        self._delayed: list[tuple[float, int, frozenset[ScopeID], Request]] = []
-        self._delayed_seq: int = 0
         if slot_startprios:
             for set_key, startprios in slot_startprios.items():
                 scope_set = _scope_set_from_key(set_key)
                 self.pqueues[scope_set] = self.pqfactory(scope_set, startprios)
+
+        # Min-heap of (deadline, seq, scope_set, request) for requests held
+        # back by a per-request throttling_delay; seq keeps ordering stable and
+        # avoids comparing requests when deadlines tie.
+        self._delayed: list[tuple[float, int, frozenset[ScopeID], Request]] = []
+        self._delayed_seq: int = 0
 
     def pqfactory(
         self, scope_set: frozenset[ScopeID], startprios: Iterable[int] = ()

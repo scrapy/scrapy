@@ -44,7 +44,6 @@ class AutoThrottle:
                 f"AUTOTHROTTLE_TARGET_CONCURRENCY "
                 f"({self.target_concurrency!r}) must be higher than 0."
             )
-        # Scopes whose start delay has already been applied (see _scope_delay).
         self._started_scopes: set[str] = set()
         crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(
@@ -81,11 +80,6 @@ class AutoThrottle:
         ):
             return
 
-        # AutoThrottle predates throttling scopes, so it adjusts the delay of
-        # the request's domain scope, matching its historical per-domain slots.
-        # Key by hostname (not netloc) to match the default ThrottlingManager
-        # scope, so the adjusted delay applies to the scope actually enforced
-        # even for non-default ports.
         scope_id = urlparse_cached(request).hostname or ""
         olddelay = self._scope_delay(throttler, scope_id)
         newdelay = self._adjust_delay(olddelay, latency, response)

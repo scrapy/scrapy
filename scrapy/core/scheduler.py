@@ -516,7 +516,7 @@ def _queue_supports_peek(queue_cls: type) -> bool:
 
 
 class ThrottlingAwareScheduler(Scheduler):
-    """A :class:`Scheduler` that only ever hands the engine requests whose
+    """A :setting:`SCHEDULER` that only ever hands the engine requests whose
     :ref:`throttling scopes <throttling-scopes>` allow them to be sent **right
     now**.
 

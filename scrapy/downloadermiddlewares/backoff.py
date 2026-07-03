@@ -4,9 +4,10 @@ import logging
 from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
-from scrapy.throttling import _load_exceptions, iter_scopes
+from scrapy.throttling import iter_scopes
 from scrapy.utils._headers import _parse_ratelimit_reset, _parse_retry_after
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.misc import _load_objects
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -37,25 +38,20 @@ class BackoffMiddleware:
     See :ref:`throttling` for details.
     """
 
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        return cls(crawler)
+
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("BACKOFF_ENABLED"):
             raise NotConfigured
-        # Throttling is a core, always-on subsystem: THROTTLING_MANAGER has a
-        # non-None default and is instantiated before the downloader is built,
-        # so crawler.throttler is always set here (the engine likewise asserts
-        # it in its download path).
         assert crawler.throttler is not None
         self._throttler: ThrottlingManagerProtocol = crawler.throttler
         settings = crawler.settings
-        # Union of the global backoff triggers and every per-scope override: a
-        # response status (or exception type) outside it cannot trigger backoff
-        # for any scope, so the scopes of such a request need not be resolved.
-        # Each scope still makes the final decision via its scope manager's
-        # triggers_backoff_* methods (which read the per-scope overrides).
         self._http_codes: set[int] = {
             int(code) for code in settings.getlist("BACKOFF_HTTP_CODES")
         }
-        self._exceptions: tuple[type[BaseException], ...] = _load_exceptions(
+        self._exceptions: tuple[type[BaseException], ...] = _load_objects(
             settings.getlist("BACKOFF_EXCEPTIONS")
         )
         for scope_config in settings.getdict("THROTTLING_SCOPES").values():
@@ -63,11 +59,7 @@ class BackoffMiddleware:
             if "http_codes" in backoff:
                 self._http_codes.update(int(code) for code in backoff["http_codes"])
             if "exceptions" in backoff:
-                self._exceptions += _load_exceptions(backoff["exceptions"])
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler)
+                self._exceptions += _load_objects(backoff["exceptions"])
 
     @_warn_spider_arg
     def process_response(
