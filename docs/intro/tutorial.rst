@@ -130,6 +130,29 @@ and defines some attributes and methods:
   the scraped data as dicts and also finding new URLs to
   follow and creating new requests (:class:`~scrapy.Request`) from them.
 
+Crawling faster for this tutorial
+---------------------------------
+
+By default, Scrapy :ref:`throttles <throttling>` crawls to be polite: it sends
+at most one request at a time to each website, waiting one second between
+requests. That keeps you from overwhelming websites, but it also makes crawling
+slow, and it means the requests above are sent one after another rather than in
+parallel.
+
+``quotes.toscrape.com`` is a sandbox meant for scraping practice, so we can
+safely crawl it faster. Open ``tutorial/settings.py`` and add a
+:setting:`THROTTLING_SCOPES` entry that raises the concurrency and lowers the
+delay for that domain only:
+
+.. code-block:: python
+
+    THROTTLING_SCOPES = {
+        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
+    }
+
+The polite defaults still apply to every other website. Remove this entry once
+you move on to crawling your own sites.
+
 How to run our spider
 ---------------------
 

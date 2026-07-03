@@ -7,6 +7,7 @@ import pytest
 from scrapy import signals
 from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Request, Response
+from scrapy.settings import default_settings
 from scrapy.throttling import (
     ThrottlingManager,
     ThrottlingScopeManager,
@@ -56,6 +57,18 @@ class _FakeRobotParser:
 def _response(status=200, headers=None, url="http://example.com", meta=None):
     request = Request(url, meta=meta or {})
     return Response(url, status=status, headers=headers or {}, request=request)
+
+
+def test_deprecated_concurrency_defaults_differ():
+    """``_warn_on_deprecated_concurrency`` emits a warn-then-flip message that
+    only makes sense while the two concurrency defaults differ (otherwise it
+    reads "will drop from N to N"). Guard that invariant here so that lowering
+    the deprecated default to match is caught by the test suite instead of
+    shipping a bogus warning or aborting a crawl."""
+    assert (
+        default_settings.CONCURRENT_REQUESTS_PER_DOMAIN
+        != default_settings.THROTTLING_SCOPE_CONCURRENCY
+    )
 
 
 class TestThrottlingManager:

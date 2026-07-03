@@ -104,13 +104,7 @@ def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
     this helper normalizes any of those into an iterable of scope IDs, e.g. to
     react to a request's scopes in a custom middleware.
     """
-    if scopes is None:
-        return ()
-    if isinstance(scopes, str):
-        return (scopes,)
-    if isinstance(scopes, dict):
-        return scopes.keys()
-    return iter(scopes)
+    return (scope for scope, _ in iter_scope_values(scopes))
 
 
 def iter_scope_values(scopes: RequestScopes) -> Iterable[tuple[ScopeID, float | None]]:
@@ -197,17 +191,12 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
             stacklevel=2,
         )
     elif not scope_set:
+        # This warn-then-flip message only makes sense while the two defaults
+        # differ (otherwise it reads "will drop from 1 to 1"). That invariant is
+        # guarded by test_deprecated_concurrency_defaults_differ rather than at
+        # run time, so a crawl is never aborted over it.
         current = settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
         future = settings.getint("THROTTLING_SCOPE_CONCURRENCY")
-        # This warning only makes sense while the two defaults differ. If the
-        # default of the deprecated CONCURRENT_REQUESTS_PER_DOMAIN is lowered to
-        # match THROTTLING_SCOPE_CONCURRENCY before this branch is merged, the
-        # message becomes nonsensical ("will change from 1 to 1"); fail loudly
-        # here so it is revisited rather than shipping a bogus warning.
-        assert current != future, (
-            "CONCURRENT_REQUESTS_PER_DOMAIN and THROTTLING_SCOPE_CONCURRENCY now "
-            "share the same default; drop this warn-then-flip warning."
-        )
         warnings.warn(
             f"The effective per-scope (per-domain) concurrency is {current}, "
             f"the default of the deprecated CONCURRENT_REQUESTS_PER_DOMAIN "
@@ -727,9 +716,7 @@ class ThrottlingManager:
                 manager for manager, _ in managers if manager.concurrency_blocked()
             ]
             if not blocked:
-                for manager, value in managers:
-                    manager.record_sent(amount=value)
-                self._reserved[request] = managers
+                self._record_reservation(request, managers)
                 return
             if self._debug:
                 logger.debug(
@@ -737,6 +724,18 @@ class ThrottlingManager:
                     f"(scopes: {[scope_id for scope_id, _ in scope_values]})"
                 )
             await self._wait_for_slot(blocked)
+
+    def _record_reservation(
+        self,
+        request: Request,
+        managers: list[tuple[ThrottlingScopeManagerProtocol, float | None]],
+    ) -> None:
+        """Record a send on each of *request*'s scope *managers* and mark
+        *request* as reserved, so :meth:`release` can later free the slots. This
+        is the shared tail of :meth:`acquire` and :meth:`reserve`."""
+        for manager, value in managers:
+            manager.record_sent(amount=value)
+        self._reserved[request] = managers
 
     def release(self, request: Request) -> None:
         managers = self._reserved.pop(request, None)
@@ -769,9 +768,7 @@ class ThrottlingManager:
             (self.get_scope_manager(scope_id), value)
             for scope_id, value in self._cached_scope_values(request)
         ]
-        for manager, value in managers:
-            manager.record_sent(amount=value)
-        self._reserved[request] = managers
+        self._record_reservation(request, managers)
 
     def get_time_until_ready(self, request: Request) -> float | None:
         now = time.monotonic()
@@ -806,14 +803,19 @@ class ThrottlingManager:
 
     async def _delay_request(self, request: Request) -> None:
         """Honor the :reqmeta:`throttling_delay` meta key by holding *request*
-        for the requested number of seconds the first time it is processed."""
-        delay = request.meta.get("throttling_delay")
-        if not delay or request.meta.get("_throttling_delayed"):
+        for the requested number of seconds the first time it is processed.
+
+        This is the blocking (:meth:`acquire`) counterpart of
+        :meth:`_request_delay_deadline`, which the readiness API polls instead;
+        both share the deadline bookkeeping and the one-time debug log. Here the
+        deadline is honored by sleeping until it, then marking the delay as
+        consumed so the request is never held again."""
+        now = time.monotonic()
+        wait = self._request_delay_deadline(request, now) - now
+        if wait <= 0:
             return
+        await sleep(wait)
         request.meta["_throttling_delayed"] = True
-        if self._debug:
-            logger.debug(f"Holding {request} for {delay:.2f}s (throttling_delay)")
-        await sleep(float(delay))
 
     def _request_delay_deadline(self, request: Request, now: float) -> float:
         """Return the monotonic time before which *request* must not be sent due
@@ -1042,18 +1044,6 @@ class ThrottlingScopeManagerProtocol(Protocol):
         """Return whether *exception* triggers backoff for this scope (defaults
         to :setting:`BACKOFF_EXCEPTIONS`)."""
 
-    def get_delay(self) -> float:
-        """Return the current effective delay of this scope, in seconds,
-        including any active backoff (unlike :meth:`get_base_delay`)."""
-
-    def get_jitter(self) -> float | list[float]:
-        """Return the magnitude of the random variation applied to the delay
-        (the per-scope override of :setting:`RANDOMIZE_DOWNLOAD_DELAY`)."""
-
-    def get_concurrency(self) -> int | None:
-        """Return the maximum number of concurrent requests allowed for this
-        scope, or ``None`` when the scope enforces no explicit limit."""
-
     def get_base_delay(self) -> float:
         """Return the base (non-backoff) delay of this scope, in seconds."""
 
@@ -1167,11 +1157,14 @@ class ThrottlingScopeManager:
         self._base_delay: float = float(
             config.get("delay", settings.getfloat("DOWNLOAD_DELAY"))
         )
-        # Magnitude of the random variation applied to the (non-backoff) delay.
+        # Magnitude of the random variation applied to the (non-backoff) delay,
+        # normalized to a (low, high) multiplier range (or None for no jitter).
         # Defaults to RANDOMIZE_DOWNLOAD_DELAY's historical ±50% when delay
         # randomization is on, or to no variation when it is off.
-        self._jitter: float | list[float] = config.get(
-            "jitter", 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
+        self._jitter: tuple[float, float] | None = self._normalize_jitter(
+            config.get(
+                "jitter", 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
+            )
         )
         self._delay_factor: float = float(
             backoff.get("delay_factor", settings.getfloat("BACKOFF_DELAY_FACTOR"))
@@ -1182,8 +1175,8 @@ class ThrottlingScopeManager:
         self._min_delay: float = float(
             backoff.get("min_delay", settings.getfloat("BACKOFF_MIN_DELAY"))
         )
-        self._backoff_jitter: float | list[float] = backoff.get(
-            "jitter", settings.getfloat("BACKOFF_JITTER")
+        self._backoff_jitter: tuple[float, float] | None = self._normalize_jitter(
+            backoff.get("jitter", settings.getfloat("BACKOFF_JITTER"))
         )
         # Which responses/exceptions trigger backoff for this scope. Each
         # defaults to the matching global BACKOFF_* setting (see
@@ -1252,13 +1245,28 @@ class ThrottlingScopeManager:
         return time.monotonic() if now is None else now
 
     @staticmethod
-    def _apply_jitter(value: float, jitter: float | list[float]) -> float:
+    def _normalize_jitter(
+        jitter: float | list[float],
+    ) -> tuple[float, float] | None:
+        """Normalize a ``jitter`` config value to a ``(low, high)`` multiplier
+        range, or ``None`` when no jitter applies.
+
+        A scalar ``j`` means the symmetric range ``(-j, +j)``, so that
+        ``value * (1 + uniform(-j, +j))`` matches the historical
+        ``value * uniform(1 - j, 1 + j)``; a list/tuple is taken as an explicit
+        ``[low, high]`` range.
+        """
         if isinstance(jitter, (list, tuple)):
-            low, high = jitter[0], jitter[1]
-            return value * (1 + random.uniform(low, high))  # noqa: S311
+            return (float(jitter[0]), float(jitter[1]))
         if not jitter:
+            return None
+        return (-float(jitter), float(jitter))
+
+    @staticmethod
+    def _apply_jitter(value: float, jitter: tuple[float, float] | None) -> float:
+        if jitter is None:
             return value
-        return value * random.uniform(1 - jitter, 1 + jitter)  # noqa: S311
+        return value * (1 + random.uniform(*jitter))  # noqa: S311
 
     def _effective_delay(self) -> float:
         # ``self._delay`` is the deterministic delay (the base delay, or the
@@ -1473,15 +1481,6 @@ class ThrottlingScopeManager:
 
     def triggers_backoff_for_exception(self, exception: BaseException) -> bool:
         return isinstance(exception, self._backoff_exceptions)
-
-    def get_delay(self) -> float:
-        return self._delay
-
-    def get_jitter(self) -> float | list[float]:
-        return self._jitter
-
-    def get_concurrency(self) -> int | None:
-        return self._concurrency
 
     def get_base_delay(self) -> float:
         return self._base_delay
