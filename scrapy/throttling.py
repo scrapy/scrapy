@@ -134,6 +134,14 @@ def _load_exceptions(exceptions: Iterable[Any]) -> tuple[type[BaseException], ..
     )
 
 
+def _effective_priority(settings: BaseSettings, name: str) -> int:
+    """Return the priority of setting *name*, treating an unset setting (no
+    priority, ``None``) as just below ``"default"`` so it never wins over one
+    that is at least at its default value."""
+    priority = settings.getpriority(name)
+    return SETTINGS_PRIORITIES["default"] - 1 if priority is None else priority
+
+
 def _default_scope_concurrency(settings: BaseSettings) -> int:
     """Return the default concurrency of a throttling scope that does not set
     its own ``concurrency``.
@@ -147,14 +155,8 @@ def _default_scope_concurrency(settings: BaseSettings) -> int:
     :func:`_warn_on_deprecated_concurrency`).
     """
     default_priority = SETTINGS_PRIORITIES["default"]
-    # An unset setting has no priority (``None``); treat it as below "default"
-    # so it never wins over one that is at least at its default value.
-    domain_priority = settings.getpriority("CONCURRENT_REQUESTS_PER_DOMAIN")
-    domain_priority = (
-        default_priority - 1 if domain_priority is None else domain_priority
-    )
-    scope_priority = settings.getpriority("THROTTLING_SCOPE_CONCURRENCY")
-    scope_priority = default_priority - 1 if scope_priority is None else scope_priority
+    domain_priority = _effective_priority(settings, "CONCURRENT_REQUESTS_PER_DOMAIN")
+    scope_priority = _effective_priority(settings, "THROTTLING_SCOPE_CONCURRENCY")
     if domain_priority > scope_priority:
         return settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
     if scope_priority > domain_priority:
@@ -179,10 +181,13 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
     :setting:`THROTTLING_SCOPE_CONCURRENCY`'s default once the deprecated
     setting is removed, so users can pin it explicitly."""
     default_priority = SETTINGS_PRIORITIES["default"]
-    domain_priority = settings.getpriority("CONCURRENT_REQUESTS_PER_DOMAIN")
-    scope_priority = settings.getpriority("THROTTLING_SCOPE_CONCURRENCY")
-    domain_set = domain_priority is not None and domain_priority > default_priority
-    scope_set = scope_priority is not None and scope_priority > default_priority
+    domain_set = (
+        _effective_priority(settings, "CONCURRENT_REQUESTS_PER_DOMAIN")
+        > default_priority
+    )
+    scope_set = (
+        _effective_priority(settings, "THROTTLING_SCOPE_CONCURRENCY") > default_priority
+    )
     if domain_set:
         warnings.warn(
             "The CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated, use "
@@ -210,39 +215,21 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
         )
 
 
-def _to_scope_dict(collection: Any, default: Callable[[], Any]) -> dict[ScopeID, Any]:
-    """Normalize *collection* (``None``, str, iterable or dict) into a dict
-    mapping scope names to values produced by *default*."""
-    if isinstance(collection, dict):
-        return collection
-    if collection is None:
+def _to_scope_dict(scopes: RequestScopes) -> dict[ScopeID, float | None]:
+    """Normalize *scopes* (``None``, a scope id, an iterable of scope ids or a
+    ``{scope_id: quota}`` dict) into a ``{scope_id: quota}`` dict, using ``None``
+    as the quota of scopes that have none."""
+    if isinstance(scopes, dict):
+        return scopes
+    if scopes is None:
         return {}
-    if isinstance(collection, str):
-        return {collection: default()}
-    if isinstance(collection, Iterable):
-        return {scope: default() for scope in collection}
+    if isinstance(scopes, str):
+        return {scopes: None}
+    if isinstance(scopes, Iterable):
+        return dict.fromkeys(scopes)
     raise TypeError(
-        f"Invalid type ({type(collection)}) of scopes value "
-        f"{collection!r}. Expected None, str, Iterable or dict."
-    )
-
-
-def _add_bare_scope(collection: Any, scope: ScopeID, empty: Any) -> Any:
-    """Add *scope* to *collection* without any associated value, keeping the
-    most compact representation possible."""
-    if collection is None:
-        return scope
-    if isinstance(collection, str):
-        return collection if collection == scope else {collection, scope}
-    if isinstance(collection, dict):
-        if scope not in collection:
-            collection[scope] = empty
-        return collection
-    if isinstance(collection, Iterable):
-        return set(collection) | {scope} if scope not in collection else collection
-    raise TypeError(
-        f"Invalid type ({type(collection)}) of scopes value "
-        f"{collection!r}. Expected None, str, Iterable or dict."
+        f"Invalid type ({type(scopes)}) of scopes value "
+        f"{scopes!r}. Expected None, str, Iterable or dict."
     )
 
 
@@ -251,20 +238,26 @@ def add_scope(
     scope: ScopeID,
     value: float | None = None,
     /,
-) -> RequestScopes:
-    """Add *scope* to *scopes* with *value*.
+) -> dict[ScopeID, float | None]:
+    """Add *scope* to *scopes* with *value*, returning a ``{scope_id: quota}``
+    dict.
 
     This is a utility function to help extending the output of
     :meth:`~ThrottlingManagerProtocol.get_scopes`, e.g. in
     :class:`ThrottlingManager` subclasses.
+
+    Adding a scope with a *value* fails if it is already present, so an existing
+    :ref:`quota <throttling-quotas>` is never silently overwritten; adding it
+    without a value leaves any existing entry untouched.
     """
+    result = _to_scope_dict(scopes)
     if value is None:
-        return cast("RequestScopes", _add_bare_scope(scopes, scope, None))
-    scopes = _to_scope_dict(scopes, lambda: None)
-    if scope in scopes and not isinstance(scopes[scope], dict):
-        raise TypeError(f"Scope {scope!r} has a non-dict value in {scopes!r}")
-    scopes[scope] = value
-    return scopes
+        result.setdefault(scope, None)
+        return result
+    if scope in result:
+        raise TypeError(f"Scope {scope!r} already has a value in {scopes!r}")
+    result[scope] = value
+    return result
 
 
 class ThrottlingManagerProtocol(Protocol):

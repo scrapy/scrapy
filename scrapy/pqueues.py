@@ -268,21 +268,6 @@ class ScrapyPriorityQueue:
         )
 
 
-class _DownloaderInterface:
-    def __init__(self, crawler: Crawler):
-        assert crawler.throttler is not None
-        self._throttler: ThrottlingManagerProtocol = crawler.throttler
-
-    def stats(self, possible_slots: Iterable[str]) -> list[tuple[float, str]]:
-        return [(self._slot_load(slot), slot) for slot in possible_slots]
-
-    def get_slot_key(self, request: Request) -> str:
-        return self._throttler.get_slot_key(request)
-
-    def _slot_load(self, slot: str) -> float:
-        return self._throttler.get_scope_load(slot)
-
-
 class DownloaderAwarePriorityQueue:
     """PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
@@ -347,7 +332,8 @@ class DownloaderAwarePriorityQueue:
                 "queue class can be resumed."
             )
 
-        self._downloader_interface: _DownloaderInterface = _DownloaderInterface(crawler)
+        assert crawler.throttler is not None
+        self._throttler: ThrottlingManagerProtocol = crawler.throttler
         self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
         self._start_queue_cls: type[QueueProtocol] | None = start_queue_cls
         self.key: str = key
@@ -397,8 +383,11 @@ class DownloaderAwarePriorityQueue:
             start_queue_cls=self._start_queue_cls,
         )
 
+    def _slot_stats(self) -> list[tuple[float, str]]:
+        return [(self._throttler.get_scope_load(slot), slot) for slot in self.pqueues]
+
     def pop(self) -> Request | None:
-        stats = self._downloader_interface.stats(self.pqueues)
+        stats = self._slot_stats()
 
         if not stats:
             return None
@@ -411,7 +400,7 @@ class DownloaderAwarePriorityQueue:
         return request
 
     def push(self, request: Request) -> None:
-        slot = self._downloader_interface.get_slot_key(request)
+        slot = self._throttler.get_slot_key(request)
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
         queue = self.pqueues[slot]
@@ -424,7 +413,7 @@ class DownloaderAwarePriorityQueue:
         Raises :exc:`NotImplementedError` if the underlying queue class does
         not implement a ``peek`` method, which is optional for queues.
         """
-        stats = self._downloader_interface.stats(self.pqueues)
+        stats = self._slot_stats()
         if not stats:
             return None
         slot = self._next_slot(stats, update_state=False)
