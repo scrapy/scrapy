@@ -150,8 +150,7 @@ delay for that domain only:
         "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
     }
 
-The polite defaults still apply to every other website. Remove this entry once
-you move on to crawling your own sites.
+The polite defaults still apply to every other website.
 
 How to run our spider
 ---------------------
