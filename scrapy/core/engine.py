@@ -539,7 +539,7 @@ class ExecutionEngine:
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request) -> None:
-        assert self._slot is not None  # typing
+        assert self._slot is not None
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,

@@ -65,6 +65,33 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     plays a great part in determining the order in which those requests are downloaded. See :ref:`request-order`.
 
     The methods defined in this class constitute the minimal interface that the Scrapy engine will interact with.
+
+    Asynchronous API
+    ================
+
+    Beyond the minimal interface above, the engine also uses the following
+    optional members when a scheduler defines them, to support asynchronous
+    scheduling. :meth:`next_request` itself stays synchronous.
+
+    .. method:: enqueue_request_async(request)
+        :async:
+
+        Asynchronous counterpart of :meth:`enqueue_request`, following the same
+        return contract. When a scheduler defines it, the engine awaits it
+        *instead of* calling :meth:`enqueue_request`. Define it when enqueuing a
+        request needs to ``await`` (e.g. to resolve throttling scopes
+        asynchronously).
+
+    .. method:: get_next_request_delay()
+
+        Return the number of seconds until some pending request that
+        :meth:`next_request` is currently withholding for a time-based reason
+        becomes available, or ``None`` if no pending request is time-blocked.
+        When a scheduler defines it, the engine uses it to schedule a single
+        wakeup after :meth:`next_request` returns ``None`` while requests remain
+        pending, so a crawl held back only by time does not stall.
+
+    .. versionadded:: VERSION
     """
 
     @classmethod
@@ -375,12 +402,21 @@ class Scheduler(BaseScheduler):
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
-        dqok = self._dqpush(request)
+        return self._store(request)
+
+    def _store(self, request: Request, *push_args: Any) -> bool:
+        """Push *request* into the disk queue, falling back to the memory queue,
+        and increment the relevant ``scheduler/enqueued*`` stats.
+
+        Extra positional arguments are forwarded to the underlying queue
+        ``push`` calls; subclasses that store requests under additional keys
+        (e.g. a throttling scope set) pass them through here.
+        """
         assert self.stats is not None
-        if dqok:
+        if self._dqpush(request, *push_args):
             self.stats.inc_value("scheduler/enqueued/disk")
         else:
-            self._mqpush(request)
+            self._mqpush(request, *push_args)
             self.stats.inc_value("scheduler/enqueued/memory")
         self.stats.inc_value("scheduler/enqueued")
         return True
@@ -412,11 +448,11 @@ class Scheduler(BaseScheduler):
         """
         return len(self.dqs) + len(self.mqs) if self.dqs is not None else len(self.mqs)
 
-    def _dqpush(self, request: Request) -> bool:
+    def _dqpush(self, request: Request, *push_args: Any) -> bool:
         if self.dqs is None:
             return False
         try:
-            self.dqs.push(request)
+            self.dqs.push(request, *push_args)
         except ValueError as e:  # non serializable request
             if self.logunser:
                 msg = (
@@ -436,8 +472,8 @@ class Scheduler(BaseScheduler):
             return False
         return True
 
-    def _mqpush(self, request: Request) -> None:
-        self.mqs.push(request)
+    def _mqpush(self, request: Request, *push_args: Any) -> None:
+        self.mqs.push(request, *push_args)
 
     def _dqpop(self) -> Request | None:
         if self.dqs is not None:
@@ -499,37 +535,25 @@ class Scheduler(BaseScheduler):
             json.dump(state, f)
 
 
-def _queue_supports_peek(queue_cls: type) -> bool:
-    """Return whether *queue_cls* (a Scrapy queue class) is backed by an
-    underlying queue that really implements ``peek``.
-
-    Scrapy's queue wrappers in :mod:`scrapy.squeues` always define a ``peek``
-    method, but it merely delegates to the underlying queue class (e.g. a
-    queuelib one, which only gained ``peek`` in queuelib 1.6.1) and raises
-    :exc:`NotImplementedError` if that one lacks it. This checks the real
-    implementation by ignoring the delegating wrappers.
-    """
-    return any(
-        "peek" in base.__dict__ and base.__module__ != "scrapy.squeues"
-        for base in queue_cls.__mro__
-    )
-
-
 class ThrottlingAwareScheduler(Scheduler):
-    """A :setting:`SCHEDULER` that only ever hands the engine requests whose
-    :ref:`throttling scopes <throttling-scopes>` allow them to be sent **right
+    """A :setting:`SCHEDULER` that only ever hands the engine requests that
+    their :ref:`throttling scopes <throttling-scopes>` allow to be sent **right
     now**.
 
-    This avoids the head-of-line blocking that the default scheduler can suffer
-    when a crawl mixes heavily-throttled scopes with unthrottled ones: with the
-    default scheduler, requests taken from the scheduler in order wait at the
-    throttling gate
-    (:meth:`~scrapy.throttling.ThrottlingManagerProtocol.acquire`) while
-    holding a concurrency slot, so enough throttled requests waiting on a clock
-    can fill :setting:`CONCURRENT_REQUESTS` and starve unthrottled requests
-    that could be sent right away. Requests held back by this scheduler instead
-    occupy neither concurrency slots nor memory (beyond what is needed to track
-    each distinct scope set), so they cannot starve other scopes.
+    The default scheduler hands requests to the engine as concurrency allows
+    and lets them wait at the throttling gate
+    (:meth:`~scrapy.throttling.ThrottlingManagerProtocol.acquire`) while holding
+    a concurrency slot. When a crawl mixes heavily-throttled scopes with
+    unthrottled ones, enough throttled requests waiting on a clock can fill
+    :setting:`CONCURRENT_REQUESTS` and starve unthrottled requests that could be
+    sent right away. This scheduler instead withholds a request until it is
+    sendable, so held-back requests occupy neither concurrency slots nor memory
+    (beyond what is needed to track each distinct scope set) and cannot starve
+    other scopes.
+
+    It also honors the per-request :reqmeta:`throttling_delay`, holding an
+    individual request back without blocking others that share its scopes, which
+    the default scheduler cannot do.
 
     When several requests could be sent at the same time, the one with the
     highest request :attr:`~scrapy.Request.priority` is sent first; ties are
@@ -537,8 +561,7 @@ class ThrottlingAwareScheduler(Scheduler):
 
     It requires :setting:`SCHEDULER_PRIORITY_QUEUE` to be set to
     :class:`~scrapy.pqueues.ThrottlingAwarePriorityQueue` (or a compatible
-    subclass), and the configured :setting:`SCHEDULER_DISK_QUEUE` /
-    :setting:`SCHEDULER_MEMORY_QUEUE` to support ``peek``.
+    subclass).
     """
 
     def open(self, spider: Spider) -> Deferred[None] | None:
@@ -550,19 +573,6 @@ class ThrottlingAwareScheduler(Scheduler):
                 f"scrapy.pqueues.ThrottlingAwarePriorityQueue, but the "
                 f"configured one ({type(self.mqs).__name__}) is not."
             )
-        for setting, pq in (
-            ("SCHEDULER_MEMORY_QUEUE", self.mqs),
-            ("SCHEDULER_DISK_QUEUE", self.dqs),
-        ):
-            if pq is None:
-                continue
-            queue_cls = getattr(pq, "downstream_queue_cls", None)
-            if queue_cls is not None and not _queue_supports_peek(queue_cls):
-                raise ValueError(
-                    f"{type(self).__name__} requires {setting} to be set to a "
-                    f"queue class that supports peek(), but the configured one "
-                    f"({queue_cls.__name__}) does not."
-                )
         assert self.crawler is not None
         assert self.crawler.throttler is not None
         self._throttler: ThrottlingManagerProtocol = self.crawler.throttler
@@ -576,56 +586,13 @@ class ThrottlingAwareScheduler(Scheduler):
         )
 
     async def enqueue_request_async(self, request: Request) -> bool:
-        """Resolve the :ref:`throttling scope set <throttling-scopes>` of
-        *request* and store it under the queue for that scope set.
-
-        This is the asynchronous counterpart of
-        :meth:`Scheduler.enqueue_request`; scope resolution
-        (:meth:`~scrapy.throttling.ThrottlingManagerProtocol.get_scopes`) is
-        asynchronous, which is why enqueuing has to be too.
-        """
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
         scope_set = frozenset(iter_scopes(await self._throttler.get_scopes(request)))
-        assert self.stats is not None
-        if self._dqpush_throttling(request, scope_set):
-            self.stats.inc_value("scheduler/enqueued/disk")
-        else:
-            self.mqs.push(request, scope_set)  # type: ignore[call-arg]
-            self.stats.inc_value("scheduler/enqueued/memory")
-        self.stats.inc_value("scheduler/enqueued")
-        return True
-
-    def _dqpush_throttling(self, request: Request, scope_set: frozenset[str]) -> bool:
-        if self.dqs is None:
-            return False
-        try:
-            self.dqs.push(request, scope_set)  # type: ignore[call-arg]
-        except ValueError as e:  # non serializable request
-            if self.logunser:
-                logger.warning(
-                    "Unable to serialize request: %(request)s - reason:"
-                    " %(reason)s - no more unserializable requests will be"
-                    " logged (stats being collected)",
-                    {"request": request, "reason": e},
-                    exc_info=True,
-                    extra={"spider": self.spider},
-                )
-                self.logunser = False
-            assert self.stats is not None
-            self.stats.inc_value("scheduler/unserializable")
-            return False
-        return True
+        return self._store(request, scope_set)
 
     def get_next_request_delay(self) -> float | None:
-        """Return the minimum number of seconds until some pending request
-        becomes sendable because a time-based throttling gate opens, or
-        ``None`` if no pending request is time-blocked.
-
-        The engine uses this to arm a single wakeup timer when
-        :meth:`next_request` returns ``None`` while requests are still
-        pending."""
         delays = [
             delay
             for pq in (self.mqs, self.dqs)
