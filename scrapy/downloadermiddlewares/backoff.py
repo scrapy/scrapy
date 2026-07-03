@@ -54,12 +54,23 @@ class BackoffMiddleware:
         self._exceptions: tuple[type[BaseException], ...] = _load_objects(
             settings.getlist("BACKOFF_EXCEPTIONS")
         )
-        for scope_config in settings.getdict("THROTTLING_SCOPES").values():
+        # Per-scope overrides; a scope absent from these uses the globals above.
+        self._scope_http_codes: dict[str, set[int]] = {}
+        self._scope_exceptions: dict[str, tuple[type[BaseException], ...]] = {}
+        # Unions of the globals and every per-scope override, used as a cheap
+        # pre-filter to skip outcomes that no scope backs off on.
+        self._any_http_codes: set[int] = set(self._http_codes)
+        self._any_exceptions: tuple[type[BaseException], ...] = self._exceptions
+        for scope_id, scope_config in settings.getdict("THROTTLING_SCOPES").items():
             backoff = scope_config.get("backoff") or {}
             if "http_codes" in backoff:
-                self._http_codes.update(int(code) for code in backoff["http_codes"])
+                codes = {int(code) for code in backoff["http_codes"]}
+                self._scope_http_codes[scope_id] = codes
+                self._any_http_codes |= codes
             if "exceptions" in backoff:
-                self._exceptions += _load_objects(backoff["exceptions"])
+                exceptions = _load_objects(backoff["exceptions"])
+                self._scope_exceptions[scope_id] = exceptions
+                self._any_exceptions += exceptions
 
     @_warn_spider_arg
     def process_response(
@@ -69,7 +80,7 @@ class BackoffMiddleware:
         spider: scrapy.Spider | None = None,
     ) -> Response:
         if (
-            response.status not in self._http_codes
+            response.status not in self._any_http_codes
             or "cached" in response.flags
             or request.meta.get("dont_throttle")
         ):
@@ -77,9 +88,7 @@ class BackoffMiddleware:
         matched = [
             scope
             for scope in iter_scopes(self._throttler.get_resolved_scopes(request))
-            if self._throttler.get_scope_manager(scope).triggers_backoff_for_status(
-                response.status
-            )
+            if response.status in self._scope_http_codes.get(scope, self._http_codes)
         ]
         if matched:
             self._throttler.back_off(matched, delay=self._response_delay(response))
@@ -93,14 +102,14 @@ class BackoffMiddleware:
         spider: scrapy.Spider | None = None,
     ) -> None:
         if request.meta.get("dont_throttle") or not isinstance(
-            exception, self._exceptions
+            exception, self._any_exceptions
         ):
             return
         matched = [
             scope
             for scope in iter_scopes(self._throttler.get_resolved_scopes(request))
-            if self._throttler.get_scope_manager(scope).triggers_backoff_for_exception(
-                exception
+            if isinstance(
+                exception, self._scope_exceptions.get(scope, self._exceptions)
             )
         ]
         if matched:

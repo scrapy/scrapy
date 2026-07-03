@@ -752,8 +752,7 @@ to:
     the API itself. The API returns ``200`` even when the target website
     rate-limits it, reporting the upstream status in a header; the middleware
     backs off the **target-website** scope (not the API scope) in that case,
-    reusing the scope's own :meth:`~scrapy.throttling.ThrottlingScopeManagerProtocol.triggers_backoff_for_status`
-    check:
+    checking the upstream status against :setting:`BACKOFF_HTTP_CODES`:
 
     .. code-block:: python
 
@@ -764,6 +763,9 @@ to:
         class UpstreamBackoffMiddleware:
             def __init__(self, crawler):
                 self.throttler = crawler.throttler
+                self.backoff_codes = {
+                    int(code) for code in crawler.settings.getlist("BACKOFF_HTTP_CODES")
+                }
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -774,15 +776,15 @@ to:
                     upstream_status = int(
                         response.headers.get("X-Upstream-Status-Code", b"200")
                     )
-                    scopes = [
-                        scope
-                        for scope in iter_scopes(self.throttler.get_resolved_scopes(request))
-                        if scope != "api.toscrape.com"
-                        and self.throttler.get_scope_manager(scope).triggers_backoff_for_status(
-                            upstream_status
-                        )
-                    ]
-                    self.throttler.back_off(scopes)
+                    if upstream_status in self.backoff_codes:
+                        scopes = [
+                            scope
+                            for scope in iter_scopes(
+                                self.throttler.get_resolved_scopes(request)
+                            )
+                            if scope != "api.toscrape.com"
+                        ]
+                        self.throttler.back_off(scopes)
                 return response
 
 

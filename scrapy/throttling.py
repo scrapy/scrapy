@@ -19,7 +19,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.asyncio import sleep, wait_for_first
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import _load_objects, build_from_crawler, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -1031,14 +1031,6 @@ class ThrottlingScopeManagerProtocol(Protocol):
         reported for a request, correcting the estimate used by
         :meth:`record_sent`."""
 
-    def triggers_backoff_for_status(self, status: int) -> bool:
-        """Return whether a response with the given *status* triggers backoff
-        for this scope (defaults to :setting:`BACKOFF_HTTP_CODES`)."""
-
-    def triggers_backoff_for_exception(self, exception: BaseException) -> bool:
-        """Return whether *exception* triggers backoff for this scope (defaults
-        to :setting:`BACKOFF_EXCEPTIONS`)."""
-
     def get_base_delay(self) -> float:
         """Return the base (non-backoff) delay of this scope, in seconds."""
 
@@ -1167,18 +1159,9 @@ class ThrottlingScopeManager:
         self._backoff_jitter: tuple[float, float] | None = self._normalize_jitter(
             backoff.get("jitter", settings.getfloat("BACKOFF_JITTER"))
         )
-        # Which responses/exceptions trigger backoff for this scope. Each
-        # defaults to the matching global BACKOFF_* setting (see
-        # triggers_backoff_for_status / triggers_backoff_for_exception).
-        self._backoff_http_codes: set[int] = {
-            int(code)
-            for code in backoff.get(
-                "http_codes", settings.getlist("BACKOFF_HTTP_CODES")
-            )
-        }
-        self._backoff_exceptions: tuple[type[BaseException], ...] = _load_objects(
-            backoff.get("exceptions", settings.getlist("BACKOFF_EXCEPTIONS"))
-        )
+        # Which responses/exceptions trigger backoff is decided by the backoff
+        # middleware (see BackoffMiddleware), which reads the same per-scope
+        # "http_codes"/"exceptions" config and the global BACKOFF_* settings.
         self._window: float = settings.getfloat("BACKOFF_WINDOW")
 
         # Concurrency. ``None`` means no scope-level limit (the downloader slots
@@ -1398,12 +1381,6 @@ class ThrottlingScopeManager:
             self._consumed = max(0.0, self._quota - float(remaining))
         elif consumed is not None:
             self._consumed = max(0.0, self._consumed + float(consumed))
-
-    def triggers_backoff_for_status(self, status: int) -> bool:
-        return status in self._backoff_http_codes
-
-    def triggers_backoff_for_exception(self, exception: BaseException) -> bool:
-        return isinstance(exception, self._backoff_exceptions)
 
     def get_base_delay(self) -> float:
         return self._base_delay

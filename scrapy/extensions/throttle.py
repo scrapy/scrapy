@@ -57,7 +57,7 @@ class AutoThrottle:
     def _spider_opened(self, spider: Spider) -> None:
         self.mindelay = self._min_delay(spider)
         self.maxdelay = self._max_delay(spider)
-        self.startdelay = max(
+        self._startdelay = max(
             self.mindelay, self.crawler.settings.getfloat("AUTOTHROTTLE_START_DELAY")
         )
 
@@ -107,7 +107,7 @@ class AutoThrottle:
         delay = throttler.get_scope_delay(scope_id)
         if scope_id not in self._started_scopes:
             self._started_scopes.add(scope_id)
-            delay = max(delay, self.startdelay)
+            delay = max(delay, self._startdelay)
         return delay
 
     def _adjust_delay(

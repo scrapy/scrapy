@@ -15,6 +15,7 @@ from twisted.web.client import Agent
 
 from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner, CrawlerRunnerBase
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import default_settings
 from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
@@ -72,10 +73,13 @@ def get_crawler(
         **(settings_dict or {}),
     }
     if prevent_warnings:
-        # Pin the pre-deprecation default per-scope concurrency so the suite
-        # keeps its historical behavior and does not emit the warn-then-flip
-        # deprecation warning (see throttling._warn_on_deprecated_concurrency).
-        settings.setdefault("THROTTLING_SCOPE_CONCURRENCY", 8)
+        # Pin the per-scope concurrency to CONCURRENT_REQUESTS_PER_DOMAIN's
+        # default: keeps the suite's historical behavior and silences the
+        # warn-then-flip warning (see throttling._warn_on_deprecated_concurrency).
+        settings.setdefault(
+            "THROTTLING_SCOPE_CONCURRENCY",
+            default_settings.CONCURRENT_REQUESTS_PER_DOMAIN,
+        )
     runner: CrawlerRunnerBase
     if is_reactor_installed():
         runner = CrawlerRunner(settings)
