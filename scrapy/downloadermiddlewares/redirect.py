@@ -184,7 +184,7 @@ class BaseRedirectMiddleware:
         """Delay the redirect when *response* carries a ``Retry-After`` header.
 
         The delay is capped at :setting:`REDIRECT_MAX_DELAY` and applied through
-        the :reqmeta:`throttling_delay` request metadata key, which holds back
+        the :reqmeta:`delay` request metadata key, which holds back
         this request only (without counting as a :ref:`backoff <backoff>`
         trigger for its scopes). :setting:`REDIRECT_MAX_DELAY` set to ``0``
         disables it.
@@ -194,11 +194,11 @@ class BaseRedirectMiddleware:
         retry_after = _parse_retry_after(response)
         if retry_after is None:
             return
-        redirect_request.meta["throttling_delay"] = min(retry_after, self.max_delay)
+        redirect_request.meta["delay"] = min(retry_after, self.max_delay)
         # This is a fresh request that may inherit an already-honored delay from
         # its source request's meta; clear that state so the new delay applies.
-        redirect_request.meta.pop("_throttling_delayed", None)
-        redirect_request.meta.pop("_throttling_delay_deadline", None)
+        redirect_request.meta.pop("_throttler_delayed", None)
+        redirect_request.meta.pop("_throttler_delay_deadline", None)
 
     def _redirect_request_using_get(
         self, request: Request, response: Response, redirect_url: str

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 from twisted.internet.defer import Deferred  # noqa: TC002
 
 from scrapy.spiders import Spider  # noqa: TC001
-from scrapy.throttling import iter_scopes
+from scrapy.throttler import iter_scopes
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from scrapy.http.request import Request
     from scrapy.pqueues import ScrapyPriorityQueue
     from scrapy.statscollectors import StatsCollector
-    from scrapy.throttling import ThrottlingManagerProtocol
+    from scrapy.throttler import ThrottlerProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         Asynchronous counterpart of :meth:`enqueue_request`, following the same
         return contract. When a scheduler defines it, the engine awaits it
         *instead of* calling :meth:`enqueue_request`. Define it when enqueuing a
-        request needs to ``await`` (e.g. to resolve throttling scopes
+        request needs to ``await`` (e.g. to resolve throttler scopes
         asynchronously).
 
     .. method:: get_next_request_delay()
@@ -238,7 +238,7 @@ class Scheduler(BaseScheduler):
     -------------------------
 
     While pending requests are below the configured values of
-    :setting:`CONCURRENT_REQUESTS` or :setting:`THROTTLING_SCOPE_CONCURRENCY`,
+    :setting:`CONCURRENT_REQUESTS` or :setting:`THROTTLER_SCOPE_CONCURRENCY`,
     those requests are sent concurrently.
 
     As a result, the first few requests of a crawl may not follow the desired
@@ -410,7 +410,7 @@ class Scheduler(BaseScheduler):
 
         Extra positional arguments are forwarded to the underlying queue
         ``push`` calls; subclasses that store requests under additional keys
-        (e.g. a throttling scope set) pass them through here.
+        (e.g. a throttler scope set) pass them through here.
         """
         assert self.stats is not None
         if self._dqpush(request, *push_args):
@@ -535,14 +535,14 @@ class Scheduler(BaseScheduler):
             json.dump(state, f)
 
 
-class ThrottlingAwareScheduler(Scheduler):
+class ThrottlerAwareScheduler(Scheduler):
     """A :setting:`SCHEDULER` that only ever hands the engine requests that
-    their :ref:`throttling scopes <throttling-scopes>` allow to be sent **right
+    their :ref:`throttler scopes <throttler-scopes>` allow to be sent **right
     now**.
 
     The default scheduler hands requests to the engine as concurrency allows
     and lets them wait at the throttling gate
-    (:meth:`~scrapy.throttling.ThrottlingManagerProtocol.acquire`) while holding
+    (:meth:`~scrapy.throttler.ThrottlerProtocol.acquire`) while holding
     a concurrency slot. When a crawl mixes heavily-throttled scopes with
     unthrottled ones, enough throttled requests waiting on a clock can fill
     :setting:`CONCURRENT_REQUESTS` and starve unthrottled requests that could be
@@ -551,7 +551,7 @@ class ThrottlingAwareScheduler(Scheduler):
     (beyond what is needed to track each distinct scope set) and cannot starve
     other scopes.
 
-    It also honors the per-request :reqmeta:`throttling_delay`, holding an
+    It also honors the per-request :reqmeta:`delay`, holding an
     individual request back without blocking others that share its scopes, which
     the default scheduler cannot do.
 
@@ -560,7 +560,7 @@ class ThrottlingAwareScheduler(Scheduler):
     broken by preferring the least-busy scopes.
 
     It requires :setting:`SCHEDULER_PRIORITY_QUEUE` to be set to
-    :class:`~scrapy.pqueues.ThrottlingAwarePriorityQueue` (or a compatible
+    :class:`~scrapy.pqueues.ThrottlerAwarePriorityQueue` (or a compatible
     subclass).
     """
 
@@ -569,18 +569,18 @@ class ThrottlingAwareScheduler(Scheduler):
         if not hasattr(self.mqs, "get_next_request_delay"):
             raise ValueError(
                 f"{type(self).__name__} requires SCHEDULER_PRIORITY_QUEUE to be "
-                f"set to a throttling-aware priority queue such as "
-                f"scrapy.pqueues.ThrottlingAwarePriorityQueue, but the "
+                f"set to a throttler-aware priority queue such as "
+                f"scrapy.pqueues.ThrottlerAwarePriorityQueue, but the "
                 f"configured one ({type(self.mqs).__name__}) is not."
             )
         assert self.crawler is not None
         assert self.crawler.throttler is not None
-        self._throttler: ThrottlingManagerProtocol = self.crawler.throttler
+        self._throttler: ThrottlerProtocol = self.crawler.throttler
         return result
 
     def enqueue_request(self, request: Request) -> bool:
         raise RuntimeError(
-            "ThrottlingAwareScheduler requires the asynchronous enqueue path; "
+            "ThrottlerAwareScheduler requires the asynchronous enqueue path; "
             "enqueue_request_async() is used by the engine instead of "
             "enqueue_request()."
         )

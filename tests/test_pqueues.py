@@ -8,11 +8,11 @@ from scrapy.http.request import Request
 from scrapy.pqueues import (
     DownloaderAwarePriorityQueue,
     ScrapyPriorityQueue,
-    ThrottlingAwarePriorityQueue,
+    ThrottlerAwarePriorityQueue,
 )
 from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
-from scrapy.throttling import iter_scopes
+from scrapy.throttler import iter_scopes
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.test_scheduler import MockDownloader
@@ -191,22 +191,22 @@ class TestDownloaderAwarePriorityQueue:
         # No active downloads are tracked in the downloader, so every slot has
         # the same score and tie-breaking must not starve a slot.
         req_a1 = Request("https://example.org/a1")
-        req_a1.meta["throttling_scopes"] = "slot-a"
+        req_a1.meta["throttler_scopes"] = "slot-a"
         req_b1 = Request("https://example.org/b1")
-        req_b1.meta["throttling_scopes"] = "slot-b"
+        req_b1.meta["throttler_scopes"] = "slot-b"
         req_a2 = Request("https://example.org/a2")
-        req_a2.meta["throttling_scopes"] = "slot-a"
+        req_a2.meta["throttler_scopes"] = "slot-a"
         req_b2 = Request("https://example.org/b2")
-        req_b2.meta["throttling_scopes"] = "slot-b"
+        req_b2.meta["throttler_scopes"] = "slot-b"
 
         for request in (req_a1, req_b1, req_a2, req_b2):
             self.queue.push(request)
 
         slots = [
-            self.queue.pop().meta["throttling_scopes"],
-            self.queue.pop().meta["throttling_scopes"],
-            self.queue.pop().meta["throttling_scopes"],
-            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttler_scopes"],
+            self.queue.pop().meta["throttler_scopes"],
+            self.queue.pop().meta["throttler_scopes"],
+            self.queue.pop().meta["throttler_scopes"],
         ]
 
         assert slots == ["slot-a", "slot-b", "slot-a", "slot-b"]
@@ -215,22 +215,22 @@ class TestDownloaderAwarePriorityQueue:
         # If the selected slot becomes empty, rotation should continue from
         # that slot marker to avoid restarting from the smallest slot.
         req_a1 = Request("https://example.org/a1")
-        req_a1.meta["throttling_scopes"] = "slot-a"
+        req_a1.meta["throttler_scopes"] = "slot-a"
         req_a2 = Request("https://example.org/a2")
-        req_a2.meta["throttling_scopes"] = "slot-a"
+        req_a2.meta["throttler_scopes"] = "slot-a"
         req_b1 = Request("https://example.org/b1")
-        req_b1.meta["throttling_scopes"] = "slot-b"
+        req_b1.meta["throttler_scopes"] = "slot-b"
         req_c1 = Request("https://example.org/c1")
-        req_c1.meta["throttling_scopes"] = "slot-c"
+        req_c1.meta["throttler_scopes"] = "slot-c"
 
         for request in (req_a1, req_a2, req_b1, req_c1):
             self.queue.push(request)
 
         slots = [
-            self.queue.pop().meta["throttling_scopes"],
-            self.queue.pop().meta["throttling_scopes"],
-            self.queue.pop().meta["throttling_scopes"],
-            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttler_scopes"],
+            self.queue.pop().meta["throttler_scopes"],
+            self.queue.pop().meta["throttler_scopes"],
+            self.queue.pop().meta["throttler_scopes"],
         ]
 
         assert slots == ["slot-a", "slot-b", "slot-c", "slot-a"]
@@ -240,11 +240,11 @@ class TestDownloaderAwarePriorityQueue:
         assert throttler is not None
 
         req_a = Request("https://example.org/a")
-        req_a.meta["throttling_scopes"] = "slot-a"
+        req_a.meta["throttler_scopes"] = "slot-a"
         req_b = Request("https://example.org/b")
-        req_b.meta["throttling_scopes"] = "slot-b"
+        req_b.meta["throttler_scopes"] = "slot-b"
         req_c = Request("https://example.org/c")
-        req_c.meta["throttling_scopes"] = "slot-c"
+        req_c.meta["throttler_scopes"] = "slot-c"
 
         for req in (req_a, req_b, req_c):
             self.queue.push(req)
@@ -257,7 +257,7 @@ class TestDownloaderAwarePriorityQueue:
 
     def test_contains(self):
         req = Request("https://example.org/")
-        req.meta["throttling_scopes"] = "example-slot"
+        req.meta["throttler_scopes"] = "example-slot"
         assert "example-slot" not in self.queue
         self.queue.push(req)
         assert "example-slot" in self.queue
@@ -317,10 +317,10 @@ def test_pop_order(input_, output):
     assert actual_output_urls == expected_output_urls
 
 
-class TestThrottlingAwarePriorityQueue:
+class TestThrottlerAwarePriorityQueue:
     def _queue(self, crawler, key=""):
         return build_from_crawler(
-            ThrottlingAwarePriorityQueue,
+            ThrottlerAwarePriorityQueue,
             crawler,
             downstream_queue_cls=FifoMemoryQueue,
             key=key,
@@ -346,7 +346,7 @@ class TestThrottlingAwarePriorityQueue:
         crawler = get_crawler(
             Spider,
             settings_dict={
-                "THROTTLING_SCOPES": {"slow.com": {"delay": 1000.0}},
+                "THROTTLER_SCOPES": {"slow.com": {"delay": 1000.0}},
                 "RANDOMIZE_DOWNLOAD_DELAY": False,
             },
         )
@@ -369,13 +369,13 @@ class TestThrottlingAwarePriorityQueue:
         assert delay == pytest.approx(1000.0, abs=1.0)
 
     @coroutine_test
-    async def test_pop_holds_request_with_throttling_delay(self):
+    async def test_pop_holds_request_with_delay(self):
         crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
         queue = self._queue(crawler)
         await self._push(
             queue,
             crawler,
-            Request("http://slow.com/1", meta={"throttling_delay": 1000.0}),
+            Request("http://slow.com/1", meta={"delay": 1000.0}),
         )
         await self._push(queue, crawler, Request("http://fast.com/1"))
         # The delayed request is held back even though its scope is otherwise
@@ -398,7 +398,7 @@ class TestThrottlingAwarePriorityQueue:
         await self._push(
             queue,
             crawler,
-            Request("http://example.com/slow", meta={"throttling_delay": 1000.0}),
+            Request("http://example.com/slow", meta={"delay": 1000.0}),
         )
         await self._push(queue, crawler, Request("http://example.com/fast"))
         # The delayed request is held aside, so the other request in the same
@@ -413,7 +413,7 @@ class TestThrottlingAwarePriorityQueue:
     async def test_delayed_request_promoted_when_due(self):
         crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
         queue = self._queue(crawler)
-        request = Request("http://example.com/slow", meta={"throttling_delay": 1000.0})
+        request = Request("http://example.com/slow", meta={"delay": 1000.0})
         await self._push(queue, crawler, request)
         assert queue.pop() is None  # held back by its per-request delay
         # Once the delay elapses the request is promoted into its scope-set
@@ -421,7 +421,7 @@ class TestThrottlingAwarePriorityQueue:
         queue._promote_ready(queue._delayed[0][0])
         popped = queue.pop()
         assert popped is request
-        assert popped.meta["_throttling_delayed"] is True
+        assert popped.meta["_throttler_delayed"] is True
         assert len(queue) == 0
 
     @coroutine_test
@@ -432,7 +432,7 @@ class TestThrottlingAwarePriorityQueue:
         crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
         temp_dir = tempfile.mkdtemp()
         queue = build_from_crawler(
-            ThrottlingAwarePriorityQueue,
+            ThrottlerAwarePriorityQueue,
             crawler,
             downstream_queue_cls=PickleFifoDiskQueue,
             key=temp_dir,
@@ -440,13 +440,13 @@ class TestThrottlingAwarePriorityQueue:
         await self._push(
             queue,
             crawler,
-            Request("http://example.com/slow", meta={"throttling_delay": 1000.0}),
+            Request("http://example.com/slow", meta={"delay": 1000.0}),
         )
         assert len(queue) == 1  # held in memory, not yet in any scope-set queue
         state = queue.close()  # graceful stop
 
         resumed = build_from_crawler(
-            ThrottlingAwarePriorityQueue,
+            ThrottlerAwarePriorityQueue,
             crawler,
             downstream_queue_cls=PickleFifoDiskQueue,
             key=temp_dir,
@@ -457,7 +457,7 @@ class TestThrottlingAwarePriorityQueue:
         assert popped is not None
         assert popped.url == "http://example.com/slow"
         # Its delay is marked consumed, so it does not re-block on resume.
-        assert popped.meta["_throttling_delayed"] is True
+        assert popped.meta["_throttler_delayed"] is True
         resumed.close()
 
     @coroutine_test
@@ -465,7 +465,7 @@ class TestThrottlingAwarePriorityQueue:
         crawler = get_crawler(
             Spider,
             settings_dict={
-                "THROTTLING_SCOPES": {
+                "THROTTLER_SCOPES": {
                     "a.com": {"concurrency": 4},
                     "b.com": {"concurrency": 4},
                 }
@@ -486,7 +486,7 @@ class TestThrottlingAwarePriorityQueue:
         crawler = get_crawler(
             Spider,
             settings_dict={
-                "THROTTLING_SCOPES": {
+                "THROTTLER_SCOPES": {
                     "a.com": {"concurrency": 4},
                     "b.com": {"concurrency": 4},
                 }
@@ -513,18 +513,6 @@ class TestThrottlingAwarePriorityQueue:
         assert queue.close() != {}
 
     @coroutine_test
-    async def test_peek(self):
-        crawler = get_crawler(Spider)
-        queue = self._queue(crawler)
-        assert queue.peek() is None
-        await self._push(queue, crawler, Request("http://a.com/1"))
-        head = queue.peek()
-        assert head is not None
-        assert head.url == "http://a.com/1"
-        # peek() does not consume the request.
-        assert len(queue) == 1
-
-    @coroutine_test
     async def test_get_next_request_delay_zero_when_ready(self):
         crawler = get_crawler(Spider)
         queue = self._queue(crawler)
@@ -537,7 +525,7 @@ class TestThrottlingAwarePriorityQueue:
         crawler = get_crawler(Spider)
         queue = self._queue(crawler)
         # An empty (but still registered) internal queue is skipped.
-        queue.pqueues[frozenset({"a.com"})] = queue.pqfactory(frozenset({"a.com"}))
+        queue.pqueues[frozenset({"a.com"})] = queue._pqfactory(frozenset({"a.com"}))
         assert queue.get_next_request_delay() is None
 
     @coroutine_test
@@ -545,7 +533,7 @@ class TestThrottlingAwarePriorityQueue:
         crawler = get_crawler(
             Spider,
             settings_dict={
-                "THROTTLING_SCOPES": {
+                "THROTTLER_SCOPES": {
                     "a.com": {"delay": 10.0},
                     "b.com": {"delay": 1000.0},
                 },
@@ -572,27 +560,16 @@ class TestThrottlingAwarePriorityQueue:
         queue = self._queue(crawler)
         await self._push(queue, crawler, Request("http://a.com/1"))
         inner = next(iter(queue.pqueues.values()))
-        # peek() still reports a sendable head, but pop() yields nothing: the
+        # _select() still reports a sendable head, but pop() yields nothing: the
         # request-is-None guard must not try to reserve a missing request.
         inner.pop = lambda: None
         assert queue.pop() is None
-
-    @coroutine_test
-    async def test_contains(self):
-        crawler = get_crawler(Spider)
-        queue = self._queue(crawler)
-        scope_set = frozenset(
-            iter_scopes(await crawler.throttler.get_scopes(Request("http://a.com/1")))
-        )
-        assert scope_set not in queue
-        await self._push(queue, crawler, Request("http://a.com/1"))
-        assert scope_set in queue
 
     def test_non_dict_slot_startprios(self):
         crawler = get_crawler(Spider)
         with pytest.raises(ValueError, match="slot_startprios"):
             build_from_crawler(
-                ThrottlingAwarePriorityQueue,
+                ThrottlerAwarePriorityQueue,
                 crawler,
                 downstream_queue_cls=FifoMemoryQueue,
                 key="",

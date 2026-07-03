@@ -11,7 +11,7 @@ from unittest.mock import Mock
 import pytest
 
 from scrapy.core.downloader import Downloader
-from scrapy.core.scheduler import BaseScheduler, Scheduler, ThrottlingAwareScheduler
+from scrapy.core.scheduler import BaseScheduler, Scheduler, ThrottlerAwareScheduler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
@@ -411,22 +411,22 @@ class TestIncompatibility:
                 self._incompatible()
 
 
-_THROTTLING_AWARE_PQ = "scrapy.pqueues.ThrottlingAwarePriorityQueue"
+_THROTTLER_AWARE_PQ = "scrapy.pqueues.ThrottlerAwarePriorityQueue"
 
 
-class TestThrottlingAwareScheduler:
+class TestThrottlerAwareScheduler:
     def _crawler(self, settings_dict: dict[str, Any] | None = None) -> Crawler:
         settings = {
-            "SCHEDULER_PRIORITY_QUEUE": _THROTTLING_AWARE_PQ,
+            "SCHEDULER_PRIORITY_QUEUE": _THROTTLER_AWARE_PQ,
             "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
             **(settings_dict or {}),
         }
         return get_crawler(Spider, settings)
 
-    def _scheduler(self, crawler: Crawler) -> ThrottlingAwareScheduler:
+    def _scheduler(self, crawler: Crawler) -> ThrottlerAwareScheduler:
         spider = Spider(name="spider")
         crawler.spider = spider
-        scheduler = ThrottlingAwareScheduler.from_crawler(crawler)
+        scheduler = ThrottlerAwareScheduler.from_crawler(crawler)
         scheduler.open(spider)
         return scheduler
 
@@ -449,21 +449,21 @@ class TestThrottlingAwareScheduler:
             scheduler.enqueue_request(Request("http://a.com/1"))
         scheduler.close("finished")
 
-    def test_requires_throttling_aware_priority_queue(self) -> None:
+    def test_requires_throttler_aware_priority_queue(self) -> None:
         crawler = self._crawler(
             {"SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ScrapyPriorityQueue"}
         )
         spider = Spider(name="spider")
         crawler.spider = spider
-        scheduler = ThrottlingAwareScheduler.from_crawler(crawler)
-        with pytest.raises(ValueError, match="throttling-aware priority queue"):
+        scheduler = ThrottlerAwareScheduler.from_crawler(crawler)
+        with pytest.raises(ValueError, match="throttler-aware priority queue"):
             scheduler.open(spider)
 
     @coroutine_test
     async def test_delay_blocks_and_reports_delay(self) -> None:
         crawler = self._crawler(
             {
-                "THROTTLING_SCOPES": {"slow.com": {"delay": 1000.0}},
+                "THROTTLER_SCOPES": {"slow.com": {"delay": 1000.0}},
                 "RANDOMIZE_DOWNLOAD_DELAY": False,
             },
         )
@@ -481,7 +481,7 @@ class TestThrottlingAwareScheduler:
     @coroutine_test
     async def test_no_delay_when_only_concurrency_blocked(self) -> None:
         crawler = self._crawler(
-            {"THROTTLING_SCOPES": {"slow.com": {"concurrency": 1}}},
+            {"THROTTLER_SCOPES": {"slow.com": {"concurrency": 1}}},
         )
         scheduler = self._scheduler(crawler)
         await scheduler.enqueue_request_async(Request("http://slow.com/1"))
@@ -494,14 +494,14 @@ class TestThrottlingAwareScheduler:
 
     @coroutine_test
     async def test_delayed_request_survives_jobdir_stop(self, tmp_path: Path) -> None:
-        # A request held back by its per-request throttling_delay must not be
+        # A request held back by its per-request delay must not be
         # lost on a graceful stop when a JOBDIR is configured: it is flushed to
         # the disk queue on close and restored on resume.
         crawler = self._crawler(
             {"JOBDIR": str(tmp_path), "RANDOMIZE_DOWNLOAD_DELAY": False}
         )
         scheduler = self._scheduler(crawler)
-        request = Request("http://a.com/slow", meta={"throttling_delay": 1000.0})
+        request = Request("http://a.com/slow", meta={"delay": 1000.0})
         assert await scheduler.enqueue_request_async(request) is True
         assert len(scheduler) == 1
         # The delay holds it back, so nothing is dequeued before the stop.
@@ -585,14 +585,14 @@ class TestThrottlingAwareScheduler:
         scheduler2.close("finished")
 
 
-class TestIntegrationWithThrottlingAwareScheduler:
+class TestIntegrationWithThrottlerAwareScheduler:
     @inline_callbacks_test
     def test_integration(self):
         crawler = get_crawler(
             spidercls=StartUrlsSpider,
             settings_dict={
-                "SCHEDULER": "scrapy.core.scheduler.ThrottlingAwareScheduler",
-                "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlingAwarePriorityQueue",
+                "SCHEDULER": "scrapy.core.scheduler.ThrottlerAwareScheduler",
+                "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlerAwarePriorityQueue",
                 "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
             },
         )
@@ -628,8 +628,8 @@ class TestIntegrationWithThrottlingAwareScheduler:
             crawler = get_crawler(
                 spidercls=FollowSpider,
                 settings_dict={
-                    "SCHEDULER": "scrapy.core.scheduler.ThrottlingAwareScheduler",
-                    "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlingAwarePriorityQueue",
+                    "SCHEDULER": "scrapy.core.scheduler.ThrottlerAwareScheduler",
+                    "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlerAwarePriorityQueue",
                     "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
                 },
             )
@@ -638,16 +638,16 @@ class TestIntegrationWithThrottlingAwareScheduler:
 
     @inline_callbacks_test
     def test_integration_with_delay(self):
-        # A small per-scope delay forces the engine to arm the throttling wakeup
+        # A small per-scope delay forces the engine to arm the throttler wakeup
         # timer between requests; the crawl must still complete.
         crawler = get_crawler(
             spidercls=StartUrlsSpider,
             settings_dict={
-                "SCHEDULER": "scrapy.core.scheduler.ThrottlingAwareScheduler",
-                "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlingAwarePriorityQueue",
+                "SCHEDULER": "scrapy.core.scheduler.ThrottlerAwareScheduler",
+                "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlerAwarePriorityQueue",
                 "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
                 "RANDOMIZE_DOWNLOAD_DELAY": False,
-                "THROTTLING_SCOPES": {"127.0.0.1": {"delay": 0.05}},
+                "THROTTLER_SCOPES": {"127.0.0.1": {"delay": 0.05}},
             },
         )
         with MockServer() as mockserver:

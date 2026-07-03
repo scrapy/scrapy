@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class BackoffConfig(TypedDict, total=False):
     """Per-scope override of the backoff settings.
 
-    Used as the value of the ``"backoff"`` key of :class:`ThrottlingScopeConfig`
+    Used as the value of the ``"backoff"`` key of :class:`ThrottlerScopeConfig`
     entries. Any key left out falls back to the corresponding global
     ``BACKOFF_*`` setting.
     """
@@ -46,8 +46,8 @@ class BackoffConfig(TypedDict, total=False):
     jitter: float | list[float]
 
 
-class ThrottlingScopeConfig(TypedDict, total=False):
-    """Accepted keys of :setting:`THROTTLING_SCOPES` entries.
+class ThrottlerScopeConfig(TypedDict, total=False):
+    """Accepted keys of :setting:`THROTTLER_SCOPES` entries.
 
     Every key is optional; missing keys fall back to the matching global
     setting (e.g. ``delay`` falls back to :setting:`DOWNLOAD_DELAY`).
@@ -66,7 +66,7 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     window: float
 
     manager: str | type
-    """Import path or class of a custom :setting:`THROTTLING_SCOPE_MANAGER` for
+    """Import path or class of a custom :setting:`THROTTLER_SCOPE_MANAGER` for
     this scope."""
 
     backoff: BackoffConfig
@@ -83,8 +83,8 @@ RequestScopes = None | ScopeID | Iterable[ScopeID] | dict[ScopeID, float | None]
 def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
     """Iterate over the scope IDs of *scopes*, whatever its form.
 
-    :class:`~ThrottlingManagerProtocol.get_scopes` (and
-    :meth:`~ThrottlingManagerProtocol.get_resolved_scopes`) may return a single
+    :class:`~ThrottlerProtocol.get_scopes` (and
+    :meth:`~ThrottlerProtocol.get_resolved_scopes`) may return a single
     scope ID, an iterable of them, a ``{scope_id: quota}`` mapping, or ``None``;
     this helper normalizes any of those into an iterable of scope IDs, e.g. to
     react to a request's scopes in a custom middleware.
@@ -95,7 +95,7 @@ def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
 def iter_scope_values(scopes: RequestScopes) -> Iterable[tuple[ScopeID, float | None]]:
     """Iterate over *scopes* as ``(scope_id, value)`` pairs.
 
-    For dict scopes the value is the expected :ref:`throttling quota
+    For dict scopes the value is the expected :ref:`throttler quota
     <throttling-quotas>` consumption; for every other form the value is
     ``None``.
     """
@@ -120,42 +120,42 @@ def _effective_priority(settings: BaseSettings, name: str) -> int:
 
 
 def _default_scope_concurrency(settings: BaseSettings) -> int:
-    """Return the default concurrency of a throttling scope that does not set
+    """Return the default concurrency of a throttler scope that does not set
     its own ``concurrency``.
 
-    This is :setting:`THROTTLING_SCOPE_CONCURRENCY`, except that the deprecated
+    This is :setting:`THROTTLER_SCOPE_CONCURRENCY`, except that the deprecated
     :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is bridged in when set at a
     higher :ref:`priority <populating-settings>`. When neither is set
     explicitly, the historical :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` value is
     kept for backward compatibility (its default flips to
-    :setting:`THROTTLING_SCOPE_CONCURRENCY` in a future version; see
+    :setting:`THROTTLER_SCOPE_CONCURRENCY` in a future version; see
     :func:`_warn_on_deprecated_concurrency`).
     """
     default_priority = SETTINGS_PRIORITIES["default"]
     domain_priority = _effective_priority(settings, "CONCURRENT_REQUESTS_PER_DOMAIN")
-    scope_priority = _effective_priority(settings, "THROTTLING_SCOPE_CONCURRENCY")
+    scope_priority = _effective_priority(settings, "THROTTLER_SCOPE_CONCURRENCY")
     if domain_priority > scope_priority:
         return settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
     if scope_priority > domain_priority:
-        return settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+        return settings.getint("THROTTLER_SCOPE_CONCURRENCY")
     # Equal priority: on an explicit (higher-than-default) tie the new setting
     # wins; when neither is set (both at "default") keep the historical
     # per-domain value so existing behavior is preserved.
     if domain_priority <= default_priority:
         return settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
-    return settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+    return settings.getint("THROTTLER_SCOPE_CONCURRENCY")
 
 
 def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
     """Warn about the concurrency settings bridged by
     :func:`_default_scope_concurrency`. Call once per crawl (see
-    :meth:`ThrottlingManager.__init__`).
+    :meth:`Throttler.__init__`).
 
     When :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is set explicitly, warn that
     it is deprecated. When neither concurrency setting is set explicitly, warn
     that the effective per-scope concurrency is still the deprecated setting's
     value (kept for backward compatibility) and will drop to
-    :setting:`THROTTLING_SCOPE_CONCURRENCY`'s default once the deprecated
+    :setting:`THROTTLER_SCOPE_CONCURRENCY`'s default once the deprecated
     setting is removed, so users can pin it explicitly."""
     default_priority = SETTINGS_PRIORITIES["default"]
     domain_set = (
@@ -163,12 +163,12 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
         > default_priority
     )
     scope_set = (
-        _effective_priority(settings, "THROTTLING_SCOPE_CONCURRENCY") > default_priority
+        _effective_priority(settings, "THROTTLER_SCOPE_CONCURRENCY") > default_priority
     )
     if domain_set:
         warnings.warn(
             "The CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated, use "
-            "THROTTLING_SCOPE_CONCURRENCY instead.",
+            "THROTTLER_SCOPE_CONCURRENCY instead.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
@@ -178,14 +178,14 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
         # guarded by test_deprecated_concurrency_defaults_differ rather than at
         # run time, so a crawl is never aborted over it.
         current = settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
-        future = settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+        future = settings.getint("THROTTLER_SCOPE_CONCURRENCY")
         warnings.warn(
             f"The effective per-scope (per-domain) concurrency is {current}, "
             f"the default of the deprecated CONCURRENT_REQUESTS_PER_DOMAIN "
             f"setting, which is still respected for backward compatibility. "
             f"Once CONCURRENT_REQUESTS_PER_DOMAIN is removed, it will drop to "
-            f"{future}, the default of THROTTLING_SCOPE_CONCURRENCY. Set "
-            f"THROTTLING_SCOPE_CONCURRENCY explicitly to choose a value and "
+            f"{future}, the default of THROTTLER_SCOPE_CONCURRENCY. Set "
+            f"THROTTLER_SCOPE_CONCURRENCY explicitly to choose a value and "
             f"silence this warning.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
@@ -195,7 +195,7 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
 def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
     """Warn about configured concurrency limits that exceed
     :setting:`CONCURRENT_REQUESTS`. Call once per crawl (see
-    :meth:`ThrottlingManager.__init__`).
+    :meth:`Throttler.__init__`).
 
     :setting:`CONCURRENT_REQUESTS` caps the total number of requests in flight,
     so a per-scope (or per-domain) concurrency limit above it can never be
@@ -204,12 +204,12 @@ def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
     global_concurrency = settings.getint("CONCURRENT_REQUESTS")
     offenders: list[str] = [
         f"{name}={settings.getint(name)}"
-        for name in ("CONCURRENT_REQUESTS_PER_DOMAIN", "THROTTLING_SCOPE_CONCURRENCY")
+        for name in ("CONCURRENT_REQUESTS_PER_DOMAIN", "THROTTLER_SCOPE_CONCURRENCY")
         if settings.getint(name) > global_concurrency
     ]
     offenders += [
-        f"THROTTLING_SCOPES[{scope_id!r}]['concurrency']={config['concurrency']}"
-        for scope_id, config in settings.getdict("THROTTLING_SCOPES").items()
+        f"THROTTLER_SCOPES[{scope_id!r}]['concurrency']={config['concurrency']}"
+        for scope_id, config in settings.getdict("THROTTLER_SCOPES").items()
         if config.get("concurrency") is not None
         and int(config["concurrency"]) > global_concurrency
     ]
@@ -249,8 +249,8 @@ def add_scope(
     dict.
 
     This is a utility function to help extending the output of
-    :meth:`~ThrottlingManagerProtocol.get_scopes`, e.g. in
-    :class:`ThrottlingManager` subclasses.
+    :meth:`~ThrottlerProtocol.get_scopes`, e.g. in
+    :class:`Throttler` subclasses.
 
     Adding a scope with a *value* fails if it is already present, so an existing
     :ref:`quota <throttling-quotas>` is never silently overwritten; adding it
@@ -266,21 +266,21 @@ def add_scope(
     return result
 
 
-class ThrottlingManagerProtocol(Protocol):
-    """A protocol for :setting:`THROTTLING_MANAGER` :ref:`components
+class ThrottlerProtocol(Protocol):
+    """A protocol for :setting:`THROTTLER` :ref:`components
     <topics-components>`."""
 
     async def get_scopes(self, request: Request) -> RequestScopes:
-        """Return the :ref:`throttling scopes <throttling-scopes>` that apply
+        """Return the :ref:`throttler scopes <throttling-scopes>` that apply
         to *request*.
 
         Return ``None`` if no scopes apply, a string for a single scope, an
         iterable of strings for multiple scopes, or a dict with scope names as
-        keys and :ref:`throttling quotas <throttling-quotas>` as values.
+        keys and :ref:`throttler quotas <throttling-quotas>` as values.
         """
 
     def get_resolved_scopes(self, request: Request) -> RequestScopes:
-        """Return the :ref:`throttling scopes <throttling-scopes>` under which
+        """Return the :ref:`throttler scopes <throttling-scopes>` under which
         *request* was (or will be) sent, without re-resolving them.
 
         This is the synchronous counterpart of :meth:`get_scopes`: it returns
@@ -314,8 +314,8 @@ class ThrottlingManagerProtocol(Protocol):
         *and* a concurrency slot is free in every scope.
 
         This is the synchronous, non-blocking counterpart of :meth:`acquire`,
-        used by a :ref:`throttling-aware scheduler
-        <throttling-aware-scheduler>` to decide whether a request can be
+        used by a :ref:`throttler-aware scheduler
+        <throttler-aware-scheduler>` to decide whether a request can be
         dequeued now. It assumes the scopes of *request* have already been
         resolved (e.g. by an earlier :meth:`get_scopes` call at enqueue time).
         """
@@ -325,7 +325,7 @@ class ThrottlingManagerProtocol(Protocol):
         scopes and mark *request* as reserved, so that a later :meth:`acquire`
         for it returns immediately without reserving again.
 
-        A :ref:`throttling-aware scheduler <throttling-aware-scheduler>` calls
+        A :ref:`throttler-aware scheduler <throttler-aware-scheduler>` calls
         this when it decides to dequeue *request* (after :meth:`is_ready`
         returned ``True``). The reservation is released by :meth:`release`.
         """
@@ -335,8 +335,8 @@ class ThrottlingManagerProtocol(Protocol):
         *request* would be open, or ``None`` if no time-based gate is currently
         blocking it (only a concurrency slot could be).
 
-        Used by a :ref:`throttling-aware scheduler
-        <throttling-aware-scheduler>` to schedule a wakeup when all pending
+        Used by a :ref:`throttler-aware scheduler
+        <throttler-aware-scheduler>` to schedule a wakeup when all pending
         requests are time-blocked.
         """
 
@@ -354,19 +354,19 @@ class ThrottlingManagerProtocol(Protocol):
         active sends divided by its concurrency limit (or by the global
         :setting:`CONCURRENT_REQUESTS` when the scope has no explicit limit).
 
-        Used by a :ref:`throttling-aware scheduler
-        <throttling-aware-scheduler>` to balance dequeuing across scopes,
+        Used by a :ref:`throttler-aware scheduler
+        <throttler-aware-scheduler>` to balance dequeuing across scopes,
         preferring the least-loaded ones.
         """
 
     def get_request_delay(self, request: Request, now: float | None = None) -> float:
         """Return how many seconds *request* must still be held individually
-        because of its :reqmeta:`throttling_delay`, or ``0.0`` if it has none
+        because of its :reqmeta:`delay`, or ``0.0`` if it has none
         or it has already elapsed. The one-time delay is started on the first
         call.
 
         Unlike a scope delay, this affects only *request*: a
-        :ref:`throttling-aware scheduler <throttling-aware-scheduler>` must
+        :ref:`throttler-aware scheduler <throttler-aware-scheduler>` must
         hold the request back on its own, **without** blocking other requests
         that share its scopes.
         """
@@ -423,7 +423,7 @@ class ThrottlingManagerProtocol(Protocol):
         consumed: float | None = None,
         remaining: float | None = None,
     ) -> None:
-        """Reconcile the :ref:`throttling quota <throttling-quotas>` of each of
+        """Reconcile the :ref:`throttler quota <throttling-quotas>` of each of
         *scopes* with an actually *consumed* amount (a delta to add) or a
         *remaining* amount (an absolute value), correcting the estimate used
         when requests were sent.
@@ -444,8 +444,8 @@ class ThrottlingManagerProtocol(Protocol):
         directly (e.g. an adaptive-delay extension).
         """
 
-    def get_scope_manager(self, scope_id: str) -> ThrottlingScopeManagerProtocol:
-        """Return the :class:`ThrottlingScopeManagerProtocol` instance handling
+    def get_scope_manager(self, scope_id: str) -> ThrottlerScopeManagerProtocol:
+        """Return the :class:`ThrottlerScopeManagerProtocol` instance handling
         the scope identified by *scope_id*, creating it if necessary."""
 
 
@@ -456,16 +456,16 @@ _GetScopesMethod = TypeVar(
 
 # Request.meta key under which scope_cache persists the resolved scopes so that
 # they survive a request being serialized to and restored from a disk queue.
-_RESOLVED_SCOPES_META_KEY = "_throttling_resolved_scopes"
+_RESOLVED_SCOPES_META_KEY = "_throttler_resolved_scopes"
 
 
 def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
-    """Decorator for :meth:`~ThrottlingManagerProtocol.get_scopes`
+    """Decorator for :meth:`~ThrottlerProtocol.get_scopes`
     implementations that persists the resolved scopes on ``request.meta``.
 
     The readers of the resolved scopes — the synchronous readiness API of a
-    :ref:`throttling-aware scheduler <throttling-aware-scheduler>` and
-    :meth:`~ThrottlingManagerProtocol.get_resolved_scopes` — read this persisted
+    :ref:`throttler-aware scheduler <throttler-aware-scheduler>` and
+    :meth:`~ThrottlerProtocol.get_resolved_scopes` — read this persisted
     value instead of resolving the scopes again, so they stay cheap and
     consistent, and it survives a request being
     serialized to and restored from a :ref:`disk queue <topics-jobs>` (which is
@@ -483,10 +483,10 @@ def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
     .. code-block:: python
 
         from scrapy.utils.httpobj import urlparse_cached
-        from scrapy.throttling import scope_cache
+        from scrapy.throttler import scope_cache
 
 
-        class MyThrottlingManager:
+        class MyThrottler:
             @scope_cache
             async def get_scopes(self, request):
                 return urlparse_cached(request).hostname or ""
@@ -505,8 +505,8 @@ def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
     return wrapper  # type: ignore[return-value]
 
 
-class ThrottlingManager:
-    """The default :setting:`THROTTLING_MANAGER` class.
+class Throttler:
+    """The default :setting:`THROTTLER` class.
 
     It assigns to each request its domain or subdomain as scope and handles
     backoff according to :ref:`backoff settings <basic-throttling>`.
@@ -520,13 +520,13 @@ class ThrottlingManager:
         self.crawler = crawler
         _warn_on_deprecated_concurrency(crawler.settings)
         _warn_on_unachievable_concurrency(crawler.settings)
-        self._debug = crawler.settings.getbool("THROTTLING_DEBUG")
-        self._max_idle = crawler.settings.getfloat("THROTTLING_SCOPE_MAX_IDLE")
+        self._debug = crawler.settings.getbool("THROTTLER_DEBUG")
+        self._max_idle = crawler.settings.getfloat("THROTTLER_SCOPE_MAX_IDLE")
         self._robotstxt_obey = crawler.settings.getbool(
             "ROBOTSTXT_OBEY"
-        ) and crawler.settings.getbool("THROTTLING_ROBOTSTXT_OBEY")
+        ) and crawler.settings.getbool("THROTTLER_ROBOTSTXT_OBEY")
         self._robotstxt_max_delay = crawler.settings.getfloat(
-            "THROTTLING_ROBOTSTXT_MAX_DELAY"
+            "THROTTLER_ROBOTSTXT_MAX_DELAY"
         )
         self._default_useragent: str = crawler.settings["USER_AGENT"]
         self._robotstxt_useragent: str | None = crawler.settings["ROBOTSTXT_USER_AGENT"]
@@ -535,40 +535,40 @@ class ThrottlingManager:
                 self._on_robots_parsed, signal=signals.robots_parsed
             )
         self._default_scope_manager_cls = load_object(
-            crawler.settings["THROTTLING_SCOPE_MANAGER"]
+            crawler.settings["THROTTLER_SCOPE_MANAGER"]
         )
         self._scopes_config: dict[str, dict[str, Any]] = self._merge_download_slots(
             crawler.settings
         )
         # Ordered by least-recently-used first (see get_scope_manager), so the
-        # scope limit can evict the coldest idle scopes (see THROTTLING_SCOPE_LIMIT).
-        self._scope_managers: OrderedDict[ScopeID, ThrottlingScopeManagerProtocol] = (
+        # scope limit can evict the coldest idle scopes (see THROTTLER_SCOPE_LIMIT).
+        self._scope_managers: OrderedDict[ScopeID, ThrottlerScopeManagerProtocol] = (
             OrderedDict()
         )
-        self._scope_limit: int = crawler.settings.getint("THROTTLING_SCOPE_LIMIT")
+        self._scope_limit: int = crawler.settings.getint("THROTTLER_SCOPE_LIMIT")
         self._last_eviction: float | None = None
         # Concurrency slots reserved by acquire(), to be released once the
         # request finishes downloading.
         self._reserved: WeakKeyDictionary[
-            Request, list[tuple[ThrottlingScopeManagerProtocol, float | None]]
+            Request, list[tuple[ThrottlerScopeManagerProtocol, float | None]]
         ] = WeakKeyDictionary()
 
     @staticmethod
     def _merge_download_slots(settings: BaseSettings) -> dict[str, dict[str, Any]]:
         """Return the effective per-scope configuration, merging the deprecated
-        :setting:`DOWNLOAD_SLOTS` setting into :setting:`THROTTLING_SCOPES`.
+        :setting:`DOWNLOAD_SLOTS` setting into :setting:`THROTTLER_SCOPES`.
 
-        Each ``DOWNLOAD_SLOTS`` entry is translated to a throttling scope keyed
+        Each ``DOWNLOAD_SLOTS`` entry is translated to a throttler scope keyed
         by the same slot name (the default manager keys domain scopes by host
         name, which is what download slots used too): ``concurrency`` and
         ``delay`` map directly, and the ``randomize_delay`` boolean maps to a
         ``jitter`` magnitude (the historical ±50%, or none). An explicit
-        ``THROTTLING_SCOPES`` entry for the same scope takes precedence over the
+        ``THROTTLER_SCOPES`` entry for the same scope takes precedence over the
         translated one. The deprecation warning is emitted by the downloader.
         """
         scopes: dict[str, dict[str, Any]] = {
             scope_id: dict(config)
-            for scope_id, config in settings.getdict("THROTTLING_SCOPES").items()
+            for scope_id, config in settings.getdict("THROTTLER_SCOPES").items()
         }
         for slot_id, slot_config in settings.getdict("DOWNLOAD_SLOTS").items():
             translated: dict[str, Any] = {}
@@ -578,7 +578,7 @@ class ThrottlingManager:
                 translated["delay"] = slot_config["delay"]
             if "randomize_delay" in slot_config:
                 translated["jitter"] = 0.5 if slot_config["randomize_delay"] else 0.0
-            # An explicit THROTTLING_SCOPES entry wins over the translated one.
+            # An explicit THROTTLER_SCOPES entry wins over the translated one.
             scopes[slot_id] = {**translated, **scopes.get(slot_id, {})}
         return scopes
 
@@ -597,14 +597,14 @@ class ThrottlingManager:
         :func:`scope_cache`). Subclasses whose :meth:`get_scopes` cannot be
         resolved synchronously rely on that persisted value instead.
         """
-        scopes = request.meta.get("throttling_scopes")
+        scopes = request.meta.get("throttler_scopes")
         if scopes is not None:
             return cast("RequestScopes", scopes)
         download_slot = request.meta.get("download_slot")
         if download_slot is not None:
             warnings.warn(
                 "The 'download_slot' request meta key is deprecated. Use "
-                "'throttling_scopes' instead.",
+                "'throttler_scopes' instead.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -641,7 +641,7 @@ class ThrottlingManager:
 
     # -- Scope-state coordination (called from the request lifecycle) --------
 
-    def get_scope_manager(self, scope_id: ScopeID) -> ThrottlingScopeManagerProtocol:
+    def get_scope_manager(self, scope_id: ScopeID) -> ThrottlerScopeManagerProtocol:
         manager = self._scope_managers.get(scope_id)
         if manager is not None:
             # Mark as most-recently-used for the LRU scope limit.
@@ -655,7 +655,7 @@ class ThrottlingManager:
             else self._default_scope_manager_cls
         )
         manager = cast(
-            "ThrottlingScopeManagerProtocol",
+            "ThrottlerScopeManagerProtocol",
             build_from_crawler(manager_cls, self.crawler, config),
         )
         self._scope_managers[scope_id] = manager
@@ -664,7 +664,7 @@ class ThrottlingManager:
 
     def _enforce_scope_limit(self, keep: ScopeID) -> None:
         """Evict least-recently-used idle scopes while the number of live scope
-        managers exceeds :setting:`THROTTLING_SCOPE_LIMIT` (``0`` disables the
+        managers exceeds :setting:`THROTTLER_SCOPE_LIMIT` (``0`` disables the
         limit).
 
         LRU order is kept by :meth:`get_scope_manager` moving each accessed
@@ -684,7 +684,7 @@ class ThrottlingManager:
                 del self._scope_managers[scope_id]
 
     async def acquire(self, request: Request) -> None:
-        # A throttling-aware scheduler reserves the request before handing it
+        # A throttler-aware scheduler reserves the request before handing it
         # to the engine, so there is nothing left to wait for or record here.
         if request in self._reserved:
             return
@@ -728,7 +728,7 @@ class ThrottlingManager:
     def _record_reservation(
         self,
         request: Request,
-        managers: list[tuple[ThrottlingScopeManagerProtocol, float | None]],
+        managers: list[tuple[ThrottlerScopeManagerProtocol, float | None]],
     ) -> None:
         """Record a send on each of *request*'s scope *managers* and mark
         *request* as reserved, so :meth:`release` can later free the slots. This
@@ -744,7 +744,7 @@ class ThrottlingManager:
         for manager, _ in managers:
             manager.record_done()
 
-    # -- Synchronous readiness API (used by a throttling-aware scheduler) ------
+    # -- Synchronous readiness API (used by a throttler-aware scheduler) ------
 
     def is_ready(self, request: Request) -> bool:
         now = time.monotonic()
@@ -759,7 +759,7 @@ class ThrottlingManager:
         return True
 
     def reserve(self, request: Request) -> None:
-        # A throttling-aware scheduler reserves every request before handing it
+        # A throttler-aware scheduler reserves every request before handing it
         # to the engine, so acquire() always returns early for it and never
         # gets to evict idle scopes; do it here so their managers do not pile
         # up on broad crawls.
@@ -789,8 +789,8 @@ class ThrottlingManager:
         """Block until any of *managers* frees a concurrency slot.
 
         Each manager hands out an event Deferred that fires when a slot is freed
-        (via :meth:`ThrottlingScopeManager.record_done`) or the limit is raised
-        (via :meth:`ThrottlingScopeManager.set_concurrency`). A long safety timer
+        (via :meth:`ThrottlerScopeManager.record_done`) or the limit is raised
+        (via :meth:`ThrottlerScopeManager.set_concurrency`). A long safety timer
         bounds the wait in case no slot is ever freed (it always should be, via
         :meth:`release`).
         """
@@ -802,7 +802,7 @@ class ThrottlingManager:
                 manager.discard_slot_event(event)
 
     async def _delay_request(self, request: Request) -> None:
-        """Honor the :reqmeta:`throttling_delay` meta key by holding *request*
+        """Honor the :reqmeta:`delay` meta key by holding *request*
         for the requested number of seconds the first time it is processed.
 
         This is the blocking (:meth:`acquire`) counterpart of
@@ -815,31 +815,31 @@ class ThrottlingManager:
         if wait <= 0:
             return
         await sleep(wait)
-        request.meta["_throttling_delayed"] = True
+        request.meta["_throttler_delayed"] = True
 
     def _request_delay_deadline(self, request: Request, now: float) -> float:
         """Return the monotonic time before which *request* must not be sent due
-        to its :reqmeta:`throttling_delay`, or ``0.0`` if it has none.
+        to its :reqmeta:`delay`, or ``0.0`` if it has none.
 
         This is the readiness-API counterpart of :meth:`_delay_request`:
-        a throttling-aware scheduler gates requests through :meth:`is_ready` and
+        a throttler-aware scheduler gates requests through :meth:`is_ready` and
         :meth:`get_time_until_ready` instead of awaiting :meth:`acquire`, so the
         delay is enforced by holding back the request until this deadline rather
         than by sleeping. The deadline is computed once, the first time the
         request reaches the gate, and stored so later polls reuse it.
 
-        A request whose delay has already been honored (the ``_throttling_delayed``
+        A request whose delay has already been honored (the ``_throttler_delayed``
         flag, also set by :meth:`_delay_request`) is never delayed again,
         which keeps a resumed crawl from re-blocking on a stale deadline."""
-        delay = request.meta.get("throttling_delay")
-        if not delay or request.meta.get("_throttling_delayed"):
+        delay = request.meta.get("delay")
+        if not delay or request.meta.get("_throttler_delayed"):
             return 0.0
-        deadline = request.meta.get("_throttling_delay_deadline")
+        deadline = request.meta.get("_throttler_delay_deadline")
         if deadline is None:
             deadline = now + float(delay)
-            request.meta["_throttling_delay_deadline"] = deadline
+            request.meta["_throttler_delay_deadline"] = deadline
             if self._debug:
-                logger.debug(f"Holding {request} for {delay:.2f}s (throttling_delay)")
+                logger.debug(f"Holding {request} for {delay:.2f}s (delay)")
         return deadline
 
     def back_off(
@@ -889,11 +889,11 @@ class ThrottlingManager:
     def apply_robots_crawl_delay(self, scope_id: ScopeID, delay: float) -> None:
         """Honor a robots.txt ``Crawl-delay`` directive of *delay* seconds for
         *scope_id* by setting its delay (capped at
-        :setting:`THROTTLING_ROBOTSTXT_MAX_DELAY`) and its concurrency to ``1``.
+        :setting:`THROTTLER_ROBOTSTXT_MAX_DELAY`) and its concurrency to ``1``.
 
         Called from the :signal:`robots_parsed` signal handler when
-        :setting:`THROTTLING_ROBOTSTXT_OBEY` is enabled. An explicit
-        :setting:`THROTTLING_SCOPES` configuration for the scope is respected, but
+        :setting:`THROTTLER_ROBOTSTXT_OBEY` is enabled. An explicit
+        :setting:`THROTTLER_SCOPES` configuration for the scope is respected, but
         a warning is logged about the discrepancy unless its ``ignore_robots_txt``
         key is ``True``.
         """
@@ -910,10 +910,10 @@ class ThrottlingManager:
             conflicts.append(f"concurrency={config['concurrency']!r} > 1")
         if conflicts:
             logger.warning(
-                f"Throttling scope {scope_id!r} is configured with {' and '.join(conflicts)}, "
+                f"Throttler scope {scope_id!r} is configured with {' and '.join(conflicts)}, "
                 f"which is more aggressive than its robots.txt Crawl-delay of "
                 f"{capped}s. The configured values take precedence; set "
-                "'ignore_robots_txt': True in its THROTTLING_SCOPES entry to "
+                "'ignore_robots_txt': True in its THROTTLER_SCOPES entry to "
                 "silence this warning."
             )
             return
@@ -951,12 +951,12 @@ class ThrottlingManager:
                 del self._scope_managers[scope_id]
 
 
-class ThrottlingScopeManagerProtocol(Protocol):
-    """A protocol for :setting:`THROTTLING_SCOPE_MANAGER` :ref:`components
+class ThrottlerScopeManagerProtocol(Protocol):
+    """A protocol for :setting:`THROTTLER_SCOPE_MANAGER` :ref:`components
     <topics-components>`.
 
     The ``__init__`` method gets a ``config`` dict with the base configuration
-    of the managed throttling scope. For example:
+    of the managed throttler scope. For example:
 
     .. code-block:: python
 
@@ -988,7 +988,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
         """Return the number of seconds to wait before a request for this scope
         may be sent, or ``0`` if it may be sent right away.
 
-        *amount* is the expected :ref:`throttling quota <throttling-quotas>`
+        *amount* is the expected :ref:`throttler quota <throttling-quotas>`
         consumption of the request, if any.
         """
 
@@ -996,7 +996,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
         self, now: float | None = None, amount: float | None = None
     ) -> None:
         """Record that a request for this scope has just been sent, consuming
-        *amount* of its :ref:`throttling quota <throttling-quotas>` if given."""
+        *amount* of its :ref:`throttler quota <throttling-quotas>` if given."""
 
     def record_done(self, now: float | None = None) -> None:
         """Record that a previously :meth:`record_sent` request has finished
@@ -1017,7 +1017,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
         *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`. It is ``True`` for
         untrusted input such as response headers, and may be set to ``False``
         for trusted, programmatic delays (see
-        :meth:`ThrottlingManagerProtocol.delay_scope`).
+        :meth:`ThrottlerProtocol.delay_scope`).
         """
 
     def reconcile_quota(
@@ -1026,7 +1026,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
         remaining: float | None = None,
         now: float | None = None,
     ) -> None:
-        """Reconcile the :ref:`throttling quota <throttling-quotas>` of this
+        """Reconcile the :ref:`throttler quota <throttling-quotas>` of this
         scope with the actual *consumed* amount (or the *remaining* amount)
         reported for a request, correcting the estimate used by
         :meth:`record_sent`."""
@@ -1049,7 +1049,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
     def concurrency_blocked(self) -> bool:
         """Return whether this scope is at its concurrency limit.
 
-        :class:`ThrottlingManager` calls this (after all time-based gates in
+        :class:`Throttler` calls this (after all time-based gates in
         :meth:`can_send` are open) to decide whether to wait for a freed slot.
         Return ``False`` when no concurrency limit is enforced.
         """
@@ -1058,7 +1058,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
         """Return the current load of this scope: a non-negative number, with
         ``1.0`` meaning "as busy as its concurrency limit allows".
 
-        A :ref:`throttling-aware scheduler <throttling-aware-scheduler>` uses
+        A :ref:`throttler-aware scheduler <throttler-aware-scheduler>` uses
         this to break ties between equally-prioritized requests, preferring the
         least-loaded scopes. The reference implementation returns active sends
         divided by the concurrency limit (falling back to
@@ -1076,7 +1076,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
     def discard_slot_event(self, event: Deferred[None]) -> None:
         """Cancel a pending slot event returned by :meth:`slot_event`.
 
-        Called by :class:`ThrottlingManager` when the wait ends without the
+        Called by :class:`Throttler` when the wait ends without the
         event firing (e.g. another scope's slot opened first).
         """
 
@@ -1095,8 +1095,8 @@ class ThrottlingScopeManagerProtocol(Protocol):
 _SLOT_WAIT_TIMEOUT = 1.0
 
 
-class ThrottlingScopeManager:
-    """The default :setting:`THROTTLING_SCOPE_MANAGER` class.
+class ThrottlerScopeManager:
+    """The default :setting:`THROTTLER_SCOPE_MANAGER` class.
 
     It implements a per-scope state machine covering delay, exponential
     :ref:`backoff <backoff>`, concurrency and :ref:`quotas
@@ -1122,7 +1122,7 @@ class ThrottlingScopeManager:
         than that many requests are allowed in flight at once.
 
     -   When the scope is configured with a ``"quota"``, no more than that much
-        quota is consumed per ``"window"`` (default: :setting:`THROTTLING_WINDOW`).
+        quota is consumed per ``"window"`` (default: :setting:`THROTTLER_WINDOW`).
     """
 
     @classmethod
@@ -1134,7 +1134,7 @@ class ThrottlingScopeManager:
         backoff: dict[str, Any] = config.get("backoff", {})
         self._id: ScopeID = config.get("id", "")
         # The per-scope delay defaults to DOWNLOAD_DELAY; a scope can override
-        # it with its own "delay" config (see THROTTLING_SCOPES).
+        # it with its own "delay" config (see THROTTLER_SCOPES).
         self._base_delay: float = float(
             config.get("delay", settings.getfloat("DOWNLOAD_DELAY"))
         )
@@ -1180,7 +1180,7 @@ class ThrottlingScopeManager:
         quota = config.get("quota")
         self._quota: float | None = None if quota is None else float(quota)
         self._quota_window: float = float(
-            config.get("window", settings.getfloat("THROTTLING_WINDOW"))
+            config.get("window", settings.getfloat("THROTTLER_WINDOW"))
         )
 
         # State.

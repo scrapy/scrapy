@@ -733,8 +733,8 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
-* :reqmeta:`throttling_delay`
-* :reqmeta:`throttling_scopes`
+* :reqmeta:`delay`
+* :reqmeta:`throttler_scopes`
 * :reqmeta:`verbatim_url`
 
 .. reqmeta:: bindaddress

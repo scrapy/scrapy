@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
-    from scrapy.throttling import ThrottlingManagerProtocol
+    from scrapy.throttler import ThrottlerProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class AutoThrottle:
 
         warn(
             "You have set the AUTOTHROTTLE_ENABLED setting to True, however "
-            "the AutoThrottle extension is deprecated; use throttling and "
+            "the AutoThrottle extension is deprecated; use throttler and "
             "backoff settings instead: "
             "https://docs.scrapy.org/en/latest/topics/throttling.html",
             ScrapyDeprecationWarning,
@@ -99,9 +99,7 @@ class AutoThrottle:
                 extra={"spider": spider},
             )
 
-    def _scope_delay(
-        self, throttler: ThrottlingManagerProtocol, scope_id: str
-    ) -> float:
+    def _scope_delay(self, throttler: ThrottlerProtocol, scope_id: str) -> float:
         """Return the current delay of *scope_id*, applying AUTOTHROTTLE_START_DELAY
         the first time the scope is seen."""
         delay = throttler.get_scope_delay(scope_id)

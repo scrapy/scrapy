@@ -26,12 +26,12 @@ throttling limits, as do ``toscrape.com`` and ``books.toscrape.com``.
 
 The main throttling :ref:`settings <topics-settings>` are:
 
--   .. setting:: THROTTLING_SCOPE_CONCURRENCY
+-   .. setting:: THROTTLER_SCOPE_CONCURRENCY
 
-    :setting:`THROTTLING_SCOPE_CONCURRENCY` (default: ``1``)
+    :setting:`THROTTLER_SCOPE_CONCURRENCY` (default: ``1``)
 
-    Default maximum number of simultaneous requests per :ref:`throttling scope
-    <throttling-scopes>`. Requests are grouped by domain by default, so this is
+    Default maximum number of simultaneous requests per :ref:`throttler scope
+    <throttler-scopes>`. Requests are grouped by domain by default, so this is
     the maximum number of simultaneous requests per domain.
 
     It defines a number of “slots” per scope. Each slot can send 1 request at a
@@ -51,29 +51,29 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 When configuring these settings, note that:
 
--   :setting:`CONCURRENT_REQUESTS` caps :setting:`THROTTLING_SCOPE_CONCURRENCY`.
+-   :setting:`CONCURRENT_REQUESTS` caps :setting:`THROTTLER_SCOPE_CONCURRENCY`.
 
 -   If ``DOWNLOAD_DELAY`` ≥ response time, concurrency is effectively ``1``,
     because the next request to the domain is not sent until the delay elapses,
     by which time the previous response has already arrived.
 
-.. [1] You can :ref:`customize <throttling-scopes>` how requests are grouped
+.. [1] You can :ref:`customize <throttler-scopes>` how requests are grouped
     for throttling, but domain-based throttling works well in most cases. For
     more complex domain grouping strategies, see
     :ref:`alternative-domain-throttling`.
 
-.. setting:: THROTTLING_SCOPES
+.. setting:: THROTTLER_SCOPES
 
 .. _per-domain-throttling:
 
 Per-domain throttling
 =====================
 
-The :setting:`THROTTLING_SCOPES` setting allows you to customize throttling
+The :setting:`THROTTLER_SCOPES` setting allows you to customize throttling
 behavior for specific domains [1]_.
 
 It is a dict that maps scope names to
-:class:`~scrapy.throttling.ThrottlingScopeConfig` dicts. It is empty by default.
+:class:`~scrapy.throttler.ThrottlerScopeConfig` dicts. It is empty by default.
 
 :command:`startproject` scaffolds a commented-out example entry, so that you can
 uncomment and edit it to crawl domains you own (or that are meant for scraping)
@@ -82,7 +82,7 @@ other domains:
 
 .. code-block:: python
 
-    THROTTLING_SCOPES = {
+    THROTTLER_SCOPES = {
         "example.com": {"concurrency": 16, "delay": 0.1},
     }
 
@@ -133,7 +133,7 @@ See :ref:`throttling-settings` for :setting:`BACKOFF_EXCEPTIONS`,
 How backoff works
 -----------------
 
-Every :ref:`throttling scope <throttling-scopes>` keeps a current delay that
+Every :ref:`throttler scope <throttler-scopes>` keeps a current delay that
 starts at its configured ``"delay"`` (:setting:`DOWNLOAD_DELAY` by default).
 
 A **backoff trigger** is a response whose status code is in
@@ -181,7 +181,7 @@ Backoff triggers are detected by the
 Any component can also trigger backoff programmatically for arbitrary scopes —
 e.g. based on the response body of a specific site — through
 :meth:`crawler.throttler.back_off()
-<scrapy.throttling.ThrottlingManagerProtocol.back_off>`.
+<scrapy.throttler.ThrottlerProtocol.back_off>`.
 
 .. _per-scope-backoff:
 
@@ -189,13 +189,13 @@ Per-scope backoff configuration
 -------------------------------
 
 The global ``BACKOFF_*`` settings can be overridden per scope with the
-``"backoff"`` key of a :setting:`THROTTLING_SCOPES` entry, an instance of
-:class:`~scrapy.throttling.BackoffConfig`:
+``"backoff"`` key of a :setting:`THROTTLER_SCOPES` entry, an instance of
+:class:`~scrapy.throttler.BackoffConfig`:
 
 .. code-block:: python
     :caption: ``settings.py``
 
-    THROTTLING_SCOPES = {
+    THROTTLER_SCOPES = {
         "example.com": {
             "backoff": {
                 "http_codes": [429, 503],
@@ -242,17 +242,17 @@ robots.txt
 is a non-standard ``robots.txt`` directive that indicates a number of seconds
 to wait between requests.
 
-.. setting:: THROTTLING_ROBOTSTXT_OBEY
-.. setting:: THROTTLING_ROBOTSTXT_MAX_DELAY
+.. setting:: THROTTLER_ROBOTSTXT_OBEY
+.. setting:: THROTTLER_ROBOTSTXT_MAX_DELAY
 
-If :setting:`ROBOTSTXT_OBEY` and :setting:`THROTTLING_ROBOTSTXT_OBEY` are
+If :setting:`ROBOTSTXT_OBEY` and :setting:`THROTTLER_ROBOTSTXT_OBEY` are
 ``True`` (default), valid ``Crawl-Delay`` directives override
-:setting:`THROTTLING_SCOPE_CONCURRENCY` and :setting:`DOWNLOAD_DELAY`.
+:setting:`THROTTLER_SCOPE_CONCURRENCY` and :setting:`DOWNLOAD_DELAY`.
 Concurrency is set to ``1`` and the delay is raised to at least the
 ``Crawl-Delay`` value (a larger configured delay is kept), capped at
-:setting:`THROTTLING_ROBOTSTXT_MAX_DELAY` (default: ``60.0``).
+:setting:`THROTTLER_ROBOTSTXT_MAX_DELAY` (default: ``60.0``).
 
-If :setting:`THROTTLING_SCOPES` defines a different concurrency or delay, it
+If :setting:`THROTTLER_SCOPES` defines a different concurrency or delay, it
 will be respected, but a warning will be logged about the discrepancy with
 ``Crawl-Delay``. Set ``ignore_robots_txt`` to ``True`` to silence this warning.
 
@@ -261,9 +261,9 @@ will be respected, but a warning will be logged about the discrepancy with
 Delaying a scope programmatically
 =================================
 
-You can delay a :ref:`throttling scope <throttling-scopes>` on demand through
+You can delay a :ref:`throttler scope <throttler-scopes>` on demand through
 :meth:`crawler.throttler.delay_scope()
-<scrapy.throttling.ThrottlingManagerProtocol.delay_scope>`:
+<scrapy.throttler.ThrottlerProtocol.delay_scope>`:
 
 .. skip: next
 
@@ -315,9 +315,9 @@ For example, you might want to throttle API endpoints differently than web
 pages on the same domain, group requests by content type (images vs HTML), or
 apply different throttling based on request priority.
 
-.. reqmeta:: throttling_scopes
+.. reqmeta:: throttler_scopes
 
-Use the ``throttling_scopes`` request metadata to assign requests to custom
+Use the ``throttler_scopes`` request metadata to assign requests to custom
 throttling groups:
 
 .. invisible-code-block: python
@@ -326,51 +326,51 @@ throttling groups:
 
 .. code-block:: python
 
-    Request("https://api.example/", meta={"throttling_scopes": "api"})
+    Request("https://api.example/", meta={"throttler_scopes": "api"})
 
 You can also assign multiple throttling groups to a single request:
 
 .. code-block:: python
 
-    Request("https://api.example/users", meta={"throttling_scopes": {"api", "users"}})
+    Request("https://api.example/users", meta={"throttler_scopes": {"api", "users"}})
 
-You can then use the :setting:`THROTTLING_SCOPES` setting to customize
+You can then use the :setting:`THROTTLER_SCOPES` setting to customize
 throttling for such requests:
 
 .. code-block:: python
     :caption: ``settings.py``
 
-    THROTTLING_SCOPES = {
+    THROTTLER_SCOPES = {
         "api": {"concurrency": 2},
         "users": {"delay": 5.0},
     }
 
 .. note:: These custom throttling groups persist through redirects. For
-    redirect-aware throttling assignment, see :ref:`custom-throttling-scopes`.
+    redirect-aware throttling assignment, see :ref:`custom-throttler-scopes`.
 
-.. reqmeta:: throttling_delay
+.. reqmeta:: delay
 
 Delaying a single request
 -------------------------
 
 To hold a single request for a fixed number of seconds before it is sent,
-regardless of its scopes, set the ``throttling_delay`` request metadata key:
+regardless of its scopes, set the ``delay`` request metadata key:
 
 .. code-block:: python
 
-    Request("https://example.com/slow", meta={"throttling_delay": 5.0})
+    Request("https://example.com/slow", meta={"delay": 5.0})
 
 The delay is applied once, the first time the request reaches the throttling
 gate.
 
-``throttling_delay`` defines only the *earliest* time the request may be sent,
+``delay`` defines only the *earliest* time the request may be sent,
 not the exact time: once the delay elapses, the request still competes with
 every other pending request for its scopes. If you want it sent **as soon as**
 its delay elapses, give it a higher :attr:`~scrapy.Request.priority` too:
 
 .. code-block:: python
 
-    Request("https://example.com/slow", meta={"throttling_delay": 5.0}, priority=1)
+    Request("https://example.com/slow", meta={"delay": 5.0}, priority=1)
 
 Without a higher priority, a backlog of requests ahead of it in a FIFO queue
 could keep it waiting well past the configured delay; a higher priority puts it
@@ -391,33 +391,33 @@ request normally without letting its outcome trigger :ref:`backoff <backoff>`:
 
     Request("https://example.com/login", meta={"dont_throttle": True})
 
-.. _throttling-scopes:
+.. _throttler-scopes:
 
-Throttling scopes
-=================
+Throttler scopes
+================
 
-Throttling scopes represent aspects of requests that can be throttled
+Throttler scopes represent aspects of requests that can be throttled
 independently.
 
 ..
-    For future reference, the “throttling scope” name was taken from
+    For future reference, the “throttler scope” name was taken from
     https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#section-1.4-4.4
 
-.. _custom-throttling-scopes:
+.. _custom-throttler-scopes:
 
-Customizing throttling scopes
+Customizing throttler scopes
 ------------------------------
 
-There are 2 ways to customize throttling scopes.
+There are 2 ways to customize throttler scopes.
 
-To **configure existing scopes**, use the :setting:`THROTTLING_SCOPES` setting.
+To **configure existing scopes**, use the :setting:`THROTTLER_SCOPES` setting.
 Its keys are scope names and its values are
-:class:`~scrapy.throttling.ThrottlingScopeConfig` dicts, which accept the
+:class:`~scrapy.throttler.ThrottlerScopeConfig` dicts, which accept the
 following keys:
 
 ``concurrency`` (:class:`int`)
     Maximum number of concurrent requests for the scope. Defaults to
-    :setting:`THROTTLING_SCOPE_CONCURRENCY`.
+    :setting:`THROTTLER_SCOPE_CONCURRENCY`.
 
 ``delay`` (:class:`float`)
     Minimum seconds between requests for the scope. Defaults to
@@ -430,152 +430,152 @@ following keys:
     a ``[low, high]`` pair multiplies the delay by ``1 + uniform(low, high)``.
 
 ``quota`` (:class:`float`)
-    Maximum :ref:`quota <throttling-quotas>` consumed per ``window``.
+    Maximum :ref:`quota <throttler-quotas>` consumed per ``window``.
 
 ``window`` (:class:`float`)
-    Quota window in seconds. Defaults to :setting:`THROTTLING_WINDOW`.
+    Quota window in seconds. Defaults to :setting:`THROTTLER_WINDOW`.
 
-``backoff`` (:class:`~scrapy.throttling.BackoffConfig`)
+``backoff`` (:class:`~scrapy.throttler.BackoffConfig`)
     Per-scope :ref:`backoff overrides <per-scope-backoff>`.
 
 ``manager`` (:class:`str` or :class:`type`)
     Import path or class of a :ref:`custom scope manager
-    <custom-throttling-scope-managers>` for the scope.
+    <custom-throttler-scope-managers>` for the scope.
 
 ``ignore_robots_txt`` (:class:`bool`)
     Silences the warning logged when this configuration is more aggressive than
     a :ref:`robots.txt Crawl-delay <crawl-delay>`.
 
-.. setting:: THROTTLING_MANAGER
+.. setting:: THROTTLER
 
 To **change how scopes are assigned** (or anything beyond per-scope settings),
-set :setting:`THROTTLING_MANAGER` (default:
-:class:`~scrapy.throttling.ThrottlingManager`) to a :ref:`component
+set :setting:`THROTTLER` (default:
+:class:`~scrapy.throttler.Throttler`) to a :ref:`component
 <topics-components>` that implements the
-:class:`~scrapy.throttling.ThrottlingManagerProtocol` protocol (or its import
+:class:`~scrapy.throttler.ThrottlerProtocol` protocol (or its import
 path as a string):
 
 .. code-block:: python
     :caption: ``settings.py``
 
-    THROTTLING_MANAGER = "myproject.throttling.MyThrottlingManager"
+    THROTTLER = "myproject.throttling.MyThrottler"
 
-.. _multiple-throttling-scopes:
+.. _multiple-throttler-scopes:
 
-Handling of multiple throttling scopes
+Handling of multiple throttler scopes
 --------------------------------------
 
-When a request has multiple throttling scopes, it is not sent until all of its
-throttling scopes allow it.
+When a request has multiple throttler scopes, it is not sent until all of its
+throttler scopes allow it.
 
-.. _throttling-quotas:
+.. _throttler-quotas:
 
-Throttling quotas
------------------
+Throttler quotas
+----------------
 
-When different requests can consume different amounts of a throttling scope,
-you can express this using **throttling quotas**.
+When different requests can consume different amounts of a throttler scope,
+you can express this using **throttler quotas**.
 
-.. setting:: THROTTLING_WINDOW
+.. setting:: THROTTLER_WINDOW
 
-Use the :setting:`THROTTLING_WINDOW` setting (default: ``60.0``) or the ``"window"``
-key in the :setting:`THROTTLING_SCOPES` setting to define the time window after
-which throttling quotas are reset.
+Use the :setting:`THROTTLER_WINDOW` setting (default: ``60.0``) or the ``"window"``
+key in the :setting:`THROTTLER_SCOPES` setting to define the time window after
+which throttler quotas are reset.
 
-Then use the :setting:`THROTTLING_SCOPES` setting to define the throttling
-quotas for each throttling scope:
+Then use the :setting:`THROTTLER_SCOPES` setting to define the throttling
+quotas for each throttler scope:
 
 .. code-block:: python
     :caption: ``settings.py``
 
-    THROTTLING_SCOPES = {
+    THROTTLER_SCOPES = {
         "api.toscrape.com": {
             "quota": 500.0,
         },
     }
 
-Then, in the :reqmeta:`throttling_scopes` request metadata key or in the return
-value of the :meth:`~scrapy.throttling.ThrottlingManagerProtocol.get_scopes`
-method, define a :class:`dict` where keys are throttling scopes and values are
+Then, in the :reqmeta:`throttler_scopes` request metadata key or in the return
+value of the :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes`
+method, define a :class:`dict` where keys are throttler scopes and values are
 :class:`float` values that indicate the expected quota consumption (it does not
 need to be exact).
 
-.. _custom-throttling-scope-managers:
+.. _custom-throttler-scope-managers:
 
-Customizing throttling scope managers
+Customizing throttler scope managers
 -------------------------------------
 
-.. setting:: THROTTLING_SCOPE_MANAGER
+.. setting:: THROTTLER_SCOPE_MANAGER
 
-The :setting:`THROTTLING_SCOPE_MANAGER` setting (default:
-:class:`~scrapy.throttling.ThrottlingScopeManager`) is a :ref:`component
+The :setting:`THROTTLER_SCOPE_MANAGER` setting (default:
+:class:`~scrapy.throttler.ThrottlerScopeManager`) is a :ref:`component
 <topics-components>` that implements the
-:class:`~scrapy.throttling.ThrottlingScopeManagerProtocol` (or its import path
+:class:`~scrapy.throttler.ThrottlerScopeManagerProtocol` (or its import path
 as a string):
 
 .. code-block:: python
     :caption: ``settings.py``
 
-    THROTTLING_SCOPE_MANAGER = "myproject.throttling.MyThrottlingScopeManager"
+    THROTTLER_SCOPE_MANAGER = "myproject.throttling.MyThrottlerScopeManager"
 
-For each throttling scope, an instance of this class is created to manage any
+For each throttler scope, an instance of this class is created to manage any
 gradual :ref:`backoff <backoff>` required at run time.
 
-You can implement your own throttling scope manager if you wish to change the
+You can implement your own throttler scope manager if you wish to change the
 backoff behavior beyond what settings allow.
 
-You can also define a custom throttling scope manager for a specific throttling
-scope by setting the ``"manager"`` key in the :setting:`THROTTLING_SCOPES`
+You can also define a custom throttler scope manager for a specific throttling
+scope by setting the ``"manager"`` key in the :setting:`THROTTLER_SCOPES`
 setting:
 
 .. code-block:: python
     :caption: ``settings.py``
 
-    THROTTLING_SCOPES = {
+    THROTTLER_SCOPES = {
         "api.toscrape.com": {
-            "manager": "myproject.throttling.MyThrottlingScopeManager",
+            "manager": "myproject.throttling.MyThrottlerScopeManager",
         },
     }
 
 Most custom scope managers subclass the default
-:class:`~scrapy.throttling.ThrottlingScopeManager` and override only the methods
+:class:`~scrapy.throttler.ThrottlerScopeManager` and override only the methods
 whose behavior they want to change; implementing the
-:class:`~scrapy.throttling.ThrottlingScopeManagerProtocol` from scratch is also
+:class:`~scrapy.throttler.ThrottlerScopeManagerProtocol` from scratch is also
 supported. For example, this manager disables exponential :ref:`backoff
 <backoff>`, so a scope relies solely on its configured delay and quota:
 
 .. code-block:: python
     :caption: ``myproject/throttling.py``
 
-    from scrapy.throttling import ThrottlingScopeManager
+    from scrapy.throttler import ThrottlerScopeManager
 
 
-    class FixedWindowScopeManager(ThrottlingScopeManager):
+    class FixedWindowScopeManager(ThrottlerScopeManager):
         def record_backoff(self, *args, **kwargs):
             pass  # never back off
 
-.. _throttling-aware-scheduler:
+.. _throttler-aware-scheduler:
 
 Throttling-aware scheduling
 ===========================
 
 By default, throttling is enforced at the engine, where a request waiting on
-its :ref:`throttling scopes <throttling-scopes>` holds a concurrency slot. In a
+its :ref:`throttler scopes <throttler-scopes>` holds a concurrency slot. In a
 crawl that mixes heavily-throttled scopes with unthrottled ones, this can let
 throttled requests starve unthrottled ones that could be sent right away
 (**head-of-line blocking**; Scrapy logs a warning the first time throttled
 requests start consuming the global concurrency budget while they wait).
 
-:class:`~scrapy.core.scheduler.ThrottlingAwareScheduler` avoids this. To enable
+:class:`~scrapy.core.scheduler.ThrottlerAwareScheduler` avoids this. To enable
 it:
 
 .. code-block:: python
     :caption: ``settings.py``
 
-    SCHEDULER = "scrapy.core.scheduler.ThrottlingAwareScheduler"
-    SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ThrottlingAwarePriorityQueue"
+    SCHEDULER = "scrapy.core.scheduler.ThrottlerAwareScheduler"
+    SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ThrottlerAwarePriorityQueue"
 
-.. autoclass:: scrapy.core.scheduler.ThrottlingAwareScheduler
+.. autoclass:: scrapy.core.scheduler.ThrottlerAwareScheduler
 
 .. _throttling-examples:
 
@@ -587,14 +587,14 @@ Examples
 Alternative domain throttling
 -----------------------------
 
-If you are not happy with the :ref:`default throttling scope behavior
+If you are not happy with the :ref:`default throttler scope behavior
 <basic-throttling>` with regards to domains and subdomains, you can change it.
 
 Alternative approaches include:
 
--   Using the **highest-level registrable domain** as the throttling scope,
+-   Using the **highest-level registrable domain** as the throttler scope,
     e.g. https://books.toscrape.com and https://toscrape.com both get a
-    ``toscrape.com`` throttling scope.
+    ``toscrape.com`` throttler scope.
 
     This allows to apply the same throttling settings to all subdomains of a
     registrable domain.
@@ -605,24 +605,24 @@ Alternative approaches include:
         :caption: ``settings.py``
 
         import tldextract
-        from scrapy.throttling import ThrottlingManager, scope_cache
+        from scrapy.throttler import Throttler, scope_cache
         from scrapy.utils.httpobj import urlparse_cached
 
 
-        class MyThrottlingManager(ThrottlingManager):
+        class MyThrottler(Throttler):
             @scope_cache
             async def get_scopes(self, request):
                 extracted = tldextract.extract(request.url)
                 return extracted.registered_domain or urlparse_cached(request).netloc
 
 
-        THROTTLING_MANAGER = MyThrottlingManager
+        THROTTLER = MyThrottler
 
--   Using **multiple throttling scopes per request**, one per registrable
+-   Using **multiple throttler scopes per request**, one per registrable
     domain and for every higher-level subdomain, e.g.
     https://books.toscrape.com and https://toscrape.com both get a
-    ``toscrape.com`` throttling scope, but https://books.toscrape.com also
-    gets a ``books.toscrape.com`` throttling scope.
+    ``toscrape.com`` throttler scope, but https://books.toscrape.com also
+    gets a ``books.toscrape.com`` throttler scope.
 
     This allows to apply the same throttling settings to all subdomains of a
     registrable domain, but also allows applying further restrictions on each
@@ -634,11 +634,11 @@ Alternative approaches include:
         :caption: ``settings.py``
 
         import tldextract
-        from scrapy.throttling import ThrottlingManager, scope_cache
+        from scrapy.throttler import Throttler, scope_cache
         from scrapy.utils.httpobj import urlparse_cached
 
 
-        class MyThrottlingManager(ThrottlingManager):
+        class MyThrottler(Throttler):
             @scope_cache
             async def get_scopes(self, request):
                 extracted = tldextract.extract(request.url)
@@ -648,8 +648,8 @@ Alternative approaches include:
                 return {extracted.registered_domain, extracted.fqdn}
 
 
-        THROTTLING_MANAGER = MyThrottlingManager
-        THROTTLING_SCOPES = {
+        THROTTLER = MyThrottler
+        THROTTLER_SCOPES = {
             "toscrape.com": {"concurrency": 32},
             "books.toscrape.com": {"concurrency": 24},
             "quotes.toscrape.com": {"concurrency": 16},
@@ -669,16 +669,16 @@ To apply different throttling settings to different endpoints of the same
 domain and not enforce any common throttling, effectively treating them as
 different domains:
 
--   Implement a :ref:`throttling manager <custom-throttling-scopes>` that sets
-    endpoint-specific throttling scopes for that domain:
+-   Implement a :ref:`throttler <custom-throttler-scopes>` that sets
+    endpoint-specific throttler scopes for that domain:
 
     .. code-block:: python
 
-        from scrapy.throttling import ThrottlingManager, scope_cache
+        from scrapy.throttler import Throttler, scope_cache
         from scrapy.utils.httpobj import urlparse_cached
 
 
-        class MyThrottlingManager(ThrottlingManager):
+        class MyThrottler(Throttler):
             @scope_cache
             async def get_scopes(self, request):
                 parsed_url = urlparse_cached(request)
@@ -686,13 +686,13 @@ different domains:
                     return await super().get_scopes(request)
                 return f"{parsed_url.netloc}{parsed_url.path}"
 
--   Use the :setting:`THROTTLING_SCOPES` setting to set different throttling
+-   Use the :setting:`THROTTLER_SCOPES` setting to set different throttling
     settings per endpoint:
 
     .. code-block:: python
         :caption: ``settings.py``
 
-        THROTTLING_SCOPES = {
+        THROTTLER_SCOPES = {
             "api.toscrape.com/fast-endpoint": {"concurrency": 1000, "delay": 0.08},
             "api.toscrape.com/slow-endpoint": {"delay": 5.0},
         }
@@ -707,35 +707,35 @@ Imagine you are sending requests to a web scraping API, e.g. to avoid bans.
 Unless that API provides a Scrapy plugin to make it easier to use, you may want
 to:
 
--   Use the :setting:`THROTTLING_SCOPES` setting to increase concurrency for
+-   Use the :setting:`THROTTLER_SCOPES` setting to increase concurrency for
     API requests. For example:
 
     .. code-block:: python
         :caption: ``settings.py``
 
-        THROTTLING_SCOPES = {
+        THROTTLER_SCOPES = {
             "api.toscrape.com": {"concurrency": 1000, "delay": 0.08},
         }
 
--   Implement a :ref:`throttling manager <custom-throttling-scopes>` that:
+-   Implement a :ref:`throttler <custom-throttler-scopes>` that:
 
-    -   Adds a throttling scope for the URL being scraped.
+    -   Adds a throttler scope for the URL being scraped.
 
         For example, if you request
         ``https://api.toscrape.com/?url=https://example.com``, by default it
-        will get a ``api.toscrape.com`` throttling scope, but it should also
-        get the ``example.com`` throttling scope:
+        will get a ``api.toscrape.com`` throttler scope, but it should also
+        get the ``example.com`` throttler scope:
 
         .. code-block:: python
 
             from urllib.parse import urlparse
 
-            from scrapy.throttling import add_scope, ThrottlingManager, scope_cache
+            from scrapy.throttler import add_scope, Throttler, scope_cache
             from scrapy.utils.httpobj import urlparse_cached
             from w3lib.url import url_query_parameter
 
 
-            class MyThrottlingManager(ThrottlingManager):
+            class MyThrottler(Throttler):
                 @scope_cache
                 async def get_scopes(self, request):
                     scopes = await super().get_scopes(request)
@@ -756,7 +756,7 @@ to:
 
     .. code-block:: python
 
-        from scrapy.throttling import iter_scopes
+        from scrapy.throttler import iter_scopes
         from scrapy.utils.httpobj import urlparse_cached
 
 
@@ -795,21 +795,21 @@ Cost-capped throttling
 
 Imagine you are using an API that charges different requests differently, e.g.
 based on the features used, and you want to limit how much you spend per time
-window (:setting:`THROTTLING_WINDOW`). You can use :ref:`throttling quotas
-<throttling-quotas>` for that:
+window (:setting:`THROTTLER_WINDOW`). You can use :ref:`throttler quotas
+<throttler-quotas>` for that:
 
--   Implement a :ref:`throttling manager <custom-throttling-scopes>` that:
+-   Implement a :ref:`throttler <custom-throttler-scopes>` that:
 
-    -   Sets a ``cost`` throttling scope on each request to some estimation
+    -   Sets a ``cost`` throttler scope on each request to some estimation
         based e.g. on request URL parameters:
 
         .. code-block:: python
 
             from scrapy.utils.httpobj import urlparse_cached
-            from scrapy.throttling import ThrottlingManager, scope_cache
+            from scrapy.throttler import Throttler, scope_cache
 
 
-            class MyThrottlingManager(ThrottlingManager):
+            class MyThrottler(Throttler):
                 @scope_cache
                 async def get_scopes(self, request):
                     scopes = await super().get_scopes(request)
@@ -840,13 +840,13 @@ window (:setting:`THROTTLING_WINDOW`). You can use :ref:`throttling quotas
                     self.throttler.reconcile_quota("cost", consumed=actual - estimated)
                 return response
 
--   Use the :setting:`THROTTLING_SCOPES` setting to set a maximum cost per time
+-   Use the :setting:`THROTTLER_SCOPES` setting to set a maximum cost per time
     window:
 
     .. code-block:: python
         :caption: ``settings.py``
 
-        THROTTLING_SCOPES = {
+        THROTTLER_SCOPES = {
             "cost": {"quota": 100.0},
         }
 
@@ -858,24 +858,24 @@ window (:setting:`THROTTLING_WINDOW`). You can use :ref:`throttling quotas
 Per-IP concurrency limiting
 ---------------------------
 
-A concurrency limit keyed by IP is just a throttling scope whose id is the
+A concurrency limit keyed by IP is just a throttler scope whose id is the
 request's IP, with a ``concurrency`` limit. A request then carries two scopes,
 its domain and its IP, and is only sent when **both** allow it (see
-:ref:`multiple-throttling-scopes`).
+:ref:`multiple-throttler-scopes`).
 
--   Implement a :ref:`throttling manager <custom-throttling-scopes>` that adds
+-   Implement a :ref:`throttler <custom-throttler-scopes>` that adds
     the request's IP as a second scope:
 
     .. code-block:: python
 
         import socket
 
-        from scrapy.throttling import ThrottlingManager, add_scope, scope_cache
+        from scrapy.throttler import Throttler, add_scope, scope_cache
         from scrapy.utils.asyncio import run_in_thread
         from scrapy.utils.httpobj import urlparse_cached
 
 
-        class IPThrottlingManager(ThrottlingManager):
+        class IPThrottler(Throttler):
             @scope_cache
             async def get_scopes(self, request):
                 scopes = await super().get_scopes(request)
@@ -887,6 +887,7 @@ its domain and its IP, and is only sent when **both** allow it (see
 
 Additional settings
 ===================
+
 -   .. setting:: BACKOFF_ENABLED
 
     :setting:`BACKOFF_ENABLED` (default: ``True``)
@@ -933,7 +934,7 @@ Additional settings
     :setting:`BACKOFF_WINDOW` (default: ``60.0``)
 
     Time window, in seconds, used by :ref:`backoff <backoff>`. A
-    :ref:`throttling scope <throttling-scopes>` must go this many seconds
+    :ref:`throttler scope <throttler-scopes>` must go this many seconds
     without a new backoff
     trigger (an HTTP error code from :setting:`BACKOFF_HTTP_CODES` or an
     exception from :setting:`BACKOFF_EXCEPTIONS`) before its delay decreases
@@ -954,18 +955,18 @@ Additional settings
     If ``True``, ``0.5`` (i.e. ±50%) is used as the randomization factor. If
     ``False``, no randomization is applied.
 
--   .. setting:: THROTTLING_DEBUG
+-   .. setting:: THROTTLER_DEBUG
 
-    :setting:`THROTTLING_DEBUG` (default: ``False``)
+    :setting:`THROTTLER_DEBUG` (default: ``False``)
 
     Whether to log :ref:`throttling <throttling>` decisions (per-scope delays,
     backoff steps and recoveries) for debugging.
 
--   .. setting:: THROTTLING_SCOPE_LIMIT
+-   .. setting:: THROTTLER_SCOPE_LIMIT
 
-    :setting:`THROTTLING_SCOPE_LIMIT` (default: ``100000``)
+    :setting:`THROTTLER_SCOPE_LIMIT` (default: ``100000``)
 
-    Maximum number of :ref:`throttling scope <throttling-scopes>` states kept
+    Maximum number of :ref:`throttler scope <throttler-scopes>` states kept
     in memory at once, to bound memory usage on broad crawls that touch a large
     number of scopes (e.g. domains).
 
@@ -975,15 +976,15 @@ Additional settings
     evicted, so the limit may be temporarily exceeded if that many scopes are
     busy at once. Set to ``0`` to disable the limit.
 
-    This complements :setting:`THROTTLING_SCOPE_MAX_IDLE`, which evicts scopes
+    This complements :setting:`THROTTLER_SCOPE_MAX_IDLE`, which evicts scopes
     by inactivity time rather than by count.
 
--   .. setting:: THROTTLING_SCOPE_MAX_IDLE
+-   .. setting:: THROTTLER_SCOPE_MAX_IDLE
 
-    :setting:`THROTTLING_SCOPE_MAX_IDLE` (default: ``3600.0``)
+    :setting:`THROTTLER_SCOPE_MAX_IDLE` (default: ``3600.0``)
 
-    Seconds of inactivity after which the state of a :ref:`throttling scope
-    <throttling-scopes>` is evicted from memory to bound memory usage on
+    Seconds of inactivity after which the state of a :ref:`throttler scope
+    <throttler-scopes>` is evicted from memory to bound memory usage on
     long-running crawls. Set to ``0`` to never evict. Scopes in active backoff
     are never evicted.
 
@@ -992,24 +993,24 @@ Additional settings
 API
 ===
 
-.. autoclass:: scrapy.throttling.ThrottlingManagerProtocol
+.. autoclass:: scrapy.throttler.ThrottlerProtocol
     :members:
     :member-order: bysource
 
-.. autoclass:: scrapy.throttling.ThrottlingManager
+.. autoclass:: scrapy.throttler.Throttler
 
-.. autoclass:: scrapy.throttling.ThrottlingScopeManagerProtocol
+.. autoclass:: scrapy.throttler.ThrottlerScopeManagerProtocol
     :members:
     :member-order: bysource
 
-.. autoclass:: scrapy.throttling.ThrottlingScopeManager
+.. autoclass:: scrapy.throttler.ThrottlerScopeManager
 
-.. autoclass:: scrapy.pqueues.ThrottlingAwarePriorityQueue
+.. autoclass:: scrapy.pqueues.ThrottlerAwarePriorityQueue
 
-.. autoclass:: scrapy.throttling.ThrottlingScopeConfig
+.. autoclass:: scrapy.throttler.ThrottlerScopeConfig
 
-.. autoclass:: scrapy.throttling.BackoffConfig
+.. autoclass:: scrapy.throttler.BackoffConfig
 
-.. autofunction:: scrapy.throttling.scope_cache
-.. autofunction:: scrapy.throttling.add_scope
-.. autofunction:: scrapy.throttling.iter_scopes
+.. autofunction:: scrapy.throttler.scope_cache
+.. autofunction:: scrapy.throttler.add_scope
+.. autofunction:: scrapy.throttler.iter_scopes

@@ -55,12 +55,12 @@ def get_raw_crawler(
 
 class TestScopeConcurrencyBridge:
     """CONCURRENT_REQUESTS_PER_DOMAIN is deprecated and bridged into
-    THROTTLING_SCOPE_CONCURRENCY by setting priority (see
-    scrapy.throttling._default_scope_concurrency)."""
+    THROTTLER_SCOPE_CONCURRENCY by setting priority (see
+    scrapy.throttler._default_scope_concurrency)."""
 
     @staticmethod
     def _resolve(settings: Settings) -> int:
-        from scrapy.throttling import _default_scope_concurrency  # noqa: PLC0415
+        from scrapy.throttler import _default_scope_concurrency  # noqa: PLC0415
 
         return _default_scope_concurrency(settings)
 
@@ -75,18 +75,18 @@ class TestScopeConcurrencyBridge:
 
     def test_scope_concurrency_overrides(self) -> None:
         settings = Settings()
-        settings.set("THROTTLING_SCOPE_CONCURRENCY", 4, priority="project")
+        settings.set("THROTTLER_SCOPE_CONCURRENCY", 4, priority="project")
         assert self._resolve(settings) == 4
 
     def test_new_setting_wins_on_non_default_tie(self) -> None:
         settings = Settings()
         settings.set("CONCURRENT_REQUESTS_PER_DOMAIN", 4, priority="project")
-        settings.set("THROTTLING_SCOPE_CONCURRENCY", 9, priority="project")
+        settings.set("THROTTLER_SCOPE_CONCURRENCY", 9, priority="project")
         assert self._resolve(settings) == 9
 
     def test_higher_priority_deprecated_setting_wins(self) -> None:
         settings = Settings()
-        settings.set("THROTTLING_SCOPE_CONCURRENCY", 9, priority="project")
+        settings.set("THROTTLER_SCOPE_CONCURRENCY", 9, priority="project")
         settings.set("CONCURRENT_REQUESTS_PER_DOMAIN", 4, priority="cmdline")
         assert self._resolve(settings) == 4
 
@@ -111,7 +111,7 @@ class TestScopeConcurrencyBridge:
         with warnings.catch_warnings(record=True) as recorded:
             warnings.simplefilter("always")
             get_crawler(
-                settings_dict={"THROTTLING_SCOPE_CONCURRENCY": 4},
+                settings_dict={"THROTTLER_SCOPE_CONCURRENCY": 4},
                 prevent_warnings=False,
             )
         messages = [str(w.message) for w in recorded]

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
     from scrapy import Request
     from scrapy.crawler import Crawler
-    from scrapy.throttling import ScopeID, ThrottlingManagerProtocol
+    from scrapy.throttler import ScopeID, ThrottlerProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -329,7 +329,7 @@ class DownloaderAwarePriorityQueue:
             )
 
         assert crawler.throttler is not None
-        self._throttler: ThrottlingManagerProtocol = crawler.throttler
+        self._throttler: ThrottlerProtocol = crawler.throttler
         self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
         self._start_queue_cls: type[QueueProtocol] | None = start_queue_cls
         self.key: str = key
@@ -441,10 +441,10 @@ def _scope_set_from_key(key: str) -> frozenset[ScopeID]:
     return frozenset(json.loads(key))
 
 
-class ThrottlingAwarePriorityQueue:
+class ThrottlerAwarePriorityQueue:
     """Priority queue that only ever pops a request that can be sent right now
-    based on its :ref:`throttling scope set <throttling-scopes>` and
-    per-request :reqmeta:`throttling_delay`.
+    based on its :ref:`throttler scope set <throttler-scopes>` and
+    per-request :reqmeta:`delay`.
 
     The downstream queue class must support ``peek``.
 
@@ -460,6 +460,22 @@ class ThrottlingAwarePriorityQueue:
     persistence directory, and inside it this class creates a subdirectory per
     scope set, named from a path-safe, order-independent encoding of its scope
     ids.
+
+    For example, a request whose scope set is ``{"example.com",
+    "cost:group-1"}`` is stored under a subdirectory derived in two steps:
+
+    #.  The scope ids are sorted and JSON-encoded into an order-independent key
+        (so ``{"example.com", "cost:group-1"}`` and ``{"cost:group-1",
+        "example.com"}`` map to the same one)::
+
+            ["cost:group-1", "example.com"]
+
+    #.  That key is made path-safe: every character outside ``[A-Za-z0-9-._]``
+        becomes ``_`` (here the ``:`` and the JSON quotes, brackets and spaces;
+        the ``-`` and ``.`` are kept), and an MD5 suffix disambiguates keys that
+        collapse to the same path::
+
+            __cost_group-1____example.com__-fc6ba2aff8f421bf981b662d77739902
     """
 
     @classmethod
@@ -491,7 +507,7 @@ class ThrottlingAwarePriorityQueue:
     ):
         if slot_startprios and not isinstance(slot_startprios, dict):
             raise ValueError(
-                "ThrottlingAwarePriorityQueue accepts ``slot_startprios`` as a "
+                "ThrottlerAwarePriorityQueue accepts ``slot_startprios`` as a "
                 f"dict; {slot_startprios.__class__!r} instance is passed. Most "
                 "likely, it means the state is created by an incompatible "
                 "priority queue. Only a crawl started with the same priority "
@@ -499,7 +515,7 @@ class ThrottlingAwarePriorityQueue:
             )
 
         assert crawler.throttler is not None
-        self._throttler: ThrottlingManagerProtocol = crawler.throttler
+        self._throttler: ThrottlerProtocol = crawler.throttler
         self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
         self._start_queue_cls: type[QueueProtocol] | None = start_queue_cls
         self.key: str = key
@@ -509,15 +525,26 @@ class ThrottlingAwarePriorityQueue:
         if slot_startprios:
             for set_key, startprios in slot_startprios.items():
                 scope_set = _scope_set_from_key(set_key)
-                self.pqueues[scope_set] = self.pqfactory(scope_set, startprios)
+                self.pqueues[scope_set] = self._pqfactory(scope_set, startprios)
 
-        # Min-heap of (deadline, seq, scope_set, request) for requests held
-        # back by a per-request throttling_delay; seq keeps ordering stable and
-        # avoids comparing requests when deadlines tie.
+        # Requests held back by their own per-request delay wait
+        # here instead of in their scope-set queue, so a not-yet-due request
+        # never sits at a queue head and blocks the other requests that share
+        # its scopes (the head-of-line blocking this scheduler exists to
+        # avoid). Once the delay elapses, _promote_ready() moves the request
+        # into its scope-set queue, where it competes normally.
+        #
+        # This is a min-heap of (deadline, seq, scope_set, request). heapq
+        # needs a total order and always compares entries to keep its invariant;
+        # seq (a monotonic counter) makes the (deadline, seq) prefix totally
+        # ordered, so a deadline tie is broken there and the scope_set (a
+        # frozenset, whose < is only the partial subset order) and the request
+        # (no ordering at all) are never compared. The order among tied
+        # deadlines is irrelevant beyond being deterministic.
         self._delayed: list[tuple[float, int, frozenset[ScopeID], Request]] = []
         self._delayed_seq: int = 0
 
-    def pqfactory(
+    def _pqfactory(
         self, scope_set: frozenset[ScopeID], startprios: Iterable[int] = ()
     ) -> ScrapyPriorityQueue:
         return ScrapyPriorityQueue(
@@ -542,7 +569,7 @@ class ThrottlingAwarePriorityQueue:
 
     def _push_to_queue(self, request: Request, scope_set: frozenset[ScopeID]) -> None:
         if scope_set not in self.pqueues:
-            self.pqueues[scope_set] = self.pqfactory(scope_set)
+            self.pqueues[scope_set] = self._pqfactory(scope_set)
         self.pqueues[scope_set].push(request)
 
     def _promote_ready(self, now: float) -> None:
@@ -559,7 +586,7 @@ class ThrottlingAwarePriorityQueue:
         # mark it consumed: the request must not be delayed again, and on resume
         # it must not re-block its scope set on a stale, no-longer-meaningful
         # deadline.
-        request.meta["_throttling_delayed"] = True
+        request.meta["_throttler_delayed"] = True
         try:
             self._push_to_queue(request, scope_set)
         except ValueError as e:
@@ -586,7 +613,7 @@ class ThrottlingAwarePriorityQueue:
         Among the sendable queues (those whose scope set can be sent right now),
         the one whose head has the highest request priority is chosen; ties are
         broken by ascending load (the maximum
-        :meth:`~scrapy.throttling.ThrottlingManagerProtocol.get_scope_load` over the
+        :meth:`~scrapy.throttler.ThrottlerProtocol.get_scope_load` over the
         scopes of the queue), i.e. by preferring the least-busy scopes.
         """
         self._promote_ready(time.monotonic())
@@ -618,12 +645,6 @@ class ThrottlingAwarePriorityQueue:
             del self.pqueues[scope_set]
         return request
 
-    def peek(self) -> Request | None:
-        selected = self._select()
-        if selected is None:
-            return None
-        return selected[1].peek()
-
     def get_next_request_delay(self) -> float | None:
         now = time.monotonic()
         self._promote_ready(now)
@@ -639,7 +660,7 @@ class ThrottlingAwarePriorityQueue:
                 continue
             if delay is None or head_delay < delay:
                 delay = head_delay
-        # A request held back only by its own throttling_delay is not in any
+        # A request held back only by its own delay is not in any
         # scope-set queue, so factor in when the earliest one is due.
         if self._delayed:
             next_delayed = max(0.0, self._delayed[0][0] - now)
@@ -662,6 +683,3 @@ class ThrottlingAwarePriorityQueue:
     def __len__(self) -> int:
         queued = sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
         return queued + len(self._delayed)
-
-    def __contains__(self, scope_set: frozenset[ScopeID]) -> bool:
-        return scope_set in self.pqueues

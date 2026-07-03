@@ -17,7 +17,7 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
     def _max_per_host_concurrency(settings: BaseSettings) -> int:
         """Highest per-host concurrency the throttler may admit: the per-domain
         limit, the default ``other``-scope limit, and any explicit
-        :setting:`THROTTLING_SCOPES` concurrency.
+        :setting:`THROTTLER_SCOPES` concurrency.
 
         Since :setting:`CONCURRENT_REQUESTS` caps the total number of requests in
         flight, no host can ever exceed it, so it is also the upper bound of the
@@ -26,11 +26,11 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
         global_concurrency = settings.getint("CONCURRENT_REQUESTS")
         candidates = [
             settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN"),
-            settings.getint("THROTTLING_SCOPE_CONCURRENCY"),
+            settings.getint("THROTTLER_SCOPE_CONCURRENCY"),
         ]
         candidates += [
             int(scope["concurrency"])
-            for scope in settings.getdict("THROTTLING_SCOPES").values()
+            for scope in settings.getdict("THROTTLER_SCOPES").values()
             if "concurrency" in scope
         ]
         return min(max(candidates), global_concurrency)

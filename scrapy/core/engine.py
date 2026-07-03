@@ -131,9 +131,9 @@ class ExecutionEngine:
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None
         ) = None
-        # Requests currently held by the throttling manager, waiting for their
+        # Requests currently held by the throttler, waiting for their
         # scopes to allow them through to the downloader.
-        self._throttling_waiting: set[Request] = set()
+        self._throttler_waiting: set[Request] = set()
         # Number of in-flight asynchronous enqueue operations (see
         # ``_enqueue_request_async``), so the spider is not considered idle
         # while a request is still on its way into the scheduler.
@@ -149,7 +149,7 @@ class ExecutionEngine:
         # Whether the scheduler exposes enqueue_request_async, cached once per
         # crawl in ``open_spider_async``; checked for every scheduled request.
         self._scheduler_enqueues_async: bool = False
-        self._throttling_backout_warned: bool = False
+        self._throttler_backout_warned: bool = False
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -412,40 +412,40 @@ class ExecutionEngine:
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
-            or self._throttling_needs_backout()
+            or self._throttler_needs_backout()
         )
 
-    def _throttling_needs_backout(self) -> bool:
-        """Apply backpressure while requests are held by the throttling manager.
+    def _throttler_needs_backout(self) -> bool:
+        """Apply backpressure while requests are held by the throttler.
 
         Requests waiting on throttling do not occupy a downloader concurrency
         slot, so without this check the engine would keep draining the
         scheduler into pending throttling waits. Count them together with the
         in-flight requests against the global concurrency limit.
         """
-        if not self._throttling_waiting:
+        if not self._throttler_waiting:
             return False
         if (
-            len(self._throttling_waiting) + len(self.downloader.active)
+            len(self._throttler_waiting) + len(self.downloader.active)
             < self.downloader.total_concurrency
         ):
             return False
-        self._maybe_warn_throttling_backout()
+        self._maybe_warn_throttler_backout()
         return True
 
-    def _maybe_warn_throttling_backout(self) -> None:
-        if self._throttling_backout_warned:
+    def _maybe_warn_throttler_backout(self) -> None:
+        if self._throttler_backout_warned:
             return
-        # A throttling-aware scheduler holds time-blocked requests itself instead
-        # of letting them pile up in _throttling_waiting and back-pressure the
+        # A throttler-aware scheduler holds time-blocked requests itself instead
+        # of letting them pile up in _throttler_waiting and back-pressure the
         # engine here, so the warning does not apply when one is in use.
         if self._get_next_request_delay is not None:
             return
-        self._throttling_backout_warned = True
+        self._throttler_backout_warned = True
         logger.warning(
             "Throttling is holding requests back and they are now consuming the "
             "global concurrency budget while they wait for a free slot. Consider "
-            "switching to scrapy.core.scheduler.ThrottlingAwareScheduler, which "
+            "switching to scrapy.core.scheduler.ThrottlerAwareScheduler, which "
             "holds throttled requests without consuming concurrency slots.",
             extra={"spider": self.spider},
         )
@@ -523,7 +523,7 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
-        if self._throttling_waiting:  # requests held by the throttling manager
+        if self._throttler_waiting:  # requests held by the throttler
             return False
         if self._scheduling:  # requests still on their way into the scheduler
             return False
@@ -612,18 +612,18 @@ class ExecutionEngine:
         return response_or_request
 
     @inlineCallbacks
-    def _acquire_throttling(
+    def _acquire_throttler(
         self, request: Request
     ) -> Generator[Deferred[Any], Any, None]:
         """Wait at the throttling gate before *request* is sent, tracking it as
         held meanwhile."""
-        self._throttling_waiting.add(request)
+        self._throttler_waiting.add(request)
         throttler = self.crawler.throttler
         assert throttler is not None
         try:
             yield deferred_from_coro(throttler.acquire(request))
         finally:
-            self._throttling_waiting.discard(request)
+            self._throttler_waiting.discard(request)
 
     @inlineCallbacks
     def _download(
@@ -634,12 +634,12 @@ class ExecutionEngine:
 
         throttler = self.crawler.throttler
         assert throttler is not None
-        # A throttling-aware scheduler reserves the request (a concurrency slot)
+        # A throttler-aware scheduler reserves the request (a concurrency slot)
         # before handing it here, so everything past this point runs inside the
         # try/finally that releases it, even if add_request() were to raise.
         try:
             self._slot.add_request(request)
-            yield self._acquire_throttling(request)
+            yield self._acquire_throttler(request)
             result: Response | Request
             if self._downloader_fetch_needs_spider:
                 result = yield self.downloader.fetch(request, self.spider)

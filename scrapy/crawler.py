@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
     from scrapy.logformatter import LogFormatter
     from scrapy.statscollectors import StatsCollector
-    from scrapy.throttling import ThrottlingManagerProtocol
+    from scrapy.throttler import ThrottlerProtocol
     from scrapy.utils.request import RequestFingerprinterProtocol
 
 
@@ -84,13 +84,13 @@ class Crawler:
         self.stats: StatsCollector | None = None
         self.logformatter: LogFormatter | None = None
         self.request_fingerprinter: RequestFingerprinterProtocol | None = None
-        self.throttler: ThrottlingManagerProtocol | None = None
-        """The throttling manager of this crawler, an instance of
-        :setting:`THROTTLING_MANAGER`.
+        self.throttler: ThrottlerProtocol | None = None
+        """The throttler of this crawler, an instance of
+        :setting:`THROTTLER`.
 
         It is ``None`` until the crawl starts. Components can use it to inspect
         or drive :ref:`throttling <throttling>` at run time, e.g. through
-        :meth:`~scrapy.throttling.ThrottlingManagerProtocol.delay_scope`."""
+        :meth:`~scrapy.throttler.ThrottlerProtocol.delay_scope`."""
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
@@ -106,7 +106,7 @@ class Crawler:
         self.addons.load_settings(self.settings)
         self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
         self._apply_deprecated_spider_attr(
-            "max_concurrent_requests", "THROTTLING_SCOPE_CONCURRENCY"
+            "max_concurrent_requests", "THROTTLER_SCOPE_CONCURRENCY"
         )
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
@@ -118,7 +118,7 @@ class Crawler:
             self,
         )
         self.throttler = build_from_crawler(
-            load_object(self.settings["THROTTLING_MANAGER"]),
+            load_object(self.settings["THROTTLER"]),
             self,
         )
 
@@ -185,7 +185,7 @@ class Crawler:
             return
         warnings.warn(
             f"The {attr!r} spider attribute is deprecated. Use the {setting} "
-            f"setting or THROTTLING_SCOPES instead.",
+            f"setting or THROTTLER_SCOPES instead.",
             category=ScrapyDeprecationWarning,
             stacklevel=3,
         )

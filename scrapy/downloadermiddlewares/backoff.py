@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
-from scrapy.throttling import iter_scopes
+from scrapy.throttler import iter_scopes
 from scrapy.utils._headers import _parse_ratelimit_reset, _parse_retry_after
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.misc import _load_objects
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import scrapy
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
-    from scrapy.throttling import ThrottlingManagerProtocol
+    from scrapy.throttler import ThrottlerProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -28,9 +28,9 @@ class BackoffMiddleware:
 
     It observes every response and download exception and, for those matching
     :setting:`BACKOFF_HTTP_CODES` or :setting:`BACKOFF_EXCEPTIONS` (globally or
-    per :setting:`THROTTLING_SCOPES` scope), tells the :ref:`throttling manager
+    per :setting:`THROTTLER_SCOPES` scope), tells the :ref:`throttler
     <throttling>` to back off the request's scopes through its
-    :meth:`~scrapy.throttling.ThrottlingManagerProtocol.back_off` API.
+    :meth:`~scrapy.throttler.ThrottlerProtocol.back_off` API.
 
     It is enabled by default; set :setting:`BACKOFF_ENABLED` to ``False`` to
     disable it without removing it from :setting:`DOWNLOADER_MIDDLEWARES`.
@@ -46,7 +46,7 @@ class BackoffMiddleware:
         if not crawler.settings.getbool("BACKOFF_ENABLED"):
             raise NotConfigured
         assert crawler.throttler is not None
-        self._throttler: ThrottlingManagerProtocol = crawler.throttler
+        self._throttler: ThrottlerProtocol = crawler.throttler
         settings = crawler.settings
         self._http_codes: set[int] = {
             int(code) for code in settings.getlist("BACKOFF_HTTP_CODES")
@@ -61,7 +61,7 @@ class BackoffMiddleware:
         # pre-filter to skip outcomes that no scope backs off on.
         self._any_http_codes: set[int] = set(self._http_codes)
         self._any_exceptions: tuple[type[BaseException], ...] = self._exceptions
-        for scope_id, scope_config in settings.getdict("THROTTLING_SCOPES").items():
+        for scope_id, scope_config in settings.getdict("THROTTLER_SCOPES").items():
             backoff = scope_config.get("backoff") or {}
             if "http_codes" in backoff:
                 codes = {int(code) for code in backoff["http_codes"]}
