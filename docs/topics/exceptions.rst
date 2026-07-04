@@ -7,6 +7,11 @@ Exceptions
 .. module:: scrapy.exceptions
    :synopsis: Scrapy exceptions
 
+.. note::
+
+   When adding a new exception to ``scrapy.exceptions``, document it on this
+   page.
+
 .. _topics-exceptions-ref:
 
 Built-in Exceptions reference

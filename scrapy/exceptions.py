@@ -1,10 +1,3 @@
-"""
-Scrapy core exceptions
-
-These exceptions are documented in docs/topics/exceptions.rst. Please don't add
-new exceptions here without documenting them there.
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

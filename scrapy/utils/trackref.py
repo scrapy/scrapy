@@ -1,17 +1,3 @@
-"""This module provides some functions and classes to record and report
-references to live object instances.
-
-If you want live objects for a particular class to be tracked, you only have to
-subclass from object_ref (instead of object).
-
-This library has a minimal performance impact.
-
-.. note:: PyPy uses a tracing garbage collector, so objects may
-    remain in the ``live_refs`` longer than expected, even after they
-    go out of scope. If deterministic behavior is required, you may need
-    to explicitly trigger garbage collection or call ``trackref.live_refs.clear()``.
-"""
-
 from __future__ import annotations
 
 from collections import defaultdict

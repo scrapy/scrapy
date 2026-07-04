@@ -378,6 +378,25 @@ This handler supports ``ftp://host/path`` FTP URIs.
 
 It's implemented using :mod:`twisted.protocols.ftp`.
 
+FTP connection parameters can be passed using :attr:`Request.meta
+<scrapy.Request.meta>`:
+
+* ``ftp_user`` (falls back to :setting:`FTP_USER`)
+* ``ftp_password`` (falls back to :setting:`FTP_PASSWORD`)
+* ``ftp_passive`` (falls back to :setting:`FTP_PASSIVE_MODE`)
+* ``ftp_local_filename``: if not given, file data is returned in
+  ``response.body``. If given, file data is saved to that local path (useful
+  for large files) and the local filename is also returned in ``response.body``.
+
+The built response uses HTTP-like status codes by default: ``200`` on success,
+``404`` when the file is not found (FTP code 550), or the corresponding FTP
+exception otherwise. The mapping from FTP return codes to response status codes
+is defined in the :attr:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler.CODE_MAPPING`
+class attribute. The ``default`` key is used for unmapped codes.
+
+On successful requests (status 200), ``response.headers`` includes
+``Local Filename`` (when ``ftp_local_filename`` is used) and ``Size``.
+
 S3DownloadHandler
 -----------------
 

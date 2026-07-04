@@ -182,6 +182,13 @@ scrapy.utils.trackref module
 
 Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 
+.. note::
+
+   PyPy uses a tracing garbage collector, so objects may remain in
+   ``live_refs`` longer than expected, even after they go out of scope. If
+   deterministic behavior is required, you may need to explicitly trigger
+   garbage collection or call ``trackref.live_refs.clear()``.
+
 .. class:: object_ref
 
     Inherit from this class if you want to track live
