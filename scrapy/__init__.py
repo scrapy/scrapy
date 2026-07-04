@@ -1,7 +1,3 @@
-"""
-Scrapy - a web crawling and web scraping framework written for Python
-"""
-
 import pkgutil
 import sys
 import warnings

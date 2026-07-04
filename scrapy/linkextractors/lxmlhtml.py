@@ -1,7 +1,3 @@
-"""
-Link extractor based on lxml.html
-"""
-
 from __future__ import annotations
 
 import logging
