@@ -1,10 +1,3 @@
-"""
-This module implements the XmlRpcRequest class which is a more convenient class
-(that Request) to generate xml-rpc requests.
-
-See documentation in docs/topics/request-response.rst
-"""
-
 from __future__ import annotations
 
 import xmlrpc.client as xmlrpclib

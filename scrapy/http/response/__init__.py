@@ -1,10 +1,3 @@
-"""
-This module implements the Response class which is used to represent HTTP
-responses in Scrapy.
-
-See documentation in docs/topics/request-response.rst
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, AnyStr, TypeVar, overload

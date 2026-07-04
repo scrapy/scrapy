@@ -1,9 +1,3 @@
-"""CloseSpider is an extension that forces spiders to be closed after certain
-conditions are met.
-
-See documentation in docs/topics/extensions.rst
-"""
-
 from __future__ import annotations
 
 import logging
