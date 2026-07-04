@@ -1,9 +1,3 @@
-"""
-The Extension Manager
-
-See documentation in docs/topics/extensions.rst
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

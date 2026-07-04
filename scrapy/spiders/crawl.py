@@ -1,10 +1,3 @@
-"""
-This modules implements the CrawlSpider which is the recommended spider to use
-for scraping typical websites that requires crawling pages.
-
-See documentation in docs/topics/spiders.rst
-"""
-
 from __future__ import annotations
 
 import copy
