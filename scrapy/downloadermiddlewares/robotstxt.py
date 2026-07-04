@@ -1,9 +1,3 @@
-"""
-This is a middleware to respect robots.txt policies. To activate it you must
-enable this middleware and enable the ROBOTSTXT_OBEY setting.
-
-"""
-
 from __future__ import annotations
 
 import logging
