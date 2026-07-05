@@ -371,6 +371,21 @@ To see coverage report install :doc:`coverage <coverage:index>`
 
 see output of ``coverage --help`` for more options like html or xml report.
 
+Some tests need a ``mitmdump`` executable (from mitmproxy_) to test against a
+fully featured proxy server; they are skipped when one cannot be found
+(``mitmproxy`` is intentionally not a test dependency that would be installed
+into test venvs, as that sometimes leads to various dependency conflicts).
+To run these tests, make ``mitmdump`` available in one of these ways:
+
+* install ``mitmproxy`` so that ``mitmdump`` is on your ``PATH``, e.g. with
+  pipx_ (``pipx install mitmproxy``) or uv_ (``uv tool install mitmproxy``);
+
+* have uv_ installed, in which case the tests will run
+  ``uvx --from mitmproxy mitmdump``;
+
+* set the ``MITMDUMP`` environment variable to the path of a ``mitmdump``
+  executable.
+
 Writing tests
 -------------
 
@@ -398,3 +413,6 @@ And their unit-tests are in::
 .. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist
 .. _help wanted issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
 .. _test coverage: https://app.codecov.io/gh/scrapy/scrapy
+.. _mitmproxy: https://mitmproxy.org/
+.. _pipx: https://pipx.pypa.io/
+.. _uv: https://docs.astral.sh/uv/

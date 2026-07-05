@@ -1,10 +1,36 @@
 from __future__ import annotations
 
+import functools
+import os
 import re
-import sys
+import shutil
 from pathlib import Path
 from subprocess import PIPE, Popen
 from urllib.parse import urlsplit, urlunsplit
+
+
+@functools.cache
+def mitmdump_cmd() -> list[str] | None:
+    """Return the command prefix used to invoke ``mitmdump``, or ``None`` if it
+    cannot be resolved.
+
+    We don't want to install ``mitmproxy`` into the test env (it has a lot of
+    dependencies that can conflict with some of the Scrapy/test ones, and its
+    newer versions may not support older Python versions). So we expect it
+    installed externally. We look for the ``mitmdump`` binary in the following
+    sources:
+
+    1. the ``MITMDUMP`` environment variable;
+    2. a ``mitmdump`` binary on ``PATH``;
+    3. using ``uvx --from mitmproxy mitmdump`` if ``uvx`` is available.
+    """
+    if env := os.environ.get("MITMDUMP"):
+        return [env]
+    if path := shutil.which("mitmdump"):
+        return [path]
+    if uvx := shutil.which("uvx"):
+        return [uvx, "--from", "mitmproxy", "mitmdump"]
+    return None
 
 
 class MitmProxy:
@@ -15,12 +41,11 @@ class MitmProxy:
         self.mode = mode
 
     def start(self) -> str:
-        script = """
-import sys
-from mitmproxy.tools.main import mitmdump
-sys.argv[0] = "mitmdump"
-sys.exit(mitmdump())
-        """
+        cmd = mitmdump_cmd()
+        if not cmd:
+            raise RuntimeError(
+                "mitmdump is not available. Please install mitmproxy or uv."
+            )
         cert_path = Path(__file__).parent.parent.resolve() / "keys"
         args = [
             "--listen-host",
@@ -38,15 +63,10 @@ sys.exit(mitmdump())
         if self.mode:
             args += ["--mode", self.mode]
         self.proc: Popen[str] = Popen(
-            [
-                sys.executable,
-                "-u",
-                "-c",
-                script,
-                *args,
-            ],
+            [*cmd, *args],
             stdout=PIPE,
             text=True,
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
         )
         assert self.proc.stdout is not None
         scheme = "socks5" if self.mode == "socks5" else "http"
