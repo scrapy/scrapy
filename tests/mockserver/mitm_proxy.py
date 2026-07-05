@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import os
 import re
 import shutil
+import signal
 from pathlib import Path
 from subprocess import PIPE, Popen
 from urllib.parse import urlsplit, urlunsplit
@@ -67,6 +69,7 @@ class MitmProxy:
             stdout=PIPE,
             text=True,
             env={**os.environ, "PYTHONUNBUFFERED": "1"},
+            start_new_session=True,  # needed for killpg() to make sense
         )
         assert self.proc.stdout is not None
         scheme = "socks5" if self.mode == "socks5" else "http"
@@ -80,7 +83,14 @@ class MitmProxy:
         raise RuntimeError(f"Failed to parse mitmdump output: {line}")
 
     def stop(self) -> None:
-        self.proc.kill()
+        if os.name == "posix":
+            # SIGKILL doesn't propagate to the actual process (child of uvx)
+            # https://github.com/astral-sh/uv/issues/11817#issuecomment-2688830077
+            # https://stackoverflow.com/a/61980200/113586
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(os.getpgid(self.proc.pid), signal.SIGKILL)
+        else:
+            self.proc.kill()
         self.proc.communicate()
 
 
