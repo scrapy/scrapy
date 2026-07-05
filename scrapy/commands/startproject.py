@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import string
+import sys
 from importlib.util import find_spec
 from pathlib import Path
 from shutil import copy2, copystat, ignore_patterns, move
@@ -16,15 +17,22 @@ from scrapy.utils.template import render_templatefile, string_camelcase
 if TYPE_CHECKING:
     import argparse
 
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
+
+
 TEMPLATES_TO_RENDER: tuple[tuple[str, ...], ...] = (
-    ("scrapy.cfg",),
+    ("pyproject.toml",),
     ("${project_name}", "settings.py.tmpl"),
     ("${project_name}", "items.py.tmpl"),
     ("${project_name}", "pipelines.py.tmpl"),
     ("${project_name}", "middlewares.py.tmpl"),
 )
 
-IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn")
+IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn", "scrapy.cfg")
 
 
 def _make_writable(path: Path) -> None:
@@ -101,6 +109,17 @@ class Command(ScrapyCommand):
             self.exitcode = 1
             print(f"Error: scrapy.cfg already exists in {project_dir.resolve()}")
             return
+
+        if (project_dir / "pyproject.toml").exists():
+            with (project_dir / "pyproject.toml").open("rb") as f:
+                data = tomllib.load(f)
+            if data.get("tool", {}).get("scrapy"):
+                self.exitcode = 1
+                print(
+                    f"Error: pyproject.toml with [tool.scrapy] already exists "
+                    f"in {project_dir.resolve()}"
+                )
+                return
 
         if not self._is_valid_name(project_name):
             self.exitcode = 1
