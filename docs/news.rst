@@ -94,7 +94,7 @@ New features
 
 -   Added ``deny_tags`` and ``deny_attrs`` arguments to :class:`LinkExtractor
     <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`.
-    (:issue:`7015`, :issue:`7679`)
+    (:issue:`6321`, :issue:`7679`)
 
 -   :attr:`scrapy.Item.fields` now returns the fields in the definition order
     instead of the alphabetical one.
