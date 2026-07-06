@@ -165,6 +165,27 @@ class TestRequest:
         r4 = self.request_class(url="http://www.example.org/r%E9sum%E9.html")
         assert r4.url == "http://www.example.org/r%E9sum%E9.html"
 
+    def test_url_empty_path_with_query(self):
+        # A missing path must be replaced with "/" if there is a query,
+        # otherwise the request line sent to the server would be malformed,
+        # e.g. "GET ?a=1 HTTP/1.1" (see #6574)
+        r = self.request_class(url="http://www.scrapy.org?a=1")
+        assert r.url == "http://www.scrapy.org/?a=1"
+        r = self.request_class(url="https://www.scrapy.org:8080?a=1&b=2")
+        assert r.url == "https://www.scrapy.org:8080/?a=1&b=2"
+        r = self.request_class(url="http://www.scrapy.org?a=1#frag")
+        assert r.url == "http://www.scrapy.org/?a=1#frag"
+
+        # URLs without a query are left unchanged
+        r = self.request_class(url="http://www.scrapy.org")
+        assert r.url == "http://www.scrapy.org"
+        r = self.request_class(url="http://www.scrapy.org#frag")
+        assert r.url == "http://www.scrapy.org#frag"
+
+        # non-HTTP schemes are left unchanged
+        r = self.request_class(url="s3://bucket?a=1")
+        assert r.url == "s3://bucket?a=1"
+
     def test_url_verbatim(self):
         r = self.request_class(
             url="http://www.scrapy.org/price/£",

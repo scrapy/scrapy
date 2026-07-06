@@ -19,6 +19,7 @@ from typing import (
     TypeVar,
     overload,
 )
+from urllib.parse import urlsplit, urlunsplit
 
 from w3lib.url import safe_url_string
 
@@ -263,6 +264,19 @@ class Request(object_ref):
             self._url = url
         else:
             self._url = safe_url_string(url, self.encoding)
+            # An http(s) URL with a host and a query but no path (e.g.
+            # "http://example.com?a=1") would produce a malformed request
+            # line ("GET ?a=1 HTTP/1.1") that many servers reject with a
+            # 400 response. Restore the "/" like web browsers do.
+            # See https://github.com/scrapy/scrapy/issues/6574
+            parts = urlsplit(self._url)
+            if (
+                parts.scheme in {"http", "https"}
+                and parts.netloc
+                and not parts.path
+                and parts.query
+            ):
+                self._url = urlunsplit(parts._replace(path="/"))
 
         if (
             "://" not in self._url
