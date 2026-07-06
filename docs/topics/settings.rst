@@ -811,6 +811,8 @@ modern environments.
 
 .. seealso:: :ref:`security-tls-protocols-ciphers`
 
+.. versionadded:: 2.17.0
+
 .. setting:: DOWNLOAD_TLS_MIN_VERSION
 
 DOWNLOAD_TLS_MIN_VERSION
@@ -824,6 +826,8 @@ be used by Scrapy.
 See :setting:`DOWNLOAD_TLS_MAX_VERSION` for the details and limitations.
 
 .. seealso:: :ref:`security-tls-protocols-ciphers`
+
+.. versionadded:: 2.17.0
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 

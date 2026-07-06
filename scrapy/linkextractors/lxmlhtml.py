@@ -235,7 +235,7 @@ class LxmlLinkExtractor:
         can be combined with ``tags='*'`` to consider every tag except a few.
         Defaults to ``()`` (no tag is excluded).
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.17.0
     :type deny_tags: str or list
 
     :param deny_attrs: an attribute or a list of attributes that should not be
@@ -244,7 +244,7 @@ class LxmlLinkExtractor:
         every attribute except a few. Defaults to ``()`` (no attribute is
         excluded).
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.17.0
     :type deny_attrs: str or list
 
     :param canonicalize: canonicalize each extracted url (using
