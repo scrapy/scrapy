@@ -3,12 +3,15 @@ from __future__ import annotations
 import contextlib
 import functools
 import os
-import re
 import shutil
 import signal
+import socket
+import time
 from pathlib import Path
-from subprocess import PIPE, Popen
+from subprocess import DEVNULL, Popen
 from urllib.parse import urlsplit, urlunsplit
+
+from .utils import _free_port
 
 
 @functools.cache
@@ -49,11 +52,16 @@ class MitmProxy:
                 "mitmdump is not available. Please install mitmproxy or uv."
             )
         cert_path = Path(__file__).parent.parent.resolve() / "keys"
+        # Choose a free port ourselves instead of reading the mitmdump output
+        # as there is no easy way to disable stdout buffering for all kinds of
+        # mitmdump installs that we support.
+        host = "127.0.0.1"
+        port = _free_port()
         args = [
             "--listen-host",
-            "127.0.0.1",
+            host,
             "--listen-port",
-            "0",
+            str(port),
             "--proxyauth",
             f"{self.auth_user}:{self.auth_pass}",
             "--set",
@@ -64,23 +72,29 @@ class MitmProxy:
         ]
         if self.mode:
             args += ["--mode", self.mode]
-        self.proc: Popen[str] = Popen(
+        self.proc: Popen[bytes] = Popen(
             [*cmd, *args],
-            stdout=PIPE,
-            text=True,
-            env={**os.environ, "PYTHONUNBUFFERED": "1"},
+            stdout=DEVNULL,
+            stderr=DEVNULL,
             start_new_session=True,  # needed for killpg() to make sense
         )
-        assert self.proc.stdout is not None
         scheme = "socks5" if self.mode == "socks5" else "http"
-        line = ""
-        for line in self.proc.stdout:
-            m = re.search(r"listening at (?:\w+://)?([^:]+:\d+)", line)
-            if m:
-                host_port = m.group(1)
-                return f"{scheme}://{self.auth_user}:{self.auth_pass}@{host_port}"
+        deadline = time.monotonic() + 60
+        while True:
+            if self.proc.poll() is not None:
+                raise RuntimeError(
+                    f"mitmdump exited with code {self.proc.returncode} before it "
+                    f"started listening"
+                )
+            try:
+                with socket.create_connection((host, port), timeout=1):
+                    return f"{scheme}://{self.auth_user}:{self.auth_pass}@{host}:{port}"
+            except OSError:
+                if time.monotonic() >= deadline:
+                    break
+                time.sleep(0.05)
         self.stop()
-        raise RuntimeError(f"Failed to parse mitmdump output: {line}")
+        raise RuntimeError(f"mitmdump did not start listening on {host}:{port} in time")
 
     def stop(self) -> None:
         if os.name == "posix":
