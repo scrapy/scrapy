@@ -23,7 +23,7 @@ def _free_port() -> int:
     # racy but should be fine for tests
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
+        return cast("int", s.getsockname()[1])
 
 
 def ssl_context_factory(
