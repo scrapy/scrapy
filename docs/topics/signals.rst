@@ -454,7 +454,7 @@ bytes_received
 .. signal:: bytes_received
 .. function:: bytes_received(data, request, spider)
 
-    Sent by the HTTP 1.1 and S3 download handlers when a group of bytes is
+    Sent by some download handlers when a group of bytes is
     received for a specific request. This signal might be fired multiple
     times for the same request, with partial data each time. For instance,
     a possible scenario for a 25 kb response would be two signals fired
@@ -482,7 +482,7 @@ headers_received
 .. signal:: headers_received
 .. function:: headers_received(headers, body_length, request, spider)
 
-    Sent by the HTTP 1.1 and S3 download handlers when the response headers are
+    Sent by some download handlers when the response headers are
     available for a given request, before downloading any additional content.
 
     Handlers for this signal can stop the download of a response while it

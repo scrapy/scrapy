@@ -17,8 +17,10 @@ Run Scrapy from a script
 You can use the :ref:`API <topics-api>` to run Scrapy from a script, instead of
 the typical way of running Scrapy via ``scrapy crawl``.
 
-Remember that Scrapy is built on top of the Twisted
-asynchronous networking library, so you need to run it inside the Twisted reactor.
+Remember that Scrapy requires a Twisted reactor or (with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``) an asyncio event loop, so
+you need to run one of those in your script for it to work (helpers described
+below can do it for you).
 
 The first utility you can use to run your spiders is
 :class:`scrapy.crawler.AsyncCrawlerProcess` or

@@ -614,7 +614,7 @@ XMLFeedSpider
 
         A string which defines the iterator to use. It can be either:
 
-           - ``'iternodes'`` - a fast iterator based on regular expressions
+           - ``'iternodes'`` - a fast iterator based on ``lxml``
 
            - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory

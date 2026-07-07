@@ -1015,16 +1015,8 @@ RetryMiddleware
    A middleware to retry failed requests that are potentially caused by
    temporary problems such as a connection timeout or HTTP 500 error.
 
-Failed pages are collected on the scraping process and rescheduled at the
-end, once the spider has finished crawling all regular (non failed) pages.
-
-The :class:`RetryMiddleware` can be configured through the following
-settings (see the settings documentation for more info):
-
-* :setting:`RETRY_ENABLED`
-* :setting:`RETRY_TIMES`
-* :setting:`RETRY_HTTP_CODES`
-* :setting:`RETRY_EXCEPTIONS`
+Failed pages are rescheduled with the priority adjusted according to
+:setting:`RETRY_PRIORITY_ADJUST`.
 
 .. reqmeta:: dont_retry
 
