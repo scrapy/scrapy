@@ -351,28 +351,30 @@ HttpAuthMiddleware
 HTTPAUTH_USER
 ~~~~~~~~~~~~~
 
+.. versionadded:: 2.17.0
+
 Default: ``""``
 
 The username to use for HTTP basic authentication, applied to all requests
 whose URL matches :setting:`HTTPAUTH_DOMAIN`.
-
-.. versionadded:: 2.17.0
 
 .. setting:: HTTPAUTH_PASS
 
 HTTPAUTH_PASS
 ~~~~~~~~~~~~~
 
+.. versionadded:: 2.17.0
+
 Default: ``""``
 
 The password to use for HTTP basic authentication.
-
-.. versionadded:: 2.17.0
 
 .. setting:: HTTPAUTH_DOMAIN
 
 HTTPAUTH_DOMAIN
 ~~~~~~~~~~~~~~~
+
+.. versionadded:: 2.17.0
 
 Default: ``None``
 
@@ -384,8 +386,6 @@ This setting must be explicitly configured whenever :setting:`HTTPAUTH_USER`
 or :setting:`HTTPAUTH_PASS` is set.
 
 .. seealso:: :ref:`security-credential-leakage`
-
-.. versionadded:: 2.17.0
 
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
@@ -1109,6 +1109,8 @@ exception propagation, see
 
 RETRY_GIVE_UP_LOG_LEVEL
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.17.0
 
 Default: ``"ERROR"``
 

@@ -329,12 +329,12 @@ Other limitations:
 HTTPX_HTTP2_ENABLED
 ^^^^^^^^^^^^^^^^^^^
 
+.. versionadded:: 2.17.0
+
 Default: ``False``
 
 Whether to enable HTTP/2 support in this handler. The ``httpx[http2]`` extra
 needs to be installed if you want to enable this setting.
-
-.. versionadded:: 2.17.0
 
 Built-in non-HTTP download handlers reference
 =============================================
