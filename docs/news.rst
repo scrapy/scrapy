@@ -64,6 +64,16 @@ Deprecations
     ``follow=False`` in your rules to achieve the same effect.
     (:issue:`7592`)
 
+-   Instantiating
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    without a ``crawler`` argument is deprecated.
+    (:issue:`7655`)
+
+-   Instantiating
+    :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` without a
+    ``settings`` argument is deprecated.
+    (:issue:`7664`)
+
 New features
 ~~~~~~~~~~~~
 
