@@ -247,7 +247,7 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
+    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs, cls])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
@@ -717,6 +717,7 @@ Those are:
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
+* :reqmeta:`download_slot`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
@@ -1085,7 +1086,7 @@ Response objects
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
-        tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
+        tagging Responses. For example: ``'cached'``, ``'redirected'``', etc. And
         they're shown on the string representation of the Response (``__str__()``
         method) which is used by the engine for logging.
 
@@ -1119,7 +1120,7 @@ Response objects
 
        Returns a new Response which is a copy of this Response.
 
-    .. method:: Response.replace([url, status, headers, body, request, flags, cls])
+    .. method:: Response.replace([url, status, headers, body, request, flags, certificate, ip_address, protocol, cls])
 
        Returns a Response object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The

@@ -208,7 +208,7 @@ scrapy.Spider
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
 
-   .. method:: log(message, [level, component])
+   .. method:: log(message, [level])
 
        Wrapper that sends a log message through the Spider's :attr:`logger`,
        kept for backward compatibility. For more information see
@@ -335,8 +335,8 @@ The above example can also be written as follows:
 
 If you are :ref:`running Scrapy from a script <run-from-script>`, you can
 specify spider arguments when calling
-:class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
-:class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
+:meth:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
+:meth:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
 
 .. skip: next
 .. code-block:: python
@@ -593,7 +593,7 @@ Let's now take a look at an example CrawlSpider with rules:
 This spider would start crawling example.com's home page, collecting category
 links, and item links, parsing the latter with the ``parse_item`` method. For
 each item response, some data will be extracted from the HTML using XPath, and
-an :class:`~scrapy.Item` will be filled with it.
+a dictionary will be filled with it.
 
 XMLFeedSpider
 -------------
@@ -953,6 +953,7 @@ Combine SitemapSpider with other sources of urls:
 
 .. code-block:: python
 
+    from scrapy import Request
     from scrapy.spiders import SitemapSpider
 
 

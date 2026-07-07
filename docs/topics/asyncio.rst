@@ -105,6 +105,9 @@ Scrapy API requires passing a Deferred to it) using the following helpers:
 
 .. autofunction:: scrapy.utils.defer.deferred_from_coro
 .. autofunction:: scrapy.utils.defer.deferred_f_from_coro_f
+
+The following function helps with a reverse wrapping:
+
 .. autofunction:: scrapy.utils.defer.ensure_awaitable
 
 
@@ -190,7 +193,7 @@ in future Scrapy versions. The following features are not available:
   :class:`~scrapy.crawler.CrawlerProcess`
   (:class:`~scrapy.crawler.AsyncCrawlerProcess` and
   :class:`~scrapy.crawler.AsyncCrawlerRunner` are available)
-* Twisted-specific DNS resolvers (the :setting:`DNS_RESOLVER` setting)
+* Twisted-specific DNS resolvers (the :setting:`TWISTED_DNS_RESOLVER` setting)
 * User and 3rd-party code that requires a reactor (see :ref:`below
   <asyncio-without-reactor-migrate>` for examples)
 
@@ -315,8 +318,7 @@ implementations, :class:`~asyncio.ProactorEventLoop` (default) and
 :class:`~asyncio.SelectorEventLoop` works with Twisted.
 
 Scrapy changes the event loop class to :class:`~asyncio.SelectorEventLoop`
-automatically when you change the :setting:`TWISTED_REACTOR` setting or call
-:func:`~scrapy.utils.reactor.install_reactor`.
+automatically when installing the asyncio reactor.
 
 .. note:: Other libraries you use may require
           :class:`~asyncio.ProactorEventLoop`, e.g. because it supports

@@ -199,6 +199,7 @@ Global commands:
 * :command:`fetch`
 * :command:`view`
 * :command:`version`
+* :command:`bench`
 
 Project-only commands:
 
@@ -207,7 +208,6 @@ Project-only commands:
 * :command:`list`
 * :command:`edit`
 * :command:`parse`
-* :command:`bench`
 
 .. command:: startproject
 
@@ -476,7 +476,7 @@ Supported options:
 
 * ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
 
-* ``--a NAME=VALUE``: set spider argument (may be repeated)
+* ``-a NAME=VALUE``: set spider argument (may be repeated)
 
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response

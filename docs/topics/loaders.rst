@@ -76,7 +76,7 @@ data that will be assigned to the ``name`` field later.
 
 Afterwards, similar calls are used for ``price`` and ``stock`` fields
 (the latter using a CSS selector with the :meth:`~ItemLoader.add_css` method),
-and finally the ``last_update`` field is populated directly with a literal value
+and finally the ``last_updated`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
 Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
@@ -273,8 +273,8 @@ The precedence order, for both input and output processors, is as follows:
 1. Item Loader field-specific attributes: ``field_in`` and ``field_out`` (most
    precedence)
 2. Field metadata (``input_processor`` and ``output_processor`` key)
-3. Item Loader defaults: :meth:`ItemLoader.default_input_processor` and
-   :meth:`ItemLoader.default_output_processor` (least precedence)
+3. Item Loader defaults: :attr:`ItemLoader.default_input_processor` and
+   :attr:`ItemLoader.default_output_processor` (least precedence)
 
 See also: :ref:`topics-loaders-extending`.
 
@@ -323,8 +323,8 @@ There are several ways to modify Item Loader context values:
       loader = ItemLoader(product, unit="cm")
 
 3. On Item Loader declaration, for those input/output processors that support
-   instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
-   them:
+   instantiating them with an Item Loader context.
+   :class:`~itemloaders.processors.MapCompose` is one of them:
 
    .. code-block:: python
 
