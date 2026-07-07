@@ -411,7 +411,6 @@ How can I make a blank request?
 
     from scrapy import Request
 
-
     blank_request = Request("data:,")
 
 In this case, the URL is set to a data URI scheme. Data URLs allow you to include data

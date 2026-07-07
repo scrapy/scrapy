@@ -49,7 +49,7 @@ class S3DownloadHandler(BaseDownloadHandler):
 
     async def download_request(self, request: Request) -> Response:
         p = urlparse_cached(request)
-        scheme = "https" if request.meta.get("is_secure") else "http"
+        scheme = "http" if request.meta.get("is_secure") is False else "https"
         bucket = p.hostname
         path = p.path + "?" + p.query if p.query else p.path
         url = f"{scheme}://{bucket}.s3.amazonaws.com{path}"

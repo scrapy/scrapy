@@ -88,6 +88,8 @@ server) is, and this extension builds on that premise.
 Prevent specific requests from triggering slot delay adjustments
 ================================================================
 
+.. versionadded:: 2.12.0
+
 AutoThrottle adjusts the delay of download slots based on the latencies of
 responses that belong to that download slot. The only exceptions are non-200
 responses, which are only taken into account to increase that delay, but
