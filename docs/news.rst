@@ -50,13 +50,15 @@ Deprecations
 
     - ``scrapy.core.downloader.tls.openssl_methods``
 
+    - ``scrapy.core.downloader.tls.DEFAULT_CIPHERS``
+
     - ``scrapy.utils.ssl.ffi_buf_to_string()``
 
     - ``scrapy.utils.ssl.get_temp_key_info()``
 
     - ``scrapy.utils.ssl.x509name_to_string()``
 
-    (:issue:`6546`, :issue:`7619`)
+    (:issue:`6546`, :issue:`7619`, :issue:`7665`)
 
 -   The ``CRAWLSPIDER_FOLLOW_LINKS`` setting is deprecated. You can set
     ``follow=False`` in your rules to achieve the same effect.
@@ -237,7 +239,7 @@ Documentation
 
 -   Documented a way to :ref:`improve startup time and memory usage
     <large-project-startup>` by using :setting:`SPIDER_MODULES`.
-    (:issue:`7576`)
+    (:issue:`7576`, :issue:`7600`)
 
 -   Clarified handling of the ``type`` argument of :class:`~scrapy.Selector`.
     (:issue:`7704`)
@@ -259,7 +261,7 @@ Quality assurance
     (:issue:`7621`)
 
 -   Type hints improvements and fixes.
-    (:issue:`6958`, :issue:`7585`)
+    (:issue:`6958`, :issue:`7585`, :issue:`7586`)
 
 -   CI and test improvements and fixes.
     (:issue:`5954`,
