@@ -1,3 +1,8 @@
+# PyPy uses a tracing garbage collector, so objects may remain in live_refs
+# longer than expected, even after they go out of scope. If deterministic
+# behavior is required, you may need to explicitly trigger garbage collection
+# or call trackref.live_refs.clear().
+
 from __future__ import annotations
 
 from collections import defaultdict

@@ -1,3 +1,11 @@
+# Scrapy developers, if you add a setting here remember to:
+#
+# * add it in alphabetical order, with the exception that enabling flags and
+#   other high-level settings for a group should come first in their group
+#   and pairs like host/port and user/password should be in the usual order
+# * group similar settings without leaving blank lines
+# * add its documentation to docs/topics/settings.rst
+
 import sys
 from importlib import import_module
 from pathlib import Path

@@ -787,11 +787,6 @@ SitemapSpider
     SitemapSpider allows you to crawl a site by discovering the URLs using
     `Sitemaps`_.
 
-    .. note::
-
-       The :mod:`scrapy.utils.sitemap` module provides sitemap parsing support
-       for this spider. Its API is subject to change without notice.
-
     It supports nested sitemaps and discovering sitemap urls from
     `robots.txt`_.
 

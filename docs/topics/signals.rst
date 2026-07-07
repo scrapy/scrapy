@@ -16,10 +16,6 @@ deliver the arguments that the handler receives.
 You can connect to signals (or send your own) through the
 :ref:`topics-api-signals`.
 
-.. note::
-
-   When adding a new signal to ``scrapy.signals``, document it on this page.
-
 Here is a simple example showing how you can catch signals and perform some action:
 
 .. code-block:: python

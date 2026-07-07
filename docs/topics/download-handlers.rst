@@ -378,6 +378,8 @@ This handler supports ``ftp://host/path`` FTP URIs.
 
 It's implemented using :mod:`twisted.protocols.ftp`.
 
+.. _topics-ftp-request-meta:
+
 FTP connection parameters can be passed using :attr:`Request.meta
 <scrapy.Request.meta>`:
 

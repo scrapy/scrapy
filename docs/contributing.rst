@@ -308,17 +308,6 @@ In any case, if something is covered in a docstring, use the
 documentation instead of duplicating the docstring in files within the
 ``docs/`` directory.
 
-When adding a new setting to ``scrapy/settings/default_settings.py``:
-
-* add it in alphabetical order, with the exception that enabling flags and
-  other high-level settings for a group should come first in their group
-  and pairs like host/port and user/password should be in the usual order
-* group similar settings without leaving blank lines
-* add its documentation to :doc:`topics/settings`
-
-When adding a new exception or signal, document it in :doc:`topics/exceptions`
-or :doc:`topics/signals`, respectively.
-
 Documentation updates that cover new or modified features must use Sphinx’s
 :rst:dir:`versionadded` and :rst:dir:`versionchanged` directives. Use
 ``VERSION`` as version, we will replace it with the actual version right before

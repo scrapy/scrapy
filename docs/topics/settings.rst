@@ -2056,18 +2056,6 @@ Example:
 
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
-.. setting:: STATSMAILER_RCPTS
-
-STATSMAILER_RCPTS
------------------
-
-Default: ``[]``
-
-A list of email addresses to receive a message with scraping stats when a
-spider finishes. Used by the deprecated
-:class:`~scrapy.extensions.statsmailer.StatsMailer` extension, which is enabled
-when this setting is non-empty.
-
 .. setting:: STATS_CLASS
 
 STATS_CLASS

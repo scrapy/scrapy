@@ -721,7 +721,7 @@ Those are:
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_passive`` (See :setting:`FTP_PASSIVE_MODE` for more info)
-* ``ftp_local_filename`` (See :ref:`topics-download-handlers` for more info)
+* ``ftp_local_filename`` (See :ref:`topics-ftp-request-meta` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
