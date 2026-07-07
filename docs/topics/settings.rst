@@ -766,6 +766,9 @@ specific cipher that is not included in ``DEFAULT`` if a website requires it.
 Set this setting to ``None`` to use the default ciphers of the underlying TLS
 implementation.
 
+.. versionchanged:: 2.17.0
+   Added support for setting this to ``None``.
+
 .. _OpenSSL cipher list format: https://docs.openssl.org/master/man1/openssl-ciphers/#cipher-list-format
 
 .. note::
@@ -780,6 +783,8 @@ implementation.
 
 DOWNLOAD_TLS_MAX_VERSION
 ------------------------
+
+.. versionadded:: 2.17.0
 
 Default: ``None``
 
@@ -815,6 +820,8 @@ modern environments.
 
 DOWNLOAD_TLS_MIN_VERSION
 ------------------------
+
+.. versionadded:: 2.17.0
 
 Default: ``None``
 

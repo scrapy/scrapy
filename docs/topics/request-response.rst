@@ -806,6 +806,8 @@ Whether or not to fail on broken responses. See:
 give_up_log_level
 -----------------
 
+.. versionadded:: 2.17.0
+
 :ref:`Logging level <levels>` used for the message logged when a request
 exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
 
@@ -814,6 +816,8 @@ exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
 http_auth_domain
 ----------------
 
+.. versionadded:: 2.17.0
+
 Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
 
 .. reqmeta:: http_pass
@@ -821,12 +825,16 @@ Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
 http_pass
 ---------
 
+.. versionadded:: 2.17.0
+
 Overrides :setting:`HTTPAUTH_PASS` for this request.
 
 .. reqmeta:: http_user
 
 http_user
 ---------
+
+.. versionadded:: 2.17.0
 
 Overrides :setting:`HTTPAUTH_USER` for this request.
 
@@ -844,6 +852,8 @@ The meta key is used set retry times per request. When set, the
 verbatim_url
 ------------
 
+.. versionadded:: 2.17.0
+
 Set this key to ``True`` to keep the request URL as passed to
 :class:`~scrapy.Request`, without URL percent-encoding.
 
@@ -853,7 +863,6 @@ characters that would otherwise be canonicalized get different fingerprints.
 
 In this mode, the ``keep_fragments`` parameter is ignored, and it is
 effectively true.
-
 
 .. _topics-stop-response-download:
 

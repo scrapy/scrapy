@@ -3,6 +3,310 @@
 Release notes
 =============
 
+.. _release-2.17.0:
+
+Scrapy 2.17.0 (unreleased)
+--------------------------
+
+Highlights:
+
+-   HTTP/2 and SOCKS proxy support for ``HttpxDownloadHandler``
+
+-   Improved settings for changing allowed TLS versions
+
+Deprecations
+~~~~~~~~~~~~
+
+-   The ``DOWNLOADER_CLIENT_TLS_METHOD`` setting is deprecated. You should use
+    the :setting:`DOWNLOAD_TLS_MIN_VERSION` and/or
+    :setting:`DOWNLOAD_TLS_MAX_VERSION` settings instead if you want to change
+    the TLS method selection.
+    (:issue:`3288`, :issue:`6546`)
+
+-   The following spider attributes are deprecated in favor of settings:
+
+    - ``http_user`` (use :setting:`HTTPAUTH_USER`)
+
+    - ``http_pass`` (use :setting:`HTTPAUTH_PASS`)
+
+    - ``http_auth_domain`` (use :setting:`HTTPAUTH_DOMAIN`)
+
+    (:issue:`7590`)
+
+-   The ``scrapy.commands.ScrapyCommand.help()`` method is deprecated. It was
+    never called by Scrapy.
+    (:issue:`7626`, :issue:`7633`)
+
+-   The following TLS-related functions and constants, intended for internal
+    use, are deprecated:
+
+    - ``scrapy.core.downloader.tls.METHOD_TLS``
+
+    - ``scrapy.core.downloader.tls.METHOD_TLSv10``
+
+    - ``scrapy.core.downloader.tls.METHOD_TLSv11``
+
+    - ``scrapy.core.downloader.tls.METHOD_TLSv12``
+
+    - ``scrapy.core.downloader.tls.openssl_methods``
+
+    - ``scrapy.core.downloader.tls.DEFAULT_CIPHERS``
+
+    - ``scrapy.utils.ssl.ffi_buf_to_string()``
+
+    - ``scrapy.utils.ssl.get_temp_key_info()``
+
+    - ``scrapy.utils.ssl.x509name_to_string()``
+
+    (:issue:`6546`, :issue:`7619`, :issue:`7665`)
+
+-   The ``CRAWLSPIDER_FOLLOW_LINKS`` setting is deprecated. You can set
+    ``follow=False`` in your rules to achieve the same effect.
+    (:issue:`7592`)
+
+-   Instantiating
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    without a ``crawler`` argument is deprecated.
+    (:issue:`7655`)
+
+-   Instantiating
+    :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` without a
+    ``settings`` argument is deprecated.
+    (:issue:`7664`)
+
+New features
+~~~~~~~~~~~~
+
+-   Added support for HTTP/2 requests to
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. It
+    requires setting the new :setting:`HTTPX_HTTP2_ENABLED` setting to
+    ``True``.
+    (:issue:`7575`)
+
+-   Added support for SOCKS proxies to
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`.
+    (:issue:`747`, :issue:`7575`)
+
+-   Added :setting:`DOWNLOAD_TLS_MIN_VERSION` and
+    :setting:`DOWNLOAD_TLS_MAX_VERSION` settings as replacements for the
+    ``DOWNLOADER_CLIENT_TLS_METHOD`` setting (which is now deprecated).
+    Compared to the old setting, they support specifying a range of allowed
+    versions and support newer TLS versions.
+    (:issue:`4821`, :issue:`6546`)
+
+-   Added :setting:`HTTPAUTH_USER`, :setting:`HTTPAUTH_PASS` and
+    :setting:`HTTPAUTH_DOMAIN` settings and :reqmeta:`http_user`,
+    :reqmeta:`http_pass` and :reqmeta:`http_auth_domain` meta keys as more
+    flexible ways to set HTTP authentication data.
+    (:issue:`7590`)
+
+-   Added a :reqmeta:`verbatim_url` meta key that can be set to ``True`` to
+    skip request URL canonicalization.
+    (:issue:`7473`)
+
+-   Added ``deny_tags`` and ``deny_attrs`` arguments to :class:`LinkExtractor
+    <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`.
+    (:issue:`6321`, :issue:`7679`)
+
+-   :attr:`scrapy.Item.fields` now returns the fields in the definition order
+    instead of the alphabetical one.
+    (:issue:`7015`, :issue:`7694`)
+
+-   Added a :setting:`RETRY_GIVE_UP_LOG_LEVEL` setting, a
+    :reqmeta:`give_up_log_level` meta key and a ``give_up_log_level`` argument
+    of the
+    :func:`~scrapy.downloadermiddlewares.retry.get_retry_request` function that
+    allow changing the log level of the message logged when the retry limit has
+    been reached.
+    (:issue:`4622`, :issue:`5297`, :issue:`7567`)
+
+-   It's now possible to set :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` to
+    ``None`` to use the default ciphers of the underlying TLS implementation.
+    (:issue:`7499`, :issue:`7665`)
+
+Improvements
+~~~~~~~~~~~~
+
+-   :class:`~scrapy.FormRequest` is no longer deprecated, only its
+    ``from_response()`` method is still deprecated.
+    (:issue:`7561`, :issue:`7671`)
+
+-   Switched the item definition in the default project template from a
+    :class:`scrapy.item.Item` to a dataclass.
+    (:issue:`7493`, :issue:`7513`)
+
+-   Fixed deprecation warnings with pyOpenSSL 26.3.0.
+    (:issue:`7619`)
+
+-   Removed the runtime warnings for :attr:`Spider.allowed_domains
+    <scrapy.Spider.allowed_domains>` containing URLs or domains with ports
+    instead of just domains and for spider classes having a ``start_url``
+    attribute instead of :class:`~scrapy.spiders.Spider.start_urls`. Please use
+    :doc:`scrapy-lint <scrapy-lint:index>` to find mistakes in your spider code
+    instead.
+    (:issue:`4421`, :issue:`7627`)
+
+-   :func:`scrapy.utils.test.get_crawler` now disables
+    :setting:`TELNETCONSOLE_ENABLED` by default.
+    (:issue:`7644`)
+
+-   Other code refactoring and improvements.
+    (:issue:`7409`, :issue:`7593`, :issue:`7594`, :issue:`7611`, :issue:`7649`)
+
+Bug fixes
+~~~~~~~~~
+
+-   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` no
+    longer ignores proxy credentials for redirected or retried requests.
+    (:issue:`7601`, :issue:`7630`)
+
+-   :class:`~scrapy.extensions.feedexport.GCSFeedStorage` now closes the
+    temporary file after the upload.
+    (:issue:`7546`)
+
+-   Fixed ``scrapy shell <URL>`` running a full spider crawl when there is a
+    spider for the requested URL. This bug was introduced in Scrapy 2.13.0.
+    (:issue:`7552`, :issue:`7557`)
+
+-   The :setting:`IMAGES_STORE_S3_ACL` and :setting:`IMAGES_STORE_GCS_ACL`
+    settings are no longer ignored. This bug was introduced in Scrapy 2.12.0.
+    (:issue:`7597`, :issue:`7614`)
+
+-   :class:`~scrapy.core.downloader.handlers.ftp.FTPDownloadHandler` now closes
+    the connection after making the request.
+    (:issue:`7602`, :issue:`7667`)
+
+-   Removed the deprecated ``spider`` argument from the pipeline defined in the
+    default project template.
+    (:issue:`7676`)
+
+-   Fixed ``scrapy genspider --edit`` not working.
+    (:issue:`7260`, :issue:`7683`)
+
+-   When a :class:`~scrapy.crawler.Crawler` instance is passed to
+    :meth:`AsyncCrawlerRunner.create_crawler()
+    <scrapy.crawler.AsyncCrawlerRunner.create_crawler>` or
+    :meth:`CrawlerRunner.create_crawler()
+    <scrapy.crawler.CrawlerRunner.create_crawler>`, settings from both classes
+    are now merged, previously only the settings from the
+    :class:`~scrapy.crawler.Crawler` instance were used.
+    (:issue:`1280`, :issue:`7647`)
+
+-   Fixed several issues with cookie handling in
+    :func:`scrapy.utils.request.request_to_curl`.
+    (:issue:`7603`, :issue:`7675`, :issue:`7684`)
+
+-   Fixed :class:`scrapy.resolver.CachingThreadedResolver` not disabling the
+    cache when :setting:`DNSCACHE_ENABLED` is set to ``False``.
+    (:issue:`7663`)
+
+-   Fixed :func:`scrapy.utils.response.open_in_browser` not removing comments
+    when looking for the ``<base>`` tag.
+    (:issue:`7506`)
+
+-   Fixed checking for deprecated methods in custom :setting:`ITEM_PROCESSOR`
+    implementations.
+    (:issue:`7589`)
+
+-   Fixed :func:`scrapy.utils.url.strip_url` corrupting some URLs with
+    credentials.
+    (:issue:`7604`, :issue:`7605`)
+
+-   :func:`scrapy.utils.misc.rel_has_nofollow` now ignores the case when
+    looking for "nofollow" strings.
+    (:issue:`7632`)
+
+-   Fixed an exception in :class:`scrapy.utils.sitemap.Sitemap` when parsing
+    some malformed sitemaps.
+    (:issue:`7686`, :issue:`7687`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Mentioned :doc:`scrapy-lint <scrapy-lint:index>` in the docs.
+    (:issue:`4421`, :issue:`7627`)
+
+-   Added the docs about :ref:`security considerations <security>`.
+    (:issue:`7389`, :issue:`7678`)
+
+-   Improved the :ref:`item pipeline docs <topics-item-pipeline>`.
+    (:issue:`2350`, :issue:`7676`)
+
+-   Documented which stats are collected by
+    :class:`~scrapy.extensions.corestats.CoreStats`.
+    (:issue:`7421`)
+
+-   Switched documentation examples from using :class:`scrapy.item.Item` to
+    using dataclasses.
+    (:issue:`7493`, :issue:`7513`)
+
+-   Added feature comparison tables to the :ref:`download handler
+    <download-handlers-ref>` docs.
+    (:issue:`7575`)
+
+-   Improved the docs for :ref:`logging settings <logging-settings>`.
+    (:issue:`6909`, :issue:`7668`)
+
+-   Documented a way to :ref:`improve startup time and memory usage
+    <large-project-startup>` by using :setting:`SPIDER_MODULES`.
+    (:issue:`7576`, :issue:`7600`)
+
+-   Clarified handling of the ``type`` argument of :class:`~scrapy.Selector`.
+    (:issue:`7704`)
+
+-   Other documentation improvements and fixes.
+    (:issue:`4954`,
+    :issue:`6120`,
+    :issue:`7286`,
+    :issue:`7564`,
+    :issue:`7573`,
+    :issue:`7598`,
+    :issue:`7599`,
+    :issue:`7698`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Fixed deprecation warnings with pytest 9.1.0.
+    (:issue:`7621`)
+
+-   Type hints improvements and fixes.
+    (:issue:`6958`, :issue:`7586`)
+
+-   CI and test improvements and fixes.
+    (:issue:`5954`,
+    :issue:`7002`,
+    :issue:`7017`,
+    :issue:`7247`,
+    :issue:`7508`,
+    :issue:`7545`,
+    :issue:`7566`,
+    :issue:`7574`,
+    :issue:`7585`,
+    :issue:`7595`,
+    :issue:`7608`,
+    :issue:`7610`,
+    :issue:`7612`,
+    :issue:`7616`,
+    :issue:`7625`,
+    :issue:`7637`,
+    :issue:`7639`,
+    :issue:`7640`,
+    :issue:`7641`,
+    :issue:`7642`,
+    :issue:`7643`,
+    :issue:`7644`,
+    :issue:`7645`,
+    :issue:`7646`,
+    :issue:`7654`,
+    :issue:`7655`,
+    :issue:`7664`,
+    :issue:`7672`,
+    :issue:`7677`,
+    :issue:`7680`,
+    :issue:`7682`,
+    :issue:`7692`)
+
 .. _release-2.16.0:
 
 Scrapy 2.16.0 (2026-05-19)
@@ -6243,8 +6547,8 @@ Backward-incompatible changes
     ``429``, you must override :setting:`RETRY_HTTP_CODES` accordingly.
 
 *   :class:`~scrapy.crawler.Crawler`,
-    :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>` and
-    :class:`CrawlerRunner.create_crawler <scrapy.crawler.CrawlerRunner.create_crawler>`
+    :meth:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>` and
+    :meth:`CrawlerRunner.create_crawler <scrapy.crawler.CrawlerRunner.create_crawler>`
     no longer accept a :class:`~scrapy.spiders.Spider` subclass instance, they
     only accept a :class:`~scrapy.spiders.Spider` subclass now.
 
