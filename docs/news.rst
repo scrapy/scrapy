@@ -10,9 +10,29 @@ Scrapy 2.17.0 (unreleased)
 
 Highlights:
 
+-   Security bug fixes
+
 -   HTTP/2 and SOCKS proxy support for ``HttpxDownloadHandler``
 
 -   Improved settings for changing allowed TLS versions
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   ``s3://`` requests now use HTTPS by default, instead of plaintext HTTP.
+
+    Previously, :class:`~scrapy.core.downloader.handlers.s3.S3DownloadHandler`
+    sent signed S3 requests over plaintext HTTP unless
+    ``request.meta["is_secure"]`` was set to a true value, exposing the request
+    path, the AWS ``Authorization`` header, the ``X-Amz-Security-Token`` header
+    (when using temporary credentials), and the response contents to network
+    attackers, who could also tamper with responses. See the `76g3-c3x4-crvx`_
+    security advisory for details.
+
+    To restore the previous behavior for a given request, set
+    ``request.meta["is_secure"]`` to ``False``.
+
+    .. _76g3-c3x4-crvx: https://github.com/scrapy/scrapy/security/advisories/GHSA-76g3-c3x4-crvx
 
 Deprecations
 ~~~~~~~~~~~~

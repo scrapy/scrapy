@@ -170,6 +170,12 @@ class TestS3Anon:
         httpreq = await self.download_request(req)
         assert hasattr(self.s3reqh, "anon")
         assert self.s3reqh.anon
+        assert httpreq.url == "https://aws-publicdatasets.s3.amazonaws.com/"
+
+    @coroutine_test
+    async def test_anon_request_insecure(self):
+        req = Request("s3://aws-publicdatasets/", meta={"is_secure": False})
+        httpreq = await self.download_request(req)
         assert httpreq.url == "http://aws-publicdatasets.s3.amazonaws.com/"
 
 
@@ -199,6 +205,18 @@ class TestS3:
         with mock.patch("botocore.auth.formatdate") as mock_formatdate:
             mock_formatdate.return_value = date
             yield
+
+    @coroutine_test
+    async def test_secure_by_default(self):
+        req = Request("s3://johnsmith/photos/puppy.jpg")
+        httpreq = await self.download_request(req)
+        assert httpreq.url == "https://johnsmith.s3.amazonaws.com/photos/puppy.jpg"
+
+    @coroutine_test
+    async def test_insecure_opt_out(self):
+        req = Request("s3://johnsmith/photos/puppy.jpg", meta={"is_secure": False})
+        httpreq = await self.download_request(req)
+        assert httpreq.url == "http://johnsmith.s3.amazonaws.com/photos/puppy.jpg"
 
     @coroutine_test
     async def test_request_signing1(self):
