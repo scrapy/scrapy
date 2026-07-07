@@ -138,7 +138,7 @@ Improvements
 
 -   :func:`scrapy.utils.test.get_crawler` now disables
     :setting:`TELNETCONSOLE_ENABLED` by default.
-    (:issue:`7637`)
+    (:issue:`7644`)
 
 -   Other code refactoring and improvements.
     (:issue:`7409`, :issue:`7593`, :issue:`7594`, :issue:`7611`, :issue:`7649`)
@@ -261,7 +261,7 @@ Quality assurance
     (:issue:`7621`)
 
 -   Type hints improvements and fixes.
-    (:issue:`6958`, :issue:`7585`, :issue:`7586`)
+    (:issue:`6958`, :issue:`7586`)
 
 -   CI and test improvements and fixes.
     (:issue:`5954`,
