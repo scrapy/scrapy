@@ -59,6 +59,14 @@ class TestSitemapSpider(TestSpider):
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=self.BODY)
         self.assertSitemapBody(r, self.BODY)
 
+    def test_get_sitemap_body_xml_url_with_query_string(self):
+        # Sitemaps served with a query string must not be ignored (#6293).
+        r = TextResponse(
+            url="http://www.example.com/sitemap_products_8.xml?from=1&to=2",
+            body=self.BODY,
+        )
+        self.assertSitemapBody(r, self.BODY)
+
     def test_get_sitemap_body_xml_url_compressed(self):
         r = Response(
             url="http://www.example.com/sitemap.xml.gz",
