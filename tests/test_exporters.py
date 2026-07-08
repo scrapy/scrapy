@@ -384,6 +384,20 @@ class TestCsvItemExporter(TestBaseItemExporter):
             errors="xmlcharrefreplace",
         )
 
+    def test_csv_dropped_fields_warning(self, caplog):
+        out = BytesIO()
+        exporter = CsvItemExporter(out)
+        exporter.start_exporting()
+
+        exporter.export_item({"name": "Apple"})
+
+        with caplog.at_level("WARNING", logger="scrapy.exporters"):
+            exporter.export_item({"name": "Banana", "price": 2.00})
+
+        assert len(caplog.records) == 1
+        assert "CSVExporter dropped fields" in caplog.text
+        assert "price" in caplog.text
+
 
 class TestCsvItemExporterDataclass(TestCsvItemExporter):
     item_class = MyDataClass
