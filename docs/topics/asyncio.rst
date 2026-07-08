@@ -5,7 +5,7 @@ asyncio
 =======
 
 Scrapy supports :mod:`asyncio` natively. New projects created with
-:command:`scrapy startproject` have asyncio enabled by default, and you can use
+:command:`startproject` have asyncio enabled by default, and you can use
 :mod:`asyncio` and :mod:`asyncio`-powered libraries in any :doc:`coroutine
 <coroutines>`.
 
@@ -18,7 +18,7 @@ no additional setup is needed.
 Configuring the asyncio reactor
 ===============================
 
-New projects generated with :command:`scrapy startproject` have the asyncio
+New projects generated with :command:`startproject` have the asyncio
 reactor configured by default. No manual setup is needed.
 
 The :setting:`TWISTED_REACTOR` setting controls which Twisted reactor Scrapy

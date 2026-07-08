@@ -62,8 +62,8 @@ its ``__init__`` method.
 :class:`Item` also allows the defining of field metadata, which can be used to
 :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-:mod:`trackref` tracks :class:`Item` objects to help find memory leaks
-(see :ref:`topics-leaks-trackrefs`).
+:mod:`scrapy.utils.trackref` tracks :class:`Item` objects to help find memory
+leaks (see :ref:`topics-leaks-trackrefs`).
 
 Example:
 

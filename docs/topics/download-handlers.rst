@@ -89,7 +89,7 @@ the following API:
         If ``True``, the handler will only be instantiated when the first
         request handled by it needs to be downloaded.
 
-    .. method:: download_request(request: Request) -> Response:
+    .. method:: download_request(request: Request) -> Response
         :async:
 
         Download the given request and return a response.
