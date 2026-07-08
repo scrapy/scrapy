@@ -16,7 +16,7 @@ from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import Request
+from scrapy.http import Request, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.misc import build_from_crawler
@@ -354,6 +354,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "A brief note"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "US-ASCII"
 
     @coroutine_test
@@ -362,6 +363,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
     @coroutine_test
@@ -370,6 +372,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert response.body == b"\xbe\xd3\xbe"
+        assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
     @coroutine_test
@@ -382,6 +385,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "utf-8"
 
     @coroutine_test
