@@ -11,7 +11,7 @@ from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
-from tests.mockserver.mitm_proxy import MitmProxy
+from tests.mockserver.mitm_proxy import MitmProxy, mitmdump_cmd
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -127,7 +127,6 @@ def pytest_runtest_setup(item):
         "uvloop",
         "botocore",
         "boto3",
-        "mitmproxy",
     ]
 
     for module in optional_deps:
@@ -136,6 +135,9 @@ def pytest_runtest_setup(item):
                 importlib.import_module(module)
             except ImportError:
                 pytest.skip(f"{module} is not installed")
+
+    if item.get_closest_marker("requires_mitmproxy") and mitmdump_cmd() is None:
+        pytest.skip("mitmdump is not available")
 
 
 # Generate localhost certificate files, needed by some tests
