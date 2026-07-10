@@ -32,6 +32,7 @@ from scrapy.extensions.feedexport import (
     FeedSlot,
     FileFeedStorage,
     IFeedStorage,
+    apply_uri_params,
 )
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
@@ -580,6 +581,36 @@ class TestFeedExport(TestFeedExportBase):
         files = list(feed_dir.iterdir())
         assert len(files) == 1
         assert files[0].name == "out testspider ünïcode.json"
+
+    @coroutine_test
+    async def test_str_uri_with_percent_encoding_and_placeholder(self):
+        # A percent-encoded string URI (e.g. %20 for a space) must reach
+        # storage verbatim rather than being misinterpreted as a printf
+        # directive, while %()s placeholders are still substituted. See #6425
+        # and #5794.
+        feed_dir = Path(self.temp_dir, "dir with spaces")
+        feed_dir.mkdir()
+        items = [self.MyItem({"foo": "bar1", "egg": "spam1"})]
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+
+            def parse(self, response):
+                yield from items
+
+        TestSpider.start_urls = [self.mockserver.url("/")]
+        settings = {
+            "FEEDS": {
+                f"{feed_dir.as_uri()}/%(time)s.json": {"format": "json"},
+            },
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        files = list(feed_dir.iterdir())
+        assert len(files) == 1
+        assert "%(time)s" not in files[0].name
+        assert files[0].suffix == ".json"
 
     @coroutine_test
     async def test_export_no_items_not_store_empty(self):
@@ -1463,3 +1494,34 @@ class TestFeedExportInit:
         crawler = get_crawler(settings_dict=settings)
         exporter = FeedExporter.from_crawler(crawler)
         assert isinstance(exporter, FeedExporter)
+
+
+class TestApplyUriParams:
+    params = {
+        "name": "myspider",
+        "time": "2020-01-01T00-00-00",
+        "batch_id": 2,
+        "batch_time": "2020-01-01T00-00-00",
+    }
+
+    @pytest.mark.parametrize(
+        ("uri_template", "expected"),
+        [
+            # Placeholders are substituted, including width/flags.
+            ("/data/%(name)s/%(time)s.json", "/data/myspider/2020-01-01T00-00-00.json"),
+            ("/data/%(batch_id)05d.json", "/data/00002.json"),
+            # Percent-encoding is kept verbatim (#6425, #5794).
+            (
+                "file:///path%20with%20spaces/%(name)s.json",
+                "file:///path%20with%20spaces/myspider.json",
+            ),
+            (
+                "ftp://user:2%23um25%21M%23JZ@ftp.example.com/%(name)s.csv",
+                "ftp://user:2%23um25%21M%23JZ@ftp.example.com/myspider.csv",
+            ),
+            # A lone percent character next to a placeholder stays literal.
+            ("/100%/%(name)s.json", "/100%/myspider.json"),
+        ],
+    )
+    def test_apply_uri_params(self, uri_template, expected):
+        assert apply_uri_params(uri_template, self.params) == expected
