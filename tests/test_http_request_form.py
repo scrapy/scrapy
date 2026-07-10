@@ -499,6 +499,39 @@ class TestFormRequest(TestRequest):
         fs = _qs(req)
         assert fs[b"clickme"] == [b"two"]
 
+    def test_from_response_override_clickable_formdata_list(self):
+        # formdata as a list of (key, value) tuples (documented as equivalent to
+        # a dict) must dedupe the submit button the same way; otherwise the form's
+        # default submit value leaks in alongside the override.
+        response = _buildresponse(
+            """<form><input type="submit" name="clickme" value="one"> </form>"""
+        )
+        req = self.request_class.from_response(
+            response, formdata=[("clickme", "two")], clickdata={"name": "clickme"}
+        )
+        assert _qs(req)[b"clickme"] == [b"two"]
+
+    def test_from_response_override_auto_clicked_submit_formdata_list(self):
+        # Same class of bug without clickdata: the auto-selected submit must be
+        # overridden by a list formdata entry, not duplicated.
+        response = _buildresponse(
+            """<form method="post">"""
+            """<input type="submit" name="clickme" value="one"></form>"""
+        )
+        req = self.request_class.from_response(response, formdata=[("clickme", "two")])
+        assert _qs(req)[b"clickme"] == [b"two"]
+
+    def test_from_response_submit_kept_with_unrelated_formdata_list(self):
+        # A list formdata that does not name the submit must not suppress it.
+        response = _buildresponse(
+            """<form method="post">"""
+            """<input type="submit" name="clickme" value="one"></form>"""
+        )
+        req = self.request_class.from_response(response, formdata=[("extra", "x")])
+        fs = _qs(req)
+        assert fs[b"clickme"] == [b"one"]
+        assert fs[b"extra"] == [b"x"]
+
     def test_from_response_dont_click(self):
         response = _buildresponse(
             """<form action="get.php" method="GET">

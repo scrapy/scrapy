@@ -245,7 +245,7 @@ def _get_inputs(
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
-        if clickable and clickable[0] not in formdata and clickable[0] is not None:
+        if clickable and clickable[0] not in formdata_keys and clickable[0] is not None:
             values.append(clickable)
 
     formdata_items = formdata.items() if isinstance(formdata, dict) else formdata
