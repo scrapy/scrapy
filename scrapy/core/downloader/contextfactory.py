@@ -47,8 +47,13 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     instance.
 
     The purpose of this custom class is to provide a ``creatorForNetloc()``
-    method that returns a ``_ScrapyClientTLSOptions`` instance configured based
-    on TLS settings provided to the factory.
+    method that returns:
+
+    - a ``_ScrapyClientTLSOptions26`` or ``_ScrapyClientTLSOptions`` instance
+      configured based on TLS settings provided to the factory (when the
+      certificate verification is disabled);
+    - a result of ``optionsForClientTLS()`` called with those TLS settings
+      (when the certificate verification is enabled).
     """
 
     def __init__(

@@ -250,20 +250,22 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        if self.acl:
-            self.s3_client.upload_fileobj(
-                Bucket=self.bucketname,
-                Key=self.keyname,
-                Fileobj=file,
-                ExtraArgs={"ACL": self.acl},
-            )
-        else:
-            self.s3_client.upload_fileobj(
-                Bucket=self.bucketname,
-                Key=self.keyname,
-                Fileobj=file,
-            )
-        file.close()
+        try:
+            if self.acl:
+                self.s3_client.upload_fileobj(
+                    Bucket=self.bucketname,
+                    Key=self.keyname,
+                    Fileobj=file,
+                    ExtraArgs={"ACL": self.acl},
+                )
+            else:
+                self.s3_client.upload_fileobj(
+                    Bucket=self.bucketname,
+                    Key=self.keyname,
+                    Fileobj=file,
+                )
+        finally:
+            file.close()
 
 
 class GCSFeedStorage(BlockingFeedStorage):

@@ -60,7 +60,7 @@ else:
 
 
 class HttpCompressionMiddleware:
-    """This middleware allows compressed (gzip, deflate) traffic to be
+    """This middleware allows compressed (gzip, deflate etc.) traffic to be
     sent/received from websites"""
 
     def __init__(

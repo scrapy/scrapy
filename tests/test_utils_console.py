@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from scrapy.utils.console import get_shell_embed_func
@@ -38,4 +40,5 @@ def test_get_shell_embed_func_bpython():
 def test_get_shell_embed_func_ipython():
     # default shell should be 'ipython'
     shell = get_shell_embed_func()
+    assert shell is not None
     assert shell.__name__ == "_embed_ipython_shell"

@@ -36,6 +36,7 @@ def createResolver(servers: list[tuple[str, int]]) -> ResolverBase:
 
 class LocalhostSpider(Spider):
     name = "localhost_spider"
+    url: str
 
     async def start(self):
         yield Request(self.url)

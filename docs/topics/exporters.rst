@@ -153,7 +153,7 @@ output examples, which assume you're exporting these two items:
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=0, dont_fail=False)
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding=None, indent=None, dont_fail=False)
 
    This is the (abstract) base class for all Item Exporters. It provides
    support for common features used by all (concrete) Item Exporters, such as
@@ -239,7 +239,7 @@ BaseItemExporter
 
    .. attribute:: indent
 
-      Amount of spaces used to indent the output on each level. Defaults to ``0``.
+      Amount of spaces used to indent the output on each level. Defaults to ``None``.
 
       * ``indent=None`` selects the most compact representation,
         all items in the same line with no indentation
@@ -328,7 +328,7 @@ CsvItemExporter
 
    :param join_multivalued: The char (or chars) that will be used for joining
       multi-valued fields, if found.
-   :type include_headers_line: str
+   :type join_multivalued: str
 
    :param errors: The optional string that specifies how encoding and decoding
       errors are to be handled. For more information see
@@ -342,14 +342,14 @@ CsvItemExporter
 
    A typical output of this exporter would be::
 
-      product,price
+      name,price
       Color TV,1200
       DVD player,200
 
 PickleItemExporter
 ------------------
 
-.. class:: PickleItemExporter(file, protocol=0, **kwargs)
+.. class:: PickleItemExporter(file, protocol=4, **kwargs)
 
    Exports items in pickle format to the given file-like object.
 

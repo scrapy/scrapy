@@ -238,7 +238,7 @@ class TestXmliterBase(ABC):
             next(my_iter)
 
     def test_xmliter_objtype_exception(self):
-        i = self.xmliter(42, "product")
+        i = self.xmliter(42, "product")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
             next(i)
 
@@ -353,7 +353,7 @@ class TestLxmlXmliter(TestXmliterBase):
         assert node.xpath("f:name/text()").getall() == ["African Coffee Table"]
 
     def test_xmliter_objtype_exception(self):
-        i = self.xmliter(42, "product")
+        i = self.xmliter(42, "product")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
             next(i)
 

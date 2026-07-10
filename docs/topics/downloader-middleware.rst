@@ -351,6 +351,8 @@ HttpAuthMiddleware
 HTTPAUTH_USER
 ~~~~~~~~~~~~~
 
+.. versionadded:: 2.17.0
+
 Default: ``""``
 
 The username to use for HTTP basic authentication, applied to all requests
@@ -361,6 +363,8 @@ whose URL matches :setting:`HTTPAUTH_DOMAIN`.
 HTTPAUTH_PASS
 ~~~~~~~~~~~~~
 
+.. versionadded:: 2.17.0
+
 Default: ``""``
 
 The password to use for HTTP basic authentication.
@@ -370,6 +374,8 @@ The password to use for HTTP basic authentication.
 HTTPAUTH_DOMAIN
 ~~~~~~~~~~~~~~~
 
+.. versionadded:: 2.17.0
+
 Default: ``None``
 
 The domain (and its subdomains) to which HTTP basic authentication credentials
@@ -378,6 +384,8 @@ that this risks leaking credentials to unrelated domains.
 
 This setting must be explicitly configured whenever :setting:`HTTPAUTH_USER`
 or :setting:`HTTPAUTH_PASS` is set.
+
+.. seealso:: :ref:`security-credential-leakage`
 
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
@@ -497,7 +505,7 @@ Filesystem storage backend (default)
 
     *   ``response_body`` - the plain response body
 
-    *   ``response_headers`` - the request headers (in raw HTTP format)
+    *   ``response_headers`` - the response headers (in raw HTTP format)
 
     *   ``meta`` - some metadata of this cache resource in Python ``repr()``
         format (grep-friendly format)
@@ -539,7 +547,7 @@ defines the methods described below.
     .. method:: open_spider(spider)
 
       This method gets called after a spider has been opened for crawling. It handles
-      the :signal:`open_spider <spider_opened>` signal.
+      the :signal:`spider_opened` signal.
 
       :param spider: the spider which has been opened
       :type spider: :class:`~scrapy.Spider` object
@@ -547,7 +555,7 @@ defines the methods described below.
     .. method:: close_spider(spider)
 
       This method gets called after a spider has been closed. It handles
-      the :signal:`close_spider <spider_closed>` signal.
+      the :signal:`spider_closed` signal.
 
       :param spider: the spider which has been closed
       :type spider: :class:`~scrapy.Spider` object
@@ -806,7 +814,6 @@ HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. setting:: HTTPPROXY_ENABLED
-.. setting:: HTTPPROXY_AUTH_ENCODING
 
 HTTPPROXY_ENABLED
 ^^^^^^^^^^^^^^^^^
@@ -814,6 +821,8 @@ HTTPPROXY_ENABLED
 Default: ``True``
 
 Whether or not to enable the :class:`HttpProxyMiddleware`.
+
+.. setting:: HTTPPROXY_AUTH_ENCODING
 
 HTTPPROXY_AUTH_ENCODING
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -976,7 +985,7 @@ Whether the Meta Refresh middleware will be enabled.
 METAREFRESH_IGNORE_TAGS
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``[]``
+Default: ``["noscript"]``
 
 Meta tags within these tags are ignored.
 
@@ -1083,7 +1092,7 @@ Default::
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
-        IOError,
+        OSError,
         'scrapy.core.downloader.handlers.http11.TunnelError',
     ]
 
@@ -1101,6 +1110,8 @@ exception propagation, see
 
 RETRY_GIVE_UP_LOG_LEVEL
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.17.0
 
 Default: ``"ERROR"``
 

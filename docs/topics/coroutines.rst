@@ -268,5 +268,5 @@ You can also send multiple requests in parallel:
             yield {
                 "h1": response.css("h1::text").get(),
                 "price": responses[0].css(".price::text").get(),
-                "price2": responses[1].css(".color::text").get(),
+                "color": responses[1].css(".color::text").get(),
             }

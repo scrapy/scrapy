@@ -87,6 +87,7 @@ class DummyBlockingFeedStorage(BlockingFeedStorage):
 
 class FailingBlockingFeedStorage(DummyBlockingFeedStorage):
     def _store_in_thread(self, file):
+        file.close()
         raise OSError("Cannot store")
 
 
@@ -477,9 +478,14 @@ class TestFeedExport(TestFeedExportBase):
             },
         }
         crawler = get_crawler(ItemSpider, settings)
+
+        def store(file: IO[bytes]) -> None:
+            file.close()
+            raise KeyError("foo")
+
         with mock.patch(
             "scrapy.extensions.feedexport.FileFeedStorage.store",
-            side_effect=KeyError("foo"),
+            side_effect=store,
         ):
             yield crawler.crawl(mockserver=self.mockserver)
         assert "feedexport/failed_count/FileFeedStorage" in crawler.stats.get_stats()
@@ -795,7 +801,7 @@ class TestFeedExport(TestFeedExportBase):
         ]
 
         formats = {
-            "csv": b"baz,egg,foo\r\n,spam1,bar1\r\n",
+            "csv": b"foo,egg,baz\r\nbar1,spam1,\r\n",
             "json": b'[\n{"hello": "world2", "foo": "bar2"}\n]',
             "jsonlines": (
                 b'{"foo": "bar1", "egg": "spam1"}\n{"hello": "world2", "foo": "bar2"}\n'

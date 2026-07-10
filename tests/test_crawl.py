@@ -356,9 +356,10 @@ with multiples lines
 
     @coroutine_test
     async def test_engine_status(self, mockserver: MockServer) -> None:
-        est = []
+        est: list[list[tuple[str, Any]]] = []
 
         def cb(response):
+            assert crawler.engine
             est.append(get_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -373,9 +374,10 @@ with multiples lines
 
     @coroutine_test
     async def test_format_engine_status(self, mockserver: MockServer) -> None:
-        est = []
+        est: list[str] = []
 
         def cb(response):
+            assert crawler.engine
             est.append(format_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -386,8 +388,8 @@ with multiples lines
         assert len(est) == 1, est
         est = est[0].split("\n")[2:-2]  # remove header & footer
         # convert to dict
-        est = [x.split(":") for x in est]
-        est = [x for sublist in est for x in sublist]  # flatten
+        est_split = [x.split(":") for x in est]
+        est = [x for sublist in est_split for x in sublist]  # flatten
         est = [x.lstrip().rstrip() for x in est]
         it = iter(est)
         s = dict(zip(it, it, strict=True))

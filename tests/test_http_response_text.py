@@ -14,6 +14,13 @@ from tests.test_http_response import TestResponse
 class TestTextResponse(TestResponse):
     response_class = TextResponse
 
+    def test_follow_None_encoding(self):
+        # unlike the base Response, TextResponse.follow() falls back to the
+        # response encoding when encoding is None instead of raising
+        r = self.response_class("http://example.com", body=b"hello", encoding="cp1252")
+        req = r.follow("foo", encoding=None)
+        assert req.encoding == "cp1252"
+
     def test_replace(self):
         super().test_replace()
         r1 = self.response_class(
@@ -156,12 +163,13 @@ class TestTextResponse(TestResponse):
 
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""
+        body = b"\xff\xfeh\x00i\x00"
         r = self.response_class(
             "http://www.example.com",
-            body=b"\xff\xfeh\x00i\x00",
+            body=body,
             encoding="utf-16",
         )
-        self._assert_response_values(r, "utf-16", "hi")
+        self._assert_response_values(r, "utf-16", body)
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
         r6 = self.response_class(

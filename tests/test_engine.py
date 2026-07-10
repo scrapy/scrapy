@@ -38,6 +38,8 @@ from tests import get_testdata
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from twisted.python.failure import Failure
 
     from scrapy.core.scheduler import Scheduler
@@ -608,8 +610,8 @@ class TestEngineDownload(TestEngineDownloadAsync):
 @coroutine_test
 async def test_request_scheduled_signal():
     class TestScheduler(BaseScheduler):
-        def __init__(self):
-            self.enqueued = []
+        def __init__(self) -> None:
+            self.enqueued: list[Request] = []
 
         def enqueue_request(self, request: Request) -> bool:
             self.enqueued.append(request)
@@ -621,9 +623,9 @@ async def test_request_scheduled_signal():
 
     crawler = get_crawler(MySpider)
     engine = ExecutionEngine(crawler, lambda _: None)
-    scheduler = TestScheduler()
+    scheduler = TestScheduler()  # type: ignore[abstract]
 
-    async def start():
+    async def start() -> AsyncIterator[Any]:
         return
         yield
 

@@ -101,7 +101,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
                 uri is used to verify that incoming client requests have correct
                 base URL.
             settings -- Scrapy project settings
-            conn_lost_deferred -- Deferred fires with the reason: Failure to notify
+            conn_lost_deferred -- Deferred that fires with the list of underlying exceptions to notify
                 that connection was lost
             tls_verbose_logging -- Whether to log TLS details
         """
@@ -375,7 +375,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def _handle_events(self, events: list[Event]) -> None:
         """Private method which acts as a bridge between the events
-        received from the HTTP/2 data and IH2EventsHandler
+        received from the HTTP/2 data and the handlers in this class.
 
         Arguments:
             events -- A list of events that the remote peer triggered by sending data

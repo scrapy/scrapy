@@ -93,7 +93,7 @@ You can get the oldest object of each class using the
 Which objects are tracked?
 --------------------------
 
-The objects tracked by ``trackrefs`` are all from these classes (and all its
+The objects tracked by ``trackref`` are all from these classes (and all its
 subclasses):
 
 * :class:`scrapy.Request`
@@ -187,7 +187,7 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
     Inherit from this class if you want to track live
     instances with the ``trackref`` module.
 
-.. function:: print_live_refs(class_name, ignore=NoneType)
+.. function:: print_live_refs(ignore=NoneType)
 
     Print a report of live references, grouped by class name.
 
@@ -203,9 +203,9 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 
 .. function:: iter_all(class_name)
 
-    Return an iterator over all objects alive with the given class name, or
-    ``None`` if none is found. Use :func:`print_live_refs` first to get a list
-    of all tracked live objects per class name.
+    Return an iterator over all objects alive with the given class name. Use
+    :func:`print_live_refs` first to get a list of all tracked live objects
+    per class name.
 
 .. skip: end
 

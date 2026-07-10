@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from scrapy import Spider
 from scrapy.http import Request
 from scrapy.item import Item
@@ -17,7 +19,7 @@ def test_iterate_spider_output():
     r = Request("http://scrapytest.org")
     o = object()
 
-    assert list(iterate_spider_output(i)) == [i]
+    assert list(iterate_spider_output(i)) == [i]  # type: ignore[call-overload]
     assert list(iterate_spider_output(r)) == [r]
     assert list(iterate_spider_output(o)) == [o]
     assert list(iterate_spider_output([r, i, o])) == [r, i, o]

@@ -378,6 +378,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(total=2, mockserver=self.mockserver)
+        assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
@@ -392,7 +393,9 @@ class TestBatchDeliveries(TestFeedExportBase):
         ]
 
         class CustomS3FeedStorage(S3FeedStorage):
-            stubs = []
+            from botocore.stub import Stubber  # noqa: PLC0415
+
+            stubs: list[Stubber] = []
 
             def open(self, *args, **kwargs):
                 from botocore import __version__ as botocore_version  # noqa: PLC0415
@@ -449,6 +452,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs:
             stub.assert_no_pending_responses()
+        assert crawler.stats
         assert (
             "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
         )
