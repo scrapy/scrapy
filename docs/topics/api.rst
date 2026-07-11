@@ -178,9 +178,7 @@ SpiderLoader API
     defined across the project.
 
     Custom spider loaders can be employed by specifying their path in the
-    :setting:`SPIDER_LOADER_CLASS` project setting. They must fully implement
-    the :class:`scrapy.interfaces.ISpiderLoader` interface to guarantee an
-    errorless execution.
+    :setting:`SPIDER_LOADER_CLASS` project setting.
 
     .. method:: from_settings(settings)
 

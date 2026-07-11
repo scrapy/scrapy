@@ -2643,7 +2643,7 @@ Deprecation removals
     (:issue:`6109`, :issue:`6116`)
 
 -   A custom class assigned to the :setting:`SPIDER_LOADER_CLASS` setting that
-    does not implement the :class:`~scrapy.interfaces.ISpiderLoader` interface
+    does not implement the ``ISpiderLoader`` interface
     will now raise a :exc:`zope.interface.verify.DoesNotImplement` exception at
     run time. Non-compliant classes have been triggering a deprecation warning
     since Scrapy 1.0.0.
