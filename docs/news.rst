@@ -18,6 +18,11 @@ Backward-incompatible changes
     - :func:`~scrapy.spiderloader.get_spider_loader` no longer checks that the
       configured spider loader implements the ``ISpiderLoader`` interface.
 
+    - :class:`~scrapy.extensions.feedexport.BlockingFeedStorage`,
+    - :class:`~scrapy.extensions.feedexport.FileFeedStorage` and
+    - :class:`~scrapy.extensions.feedexport.StdoutFeedStorage` are no longer
+      marked as implementing the ``IFeedStorage`` interface.
+
     (:issue:`6585`, :issue:`TBD`)
 
 .. _release-2.17.0:

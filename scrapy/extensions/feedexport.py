@@ -22,7 +22,7 @@ from urllib.parse import unquote, urlparse
 
 from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
-from zope.interface import Interface, implementer
+from zope.interface import Interface
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
@@ -120,7 +120,6 @@ class FeedStorageProtocol(Protocol):
         """Store the given file stream"""
 
 
-@implementer(IFeedStorage)
 class BlockingFeedStorage(ABC):
     def open(self, spider: Spider) -> IO[bytes]:
         path = spider.crawler.settings["FEED_TEMPDIR"]
@@ -137,7 +136,6 @@ class BlockingFeedStorage(ABC):
         raise NotImplementedError
 
 
-@implementer(IFeedStorage)
 class StdoutFeedStorage:
     def __init__(
         self,
@@ -164,7 +162,6 @@ class StdoutFeedStorage:
         pass
 
 
-@implementer(IFeedStorage)
 class FileFeedStorage:
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         self.path: str = file_uri_to_path(uri) if uri.startswith("file:") else uri
