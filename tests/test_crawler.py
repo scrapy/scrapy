@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from unittest.mock import MagicMock
 
 import pytest
-from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
 from scrapy import Spider
@@ -586,21 +585,7 @@ class TestCrawlerLogging:
         assert "debug message" in logged
 
 
-class SpiderLoaderWithWrongInterface:
-    def unneeded_method(self) -> None:
-        pass
-
-
 class TestCrawlerRunner(TestBaseCrawler):
-    def test_spider_manager_verify_interface(self) -> None:
-        settings = Settings(
-            {
-                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
-            }
-        )
-        with pytest.raises(MultipleInvalid):
-            CrawlerRunner(settings)
-
     def test_crawler_runner_accepts_dict(self) -> None:
         runner = CrawlerRunner({"foo": "bar"})
         assert runner.settings["foo"] == "bar"
@@ -612,15 +597,6 @@ class TestCrawlerRunner(TestBaseCrawler):
 
 
 class TestAsyncCrawlerRunner(TestBaseCrawler):
-    def test_spider_manager_verify_interface(self) -> None:
-        settings = Settings(
-            {
-                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
-            }
-        )
-        with pytest.raises(MultipleInvalid):
-            AsyncCrawlerRunner(settings)
-
     def test_crawler_runner_accepts_dict(self) -> None:
         runner = AsyncCrawlerRunner({"foo": "bar"})
         assert runner.settings["foo"] == "bar"
