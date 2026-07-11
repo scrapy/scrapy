@@ -14,16 +14,10 @@ warnings.warn(
 
 
 class ISpiderLoader(Interface):
-    def from_settings(settings):
-        """Return an instance of the class for the given settings"""
+    def from_settings(settings): ...
 
-    def load(spider_name):
-        """Return the Spider class for the given spider name. If the spider
-        name is not found, it must raise a KeyError."""
+    def load(spider_name): ...
 
-    def list():
-        """Return a list with the names of all spiders available in the
-        project"""
+    def list(): ...
 
-    def find_by_request(request):
-        """Return the list of spiders names that can handle the given request"""
+    def find_by_request(request): ...
