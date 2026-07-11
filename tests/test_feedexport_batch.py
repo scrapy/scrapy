@@ -12,12 +12,11 @@ from urllib.parse import urljoin
 import lxml.etree
 import pytest
 from packaging.version import Version
-from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy import Spider
 from scrapy.exceptions import NotConfigured
-from scrapy.extensions.feedexport import FeedExporter, IFeedStorage, S3FeedStorage
+from scrapy.extensions.feedexport import FeedExporter, S3FeedStorage
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
@@ -435,9 +434,6 @@ class TestBatchDeliveries(TestFeedExportBase):
                 },
             },
         }
-        crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(crawler, uri)
-        verifyObject(IFeedStorage, storage)
 
         class TestSpider(scrapy.Spider):
             name = "testspider"

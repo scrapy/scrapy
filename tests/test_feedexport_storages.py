@@ -12,7 +12,6 @@ from urllib.parse import quote
 import pytest
 from testfixtures import LogCapture
 from w3lib.url import path_to_file_uri
-from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy.extensions.feedexport import (
@@ -20,7 +19,6 @@ from scrapy.extensions.feedexport import (
     FileFeedStorage,
     FTPFeedStorage,
     GCSFeedStorage,
-    IFeedStorage,
     S3FeedStorage,
     StdoutFeedStorage,
 )
@@ -70,11 +68,6 @@ class TestFileFeedStorage:
             self._assert_stores(FileFeedStorage(str(path)), path)
         finally:
             os.chdir(old_cwd)
-
-    def test_interface(self, tmp_path):
-        path = tmp_path / "file.txt"
-        st = FileFeedStorage(str(path))
-        verifyObject(IFeedStorage, st)
 
     @staticmethod
     def _store(path: Path, feed_options: dict[str, Any] | None = None) -> None:
@@ -131,7 +124,6 @@ class TestFTPFeedStorage:
             uri,
             feed_options=feed_options,
         )
-        verifyObject(IFeedStorage, storage)
         spider = self.get_test_spider()
         file = storage.open(spider)
         file.write(content)
@@ -275,7 +267,6 @@ class TestS3FeedStorage:
         bucket = "mybucket"
         key = "export.csv"
         storage = S3FeedStorage.from_crawler(crawler, f"s3://{bucket}/{key}")
-        verifyObject(IFeedStorage, storage)
 
         file = mock.MagicMock()
 

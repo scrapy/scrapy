@@ -20,7 +20,6 @@ import lxml.etree
 import pytest
 from testfixtures import LogCapture
 from w3lib.url import file_uri_to_path
-from zope.interface import implementer
 
 import scrapy
 from scrapy import Spider, signals
@@ -31,7 +30,6 @@ from scrapy.extensions.feedexport import (
     FeedExporter,
     FeedSlot,
     FileFeedStorage,
-    IFeedStorage,
 )
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
@@ -91,7 +89,6 @@ class FailingBlockingFeedStorage(DummyBlockingFeedStorage):
         raise OSError("Cannot store")
 
 
-@implementer(IFeedStorage)
 class LogOnStoreFileStorage:
     """
     This storage logs inside `store` method.
@@ -1234,7 +1231,6 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_storage_file_no_postprocessing(self):
-        @implementer(IFeedStorage)
         class Storage:
             def __init__(self, uri, *, feed_options=None):
                 pass
@@ -1256,7 +1252,6 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_storage_file_postprocessing(self):
-        @implementer(IFeedStorage)
         class Storage:
             def __init__(self, uri, *, feed_options=None):
                 pass
