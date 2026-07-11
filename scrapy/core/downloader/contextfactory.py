@@ -120,8 +120,13 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def _get_cert_options_kwargs(self) -> dict[str, Any]:
         kwargs: dict[str, Any] = {
             "fixBrokenPeers": True,
-            "acceptableCiphers": self.tls_ciphers,
         }
+        # Pass acceptableCiphers to Twisted only when explicitly set.
+        # When None (user set DOWNLOADER_CLIENT_TLS_CIPHERS=None),
+        # omit the kwarg so Twisted uses its own curated cipher list
+        # instead of falling back to OpenSSL's DEFAULT.
+        if self.tls_ciphers is not None:
+            kwargs["acceptableCiphers"] = self.tls_ciphers
         if self.tls_min_version or self.tls_max_version:
             kwargs.update(
                 _get_cert_options_version_kwargs(

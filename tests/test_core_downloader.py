@@ -215,11 +215,13 @@ class TestContextFactoryCiphers(TestContextFactoryBase):
 
     @coroutine_test
     async def test_none(self, server_url: str) -> None:
-        """A None value enables the Twisted default ciphers."""
+        """When DOWNLOADER_CLIENT_TLS_CIPHERS=None, acceptableCiphers is
+        not passed to CertificateOptions, so Twisted uses its own curated
+        cipher list instead of falling back to OpenSSL DEFAULT."""
         crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": None})
         factory = build_from_crawler(_ScrapyClientContextFactory, crawler)
         assert factory.tls_ciphers is None
-        assert factory._get_cert_options_kwargs()["acceptableCiphers"] is None
+        assert "acceptableCiphers" not in factory._get_cert_options_kwargs()
         await self._assert_factory_works(server_url, factory)
 
 
