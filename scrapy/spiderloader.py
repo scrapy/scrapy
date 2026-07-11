@@ -5,9 +5,6 @@ import warnings
 from collections import defaultdict
 from typing import TYPE_CHECKING, Protocol, cast
 
-from zope.interface import implementer
-
-from scrapy.interfaces import ISpiderLoader
 from scrapy.utils.misc import load_object, walk_modules_iter
 from scrapy.utils.spider import iter_spider_classes
 
@@ -45,7 +42,6 @@ class SpiderLoaderProtocol(Protocol):
         """Return the list of spiders names that can handle the given request"""
 
 
-@implementer(ISpiderLoader)
 class SpiderLoader:
     """
     SpiderLoader is a class which locates and loads spiders
@@ -131,7 +127,6 @@ class SpiderLoader:
         return list(self._spiders.keys())
 
 
-@implementer(ISpiderLoader)
 class DummySpiderLoader:
     """A dummy spider loader that does not load any spiders."""
 

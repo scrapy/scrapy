@@ -3,6 +3,23 @@
 Release notes
 =============
 
+Scrapy VERSION (unreleased)
+---------------------------
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   The following runtime usage of zope.interface_ interfaces is removed:
+
+    - :class:`~scrapy.spiderloader.SpiderLoader` and
+      :class:`~scrapy.spiderloader.DummySpiderLoader` are no longer marked
+      as implementing the ``ISpiderLoader`` interface.
+
+    - :func:`~scrapy.spiderloader.get_spider_loader` no longer checks that the
+      configured spider loader implements the ``ISpiderLoader`` interface.
+
+    (:issue:`6585`, :issue:`TBD`)
+
 .. _release-2.17.0:
 
 Scrapy 2.17.0 (2026-07-07)
