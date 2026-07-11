@@ -364,6 +364,61 @@ class TestBatchDeliveries(TestFeedExportBase):
         data = await self.exported_data(items, settings)
         assert len(items) == len(data["json"])
 
+    @coroutine_test
+    async def test_jobdir_batch_id_continues_after_restart(self):
+        """Regression test for #5153.
+
+        When JOBDIR is set and the feed URI references ``%(batch_id)``, the
+        batch_id counter must persist across restarts so that re-running the
+        crawl with the same JOBDIR does not overwrite previously-written
+        batch files.
+        """
+        items = [
+            self.MyItem({"foo": "bar1", "egg": "spam1"}),
+            self.MyItem({"foo": "bar2", "egg": "spam2"}),
+        ]
+        feed_dir = self._random_temp_filename()
+        jobdir = self._random_temp_filename()
+        uri_template = feed_dir / "%(batch_id)d.jl"
+
+        def make_settings():
+            return {
+                "FEEDS": {
+                    uri_template: {"format": "jl"},
+                },
+                "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+                "JOBDIR": str(jobdir),
+            }
+
+        # First run: should produce 1.jl and 2.jl (one per item).
+        await self.exported_data(items, make_settings())
+        first_run_files = sorted(p.name for p in feed_dir.iterdir())
+        assert first_run_files == ["1.jl", "2.jl"]
+        # Mark each file so that we can detect overwrites.
+        sentinel = b"SENTINEL-FROM-FIRST-RUN\n"
+        for name in first_run_files:
+            with (feed_dir / name).open("ab") as f:
+                f.write(sentinel)
+        first_run_contents = {
+            name: (feed_dir / name).read_bytes() for name in first_run_files
+        }
+
+        # Second run with the same JOBDIR: must NOT overwrite the prior files
+        # and must start the batch_id counter at 3.
+        more_items = [
+            self.MyItem({"foo": "bar3", "egg": "spam3"}),
+            self.MyItem({"foo": "bar4", "egg": "spam4"}),
+        ]
+        await self.exported_data(more_items, make_settings())
+
+        for name, prior in first_run_contents.items():
+            assert (feed_dir / name).read_bytes() == prior, (
+                f"{name} was overwritten by the second run"
+            )
+
+        all_files = sorted(p.name for p in feed_dir.iterdir())
+        assert all_files == ["1.jl", "2.jl", "3.jl", "4.jl"]
+
     @inline_callbacks_test
     def test_stats_batch_file_success(self):
         settings = {

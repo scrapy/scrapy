@@ -717,6 +717,12 @@ The command line above can generate a directory tree like::
 Where the first and second files contain exactly 100 items. The last one contains
 100 items or fewer.
 
+When :setting:`JOBDIR` is set and the feed URI contains the ``%(batch_id)d``
+placeholder, the next ``batch_id`` to use is persisted under
+``<JOBDIR>/feedexport.state`` so that resuming a crawl with the same
+:setting:`JOBDIR` continues numbering after the last batch produced by the
+previous run, instead of restarting at ``1`` and overwriting prior files.
+
 
 .. setting:: FEED_URI_PARAMS
 
