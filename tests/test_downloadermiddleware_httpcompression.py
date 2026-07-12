@@ -538,9 +538,23 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")  # 11_511_612 B
-        with pytest.raises(IgnoreRequest) as exc_info:
+        with (
+            LogCapture(
+                "scrapy.downloadermiddlewares.httpcompression",
+                propagate=False,
+                level=WARNING,
+            ) as log,
+            pytest.raises(IgnoreRequest) as exc_info,
+        ):
             mw.process_response(response.request, response)
         assert exc_info.value.__cause__.decompressed_size < 1_100_000
+        log.check(
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                "WARNING",
+                str(exc_info.value),
+            ),
+        )
 
     def test_compression_bomb_setting_br(self):
         _skip_if_no_br()
