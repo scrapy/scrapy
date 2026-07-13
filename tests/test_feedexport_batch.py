@@ -210,6 +210,47 @@ class TestBatchDeliveries(TestFeedExportBase):
         header = self.MyItem.fields.keys()
         await self.assertExported(items, header, rows, settings=settings)
 
+    @coroutine_test
+    async def test_batch_delivered_when_full(self):
+        """Full batches must be finalized and delivered as soon as they are
+        full, instead of when the spider closes (#7730)."""
+        dir_path = self._random_temp_filename()
+        batch1_path = Path(dir_path, "1.json")
+        mockserver_url = self.mockserver.url("/")
+        batch1_contents: list[bytes | None] = []
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+            start_urls = [mockserver_url]
+
+            def parse(self, response):
+                yield {"foo": "bar1"}
+                yield {"foo": "bar2"}
+                yield scrapy.Request(
+                    mockserver_url, callback=self.parse2, dont_filter=True
+                )
+
+            def parse2(self, response):
+                # the first batch was full after the second item, so it must
+                # have been delivered by now
+                batch1_contents.append(
+                    batch1_path.read_bytes() if batch1_path.exists() else None
+                )
+                yield {"foo": "bar3"}
+
+        settings = {
+            "FEEDS": {
+                build_url(dir_path / "%(batch_id)d.json"): {"format": "json"},
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        assert batch1_contents, "the second request was not processed"
+        assert batch1_contents[0] is not None, "batch 1 was not stored during the crawl"
+        assert json.loads(batch1_contents[0]) == [{"foo": "bar1"}, {"foo": "bar2"}]
+
     def test_wrong_path(self):
         """If path is without %(batch_time)s and %(batch_id) an exception must be raised"""
         settings = {

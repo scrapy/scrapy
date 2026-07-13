@@ -13,7 +13,7 @@ import re
 import sys
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
@@ -458,7 +458,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
-        self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
+        self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -522,22 +522,43 @@ class FeedExporter:
             )
 
     async def close_spider(self, spider: Spider) -> None:
-        self._pending_close_coros.extend(
-            self._close_slot(slot, spider) for slot in self.slots
-        )
+        for slot in self.slots:
+            self._schedule_slot_close(slot, spider)
 
-        if self._pending_close_coros:
+        if self._pending_close_tasks:
             if is_asyncio_available():
                 await asyncio.wait(
-                    [asyncio.create_task(coro) for coro in self._pending_close_coros]
+                    cast("list[asyncio.Task[None]]", list(self._pending_close_tasks))
                 )
             else:
                 await DeferredList(
-                    deferred_from_coro(coro) for coro in self._pending_close_coros
+                    cast("list[Deferred[None]]", list(self._pending_close_tasks))
                 )
 
         # Send FEED_EXPORTER_CLOSED signal
         await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
+
+    def _schedule_slot_close(
+        self, slot: FeedSlot, spider: Spider
+    ) -> asyncio.Task[None] | Deferred[None]:
+        """Start closing the slot without waiting for it to finish, keeping
+        track of the pending work so that it can be awaited in
+        :meth:`close_spider` if it hasn't finished by then."""
+        aw: asyncio.Task[None] | Deferred[None]
+        coro = self._close_slot(slot, spider)
+        if is_asyncio_available():
+            aw = asyncio.create_task(coro)
+            self._pending_close_tasks.append(aw)
+            aw.add_done_callback(self._pending_close_tasks.remove)
+        else:
+            aw = deferred_from_coro(coro)
+            self._pending_close_tasks.append(aw)
+            aw.addBoth(self._untrack_pending_close_task, aw)
+        return aw
+
+    def _untrack_pending_close_task(self, result: Any, aw: Deferred[None]) -> Any:
+        self._pending_close_tasks.remove(aw)
+        return result
 
     @staticmethod
     def _get_file(slot_: FeedSlot) -> IO[bytes]:
@@ -635,7 +656,7 @@ class FeedExporter:
                 uri_params = self._get_uri_params(
                     spider, self.feeds[slot.uri_template]["uri_params"], slot
                 )
-                self._pending_close_coros.append(self._close_slot(slot, spider))
+                self._schedule_slot_close(slot, spider)
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,
