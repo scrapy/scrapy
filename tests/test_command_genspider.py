@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.test_commands import TestProjectBase
+from tests.utils.base_commands import TestProjectBase
 from tests.utils.cmdline import call, proc, write_recording_editor
 
 
