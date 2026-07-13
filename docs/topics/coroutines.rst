@@ -210,8 +210,9 @@ Common use cases for asynchronous code include:
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler);
 * calling asynchronous Scrapy methods like
-  :meth:`scrapy.core.engine.ExecutionEngine.download_async` (see
-  :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
+  :meth:`ExecutionEngine.download_async()
+  <scrapy.core.engine.ExecutionEngine.download_async>` (see :ref:`the
+  screenshot pipeline example <ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
 

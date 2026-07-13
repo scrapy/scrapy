@@ -591,7 +591,7 @@ In order to use your storage backend, set:
 HTTPCache middleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` can be
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` can be
 configured through the following settings:
 
 .. setting:: HTTPCACHE_ENABLED
@@ -1014,9 +1014,6 @@ RetryMiddleware
 
    A middleware to retry failed requests that are potentially caused by
    temporary problems such as a connection timeout or HTTP 500 error.
-
-Failed pages are rescheduled with the priority adjusted according to
-:setting:`RETRY_PRIORITY_ADJUST`.
 
 .. reqmeta:: dont_retry
 

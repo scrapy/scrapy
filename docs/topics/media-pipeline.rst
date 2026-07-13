@@ -41,11 +41,10 @@ this:
 2. The item is returned from the spider and goes to the item pipeline.
 
 3. When the item reaches the :class:`FilesPipeline`, the URLs in the
-   ``file_urls`` field are scheduled for download using the standard
-   Scrapy downloader (which means the downloader middlewares are used, but
-   the spider middlewares aren't). The item remains "locked" at that particular
-   pipeline stage until the files have finished downloading (or failed for some
-   reason).
+   ``file_urls`` field are downloaded using the standard Scrapy downloader
+   (which means the downloader middlewares are used, but the spider middlewares
+   aren't). The item remains "locked" at that particular pipeline stage until
+   the files have finished downloading (or failed for some reason).
 
 4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
