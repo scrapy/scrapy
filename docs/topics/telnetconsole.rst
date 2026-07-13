@@ -107,8 +107,8 @@ Here are some example tasks you can do with the telnet console:
 View engine status
 ------------------
 
-You can use the ``est()`` method of the Scrapy engine to quickly show its state
-using the telnet console::
+You can use the ``est()`` method provided by the console to quickly show the
+engine status::
 
     telnet localhost 6023
     >>> est()

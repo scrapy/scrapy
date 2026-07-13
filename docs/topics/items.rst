@@ -23,7 +23,8 @@ Item Types
 
 Scrapy supports the following types of items, via the `itemadapter`_ library:
 :ref:`dictionaries <dict-items>`, :ref:`Item objects <item-objects>`,
-:ref:`dataclass objects <dataclass-items>`, and :ref:`attrs objects <attrs-items>`.
+:ref:`dataclass objects <dataclass-items>`, :ref:`attrs objects <attrs-items>`
+and :ref:`Pydantic models <pydantic-items>`.
 
 .. _itemadapter: https://github.com/scrapy/itemadapter
 
@@ -61,8 +62,8 @@ its ``__init__`` method.
 :class:`Item` also allows the defining of field metadata, which can be used to
 :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-:mod:`trackref` tracks :class:`Item` objects to help find memory leaks
-(see :ref:`topics-leaks-trackrefs`).
+:mod:`scrapy.utils.trackref` tracks :class:`Item` objects to help find memory
+leaks (see :ref:`topics-leaks-trackrefs`).
 
 Example:
 
@@ -262,7 +263,7 @@ Creating items
 
     >>> product = Product(name="Desktop PC", price=1000)
     >>> print(product)
-    Product(name='Desktop PC', price=1000)
+    {'name': 'Desktop PC', 'price': 1000}
 
 
 Getting field values
@@ -381,7 +382,7 @@ Creating items from dicts:
 .. code-block:: pycon
 
     >>> Product({"name": "Laptop PC", "price": 1500})
-    Product(price=1500, name='Laptop PC')
+    {'name': 'Laptop PC', 'price': 1500}
 
     >>> Product({"name": "Laptop PC", "lala": 1500})  # warning: unknown field in dict
     Traceback (most recent call last):

@@ -121,7 +121,7 @@ Write items to MongoDB
 
 In this example we'll write items to MongoDB_ using pymongo_.
 MongoDB address and database name are specified in Scrapy settings;
-MongoDB collection is named after item class.
+MongoDB collection is specified in a class attribute.
 
 The main point of this example is to show how to :ref:`get the crawler
 <from-crawler>` and how to clean up the resources properly.

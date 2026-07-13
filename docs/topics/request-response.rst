@@ -1101,8 +1101,8 @@ Response objects
 
         The IP address of the server from which the Response originated.
 
-        This attribute is currently only populated by the HTTP 1.1 download
-        handler, i.e. for ``http(s)`` responses. For other handlers,
+        This attribute is currently only populated by the HTTP download
+        handlers, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`ip_address` is always ``None``.
 
     .. attribute:: Response.protocol
