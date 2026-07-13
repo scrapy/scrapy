@@ -80,29 +80,36 @@ def fingerprint(
     cache = _fingerprint_cache.setdefault(request, {})
     cache_key = (processed_include_headers, effective_keep_fragments, verbatim_url)
     if cache_key not in cache:
-        # To decode bytes reliably (JSON does not support bytes), regardless of
-        # character encoding, we use bytes.hex()
-        headers: dict[str, list[str]] = {}
-        if processed_include_headers:
-            for header in processed_include_headers:
-                if header in request.headers:
-                    headers[header.hex()] = [
-                        header_value.hex()
-                        for header_value in request.headers.getlist(header)
-                    ]
         if verbatim_url:
             url = request.url
         else:
             url = canonicalize_url(request.url, keep_fragments=keep_fragments)
-        fingerprint_data = {
-            "method": to_unicode(request.method),
-            "url": url,
-            "body": (request.body or b"").hex(),
-            "headers": headers,
-        }
-        fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
+
+        headers_parts = []
+        if processed_include_headers:
+            for header in processed_include_headers:
+                if header in request.headers:
+                    vals = request.headers.getlist(header)
+                    val_parts = []
+                    for val in vals:
+                        val_parts.append(f'"{val.hex()}"')
+                    val_str = "[" + ", ".join(val_parts) + "]"
+                    headers_parts.append(f'"{header.hex()}": {val_str}')
+
+        if headers_parts:
+            headers_str = "{" + ", ".join(headers_parts) + "}"
+        else:
+            headers_str = "{}"
+
+        method = to_unicode(request.method)
+        body_hex = (request.body or b"").hex()
+
+        url_escaped = url.replace('\\', '\\\\').replace('"', '\\"')
+        method_escaped = method.replace('\\', '\\\\').replace('"', '\\"')
+
+        fp_json = f'{{"body": "{body_hex}", "headers": {headers_str}, "method": "{method_escaped}", "url": "{url_escaped}"}}'
         cache[cache_key] = hashlib.sha1(  # noqa: S324
-            fingerprint_json.encode()
+            fp_json.encode()
         ).digest()
     return cache[cache_key]
 
