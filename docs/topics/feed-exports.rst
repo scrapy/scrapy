@@ -143,6 +143,11 @@ Here are some examples to illustrate:
 .. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
           they can also be used as storage URI parameters.
 
+.. note:: Only ``%(...)s`` parameters are replaced. Any other percent
+          character is kept as-is, so percent-encoded URIs (e.g. ``%20`` for a
+          space or percent-encoded FTP credentials) and :class:`pathlib.Path`
+          keys containing ``%(...)s`` parameters both work as expected.
+
 
 .. _topics-feed-storage-backends:
 

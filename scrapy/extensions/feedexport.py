@@ -47,6 +47,33 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+# Printf-style placeholders (e.g. %(time)s) used to build feed URIs. Any other
+# percent character in a URI (e.g. percent-encoding such as %20 or %23) must be
+# treated as a literal rather than as the start of a placeholder.
+_FEED_URI_PLACEHOLDER_RE = re.compile(
+    r"%\([^)]+\)[-+ #0]*(?:\d+|\*)?(?:\.(?:\d+|\*))?[diouxXeEfFgGcrsa]"
+)
+
+
+def apply_uri_params(uri_template: str, uri_params: dict[str, Any]) -> str:
+    """Return *uri_template* with its ``%(...)s`` placeholders replaced using
+    *uri_params*, leaving any other percent character untouched.
+
+    This allows feed URIs to contain percent-encoded characters (e.g. ``%20``
+    in a path with spaces or ``%23`` in FTP credentials) without them being
+    misinterpreted as printf-style formatting directives.
+    """
+    parts: list[str] = []
+    last = 0
+    for match in _FEED_URI_PLACEHOLDER_RE.finditer(uri_template):
+        parts.append(uri_template[last : match.start()].replace("%", "%%"))
+        parts.append(match.group(0))
+        last = match.end()
+    parts.append(uri_template[last:].replace("%", "%%"))
+    return "".join(parts) % uri_params
+
+
 UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
 ]
@@ -473,7 +500,7 @@ class FeedExporter:
             )
             uri = self.settings["FEED_URI"]
             # handle pathlib.Path objects
-            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
+            uri = str(uri.absolute()) if isinstance(uri, Path) else str(uri)
             feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -485,9 +512,9 @@ class FeedExporter:
         for settings_uri, feed_options in self.settings.getdict("FEEDS").items():
             # handle pathlib.Path objects
             uri = (
-                str(settings_uri)
-                if not isinstance(settings_uri, Path)
-                else settings_uri.absolute().as_uri()
+                str(settings_uri.absolute())
+                if isinstance(settings_uri, Path)
+                else str(settings_uri)
             )
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -514,7 +541,7 @@ class FeedExporter:
             self.slots.append(
                 self._start_new_batch(
                     batch_id=1,
-                    uri=uri % uri_params,
+                    uri=apply_uri_params(uri, uri_params),
                     feed_options=feed_options,
                     spider=spider,
                     uri_template=uri,
@@ -639,7 +666,7 @@ class FeedExporter:
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,
-                        uri=slot.uri_template % uri_params,
+                        uri=apply_uri_params(slot.uri_template, uri_params),
                         feed_options=self.feeds[slot.uri_template],
                         spider=spider,
                         uri_template=slot.uri_template,
