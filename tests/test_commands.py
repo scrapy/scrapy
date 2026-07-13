@@ -16,7 +16,7 @@ from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
-from tests.utils.cmdline import call, proc
+from tests.utils.cmdline import call, proc, write_recording_editor
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -430,9 +430,7 @@ class TestEditCommand(TestProjectBase):
         spider = proj_path / self.project_name / "spiders" / "example.py"
         edited = proj_path / "edited.txt"
         editor = proj_path / "fake-editor.sh"
-        # Records the file it is asked to open ($2) into the file given as $1.
-        editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
-        editor.chmod(0o755)
+        write_recording_editor(editor)
         monkeypatch.setenv("EDITOR", f"{editor} {edited}")
 
         assert call("genspider", "example", "example.com", cwd=proj_path) == 0
