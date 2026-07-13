@@ -13,8 +13,6 @@ from pathlib import Path
 from string import ascii_letters, digits
 from typing import IO, TYPE_CHECKING, Any
 from unittest import mock
-from urllib.parse import urljoin
-from urllib.request import pathname2url
 
 import lxml.etree
 import pytest
@@ -39,17 +37,10 @@ from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.feedexport import path_to_url, printf_escape
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
-
-
-def path_to_url(path: str | Path) -> str:
-    return urljoin("file:", pathname2url(str(path)))
-
-
-def printf_escape(s: str) -> str:
-    return s.replace("%", "%%")
 
 
 class FromCrawlerMixin:

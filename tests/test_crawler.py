@@ -33,6 +33,7 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
+from tests.spiders import ExceptionSpider, NoRequestsSpider
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -847,22 +848,6 @@ def test_crawl_rejects_spider_object(runner_cls: type[CrawlerRunnerBase]) -> Non
     runner = runner_cls()
     with pytest.raises(ValueError, match="cannot be a spider object"):
         runner.crawl(DefaultSpider())  # type: ignore[arg-type]
-
-
-class ExceptionSpider(scrapy.Spider):
-    name = "exception"
-
-    @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        raise ValueError("Exception in from_crawler method")
-
-
-class NoRequestsSpider(scrapy.Spider):
-    name = "no_request"
-
-    async def start(self):
-        return
-        yield
 
 
 @pytest.mark.requires_reactor  # CrawlerRunner requires a reactor
