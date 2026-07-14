@@ -18,7 +18,7 @@ TEST_URL = "http://www.example.com"
 
 def _make_mw(sticky_meta_keys: Any) -> StickyMetaParamsMiddleware:
     crawler = get_crawler(Spider, {"STICKY_META_KEYS": sticky_meta_keys})
-    return StickyMetaParamsMiddleware.from_crawler(crawler)
+    return build_from_crawler(StickyMetaParamsMiddleware, crawler)
 
 
 async def _run_all_paths(
