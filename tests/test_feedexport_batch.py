@@ -24,6 +24,7 @@ from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
 from tests.test_feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.feedexport import MyItem
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -197,9 +198,9 @@ class TestBatchDeliveries(TestFeedExportBase):
     async def test_export_items(self):
         """Test partial deliveries in all supported formats"""
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
         rows = [
             {"egg": "spam1", "foo": "bar1", "baz": ""},
@@ -207,7 +208,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             {"foo": "bar3", "baz": "quux3", "egg": ""},
         ]
         settings = {"FEED_EXPORT_BATCH_ITEM_COUNT": 2}
-        header = self.MyItem.fields.keys()
+        header = MyItem.fields.keys()
         await self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
@@ -349,9 +350,9 @@ class TestBatchDeliveries(TestFeedExportBase):
         So %(batch_id)d replaced with the current id.
         """
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
         settings = {
             "FEEDS": {
@@ -387,9 +388,9 @@ class TestBatchDeliveries(TestFeedExportBase):
     def test_s3_export(self):
         bucket = "mybucket"
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
 
         class CustomS3FeedStorage(S3FeedStorage):
