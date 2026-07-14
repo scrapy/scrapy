@@ -1644,21 +1644,6 @@ Default: ``False``
 
 Whether to enable memory debugging.
 
-.. setting:: MEMDEBUG_NOTIFY
-
-MEMDEBUG_NOTIFY
----------------
-
-Default: ``[]``
-
-When memory debugging is enabled a memory report will be sent to the specified
-addresses if this setting is not empty, otherwise the report will be written to
-the log.
-
-Example::
-
-    MEMDEBUG_NOTIFY = ['user@example.com']
-
 .. setting:: MEMUSAGE_ENABLED
 
 MEMUSAGE_ENABLED
