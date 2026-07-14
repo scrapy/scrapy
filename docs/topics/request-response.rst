@@ -436,7 +436,7 @@ errors if needed:
                 )
 
         def parse_httpbin(self, response):
-            self.logger.info("Got successful response from {}".format(response.url))
+            self.logger.info(f"Got successful response from {response.url}")
             # do something useful here...
 
         def errback_httpbin(self, failure):

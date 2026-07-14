@@ -2209,7 +2209,7 @@ In order to use the reactor installed by Scrapy:
 
         def __init__(self, *args, **kwargs):
             self.timeout = int(kwargs.pop("timeout", "60"))
-            super(QuotesSpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
         async def start(self):
             reactor.callLater(self.timeout, self.stop)
@@ -2238,7 +2238,7 @@ which raises an exception, becomes:
 
         def __init__(self, *args, **kwargs):
             self.timeout = int(kwargs.pop("timeout", "60"))
-            super(QuotesSpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
         async def start(self):
             from twisted.internet import reactor

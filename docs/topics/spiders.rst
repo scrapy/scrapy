@@ -314,7 +314,7 @@ Spiders can access arguments in their `__init__` methods:
         name = "myspider"
 
         def __init__(self, category=None, *args, **kwargs):
-            super(MySpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
             self.start_urls = [f"http://www.example.com/categories/{category}"]
             # ...
 
