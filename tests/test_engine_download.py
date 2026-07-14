@@ -13,19 +13,19 @@ from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
 
+@pytest.fixture
+def engine() -> ExecutionEngine:
+    crawler = get_crawler(DefaultSpider)
+    engine = ExecutionEngine(crawler, lambda _: None)
+    engine.downloader.close()
+    engine.downloader = Mock()
+    engine._slot = Mock()
+    engine._slot.inprogress = set()
+    return engine
+
+
 class TestEngineDownloadAsync:
     """Test cases for ExecutionEngine.download_async()."""
-
-    @pytest.fixture
-    def engine(self) -> ExecutionEngine:
-        # crawler = get_crawler(MySpider)
-        crawler = get_crawler(DefaultSpider)
-        engine = ExecutionEngine(crawler, lambda _: None)
-        engine.downloader.close()
-        engine.downloader = Mock()
-        engine._slot = Mock()
-        engine._slot.inprogress = set()
-        return engine
 
     @staticmethod
     async def _download(engine: ExecutionEngine, request: Request) -> Response:
