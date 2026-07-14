@@ -628,9 +628,11 @@ XMLFeedSpider
 
     .. attribute:: itertag
 
-        A string with the name of the node (or element) to iterate in. Example::
+        A string with the name of the node (or element) to iterate in. Example:
 
-            itertag = 'product'
+        .. code-block:: python
+
+            itertag = "product"
 
     .. attribute:: namespaces
 
@@ -643,12 +645,17 @@ XMLFeedSpider
         You can then specify nodes with namespaces in the :attr:`itertag`
         attribute.
 
-        Example::
+        Example:
+
+        .. code-block:: python
+
+            from scrapy.spiders import XMLFeedSpider
+
 
             class YourSpider(XMLFeedSpider):
 
-                namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]
-                itertag = 'n:url'
+                namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
+                itertag = "n:url"
                 # ...
 
     Apart from these new attributes, this spider has the following overridable
@@ -808,9 +815,11 @@ SitemapSpider
           the regular expression. ``callback`` can be a string (indicating the
           name of a spider method) or a callable.
 
-        For example::
+        For example:
 
-            sitemap_rules = [('/product/', 'parse_product')]
+        .. code-block:: python
+
+            sitemap_rules = [("/product/", "parse_product")]
 
         Rules are applied in order, and only the first one that matches will be
         used.
@@ -832,7 +841,9 @@ SitemapSpider
         are links for the same website in another language passed within
         the same ``url`` block.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>
@@ -850,7 +861,9 @@ SitemapSpider
         This is a filter function that could be overridden to select sitemap entries
         based on their attributes.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>

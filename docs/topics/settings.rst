@@ -899,7 +899,9 @@ Use :setting:`DOWNLOAD_DELAY` to throttle your crawling speed, to avoid hitting
 servers too hard.
 
 Decimal numbers are supported. For example, to send a maximum of 4 requests
-every 10 seconds::
+every 10 seconds:
+
+.. code-block:: python
 
     DOWNLOAD_DELAY = 2.5
 
@@ -1231,7 +1233,9 @@ the ``dont_filter`` parameter to ``True`` on the ``__init__`` method of a
 specific :class:`~scrapy.Request` object that should not be filtered out.
 
 A class assigned to :setting:`DUPEFILTER_CLASS` must implement the following
-interface::
+interface:
+
+.. code-block:: python
 
     class MyDupeFilter:
 
@@ -1717,9 +1721,11 @@ Default: ``"<project name>.spiders"`` (:ref:`fallback <default-settings>`: ``""`
 
 Module where to create new spiders using the :command:`genspider` command.
 
-Example::
+Example:
 
-    NEWSPIDER_MODULE = 'mybot.spiders_dev'
+.. code-block:: python
+
+    NEWSPIDER_MODULE = "mybot.spiders_dev"
 
 .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 

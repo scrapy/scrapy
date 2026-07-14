@@ -1028,9 +1028,13 @@ Response objects
         :meth:`~scrapy.http.headers.Headers.get` to return the last header value with
         the specified name or :meth:`~scrapy.http.headers.Headers.getlist` to return
         all header values with the specified name. For example, this call will give you
-        all cookies in the headers::
+        all cookies in the headers:
 
-            response.headers.getlist('Set-Cookie')
+        .. skip: next
+
+        .. code-block:: python
+
+            response.headers.getlist("Set-Cookie")
 
     .. attribute:: Response.body
 
@@ -1132,7 +1136,11 @@ Response objects
         a possible relative url.
 
         This is a wrapper over :func:`~urllib.parse.urljoin`, it's merely an alias for
-        making this call::
+        making this call:
+
+        .. skip: next
+
+        .. code-block:: python
 
             urllib.parse.urljoin(response.url, url)
 
@@ -1221,21 +1229,31 @@ TextResponse objects
 
     .. method:: TextResponse.jmespath(query)
 
-        A shortcut to ``TextResponse.selector.jmespath(query)``::
+        .. skip: start
 
-            response.jmespath('object.[*]')
+        A shortcut to ``TextResponse.selector.jmespath(query)``:
+
+        .. code-block:: python
+
+            response.jmespath("object.[*]")
 
     .. method:: TextResponse.xpath(query)
 
-        A shortcut to ``TextResponse.selector.xpath(query)``::
+        A shortcut to ``TextResponse.selector.xpath(query)``:
 
-            response.xpath('//p')
+        .. code-block:: python
+
+            response.xpath("//p")
 
     .. method:: TextResponse.css(query)
 
-        A shortcut to ``TextResponse.selector.css(query)``::
+        A shortcut to ``TextResponse.selector.css(query)``:
 
-            response.css('p')
+        .. code-block:: python
+
+            response.css("p")
+
+        .. skip: end
 
     .. automethod:: TextResponse.follow
 
