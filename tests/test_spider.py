@@ -30,7 +30,7 @@ class TestSpider:
         assert spider.foo == "bar"
 
     def test_spider_without_name(self):
-        """``__init__`` method arguments are assigned to spider attributes"""
+        """``__init__`` raises when the name is not provided."""
         msg = "must have a name"
         with pytest.raises(ValueError, match=msg):
             self.spider_class()

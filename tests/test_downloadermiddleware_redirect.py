@@ -36,7 +36,7 @@ class TestRedirectMiddleware(Base.Test):
         headers = {"Location": location}
         return Response(request.url, status=status, headers=headers)
 
-    def test_redirect_3xx_permanent(self):
+    def test_redirect_307_308_preserve_method(self):
         def _test(method, status: int):
             url = f"http://www.example.com/{status}"
             url2 = "http://www.example.com/redirected"
