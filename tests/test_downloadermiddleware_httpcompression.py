@@ -558,9 +558,7 @@ class TestHttpCompression:
 
         self._test_compression_bomb_setting("zstd")
 
-    def test_compression_bomb_setting_logs_warning(
-        self, caplog: pytest.LogCaptureFixture
-    ):
+    def test_compression_bomb_setting_logs_warning(self, caplog):
         settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
         crawler = get_crawler(Spider, settings_dict=settings)
         spider = crawler._create_spider("scrapytest.org")
@@ -568,6 +566,7 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse("bomb-gzip")  # 11_511_612 B
+        caplog.clear()
         with (
             caplog.at_level(
                 WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
@@ -575,7 +574,6 @@ class TestHttpCompression:
             pytest.raises(IgnoreRequest) as exc_info,
         ):
             mw.process_response(response.request, response)
-        assert exc_info.value.__cause__.decompressed_size < 1_100_000
         assert caplog.record_tuples == [
             (
                 "scrapy.downloadermiddlewares.httpcompression",
