@@ -406,6 +406,19 @@ class TestRequest:
         with pytest.raises(RuntimeError):
             NO_CALLBACK()
 
+    def test_to_curl(self):
+        request = self.request_class(
+            "https://www.httpbin.org/post",
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            body='{"foo": "bar"}',
+        )
+        assert request.to_curl() == (
+            "curl -X POST https://www.httpbin.org/post"
+            ' --data-raw \'{"foo": "bar"}\''
+            " -H 'Content-Type: application/json'"
+        )
+
     def test_from_curl(self):
         # Note: more curated tests regarding curl conversion are in
         # `test_utils_curl.py`
