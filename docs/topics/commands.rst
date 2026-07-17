@@ -662,23 +662,37 @@ and overriding specific methods. Here's what you need to know:
 
 **Attributes you can set:**
 
-* ``requires_project`` (bool): If True, the command requires a Scrapy project to be present (default: False)
-* ``requires_crawler_process`` (bool): If True, the command requires a crawler process to be available (default: True)
-* ``default_settings`` (dict): Default settings to use for this command instead of global defaults (default: {})
-* ``exitcode`` (int): Exit code to return when command completes (default: 0)
+* :attr:`~scrapy.commands.ScrapyCommand.requires_project` (bool): If ``True``,
+  the command only runs inside a Scrapy project (default: ``False``).
+* :attr:`~scrapy.commands.ScrapyCommand.requires_crawler_process` (bool): If
+  ``True``, a :class:`~scrapy.crawler.AsyncCrawlerProcess` or
+  :class:`~scrapy.crawler.CrawlerProcess` instance will be created by Scrapy
+  when the command runs and made available in the
+  :attr:`~scrapy.commands.ScrapyCommand.crawler_process` attribute (default:
+  ``True``).
+* :attr:`~scrapy.commands.ScrapyCommand.default_settings` (dict): Settings that
+  will override the default ones when running this command (default: ``{}``).
+* :attr:`~scrapy.commands.ScrapyCommand.exitcode` (int): Process exit code to
+  set when the command completes (default: ``0``).
 
 **Methods you must override:**
 
-* :meth:`~scrapy.commands.ScrapyCommand.syntax`: Return command syntax (preferably one-line, without command name)
-* :meth:`~scrapy.commands.ScrapyCommand.short_desc`: Return a short description of the command
-* :meth:`~scrapy.commands.ScrapyCommand.run`: Main entry point for command execution (must implement)
+* :meth:`~scrapy.commands.ScrapyCommand.short_desc`: Return a short description
+  of the command.
+* :meth:`~scrapy.commands.ScrapyCommand.run`: Main entry point for the command
+  execution.
 
 **Methods you can override:**
 
-* :meth:`~scrapy.commands.ScrapyCommand.long_desc`: Return a detailed description (can contain newlines)
-* :meth:`~scrapy.commands.ScrapyCommand.help`: Return extensive help text (can contain newlines)
-* :meth:`~scrapy.commands.ScrapyCommand.add_options`: Add command-specific options to argument parser
-* :meth:`~scrapy.commands.ScrapyCommand.process_options`: Process parsed command-line options
+* :meth:`~scrapy.commands.ScrapyCommand.syntax`: Return command syntax
+  (preferably one-line, without command name).
+* :meth:`~scrapy.commands.ScrapyCommand.long_desc`: Return a detailed command
+  description.
+* :meth:`~scrapy.commands.ScrapyCommand.add_options`: Add command-specific
+  options to the argument parser.
+* :meth:`~scrapy.commands.ScrapyCommand.process_options`: Process parsed
+  command-line options and set settings before
+  :attr:`~scrapy.commands.ScrapyCommand.crawler_process` is instantiated.
 
 **Example custom command:**
 
