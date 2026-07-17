@@ -381,6 +381,16 @@ class Request(object_ref):
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
+    def to_curl(self) -> str:
+        """Return a string with a cURL command equivalent to this request.
+
+        Inverse of :meth:`from_curl`. See also
+        :func:`scrapy.utils.request.request_to_curl`.
+        """
+        from scrapy.utils.request import request_to_curl
+
+        return request_to_curl(self)
+
     def to_dict(self, *, spider: scrapy.Spider | None = None) -> dict[str, Any]:
         """Return a dictionary containing the Request's data.
 
