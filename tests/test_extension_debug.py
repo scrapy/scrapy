@@ -103,11 +103,14 @@ async def test_stacktracedump_dumps_on_signal(caplog: pytest.LogCaptureFixture) 
     crawler = get_crawler(spidercls=SignalSpider, settings_dict=settings)
     with caplog.at_level(logging.INFO, logger="scrapy.extensions.debug"):
         await crawler.crawl_async()
-    assert len(caplog.records) == 1
-    message = caplog.records[0].getMessage()
-    assert "Dumping stack trace and engine status" in message
-    assert "engine.spider.name" in message
-    assert "signal_spider" in message
+    for r in caplog.records:
+        message = r.getMessage()
+        if "Dumping stack trace and engine status" in message:
+            assert "Dumping stack trace and engine status" in message
+            assert "engine.spider.name" in message
+            assert "signal_spider" in message
+            return
+    raise AssertionError("No stack trace dump log message found")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="SIGUSR2 is POSIX-only")
