@@ -40,8 +40,12 @@ def test_spider_closed_sets_stats() -> None:
 
 @coroutine_test
 async def test_crawl_sets_stats() -> None:
-    crawler = get_crawler(DefaultSpider, settings_dict={"MEMDEBUG_ENABLED": True})
+    # unique class so that other tests don't pollute live_refs
+    class MemDebugSpider(DefaultSpider):
+        pass
+
+    crawler = get_crawler(MemDebugSpider, settings_dict={"MEMDEBUG_ENABLED": True})
     await crawler.crawl_async()
     assert crawler.stats
     assert crawler.stats.get_value("memdebug/gc_garbage_count") is not None
-    assert crawler.stats.get_value("memdebug/live_refs/DefaultSpider") == 1
+    assert crawler.stats.get_value("memdebug/live_refs/MemDebugSpider") == 1
