@@ -62,25 +62,27 @@ Debugging memory leaks with ``trackref``
 
 .. skip: start
 
-:mod:`trackref` is a module provided by Scrapy to debug the most common cases of
-memory leaks. It basically tracks the references to all live Request,
-Response, Item, Spider and Selector objects.
+:mod:`scrapy.utils.trackref` is a module provided by Scrapy to debug the most
+common cases of memory leaks. It basically tracks the references to all live
+Request, Response, Item, Spider and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
-alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
+alias to the :func:`~scrapy.utils.trackref.print_live_refs` function:
+
+.. code-block:: bash
 
     telnet localhost 6023
 
-    .. code-block:: pycon
+.. code-block:: pycon
 
-        >>> prefs()
-        Live References
+    >>> prefs()
+    Live References
 
-        ExampleSpider                       1   oldest: 15s ago
-        HtmlResponse                       10   oldest: 1s ago
-        Selector                            2   oldest: 0s ago
-        FormRequest                       878   oldest: 7s ago
+    ExampleSpider                       1   oldest: 15s ago
+    HtmlResponse                       10   oldest: 1s ago
+    Selector                            2   oldest: 0s ago
+    Request                           878   oldest: 7s ago
 
 As you can see, that report also shows the "age" of the oldest object in each
 class. If you're running multiple spiders per process chances are you can
@@ -91,7 +93,7 @@ You can get the oldest object of each class using the
 Which objects are tracked?
 --------------------------
 
-The objects tracked by ``trackrefs`` are all from these classes (and all its
+The objects tracked by ``trackref`` are all from these classes (and all its
 subclasses):
 
 * :class:`scrapy.Request`
@@ -162,7 +164,7 @@ Too many spiders?
 -----------------
 
 If your project has too many spiders executed in parallel,
-the output of :func:`prefs` can be difficult to read.
+the output of ``prefs()`` can be difficult to read.
 For this reason, that function has a ``ignore`` argument which can be used to
 ignore a particular class (and all its subclasses). For
 example, this won't show any live references to spiders:
@@ -185,7 +187,7 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
     Inherit from this class if you want to track live
     instances with the ``trackref`` module.
 
-.. function:: print_live_refs(class_name, ignore=NoneType)
+.. function:: print_live_refs(ignore=NoneType)
 
     Print a report of live references, grouped by class name.
 
@@ -201,9 +203,9 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 
 .. function:: iter_all(class_name)
 
-    Return an iterator over all objects alive with the given class name, or
-    ``None`` if none is found. Use :func:`print_live_refs` first to get a list
-    of all tracked live objects per class name.
+    Return an iterator over all objects alive with the given class name. Use
+    :func:`print_live_refs` first to get a list of all tracked live objects
+    per class name.
 
 .. skip: end
 

@@ -12,6 +12,7 @@ import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
@@ -46,7 +47,9 @@ def _identity_process_request(request: Request, response: Response) -> Request |
     return request
 
 
-def _get_method(method: Callable | str | None, spider: Spider) -> Callable | None:
+def _get_method(
+    method: Callable[..., Any] | str | None, spider: Spider
+) -> Callable[..., Any] | None:
     if callable(method):
         return method
     if isinstance(method, str):
@@ -102,11 +105,13 @@ class CrawlSpider(Spider):
         self._compile_rules()
         if method_is_overridden(self.__class__, CrawlSpider, "_parse_response"):
             warnings.warn(
-                f"The CrawlSpider._parse_response method, which the "
+                "The CrawlSpider._parse_response method, which the "
                 f"{global_object_name(self.__class__)} class overrides, is "
-                f"deprecated: it will be removed in future Scrapy releases. "
-                f"Please override the CrawlSpider.parse_with_rules method "
-                f"instead."
+                "deprecated: it will be removed in future Scrapy releases. "
+                "Please override the CrawlSpider.parse_with_rules method "
+                "instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
             )
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
@@ -118,7 +123,7 @@ class CrawlSpider(Spider):
         )
 
     def parse_start_url(self, response: Response, **kwargs: Any) -> Any:
-        return []
+        return ()
 
     def process_results(
         self, response: Response, results: Iterable[Any]
@@ -195,6 +200,7 @@ class CrawlSpider(Spider):
             "The CrawlSpider._parse_response method is deprecated: "
             "it will be removed in future Scrapy releases. "
             "Please use the CrawlSpider.parse_with_rules method instead.",
+            ScrapyDeprecationWarning,
             stacklevel=2,
         )
         return self.parse_with_rules(response, callback, cb_kwargs, follow)
@@ -209,11 +215,19 @@ class CrawlSpider(Spider):
     def _compile_rules(self) -> None:
         self._rules = []
         for rule in self.rules:
-            self._rules.append(copy.copy(rule))
-            self._rules[-1]._compile(self)
+            copied_rule = copy.copy(rule)
+            copied_rule._compile(self)
+            self._rules.append(copied_rule)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider._follow_links = crawler.settings.getbool("CRAWLSPIDER_FOLLOW_LINKS")
+        if not spider._follow_links:
+            warnings.warn(
+                "The CRAWLSPIDER_FOLLOW_LINKS setting is deprecated."
+                " You can set follow=False in your rules to achieve the same effect.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return spider

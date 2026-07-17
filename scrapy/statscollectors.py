@@ -27,7 +27,7 @@ class StatsCollector:
         self._stats: StatsT = {}
         self._crawler: Crawler = crawler
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         cached_name = f"_cached_{name}"
         try:
             return super().__getattribute__(cached_name)

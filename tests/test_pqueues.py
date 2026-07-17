@@ -1,15 +1,17 @@
 import tempfile
+from unittest.mock import Mock
 
 import pytest
 import queuelib
 
+from scrapy.core.downloader import Downloader
 from scrapy.http.request import Request
 from scrapy.pqueues import DownloaderAwarePriorityQueue, ScrapyPriorityQueue
 from scrapy.spiders import Spider
-from scrapy.squeues import FifoMemoryQueue
+from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
-from tests.test_scheduler import MockDownloader, MockEngine
+from tests.test_scheduler import MockDownloader
 
 
 class TestPriorityQueue:
@@ -74,6 +76,29 @@ class TestPriorityQueue:
         assert queue.pop().url == req3.url
         assert not queue.close()
 
+    def test_init_prios_with_start_queue(self):
+        temp_dir = tempfile.mkdtemp()
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler,
+            PickleFifoDiskQueue,
+            temp_dir,
+            start_queue_cls=PickleFifoDiskQueue,
+        )
+        req = Request("https://example.org/", meta={"is_start_request": True})
+        queue.push(req)
+        startprios = queue.close()
+
+        queue2 = ScrapyPriorityQueue.from_crawler(
+            self.crawler,
+            PickleFifoDiskQueue,
+            temp_dir,
+            startprios,
+            start_queue_cls=PickleFifoDiskQueue,
+        )
+        assert len(queue2) == 1
+        assert queue2.pop().url == req.url
+        queue2.close()
+
     def test_queue_push_pop_priorities(self):
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
@@ -98,7 +123,7 @@ class TestPriorityQueue:
 class TestDownloaderAwarePriorityQueue:
     def setup_method(self):
         crawler = get_crawler(Spider)
-        crawler.engine = MockEngine(downloader=MockDownloader())
+        crawler.engine = Mock(downloader=MockDownloader())
         self.queue = DownloaderAwarePriorityQueue.from_crawler(
             crawler=crawler,
             downstream_queue_cls=FifoMemoryQueue,
@@ -156,6 +181,81 @@ class TestDownloaderAwarePriorityQueue:
         assert self.queue.peek().url == req3.url
         assert self.queue.pop().url == req3.url
         assert self.queue.peek() is None
+
+    def test_tie_breaking_rotates_slots(self):
+        # No active downloads are tracked in the downloader, so every slot has
+        # the same score and tie-breaking must not starve a slot.
+        req_a1 = Request("https://example.org/a1")
+        req_a1.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_b1 = Request("https://example.org/b1")
+        req_b1.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
+        req_a2 = Request("https://example.org/a2")
+        req_a2.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_b2 = Request("https://example.org/b2")
+        req_b2.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
+
+        for request in (req_a1, req_b1, req_a2, req_b2):
+            self.queue.push(request)
+
+        slots = [
+            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+        ]
+
+        assert slots == ["slot-a", "slot-b", "slot-a", "slot-b"]
+
+    def test_tie_breaking_keeps_rotation_after_selected_slot_is_deleted(self):
+        # If the selected slot becomes empty, rotation should continue from
+        # that slot marker to avoid restarting from the smallest slot.
+        req_a1 = Request("https://example.org/a1")
+        req_a1.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_a2 = Request("https://example.org/a2")
+        req_a2.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_b1 = Request("https://example.org/b1")
+        req_b1.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
+        req_c1 = Request("https://example.org/c1")
+        req_c1.meta[Downloader.DOWNLOAD_SLOT] = "slot-c"
+
+        for request in (req_a1, req_a2, req_b1, req_c1):
+            self.queue.push(request)
+
+        slots = [
+            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+            self.queue.pop().meta[Downloader.DOWNLOAD_SLOT],
+        ]
+
+        assert slots == ["slot-a", "slot-b", "slot-c", "slot-a"]
+
+    def test_pop_prefers_slot_with_fewer_active_downloads(self):
+        downloader = self.queue._downloader_interface.downloader
+
+        req_a = Request("https://example.org/a")
+        req_a.meta[Downloader.DOWNLOAD_SLOT] = "slot-a"
+        req_b = Request("https://example.org/b")
+        req_b.meta[Downloader.DOWNLOAD_SLOT] = "slot-b"
+        req_c = Request("https://example.org/c")
+        req_c.meta[Downloader.DOWNLOAD_SLOT] = "slot-c"
+
+        for req in (req_a, req_b, req_c):
+            self.queue.push(req)
+
+        downloader.increment("slot-a")
+        downloader.increment("slot-c")
+
+        popped = self.queue.pop()
+        assert popped.url == req_b.url
+
+    def test_contains(self):
+        req = Request("https://example.org/")
+        req.meta[Downloader.DOWNLOAD_SLOT] = "example-slot"
+        assert "example-slot" not in self.queue
+        self.queue.push(req)
+        assert "example-slot" in self.queue
+        assert "other-slot" not in self.queue
 
 
 @pytest.mark.parametrize(

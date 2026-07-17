@@ -10,6 +10,7 @@ from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from json import JSONEncoder
 
     from twisted.internet.task import LoopingCall
@@ -31,8 +32,8 @@ class PeriodicLog:
         self,
         stats: StatsCollector,
         interval: float = 60.0,
-        ext_stats: dict[str, Any] = {},
-        ext_delta: dict[str, Any] = {},
+        ext_stats: dict[str, Any] | None = None,
+        ext_delta: dict[str, Any] | None = None,
         ext_timing_enabled: bool = False,
     ):
         self.stats: StatsCollector = stats
@@ -41,11 +42,19 @@ class PeriodicLog:
         self.task: AsyncioLoopingCall | LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
-        self.ext_stats_include: list[str] = ext_stats.get("include", [])
-        self.ext_stats_exclude: list[str] = ext_stats.get("exclude", [])
+        self.ext_stats_include: Sequence[str] = (
+            ext_stats.get("include", ()) if ext_stats else ()
+        )
+        self.ext_stats_exclude: Sequence[str] = (
+            ext_stats.get("exclude", ()) if ext_stats else ()
+        )
         self.ext_delta_enabled: bool = bool(ext_delta)
-        self.ext_delta_include: list[str] = ext_delta.get("include", [])
-        self.ext_delta_exclude: list[str] = ext_delta.get("exclude", [])
+        self.ext_delta_include: Sequence[str] = (
+            ext_delta.get("include", ()) if ext_delta else ()
+        )
+        self.ext_delta_exclude: Sequence[str] = (
+            ext_delta.get("exclude", ()) if ext_delta else ()
+        )
         self.ext_timing_enabled: bool = ext_timing_enabled
 
     @classmethod
@@ -143,7 +152,7 @@ class PeriodicLog:
         return {"stats": stats}
 
     def param_allowed(
-        self, stat_name: str, include: list[str], exclude: list[str]
+        self, stat_name: str, include: Sequence[str], exclude: Sequence[str]
     ) -> bool:
         if not include and not exclude:
             return True

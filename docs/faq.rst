@@ -82,9 +82,17 @@ to steal from us!
 Does Scrapy work with HTTP proxies?
 -----------------------------------
 
-Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
-Proxy downloader middleware. See
+Yes. Support for HTTP proxies is provided through the HTTP Proxy downloader
+middleware. See
 :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`.
+
+Does Scrapy work with SOCKS proxies?
+------------------------------------
+
+Yes, when using
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. See
+:class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` and the
+handler documentation.
 
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
@@ -277,7 +285,8 @@ consume a lot of memory.
 In order to avoid parsing all the entire feed at once in memory, you can use
 the :func:`~scrapy.utils.iterators.xmliter_lxml` and
 :func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
-:class:`~scrapy.spiders.XMLFeedSpider` uses.
+:class:`~scrapy.spiders.XMLFeedSpider` and
+:class:`~scrapy.spiders.CSVFeedSpider` use.
 
 .. autofunction:: scrapy.utils.iterators.xmliter_lxml
 
@@ -352,15 +361,19 @@ method for this purpose. For example:
         def process_spider_output(self, response, result):
             for item_or_request in result:
                 if isinstance(item_or_request, Request):
+                    yield item_or_request
                     continue
-                adapter = ItemAdapter(item)
+                adapter = ItemAdapter(item_or_request)
                 for _ in range(adapter["multiply_by"]):
-                    yield deepcopy(item)
+                    yield deepcopy(item_or_request)
 
 Does Scrapy support IPv6 addresses?
 -----------------------------------
 
-Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Yes, but when using
+:class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` or
+:class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` you need to
+set :setting:`TWISTED_DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
 Note that by doing so, you lose the ability to set a specific timeout for DNS requests
 (the value of the :setting:`DNS_TIMEOUT` setting is ignored).
 
@@ -371,8 +384,9 @@ How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()
 ----------------------------------------------------------------------------------------------
 
 This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
-Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a
-different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
+Twisted reactor was :class:`twisted.internet.selectreactor.SelectReactor` at that time.
+If you have switched to this reactor using the :setting:`TWISTED_REACTOR` setting you can switch
+to a different one in the same way.
 
 
 .. _faq-stop-response-download:
@@ -398,7 +412,6 @@ How can I make a blank request?
 
     from scrapy import Request
 
-
     blank_request = Request("data:,")
 
 In this case, the URL is set to a data URI scheme. Data URLs allow you to include data
@@ -418,4 +431,3 @@ See :issue:`2680`.
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
-.. _user agents: https://en.wikipedia.org/wiki/User_agent

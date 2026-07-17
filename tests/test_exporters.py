@@ -3,7 +3,6 @@ import json
 import marshal
 import pickle
 import re
-import tempfile
 from abc import ABC, abstractmethod
 from datetime import datetime
 from io import BytesIO
@@ -195,9 +194,7 @@ class TestPprintItemExporter(TestBaseItemExporter):
         return PprintItemExporter(self.output, **kwargs)
 
     def _check_output(self):
-        self._assert_expected_item(
-            eval(self.output.getvalue())  # pylint: disable=eval-used
-        )
+        self._assert_expected_item(eval(self.output.getvalue()))
 
 
 class TestPprintItemExporterDataclass(TestPprintItemExporter):
@@ -244,7 +241,6 @@ class TestPickleItemExporterDataclass(TestPickleItemExporter):
 
 class TestMarshalItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
-        self.output = tempfile.TemporaryFile()
         return MarshalItemExporter(self.output, **kwargs)
 
     def _check_output(self):
@@ -254,7 +250,7 @@ class TestMarshalItemExporter(TestBaseItemExporter):
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
         item.pop("time")  # datetime is not marshallable
-        fp = tempfile.TemporaryFile()
+        fp = BytesIO()
         ie = MarshalItemExporter(fp)
         ie.start_exporting()
         ie.export_item(item)
@@ -262,6 +258,7 @@ class TestMarshalItemExporter(TestBaseItemExporter):
         del ie  # See the first “del self.ie” in this file for context.
         fp.seek(0)
         assert marshal.load(fp) == item
+        fp.close()
 
 
 class TestMarshalItemExporterDataclass(TestMarshalItemExporter):
@@ -271,7 +268,11 @@ class TestMarshalItemExporterDataclass(TestMarshalItemExporter):
 
 class TestCsvItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
-        self.output = tempfile.TemporaryFile()
+        # We need a fresh instance for each exporter, because
+        # CsvItemExporter.stream.__del__() closes the underlying file
+        # (CsvItemExporter.finish_exporting() calls detach() but not all tests
+        # call it).
+        self.output = BytesIO()
         return CsvItemExporter(self.output, **kwargs)
 
     def assertCsvEqual(self, first, second, msg=None):
@@ -383,6 +384,20 @@ class TestCsvItemExporter(TestBaseItemExporter):
             errors="xmlcharrefreplace",
         )
 
+    def test_csv_dropped_fields_warning(self, caplog):
+        out = BytesIO()
+        exporter = CsvItemExporter(out)
+        exporter.start_exporting()
+
+        exporter.export_item({"name": "Apple"})
+
+        with caplog.at_level("WARNING", logger="scrapy.exporters"):
+            exporter.export_item({"name": "Banana", "price": 2.00})
+
+        assert len(caplog.records) == 1
+        assert "CSVExporter dropped fields" in caplog.text
+        assert "price" in caplog.text
+
 
 class TestCsvItemExporterDataclass(TestCsvItemExporter):
     item_class = MyDataClass
@@ -391,6 +406,11 @@ class TestCsvItemExporterDataclass(TestCsvItemExporter):
 
 class TestXmlItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
+        # We need a fresh instance for each exporter, because
+        # XmlItemExporter.stream.__del__() closes the underlying file
+        # (XmlItemExporter.finish_exporting() calls detach() but not all tests
+        # call it).
+        self.output = BytesIO()
         return XmlItemExporter(self.output, **kwargs)
 
     def assertXmlEquivalent(self, first, second, msg=None):

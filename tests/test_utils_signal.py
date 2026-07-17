@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import asyncio
+from typing import TYPE_CHECKING
 
 import pytest
 from pydispatch import dispatcher
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy.utils.asyncio import call_later
@@ -15,13 +17,20 @@ from scrapy.utils.signal import (
     send_catch_log_deferred,
 )
 from scrapy.utils.test import get_from_asyncio_queue
+from tests.utils.decorators import inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class TestSendCatchLog:
-    @inlineCallbacks
+    # whether the function being tested returns exceptions or failures
+    returns_exceptions: bool = False
+
+    @inline_callbacks_test
     def test_send_catch_log(self):
         test_signal = object()
-        handlers_called = set()
+        handlers_called: set[Callable[..., None]] = set()
 
         dispatcher.connect(self.error_handler, signal=test_signal)
         dispatcher.connect(self.ok_handler, signal=test_signal)
@@ -40,7 +49,9 @@ class TestSendCatchLog:
         assert "error_handler" in record.getMessage()
         assert record.levelname == "ERROR"
         assert result[0][0] == self.error_handler  # pylint: disable=comparison-with-callable
-        assert isinstance(result[0][1], Failure)
+        assert isinstance(
+            result[0][1], Exception if self.returns_exceptions else Failure
+        )
         assert result[1] == (self.ok_handler, "OK")
 
         dispatcher.disconnect(self.error_handler, signal=test_signal)
@@ -59,6 +70,7 @@ class TestSendCatchLog:
         return "OK"
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogDeferred(TestSendCatchLog):
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
@@ -68,7 +80,7 @@ class TestSendCatchLogDeferred2(TestSendCatchLogDeferred):
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
         assert arg == "test"
-        d = defer.Deferred()
+        d: defer.Deferred[str] = defer.Deferred()
         call_later(0, d.callback, "OK")
         return d
 
@@ -91,15 +103,18 @@ class TestSendCatchLogDeferredAsyncio(TestSendCatchLogDeferred):
 
 
 class TestSendCatchLogAsync(TestSendCatchLog):
+    returns_exceptions = True
+
     def _get_result(self, signal, *a, **kw):
         return deferred_from_coro(send_catch_log_async(signal, *a, **kw))
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogAsync2(TestSendCatchLogAsync):
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
         assert arg == "test"
-        d = defer.Deferred()
+        d: defer.Deferred[str] = defer.Deferred()
         call_later(0, d.callback, "OK")
         return d
 

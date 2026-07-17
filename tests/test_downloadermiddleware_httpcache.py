@@ -6,6 +6,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
+from unittest import mock
 
 import pytest
 
@@ -47,7 +48,6 @@ class TestBase:
         settings = {
             "HTTPCACHE_ENABLED": True,
             "HTTPCACHE_DIR": self.tmpdir,
-            "HTTPCACHE_EXPIRATION_SECS": 1,
             "HTTPCACHE_IGNORE_HTTP_CODES": [],
             "HTTPCACHE_POLICY": self.policy_class,
             "HTTPCACHE_STORAGE": self.storage_class,
@@ -89,26 +89,12 @@ class TestBase:
         assert response1.headers == response2.headers
         assert response1.body == response2.body
 
-    def assertEqualRequest(self, request1, request2):
-        assert request1.url == request2.url
-        assert request1.headers == request2.headers
-        assert request1.body == request2.body
-
-    def assertEqualRequestButWithCacheValidators(self, request1, request2):
-        assert request1.url == request2.url
-        assert b"If-None-Match" not in request1.headers
-        assert b"If-Modified-Since" not in request1.headers
-        assert any(
-            h in request2.headers for h in (b"If-None-Match", b"If-Modified-Since")
-        )
-        assert request1.body == request2.body
-
 
 class StorageTestMixin:
     """Mixin containing storage-specific test methods."""
 
     def test_storage(self):
-        with self._storage() as (storage, crawler):
+        with self._storage(HTTPCACHE_EXPIRATION_SECS=1) as (storage, crawler):
             request2 = self.request.copy()
             assert storage.retrieve_response(crawler.spider, request2) is None
 
@@ -117,15 +103,17 @@ class StorageTestMixin:
             assert isinstance(response2, HtmlResponse)  # content-type header
             self.assertEqualResponse(self.response, response2)
 
-            time.sleep(2)  # wait for cache to expire
-            assert storage.retrieve_response(crawler.spider, request2) is None
+            expired = time.time() + storage.expiration_secs + 1
+            with mock.patch("scrapy.extensions.httpcache.time", return_value=expired):
+                assert storage.retrieve_response(crawler.spider, request2) is None
 
     def test_storage_never_expire(self):
         with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as (storage, crawler):
             assert storage.retrieve_response(crawler.spider, self.request) is None
             storage.store_response(crawler.spider, self.request, self.response)
-            time.sleep(0.5)  # give the chance to expire
-            assert storage.retrieve_response(crawler.spider, self.request)
+            future = time.time() + 10**6
+            with mock.patch("scrapy.extensions.httpcache.time", return_value=future):
+                assert storage.retrieve_response(crawler.spider, self.request)
 
     def test_storage_no_content_type_header(self):
         """Test that the response body is used to get the right response class
@@ -149,6 +137,7 @@ class PolicyTestMixin:
     def test_dont_cache(self):
         with self._middleware() as mw:
             self.request.meta["dont_cache"] = True
+            assert mw.process_request(self.request) is None
             mw.process_response(self.request, self.response)
             assert mw.storage.retrieve_response(mw.crawler.spider, self.request) is None
 
@@ -217,7 +206,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert mw.process_request(req) is None
 
         # s3 scheme response is cached by default
-        req, res = Request("s3://bucket/key"), Response("http://bucket/key")
+        req, res = Request("s3://bucket/key"), Response("s3://bucket/key")
         with self._middleware() as mw:
             assert mw.process_request(req) is None
             mw.process_response(req, res)
@@ -228,7 +217,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert "cached" in cached.flags
 
         # ignore s3 scheme
-        req, res = Request("s3://bucket/key2"), Response("http://bucket/key2")
+        req, res = Request("s3://bucket/key2"), Response("s3://bucket/key2")
         with self._middleware(HTTPCACHE_IGNORE_SCHEMES=["s3"]) as mw:
             assert mw.process_request(req) is None
             mw.process_response(req, res)

@@ -32,10 +32,6 @@ Request objects
     :type url: str
 
     :param callback: sets :attr:`callback`, defaults to ``None``.
-
-        .. versionchanged:: 2.0
-            The *callback* parameter is no longer required when the *errback*
-            parameter is specified.
     :type callback: Callable[Concatenate[Response, ...], Any] | None
 
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
@@ -67,7 +63,7 @@ Request objects
 
         .. invisible-code-block: python
 
-            from scrapy.http import Request
+            from scrapy import Request
 
         1. Using a dict:
 
@@ -116,15 +112,14 @@ Request objects
             :class:`scrapy.Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
-        .. versionadded:: 2.6.0
-           Cookie values that are :class:`bool`, :class:`float` or :class:`int`
-           are casted to :class:`str`.
-
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
        This encoding will be used to percent-encode the URL and to convert the
        body to bytes (if given as a string).
+
+       To disable URL percent-encoding for a request, use the
+       :reqmeta:`verbatim_url` request meta key.
     :type encoding: str
 
     :param priority: sets :attr:`priority`, defaults to ``0``.
@@ -134,10 +129,6 @@ Request objects
     :type dont_filter: bool
 
     :param errback: sets :attr:`errback`, defaults to ``None``.
-
-        .. versionchanged:: 2.0
-            The *callback* parameter is no longer required when the *errback*
-            parameter is specified.
     :type errback: Callable[[Failure], Any] | None
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
@@ -148,9 +139,13 @@ Request objects
 
     .. attribute:: Request.url
 
-        A string containing the URL of this request. Keep in mind that this
-        attribute contains the escaped URL, so it can differ from the URL passed in
-        the ``__init__()`` method.
+        A string containing the URL of this request.
+
+        Keep in mind that this attribute contains the escaped URL, so it can
+        differ from the URL passed in the ``__init__()`` method.
+
+        If :reqmeta:`verbatim_url` is set to ``True``, the URL is kept as
+        passed to ``__init__()``.
 
         This attribute is read-only. To change the URL of a Request use
         :meth:`replace`.
@@ -192,6 +187,13 @@ Request objects
         In case of a failure to process the request, this dict can be accessed as
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
+
+        .. note:: When :setting:`JOBDIR` is set, requests are serialized to disk
+            with :mod:`pickle` (see :ref:`request-serialization`). As a result,
+            the callback receives a deep copy of any object stored in
+            ``cb_kwargs``, so mutating such an object in the callback does not
+            affect the original. Avoid relying on shared mutable state passed
+            through ``cb_kwargs`` in that case.
 
     .. attribute:: Request.meta
        :value: {}
@@ -245,7 +247,7 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
+    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs, cls])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
@@ -256,6 +258,78 @@ Request objects
     .. automethod:: from_curl
 
     .. automethod:: to_dict
+
+
+.. _form:
+
+Creating requests that submit HTML forms
+----------------------------------------
+
+Use :doc:`form2request <form2request:index>` to build request data from an HTML
+``<form>`` element and convert it to a :class:`~scrapy.Request`.
+
+Install it with pip:
+
+.. code-block:: bash
+
+    pip install form2request
+
+Select the desired form with CSS or XPath, then build and convert request
+data:
+
+.. code-block:: python
+
+    from form2request import form2request
+
+
+    def parse(self, response):
+        form = response.css("form#search")
+        request_data = form2request(form, data={"q": "scrapy"})
+        yield request_data.to_scrapy(callback=self.parse_results)
+
+Use ``data`` to override field values. To drop a field from the resulting
+request, set its value to ``None``.
+
+By default, form2request simulates clicking the first submit button. To submit
+without clicking any button, pass ``click=False``. To click a specific submit
+button, pass its element:
+
+.. code-block:: python
+
+    def parse(self, response):
+        form = response.css("form#checkout")
+        submit = form.css('button[name="pay"]')
+        request_data = form2request(form, click=submit)
+
+.. _topics-request-response-ref-request-userlogin:
+
+Using form2request to simulate a user login
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is usual for web sites to provide pre-populated form fields through ``<input
+type="hidden">`` elements, such as session related data or authentication
+tokens (for login pages). Build the request from the form and only override the
+credentials:
+
+.. code-block:: python
+
+    import scrapy
+    from form2request import form2request
+
+
+    class LoginSpider(scrapy.Spider):
+        name = "example.com"
+        start_urls = ["http://www.example.com/users/login.php"]
+
+        def parse(self, response):
+            form = response.css("form")
+            request_data = form2request(
+                form,
+                data={"username": "john", "password": "secret"},
+            )
+            yield request_data.to_scrapy(callback=self.after_login)
+
+        def after_login(self, response): ...
 
 
 Other functions related to requests
@@ -448,8 +522,6 @@ To change how request fingerprints are built for your requests, use the
 REQUEST_FINGERPRINTER_CLASS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 2.7
-
 Default: :class:`scrapy.utils.request.RequestFingerprinter`
 
 A :ref:`request fingerprinter class <custom-request-fingerprinter>` or its
@@ -482,6 +554,11 @@ common use cases you can use :func:`scrapy.utils.request.fingerprint` as well
 in your :meth:`fingerprint` method implementation:
 
 .. autofunction:: scrapy.utils.request.fingerprint
+
+By default, request fingerprinting canonicalizes the request URL. If
+:reqmeta:`verbatim_url` is set to ``True``, fingerprinting does not
+canonicalize the URL, and the ``keep_fragments`` parameter is ignored (it is
+effectively true).
 
 For example, to take the value of a request header named ``X-ID`` into
 account:
@@ -640,25 +717,64 @@ Those are:
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
+* :reqmeta:`download_slot`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`http_auth_domain`
+* :reqmeta:`http_pass`
+* :reqmeta:`http_user`
 * :reqmeta:`is_start_request`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`verbatim_url`
 
 .. reqmeta:: bindaddress
 
 bindaddress
 -----------
 
-The IP of the outgoing IP address to use for the performing the request.
+The default local outgoing address for download-handler connections.
+
+This meta value can be either:
+
+- a host address as a string (e.g. ``"127.0.0.2"``), in which case the local
+  port is chosen automatically, or
+
+- a ``(host, port)`` tuple (e.g. ``("127.0.0.2", 50000)``) to bind to both a
+  specific local interface and a specific local port.
+
+For example:
+
+.. code-block:: python
+
+    Request(
+        "https://example.org",
+        meta={"bindaddress": "127.0.0.2"},
+    )
+
+.. code-block:: python
+
+    Request(
+        "https://example.org",
+        meta={"bindaddress": ("127.0.0.2", 50000)},
+    )
+
+If not set, built-in HTTP download handlers use the value of
+:setting:`DOWNLOAD_BIND_ADDRESS` as the default bind address.
+Set the :reqmeta:`bindaddress` request meta key to override it for a
+specific request.
+
+This meta key is not supported by
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
+:setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
 
 .. reqmeta:: download_timeout
 
@@ -686,15 +802,68 @@ download_fail_on_dataloss
 Whether or not to fail on broken responses. See:
 :setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
 
+.. reqmeta:: give_up_log_level
+
+give_up_log_level
+-----------------
+
+.. versionadded:: 2.17.0
+
+:ref:`Logging level <levels>` used for the message logged when a request
+exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
+.. reqmeta:: http_auth_domain
+
+http_auth_domain
+----------------
+
+.. versionadded:: 2.17.0
+
+Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
+
+.. reqmeta:: http_pass
+
+http_pass
+---------
+
+.. versionadded:: 2.17.0
+
+Overrides :setting:`HTTPAUTH_PASS` for this request.
+
+.. reqmeta:: http_user
+
+http_user
+---------
+
+.. versionadded:: 2.17.0
+
+Overrides :setting:`HTTPAUTH_USER` for this request.
+
 .. reqmeta:: max_retry_times
 
 max_retry_times
 ---------------
 
-The meta key is used set retry times per request. When initialized, the
+The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
 
+.. reqmeta:: verbatim_url
+
+verbatim_url
+------------
+
+.. versionadded:: 2.17.0
+
+Set this key to ``True`` to keep the request URL as passed to
+:class:`~scrapy.Request`, without URL percent-encoding.
+
+When this key is enabled, :func:`~scrapy.utils.request.fingerprint` does not
+canonicalize the request URL, so requests whose URLs differ only in
+characters that would otherwise be canonicalized get different fingerprints.
+
+In this mode, the ``keep_fragments`` parameter is ignored, and it is
+effectively true.
 
 .. _topics-stop-response-download:
 
@@ -752,158 +921,10 @@ Request subclasses
 Here is the list of built-in :class:`~scrapy.Request` subclasses. You can also subclass
 it to implement your own custom functionality.
 
-FormRequest objects
--------------------
+FormRequest
+-----------
 
-The FormRequest class extends the base :class:`~scrapy.Request` with functionality for
-dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
-fields with form data from :class:`Response` objects.
-
-.. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
-
-.. currentmodule:: None
-
-.. class:: scrapy.FormRequest(url, [formdata, ...])
-    :canonical: scrapy.http.request.form.FormRequest
-
-    The :class:`~scrapy.FormRequest` class adds a new keyword parameter to the ``__init__()`` method. The
-    remaining arguments are the same as for the :class:`~scrapy.Request` class and are
-    not documented here.
-
-    :param formdata: is a dictionary (or iterable of (key, value) tuples)
-       containing HTML Form data which will be url-encoded and assigned to the
-       body of the request.
-    :type formdata: dict or collections.abc.Iterable
-
-    The :class:`~scrapy.FormRequest` objects support the following class method in
-    addition to the standard :class:`~scrapy.Request` methods:
-
-    .. classmethod:: from_response(response, [formname=None, formid=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
-
-       Returns a new :class:`~scrapy.FormRequest` object with its form field values
-       pre-populated with those found in the HTML ``<form>`` element contained
-       in the given response. For an example see
-       :ref:`topics-request-response-ref-request-userlogin`.
-
-       The policy is to automatically simulate a click, by default, on any form
-       control that looks clickable, like a ``<input type="submit">``.  Even
-       though this is quite convenient, and often the desired behaviour,
-       sometimes it can cause problems which could be hard to debug. For
-       example, when working with forms that are filled and/or submitted using
-       javascript, the default :meth:`from_response` behaviour may not be the
-       most appropriate. To disable this behaviour you can set the
-       ``dont_click`` argument to ``True``. Also, if you want to change the
-       control clicked (instead of disabling it) you can also use the
-       ``clickdata`` argument.
-
-       .. caution:: Using this method with select elements which have leading
-          or trailing whitespace in the option values will not work due to a
-          `bug in lxml`_, which should be fixed in lxml 3.8 and above.
-
-       :param response: the response containing a HTML form which will be used
-          to pre-populate the form fields
-       :type response: :class:`~scrapy.http.Response` object
-
-       :param formname: if given, the form with name attribute set to this value will be used.
-       :type formname: str
-
-       :param formid: if given, the form with id attribute set to this value will be used.
-       :type formid: str
-
-       :param formxpath: if given, the first form that matches the xpath will be used.
-       :type formxpath: str
-
-       :param formcss: if given, the first form that matches the css selector will be used.
-       :type formcss: str
-
-       :param formnumber: the number of form to use, when the response contains
-          multiple forms. The first one (and also the default) is ``0``.
-       :type formnumber: int
-
-       :param formdata: fields to override in the form data. If a field was
-          already present in the response ``<form>`` element, its value is
-          overridden by the one passed in this parameter. If a value passed in
-          this parameter is ``None``, the field will not be included in the
-          request, even if it was present in the response ``<form>`` element.
-       :type formdata: dict
-
-       :param clickdata: attributes to lookup the control clicked. If it's not
-         given, the form data will be submitted simulating a click on the
-         first clickable element. In addition to html attributes, the control
-         can be identified by its zero-based index relative to other
-         submittable inputs inside the form, via the ``nr`` attribute.
-       :type clickdata: dict
-
-       :param dont_click: If True, the form data will be submitted without
-         clicking in any element.
-       :type dont_click: bool
-
-       The other parameters of this class method are passed directly to the
-       :class:`~scrapy.FormRequest` ``__init__()`` method.
-
-.. currentmodule:: scrapy.http
-
-Request usage examples
-----------------------
-
-Using FormRequest to send data via HTTP POST
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you want to simulate a HTML Form POST in your spider and send a couple of
-key-value fields, you can return a :class:`~scrapy.FormRequest` object (from your
-spider) like this:
-
-.. skip: next
-.. code-block:: python
-
-   return [
-       FormRequest(
-           url="http://www.example.com/post/action",
-           formdata={"name": "John Doe", "age": "27"},
-           callback=self.after_post,
-       )
-   ]
-
-.. _topics-request-response-ref-request-userlogin:
-
-Using FormRequest.from_response() to simulate a user login
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-It is usual for web sites to provide pre-populated form fields through ``<input
-type="hidden">`` elements, such as session related data or authentication
-tokens (for login pages). When scraping, you'll want these fields to be
-automatically pre-populated and only override a couple of them, such as the
-user name and password. You can use the :meth:`.FormRequest.from_response`
-method for this job. Here's an example spider which uses it:
-
-.. code-block:: python
-
-    import scrapy
-
-
-    def authentication_failed(response):
-        # TODO: Check the contents of the response and return True if it failed
-        # or False if it succeeded.
-        pass
-
-
-    class LoginSpider(scrapy.Spider):
-        name = "example.com"
-        start_urls = ["http://www.example.com/users/login.php"]
-
-        def parse(self, response):
-            return scrapy.FormRequest.from_response(
-                response,
-                formdata={"username": "john", "password": "secret"},
-                callback=self.after_login,
-            )
-
-        def after_login(self, response):
-            if authentication_failed(response):
-                self.logger.error("Login failed")
-                return
-
-            # continue scraping with authenticated session...
+.. autoclass:: scrapy.FormRequest
 
 JsonRequest
 -----------
@@ -979,7 +1000,7 @@ Response objects
     :type request: scrapy.Request
 
     :param certificate: an object representing the server's SSL certificate.
-    :type certificate: twisted.internet.ssl.Certificate
+    :type certificate: typing.Any
 
     :param ip_address: The IP address of the server from which the Response originated.
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
@@ -987,15 +1008,6 @@ Response objects
     :param protocol: The protocol that was used to download the response.
         For instance: "HTTP/1.0", "HTTP/1.1", "h2"
     :type protocol: :class:`str`
-
-    .. versionadded:: 2.0.0
-       The ``certificate`` parameter.
-
-    .. versionadded:: 2.1.0
-       The ``ip_address`` parameter.
-
-    .. versionadded:: 2.5.0
-       The ``protocol`` parameter.
 
     .. attribute:: Response.url
 
@@ -1013,7 +1025,7 @@ Response objects
 
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the response headers. Values can be accessed using
-        :meth:`~scrapy.http.headers.Headers.get` to return the first header value with
+        :meth:`~scrapy.http.headers.Headers.get` to return the last header value with
         the specified name or :meth:`~scrapy.http.headers.Headers.getlist` to return
         all header values with the specified name. For example, this call will give you
         all cookies in the headers::
@@ -1062,8 +1074,6 @@ Response objects
 
     .. attribute:: Response.cb_kwargs
 
-        .. versionadded:: 2.0
-
         A shortcut to the :attr:`~scrapy.Request.cb_kwargs` attribute of the
         :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
 
@@ -1076,32 +1086,26 @@ Response objects
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
-        tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
+        tagging Responses. For example: ``'cached'``, ``'redirected'``', etc. And
         they're shown on the string representation of the Response (``__str__()``
         method) which is used by the engine for logging.
 
     .. attribute:: Response.certificate
 
-        .. versionadded:: 2.0.0
-
-        A :class:`twisted.internet.ssl.Certificate` object representing
-        the server's SSL certificate.
+        An object representing the server's SSL certificate. Its type and
+        contents depend on the download handler that produced the response.
 
         Only populated for ``https`` responses, ``None`` otherwise.
 
     .. attribute:: Response.ip_address
 
-        .. versionadded:: 2.1.0
-
         The IP address of the server from which the Response originated.
 
-        This attribute is currently only populated by the HTTP 1.1 download
-        handler, i.e. for ``http(s)`` responses. For other handlers,
+        This attribute is currently only populated by the HTTP download
+        handlers, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`ip_address` is always ``None``.
 
     .. attribute:: Response.protocol
-
-        .. versionadded:: 2.5.0
 
         The protocol that was used to download the response.
         For instance: "HTTP/1.0", "HTTP/1.1"
@@ -1116,7 +1120,7 @@ Response objects
 
        Returns a new Response which is a copy of this Response.
 
-    .. method:: Response.replace([url, status, headers, body, request, flags, cls])
+    .. method:: Response.replace([url, status, headers, body, request, flags, certificate, ip_address, protocol, cls])
 
        Returns a Response object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The

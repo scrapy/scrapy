@@ -1,8 +1,6 @@
 """
 This module contains data types used by Scrapy which are not included in the
 Python Standard Library.
-
-This module must not depend on any module outside the Standard Library.
 """
 
 from __future__ import annotations
@@ -13,7 +11,7 @@ import warnings
 import weakref
 from collections import OrderedDict
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, AnyStr, TypeVar
+from typing import TYPE_CHECKING, Any, AnyStr, TypeVar, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -28,7 +26,7 @@ _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 
 
-class CaselessDict(dict):
+class CaselessDict(dict):  # type: ignore[type-arg]
     __slots__ = ()
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
@@ -83,7 +81,7 @@ class CaselessDict(dict):
         return dict.get(self, self.normkey(key), self.normvalue(def_val))
 
     def setdefault(self, key: AnyStr, def_val: Any = None) -> Any:
-        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))  # type: ignore[arg-type]
+        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
 
     # doesn't fully implement MutableMapping.update()
     def update(self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]) -> None:  # type: ignore[override]
@@ -99,20 +97,20 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
-class CaseInsensitiveDict(collections.UserDict):
+class CaseInsensitiveDict(collections.UserDict[str | bytes, Any]):
     """A dict-like structure that accepts strings or bytes
     as keys and allows case-insensitive lookups.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self._keys: dict = {}
+        self._keys: dict[str | bytes, Any] = {}
         super().__init__(*args, **kwargs)
 
-    def __getitem__(self, key: AnyStr) -> Any:
+    def __getitem__(self, key: str | bytes) -> Any:
         normalized_key = self._normkey(key)
         return super().__getitem__(self._keys[normalized_key.lower()])
 
-    def __setitem__(self, key: AnyStr, value: Any) -> None:
+    def __setitem__(self, key: str | bytes, value: Any) -> None:
         normalized_key = self._normkey(key)
         try:
             lower_key = self._keys[normalized_key.lower()]
@@ -122,19 +120,19 @@ class CaseInsensitiveDict(collections.UserDict):
         super().__setitem__(normalized_key, self._normvalue(value))
         self._keys[normalized_key.lower()] = normalized_key
 
-    def __delitem__(self, key: AnyStr) -> None:
+    def __delitem__(self, key: str | bytes) -> None:
         normalized_key = self._normkey(key)
         stored_key = self._keys.pop(normalized_key.lower())
         super().__delitem__(stored_key)
 
-    def __contains__(self, key: AnyStr) -> bool:  # type: ignore[override]
+    def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
         normalized_key = self._normkey(key)
         return normalized_key.lower() in self._keys
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {super().__repr__()}>"
 
-    def _normkey(self, key: AnyStr) -> AnyStr:
+    def _normkey(self, key: str | bytes) -> str | bytes:
         return key
 
     def _normvalue(self, value: Any) -> Any:
@@ -152,13 +150,15 @@ class LocalCache(OrderedDict[_KT, _VT]):
         self.limit: int | None = limit
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
-        if self.limit:
+        if self.limit is not None:
+            if self.limit == 0:
+                return
             while len(self) >= self.limit:
                 self.popitem(last=False)
         super().__setitem__(key, value)
 
 
-class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
+class LocalWeakReferencedCache(weakref.WeakKeyDictionary[_KT, _VT | None]):
     """
     A weakref.WeakKeyDictionary implementation that uses LocalCache as its
     underlying data structure, making it ordered and capable of being size-limited.
@@ -172,16 +172,16 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
 
     def __init__(self, limit: int | None = None):
         super().__init__()
-        self.data: LocalCache = LocalCache(limit=limit)
+        self.data: LocalCache[_KT, _VT] = LocalCache(limit=limit)
 
-    def __setitem__(self, key: _KT, value: _VT) -> None:
+    def __setitem__(self, key: _KT, value: _VT | None) -> None:
         # if raised, key is not weak-referenceable, skip caching
         with contextlib.suppress(TypeError):
             super().__setitem__(key, value)
 
-    def __getitem__(self, key: _KT) -> _VT | None:  # type: ignore[override]
+    def __getitem__(self, key: _KT) -> _VT | None:
         try:
-            return super().__getitem__(key)
+            return cast("_VT", super().__getitem__(key))
         except (TypeError, KeyError):
             return None  # key is either not weak-referenceable or not cached
 

@@ -8,12 +8,14 @@ import gc
 import inspect
 import re
 import sys
+import warnings
 import weakref
 from collections.abc import AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, overload
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
 
 if TYPE_CHECKING:
@@ -99,6 +101,16 @@ def to_bytes(
     return text.encode(encoding, errors)
 
 
+def _chunk_iter(text: str, chunk_size: int) -> Iterable[tuple[str, int]]:
+    offset = len(text)
+    while True:
+        offset -= chunk_size * 1024
+        if offset <= 0:
+            break
+        yield (text[offset:], offset)
+    yield (text, 0)
+
+
 def re_rsearch(
     pattern: str | Pattern[str], text: str, chunk_size: int = 1024
 ) -> tuple[int, int] | None:
@@ -115,19 +127,10 @@ def re_rsearch(
     the start position of the match, and the ending (regarding the entire text).
     """
 
-    def _chunk_iter() -> Iterable[tuple[str, int]]:
-        offset = len(text)
-        while True:
-            offset -= chunk_size * 1024
-            if offset <= 0:
-                break
-            yield (text[offset:], offset)
-        yield (text, 0)
-
     if isinstance(pattern, str):
         pattern = re.compile(pattern)
 
-    for chunk, offset in _chunk_iter():
+    for chunk, offset in _chunk_iter(text, chunk_size):
         matches = list(pattern.finditer(chunk))
         if matches:
             start, end = matches[-1].span()
@@ -174,7 +177,7 @@ def get_func_args_dict(
 ) -> Mapping[str, inspect.Parameter]:
     """Return the argument dict of a callable object.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
     """
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")
@@ -293,12 +296,13 @@ else:
         gc.collect()
 
 
-class MutableChain(Iterable[_T]):
-    """
-    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
-    """
-
+class MutableChain(Iterable[_T]):  # pragma: no cover
     def __init__(self, *args: Iterable[_T]):
+        warnings.warn(
+            "MutableChain is deprecated and will be removed in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self.data: Iterator[_T] = chain.from_iterable(args)
 
     def extend(self, *iterables: Iterable[_T]) -> None:
@@ -335,3 +339,33 @@ class MutableAsyncChain(AsyncIterator[_T]):
 
     async def __anext__(self) -> _T:
         return await self.data.__anext__()
+
+
+def _looks_like_import_path(value: str) -> bool:
+    """Return True if **value** looks like a valid Python import path or False
+    otherwise."""
+    if not value:
+        return False
+    if any(c.isspace() for c in value):
+        return False
+    allowed_chars = set(
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_."
+    )
+    if any(c not in allowed_chars for c in value):
+        return False
+    if value[0] == "." or value[-1] == ".":
+        return False
+    parts = value.split(".")
+    if any(part == "" for part in parts):
+        return False
+    return all(part.isidentifier() for part in parts)
+
+
+def _iter_exc_causes(exc: BaseException) -> Iterable[BaseException]:
+    """Iterate over the exception causes/contexts."""
+    seen: set[int] = set()
+    cur: BaseException | None = exc
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        yield cur
+        cur = cur.__cause__ or cur.__context__

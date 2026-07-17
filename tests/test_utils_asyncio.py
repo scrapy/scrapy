@@ -14,16 +14,17 @@ from scrapy.utils.asyncio import (
     _parallel_asyncio,
     is_asyncio_available,
 )
-from scrapy.utils.defer import deferred_f_from_coro_f
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
 
 class TestAsyncio:
-    def test_is_asyncio_available(self, reactor_pytest: str) -> None:
+    @coroutine_test
+    async def test_is_asyncio_available(self, reactor_pytest: str) -> None:
         # the result should depend only on the pytest --reactor argument
-        assert is_asyncio_available() == (reactor_pytest == "asyncio")
+        assert is_asyncio_available() == (reactor_pytest != "default")
 
 
 @pytest.mark.only_asyncio
@@ -66,12 +67,12 @@ class TestParallelAsyncio:
                 await asyncio.sleep(random.random() / 20)
             yield i
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_simple(self):
         for length in [20, 50, 100]:
             parallel_count = [0]
             max_parallel_count = [0]
-            results = []
+            results: list[int] = []
             ait = self.get_async_iterable(length)
             await _parallel_asyncio(
                 ait,
@@ -82,14 +83,15 @@ class TestParallelAsyncio:
                 max_parallel_count,
             )
             assert list(range(length)) == sorted(results)
+            assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_delays(self):
         for length in [20, 50, 100]:
             parallel_count = [0]
             max_parallel_count = [0]
-            results = []
+            results: list[int] = []
             ait = self.get_async_iterable_with_delays(length)
             await _parallel_asyncio(
                 ait,
@@ -100,12 +102,14 @@ class TestParallelAsyncio:
                 max_parallel_count,
             )
             assert list(range(length)) == sorted(results)
+            assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
 
 @pytest.mark.only_asyncio
 class TestAsyncioLoopingCall:
-    def test_looping_call(self):
+    @coroutine_test
+    async def test_looping_call(self):
         func = mock.MagicMock()
         looping_call = AsyncioLoopingCall(func)
         looping_call.start(1, now=False)
@@ -114,21 +118,24 @@ class TestAsyncioLoopingCall:
         assert not looping_call.running
         assert not func.called
 
-    def test_looping_call_now(self):
+    @coroutine_test
+    async def test_looping_call_now(self):
         func = mock.MagicMock()
         looping_call = AsyncioLoopingCall(func)
         looping_call.start(1)
         looping_call.stop()
         assert func.called
 
-    def test_looping_call_already_running(self):
+    @coroutine_test
+    async def test_looping_call_already_running(self):
         looping_call = AsyncioLoopingCall(lambda: None)
         looping_call.start(1)
         with pytest.raises(RuntimeError):
             looping_call.start(1)
         looping_call.stop()
 
-    def test_looping_call_interval(self):
+    @coroutine_test
+    async def test_looping_call_interval(self):
         looping_call = AsyncioLoopingCall(lambda: None)
         with pytest.raises(ValueError, match="Interval must be greater than 0"):
             looping_call.start(0)
@@ -136,8 +143,18 @@ class TestAsyncioLoopingCall:
             looping_call.start(-1)
         assert not looping_call.running
 
-    def test_looping_call_bad_function(self):
+    @coroutine_test
+    async def test_looping_call_bad_function(self):
         looping_call = AsyncioLoopingCall(Deferred)
         with pytest.raises(TypeError):
             looping_call.start(0.1)
         assert not looping_call.running
+
+    @coroutine_test
+    async def test_looping_function_raises(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        looping_call = AsyncioLoopingCall(lambda: 1 / 0)
+        looping_call.start(0.1)
+        assert not looping_call.running
+        assert "Error calling the AsyncioLoopingCall function" in caplog.text

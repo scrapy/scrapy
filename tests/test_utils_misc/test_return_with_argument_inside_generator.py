@@ -93,29 +93,27 @@ https://example.org
         assert is_generator_with_return_value(h1)
         assert is_generator_with_return_value(i1)
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            UserWarning,
+            match='The "MockSpider.top_level_return_something" method is a generator',
+        ):
             warn_on_generator_with_return_value(mock_spider, top_level_return_something)
-            assert len(w) == 1
-            assert (
-                'The "MockSpider.top_level_return_something" method is a generator'
-                in str(w[0].message)
-            )
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            UserWarning, match='The "MockSpider.f1" method is a generator'
+        ):
             warn_on_generator_with_return_value(mock_spider, f1)
-            assert len(w) == 1
-            assert 'The "MockSpider.f1" method is a generator' in str(w[0].message)
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            UserWarning, match='The "MockSpider.g1" method is a generator'
+        ):
             warn_on_generator_with_return_value(mock_spider, g1)
-            assert len(w) == 1
-            assert 'The "MockSpider.g1" method is a generator' in str(w[0].message)
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            UserWarning, match='The "MockSpider.h1" method is a generator'
+        ):
             warn_on_generator_with_return_value(mock_spider, h1)
-            assert len(w) == 1
-            assert 'The "MockSpider.h1" method is a generator' in str(w[0].message)
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            UserWarning, match='The "MockSpider.i1" method is a generator'
+        ):
             warn_on_generator_with_return_value(mock_spider, i1)
-            assert len(w) == 1
-            assert 'The "MockSpider.i1" method is a generator' in str(w[0].message)
 
     def test_generators_return_none(self, mock_spider):
         def f2():
@@ -160,30 +158,16 @@ https://example.org
         assert not is_generator_with_return_value(k2)  # not recursive
         assert not is_generator_with_return_value(l2)
 
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             warn_on_generator_with_return_value(mock_spider, top_level_return_none)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, f2)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, g2)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, h2)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, i2)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, j2)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, k2)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, l2)
-            assert len(w) == 0
 
     def test_generators_return_none_with_decorator(self, mock_spider):
         def decorator(func):
@@ -241,39 +225,23 @@ https://example.org
         assert not is_generator_with_return_value(k3)  # not recursive
         assert not is_generator_with_return_value(l3)
 
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             warn_on_generator_with_return_value(mock_spider, top_level_return_none)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, f3)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, g3)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, h3)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, i3)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, j3)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, k3)
-            assert len(w) == 0
-        with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(mock_spider, l3)
-            assert len(w) == 0
 
     @mock.patch(
         "scrapy.utils.misc.is_generator_with_return_value", new=_indentation_error
     )
     def test_indentation_error(self, mock_spider):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning, match="Unable to determine"):
             warn_on_generator_with_return_value(mock_spider, top_level_return_none)
-            assert len(w) == 1
-            assert "Unable to determine" in str(w[0].message)
 
     def test_partial(self):
         def cb(arg1, arg2):
@@ -300,13 +268,11 @@ https://example.org
             yield 1
             return "value"
 
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             warn_on_generator_with_return_value(spider, gen_with_return)
-            assert len(w) == 0
 
         spider.settings.settings_dict["WARN_ON_GENERATOR_RETURN_VALUE"] = True
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning, match="is a generator"):
             warn_on_generator_with_return_value(spider, gen_with_return)
-            assert len(w) == 1
-            assert "is a generator" in str(w[0].message)

@@ -238,7 +238,7 @@ class TestXmliterBase(ABC):
             next(my_iter)
 
     def test_xmliter_objtype_exception(self):
-        i = self.xmliter(42, "product")
+        i = self.xmliter(42, "product")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
             next(i)
 
@@ -353,7 +353,7 @@ class TestLxmlXmliter(TestXmliterBase):
         assert node.xpath("f:name/text()").getall() == ["African Coffee Table"]
 
     def test_xmliter_objtype_exception(self):
-        i = self.xmliter(42, "product")
+        i = self.xmliter(42, "product")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
             next(i)
 
@@ -527,7 +527,7 @@ class TestBodyOrStr:
         r3 = _body_or_str(obj, unicode=False)
         self._assert_type_and_value(r3, self.bbody, obj)
         assert type(r1) is type(r2)
-        assert type(r1) is not type(r3)
+        assert type(r1) is not type(r3)  # type: ignore[comparison-overlap]
 
     @staticmethod
     def _assert_type_and_value(

@@ -50,11 +50,8 @@ class MiddlewareManager(ABC):
             )
         self.middlewares: tuple[Any, ...] = middlewares
         # Only process_spider_output and process_spider_exception can be None.
-        # Only process_spider_output can be a tuple, and only until _async compatibility methods are removed.
-        self.methods: dict[str, deque[Callable | tuple[Callable, Callable] | None]] = (
-            defaultdict(deque)
-        )
-        self._mw_methods_requiring_spider: set[Callable] = set()
+        self.methods: dict[str, deque[Callable[..., Any] | None]] = defaultdict(deque)
+        self._mw_methods_requiring_spider: set[Callable[..., Any]] = set()
         for mw in middlewares:
             self._add_middleware(mw)
 
@@ -81,19 +78,6 @@ class MiddlewareManager(ABC):
                 f"Different instances of Spider were passed to {type(self).__name__}:"
                 f" {self._compat_spider} and {spider}"
             )
-
-    def _warn_spider_arg(self, method_name: str) -> None:
-        if self.crawler:
-            msg = (
-                f"Passing a spider argument to {type(self).__name__}.{method_name}() is deprecated"
-                " and the passed value is ignored."
-            )
-        else:
-            msg = (
-                f"Passing a spider argument to {type(self).__name__}.{method_name}() is deprecated,"
-                f" {type(self).__name__} should be instantiated with a Crawler instance instead."
-            )
-        warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=3)
 
     @classmethod
     @abstractmethod
@@ -132,7 +116,7 @@ class MiddlewareManager(ABC):
     def _add_middleware(self, mw: Any) -> None:  # noqa: B027
         pass
 
-    def _check_mw_method_spider_arg(self, method: Callable) -> None:
+    def _check_mw_method_spider_arg(self, method: Callable[..., Any]) -> None:
         if argument_is_required(method, "spider"):
             warnings.warn(
                 f"{method.__qualname__}() requires a spider argument,"
@@ -151,17 +135,21 @@ class MiddlewareManager(ABC):
         *args: Any,
         add_spider: bool = False,
         always_add_spider: bool = False,
+        warn_deferred: bool = False,
     ) -> _T:
         methods = cast(
             "Iterable[Callable[Concatenate[_T, _P], _T]]", self.methods[methodname]
         )
         for method in methods:
+            warn = global_object_name(method) if warn_deferred else None
             if always_add_spider or (
                 add_spider and method in self._mw_methods_requiring_spider
             ):
-                obj = await ensure_awaitable(method(obj, *(*args, self._spider)))
+                obj = await ensure_awaitable(
+                    method(obj, *(*args, self._spider)), _warn=warn
+                )
             else:
-                obj = await ensure_awaitable(method(obj, *args))
+                obj = await ensure_awaitable(method(obj, *args), _warn=warn)
         return obj
 
     def open_spider(self, spider: Spider) -> Deferred[list[None]]:  # pragma: no cover

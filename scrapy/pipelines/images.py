@@ -8,20 +8,28 @@ from __future__ import annotations
 
 import functools
 import hashlib
+import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
+from scrapy.pipelines.files import (
+    FileException,
+    FilesPipeline,
+    GCSFilesStore,
+    S3FilesStore,
+    _md5sum,
+)
+from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Iterable
     from os import PathLike
 
     from PIL import Image
@@ -29,9 +37,9 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
+    from scrapy.settings import BaseSettings
 
 
 class ImageException(FileException):
@@ -39,7 +47,7 @@ class ImageException(FileException):
 
 
 class ImagesPipeline(FilesPipeline):
-    """Abstract pipeline that implement the image thumbnail generation logic"""
+    """Pipeline that implements the handling logic specific to images."""
 
     MEDIA_NAME: str = "image"
 
@@ -48,17 +56,25 @@ class ImagesPipeline(FilesPipeline):
     MIN_WIDTH: int = 0
     MIN_HEIGHT: int = 0
     EXPIRES: int = 90
-    THUMBS: dict[str, tuple[int, int]] = {}
+    THUMBS: ClassVar[dict[str, tuple[int, int]]] = {}
     DEFAULT_IMAGES_URLS_FIELD = "image_urls"
     DEFAULT_IMAGES_RESULT_FIELD = "images"
 
     def __init__(
         self,
         store_uri: str | PathLike[str],
-        download_func: Callable[[Request, Spider], Response] | None = None,
+        download_func: None = None,
         *,
         crawler: Crawler,
     ):
+        if download_func is not None:  # pragma: no cover
+            warnings.warn(
+                "The download_func argument of ImagesPipeline.__init__() is ignored"
+                " and will be removed in a future Scrapy version.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         try:
             from PIL import Image, ImageOps  # noqa: PLC0415
 
@@ -67,9 +83,9 @@ class ImagesPipeline(FilesPipeline):
         except ImportError:
             raise NotConfigured(
                 "ImagesPipeline requires installing Pillow 8.3.2 or later"
-            )
+            ) from None
 
-        super().__init__(store_uri, download_func=download_func, crawler=crawler)
+        super().__init__(store_uri, crawler=crawler)
 
         settings = crawler.settings
         resolve = functools.partial(
@@ -107,7 +123,7 @@ class ImagesPipeline(FilesPipeline):
         store_uri = settings["IMAGES_STORE"]
         return cls(store_uri, crawler=crawler)
 
-    def file_downloaded(
+    async def file_downloaded(
         self,
         response: Response,
         request: Request,
@@ -115,9 +131,23 @@ class ImagesPipeline(FilesPipeline):
         *,
         item: Any = None,
     ) -> str:
-        return self.image_downloaded(response, request, info, item=item)
+        return await self.image_downloaded(response, request, info, item=item)
 
-    def image_downloaded(
+    @classmethod
+    def _update_stores(cls, settings: BaseSettings) -> None:
+        super()._update_stores(settings)
+
+        s3store: type[S3FilesStore] = cast(
+            "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
+        )
+        s3store.POLICY = settings["IMAGES_STORE_S3_ACL"]
+
+        gcs_store: type[GCSFilesStore] = cast(
+            "type[GCSFilesStore]", cls.STORE_SCHEMES["gs"]
+        )
+        gcs_store.POLICY = settings["IMAGES_STORE_GCS_ACL"] or None
+
+    async def image_downloaded(
         self,
         response: Response,
         request: Request,
@@ -131,12 +161,14 @@ class ImagesPipeline(FilesPipeline):
                 buf.seek(0)
                 checksum = _md5sum(buf)
             width, height = image.size
-            self.store.persist_file(
-                path,
-                buf,
-                info,
-                meta={"width": width, "height": height},
-                headers={"Content-Type": "image/jpeg"},
+            await ensure_awaitable(
+                self.store.persist_file(
+                    path,
+                    buf,
+                    info,
+                    meta={"width": width, "height": height},
+                    headers={"Content-Type": "image/jpeg"},
+                )
             )
         assert checksum is not None
         return checksum
@@ -180,7 +212,7 @@ class ImagesPipeline(FilesPipeline):
         *,
         response_body: BytesIO,
     ) -> tuple[Image.Image, BytesIO]:
-        if image.format in ("PNG", "WEBP") and image.mode == "RGBA":
+        if image.format in {"PNG", "WEBP"} and image.mode == "RGBA":
             background = self._Image.new("RGBA", image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert("RGB")

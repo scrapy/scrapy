@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import warnings
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import get_func_args_dict
@@ -43,15 +43,18 @@ def create_deprecated_class(
     It can be used to rename a base class in a library. For example, if we
     have
 
-        class OldName(SomeClass):
-            # ...
+    .. code-block:: python
 
-    and we want to rename it to NewName, we can do the following::
+        class OldName(SomeClass): ...
 
-        class NewName(SomeClass):
-            # ...
+    and we want to rename it to NewName, we can do the following:
 
-        OldName = create_deprecated_class('OldName', NewName)
+    .. code-block:: python
+
+        class NewName(SomeClass): ...
+
+
+        OldName = create_deprecated_class("OldName", NewName)
 
     Then, if user class inherits from OldName, warning is issued. Also, if
     some code uses ``issubclass(sub, OldName)`` or ``isinstance(sub(), OldName)``
@@ -60,7 +63,7 @@ def create_deprecated_class(
     """
 
     # https://github.com/python/mypy/issues/4177
-    class DeprecatedClass(new_class.__class__):  # type: ignore[misc, name-defined]
+    class DeprecatedClass(new_class.__class__):  # type: ignore[misc,name-defined]
         # pylint: disable=no-self-argument
         deprecated_class: type | None = None
         warned_on_subclass: bool = False
@@ -68,7 +71,7 @@ def create_deprecated_class(
         def __new__(  # pylint: disable=bad-classmethod-argument
             metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
         ) -> type:
-            cls = super().__new__(metacls, name, bases, clsdict_)
+            cls: type = super().__new__(metacls, name, bases, clsdict_)
             if metacls.deprecated_class is None:
                 metacls.deprecated_class = cls
             return cls
@@ -100,7 +103,7 @@ def create_deprecated_class(
                 # is the deprecated class itself - subclasses of the
                 # deprecated class should not use custom `__subclasscheck__`
                 # method.
-                return super().__subclasscheck__(sub)
+                return cast("bool", super().__subclasscheck__(sub))
 
             if not inspect.isclass(sub):
                 raise TypeError("issubclass() arg 1 must be a class")
@@ -130,7 +133,7 @@ def create_deprecated_class(
         # deprecated class is in jinja2 template). __module__ attribute is not
         # important enough to raise an exception as users may be unable
         # to fix inspect.stack() errors.
-        warnings.warn(f"Error detecting parent module: {e!r}")
+        warnings.warn(f"Error detecting parent module: {e!r}", stacklevel=2)
 
     return deprecated_cls
 
@@ -160,6 +163,7 @@ def update_classpath(path: Any) -> Any:
             warnings.warn(
                 f"`{path}` class is deprecated, use `{new_path}` instead",
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
             return new_path
     return path
@@ -203,7 +207,7 @@ def argument_is_required(func: Callable[..., Any], arg_name: str) -> bool:
     """
     Check if a function argument is required (exists and doesn't have a default value).
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
 
     >>> def func(a, b=1, c=None):
     ...     pass
@@ -219,3 +223,13 @@ def argument_is_required(func: Callable[..., Any], arg_name: str) -> bool:
     args = get_func_args_dict(func)
     param = args.get(arg_name)
     return param is not None and param.default is inspect.Parameter.empty
+
+
+def warn_on_deprecated_spider_attribute(attribute_name: str, setting_name: str) -> None:
+    warnings.warn(
+        f"The '{attribute_name}' spider attribute is deprecated. "
+        "Use Spider.custom_settings or Spider.update_settings() instead. "
+        f"The corresponding setting name is '{setting_name}'.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )

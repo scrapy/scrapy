@@ -38,37 +38,33 @@ class TestFailureToExcInfo:
         assert exc_info == failure_to_exc_info(failure)
 
     def test_non_failure(self):
-        assert failure_to_exc_info("test") is None
+        assert failure_to_exc_info("test") is None  # type: ignore[arg-type]
 
 
 class TestTopLevelFormatter:
-    def setup_method(self):
-        self.handler = LogCapture()
-        self.handler.addFilter(TopLevelFormatter(["test"]))
-
-    def test_top_level_logger(self):
+    def test_top_level_logger(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.handler.addFilter(TopLevelFormatter(["test"]))
         logger = logging.getLogger("test")
-        with self.handler as log:
-            logger.warning("test log msg")
-        log.check(("test", "WARNING", "test log msg"))
+        logger.warning("test log msg")
+        assert ("test", logging.WARNING, "test log msg") in caplog.record_tuples
 
-    def test_children_logger(self):
+    def test_children_logger(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.handler.addFilter(TopLevelFormatter(["test"]))
         logger = logging.getLogger("test.test1")
-        with self.handler as log:
-            logger.warning("test log msg")
-        log.check(("test", "WARNING", "test log msg"))
+        logger.warning("test log msg")
+        assert ("test", logging.WARNING, "test log msg") in caplog.record_tuples
 
-    def test_overlapping_name_logger(self):
+    def test_overlapping_name_logger(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.handler.addFilter(TopLevelFormatter(["test"]))
         logger = logging.getLogger("test2")
-        with self.handler as log:
-            logger.warning("test log msg")
-        log.check(("test2", "WARNING", "test log msg"))
+        logger.warning("test log msg")
+        assert ("test2", logging.WARNING, "test log msg") in caplog.record_tuples
 
-    def test_different_name_logger(self):
+    def test_different_name_logger(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.handler.addFilter(TopLevelFormatter(["test"]))
         logger = logging.getLogger("different")
-        with self.handler as log:
-            logger.warning("test log msg")
-        log.check(("different", "WARNING", "test log msg"))
+        logger.warning("test log msg")
+        assert ("different", logging.WARNING, "test log msg") in caplog.record_tuples
 
 
 class TestLogCounterHandler:
@@ -80,15 +76,16 @@ class TestLogCounterHandler:
     @pytest.fixture
     def logger(self, crawler: Crawler) -> Generator[logging.Logger]:
         logger = logging.getLogger("test")
-        logger.setLevel(logging.NOTSET)
+        logger.setLevel(logging.DEBUG)
         logger.propagate = False
-        handler = LogCounterHandler(crawler)
+        handler = LogCounterHandler(crawler, level=crawler.settings.get("LOG_LEVEL"))
         logger.addHandler(handler)
-
-        yield logger
-
-        logger.propagate = True
-        logger.removeHandler(handler)
+        try:
+            yield logger
+        finally:
+            logger.propagate = True
+            logger.setLevel(logging.NOTSET)
+            logger.removeHandler(handler)
 
     def test_init(self, crawler: Crawler, logger: logging.Logger) -> None:
         assert crawler.stats
@@ -106,7 +103,7 @@ class TestLogCounterHandler:
     def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.debug("test log msg")
         assert crawler.stats
-        assert crawler.stats.get_value("log_count/INFO") is None
+        assert crawler.stats.get_value("log_count/DEBUG") is None
 
 
 class TestStreamLogger:
@@ -144,7 +141,9 @@ class TestStreamLogger:
     ],
 )
 def test_spider_logger_adapter_process(
-    base_extra: Mapping[str, Any], log_extra: MutableMapping, expected_extra: dict
+    base_extra: Mapping[str, Any],
+    log_extra: MutableMapping[str, Any],
+    expected_extra: dict[str, Any],
 ) -> None:
     logger = logging.getLogger("test")
     spider_logger_adapter = SpiderLoggerAdapter(logger, base_extra)

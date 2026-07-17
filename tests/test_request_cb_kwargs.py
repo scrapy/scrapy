@@ -1,10 +1,10 @@
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
+from tests.utils.decorators import inline_callbacks_test
 
 
 class InjectArgumentsDownloaderMiddleware:
@@ -38,8 +38,8 @@ class InjectArgumentsSpiderMiddleware:
         if request.callback.__name__ == "parse_spider_mw":
             request.cb_kwargs["from_process_spider_input"] = True
 
-    def process_spider_output(self, response, result):
-        for element in result:
+    async def process_spider_output(self, response, result):
+        async for element in result:
             if (
                 isinstance(element, Request)
                 and element.callback.__name__ == "parse_spider_mw_2"
@@ -102,9 +102,7 @@ class KeywordArgumentsSpider(MockServerSpider):
             self.checks.append(kwargs["callback"] == "some_callback")
             self.crawler.stats.inc_value("boolean_checks", 3)
         elif response.url.endswith("/general_without"):
-            self.checks.append(
-                kwargs == {}  # pylint: disable=use-implicit-booleaness-not-comparison
-            )
+            self.checks.append(kwargs == {})
             self.crawler.stats.inc_value("boolean_checks")
 
     def parse_no_kwargs(self, response):
@@ -158,7 +156,7 @@ class TestCallbackKeywordArguments:
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_callback_kwargs(self):
         crawler = get_crawler(KeywordArgumentsSpider)
         with LogCapture() as log:

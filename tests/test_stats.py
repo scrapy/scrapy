@@ -11,6 +11,8 @@ from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider
 from scrapy.statscollectors import DummyStatsCollector, StatsCollector
 from scrapy.utils.test import get_crawler
+from tests.spiders import SimpleSpider
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -27,6 +29,7 @@ def spider(crawler: Crawler) -> Spider:
 
 
 class TestCoreStatsExtension:
+    @mock.patch("scrapy.extensions.corestats.monotonic", return_value=0)
     @mock.patch("scrapy.extensions.corestats.datetime")
     def test_core_stats_default_stats_collector(
         self, mock_datetime: mock.Mock, crawler: Crawler, spider: Spider
@@ -91,8 +94,13 @@ class TestStatsCollector:
         assert stats.get_value("test2") == 35
         stats.min_value("test4", 7)
         assert stats.get_value("test4") == 7
+        stats.set_stats({"replaced": "stats"})
+        assert stats.get_stats() == {"replaced": "stats"}
+        stats.clear_stats()
+        assert stats.get_stats() == {}
 
-    def test_dummy_collector(self, crawler: Crawler) -> None:
+    def test_dummy_collector(self) -> None:
+        crawler = get_crawler(Spider, {"STATS_DUMP": False})
         stats = DummyStatsCollector(crawler)
         assert stats.get_stats() == {}
         assert stats.get_value("anything") is None
@@ -101,20 +109,97 @@ class TestStatsCollector:
         stats.inc_value("v1")
         stats.max_value("v2", 100)
         stats.min_value("v3", 100)
+        stats.set_stats({"key": "val"})
         stats.open_spider()
         stats.set_value("test", "value")
         assert stats.get_stats() == {}
+        stats.close_spider()
 
     def test_deprecated_spider_arg(self, crawler: Crawler, spider: Spider) -> None:
         stats = StatsCollector(crawler)
         with pytest.warns(
             ScrapyDeprecationWarning,
-            match=r"Passing a 'spider' argument to StatsCollector.set_value\(\) is deprecated",
+            match=r"Passing a 'spider' argument to StatsCollector\.set_value\(\) is deprecated",
         ):
             stats.set_value("test", "value", spider=spider)
         assert stats.get_stats() == {"test": "value"}
         with pytest.warns(
             ScrapyDeprecationWarning,
-            match=r"Passing a 'spider' argument to StatsCollector.get_stats\(\) is deprecated",
+            match=r"Passing a 'spider' argument to StatsCollector\.get_stats\(\) is deprecated",
         ):
             assert stats.get_stats(spider) == {"test": "value"}
+
+    @coroutine_test
+    async def test_deprecated_spider_arg_custom_collector(self) -> None:
+        # the class reimplements many methods because those are called during the test crawl
+        class CustomStatsCollector:
+            def __init__(self, crawler):
+                self._stats = {}
+
+            def open_spider(self, spider):
+                pass
+
+            def get_stats(self, spider=None):
+                return self._stats
+
+            def get_value(self, key, default=None, spider=None):
+                return self._stats.get(key, default)
+
+            def set_value(self, key, value, spider=None):
+                self._stats[key] = value
+
+            def inc_value(self, key, count=1, start=0, spider=None):
+                d = self._stats
+                d[key] = d.setdefault(key, start) + count
+
+            def max_value(self, key, value, spider=None) -> None:
+                self._stats[key] = max(self._stats.setdefault(key, value), value)
+
+            def close_spider(self, spider, reason):
+                pass
+
+        crawler = get_crawler(SimpleSpider, {"STATS_CLASS": CustomStatsCollector})
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"The open_spider\(\) method of .*CustomStatsCollector requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"The close_spider\(\) method of .*CustomStatsCollector requires a spider argument",
+            ),
+        ):
+            await crawler.crawl_async(url="data:,")
+
+    @coroutine_test
+    async def test_deprecated_spider_arg_custom_collector_subclass(self) -> None:
+        class CustomStatsCollector(StatsCollector):
+            def open_spider(self, spider):  # pylint: disable=signature-differs
+                super().open_spider(spider)
+
+            def inc_value(self, key, count=1, start=0, spider=None):  # pylint: disable=useless-parent-delegation
+                super().inc_value(key, count, start, spider)
+
+            def close_spider(self, spider, reason):  # pylint: disable=signature-differs
+                super().close_spider(spider, reason)
+
+        crawler = get_crawler(SimpleSpider, {"STATS_CLASS": CustomStatsCollector})
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"The open_spider\(\) method of .*CustomStatsCollector requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"Passing a 'spider' argument to .*CustomStatsCollector\.open_spider\(\) is deprecated",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"The close_spider\(\) method of .*CustomStatsCollector requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"Passing a 'spider' argument to .*CustomStatsCollector\.close_spider\(\) is deprecated",
+            ),
+        ):
+            await crawler.crawl_async(url="data:,")

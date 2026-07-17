@@ -6,7 +6,7 @@ exclude: |
   )
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.2
+  rev: v0.15.20
   hooks:
     - id: ruff-check
       args: [ --fix ]
@@ -16,13 +16,17 @@ repos:
   hooks:
   - id: blacken-docs
     additional_dependencies:
-    - black==25.9.0
+    - black==26.5.1
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
   hooks:
   - id: end-of-file-fixer
   - id: trailing-whitespace
 - repo: https://github.com/sphinx-contrib/sphinx-lint
-  rev: v1.0.0
+  rev: v1.0.2
   hooks:
     - id: sphinx-lint
+- repo: https://github.com/scrapy/sphinx-scrapy
+  rev: 0.8.8
+  hooks:
+    - id: sphinx-scrapy

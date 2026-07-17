@@ -12,7 +12,8 @@ Exceptions
 Built-in Exceptions reference
 =============================
 
-Here's a list of all exceptions included in Scrapy and their usage.
+Here's a list of all exceptions included in Scrapy and their usage, except for
+the :ref:`download handler exceptions <download-handlers-exceptions>`.
 
 
 CloseSpider
@@ -31,7 +32,7 @@ For example:
 .. code-block:: python
 
     def parse_page(self, response):
-        if "Bandwidth exceeded" in response.body:
+        if "Bandwidth exceeded" in response.text:
             raise CloseSpider("bandwidth_exceeded")
 
 DontCloseSpider
@@ -71,7 +72,8 @@ remain disabled. Those components include:
 -   Downloader middlewares
 -   Spider middlewares
 
-The exception must be raised in the component's ``__init__`` method.
+The exception must be raised in the component's ``__init__()`` or
+``from_crawler()``  method.
 
 NotSupported
 ------------
@@ -82,8 +84,6 @@ This exception is raised to indicate an unsupported feature.
 
 StopDownload
 -------------
-
-.. versionadded:: 2.2
 
 .. exception:: StopDownload(fail=True)
 

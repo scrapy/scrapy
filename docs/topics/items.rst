@@ -23,7 +23,8 @@ Item Types
 
 Scrapy supports the following types of items, via the `itemadapter`_ library:
 :ref:`dictionaries <dict-items>`, :ref:`Item objects <item-objects>`,
-:ref:`dataclass objects <dataclass-items>`, and :ref:`attrs objects <attrs-items>`.
+:ref:`dataclass objects <dataclass-items>`, :ref:`attrs objects <attrs-items>`
+and :ref:`Pydantic models <pydantic-items>`.
 
 .. _itemadapter: https://github.com/scrapy/itemadapter
 
@@ -61,8 +62,8 @@ its ``__init__`` method.
 :class:`Item` also allows the defining of field metadata, which can be used to
 :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-:mod:`trackref` tracks :class:`Item` objects to help find memory leaks
-(see :ref:`topics-leaks-trackrefs`).
+:mod:`scrapy.utils.trackref` tracks :class:`Item` objects to help find memory
+leaks (see :ref:`topics-leaks-trackrefs`).
 
 Example:
 
@@ -79,8 +80,6 @@ Example:
 
 Dataclass objects
 -----------------
-
-.. versionadded:: 2.2
 
 :func:`~dataclasses.dataclass` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
@@ -112,8 +111,6 @@ Example:
 attr.s objects
 --------------
 
-.. versionadded:: 2.2
-
 :func:`attr.s` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
 default even if the first scraped object does not have values for all of them.
@@ -139,6 +136,45 @@ Example:
         one_field = attr.ib()
         another_field = attr.ib()
 
+
+.. _pydantic-items:
+
+Pydantic models
+---------------
+
+`Pydantic <https://docs.pydantic.dev/>`_ models allow the defining of item
+classes with field names, so that :ref:`item exporters <topics-exporters>` can
+export all fields by default even if the first scraped object does not have
+values for all of them.
+
+Additionally, ``pydantic`` items also allow you to:
+
+* define the type and default value of each defined field with run-time type
+  validation.
+
+* define custom field metadata through `pydantic.Field
+  <https://docs.pydantic.dev/latest/concepts/fields/>`_, which can be used to
+  :ref:`customize serialization <topics-exporters-field-serialization>`.
+
+* benefit from automatic data validation and conversion based on type
+  annotations.
+
+In order to use this type, the `pydantic package <https://docs.pydantic.dev/>`_
+needs to be installed.
+
+Example:
+
+.. code-block:: python
+
+    from pydantic import BaseModel, Field
+
+
+    class CustomItem(BaseModel):
+        one_field: str = Field(default="", description="First field")
+        another_field: int = Field(default=0, description="Second field")
+
+.. note:: Unlike other item types, Pydantic models enforce field types at
+    run time and will raise validation errors for invalid data types.
 
 Working with Item objects
 =========================
@@ -227,7 +263,7 @@ Creating items
 
     >>> product = Product(name="Desktop PC", price=1000)
     >>> print(product)
-    Product(name='Desktop PC', price=1000)
+    {'name': 'Desktop PC', 'price': 1000}
 
 
 Getting field values
@@ -341,10 +377,12 @@ Creating dicts from items:
     >>> dict(product)  # create a dict from all populated values
     {'price': 1000, 'name': 'Desktop PC'}
 
-    Creating items from dicts:
+Creating items from dicts:
+
+.. code-block:: pycon
 
     >>> Product({"name": "Laptop PC", "price": 1500})
-    Product(price=1500, name='Laptop PC')
+    {'name': 'Laptop PC', 'price': 1500}
 
     >>> Product({"name": "Laptop PC", "lala": 1500})  # warning: unknown field in dict
     Traceback (most recent call last):

@@ -83,16 +83,17 @@ While this enables you to do very fast crawls (sending multiple concurrent
 requests at the same time, in a fault-tolerant way) Scrapy also gives you
 control over the politeness of the crawl through :ref:`a few settings
 <topics-settings-ref>`. You can do things like setting a download delay between
-each request, limiting the amount of concurrent requests per domain or per IP, and
+each request, limiting the amount of concurrent requests per domain, and
 even :ref:`using an auto-throttling extension <topics-autothrottle>` that tries
 to figure these settings out automatically.
 
 .. note::
 
     This is using :ref:`feed exports <topics-feed-exports>` to generate the
-    JSON file, you can easily change the export format (XML or CSV, for example) or the
-    storage backend (FTP or `Amazon S3`_, for example).  You can also write an
-    :ref:`item pipeline <topics-item-pipeline>` to store the items in a database.
+    JSON Lines file, you can easily change the export format (XML or CSV, for
+    example) or the storage backend (FTP or `Amazon S3`_, for example). You can
+    also write an :ref:`item pipeline <topics-item-pipeline>` to store the
+    items in a database.
 
 
 .. _topics-whatelse:
@@ -150,7 +151,7 @@ The next steps for you are to :ref:`install Scrapy <intro-install>`,
 a full-blown Scrapy project and `join the community`_. Thanks for your
 interest!
 
-.. _join the community: https://scrapy.org/community/
+.. _join the community: https://www.scrapy.org/community
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 .. _Amazon Associates Web Services: https://affiliate-program.amazon.com/welcome/ecs
 .. _Amazon S3: https://aws.amazon.com/s3/

@@ -88,7 +88,7 @@ def open_in_browser(
 
 
         def parse_details(self, response):
-            if "item name" not in response.body:
+            if "item name" not in response.text:
                 open_in_browser(response)
     """
     # circular imports
@@ -97,9 +97,8 @@ def open_in_browser(
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
-        if b"<base" not in body:
-            _remove_html_comments(body)
-            repl = rf'\0<base href="{response.url}">'
+        if b"<base" not in _remove_html_comments(body):
+            repl = rf'\g<0><base href="{response.url}">'
             body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
         ext = ".html"
     elif isinstance(response, TextResponse):

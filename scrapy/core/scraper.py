@@ -23,7 +23,6 @@ from scrapy.exceptions import (
 from scrapy.http import Request, Response
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
-from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
     _schedule_coro,
@@ -66,7 +65,7 @@ class Slot:
         self.queue: deque[QueueTuple] = deque()
         self.active: set[Request] = set()
         self.active_size: int = 0
-        self.itemproc_size: int = 0
+        self.itemproc_size: int = 0  # just for scrapy.utils.engine.get_engine_status()
         self.closing: Deferred[Spider] | None = None
 
     def add_response_request(
@@ -126,7 +125,7 @@ class Scraper:
 
     def _check_deprecated_itemproc_method(self, method: str) -> None:
         itemproc_cls = type(self.itemproc)
-        if not hasattr(self.itemproc, "process_item_async"):
+        if not hasattr(self.itemproc, f"{method}_async"):
             warnings.warn(
                 f"{global_object_name(itemproc_cls)} doesn't define a {method}_async() method,"
                 f" this is deprecated and the method will be required in future Scrapy versions.",
@@ -151,7 +150,9 @@ class Scraper:
         else:
             self._itemproc_has_async[method] = True
 
-    def open_spider(self, spider: Spider | None = None) -> Deferred[None]:
+    def open_spider(
+        self, spider: Spider | None = None
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "Scraper.open_spider() is deprecated, use open_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -162,7 +163,7 @@ class Scraper:
     async def open_spider_async(self) -> None:
         """Open the spider for scraping and allocate resources for it.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
         if not self.crawler.spider:
@@ -176,7 +177,7 @@ class Scraper:
                 self.itemproc.open_spider(self.crawler.spider)
             )
 
-    def close_spider(self, spider: Spider | None = None) -> Deferred[None]:
+    def close_spider(self) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "Scraper.close_spider() is deprecated, use close_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -187,7 +188,7 @@ class Scraper:
     async def close_spider_async(self) -> None:
         """Close the spider being scraped and release its resources.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
@@ -213,9 +214,8 @@ class Scraper:
             self.slot.closing.callback(self.crawler.spider)
 
     @inlineCallbacks
-    @_warn_spider_arg
     def enqueue_scrape(
-        self, result: Response | Failure, request: Request, spider: Spider | None = None
+        self, result: Response | Failure, request: Request
     ) -> Generator[Deferred[Any], Any, None]:
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
@@ -294,7 +294,7 @@ class Scraper:
 
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
-    ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:
+    ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:  # pragma: no cover
         warnings.warn(
             "Scraper.call_spider() is deprecated, use call_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -318,6 +318,13 @@ class Scraper:
             callback = result.request.callback or self.crawler.spider._parse
             warn_on_generator_with_return_value(self.crawler.spider, callback)
             output = callback(result, **result.request.cb_kwargs)
+            if isinstance(output, Deferred):
+                warnings.warn(
+                    f"{callback} returned a Deferred."
+                    f" Returning Deferreds from spider callbacks is deprecated.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
         else:  # result is a Failure
             # TODO: properly type adding this attribute to a Failure
             result.request = request  # type: ignore[attr-defined]
@@ -329,15 +336,20 @@ class Scraper:
                 output.raiseException()
             # else the errback returned actual output (like a callback),
             # which needs to be passed to iterate_spider_output()
+            if isinstance(output, Deferred):
+                warnings.warn(
+                    f"{request.errback} returned a Deferred."
+                    f" Returning Deferreds from spider errbacks is deprecated.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
         return await ensure_awaitable(iterate_spider_output(output))
 
-    @_warn_spider_arg
     def handle_spider_error(
         self,
         _failure: Failure,
         request: Request,
         response: Response | Failure,
-        spider: Spider | None = None,
     ) -> None:
         """Handle an exception raised by a spider callback or errback."""
         assert self.crawler.spider
@@ -373,8 +385,7 @@ class Scraper:
         result: Iterable[_T] | AsyncIterator[_T],
         request: Request,
         response: Response | Failure,
-        spider: Spider | None = None,
-    ) -> Deferred[None]:
+    ) -> Deferred[None]:  # pragma: no cover
         """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
         warnings.warn(
             "Scraper.handle_spider_output() is deprecated, use handle_spider_output_async() instead",
@@ -430,7 +441,7 @@ class Scraper:
         self, output: Any, response: Response | Failure
     ) -> Deferred[None]:
         """Process each Request/Item (given in the output parameter) returned
-        from the given spider.
+        from the spider.
 
         Items are sent to the item pipelines, requests are scheduled.
         """
@@ -440,7 +451,7 @@ class Scraper:
         self, output: Any, response: Response | Failure
     ) -> None:
         """Process each Request/Item (given in the output parameter) returned
-        from the given spider.
+        from the spider.
 
         Items are sent to the item pipelines, requests are scheduled.
         """
@@ -453,7 +464,7 @@ class Scraper:
 
     def start_itemproc(
         self, item: Any, *, response: Response | Failure | None
-    ) -> Deferred[None]:
+    ) -> Deferred[None]:  # pragma: no cover
         """Send *item* to the item pipelines for processing.
 
         *response* is the source of the item data. If the item does not come
@@ -474,7 +485,7 @@ class Scraper:
         *response* is the source of the item data. If the item does not come
         from response data, e.g. it was hard-coded, set it to ``None``.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         assert self.slot is not None  # typing
         assert self.crawler.spider is not None  # typing

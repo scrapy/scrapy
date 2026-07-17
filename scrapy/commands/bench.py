@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import urlencode
 
 import scrapy
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class Command(ScrapyCommand):
-    default_settings = {
+    default_settings: ClassVar[dict[str, Any]] = {
         "LOG_LEVEL": "INFO",
         "LOGSTATS_INTERVAL": 1,
         "CLOSESPIDER_TIMEOUT": 10,
@@ -43,7 +43,7 @@ class _BenchServer:
         assert self.proc.stdout
         self.proc.stdout.readline()
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, exc_type, exc_value, traceback) -> None:  # type: ignore[no-untyped-def]
         self.proc.kill()
         self.proc.wait()
         time.sleep(0.2)

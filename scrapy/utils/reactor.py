@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import warnings
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
 from warnings import catch_warnings, filterwarnings
@@ -26,19 +27,21 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
-def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # pylint: disable=inconsistent-return-statements  # noqa: RET503
+def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # noqa: RET503
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
 
     if len(portrange) > 2:
         raise ValueError(f"invalid portrange: {portrange}")
+    if len(portrange) == 2 and portrange[0] > portrange[1]:
+        raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
-        return reactor.listenTCP(0, factory, interface=host)
+        return reactor.listenTCP(0, factory, interface=host)  # type: ignore[no-any-return]
     if len(portrange) == 1:
-        return reactor.listenTCP(portrange[0], factory, interface=host)
+        return reactor.listenTCP(portrange[0], factory, interface=host)  # type: ignore[no-any-return]
     for x in range(portrange[0], portrange[1] + 1):
         try:
-            return reactor.listenTCP(x, factory, interface=host)
+            return reactor.listenTCP(x, factory, interface=host)  # type: ignore[no-any-return]
         except error.CannotListenError:
             if x == portrange[1]:
                 raise
@@ -54,7 +57,7 @@ class CallLaterOnce(Generic[_T]):
         self._a: tuple[Any, ...] = a
         self._kw: dict[str, Any] = kw
         self._call: CallLaterResult | None = None
-        self._deferreds: list[Deferred] = []
+        self._deferreds: list[Deferred[None]] = []
 
     def schedule(self, delay: float = 0) -> None:
         # circular import
@@ -76,15 +79,15 @@ class CallLaterOnce(Generic[_T]):
 
         for d in self._deferreds:
             call_later(0, d.callback, None)
-        self._deferreds = []
+        self._deferreds.clear()
 
         return result
 
-    async def wait(self):
+    async def wait(self) -> None:
         # circular import
         from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
-        d = Deferred()
+        d: Deferred[None] = Deferred()
         self._deferreds.append(d)
         await maybe_deferred_to_future(d)
 
@@ -93,16 +96,19 @@ _asyncio_reactor_path = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 
 def set_asyncio_event_loop_policy() -> None:
-    """The policy functions from asyncio often behave unexpectedly,
-    so we restrict their use to the absolutely essential case.
-    This should only be used to install the reactor.
-    """
-    policy = asyncio.get_event_loop_policy()
-    if sys.platform == "win32" and not isinstance(
-        policy, asyncio.WindowsSelectorEventLoopPolicy
-    ):
-        policy = asyncio.WindowsSelectorEventLoopPolicy()
-        asyncio.set_event_loop_policy(policy)
+    """Needed due to https://github.com/twisted/twisted/issues/12527."""
+    if sys.platform != "win32":
+        return
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r"'asyncio\.(get_event_loop_policy|WindowsSelectorEventLoopPolicy)' is deprecated",
+            category=DeprecationWarning,
+        )
+        policy = asyncio.get_event_loop_policy()
+        if not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy):
+            policy = asyncio.WindowsSelectorEventLoopPolicy()  # pylint: disable=deprecated-class
+            asyncio.set_event_loop_policy(policy)
 
 
 def install_reactor(reactor_path: str, event_loop_path: str | None = None) -> None:
@@ -181,7 +187,7 @@ def verify_installed_reactor(reactor_path: str) -> None:
 
 
 def verify_installed_asyncio_event_loop(loop_path: str) -> None:
-    """Raise :exc:`RuntimeError` if the even loop of the installed
+    """Raise :exc:`RuntimeError` if the event loop of the installed
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
     does not match the specified import path or if no reactor is installed."""
     if not is_reactor_installed():

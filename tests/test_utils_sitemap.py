@@ -1,3 +1,6 @@
+import pytest
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
 
@@ -156,7 +159,7 @@ def test_sitemap_wrong_ns2():
 
 
 def test_sitemap_urls_from_robots():
-    robots = """User-agent: *
+    robots = b"""User-agent: *
 Disallow: /aff/
 Disallow: /wl/
 
@@ -180,6 +183,40 @@ Disallow: /forum/active/
         "http://example.com/sitemap-uppercase.xml",
         "http://example.com/sitemap-relative-url.xml",
     ]
+
+
+def test_sitemap_urls_from_robots_str_compat():
+    robots = """User-agent: *
+Disallow: /aff/
+Disallow: /wl/
+
+# Search and shopping refining
+Disallow: /s*/*facet
+Disallow: /s*/*tags
+
+# Sitemap files
+Sitemap: http://example.com/sitemap.xml
+Sitemap: http://example.com/sitemap-product-index.xml
+Sitemap: HTTP://example.com/sitemap-uppercase.xml
+Sitemap: /sitemap-relative-url.xml
+
+# Forums
+Disallow: /forum/search/
+Disallow: /forum/active/
+"""
+
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="Passing `str` type as `robots_text` is deprecated",
+    ):
+        assert list(
+            sitemap_urls_from_robots(robots, base_url="http://example.com")
+        ) == [
+            "http://example.com/sitemap.xml",
+            "http://example.com/sitemap-product-index.xml",
+            "http://example.com/sitemap-uppercase.xml",
+            "http://example.com/sitemap-relative-url.xml",
+        ]
 
 
 def test_sitemap_blanklines():
@@ -274,3 +311,14 @@ def test_xml_entity_expansion():
     """
     )
     assert list(s) == [{"loc": "http://127.0.0.1:8000/"}]
+
+
+def test_sitemap_non_string_tag():
+    """With recover=True and resolve_entities=False, libxml2 >= 2.14.6 (used
+    by lxml >= 6.1.1) preserves undeclared entity reference nodes whose
+    .tag is a non-string ``Cython function`` object instead of a ``str``.
+    _get_tag_name must handle this gracefully instead of raising
+    AttributeError.
+    """
+    results = list(Sitemap(b"<url>&k;"))
+    assert results == []

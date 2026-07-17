@@ -5,14 +5,11 @@ problems such as a connection timeout or HTTP 500 error.
 You can change the behaviour of this middleware by modifying the scraping settings:
 RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
-
-Failed pages are collected on the scraping process and rescheduled at the end,
-once the spider has finished crawling all regular (non-failed) pages.
 """
 
 from __future__ import annotations
 
-from logging import Logger, getLogger
+from logging import Logger, getLevelName, getLogger
 from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
@@ -25,11 +22,11 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    import scrapy
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.http.request import Request
     from scrapy.settings import BaseSettings
-    from scrapy.spiders import Spider
 
 
 retry_logger = getLogger(__name__)
@@ -38,11 +35,12 @@ retry_logger = getLogger(__name__)
 def get_retry_request(
     request: Request,
     *,
-    spider: Spider,
+    spider: scrapy.Spider,
     reason: str | Exception | type[Exception] = "unspecified",
     max_retry_times: int | None = None,
     priority_adjust: int | None = None,
     logger: Logger = retry_logger,
+    give_up_log_level: int | str | None = None,
     stats_base_key: str = "retry",
 ) -> Request | None:
     """
@@ -51,14 +49,16 @@ def get_retry_request(
     exhausted.
 
     For example, in a :class:`~scrapy.Spider` callback, you could use it as
-    follows::
+    follows:
+
+    .. code-block:: python
 
         def parse(self, response):
             if not response.text:
                 new_request_or_none = get_retry_request(
                     response.request,
                     spider=self,
-                    reason='empty',
+                    reason="empty",
                 )
                 return new_request_or_none
 
@@ -67,8 +67,9 @@ def get_retry_request(
     and :ref:`stats <topics-stats>`, and to provide extra logging context (see
     :func:`logging.debug`).
 
-    *reason* is a string or an :class:`Exception` object that indicates the
-    reason why the request needs to be retried. It is used to name retry stats.
+    *reason* is a string, an :class:`Exception` subclass or an
+    :class:`Exception` object that indicates the reason why the request needs
+    to be retried. It is used to name retry stats.
 
     *max_retry_times* is a number that determines the maximum number of times
     that *request* can be retried. If not specified or ``None``, the number is
@@ -81,6 +82,13 @@ def get_retry_request(
     read from the :setting:`RETRY_PRIORITY_ADJUST` setting.
 
     *logger* is the logging.Logger object to be used when logging messages
+
+    *give_up_log_level* is the :ref:`logging level <levels>` used for the
+    message logged when a request exceeds its retries. See
+    :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
+    .. versionadded:: 2.17.0
+       The *give_up_log_level* parameter.
 
     *stats_base_key* is a string to be used as the base key for the
     retry-related job stats
@@ -114,8 +122,16 @@ def get_retry_request(
         stats.inc_value(f"{stats_base_key}/count")
         stats.inc_value(f"{stats_base_key}/reason_count/{reason}")
         return new_request
+    if give_up_log_level is None:
+        give_up_log_level = settings["RETRY_GIVE_UP_LOG_LEVEL"]
+    if isinstance(give_up_log_level, str):
+        level = getLevelName(give_up_log_level)
+        if not isinstance(level, int):
+            raise ValueError(f"Invalid give-up log level: {give_up_log_level!r}")
+        give_up_log_level = level
     stats.inc_value(f"{stats_base_key}/max_reached")
-    logger.error(
+    logger.log(
+        give_up_log_level,
         "Gave up retrying %(request)s (failed %(retry_times)d times): %(reason)s",
         {"request": request, "retry_times": retry_times, "reason": reason},
         extra={"spider": spider},
@@ -132,6 +148,7 @@ class RetryMiddleware:
         self.max_retry_times = settings.getint("RETRY_TIMES")
         self.retry_http_codes = {int(x) for x in settings.getlist("RETRY_HTTP_CODES")}
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
+        self.give_up_log_level = settings["RETRY_GIVE_UP_LOG_LEVEL"]
         self.exceptions_to_retry = tuple(
             load_object(x) if isinstance(x, str) else x
             for x in settings.getlist("RETRY_EXCEPTIONS")
@@ -145,7 +162,10 @@ class RetryMiddleware:
 
     @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider | None = None
+        self,
+        request: Request,
+        response: Response,
+        spider: scrapy.Spider | None = None,
     ) -> Request | Response:
         if request.meta.get("dont_retry", False):
             return response
@@ -156,7 +176,10 @@ class RetryMiddleware:
 
     @_warn_spider_arg
     def process_exception(
-        self, request: Request, exception: Exception, spider: Spider | None = None
+        self,
+        request: Request,
+        exception: Exception,
+        spider: scrapy.Spider | None = None,
     ) -> Request | Response | None:
         if isinstance(exception, self.exceptions_to_retry) and not request.meta.get(
             "dont_retry", False
@@ -169,6 +192,9 @@ class RetryMiddleware:
     ) -> Request | None:
         max_retry_times = request.meta.get("max_retry_times", self.max_retry_times)
         priority_adjust = request.meta.get("priority_adjust", self.priority_adjust)
+        give_up_log_level = request.meta.get(
+            "give_up_log_level", self.give_up_log_level
+        )
         assert self.crawler.spider
         return get_retry_request(
             request,
@@ -176,4 +202,5 @@ class RetryMiddleware:
             spider=self.crawler.spider,
             max_retry_times=max_retry_times,
             priority_adjust=priority_adjust,
+            give_up_log_level=give_up_log_level,
         )

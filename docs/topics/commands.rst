@@ -163,8 +163,8 @@ information on which commands must be run from inside projects, and which not.
 
 Also keep in mind that some commands may have slightly different behaviours
 when running them from inside projects. For example, the fetch command will use
-spider-overridden behaviours (such as the ``user_agent`` attribute to override
-the user-agent) if the url being fetched is associated with some specific
+spider-overridden behaviours (such as the ``custom_settings`` attribute to
+override settings) if the url being fetched is associated with some specific
 spider. This is intentional, as the ``fetch`` command is meant to be used to
 check how spiders are downloading pages.
 
@@ -199,6 +199,7 @@ Global commands:
 * :command:`fetch`
 * :command:`view`
 * :command:`version`
+* :command:`bench`
 
 Project-only commands:
 
@@ -207,7 +208,6 @@ Project-only commands:
 * :command:`list`
 * :command:`edit`
 * :command:`parse`
-* :command:`bench`
 
 .. command:: startproject
 
@@ -232,9 +232,6 @@ genspider
 
 * Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
-
-.. versionadded:: 2.6.0
-   The ability to pass a URL instead of a domain.
 
 Creates a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
@@ -312,11 +309,25 @@ Usage examples::
       * parse_item
 
     $ scrapy check
-    [FAILED] first_spider:parse_item
-    >>> 'RetailPricex' field is missing
+    F.F.
+    ======================================================================
+    FAIL: [first_spider] parse (@returns post-hook)
+    ----------------------------------------------------------------------
+    Traceback (most recent call last):
+      ...
+    scrapy.exceptions.ContractFail: Returned 92 requests, expected 0..4
 
-    [FAILED] first_spider:parse
-    >>> Returned 92 requests, expected 0..4
+    ======================================================================
+    FAIL: [first_spider] parse_item (@scrapes post-hook)
+    ----------------------------------------------------------------------
+    Traceback (most recent call last):
+      ...
+    scrapy.exceptions.ContractFail: Missing fields: RetailPricex
+
+    ----------------------------------------------------------------------
+    Ran 4 contracts in 0.174s
+
+    FAILED (failures=2)
 
 .. skip: end
 
@@ -380,7 +391,7 @@ Supported options:
 
 * ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
 
-* ``--headers``: print the response's HTTP headers instead of the response's body
+* ``--headers``: print the request's and response's HTTP headers instead of the response's body
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
@@ -390,15 +401,19 @@ Usage examples::
     [ ... html content here ... ]
 
     $ scrapy fetch --nolog --headers http://www.example.com/
-    {'Accept-Ranges': ['bytes'],
-     'Age': ['1263   '],
-     'Connection': ['close     '],
-     'Content-Length': ['596'],
-     'Content-Type': ['text/html; charset=UTF-8'],
-     'Date': ['Wed, 18 Aug 2010 23:59:46 GMT'],
-     'Etag': ['"573c1-254-48c9c87349680"'],
-     'Last-Modified': ['Fri, 30 Jul 2010 15:30:18 GMT'],
-     'Server': ['Apache/2.2.3 (CentOS)']}
+    > Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+    > Accept-Language: en
+    > User-Agent: Scrapy/2.16.0 (+https://scrapy.org)
+    > Accept-Encoding: gzip, deflate, br
+    >
+    < Date: Wed, 08 Jul 2026 06:15:01 GMT
+    < Content-Type: text/html
+    < Server: cloudflare
+    < Last-Modified: Wed, 01 Jul 2026 17:50:18 GMT
+    < Allow: GET, HEAD
+    < Cf-Cache-Status: HIT
+    < Age: 8184
+    < Cf-Ray: a17cf3b80eddf141-DME
 
 .. command:: view
 
@@ -479,7 +494,7 @@ Supported options:
 
 * ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
 
-* ``--a NAME=VALUE``: set spider argument (may be repeated)
+* ``-a NAME=VALUE``: set spider argument (may be repeated)
 
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
@@ -508,8 +523,6 @@ Supported options:
 * ``--verbose`` or ``-v``: display information for each depth level
 
 * ``--output`` or ``-o``: dump scraped items to a file
-
-  .. versionadded:: 2.3
 
 .. skip: start
 
@@ -610,7 +623,10 @@ shouldn't matter to the user running the command, but when the user :ref:`needs
 a non-default Twisted reactor <disable-asyncio>`, it may be important.
 
 Scrapy decides which of these two classes to use based on the value of the
-:setting:`TWISTED_REACTOR` setting. If the setting value is the default one
+:setting:`TWISTED_REACTOR` and :setting:`TWISTED_REACTOR_ENABLED` settings.
+With :setting:`TWISTED_REACTOR_ENABLED` set to ``False`` it will use
+:class:`~scrapy.crawler.AsyncCrawlerProcess`. Otherwise, if the
+:setting:`TWISTED_REACTOR` value is the default one
 (``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``),
 :class:`~scrapy.crawler.AsyncCrawlerProcess` will be used, otherwise
 :class:`~scrapy.crawler.CrawlerProcess` will be used. The :ref:`spider settings
