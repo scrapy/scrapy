@@ -221,7 +221,8 @@ for its differences and limitations compared to
 
 Additionally, :class:`~scrapy.crawler.AsyncCrawlerProcess` will install a
 :term:`meta path finder` that prevents :mod:`twisted.internet.reactor` from
-being imported.
+being imported. It will be uninstalled when :meth:`AsyncCrawlerProcess.start()
+<scrapy.crawler.AsyncCrawlerProcess.start>` returns.
 
 .. _asyncio-without-reactor-migrate:
 

@@ -407,6 +407,38 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
 
+    def test_reactorless_import_hook_uninstall(self) -> None:
+        """The import hook is removed when start() returns, so importing
+        twisted.internet.reactor becomes possible again."""
+        log = self.run_script("reactorless_import_hook_uninstall.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "Hooks in sys.meta_path after start(): 0" in log
+        assert "Reactor imported after start()" in log
+        assert "ImportError" not in log
+
+    def test_reactorless_import_hook_multiple(self) -> None:
+        """Sequential AsyncCrawlerProcess instances don't accumulate import
+        hooks: there is exactly one during each run and none afterwards."""
+        log = self.run_script("reactorless_import_hook_multiple.py")
+        assert log.count("Spider closed (finished)") == 2
+        assert log.count("Hooks during run: 1") == 2
+        assert "Hooks after runs: 0" in log
+        assert "ERROR: " not in log
+
+    def test_reactorless_then_reactor(self) -> None:
+        """After a reactorless run finishes, a reactor-based run is possible
+        in the same process."""
+        log = self.run_script("reactorless_then_reactor.py")
+        assert log.count("Spider closed (finished)") == 2
+        assert "Not using a Twisted reactor" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert "ImportError" not in log
+        assert "ERROR: " not in log
+
     def test_reactorless_telnetconsole_default(self) -> None:
         """By default TWISTED_REACTOR_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
         log = self.run_script("reactorless_simple.py")  # no need for a separate script
