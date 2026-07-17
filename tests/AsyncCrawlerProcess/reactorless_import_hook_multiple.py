@@ -1,8 +1,11 @@
+import logging
 import sys
 
 import scrapy
 from scrapy.crawler import AsyncCrawlerProcess
 from scrapy.utils.reactorless import ReactorImportHook
+
+logger = logging.getLogger(__name__)
 
 
 def hook_count() -> int:
@@ -23,4 +26,4 @@ for _ in range(2):
     process.crawl(NoRequestsSpider)
     process.start()
 
-print(f"Hooks after runs: {hook_count()}", file=sys.stderr)
+logger.info(f"Hooks after runs: {hook_count()}")
