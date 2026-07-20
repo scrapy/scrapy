@@ -984,13 +984,14 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.run_until_complete(loop.shutdown_default_executor())
         finally:
+            # loop.close() can raise, so we uninstall the hook first
+            if self._reactor_import_hook:
+                uninstall_reactor_import_hook(self._reactor_import_hook)
+                self._reactor_import_hook = None
             self._reactorless_main_task = None
             asyncio.set_event_loop(None)
             loop.close()
             self._reactorless_loop = None
-            if self._reactor_import_hook:
-                uninstall_reactor_import_hook(self._reactor_import_hook)
-                self._reactor_import_hook = None
 
     @staticmethod
     def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
