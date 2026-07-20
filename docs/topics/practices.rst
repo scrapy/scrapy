@@ -247,6 +247,72 @@ Using :func:`asyncio.run` with :class:`~scrapy.crawler.AsyncCrawlerRunner`:
 
     asyncio.run(main())
 
+.. _run-spiders-in-apps:
+
+Running spiders inside existing applications
+============================================
+
+You may want to run Scrapy spiders inside an existing application. In simple
+cases (e.g. task queues that spawn a process for every task, or applications
+that can execute tasks synchronously in the same process) you can use the same
+approach as for standalone scripts (see :ref:`run-from-script`). More complex
+cases, e.g. asynchronous web applications, have additional caveats and
+limitations.
+
+If the application runs its own Twisted reactor, you can use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerRunner` to run spiders using this reactor, see
+:ref:`run-from-script` for examples.
+
+If the application doesn't run a Twisted reactor or an asyncio event loop (for
+example, a Django web app deployed with a WSGI server such as uWSGI), you can
+use :class:`~scrapy.crawler.AsyncCrawlerProcess` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``, so that Scrapy starts and
+stops an asyncio event loop for every spider run:
+
+.. code-block:: python
+
+    import scrapy
+    from django.http import HttpResponse
+    from scrapy.crawler import AsyncCrawlerProcess
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    def crawl_view(request):
+        process = AsyncCrawlerProcess(settings={"TWISTED_REACTOR_ENABLED": False})
+        process.crawl(MySpider)
+        process.start()  # returns when the spider finishes
+        return HttpResponse("Crawling finished")
+
+If the application runs its own asyncio event loop (for example, a Django web
+app deployed with an ASGI server such as uvicorn), you can use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``, so that Scrapy uses the
+existing event loop:
+
+.. code-block:: python
+
+    import scrapy
+    from django.http import HttpResponse
+    from scrapy.crawler import AsyncCrawlerRunner
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    async def crawl_view(request):
+        runner = AsyncCrawlerRunner(settings={"TWISTED_REACTOR_ENABLED": False})
+        await runner.crawl(MySpider)  # completes when the spider finishes
+        return HttpResponse("Crawling finished")
+
+.. note:: Running Scrapy without a Twisted reactor is experimental and has
+    some limitations, described in :ref:`asyncio-without-reactor`.
 
 .. _run-multiple-spiders:
 
