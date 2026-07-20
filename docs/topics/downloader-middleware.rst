@@ -591,8 +591,8 @@ In order to use your storage backend, set:
 HTTPCache middleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :class:`HttpCacheMiddleware` can be configured through the following
-settings:
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` can be
+configured through the following settings:
 
 .. setting:: HTTPCACHE_ENABLED
 
@@ -868,9 +868,9 @@ OffsiteMiddleware
    .. reqmeta:: allow_offsite
 
    If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
-   ``True`` or :attr:`Request.meta` has ``allow_offsite`` set to ``True``, then
-   the OffsiteMiddleware will allow the request even if its domain is not listed
-   in allowed domains.
+   ``True`` or :attr:`Request.meta <scrapy.Request.meta>` has ``allow_offsite``
+   set to ``True``, then the OffsiteMiddleware will allow the request even if
+   its domain is not listed in allowed domains.
 
 RedirectMiddleware
 ------------------
@@ -1014,17 +1014,6 @@ RetryMiddleware
 
    A middleware to retry failed requests that are potentially caused by
    temporary problems such as a connection timeout or HTTP 500 error.
-
-Failed pages are collected on the scraping process and rescheduled at the
-end, once the spider has finished crawling all regular (non failed) pages.
-
-The :class:`RetryMiddleware` can be configured through the following
-settings (see the settings documentation for more info):
-
-* :setting:`RETRY_ENABLED`
-* :setting:`RETRY_TIMES`
-* :setting:`RETRY_HTTP_CODES`
-* :setting:`RETRY_EXCEPTIONS`
 
 .. reqmeta:: dont_retry
 

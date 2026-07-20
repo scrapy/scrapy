@@ -83,7 +83,7 @@ While this enables you to do very fast crawls (sending multiple concurrent
 requests at the same time, in a fault-tolerant way) Scrapy also gives you
 control over the politeness of the crawl through :ref:`a few settings
 <topics-settings-ref>`. You can do things like setting a download delay between
-each request, limiting the amount of concurrent requests per domain or per IP, and
+each request, limiting the amount of concurrent requests per domain, and
 even :ref:`using an auto-throttling extension <topics-autothrottle>` that tries
 to figure these settings out automatically.
 

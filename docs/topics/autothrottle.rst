@@ -75,7 +75,7 @@ AutoThrottle algorithm adjusts download delays based on the following rules:
 .. _download-latency:
 
 In Scrapy, the download latency is measured as the time elapsed between
-establishing the TCP connection and receiving the HTTP headers.
+sending the request and receiving the HTTP headers.
 
 Note that these latencies are very hard to measure accurately in a cooperative
 multitasking environment because Scrapy may be busy processing a spider

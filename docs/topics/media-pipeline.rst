@@ -41,11 +41,10 @@ this:
 2. The item is returned from the spider and goes to the item pipeline.
 
 3. When the item reaches the :class:`FilesPipeline`, the URLs in the
-   ``file_urls`` field are scheduled for download using the standard
-   Scrapy scheduler and downloader (which means the scheduler and downloader
-   middlewares are reused), but with a higher priority, processing them before other
-   pages are scraped. The item remains "locked" at that particular pipeline stage
-   until the files have finish downloading (or fail for some reason).
+   ``file_urls`` field are downloaded using the standard Scrapy downloader
+   (which means the downloader middlewares are used, but the spider middlewares
+   aren't). The item remains "locked" at that particular pipeline stage until
+   the files have finished downloading (or failed for some reason).
 
 4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
@@ -548,10 +547,9 @@ See here the methods that you can override in your custom Files Pipeline:
 
    .. method:: FilesPipeline.get_media_requests(item, info)
 
-      As seen on the workflow, the pipeline will get the URLs of the images to
-      download from the item. In order to do this, you can override the
-      :meth:`~get_media_requests` method and return a Request for each
-      file URL:
+      As seen on the workflow, the pipeline will get the requests for the files
+      to download from the item by calling this method. You can override it to
+      change what requests are returned:
 
       .. code-block:: python
 
@@ -591,8 +589,9 @@ See here the methods that you can override in your custom Files Pipeline:
           * ``downloaded`` - file was downloaded.
           * ``uptodate`` - file was not downloaded, as it was downloaded recently,
             according to the file expiration policy.
-          * ``cached`` - file was already scheduled for download, by another item
-            sharing the same file.
+          * ``cached`` - file was taken from a cache (the response has a
+            ``"cached"`` flag, e.g. from
+            :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
 
       The list of tuples received by :meth:`~item_completed` is
       guaranteed to retain the same order of the requests returned from the
@@ -618,9 +617,6 @@ See here the methods that you can override in your custom Files Pipeline:
               ),
               (False, Failure(...)),
           ]
-
-      By default the :meth:`get_media_requests` method returns ``None`` which
-      means there are no files to download for the item.
 
    .. method:: FilesPipeline.item_completed(results, item, info)
 

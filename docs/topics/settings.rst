@@ -418,7 +418,9 @@ Default: ``None``
 
 Import path of a given ``asyncio`` event loop class.
 
-If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the
+If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) or when
+:ref:`running Scrapy without a reactor <asyncio-without-reactor>` this setting
+can be used to specify the
 asyncio event loop to be used with it. Set the setting to the import path of the
 desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
 event loop will be used.
@@ -554,6 +556,8 @@ performed to any single domain.
 See also: :ref:`topics-autothrottle` and its
 :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` option.
 
+It is possible to change this setting per domain by using
+:setting:`DOWNLOAD_SLOTS`.
 
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
@@ -917,9 +921,8 @@ desired.
 
     This delay can be set per spider using :attr:`download_delay` spider attribute.
 
-It is also possible to change this setting per domain, although it requires
-non-trivial code. See the implementation of the :ref:`AutoThrottle
-<topics-autothrottle>` extension for an example.
+It is possible to change this setting per domain by using
+:setting:`DOWNLOAD_SLOTS`.
 
 .. setting:: DOWNLOAD_BIND_ADDRESS
 
@@ -1358,14 +1361,19 @@ FORCE_CRAWLER_PROCESS
 Default: ``False``
 
 If ``False``, :ref:`Scrapy commands that need a CrawlerProcess
-<topics-commands-crawlerprocess>` will decide between using
+<topics-commands-crawlerprocess>`, when :setting:`TWISTED_REACTOR_ENABLED`
+is set to ``True``, will decide between using
 :class:`scrapy.crawler.AsyncCrawlerProcess` and
 :class:`scrapy.crawler.CrawlerProcess` based on the value of the
 :setting:`TWISTED_REACTOR` setting, but ignoring its value in :ref:`per-spider
 settings <spider-settings>`.
 
 If ``True``, these commands will always use
-:class:`~scrapy.crawler.CrawlerProcess`.
+:class:`~scrapy.crawler.CrawlerProcess` when :setting:`TWISTED_REACTOR_ENABLED`
+is set to ``True``.
+
+When :setting:`TWISTED_REACTOR_ENABLED` is set to ``False``,
+:class:`~scrapy.crawler.AsyncCrawlerProcess` will be used in all cases.
 
 Set this to ``True`` if you want to set :setting:`TWISTED_REACTOR` to a
 non-default value in :ref:`per-spider settings <spider-settings>`.
@@ -1745,6 +1753,9 @@ significant similarities in the time between their requests.
 The randomization policy is the same used by `wget`_ ``--random-wait`` option.
 
 If :setting:`DOWNLOAD_DELAY` is zero this option has no effect.
+
+It is possible to change this setting per domain by using
+:setting:`DOWNLOAD_SLOTS`.
 
 .. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
@@ -2158,6 +2169,9 @@ TWISTED_REACTOR
 Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
 
 Import path of a given :mod:`~twisted.internet.reactor`.
+
+.. note::
+    This setting has no effect when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
 Scrapy will install this reactor if no other reactor is installed yet, such as
 when the ``scrapy`` CLI program is invoked or when using the

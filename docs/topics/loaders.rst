@@ -264,7 +264,7 @@ metadata. Here is an example:
     >>> il.add_value("name", ["Welcome to my", "<strong>website</strong>"])
     >>> il.add_value("price", ["&euro;", "<span>1000</span>"])
     >>> il.load_item()
-    {'name': 'Welcome to my website', 'price': '1000'}
+    Product(name='Welcome to my website', price='1000')
 
 .. skip: end
 

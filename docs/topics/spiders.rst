@@ -208,12 +208,6 @@ scrapy.Spider
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
 
-   .. method:: log(message, [level])
-
-       Wrapper that sends a log message through the Spider's :attr:`logger`,
-       kept for backward compatibility. For more information see
-       :ref:`topics-logging-from-spiders`.
-
    .. method:: closed(reason)
 
        Called when the spider closes. This method provides a shortcut to
@@ -614,7 +608,7 @@ XMLFeedSpider
 
         A string which defines the iterator to use. It can be either:
 
-           - ``'iternodes'`` - a fast iterator based on regular expressions
+           - ``'iternodes'`` - a fast iterator based on ``lxml``
 
            - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory

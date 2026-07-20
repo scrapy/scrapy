@@ -143,6 +143,11 @@ Here are some examples to illustrate:
 .. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
           they can also be used as storage URI parameters.
 
+.. note:: Only ``%(...)s`` parameters are replaced. Any other percent
+          character is kept as-is, so percent-encoded URIs (e.g. ``%20`` for a
+          space or percent-encoded FTP credentials) and :class:`pathlib.Path`
+          keys containing ``%(...)s`` parameters both work as expected.
+
 
 .. _topics-feed-storage-backends:
 
@@ -161,7 +166,7 @@ The feeds are stored in the local filesystem.
 -   Required external libraries: none
 
 Note that for the local filesystem storage (only) you can omit the scheme if
-you specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
+you specify a path (e.g. ``/tmp/export.csv``).
 Alternatively you can also use a :class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
@@ -757,8 +762,8 @@ The function signature should be as follows:
    :param spider: source spider of the feed items
    :type spider: scrapy.Spider
 
-   .. caution:: The function should return a new dictionary, modifying
-                the received ``params`` in-place is deprecated.
+   .. caution:: The function must return a new dictionary instead of modifying
+                the received ``params`` in-place.
 
 For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:
