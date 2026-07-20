@@ -175,7 +175,11 @@ class TestS3Anon:
     @coroutine_test
     async def test_anon_request_insecure(self):
         req = Request("s3://aws-publicdatasets/", meta={"is_secure": False})
-        httpreq = await self.download_request(req)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Passing is_secure=False for s3:// requests is deprecated",
+        ):
+            httpreq = await self.download_request(req)
         assert httpreq.url == "http://aws-publicdatasets.s3.amazonaws.com/"
 
 
@@ -215,7 +219,11 @@ class TestS3:
     @coroutine_test
     async def test_insecure_opt_out(self):
         req = Request("s3://johnsmith/photos/puppy.jpg", meta={"is_secure": False})
-        httpreq = await self.download_request(req)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Passing is_secure=False for s3:// requests is deprecated",
+        ):
+            httpreq = await self.download_request(req)
         assert httpreq.url == "http://johnsmith.s3.amazonaws.com/photos/puppy.jpg"
 
     @coroutine_test
