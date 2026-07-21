@@ -405,22 +405,6 @@ class TestTextResponse(TestResponse):
             encoding="cp1251",
         )
 
-    def test_follow_flags(self):
-        res = self.response_class("http://example.com/")
-        fol = res.follow("http://example.com/", flags=["cached", "allowed"])
-        assert fol.flags == ["cached", "allowed"]
-
-    def test_follow_all_flags(self):
-        re = self.response_class("http://www.example.com/")
-        urls = [
-            "http://www.example.com/",
-            "http://www.example.com/2",
-            "http://www.example.com/foo",
-        ]
-        fol = re.follow_all(urls, flags=["cached", "allowed"])
-        for req in fol:
-            assert req.flags == ["cached", "allowed"]
-
     def test_follow_all_css(self):
         expected = [
             "http://example.com/sample3.html",

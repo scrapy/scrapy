@@ -703,7 +703,7 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_export_no_items_multiple_feeds(self):
-        """Make sure that `storage.store` is called for every feed."""
+        """Make sure that `storage.store` is not called."""
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},

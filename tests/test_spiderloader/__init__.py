@@ -187,7 +187,6 @@ class TestDuplicateSpiderNameLoader:
     def test_multiple_dupename_warning(self, spider_loader_env):
         settings, spiders_dir = spider_loader_env
         # copy 2 spider modules so as to have duplicate spider name
-        # This should issue 2 warning, 1 for each duplicate spider name
         shutil.copyfile(spiders_dir / "spider1.py", spiders_dir / "spider1dupe.py")
         shutil.copyfile(spiders_dir / "spider2.py", spiders_dir / "spider2dupe.py")
 

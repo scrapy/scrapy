@@ -152,7 +152,7 @@ class TestRequestSendOrder:
 
     @classmethod
     def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)  # increase if flaky
+        cls.mockserver.__exit__(None, None, None)
 
     def request(self, num, response_seconds, download_slots, priority=0):
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
