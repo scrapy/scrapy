@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
+from scrapy.dupefilters import RFPDupeFilter
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.referer import (
@@ -295,6 +296,46 @@ class TestRedirectMiddleware(Base.Test):
         assert isinstance(req2, Request)
         assert req2.url == url3
         assert req2.method == "HEAD"
+
+    def test_self_redirect_bypasses_dupefilter(self):
+        # A redirect target that fingerprints identically to the request
+        # that produced it (e.g. a literal self-redirect, or a redirect
+        # whose query-string parameters are just reordered, which the
+        # fingerprinter canonicalizes away) must not be dropped by the
+        # dupe filter, since the filter already marked that fingerprint
+        # as seen when the source request was scheduled (see #1225).
+        url = "http://www.example.com/302?a=1&b=2"
+        redirected_url = "http://www.example.com/302?b=2&a=1"
+        req = Request(url)
+        rsp = Response(url, headers={"Location": redirected_url}, status=302)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == redirected_url
+        assert req2.dont_filter is True
+
+        fingerprint = self.mw.crawler.request_fingerprinter.fingerprint
+        assert fingerprint(req2) == fingerprint(req)
+
+        dupefilter = RFPDupeFilter.from_crawler(self.mw.crawler)
+        assert dupefilter.request_seen(req) is False
+        # Without the dont_filter bypass, the scheduler would treat req2 as
+        # an already-seen duplicate of req and silently drop it.
+        assert dupefilter.request_seen(req2) is True
+
+    def test_cross_request_duplicate_redirect_still_filtered(self):
+        # The dupefilter bypass must stay narrowly scoped: a redirect to a
+        # URL that genuinely differs from the source request should not be
+        # exempted, so normal cross-request dedup (e.g. two different pages
+        # redirecting to the same canonical URL) keeps working as before.
+        url = "http://www.example.com/302"
+        redirected_url = "http://www.example.com/redirected"
+        req = Request(url)
+        rsp = Response(url, headers={"Location": redirected_url}, status=302)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.dont_filter is False
 
     def test_spider_handling(self):
         self.mw.crawler.spider.handle_httpstatus_list = [404, 301, 302]
