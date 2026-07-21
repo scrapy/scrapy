@@ -141,6 +141,11 @@ Here are some examples to illustrate:
 .. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
           they can also be used as storage URI parameters.
 
+.. note:: Only ``%(...)s`` parameters are replaced. Any other percent
+          character is kept as-is, so percent-encoded URIs (e.g. ``%20`` for a
+          space or percent-encoded FTP credentials) and :class:`pathlib.Path`
+          keys containing ``%(...)s`` parameters both work as expected.
+
 
 .. _topics-feed-storage-backends:
 
@@ -159,7 +164,7 @@ The feeds are stored in the local filesystem.
 -   Required external libraries: none
 
 Note that for the local filesystem storage (only) you can omit the scheme if
-you specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
+you specify a path (e.g. ``/tmp/export.csv``).
 Alternatively you can also use a :class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
@@ -426,33 +431,37 @@ This setting is required for enabling the feed export feature.
 
 See :ref:`topics-feed-storage-backends` for supported URI schemes.
 
-For instance::
+For instance:
+
+.. skip: next
+
+.. code-block:: python
 
     {
-        'items.json': {
-            'format': 'json',
-            'encoding': 'utf8',
-            'store_empty': False,
-            'item_classes': [MyItemClass1, 'myproject.items.MyItemClass2'],
-            'fields': None,
-            'indent': 4,
-            'item_export_kwargs': {
-               'export_empty_fields': True,
+        "items.json": {
+            "format": "json",
+            "encoding": "utf8",
+            "store_empty": False,
+            "item_classes": [MyItemClass1, "myproject.items.MyItemClass2"],
+            "fields": None,
+            "indent": 4,
+            "item_export_kwargs": {
+                "export_empty_fields": True,
             },
         },
-        '/home/user/documents/items.xml': {
-            'format': 'xml',
-            'fields': ['name', 'price'],
-            'item_filter': MyCustomFilter1,
-            'encoding': 'latin1',
-            'indent': 8,
+        "/home/user/documents/items.xml": {
+            "format": "xml",
+            "fields": ["name", "price"],
+            "item_filter": MyCustomFilter1,
+            "encoding": "latin1",
+            "indent": 8,
         },
-        pathlib.Path('items.csv.gz'): {
-            'format': 'csv',
-            'fields': ['price', 'name'],
-            'item_filter': 'myproject.filters.MyCustomFilter2',
-            'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
-            'gzip_compresslevel': 5,
+        pathlib.Path("items.csv.gz"): {
+            "format": "csv",
+            "fields": ["price", "name"],
+            "item_filter": "myproject.filters.MyCustomFilter2",
+            "postprocessing": [MyPlugin1, "scrapy.extensions.postprocessing.GzipPlugin"],
+            "gzip_compresslevel": 5,
         },
     }
 
@@ -524,10 +533,6 @@ If set to ``None``, it uses UTF-8 for everything except JSON output, which uses
 safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
 
 Use ``"utf-8"`` if you want UTF-8 for JSON too.
-
-.. versionchanged:: 2.8
-   The :command:`startproject` command now sets this setting to
-   ``"utf-8"`` in the generated ``settings.py`` file.
 
 .. setting:: FEED_EXPORT_FIELDS
 
@@ -616,6 +621,7 @@ Default:
         "file": "scrapy.extensions.feedexport.FileFeedStorage",
         "stdout": "scrapy.extensions.feedexport.StdoutFeedStorage",
         "s3": "scrapy.extensions.feedexport.S3FeedStorage",
+        "gs": "scrapy.extensions.feedexport.GCSFeedStorage",
         "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 
@@ -757,8 +763,8 @@ The function signature should be as follows:
    :param spider: source spider of the feed items
    :type spider: scrapy.Spider
 
-   .. caution:: The function should return a new dictionary, modifying
-                the received ``params`` in-place is deprecated.
+   .. caution:: The function must return a new dictionary instead of modifying
+                the received ``params`` in-place.
 
 For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:

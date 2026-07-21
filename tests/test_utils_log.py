@@ -38,7 +38,7 @@ class TestFailureToExcInfo:
         assert exc_info == failure_to_exc_info(failure)
 
     def test_non_failure(self):
-        assert failure_to_exc_info("test") is None
+        assert failure_to_exc_info("test") is None  # type: ignore[arg-type]
 
 
 class TestTopLevelFormatter:

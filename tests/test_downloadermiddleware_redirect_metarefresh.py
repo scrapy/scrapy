@@ -12,12 +12,12 @@ from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
-from tests.test_downloadermiddleware_redirect_base import (
+from tests.test_downloadermiddleware_redirect_base import Base
+from tests.utils.redirect import (
     HTTP_SCHEMES,
     NON_HTTP_SCHEMES,
     REDIRECT_SCHEME_CASES,
     SCHEME_PARAMS,
-    Base,
 )
 
 

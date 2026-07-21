@@ -5,7 +5,7 @@ asyncio
 =======
 
 Scrapy supports :mod:`asyncio` natively. New projects created with
-:command:`scrapy startproject` have asyncio enabled by default, and you can use
+:command:`startproject` have asyncio enabled by default, and you can use
 :mod:`asyncio` and :mod:`asyncio`-powered libraries in any :doc:`coroutine
 <coroutines>`.
 
@@ -18,7 +18,7 @@ no additional setup is needed.
 Configuring the asyncio reactor
 ===============================
 
-New projects generated with :command:`scrapy startproject` have the asyncio
+New projects generated with :command:`startproject` have the asyncio
 reactor configured by default. No manual setup is needed.
 
 The :setting:`TWISTED_REACTOR` setting controls which Twisted reactor Scrapy
@@ -105,6 +105,9 @@ Scrapy API requires passing a Deferred to it) using the following helpers:
 
 .. autofunction:: scrapy.utils.defer.deferred_from_coro
 .. autofunction:: scrapy.utils.defer.deferred_f_from_coro_f
+
+The following function helps with a reverse wrapping:
+
 .. autofunction:: scrapy.utils.defer.ensure_awaitable
 
 
@@ -146,6 +149,12 @@ Using Scrapy without a Twisted reactor
 
 .. warning::
     This is currently experimental and may not be suitable for production use.
+
+.. note:: As the Twisted download handlers cannot be used without a reactor,
+    the default download handler in this mode is
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. You
+    will need to additionally install the ``httpx`` library to use it, unless
+    you switch to some different handler.
 
 It's possible to use Scrapy without installing a Twisted reactor at all, by
 setting the :setting:`TWISTED_REACTOR_ENABLED` setting to ``False``. In this
@@ -190,7 +199,7 @@ in future Scrapy versions. The following features are not available:
   :class:`~scrapy.crawler.CrawlerProcess`
   (:class:`~scrapy.crawler.AsyncCrawlerProcess` and
   :class:`~scrapy.crawler.AsyncCrawlerRunner` are available)
-* Twisted-specific DNS resolvers (the :setting:`DNS_RESOLVER` setting)
+* Twisted-specific DNS resolvers (the :setting:`TWISTED_DNS_RESOLVER` setting)
 * User and 3rd-party code that requires a reactor (see :ref:`below
   <asyncio-without-reactor-migrate>` for examples)
 
@@ -315,8 +324,7 @@ implementations, :class:`~asyncio.ProactorEventLoop` (default) and
 :class:`~asyncio.SelectorEventLoop` works with Twisted.
 
 Scrapy changes the event loop class to :class:`~asyncio.SelectorEventLoop`
-automatically when you change the :setting:`TWISTED_REACTOR` setting or call
-:func:`~scrapy.utils.reactor.install_reactor`.
+automatically when installing the asyncio reactor.
 
 .. note:: Other libraries you use may require
           :class:`~asyncio.ProactorEventLoop`, e.g. because it supports

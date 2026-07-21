@@ -352,7 +352,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         ) in log
 
     @pytest.mark.requires_uvloop
-    def test_asyncio_enabled_reactor_same_loop(self) -> None:
+    def test_asyncio_custom_loop_custom_settings_same(self) -> None:
         log = self.run_script("asyncio_custom_loop_custom_settings_same.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -362,7 +362,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Using asyncio event loop: uvloop.Loop" in log
 
     @pytest.mark.requires_uvloop
-    def test_asyncio_enabled_reactor_different_loop(self) -> None:
+    def test_asyncio_custom_loop_custom_settings_different(self) -> None:
         log = self.run_script("asyncio_custom_loop_custom_settings_different.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -437,14 +437,14 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
-    def test_shutdown_graceful(self) -> None:
+    def test_reactorless_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful("reactorless_sleeping.py")
 
     @coroutine_test
-    async def test_shutdown_forced(self) -> None:
+    async def test_reactorless_shutdown_forced(self) -> None:
         await self._test_shutdown_forced("reactorless_sleeping.py")
 
-    def test_shutdown_graceful_reactorless_no_stop(self) -> None:
+    def test_reactorless_shutdown_graceful_no_stop(self) -> None:
         self._test_shutdown_graceful("reactorless_sleeping.py", "--no-stop")
 
     def test_asyncio_enabled_reactor_same_loop_default(self) -> None:

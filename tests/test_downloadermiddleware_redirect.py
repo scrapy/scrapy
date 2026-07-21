@@ -16,11 +16,8 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.test_downloadermiddleware_redirect_base import (
-    REDIRECT_SCHEME_CASES,
-    SCHEME_PARAMS,
-    Base,
-)
+from tests.test_downloadermiddleware_redirect_base import Base
+from tests.utils.redirect import REDIRECT_SCHEME_CASES, SCHEME_PARAMS
 
 
 class TestRedirectMiddleware(Base.Test):
@@ -36,7 +33,7 @@ class TestRedirectMiddleware(Base.Test):
         headers = {"Location": location}
         return Response(request.url, status=status, headers=headers)
 
-    def test_redirect_3xx_permanent(self):
+    def test_redirect_307_308_preserve_method(self):
         def _test(method, status: int):
             url = f"http://www.example.com/{status}"
             url2 = "http://www.example.com/redirected"

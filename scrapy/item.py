@@ -100,7 +100,7 @@ class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
     #: come first, followed by fields declared in subclasses, and a field
     #: redefined in a subclass keeps the position of its first definition.
     #:
-    #: .. versionchanged:: VERSION
+    #: .. versionchanged:: 2.17.0
     #:    Fields are now returned in definition order rather than alphabetical
     #:    order.
     fields: dict[str, Field]
