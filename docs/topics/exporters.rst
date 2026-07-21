@@ -211,13 +211,17 @@ BaseItemExporter
 
       -   ``None`` (all fields [2]_, default)
 
-      -   A list of fields::
+      -   A list of fields:
 
-              ['field1', 'field2']
+          .. code-block:: python
 
-      -   A dict where keys are fields and values are output names::
+              ["field1", "field2"]
 
-              {'field1': 'Field 1', 'field2': 'Field 2'}
+      -   A dict where keys are fields and values are output names:
+
+          .. code-block:: python
+
+              {"field1": "Field 1", "field2": "Field 2"}
 
       .. [1] Not all exporters respect the specified field order.
       .. [2] When using :ref:`item objects <item-types>` that do not expose
@@ -273,7 +277,9 @@ XmlItemExporter
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: xml
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -291,11 +297,17 @@ XmlItemExporter
    exported by serializing each value inside a ``<value>`` element. This is for
    convenience, as multi-valued fields are very common.
 
-   For example, the item::
+   For example, the item:
 
-        Item(name=['John', 'Doe'], age='23')
+   .. skip: next
 
-   Would be serialized as::
+   .. code-block:: python
+
+        Item(name=["John", "Doe"], age="23")
+
+   Would be serialized as:
+
+   .. code-block:: xml
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -379,10 +391,12 @@ PprintItemExporter
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
 
-        {'name': 'Color TV', 'price': '1200'}
-        {'name': 'DVD player', 'price': '200'}
+   .. code-block:: python
+
+        {"name": "Color TV", "price": "1200"}
+        {"name": "DVD player", "price": "200"}
 
    Longer lines (when present) are pretty-formatted.
 
@@ -400,7 +414,9 @@ JsonItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: json
 
         [{"name": "Color TV", "price": "1200"},
         {"name": "DVD player", "price": "200"}]
@@ -429,7 +445,9 @@ JsonLinesItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: json
 
         {"name": "Color TV", "price": "1200"}
         {"name": "DVD player", "price": "200"}

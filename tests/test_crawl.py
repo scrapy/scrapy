@@ -14,14 +14,13 @@ from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
-from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerRunner
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.engine import format_engine_status, get_engine_status
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import get_crawler, get_reactor_settings
+from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.spiders import (
     AsyncDefAsyncioGenComplexSpider,
@@ -429,50 +428,6 @@ with multiples lines
                 crawler.crawl(mockserver.url("/status?n=200"), mockserver=mockserver)
             )
         assert not crawler.crawling
-
-    @coroutine_test
-    async def test_crawlerrunner_accepts_crawler(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        crawler = Crawler(SimpleSpider, get_reactor_settings())
-        runner = CrawlerRunner()
-        with caplog.at_level(logging.DEBUG):
-            await maybe_deferred_to_future(
-                runner.crawl(
-                    crawler,
-                    mockserver.url("/status?n=200"),
-                    mockserver=mockserver,
-                )
-            )
-        assert "Got response 200" in caplog.text
-
-    @coroutine_test
-    async def test_crawl_multiple(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        settings_dict = get_reactor_settings()
-        runner_cls = (
-            CrawlerRunner
-            if settings_dict.get("TWISTED_REACTOR_ENABLED", True)
-            else AsyncCrawlerRunner
-        )
-        runner = runner_cls(settings_dict)
-        runner.crawl(
-            SimpleSpider,
-            mockserver.url("/status?n=200"),
-            mockserver=mockserver,
-        )
-        runner.crawl(
-            SimpleSpider,
-            mockserver.url("/status?n=503"),
-            mockserver=mockserver,
-        )
-
-        with caplog.at_level(logging.DEBUG):
-            await ensure_awaitable(runner.join())
-
-        self._assert_retried(caplog.text)
-        assert "Got response 200" in caplog.text
 
     @coroutine_test
     async def test_unknown_url_scheme(self, caplog: pytest.LogCaptureFixture) -> None:

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.test_crawler import ExceptionSpider, NoRequestsSpider
+from tests.spiders import ExceptionSpider, NoRequestsSpider
 from tests.utils.cmdline import proc
 
 if TYPE_CHECKING:
@@ -65,13 +65,14 @@ class BadSpider(scrapy.Spider):
 
     def test_run_fail_spider(self, tmp_path: Path) -> None:
         ret, _, _ = self.runspider(
-            tmp_path, "import scrapy\n" + inspect.getsource(ExceptionSpider)
+            tmp_path, "from scrapy import Spider\n" + inspect.getsource(ExceptionSpider)
         )
         assert ret != 0
 
     def test_run_good_spider(self, tmp_path: Path) -> None:
         ret, _, _ = self.runspider(
-            tmp_path, "import scrapy\n" + inspect.getsource(NoRequestsSpider)
+            tmp_path,
+            "from scrapy import Spider\n" + inspect.getsource(NoRequestsSpider),
         )
         assert ret == 0
 
