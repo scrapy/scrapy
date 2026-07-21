@@ -349,6 +349,10 @@ supports rerunning both as a single cell and as separate cells:
     runner = AsyncCrawlerRunner({"TWISTED_REACTOR_ENABLED": False})
     await runner.crawl(BooksSpider)
 
+.. note:: As the default download handler with
+    :setting:`TWISTED_REACTOR_ENABLED` set to ``False`` is
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`,
+    you will need to additionally install ``httpx`` for this example to work.
 
 .. _run-multiple-spiders:
 
