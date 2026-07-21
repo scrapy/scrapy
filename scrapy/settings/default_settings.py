@@ -154,7 +154,6 @@ __all__ = [
     "MAIL_TLS",
     "MAIL_USER",
     "MEMDEBUG_ENABLED",
-    "MEMDEBUG_NOTIFY",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
     "MEMUSAGE_LIMIT_MB",
@@ -470,7 +469,6 @@ MAIL_SSL = False
 MAIL_TLS = False
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
-MEMDEBUG_NOTIFY = []  # send memory debugging report by mail at engine shutdown
 
 MEMUSAGE_ENABLED = True
 MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0

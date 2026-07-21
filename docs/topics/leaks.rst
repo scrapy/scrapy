@@ -106,10 +106,15 @@ A real example
 --------------
 
 Let's see a concrete example of a hypothetical case of memory leaks.
-Suppose we have some spider with a line similar to this one::
+Suppose we have some spider with a line similar to this one:
 
-    return Request(f"http://www.somenastyspider.com/product.php?pid={product_id}",
-                   callback=self.parse, cb_kwargs={'referer': response})
+.. code-block:: python
+
+    return Request(
+        f"http://www.somenastyspider.com/product.php?pid={product_id}",
+        callback=self.parse,
+        cb_kwargs={"referer": response},
+    )
 
 That line is passing a response reference inside a request which effectively
 ties the response lifetime to the requests' one, and that would definitely

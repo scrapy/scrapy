@@ -34,7 +34,7 @@ Here is a simple example showing how you can catch signals and perform some acti
 
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
-            spider = super(DmozSpider, cls).from_crawler(crawler, *args, **kwargs)
+            spider = super().from_crawler(crawler, *args, **kwargs)
             crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
             return spider
 
@@ -72,7 +72,7 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
-            spider = super(SignalSpider, cls).from_crawler(crawler, *args, **kwargs)
+            spider = super().from_crawler(crawler, *args, **kwargs)
             crawler.signals.connect(spider.item_scraped, signal=signals.item_scraped)
             return spider
 

@@ -350,7 +350,9 @@ When parsing related values from a subsection of a document, it can be
 useful to create nested loaders.  Imagine you're extracting details from
 a footer of a page that looks something like:
 
-Example::
+Example:
+
+.. code-block:: html
 
     <footer>
         <a class="social" href="https://facebook.com/whatever">Like Us</a>

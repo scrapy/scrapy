@@ -470,7 +470,9 @@ When using the Images Pipeline, you can drop images which are too small, by
 specifying the minimum allowed size in the :setting:`IMAGES_MIN_HEIGHT` and
 :setting:`IMAGES_MIN_WIDTH` settings.
 
-For example::
+For example:
+
+.. code-block:: python
 
    IMAGES_MIN_HEIGHT = 110
    IMAGES_MIN_WIDTH = 110
@@ -493,7 +495,9 @@ Allowing redirections
 By default media pipelines ignore redirects, i.e. an HTTP redirection
 to a media file URL request will mean the media download is considered failed.
 
-To handle media redirections, set this setting to ``True``::
+To handle media redirections, set this setting to ``True``:
+
+.. code-block:: python
 
     MEDIA_ALLOW_REDIRECTS = True
 

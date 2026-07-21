@@ -434,33 +434,37 @@ This setting is required for enabling the feed export feature.
 
 See :ref:`topics-feed-storage-backends` for supported URI schemes.
 
-For instance::
+For instance:
+
+.. skip: next
+
+.. code-block:: python
 
     {
-        'items.json': {
-            'format': 'json',
-            'encoding': 'utf8',
-            'store_empty': False,
-            'item_classes': [MyItemClass1, 'myproject.items.MyItemClass2'],
-            'fields': None,
-            'indent': 4,
-            'item_export_kwargs': {
-               'export_empty_fields': True,
+        "items.json": {
+            "format": "json",
+            "encoding": "utf8",
+            "store_empty": False,
+            "item_classes": [MyItemClass1, "myproject.items.MyItemClass2"],
+            "fields": None,
+            "indent": 4,
+            "item_export_kwargs": {
+                "export_empty_fields": True,
             },
         },
-        '/home/user/documents/items.xml': {
-            'format': 'xml',
-            'fields': ['name', 'price'],
-            'item_filter': MyCustomFilter1,
-            'encoding': 'latin1',
-            'indent': 8,
+        "/home/user/documents/items.xml": {
+            "format": "xml",
+            "fields": ["name", "price"],
+            "item_filter": MyCustomFilter1,
+            "encoding": "latin1",
+            "indent": 8,
         },
-        pathlib.Path('items.csv.gz'): {
-            'format': 'csv',
-            'fields': ['price', 'name'],
-            'item_filter': 'myproject.filters.MyCustomFilter2',
-            'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
-            'gzip_compresslevel': 5,
+        pathlib.Path("items.csv.gz"): {
+            "format": "csv",
+            "fields": ["price", "name"],
+            "item_filter": "myproject.filters.MyCustomFilter2",
+            "postprocessing": [MyPlugin1, "scrapy.extensions.postprocessing.GzipPlugin"],
+            "gzip_compresslevel": 5,
         },
     }
 
