@@ -114,11 +114,7 @@ class H2ConnectionPool:
             d.errback(ResponseFailed(errors))
 
     def close_connections(self) -> None:
-        """Close all the HTTP/2 connections and remove them from pool
-
-        Returns:
-            Deferred that fires when all connections have been closed
-        """
+        """Close all the HTTP/2 connections and remove them from pool."""
         for conn in self._connections.values():
             assert conn.transport is not None  # typing
             conn.transport.abortConnection()

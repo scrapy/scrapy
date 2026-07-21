@@ -75,7 +75,7 @@ class BaseSpiderMiddleware:
     ) -> Request | None:
         """Return a processed request from the spider output.
 
-        This method is called with a single request from the start seeds or the
+        This method is called with a single request from ``start()`` or the
         spider output. It should return the same or a different request, or
         ``None`` to ignore it.
 
@@ -84,7 +84,7 @@ class BaseSpiderMiddleware:
 
         :param response: the response being processed
         :type response: :class:`~scrapy.http.Response` object or ``None`` for
-            start seeds
+            start requests
 
         :return: the processed request or ``None``
         """
@@ -93,7 +93,7 @@ class BaseSpiderMiddleware:
     def get_processed_item(self, item: Any, response: Response | None) -> Any:
         """Return a processed item from the spider output.
 
-        This method is called with a single item from the start seeds or the
+        This method is called with a single item from ``start()`` or the
         spider output. It should return the same or a different item, or
         ``None`` to ignore it.
 
@@ -102,7 +102,7 @@ class BaseSpiderMiddleware:
 
         :param response: the response being processed
         :type response: :class:`~scrapy.http.Response` object or ``None`` for
-            start seeds
+            start items
 
         :return: the processed item or ``None``
         """

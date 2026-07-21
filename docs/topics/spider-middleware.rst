@@ -46,7 +46,7 @@ previous (or subsequent) middleware being applied.
 If you want to disable a builtin middleware (the ones defined in
 :setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
 in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
-value.  For example, if you want to disable the off-site middleware:
+value.  For example, if you want to disable the referer middleware:
 
 .. code-block:: python
 
@@ -354,6 +354,8 @@ Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
     You can also set the Referrer Policy per request,
     using the special ``"referrer_policy"`` :ref:`Request.meta <topics-request-meta>` key,
     with the same acceptable values as for the ``REFERRER_POLICY`` setting.
+
+.. seealso:: :ref:`security-credential-leakage`
 
 Acceptable values for REFERRER_POLICY
 *************************************

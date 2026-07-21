@@ -13,7 +13,6 @@ from twisted.internet.ssl import (
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface.declarations import implementer
-from zope.interface.verify import verifyObject
 
 from scrapy.core.downloader.tls import (
     _TWISTED_VERSION_MAP,
@@ -47,8 +46,13 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     instance.
 
     The purpose of this custom class is to provide a ``creatorForNetloc()``
-    method that returns a ``_ScrapyClientTLSOptions`` instance configured based
-    on TLS settings provided to the factory.
+    method that returns:
+
+    - a ``_ScrapyClientTLSOptions26`` or ``_ScrapyClientTLSOptions`` instance
+      configured based on TLS settings provided to the factory (when the
+      certificate verification is disabled);
+    - a result of ``optionsForClientTLS()`` called with those TLS settings
+      (when the certificate verification is enabled).
     """
 
     def __init__(
@@ -227,7 +231,6 @@ class _AcceptableProtocolsContextFactory:
     # all of this with _ScrapyClientContextFactory.acceptableProtocols.
 
     def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
-        verifyObject(IPolicyForHTTPS, context_factory)
         self._wrapped_context_factory: Any = context_factory
         self._acceptable_protocols: list[bytes] = acceptable_protocols
 

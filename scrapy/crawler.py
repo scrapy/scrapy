@@ -531,8 +531,8 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         """
         Run a crawler with the provided arguments.
 
-        It will call the given Crawler's :meth:`~Crawler.crawl` method, while
-        keeping track of it so it can be stopped later.
+        It will call the given Crawler's :meth:`~Crawler.crawl_async` method,
+        while keeping track of it so it can be stopped later.
 
         If ``crawler_or_spidercls`` isn't a :class:`~scrapy.crawler.Crawler`
         instance, this method will try to create one using this parameter as
@@ -773,7 +773,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
         """
         This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
         size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS
-        resolver based on :setting:`DNSCACHE_ENABLED`.
+        resolver based on :setting:`TWISTED_DNS_RESOLVER`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
@@ -875,10 +875,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
         When using a reactor it adjusts its pool size to
         :setting:`REACTOR_THREADPOOL_MAXSIZE` and installs a DNS resolver based
-        on :setting:`DNSCACHE_ENABLED`.
+        on :setting:`TWISTED_DNS_RESOLVER`.
 
-        If ``stop_after_crawl`` is True, the reactor will be stopped after all
-        crawlers have finished, using :meth:`join`.
+        If ``stop_after_crawl`` is True, the reactor/event loop will be stopped
+        after all crawlers have finished, using :meth:`join`.
 
         :param bool stop_after_crawl: stop or not the reactor when all
             crawlers have finished

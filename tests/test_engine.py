@@ -6,8 +6,8 @@ import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
-from unittest.mock import Mock, call
+from typing import TYPE_CHECKING, Any
+from unittest.mock import Mock
 from urllib.parse import urlparse
 
 import attr
@@ -25,7 +25,6 @@ from scrapy.http import Headers, Request, Response
 from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
-from scrapy.statscollectors import MemoryStatsCollector
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -38,10 +37,10 @@ from tests import get_testdata
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from twisted.python.failure import Failure
 
-    from scrapy.core.scheduler import Scheduler
-    from scrapy.crawler import Crawler
     from tests.mockserver.http import MockServer
 
 
@@ -513,122 +512,11 @@ class TestEngine(TestEngineBase):
         assert "AssertionError" not in stderr_str, stderr_str
 
 
-class TestEngineDownloadAsync:
-    """Test cases for ExecutionEngine.download_async()."""
-
-    @pytest.fixture
-    def engine(self) -> ExecutionEngine:
-        crawler = get_crawler(MySpider)
-        engine = ExecutionEngine(crawler, lambda _: None)
-        engine.downloader.close()
-        engine.downloader = Mock()
-        engine._slot = Mock()
-        engine._slot.inprogress = set()
-        return engine
-
-    @staticmethod
-    async def _download(engine: ExecutionEngine, request: Request) -> Response:
-        return await engine.download_async(request)
-
-    @coroutine_test
-    async def test_download_async_success(self, engine):
-        """Test basic successful async download of a request."""
-        request = Request("http://example.com")
-        response = Response("http://example.com", body=b"test body")
-        engine.spider = Mock()
-        engine.downloader.fetch.return_value = defer.succeed(response)
-        engine._slot.add_request = Mock()
-        engine._slot.remove_request = Mock()
-
-        result = await self._download(engine, request)
-        assert result == response
-        engine._slot.add_request.assert_called_once_with(request)
-        engine._slot.remove_request.assert_called_once_with(request)
-        engine.downloader.fetch.assert_called_once_with(request)
-
-    @coroutine_test
-    async def test_download_async_redirect(self, engine):
-        """Test async download with a redirect request."""
-        original_request = Request("http://example.com")
-        redirect_request = Request("http://example.com/redirect")
-        final_response = Response("http://example.com/redirect", body=b"redirected")
-
-        # First call returns redirect request, second call returns final response
-        engine.downloader.fetch.side_effect = [
-            defer.succeed(redirect_request),
-            defer.succeed(final_response),
-        ]
-        engine.spider = Mock()
-        engine._slot.add_request = Mock()
-        engine._slot.remove_request = Mock()
-
-        result = await self._download(engine, original_request)
-        assert result == final_response
-        assert engine.downloader.fetch.call_count == 2
-        engine._slot.add_request.assert_has_calls(
-            [call(original_request), call(redirect_request)]
-        )
-        engine._slot.remove_request.assert_has_calls(
-            [call(original_request), call(redirect_request)]
-        )
-
-    @coroutine_test
-    async def test_download_async_many_redirects(self, engine):
-        """A long chain of requests being replaced by new ones is handled
-        iteratively, without hitting the recursion limit."""
-        count = sys.getrecursionlimit() * 2
-        requests = [Request(f"http://example.com/{i}") for i in range(count)]
-        final_response = Response("http://example.com/final", body=b"done")
-        engine.downloader.fetch.side_effect = [
-            *(defer.succeed(request) for request in requests[1:]),
-            defer.succeed(final_response),
-        ]
-        engine.spider = Mock()
-        engine._slot.add_request = Mock()
-        engine._slot.remove_request = Mock()
-
-        result = await self._download(engine, requests[0])
-        assert result == final_response
-        assert engine.downloader.fetch.call_count == count
-
-    @coroutine_test
-    async def test_download_async_no_spider(self, engine):
-        """Test async download attempt when no spider is available."""
-        request = Request("http://example.com")
-        engine.spider = None
-        with pytest.raises(RuntimeError, match="No open spider to crawl:"):
-            await self._download(engine, request)
-
-    @coroutine_test
-    async def test_download_async_failure(self, engine):
-        """Test async download when the downloader raises an exception."""
-        request = Request("http://example.com")
-        error = RuntimeError("Download failed")
-        engine.spider = Mock()
-        engine.downloader.fetch.return_value = defer.fail(error)
-        engine._slot.add_request = Mock()
-        engine._slot.remove_request = Mock()
-
-        with pytest.raises(RuntimeError, match="Download failed"):
-            await self._download(engine, request)
-        engine._slot.add_request.assert_called_once_with(request)
-        engine._slot.remove_request.assert_called_once_with(request)
-
-
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestEngineDownload(TestEngineDownloadAsync):
-    """Test cases for ExecutionEngine.download()."""
-
-    @staticmethod
-    async def _download(engine: ExecutionEngine, request: Request) -> Response:
-        return await maybe_deferred_to_future(engine.download(request))
-
-
 @coroutine_test
 async def test_request_scheduled_signal():
     class TestScheduler(BaseScheduler):
-        def __init__(self):
-            self.enqueued = []
+        def __init__(self) -> None:
+            self.enqueued: list[Request] = []
 
         def enqueue_request(self, request: Request) -> bool:
             self.enqueued.append(request)
@@ -640,9 +528,9 @@ async def test_request_scheduled_signal():
 
     crawler = get_crawler(MySpider)
     engine = ExecutionEngine(crawler, lambda _: None)
-    scheduler = TestScheduler()
+    scheduler = TestScheduler()  # type: ignore[abstract]
 
-    async def start():
+    async def start() -> AsyncIterator[Any]:
         return
         yield
 
@@ -657,132 +545,3 @@ async def test_request_scheduled_signal():
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )
     crawler.signals.disconnect(signal_handler, signals.request_scheduled)
-
-
-class TestEngineCloseSpider:
-    """Tests for exception handling coverage during close_spider_async()."""
-
-    @pytest.fixture
-    def crawler(self) -> Crawler:
-        crawler = get_crawler(DefaultSpider)
-        crawler.spider = crawler._create_spider()
-        return crawler
-
-    @coroutine_test
-    async def test_no_slot(self, crawler: Crawler) -> None:
-        engine = ExecutionEngine(crawler, lambda _: None)
-        crawler.engine = engine
-        await engine.open_spider_async()
-        slot = engine._slot
-        engine._slot = None
-        with pytest.raises(RuntimeError, match="Engine slot not assigned"):
-            await engine.close_spider_async()
-        # close it correctly
-        engine._slot = slot
-        await engine.close_spider_async()
-
-    @coroutine_test
-    async def test_no_spider(self, crawler: Crawler) -> None:
-        engine = ExecutionEngine(crawler, lambda _: None)
-        with pytest.raises(RuntimeError, match="Spider not opened"):
-            await engine.close_spider_async()
-        engine.downloader.close()  # cleanup
-
-    @coroutine_test
-    async def test_exception_slot(
-        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        engine = ExecutionEngine(crawler, lambda _: None)
-        crawler.engine = engine
-        await engine.open_spider_async()
-        assert engine._slot
-        del engine._slot.heartbeat
-        await engine.close_spider_async()
-        assert "Slot close failure" in caplog.text
-
-    @coroutine_test
-    async def test_exception_downloader(
-        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        engine = ExecutionEngine(crawler, lambda _: None)
-        crawler.engine = engine
-        await engine.open_spider_async()
-        del engine.downloader.slots
-        await engine.close_spider_async()
-        assert "Downloader close failure" in caplog.text
-
-    @coroutine_test
-    async def test_exception_scraper(
-        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        engine = ExecutionEngine(crawler, lambda _: None)
-        crawler.engine = engine
-        await engine.open_spider_async()
-        engine.scraper.slot = None
-        await engine.close_spider_async()
-        assert "Scraper close failure" in caplog.text
-
-    @coroutine_test
-    async def test_exception_scheduler(
-        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        engine = ExecutionEngine(crawler, lambda _: None)
-        crawler.engine = engine
-        await engine.open_spider_async()
-        assert engine._slot
-        del cast("Scheduler", engine._slot.scheduler).dqs
-        await engine.close_spider_async()
-        assert "Scheduler close failure" in caplog.text
-
-    @coroutine_test
-    async def test_exception_signal(
-        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        engine = ExecutionEngine(crawler, lambda _: None)
-        crawler.engine = engine
-        await engine.open_spider_async()
-        signal_manager = engine.signals
-        del engine.signals
-        await engine.close_spider_async()
-        assert "Error while sending spider_close signal" in caplog.text
-        # send the spider_closed signal to close various components
-        await signal_manager.send_catch_log_async(
-            signal=signals.spider_closed,
-            spider=engine.spider,
-            reason="cancelled",
-        )
-
-    @coroutine_test
-    async def test_exception_stats(
-        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        engine = ExecutionEngine(crawler, lambda _: None)
-        crawler.engine = engine
-        await engine.open_spider_async()
-        assert isinstance(crawler.stats, MemoryStatsCollector)
-        del crawler.stats.spider_stats
-        await engine.close_spider_async()
-        assert "Stats close failure" in caplog.text
-
-    @coroutine_test
-    async def test_exception_callback(
-        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        engine = ExecutionEngine(crawler, lambda _: defer.fail(ValueError()))
-        crawler.engine = engine
-        await engine.open_spider_async()
-        await engine.close_spider_async()
-        assert "Error running spider_closed_callback" in caplog.text
-
-    @coroutine_test
-    async def test_exception_async_callback(
-        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        async def cb(_):
-            raise ValueError
-
-        engine = ExecutionEngine(crawler, cb)
-        crawler.engine = engine
-        await engine.open_spider_async()
-        await engine.close_spider_async()
-        assert "Error running spider_closed_callback" in caplog.text

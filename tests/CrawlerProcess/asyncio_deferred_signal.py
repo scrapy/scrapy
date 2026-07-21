@@ -9,7 +9,7 @@ from scrapy.utils.defer import deferred_from_coro
 
 
 class UppercasePipeline:
-    async def _open_spider(self, spider):
+    async def _open_spider(self, spider: Spider) -> None:
         spider.logger.info("async pipeline opened!")
         await asyncio.sleep(0.1)
 

@@ -288,10 +288,10 @@ class BaseSettings(MutableMapping[str, Any]):
         -   ``['one', 'two']`` if set to ``'["one", "two"]'`` or ``'one,two'``
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         value = self.get(name, default)
         if value is None:
@@ -454,9 +454,10 @@ class BaseSettings(MutableMapping[str, Any]):
         """
         Store a key/value attribute with a given priority.
 
-        Settings should be populated *before* configuring the Crawler object
-        (through the :meth:`~scrapy.crawler.Crawler.configure` method),
-        otherwise they won't have any effect.
+        Settings should be populated *before* the Crawler object applies them
+        (in the :meth:`~scrapy.crawler.Crawler.crawl_async` or
+        :meth:`~scrapy.crawler.Crawler.crawl` method), otherwise they won't
+        have any effect.
 
         :param name: the setting name
         :type name: str
@@ -613,7 +614,7 @@ class BaseSettings(MutableMapping[str, Any]):
         """
         Make a deep copy of current settings.
 
-        This method returns a new instance of the :class:`Settings` class,
+        This method returns a new instance of this class,
         populated with the same values and their priorities.
 
         Modifications to the new object won't be reflected on the original
@@ -658,7 +659,7 @@ class BaseSettings(MutableMapping[str, Any]):
         Make a copy of current settings and convert to a dict.
 
         This method returns a new dict populated with the same values
-        and their priorities as the current settings.
+        as the current settings.
 
         Modifications to the returned dict won't be reflected on the original
         settings.

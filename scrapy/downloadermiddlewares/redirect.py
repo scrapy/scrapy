@@ -196,10 +196,7 @@ class BaseRedirectMiddleware:
 
 
 class RedirectMiddleware(BaseRedirectMiddleware):
-    """
-    Handle redirection of requests based on response status
-    and meta-refresh html tag.
-    """
+    """Handle redirection of requests based on response status."""
 
     @_warn_spider_arg
     def process_response(
@@ -251,6 +248,8 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
+    """Handle redirection of requests based on meta-refresh html tag."""
+
     enabled_setting = "METAREFRESH_ENABLED"
 
     def __init__(self, settings: BaseSettings):

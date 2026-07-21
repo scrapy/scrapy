@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tests.test_commands import TestProjectBase
+from tests.utils.base_commands import TestProjectBase
 from tests.utils.cmdline import proc
 
 if TYPE_CHECKING:

@@ -407,7 +407,7 @@ class TestMediaPipelineAllowRedirectSettings:
             # the downloader to handle itself
             (301, False),
             (302, False),
-            (302, False),
+            (303, False),
             (307, False),
             (308, False),
             # we still want to get 4xx and 5xx
