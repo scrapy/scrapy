@@ -6,15 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from tests.test_commands import TestProjectBase
-from tests.utils.cmdline import call, proc
-
-
-def write_recording_editor(editor: Path) -> None:
-    """Create an executable editor script that writes the path it is asked to
-    open (its last argument) into the file given as its first argument."""
-    editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
-    editor.chmod(0o755)
+from tests.utils.base_commands import TestProjectBase
+from tests.utils.cmdline import call, proc, write_recording_editor
 
 
 def find_in_file(filename: Path, regex: str) -> re.Match[str] | None:

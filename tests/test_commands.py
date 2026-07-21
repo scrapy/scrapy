@@ -4,7 +4,6 @@ import argparse
 import json
 import sys
 from io import StringIO
-from shutil import copytree
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -16,7 +15,8 @@ from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
-from tests.utils.cmdline import call, proc
+from tests.utils.base_commands import TestProjectBase
+from tests.utils.cmdline import call, proc, write_recording_editor
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -107,29 +107,6 @@ class TestCommandSettings:
             "Optional Arguments\n==================\n\n"
             "Global Options\n--------------\n"
         )
-
-
-class TestProjectBase:
-    """A base class for tests that may need a Scrapy project."""
-
-    project_name = "testproject"
-
-    @pytest.fixture(scope="session")
-    def _proj_path_cached(self, tmp_path_factory: pytest.TempPathFactory) -> Path:
-        """Create a Scrapy project in a temporary directory and return its path.
-
-        Used as a cache for ``proj_path``.
-        """
-        tmp_path = tmp_path_factory.mktemp("proj")
-        call("startproject", self.project_name, cwd=tmp_path)
-        return tmp_path / self.project_name
-
-    @pytest.fixture
-    def proj_path(self, tmp_path: Path, _proj_path_cached: Path) -> Path:
-        """Copy a pre-generated Scrapy project into a temporary directory and return its path."""
-        proj_path = tmp_path / self.project_name
-        copytree(_proj_path_cached, proj_path)
-        return proj_path
 
 
 class TestCommandCrawlerProcess(TestProjectBase):
@@ -430,9 +407,7 @@ class TestEditCommand(TestProjectBase):
         spider = proj_path / self.project_name / "spiders" / "example.py"
         edited = proj_path / "edited.txt"
         editor = proj_path / "fake-editor.sh"
-        # Records the file it is asked to open ($2) into the file given as $1.
-        editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
-        editor.chmod(0o755)
+        write_recording_editor(editor)
         monkeypatch.setenv("EDITOR", f"{editor} {edited}")
 
         assert call("genspider", "example", "example.com", cwd=proj_path) == 0
