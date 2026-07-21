@@ -1,5 +1,3 @@
-"""Set User-Agent header per spider or use a default value from settings"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

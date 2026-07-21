@@ -1,10 +1,3 @@
-"""
-This module implements the FormRequest class which is a more convenient class
-(than Request) to generate Requests based on form data.
-
-See documentation in docs/topics/request-response.rst
-"""
-
 from __future__ import annotations
 
 from collections.abc import Iterable

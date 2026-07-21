@@ -1,9 +1,3 @@
-"""
-StatsMailer extension sends an email when a spider finishes scraping.
-
-Use STATSMAILER_RCPTS setting to enable and give the recipient mail address
-"""
-
 from __future__ import annotations
 
 import warnings

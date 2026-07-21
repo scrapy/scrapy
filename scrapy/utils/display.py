@@ -1,7 +1,3 @@
-"""
-pprint and pformat wrappers with colorization support
-"""
-
 import ctypes
 import platform
 import sys

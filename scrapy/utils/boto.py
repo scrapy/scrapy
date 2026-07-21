@@ -1,5 +1,3 @@
-"""Boto/botocore helpers"""
-
 
 def is_botocore_available() -> bool:
     try:

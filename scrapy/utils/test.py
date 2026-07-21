@@ -1,7 +1,3 @@
-"""
-This module contains some assorted functions used in tests
-"""
-
 from __future__ import annotations
 
 import asyncio

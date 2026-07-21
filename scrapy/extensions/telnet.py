@@ -1,9 +1,3 @@
-"""
-Scrapy Telnet Console extension
-
-See documentation in docs/topics/telnetconsole.rst
-"""
-
 from __future__ import annotations
 
 import binascii

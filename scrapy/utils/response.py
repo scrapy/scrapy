@@ -1,8 +1,3 @@
-"""
-This module provides some useful functions for working with
-scrapy.http.Response objects
-"""
-
 from __future__ import annotations
 
 import os
