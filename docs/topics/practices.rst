@@ -314,6 +314,42 @@ existing event loop:
 .. note:: Running Scrapy without a Twisted reactor is experimental and has
     some limitations, described in :ref:`asyncio-without-reactor`.
 
+.. _run-in-notebook:
+
+Running spiders in Jupyter notebooks
+====================================
+
+You can run Scrapy spiders in Jupyter notebooks. You need to use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False`` for this, so that Scrapy
+uses the event loop provided by the notebook kernel. As
+:class:`~scrapy.crawler.AsyncCrawlerRunner` doesn't configure logging, and you
+most likely want to see the spider log in the notebook, you should call
+:func:`scrapy.utils.log.configure_logging`. Here is a full example, which
+supports rerunning both as a single cell and as separate cells:
+
+.. code-block:: python
+
+    from scrapy import Spider
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+
+    configure_logging()
+
+
+    class BooksSpider(Spider):
+        name = "books"
+        start_urls = ["https://books.toscrape.com"]
+
+        def parse(self, response):
+            for book in response.css("h3"):
+                yield {"title": book.css("a::attr(title)").get()}
+
+
+    runner = AsyncCrawlerRunner({"TWISTED_REACTOR_ENABLED": False})
+    await runner.crawl(BooksSpider)
+
+
 .. _run-multiple-spiders:
 
 Running multiple spiders in the same process
