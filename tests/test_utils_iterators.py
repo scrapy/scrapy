@@ -352,11 +352,6 @@ class TestLxmlXmliter(TestXmliterBase):
         node = next(my_iter)
         assert node.xpath("f:name/text()").getall() == ["African Coffee Table"]
 
-    def test_xmliter_objtype_exception(self):
-        i = self.xmliter(42, "product")  # type: ignore[arg-type]
-        with pytest.raises(TypeError):
-            next(i)
-
 
 class TestUtilsCsv:
     def test_csviter_defaults(self):

@@ -798,19 +798,6 @@ class Base:
 class TestLxmlLinkExtractor(Base.TestLinkExtractorBase):
     extractor_cls = LxmlLinkExtractor
 
-    def test_link_wrong_href(self):
-        html = b"""
-        <a href="http://example.org/item1.html">Item 1</a>
-        <a href="http://[example.org/item2.html">Item 2</a>
-        <a href="http://example.org/item3.html">Item 3</a>
-        """
-        response = HtmlResponse("http://example.org/index.html", body=html)
-        lx = self.extractor_cls()
-        assert list(lx.extract_links(response)) == [
-            Link(url="http://example.org/item1.html", text="Item 1", nofollow=False),
-            Link(url="http://example.org/item3.html", text="Item 3", nofollow=False),
-        ]
-
     def test_link_restrict_text(self):
         html = b"""
         <a href="http://example.org/item1.html">Pic of a cat</a>

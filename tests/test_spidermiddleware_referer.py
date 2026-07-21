@@ -239,7 +239,7 @@ class MixinSameOrigin:
         ("https://example.com/page.html", "http://not.example.com/", None),
         ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
         ("ftp://example.com/urls.zip", "http://example.com/not-page.html", None),
-        ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
+        ("ftps://example.com/urls.zip", "http://example.com/not-page.html", None),
         # test for user/password stripping
         (
             "https://user:password@example.com/page.html",
@@ -395,7 +395,7 @@ class MixinOriginWhenCrossOrigin:
         ),
         (
             "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
+            "http://example4.com/not-page.html",
             b"ftps://example4.com/",
         ),
         # test for user/password stripping
@@ -506,9 +506,9 @@ class MixinStrictOriginWhenCrossOrigin:
             b"ftps://example4.com/",
         ),
         (
-            "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
-            b"ftps://example4.com/",
+            "ftp://example4.com/urls.zip",
+            "http://example4.com/not-page.html",
+            b"ftp://example4.com/",
         ),
         # test for user/password stripping
         (
