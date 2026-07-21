@@ -5,6 +5,8 @@ import warnings
 from collections import defaultdict
 from typing import TYPE_CHECKING, Protocol, cast
 
+# working around https://github.com/sphinx-doc/sphinx/issues/10400
+from scrapy import Request, Spider  # noqa: TC001
 from scrapy.utils.misc import load_object, walk_modules_iter
 from scrapy.utils.spider import iter_spider_classes
 
@@ -14,7 +16,6 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Request, Spider
     from scrapy.settings import BaseSettings
 
 
@@ -26,20 +27,25 @@ def get_spider_loader(settings: BaseSettings) -> SpiderLoaderProtocol:
 
 
 class SpiderLoaderProtocol(Protocol):
+    """Protocol for spider loader implementations.
+
+    See :setting:`SPIDER_LOADER_CLASS`.
+    """
+
     @classmethod
     def from_settings(cls, settings: BaseSettings) -> Self:
-        """Return an instance of the class for the given settings"""
+        """Return an instance of the class for the given settings."""
 
     def load(self, spider_name: str) -> type[Spider]:
-        """Return the Spider class for the given spider name. If the spider
-        name is not found, it must raise a KeyError."""
+        """Return the spider class for the given spider name. If the spider
+        name is not found, it must raise a :exc:`KeyError`."""
 
     def list(self) -> list[str]:
         """Return a list with the names of all spiders available in the
-        project"""
+        project."""
 
     def find_by_request(self, request: Request) -> __builtins__.list[str]:
-        """Return the list of spiders names that can handle the given request"""
+        """Return the list of spiders names that can handle the given request."""
 
 
 class SpiderLoader:
@@ -100,12 +106,18 @@ class SpiderLoader:
 
     @classmethod
     def from_settings(cls, settings: BaseSettings) -> Self:
+        """Create an instance of the class.
+
+        It's called with the current project settings, and it loads the spiders
+        found recursively in the modules of the :setting:`SPIDER_MODULES`
+        setting.
+        """
         return cls(settings)
 
     def load(self, spider_name: str) -> type[Spider]:
-        """
-        Return the Spider class for the given spider name. If the spider
-        name is not found, raise a KeyError.
+        """Return the spider class for the given spider name.
+
+        If the spider name is not found, raise a :exc:`KeyError`.
         """
         try:
             return self._spiders[spider_name]
@@ -115,15 +127,16 @@ class SpiderLoader:
     def find_by_request(self, request: Request) -> list[str]:
         """
         Return the list of spider names that can handle the given request.
+
+        It will try to match the request's url against the domains of
+        the spiders.
         """
         return [
             name for name, cls in self._spiders.items() if cls.handles_request(request)
         ]
 
     def list(self) -> list[str]:
-        """
-        Return a list with the names of all spiders available in the project.
-        """
+        """Return a list with the names of all spiders available in the project."""
         return list(self._spiders.keys())
 
 
