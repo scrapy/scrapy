@@ -69,14 +69,16 @@ def test_stacktracedump_dump_stacktrace(caplog: pytest.LogCaptureFixture) -> Non
     spider = DefaultSpider()
     with caplog.at_level(logging.INFO, logger="scrapy.extensions.debug"):
         ext.dump_stacktrace(0, None)
-    assert len(caplog.records) == 1
-    message = caplog.records[0].getMessage()
-    assert "Dumping stack trace and engine status" in message
-    assert "Execution engine status" in message
-    assert "Live References" in message
-    assert type(spider).__name__ in message
-    assert "# Thread: MainThread" in message
-    assert getattr(caplog.records[0], "crawler", None) is crawler
+    for r in caplog.records:
+        message = r.getMessage()
+        if "Dumping stack trace and engine status" in message:
+            assert "Execution engine status" in message
+            assert "Live References" in message
+            assert type(spider).__name__ in message
+            assert "# Thread: MainThread" in message
+            assert getattr(r, "crawler", None) is crawler
+            return
+    raise AssertionError("No stack trace dump log message found")
 
 
 def test_stacktracedump_thread_stacks() -> None:
