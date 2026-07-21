@@ -734,6 +734,7 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`response_rough_size`
 * :reqmeta:`verbatim_url`
 
 .. reqmeta:: bindaddress
@@ -847,6 +848,20 @@ max_retry_times
 The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: response_rough_size
+
+response_rough_size
+-------------------
+
+Overrides the :setting:`RESPONSE_ROUGH_SIZE` setting for this specific request.
+
+The value is the estimated size (in bytes) to count toward
+:setting:`RESPONSE_MAX_ACTIVE_SIZE` while this request is being downloaded,
+before its actual response size is known. Set to ``0`` to disable rough-size
+counting for this request.
+
+.. versionadded:: VERSION
 
 .. reqmeta:: verbatim_url
 

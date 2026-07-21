@@ -7,8 +7,9 @@ See documentation in docs/topics/downloader-middleware.rst
 from __future__ import annotations
 
 import warnings
-from functools import wraps
+from functools import partial, wraps
 from typing import TYPE_CHECKING, Any
+from weakref import WeakSet, finalize
 
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
@@ -34,6 +35,16 @@ if TYPE_CHECKING:
 class DownloaderMiddlewareManager(MiddlewareManager):
     component_name = "downloader middleware"
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.response_active_size = 0
+        self._tracked_responses: WeakSet[Response] = WeakSet()
+        self._rough_active_size = 0
+        assert self.crawler is not None
+        self._response_rough_size: int = self.crawler.settings.getint(
+            "RESPONSE_ROUGH_SIZE"
+        )
+
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
         return build_component_list(
@@ -50,6 +61,30 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         if hasattr(mw, "process_exception"):
             self.methods["process_exception"].appendleft(mw.process_exception)
             self._check_mw_method_spider_arg(mw.process_exception)
+
+    @property
+    def total_active_size(self) -> int:
+        """Sum of sizes of tracked responses and rough sizes of in-flight requests."""
+        return self.response_active_size + self._rough_active_size
+
+    def _count_rough_size(self, request: Request) -> int:
+        size: int = request.meta.get("response_rough_size", self._response_rough_size)
+        self._rough_active_size += size
+        return size
+
+    def _discount_rough_size(self, size: int) -> None:
+        self._rough_active_size -= size
+
+    def _count_response_size(self, response: Response) -> None:
+        if response in self._tracked_responses:
+            return
+        self._tracked_responses.add(response)
+        size = len(response.body)
+        self.response_active_size += size
+        finalize(response, partial(self._discount_response_size, size))
+
+    def _discount_response_size(self, size: int) -> None:
+        self.response_active_size -= size
 
     def download(
         self,
@@ -110,8 +145,13 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     f"Request, got {response.__class__.__name__}"
                 )
             if response:
+                if isinstance(response, Response):
+                    self._count_response_size(response)
                 return response
-        return await download_func(request)
+        result = await download_func(request)
+        if isinstance(result, Response):
+            self._count_response_size(result)
+        return result
 
     async def _process_response(
         self, response: Response | Request, request: Request
@@ -135,6 +175,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 )
             if isinstance(response, Request):
                 return response
+            self._count_response_size(response)
         return response
 
     async def _process_exception(
@@ -152,5 +193,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     f"Request, got {type(response)}"
                 )
             if response:
+                if isinstance(response, Response):
+                    self._count_response_size(response)
                 return response
         raise exception

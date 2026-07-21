@@ -350,7 +350,6 @@ class ExecutionEngine:
             or not self._slot
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
-            or self.scraper.slot.needs_backout()
         )
 
     def _remove_request(self, _: Any, request: Request) -> None:

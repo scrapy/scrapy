@@ -537,9 +537,14 @@ def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
     alternative is calling :func:`scrapy.utils.defer.deferred_from_coro`,
     keeping the result, and adding proper exception handling (e.g. errbacks) to
     it.
+
+    In both asyncio and non-asyncio modes the coroutine starts in the next
+    event-loop iteration, never in the current call stack.
     """
     if not is_asyncio_available():
-        Deferred.fromCoroutine(coro)
+        from twisted.internet import reactor
+
+        reactor.callLater(0, Deferred.fromCoroutine, coro)
         return
     loop = asyncio.get_event_loop()
     loop.create_task(coro)  # noqa: RUF006
