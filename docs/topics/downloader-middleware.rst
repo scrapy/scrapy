@@ -760,6 +760,30 @@ Default: ``True``
 
 Whether the Compression middleware will be enabled.
 
+.. setting:: COMPRESSION_KEEP_ENCODING_HEADER
+
+COMPRESSION_KEEP_ENCODING_HEADER
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: VERSION
+
+Default: ``False``
+
+Whether to keep the original ``Content-Encoding`` header of a response after
+:class:`HttpCompressionMiddleware` has decompressed its body.
+
+When ``True``, the original ``Content-Encoding`` header is kept, so that you
+can tell how the response body was encoded before Scrapy decompressed it. When
+``False``, that header is removed from decompressed responses.
+
+In both cases, a ``decoded`` flag (see :attr:`Response.flags`) is added to
+decompressed responses, and responses that already have that flag are not
+decompressed again.
+
+.. note:: ``False`` is the current default for backward compatibility, but it
+   is deprecated. Set this setting to ``True`` to keep the header; ``True``
+   will be the only supported behavior in a future version of Scrapy. New
+   projects created with :command:`startproject` set it to ``True``.
 
 HttpProxyMiddleware
 -------------------

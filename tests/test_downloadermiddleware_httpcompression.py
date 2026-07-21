@@ -782,3 +782,77 @@ class TestHttpCompression:
                 continue
             resp = self._get_truncated_response(check_key)
             assert len(resp.body) == 0
+
+    def test_process_response_keep_encoding_header(self):
+        crawler = get_crawler(
+            Spider, settings_dict={"COMPRESSION_KEEP_ENCODING_HEADER": True}
+        )
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        crawler.stats.open_spider()
+        response = self._getresponse("gzip")
+        request = response.request
+
+        assert response.headers["Content-Encoding"] == b"gzip"
+        newresponse = mw.process_response(request, response)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        # The original Content-Encoding header is preserved.
+        assert newresponse.headers.getlist("Content-Encoding") == [b"gzip"]
+        assert "decoded" in newresponse.flags
+
+    def test_process_response_keep_encoding_header_partial(self):
+        crawler = get_crawler(
+            Spider, settings_dict={"COMPRESSION_KEEP_ENCODING_HEADER": True}
+        )
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        crawler.stats.open_spider()
+        response = self._getresponse("gzip")
+        response.headers["Content-Encoding"] = ["uuencode", "gzip"]
+        request = response.request
+
+        newresponse = mw.process_response(request, response)
+        assert newresponse is not response
+        # The full original Content-Encoding header is preserved, including
+        # the encoding that could not be decoded.
+        assert newresponse.headers.getlist("Content-Encoding") == [
+            b"uuencode",
+            b"gzip",
+        ]
+        assert "decoded" in newresponse.flags
+
+    def test_process_response_drop_encoding_header(self):
+        crawler = get_crawler(
+            Spider, settings_dict={"COMPRESSION_KEEP_ENCODING_HEADER": False}
+        )
+        with pytest.warns(ScrapyDeprecationWarning):
+            mw = HttpCompressionMiddleware.from_crawler(crawler)
+        crawler.stats.open_spider()
+        response = self._getresponse("gzip")
+        request = response.request
+
+        assert response.headers["Content-Encoding"] == b"gzip"
+        newresponse = mw.process_response(request, response)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" not in newresponse.headers
+        assert "decoded" in newresponse.flags
+
+    def test_process_response_already_decoded(self):
+        response = self._getresponse("gzip")
+        response.flags.append("decoded")
+        request = response.request
+
+        newresponse = self.mw.process_response(request, response)
+        assert newresponse is response
+        assert newresponse.headers["Content-Encoding"] == b"gzip"
+        self.assertStatsEqual("httpcompression/response_count", None)
+
+    def test_keep_encoding_header_deprecation_warning(self):
+        crawler = get_crawler(
+            Spider, settings_dict={"COMPRESSION_KEEP_ENCODING_HEADER": False}
+        )
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="COMPRESSION_KEEP_ENCODING_HEADER is False",
+        ):
+            HttpCompressionMiddleware.from_crawler(crawler)
