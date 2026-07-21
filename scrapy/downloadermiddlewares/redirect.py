@@ -106,6 +106,18 @@ class BaseRedirectMiddleware:
                 reason,
             ]
             redirected.dont_filter = request.dont_filter
+            if not redirected.dont_filter and self._is_self_duplicate(redirected, request):
+                # The dupe filter already marked `request`'s fingerprint as seen
+                # when it was scheduled. If the redirect target fingerprints to
+                # the same value (e.g. a literal self-redirect, or a redirect
+                # whose query-string parameters are just reordered, which the
+                # fingerprinter canonicalizes away), the target would be
+                # silently dropped as a "duplicate" of the request that
+                # produced it, instead of being followed. Bypass the filter
+                # for that specific case only, so normal cross-request dedup
+                # (different pages redirecting to the same canonical URL)
+                # still works as before.
+                redirected.dont_filter = True
             redirected.priority = request.priority + self.priority_adjust
             logger.debug(
                 "Redirecting (%(reason)s) to %(redirected)s from %(request)s",
@@ -119,6 +131,11 @@ class BaseRedirectMiddleware:
             extra={"spider": self.crawler.spider},
         )
         raise IgnoreRequest("max redirections reached")
+
+    def _is_self_duplicate(self, redirected: Request, request: Request) -> bool:
+        assert self.crawler.request_fingerprinter
+        fingerprint = self.crawler.request_fingerprinter.fingerprint
+        return fingerprint(redirected) == fingerprint(request)
 
     def _build_redirect_request(
         self, source_request: Request, response: Response, *, url: str, **kwargs: Any
