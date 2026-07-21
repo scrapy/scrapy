@@ -530,19 +530,32 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
     return deferred_to_future(d)
 
 
-def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
+_default_task_tracking_set: set[asyncio.Task | Deferred] = set()
+
+
+def _schedule_coro(
+    coro: Coroutine[Any, Any, Any],
+    tracking_set: set[asyncio.Task | Deferred] | None = None,
+) -> None:
     """Schedule the coroutine as a task or a Deferred.
 
-    This doesn't store the reference to the task/Deferred, so a better
+    This stores the reference to the task/Deferred in `tracking_set` and removes
+    task/Deferred from the set when it's done, but a better
     alternative is calling :func:`scrapy.utils.defer.deferred_from_coro`,
     keeping the result, and adding proper exception handling (e.g. errbacks) to
     it.
     """
+    if tracking_set is None:
+        tracking_set = _default_task_tracking_set
     if not is_asyncio_available():
-        Deferred.fromCoroutine(coro)
+        d = Deferred.fromCoroutine(coro)
+        tracking_set.add(d)
+        d.addBoth(lambda _result: tracking_set.discard(d))
         return
     loop = asyncio.get_event_loop()
-    loop.create_task(coro)  # noqa: RUF006
+    t = loop.create_task(coro)
+    tracking_set.add(t)
+    t.add_done_callback(tracking_set.discard)
 
 
 @overload
