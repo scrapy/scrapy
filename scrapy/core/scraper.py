@@ -35,7 +35,7 @@ from scrapy.utils.defer import (
     parallel_async,
 )
 from scrapy.utils.deprecate import method_is_overridden
-from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
+from scrapy.utils.log import failure_to_exc_info, log_crawler, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iterate_spider_output
@@ -310,40 +310,43 @@ class Scraper:
         .. versionadded:: 2.13
         """
         await _defer_sleep_async()
-        assert self.crawler.spider
-        if isinstance(result, Response):
-            if getattr(result, "request", None) is None:
-                result.request = request
-            assert result.request
-            callback = result.request.callback or self.crawler.spider._parse
-            warn_on_generator_with_return_value(self.crawler.spider, callback)
-            output = callback(result, **result.request.cb_kwargs)
-            if isinstance(output, Deferred):
-                warnings.warn(
-                    f"{callback} returned a Deferred."
-                    f" Returning Deferreds from spider callbacks is deprecated.",
-                    ScrapyDeprecationWarning,
-                    stacklevel=2,
+        with log_crawler(self.crawler):
+            assert self.crawler.spider
+            if isinstance(result, Response):
+                if getattr(result, "request", None) is None:
+                    result.request = request
+                assert result.request
+                callback = result.request.callback or self.crawler.spider._parse
+                warn_on_generator_with_return_value(self.crawler.spider, callback)
+                output = callback(result, **result.request.cb_kwargs)
+                if isinstance(output, Deferred):
+                    warnings.warn(
+                        f"{callback} returned a Deferred."
+                        f" Returning Deferreds from spider callbacks is deprecated.",
+                        ScrapyDeprecationWarning,
+                        stacklevel=2,
+                    )
+            else:  # result is a Failure
+                # TODO: properly type adding this attribute to a Failure
+                result.request = request  # type: ignore[attr-defined]
+                if not request.errback:
+                    result.raiseException()
+                warn_on_generator_with_return_value(
+                    self.crawler.spider, request.errback
                 )
-        else:  # result is a Failure
-            # TODO: properly type adding this attribute to a Failure
-            result.request = request  # type: ignore[attr-defined]
-            if not request.errback:
-                result.raiseException()
-            warn_on_generator_with_return_value(self.crawler.spider, request.errback)
-            output = request.errback(result)
-            if isinstance(output, Failure):
-                output.raiseException()
-            # else the errback returned actual output (like a callback),
-            # which needs to be passed to iterate_spider_output()
-            if isinstance(output, Deferred):
-                warnings.warn(
-                    f"{request.errback} returned a Deferred."
-                    f" Returning Deferreds from spider errbacks is deprecated.",
-                    ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-        return await ensure_awaitable(iterate_spider_output(output))
+                output = request.errback(result)
+                if isinstance(output, Failure):
+                    output.raiseException()
+                # else the errback returned actual output (like a callback),
+                # which needs to be passed to iterate_spider_output()
+                if isinstance(output, Deferred):
+                    warnings.warn(
+                        f"{request.errback} returned a Deferred."
+                        f" Returning Deferreds from spider errbacks is deprecated.",
+                        ScrapyDeprecationWarning,
+                        stacklevel=2,
+                    )
+            return await ensure_awaitable(iterate_spider_output(output))
 
     def handle_spider_error(
         self,
@@ -491,12 +494,13 @@ class Scraper:
         assert self.crawler.spider is not None  # typing
         self.slot.itemproc_size += 1
         try:
-            if self._itemproc_has_async["process_item"]:
-                output = await self.itemproc.process_item_async(item)
-            else:
-                output = await maybe_deferred_to_future(
-                    self.itemproc.process_item(item, self.crawler.spider)
-                )
+            with log_crawler(self.crawler):
+                if self._itemproc_has_async["process_item"]:
+                    output = await self.itemproc.process_item_async(item)
+                else:
+                    output = await maybe_deferred_to_future(
+                        self.itemproc.process_item(item, self.crawler.spider)
+                    )
         except DropItem as ex:
             logkws = self.logformatter.dropped(item, ex, response, self.crawler.spider)
             if logkws is not None:
