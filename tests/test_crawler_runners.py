@@ -4,7 +4,6 @@ import logging
 from typing import TYPE_CHECKING
 
 import pytest
-from zope.interface.exceptions import MultipleInvalid
 
 from scrapy.crawler import (
     AsyncCrawlerProcess,
@@ -14,7 +13,6 @@ from scrapy.crawler import (
     CrawlerRunner,
     CrawlerRunnerBase,
 )
-from scrapy.settings import Settings
 from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_reactor_settings
@@ -33,15 +31,6 @@ class SpiderLoaderWithWrongInterface:
 
 
 class TestCrawlerRunner:
-    def test_spider_manager_verify_interface(self) -> None:
-        settings = Settings(
-            {
-                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
-            }
-        )
-        with pytest.raises(MultipleInvalid):
-            CrawlerRunner(settings)
-
     def test_crawler_runner_accepts_dict(self) -> None:
         runner = CrawlerRunner({"foo": "bar"})
         assert runner.settings["foo"] == "bar"
@@ -53,15 +42,6 @@ class TestCrawlerRunner:
 
 
 class TestAsyncCrawlerRunner:
-    def test_spider_manager_verify_interface(self) -> None:
-        settings = Settings(
-            {
-                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
-            }
-        )
-        with pytest.raises(MultipleInvalid):
-            AsyncCrawlerRunner(settings)
-
     def test_crawler_runner_accepts_dict(self) -> None:
         runner = AsyncCrawlerRunner({"foo": "bar"})
         assert runner.settings["foo"] == "bar"

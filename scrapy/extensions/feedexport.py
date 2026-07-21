@@ -22,7 +22,7 @@ from urllib.parse import unquote, urlparse
 
 from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
-from zope.interface import Interface, implementer
+from zope.interface import Interface
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
@@ -115,25 +115,18 @@ class ItemFilter:
         return True  # accept all items by default
 
 
-class IFeedStorage(Interface):  # type: ignore[misc]
-    """Interface that all Feed Storages must implement"""
-
+class _IFeedStorage(Interface):  # type: ignore[misc]  # pragma: no cover
     # pylint: disable=no-self-argument
 
-    def __init__(uri, *, feed_options=None):  # type: ignore[no-untyped-def]  # pylint: disable=super-init-not-called
-        """Initialize the storage with the parameters given in the URI and the
-        feed-specific options (see :setting:`FEEDS`)"""
+    def __init__(uri, *, feed_options=None): ...  # type: ignore[no-untyped-def]  # pylint: disable=super-init-not-called
 
-    def open(spider):  # type: ignore[no-untyped-def]
-        """Open the storage for the given spider. It must return a file-like
-        object that will be used for the exporters"""
+    def open(spider): ...  # type: ignore[no-untyped-def]
 
-    def store(file):  # type: ignore[no-untyped-def]
-        """Store the given file stream"""
+    def store(file): ...  # type: ignore[no-untyped-def]
 
 
 class FeedStorageProtocol(Protocol):
-    """Reimplementation of ``IFeedStorage`` that can be used in type hints."""
+    """Protocol that all Feed Storages must follow."""
 
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         """Initialize the storage with the parameters given in the URI and the
@@ -147,7 +140,6 @@ class FeedStorageProtocol(Protocol):
         """Store the given file stream"""
 
 
-@implementer(IFeedStorage)
 class BlockingFeedStorage(ABC):
     def open(self, spider: Spider) -> IO[bytes]:
         path = spider.crawler.settings["FEED_TEMPDIR"]
@@ -164,7 +156,6 @@ class BlockingFeedStorage(ABC):
         raise NotImplementedError
 
 
-@implementer(IFeedStorage)
 class StdoutFeedStorage:
     def __init__(
         self,
@@ -191,7 +182,6 @@ class StdoutFeedStorage:
         pass
 
 
-@implementer(IFeedStorage)
 class FileFeedStorage:
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         self.path: str = file_uri_to_path(uri) if uri.startswith("file:") else uri
@@ -758,3 +748,14 @@ class FeedExporter:
             feed_options.get("item_filter", ItemFilter)
         )
         return item_filter_class(feed_options)
+
+
+def __getattr__(name: str) -> Any:  # pragma: no cover
+    if name == "IFeedStorage":
+        warnings.warn(
+            "scrapy.extensions.feedexport.IFeedStorage is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return _IFeedStorage
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

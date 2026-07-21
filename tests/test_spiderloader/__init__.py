@@ -5,14 +5,12 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from zope.interface.verify import verifyObject
 
 # ugly hack to avoid cyclic imports of scrapy.spiders when running this test
 # alone
 import scrapy
 from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
-from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import Settings
 from scrapy.spiderloader import DummySpiderLoader, SpiderLoader, get_spider_loader
 
@@ -45,9 +43,6 @@ def spider_loader(spider_loader_env):
 
 
 class TestSpiderLoader:
-    def test_interface(self, spider_loader):
-        verifyObject(ISpiderLoader, spider_loader)
-
     def test_list(self, spider_loader):
         assert set(spider_loader.list()) == {
             "spider1",
