@@ -19,11 +19,11 @@ Backward-incompatible changes
       configured spider loader implements the ``ISpiderLoader`` interface.
 
     - :class:`~scrapy.extensions.feedexport.BlockingFeedStorage`,
-    - :class:`~scrapy.extensions.feedexport.FileFeedStorage` and
-    - :class:`~scrapy.extensions.feedexport.StdoutFeedStorage` are no longer
+      :class:`~scrapy.extensions.feedexport.FileFeedStorage` and
+      :class:`~scrapy.extensions.feedexport.StdoutFeedStorage` are no longer
       marked as implementing the ``IFeedStorage`` interface.
 
-    (:issue:`6585`, :issue:`TBD`)
+    (:issue:`6585`, :issue:`7731`)
 
 .. _release-2.17.0:
 
