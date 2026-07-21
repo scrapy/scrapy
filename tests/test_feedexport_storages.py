@@ -436,10 +436,7 @@ class TestS3FeedStorage:
 
 class TestGCSFeedStorage:
     def test_parse_settings(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": "publicRead"}
         crawler = get_crawler(settings_dict=settings)
@@ -450,10 +447,7 @@ class TestGCSFeedStorage:
         assert storage.blob_name == "export.csv"
 
     def test_parse_empty_acl(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": ""}
         crawler = get_crawler(settings_dict=settings)
@@ -467,10 +461,7 @@ class TestGCSFeedStorage:
 
     @coroutine_test
     async def test_store(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         uri = "gs://mybucket/export.csv"
         project_id = "myproject-123"
@@ -492,10 +483,7 @@ class TestGCSFeedStorage:
 
     @coroutine_test
     async def test_store_closes_file_on_upload_error(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         uri = "gs://mybucket/export.csv"
         project_id = "myproject-123"
