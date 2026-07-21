@@ -73,7 +73,6 @@ def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
 class TestPeriodicLog:
     def test_extension_enabled(self):
         # Expected that settings for this extension loaded successfully
-        # And on certain conditions - extension raising NotConfigured
 
         # "PERIODIC_LOG_STATS": True -> set to {"enabled": True}
         # due to TypeError exception from settings.getdict

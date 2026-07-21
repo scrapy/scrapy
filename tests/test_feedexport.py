@@ -13,14 +13,11 @@ from pathlib import Path
 from string import ascii_letters, digits
 from typing import IO, TYPE_CHECKING, Any
 from unittest import mock
-from urllib.parse import urljoin
-from urllib.request import pathname2url
 
 import lxml.etree
 import pytest
 from testfixtures import LogCapture
 from w3lib.url import file_uri_to_path
-from zope.interface import implementer
 
 import scrapy
 from scrapy import Spider, signals
@@ -31,7 +28,6 @@ from scrapy.extensions.feedexport import (
     FeedExporter,
     FeedSlot,
     FileFeedStorage,
-    IFeedStorage,
     apply_uri_params,
 )
 from scrapy.utils.python import to_unicode
@@ -39,17 +35,10 @@ from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.feedexport import MyItem, MyItem2, path_to_url, printf_escape
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
-
-
-def path_to_url(path: str | Path) -> str:
-    return urljoin("file:", pathname2url(str(path)))
-
-
-def printf_escape(s: str) -> str:
-    return s.replace("%", "%%")
 
 
 class FromCrawlerMixin:
@@ -92,7 +81,6 @@ class FailingBlockingFeedStorage(DummyBlockingFeedStorage):
         raise OSError("Cannot store")
 
 
-@implementer(IFeedStorage)
 class LogOnStoreFileStorage:
     """
     This storage logs inside `store` method.
@@ -113,15 +101,6 @@ class LogOnStoreFileStorage:
 
 class TestFeedExportBase(ABC):
     mockserver: MockServer
-
-    class MyItem(scrapy.Item):
-        foo = scrapy.Field()
-        egg = scrapy.Field()
-        baz = scrapy.Field()
-
-    class MyItem2(scrapy.Item):
-        foo = scrapy.Field()
-        hello = scrapy.Field()
 
     def _random_temp_filename(self, inter_dir="") -> Path:
         chars = [random.choice(ascii_letters + digits) for _ in range(15)]
@@ -517,21 +496,21 @@ class TestFeedExport(TestFeedExportBase):
     async def test_export_items(self):
         # feed exporters use field names from Item
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
         ]
         rows = [
             {"egg": "spam1", "foo": "bar1", "baz": ""},
             {"egg": "spam2", "foo": "bar2", "baz": "quux2"},
         ]
-        header = self.MyItem.fields.keys()
+        header = MyItem.fields.keys()
         await self.assertExported(items, header, rows)
 
     @coroutine_test
     async def test_pathlib_uri_with_placeholders(self):
         feed_dir = Path(self.temp_dir, "pathlib_placeholders")
         feed_dir.mkdir()
-        items = [self.MyItem({"foo": "bar1", "egg": "spam1"})]
+        items = [MyItem({"foo": "bar1", "egg": "spam1"})]
 
         class TestSpider(scrapy.Spider):
             name = "testspider"
@@ -561,7 +540,7 @@ class TestFeedExport(TestFeedExportBase):
         # so the resulting file name can be asserted exactly.
         feed_dir = Path(self.temp_dir, "pathlib_spaces_unicode")
         feed_dir.mkdir()
-        items = [self.MyItem({"foo": "bar1", "egg": "spam1"})]
+        items = [MyItem({"foo": "bar1", "egg": "spam1"})]
 
         class TestSpider(scrapy.Spider):
             name = "testspider"
@@ -590,7 +569,7 @@ class TestFeedExport(TestFeedExportBase):
         # and #5794.
         feed_dir = Path(self.temp_dir, "dir with spaces")
         feed_dir.mkdir()
-        items = [self.MyItem({"foo": "bar1", "egg": "spam1"})]
+        items = [MyItem({"foo": "bar1", "egg": "spam1"})]
 
         class TestSpider(scrapy.Spider):
             name = "testspider"
@@ -627,7 +606,7 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_start_finish_exporting_items(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
         ]
         settings = {
             "FEEDS": {
@@ -665,7 +644,7 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_start_finish_exporting_items_exception(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
         ]
         settings = {
             "FEEDS": {
@@ -724,7 +703,7 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_export_no_items_multiple_feeds(self):
-        """Make sure that `storage.store` is called for every feed."""
+        """Make sure that `storage.store` is not called."""
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -743,15 +722,15 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_export_multiple_item_classes(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem2({"hello": "world2", "foo": "bar2"}),
-            self.MyItem({"foo": "bar3", "egg": "spam3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem2({"hello": "world2", "foo": "bar2"}),
+            MyItem({"foo": "bar3", "egg": "spam3", "baz": "quux3"}),
             {"hello": "world4", "egg": "spam4"},
         ]
 
         # by default, Scrapy uses fields of the first Item for CSV and
         # all fields for JSON Lines
-        header = self.MyItem.fields.keys()
+        header = MyItem.fields.keys()
         rows_csv = [
             {"egg": "spam1", "foo": "bar1", "baz": ""},
             {"egg": "", "foo": "bar2", "baz": ""},
@@ -826,8 +805,8 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_export_based_on_item_classes(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem2({"hello": "world2", "foo": "bar2"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem2({"hello": "world2", "foo": "bar2"}),
             {"hello": "world3", "egg": "spam3"},
         ]
 
@@ -849,15 +828,15 @@ class TestFeedExport(TestFeedExportBase):
             "FEEDS": {
                 self._random_temp_filename(): {
                     "format": "csv",
-                    "item_classes": [self.MyItem],
+                    "item_classes": [MyItem],
                 },
                 self._random_temp_filename(): {
                     "format": "json",
-                    "item_classes": [self.MyItem2],
+                    "item_classes": [MyItem2],
                 },
                 self._random_temp_filename(): {
                     "format": "jsonlines",
-                    "item_classes": [self.MyItem, self.MyItem2],
+                    "item_classes": [MyItem, MyItem2],
                 },
                 self._random_temp_filename(): {
                     "format": "xml",
@@ -872,12 +851,10 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_export_based_on_custom_filters(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem2({"hello": "world2", "foo": "bar2"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem2({"hello": "world2", "foo": "bar2"}),
             {"hello": "world3", "egg": "spam3"},
         ]
-
-        MyItem = self.MyItem
 
         class CustomFilter1:
             def __init__(self, feed_options):
@@ -918,7 +895,7 @@ class TestFeedExport(TestFeedExportBase):
                 },
                 self._random_temp_filename(): {
                     "format": "jsonlines",
-                    "item_classes": [self.MyItem, self.MyItem2],
+                    "item_classes": [MyItem, MyItem2],
                     "item_filter": CustomFilter3,
                 },
             },
@@ -957,7 +934,7 @@ class TestFeedExport(TestFeedExportBase):
         # FEED_EXPORT_FIELDS option allows to order export fields
         # and to select a subset of fields to export, both for Items and dicts.
 
-        for item_cls in [self.MyItem, dict]:
+        for item_cls in [MyItem, dict]:
             items = [
                 item_cls({"foo": "bar1", "egg": "spam1"}),
                 item_cls({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
@@ -1320,7 +1297,6 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_storage_file_no_postprocessing(self):
-        @implementer(IFeedStorage)
         class Storage:
             def __init__(self, uri, *, feed_options=None):
                 pass
@@ -1342,7 +1318,6 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_storage_file_postprocessing(self):
-        @implementer(IFeedStorage)
         class Storage:
             def __init__(self, uri, *, feed_options=None):
                 pass

@@ -3,6 +3,28 @@
 Release notes
 =============
 
+Scrapy VERSION (unreleased)
+---------------------------
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   The following runtime usage of zope.interface_ interfaces is removed:
+
+    - :class:`~scrapy.spiderloader.SpiderLoader` and
+      :class:`~scrapy.spiderloader.DummySpiderLoader` are no longer marked
+      as implementing the ``ISpiderLoader`` interface.
+
+    - :func:`~scrapy.spiderloader.get_spider_loader` no longer checks that the
+      configured spider loader implements the ``ISpiderLoader`` interface.
+
+    - :class:`~scrapy.extensions.feedexport.BlockingFeedStorage`,
+      :class:`~scrapy.extensions.feedexport.FileFeedStorage` and
+      :class:`~scrapy.extensions.feedexport.StdoutFeedStorage` are no longer
+      marked as implementing the ``IFeedStorage`` interface.
+
+    (:issue:`6585`, :issue:`7731`)
+
 .. _release-2.17.0:
 
 Scrapy 2.17.0 (2026-07-07)
@@ -2643,7 +2665,7 @@ Deprecation removals
     (:issue:`6109`, :issue:`6116`)
 
 -   A custom class assigned to the :setting:`SPIDER_LOADER_CLASS` setting that
-    does not implement the :class:`~scrapy.interfaces.ISpiderLoader` interface
+    does not implement the ``ISpiderLoader`` interface
     will now raise a :exc:`zope.interface.verify.DoesNotImplement` exception at
     run time. Non-compliant classes have been triggering a deprecation warning
     since Scrapy 1.0.0.

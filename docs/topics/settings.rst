@@ -899,7 +899,9 @@ Use :setting:`DOWNLOAD_DELAY` to throttle your crawling speed, to avoid hitting
 servers too hard.
 
 Decimal numbers are supported. For example, to send a maximum of 4 requests
-every 10 seconds::
+every 10 seconds:
+
+.. code-block:: python
 
     DOWNLOAD_DELAY = 2.5
 
@@ -1231,7 +1233,9 @@ the ``dont_filter`` parameter to ``True`` on the ``__init__`` method of a
 specific :class:`~scrapy.Request` object that should not be filtered out.
 
 A class assigned to :setting:`DUPEFILTER_CLASS` must implement the following
-interface::
+interface:
+
+.. code-block:: python
 
     class MyDupeFilter:
 
@@ -1644,21 +1648,6 @@ Default: ``False``
 
 Whether to enable memory debugging.
 
-.. setting:: MEMDEBUG_NOTIFY
-
-MEMDEBUG_NOTIFY
----------------
-
-Default: ``[]``
-
-When memory debugging is enabled a memory report will be sent to the specified
-addresses if this setting is not empty, otherwise the report will be written to
-the log.
-
-Example::
-
-    MEMDEBUG_NOTIFY = ['user@example.com']
-
 .. setting:: MEMUSAGE_ENABLED
 
 MEMUSAGE_ENABLED
@@ -1732,9 +1721,11 @@ Default: ``"<project name>.spiders"`` (:ref:`fallback <default-settings>`: ``""`
 
 Module where to create new spiders using the :command:`genspider` command.
 
-Example::
+Example:
 
-    NEWSPIDER_MODULE = 'mybot.spiders_dev'
+.. code-block:: python
+
+    NEWSPIDER_MODULE = "mybot.spiders_dev"
 
 .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 
@@ -2209,7 +2200,7 @@ In order to use the reactor installed by Scrapy:
 
         def __init__(self, *args, **kwargs):
             self.timeout = int(kwargs.pop("timeout", "60"))
-            super(QuotesSpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
         async def start(self):
             reactor.callLater(self.timeout, self.stop)
@@ -2238,7 +2229,7 @@ which raises an exception, becomes:
 
         def __init__(self, *args, **kwargs):
             self.timeout = int(kwargs.pop("timeout", "60"))
-            super(QuotesSpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
         async def start(self):
             from twisted.internet import reactor

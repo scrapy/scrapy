@@ -208,12 +208,6 @@ scrapy.Spider
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
 
-   .. method:: log(message, [level])
-
-       Wrapper that sends a log message through the Spider's :attr:`logger`,
-       kept for backward compatibility. For more information see
-       :ref:`topics-logging-from-spiders`.
-
    .. method:: closed(reason)
 
        Called when the spider closes. This method provides a shortcut to
@@ -314,7 +308,7 @@ Spiders can access arguments in their `__init__` methods:
         name = "myspider"
 
         def __init__(self, category=None, *args, **kwargs):
-            super(MySpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
             self.start_urls = [f"http://www.example.com/categories/{category}"]
             # ...
 
@@ -628,9 +622,11 @@ XMLFeedSpider
 
     .. attribute:: itertag
 
-        A string with the name of the node (or element) to iterate in. Example::
+        A string with the name of the node (or element) to iterate in. Example:
 
-            itertag = 'product'
+        .. code-block:: python
+
+            itertag = "product"
 
     .. attribute:: namespaces
 
@@ -643,12 +639,17 @@ XMLFeedSpider
         You can then specify nodes with namespaces in the :attr:`itertag`
         attribute.
 
-        Example::
+        Example:
+
+        .. code-block:: python
+
+            from scrapy.spiders import XMLFeedSpider
+
 
             class YourSpider(XMLFeedSpider):
 
-                namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]
-                itertag = 'n:url'
+                namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
+                itertag = "n:url"
                 # ...
 
     Apart from these new attributes, this spider has the following overridable
@@ -808,9 +809,11 @@ SitemapSpider
           the regular expression. ``callback`` can be a string (indicating the
           name of a spider method) or a callable.
 
-        For example::
+        For example:
 
-            sitemap_rules = [('/product/', 'parse_product')]
+        .. code-block:: python
+
+            sitemap_rules = [("/product/", "parse_product")]
 
         Rules are applied in order, and only the first one that matches will be
         used.
@@ -832,7 +835,9 @@ SitemapSpider
         are links for the same website in another language passed within
         the same ``url`` block.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>
@@ -850,7 +855,9 @@ SitemapSpider
         This is a filter function that could be overridden to select sitemap entries
         based on their attributes.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>

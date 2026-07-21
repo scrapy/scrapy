@@ -571,3 +571,19 @@ class HeadersReceivedErrbackSpider(HeadersReceivedCallbackSpider):
     def headers_received(self, headers, body_length, request, spider):
         self.meta["headers_received"] = headers
         raise StopDownload(fail=True)
+
+
+class ExceptionSpider(Spider):
+    name = "exception"
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        raise ValueError("Exception in from_crawler method")
+
+
+class NoRequestsSpider(Spider):
+    name = "no_request"
+
+    async def start(self):
+        return
+        yield

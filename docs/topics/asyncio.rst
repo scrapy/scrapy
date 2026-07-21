@@ -150,6 +150,12 @@ Using Scrapy without a Twisted reactor
 .. warning::
     This is currently experimental and may not be suitable for production use.
 
+.. note:: As the Twisted download handlers cannot be used without a reactor,
+    the default download handler in this mode is
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. You
+    will need to additionally install the ``httpx`` library to use it, unless
+    you switch to some different handler.
+
 It's possible to use Scrapy without installing a Twisted reactor at all, by
 setting the :setting:`TWISTED_REACTOR_ENABLED` setting to ``False``. In this
 mode Scrapy will use the asyncio event loop directly, and most of the Scrapy

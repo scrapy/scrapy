@@ -36,7 +36,9 @@ Link extractor reference
 
 The link extractor class is
 :class:`scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor`. For convenience it
-can also be imported as ``scrapy.linkextractors.LinkExtractor``::
+can also be imported as ``scrapy.linkextractors.LinkExtractor``:
+
+.. code-block:: python
 
     from scrapy.linkextractors import LinkExtractor
 
