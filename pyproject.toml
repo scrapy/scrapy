@@ -67,7 +67,7 @@ brotli = [
     "brotlicffi>=1.2.0.0; implementation_name == 'pypy'",
 ]
 gcs = ["google-cloud-storage>=1.29.0"]
-httpx = ["httpx[http2,socks]>=0.27.1"]
+httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
 ipython = ["ipython>=7.1.0"]
 ptpython = ["ptpython>=2.0.1"]

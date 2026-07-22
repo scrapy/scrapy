@@ -291,9 +291,9 @@ HttpxDownloadHandler
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 or HTTP/2 protocol for them.
 
-It's implemented using the httpx_ library.
+It's implemented using the httpx2_ library.
 
-.. _httpx: https://www.python-httpx.org/
+.. _httpx2: https://httpx2.pydantic.dev/
 
 If you want to use this handler you need to replace the default ones for the
 ``http`` and ``https`` schemes:
