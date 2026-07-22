@@ -1,10 +1,7 @@
 """Boto/botocore helpers"""
 
+from importlib.util import find_spec
+
 
 def is_botocore_available() -> bool:
-    try:
-        import botocore  # noqa: F401,PLC0415
-
-        return True
-    except ImportError:
-        return False
+    return find_spec("botocore") is not None

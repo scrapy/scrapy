@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import importlib
+from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -50,9 +50,7 @@ if not H2_ENABLED:
         )
     )
 
-try:
-    import httpx  # noqa: F401
-except ImportError:
+if not find_spec("httpx"):
     collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
 
 
@@ -130,11 +128,8 @@ def pytest_runtest_setup(item):
     ]
 
     for module in optional_deps:
-        if item.get_closest_marker(f"requires_{module}"):
-            try:
-                importlib.import_module(module)
-            except ImportError:
-                pytest.skip(f"{module} is not installed")
+        if item.get_closest_marker(f"requires_{module}") and find_spec(module) is None:
+            pytest.skip(f"{module} is not installed")
 
     if item.get_closest_marker("requires_mitmproxy") and mitmdump_cmd() is None:
         pytest.skip("mitmdump is not available")
