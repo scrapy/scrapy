@@ -13,6 +13,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
     _get_encoding_or_mime_type_from_headers,
+    _get_response_class_from_mime_type,
     _remove_html_comments,
     get_base_url,
     get_meta_refresh,
@@ -857,10 +858,22 @@ def test_get_response_class_http(kwargs, response_class):
             (None, b"application/json"),
         ),
         (Headers({"Content-Encoding": []}), (None, None)),
+        # A Content-Disposition header that yields no file name (no parameters,
+        # or parameters other than filename) is ignored.
+        (Headers({"Content-Disposition": ["attachment"]}), (None, None)),
+        (
+            Headers({"Content-Disposition": ["attachment; foo=bar"]}),
+            (None, None),
+        ),
     ],
 )
 def test_get_encoding_or_mime_type_from_headers(headers, expected):
     assert _get_encoding_or_mime_type_from_headers(headers) == expected
+
+
+@pytest.mark.parametrize("mime_type", [None, b""])
+def test_get_response_class_from_mime_type_empty(mime_type):
+    assert _get_response_class_from_mime_type(mime_type) is Response
 
 
 def test_open_in_browser():
