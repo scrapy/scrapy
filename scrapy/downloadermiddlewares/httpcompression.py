@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from importlib.util import find_spec
 from itertools import chain
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
@@ -51,11 +52,7 @@ else:
     else:
         ACCEPTED_ENCODINGS.append(b"br")
 
-try:
-    import zstandard  # noqa: F401
-except ImportError:
-    pass
-else:
+if find_spec("zstandard") is not None:
     ACCEPTED_ENCODINGS.append(b"zstd")
 
 

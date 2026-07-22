@@ -1,12 +1,7 @@
 from __future__ import annotations
 
+from importlib.util import find_spec
+
 
 def rerp_available() -> bool:
-    # check if robotexclusionrulesparser is installed
-    try:
-        from robotexclusionrulesparser import (  # noqa: PLC0415
-            RobotExclusionRulesParser,  # noqa: F401
-        )
-    except ImportError:
-        return False
-    return True
+    return find_spec("robotexclusionrulesparser") is not None
