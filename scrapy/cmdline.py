@@ -3,7 +3,10 @@ from __future__ import annotations
 import argparse
 import cProfile
 import inspect
+import io
+import logging
 import os
+import pstats
 import sys
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING, ParamSpec
@@ -23,6 +26,8 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings, Settings
 
 _P = ParamSpec("_P")
+
+logger = logging.getLogger(__name__)
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
@@ -232,6 +237,20 @@ def _run_command_profiled(
     p.runctx("cmd.run(args, opts)", globals(), loc)
     if opts.profile:
         p.dump_stats(opts.profile)
+    _log_profile_stats(p)
+
+
+def _log_profile_stats(
+    p: cProfile.Profile,
+    sort: str = "cumulative",
+    lines: int = 20,
+) -> None:
+    """Log a human-readable cProfile stats summary at WARNING level."""
+    stream = io.StringIO()
+    ps = pstats.Stats(p, stream=stream)
+    ps.sort_stats(sort)
+    ps.print_stats(lines)
+    logger.warning("cProfile stats:\n%s", stream.getvalue())
 
 
 if __name__ == "__main__":

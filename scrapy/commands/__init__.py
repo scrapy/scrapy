@@ -104,12 +104,6 @@ class ScrapyCommand(ABC):
         group.add_argument(
             "--nolog", action="store_true", help="disable logging completely"
         )
-        group.add_argument(
-            "--profile",
-            metavar="FILE",
-            default=None,
-            help="write python cProfile stats to FILE",
-        )
         group.add_argument("--pidfile", metavar="FILE", help="write process ID to FILE")
         group.add_argument(
             "-s",
@@ -118,6 +112,12 @@ class ScrapyCommand(ABC):
             default=[],
             metavar="NAME=VALUE",
             help="set/override setting (may be repeated)",
+        )
+        group.add_argument(
+            "--profile",
+            metavar="FILE",
+            default=None,
+            help="write python cProfile stats to FILE and print a stats summary",
         )
         group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
