@@ -543,7 +543,7 @@ POST_XTRACTMIME_SCENARIOS = (
                     "application/x-ecmascript",
                 )
             ),
-            # JSON MIME types should trigger a TextResponse.
+            # JSON MIME types should trigger a JsonResponse.
             #
             # https://mimesniff.spec.whatwg.org/#json-mime-type
             *(
