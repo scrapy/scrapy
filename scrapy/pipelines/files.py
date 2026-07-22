@@ -27,7 +27,15 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
+from scrapy.pipelines.media import (
+    FileException as FileException,  # noqa: PLC0414  # re-exported for backward compatibility
+)
+from scrapy.pipelines.media import (
+    FileInfo,
+    FileInfoOrError,
+    MediaPipeline,
+    _MediaRequestFiltered,
+)
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
@@ -73,21 +81,6 @@ def _md5sum(file: IO[bytes]) -> str:
             break
         m.update(d)
     return m.hexdigest()
-
-
-class FileException(Exception):
-    """General media error exception"""
-
-
-class _MediaRequestFiltered(FileException):
-    """Raised internally by media pipelines when a media request is filtered
-    out (e.g. as an offsite request) instead of being downloaded.
-
-    It is a subclass of :exc:`FileException` for backward compatibility, but
-    unlike an actual download error it is logged at the ``DEBUG`` level and
-    without a traceback, since filtering a request is expected behavior rather
-    than an error.
-    """
 
 
 class StatInfo(TypedDict, total=False):

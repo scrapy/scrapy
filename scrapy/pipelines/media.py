@@ -55,9 +55,22 @@ FileInfoOrError: TypeAlias = (
 logger = logging.getLogger(__name__)
 
 
-def _media_request_filtered(failure: Failure) -> bool:
-    from scrapy.pipelines.files import _MediaRequestFiltered  # noqa: PLC0415
+class FileException(Exception):
+    """General media error exception"""
 
+
+class _MediaRequestFiltered(FileException):
+    """Raised internally by media pipelines when a media request is filtered
+    out (e.g. as an offsite request) instead of being downloaded.
+
+    It is a subclass of :exc:`FileException` for backward compatibility, but
+    unlike an actual download error it is logged at the ``DEBUG`` level and
+    without a traceback, since filtering a request is expected behavior rather
+    than an error.
+    """
+
+
+def _media_request_filtered(failure: Failure) -> bool:
     return isinstance(failure.value, _MediaRequestFiltered)
 
 
