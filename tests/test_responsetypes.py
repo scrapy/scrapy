@@ -126,7 +126,12 @@ class TestResponseTypes:
                 {"url": "http://example.com/data.json", "filename": "index.html"},
                 JsonResponse,
             ),
+            (
+                {"url": "http://example.com/data.unknown", "filename": "index.html"},
+                HtmlResponse,
+            ),
             ({"filename": "data.xml", "body": b"<html></html>"}, XmlResponse),
+            ({"filename": "data.unknown", "body": b"<html></html>"}, HtmlResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
