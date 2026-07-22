@@ -178,7 +178,7 @@ class HttpxDownloadHandler(_Base):
             raise DownloadConnectionRefusedError(str(e)) from e
         except httpx.ProxyError as e:
             raise DownloadConnectionRefusedError(str(e)) from e
-        except DOWNLOAD_FAILED_EXCEPTIONS as e:
+        except DOWNLOAD_FAILED_EXCEPTIONS as e:  # pylint: disable=catching-non-exception
             raise DownloadFailedError(str(e)) from e
 
     @staticmethod
