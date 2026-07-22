@@ -198,17 +198,41 @@ PRE_XTRACTMIME_SCENARIOS = (
             ("xml", "application/json", JsonResponse),
         )
     ),
-    # Compressed content should be of type Response until uncompressed.
+    # Compressed content should be of type Response until uncompressed, so a
+    # compression Content-Encoding takes precedence over the Content-Type.
     (
         {
             "headers": Headers(
                 {
-                    "Content-Encoding": ["zip"],
+                    "Content-Encoding": ["gzip"],
                     "Content-Type": ["text/html"],
                 }
             )
         },
         Response,
+    ),
+    # A Content-Encoding that is not a compression coding (e.g. "zip", or a
+    # charset such as "UTF-8" mistakenly sent there) is ignored, so that the
+    # Content-Disposition file name and the body are still taken into account.
+    (
+        {
+            "headers": Headers(
+                {
+                    "Content-Disposition": [
+                        'attachment; filename="a.html"',
+                    ],
+                    "Content-Encoding": ["zip"],
+                }
+            )
+        },
+        HtmlResponse,
+    ),
+    (
+        {
+            "body": b"<html>",
+            "headers": Headers({"Content-Encoding": ["zip"]}),
+        },
+        HtmlResponse,
     ),
     # We take the file extension of URL paths into account, except for HTTP
     # responses, because “they are unreliable and easily spoofed”.
@@ -566,7 +590,9 @@ POST_XTRACTMIME_SCENARIOS = (
             ),
         )
     ),
-    # Compressed content should be of type Response until uncompressed.
+    # Compressed content should be of type Response until uncompressed, so a
+    # compression Content-Encoding takes precedence over the Content-Disposition
+    # file name and over the body.
     (
         {
             "headers": Headers(
@@ -574,7 +600,7 @@ POST_XTRACTMIME_SCENARIOS = (
                     "Content-Disposition": [
                         'attachment; filename="a.html"',
                     ],
-                    "Content-Encoding": ["zip"],
+                    "Content-Encoding": ["gzip"],
                 }
             )
         },
@@ -585,11 +611,25 @@ POST_XTRACTMIME_SCENARIOS = (
             "body": b"<html>",
             "headers": Headers(
                 {
-                    "Content-Encoding": ["zip"],
+                    "Content-Encoding": ["gzip"],
                 }
             ),
         },
         Response,
+    ),
+    # A Content-Encoding that is not a compression coding (e.g. "zip", or a
+    # charset such as "UTF-8" mistakenly sent there) is ignored, so that the
+    # Content-Type is taken into account.
+    (
+        {
+            "headers": Headers(
+                {
+                    "Content-Encoding": ["zip"],
+                    "Content-Type": ["text/html"],
+                }
+            )
+        },
+        HtmlResponse,
     ),
     # If the body is empty, it contains no binary data bytes, hence body-based
     # MIME type detection must interpret the result as text.
@@ -773,12 +813,26 @@ def test_get_response_class_http(kwargs, response_class):
                 (["gzip"], b"gzip"),
                 (["gzip", "compress"], b"compress"),
                 (["deflate, br"], b"br"),
-                # Empty tokens (e.g. from "identity" or trailing commas) are
-                # ignored rather than treated as an encoding.
+                # Tokens are matched case-insensitively and normalized to
+                # lowercase.
+                (["GZIP"], b"gzip"),
+                # Only compression codings count as an encoding. Everything else
+                # (empty tokens from "identity" or trailing commas, charsets
+                # mistakenly sent as Content-Encoding, etc.) is ignored.
                 (["identity, gzip"], b"gzip"),
                 (["gzip,"], b"gzip"),
+                (["gzip, UTF-8"], b"gzip"),
             )
         ),
+        # A Content-Encoding made up entirely of non-compression tokens is
+        # ignored, so that Content-Type is still taken into account.
+        (
+            Headers(
+                {"Content-Encoding": ["UTF-8"], "Content-Type": "application/json"}
+            ),
+            (None, b"application/json"),
+        ),
+        (Headers({"Content-Encoding": ["UTF-8"]}), (None, None)),
         # A present but empty Content-Encoding header, as left behind by
         # HttpCompressionMiddleware once the body is fully decompressed, must
         # be ignored so that Content-Type is still taken into account.

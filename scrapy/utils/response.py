@@ -49,6 +49,11 @@ _ENCODING_MIME_TYPE_MAP = {
     b"gzip": b"application/gzip",
     b"zstd": b"application/zstd",
 }
+# Content-Encoding tokens that stand for compression, and hence mean the body
+# should be treated as binary until it is decompressed. Any other token (e.g. a
+# charset mistakenly sent as Content-Encoding, such as "UTF-8") is ignored, so
+# that response class detection falls back to Content-Type and the body.
+_COMPRESSION_ENCODINGS = frozenset(_ENCODING_MIME_TYPE_MAP)
 _MIME_TYPES = MimeTypes()
 _mime_overrides = get_data("scrapy", "mime.types") or b""
 _MIME_TYPES.readfp(StringIO(_mime_overrides.decode()))
@@ -73,8 +78,8 @@ def _get_encoding_or_mime_type_from_headers(
         raw_encodings = b",".join(headers.getlist(b"Content-Encoding")).split(b",")
         encodings = [
             encoding
-            for encoding in (item.strip() for item in raw_encodings)
-            if encoding and encoding.lower() != b"identity"
+            for encoding in (item.strip().lower() for item in raw_encodings)
+            if encoding in _COMPRESSION_ENCODINGS
         ]
         if encodings:
             return encodings[-1], None
