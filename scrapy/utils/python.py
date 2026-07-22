@@ -163,6 +163,12 @@ _BINARYCHARS = {
 }
 
 
+def _binary_is_text(data: bytes) -> bool:
+    if not isinstance(data, bytes):
+        raise TypeError(f"data must be bytes, got '{type(data).__name__}'")
+    return all(c not in _BINARYCHARS for c in data)
+
+
 def binary_is_text(data: bytes) -> bool:
     """Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
@@ -170,14 +176,13 @@ def binary_is_text(data: bytes) -> bool:
     warnings.warn(
         (
             "scrapy.utils.python.binary_is_text is deprecated, use "
-            "xtractmime.is_binary_data instead."
+            "xtractmime.is_binary_data instead. Note that is_binary_data "
+            "returns the opposite value: True for binary data."
         ),
         ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    if not isinstance(data, bytes):
-        raise TypeError(f"data must be bytes, got '{type(data).__name__}'")
-    return all(c not in _BINARYCHARS for c in data)
+    return _binary_is_text(data)
 
 
 def get_func_args_dict(

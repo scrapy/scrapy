@@ -17,7 +17,7 @@ class DataURIDownloadHandler(BaseDownloadHandler):
         uri = parse_data_uri(request.url)
         respcls = get_response_class(
             body=uri.data,
-            declared_mime_types=(uri.media_type.encode(),),
+            declared_mime_type=uri.media_type.encode(),
         )
 
         if issubclass(respcls, TextResponse) and uri.media_type.split("/")[0] == "text":

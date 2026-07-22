@@ -327,25 +327,23 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
         for protocol in ("http", "https")
     ),
-    # The filename parameter is taken into account regardless of its position
-    # among the Content-Disposition parameters.
+    # The filename parameter is taken into account even when it is followed by
+    # other Content-Disposition parameters.
     *(
         (
             {
                 "url": f"{protocol}://example.com/a",
                 "headers": Headers(
                     {
-                        "Content-Disposition": [content_disposition],
+                        "Content-Disposition": [
+                            'attachment; filename="a.xml"; size=123'
+                        ],
                     }
                 ),
             },
             XmlResponse,
         )
         for protocol in ("http", "https")
-        for content_disposition in (
-            'attachment; filename="a.xml"; size=123',
-            'form-data; name="field"; filename="a.xml"',
-        )
     ),
     # Without anything else, the body determines the response class.
     *(
@@ -500,6 +498,24 @@ PRE_XTRACTMIME_SCENARIOS = (
 # Scenarios that work differently with the previously-used, deprecated
 # scrapy.responsetypes.responsetypes.from_args
 POST_XTRACTMIME_SCENARIOS = (
+    # The filename parameter is taken into account even when it is not the
+    # first Content-Disposition parameter.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                "headers": Headers(
+                    {
+                        "Content-Disposition": [
+                            'form-data; name="field"; filename="a.xml"'
+                        ],
+                    }
+                ),
+            },
+            XmlResponse,
+        )
+        for protocol in ("http", "https")
+    ),
     # Content-Type determines the type for the HTTP protocol.
     *(
         (

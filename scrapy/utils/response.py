@@ -40,7 +40,7 @@ from scrapy.http import (
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Iterable
 
 _ENCODING_MIME_TYPE_MAP = {
     b"br": b"application/brotli",
@@ -174,12 +174,12 @@ def get_response_class(
     *,
     url: str | None = None,
     body: bytes | None = None,
-    declared_mime_types: Sequence[bytes] | None = None,
+    declared_mime_type: bytes | None = None,
     http_headers: Headers | None = None,
 ) -> type[Response]:
     """Guess the most appropriate Response class based on the given
     arguments."""
-    mime_type = next(iter(declared_mime_types or []), None)
+    mime_type = declared_mime_type
     encoding = None  # as in compression (e.g. gzip), not charset
     if http_headers:
         encoding, header_mime_type = _get_encoding_or_mime_type_from_headers(
