@@ -93,7 +93,7 @@ class Slot:
             self.active_size -= self.MIN_RESPONSE_SIZE
 
     def is_idle(self) -> bool:
-        return not (self.queue or self.active)
+        return not (self.queue or self.active or self.itemproc_size)
 
     def needs_backout(self) -> bool:
         return self.active_size > self.max_active_size
@@ -540,3 +540,4 @@ class Scraper:
             )
         finally:
             self.slot.itemproc_size -= 1
+            self._check_if_closing()
