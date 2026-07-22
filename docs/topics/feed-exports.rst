@@ -92,7 +92,6 @@ Marshal
 -   Value for the ``format`` key in the :setting:`FEEDS` setting: ``marshal``
 -   Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
 
-
 .. _topics-feed-storage:
 
 Storages
@@ -106,14 +105,13 @@ The storages backends supported out of the box are:
 
 -   :ref:`topics-feed-storage-fs`
 -   :ref:`topics-feed-storage-ftp`
--   :ref:`topics-feed-storage-s3` (requires boto3_)
--   :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
+-   :ref:`topics-feed-storage-s3` (requires the :ref:`s3 <extras>` extra)
+-   :ref:`topics-feed-storage-gcs` (requires the :ref:`gcs <extras>` extra)
 -   :ref:`topics-feed-storage-stdout`
 
-Some storage backends may be unavailable if the required external libraries are
-not available. For example, the S3 backend is only available if the boto3_
-library is installed.
-
+Some storage backends may be unavailable if the required :ref:`extras <extras>`
+are not installed. For example, the S3 backend requires the :ref:`s3 <extras>`
+extra.
 
 .. _topics-feed-uri-params:
 
@@ -209,7 +207,7 @@ The feeds are stored on `Amazon S3`_.
 
     -   ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
--   Required external libraries: `boto3`_ >= 1.20.0
+-   Required extras: :ref:`s3 <extras>`
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -249,7 +247,7 @@ The feeds are stored on `Google Cloud Storage`_.
 
     -   ``gs://mybucket/path/to/export.csv``
 
--   Required external libraries: `google-cloud-storage`_.
+-   Required extras: :ref:`gcs <extras>`
 
 For more information about authentication, please refer to `Google Cloud documentation <https://docs.cloud.google.com/docs/authentication>`_.
 
@@ -266,7 +264,6 @@ storage backend is: ``True``.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
-.. _google-cloud-storage: https://docs.cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
 
 .. _topics-feed-storage-stdout:
@@ -794,6 +791,5 @@ source spider in the feed URI:
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _boto3: https://github.com/boto/boto3
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/
