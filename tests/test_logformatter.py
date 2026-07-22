@@ -28,14 +28,14 @@ class TestLogFormatter:
         self.spider = Spider("default")
         self.spider.crawler = get_crawler()
 
-    def test_crawled_with_referer(self):
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
         assert logline == "Crawled (200) <GET http://www.example.com> (referer: None)"
 
-    def test_crawled_without_referer(self):
+    def test_crawled_with_referer(self):
         req = Request(
             "http://www.example.com", headers={"referer": "http://example.com"}
         )
@@ -198,7 +198,7 @@ class TestLogformatterSubclass(TestLogFormatter):
         self.spider = Spider("default")
         self.spider.crawler = get_crawler(Spider)
 
-    def test_crawled_with_referer(self):
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
@@ -207,7 +207,7 @@ class TestLogformatterSubclass(TestLogFormatter):
             logline == "Crawled (200) <GET http://www.example.com> (referer: None) []"
         )
 
-    def test_crawled_without_referer(self):
+    def test_crawled_with_referer(self):
         req = Request(
             "http://www.example.com",
             headers={"referer": "http://example.com"},

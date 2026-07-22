@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import socket
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -10,12 +11,19 @@ from OpenSSL.crypto import FILETYPE_PEM, load_certificate, load_privatekey
 from twisted.internet.ssl import CertificateOptions, ContextFactory
 
 from scrapy.core.downloader.tls import _TWISTED_VERSION_MAP
-from scrapy.utils._deps_compat import PYOPENSSL_WANTS_X509_PKEY
+from scrapy.utils._deps_compat import PYOPENSSL_X509_DEPRECATED
 from scrapy.utils.python import to_bytes
 from scrapy.utils.ssl import _get_cert_options_version_kwargs
 
 if TYPE_CHECKING:
     from twisted.internet.interfaces import IOpenSSLContextFactory
+
+
+def _free_port() -> int:
+    # racy but should be fine for tests
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return cast("int", s.getsockname()[1])
 
 
 def ssl_context_factory(
@@ -29,7 +37,7 @@ def ssl_context_factory(
     keyfile_path = Path(__file__).parent.parent / keyfile
     certfile_path = Path(__file__).parent.parent / certfile
 
-    if not PYOPENSSL_WANTS_X509_PKEY:
+    if PYOPENSSL_X509_DEPRECATED:
         cert = load_pem_x509_certificate(certfile_path.read_bytes())
         key = load_pem_private_key(keyfile_path.read_bytes(), password=None)
     else:

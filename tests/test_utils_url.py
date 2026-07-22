@@ -48,16 +48,6 @@ def test_url_is_from_spider():
     assert not url_is_from_spider("http://www.example.net/some/page.html", MySpider)
 
 
-def test_url_is_from_spider_class_attributes():
-    class MySpider(Spider):
-        name = "example.com"
-
-    assert url_is_from_spider("http://www.example.com/some/page.html", MySpider)
-    assert url_is_from_spider("http://sub.example.com/some/page.html", MySpider)
-    assert not url_is_from_spider("http://www.example.org/some/page.html", MySpider)
-    assert not url_is_from_spider("http://www.example.net/some/page.html", MySpider)
-
-
 def test_url_is_from_spider_with_allowed_domains():
     class MySpider(Spider):
         name = "example.com"
@@ -345,6 +335,18 @@ class TestStripUrl:
             (
                 "ftp://username:password@www.example.com:221/file.txt",
                 "ftp://username:password@www.example.com:221/file.txt",
+            ),
+            (
+                "http://user:80@www.example.com:80/index.html",
+                "http://user:80@www.example.com/index.html",
+            ),
+            (
+                "https://user:443@www.example.com:443/index.html",
+                "https://user:443@www.example.com/index.html",
+            ),
+            (
+                "ftp://user:21@www.example.com:21/file.txt",
+                "ftp://user:21@www.example.com/file.txt",
             ),
         ],
     )

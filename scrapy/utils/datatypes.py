@@ -1,8 +1,6 @@
 """
 This module contains data types used by Scrapy which are not included in the
 Python Standard Library.
-
-This module must not depend on any module outside the Standard Library.
 """
 
 from __future__ import annotations
@@ -152,7 +150,9 @@ class LocalCache(OrderedDict[_KT, _VT]):
         self.limit: int | None = limit
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
-        if self.limit:
+        if self.limit is not None:
+            if self.limit == 0:
+                return
             while len(self) >= self.limit:
                 self.popitem(last=False)
         super().__setitem__(key, value)

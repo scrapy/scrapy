@@ -29,14 +29,16 @@ disable it if you want. For more information about the extension itself see
 .. note::
     This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
+.. seealso:: :ref:`security-telnet`
+
 .. highlight:: none
 
 How to access the telnet console
 ================================
 
-The telnet console listens in the TCP port defined in the
-:setting:`TELNETCONSOLE_PORT` setting, which defaults to ``6023``. To access
-the console you need to type::
+The telnet console listens on the first available TCP port from the range
+defined in the :setting:`TELNETCONSOLE_PORT` setting, which defaults to
+``[6023, 6073]``. To access the console you need to type::
 
     telnet localhost 6023
     Trying localhost...
@@ -94,8 +96,6 @@ convenience:
 +----------------+-------------------------------------------------------------------+
 | ``p``          | a shortcut to the :func:`pprint.pprint` function                  |
 +----------------+-------------------------------------------------------------------+
-| ``hpy``        | for memory debugging (see :ref:`topics-leaks`)                    |
-+----------------+-------------------------------------------------------------------+
 
 Telnet console usage examples
 =============================
@@ -107,8 +107,8 @@ Here are some example tasks you can do with the telnet console:
 View engine status
 ------------------
 
-You can use the ``est()`` method of the Scrapy engine to quickly show its state
-using the telnet console::
+You can use the ``est()`` method provided by the console to quickly show the
+engine status::
 
     telnet localhost 6023
     >>> est()
@@ -191,6 +191,8 @@ TELNETCONSOLE_HOST
 Default: ``'127.0.0.1'``
 
 The interface the telnet console should listen on
+
+.. seealso:: :ref:`security-telnet`
 
 
 .. setting:: TELNETCONSOLE_USERNAME

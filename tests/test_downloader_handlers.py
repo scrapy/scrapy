@@ -16,7 +16,7 @@ from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import Request
+from scrapy.http import Request, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.misc import build_from_crawler
@@ -170,6 +170,16 @@ class TestS3Anon:
         httpreq = await self.download_request(req)
         assert hasattr(self.s3reqh, "anon")
         assert self.s3reqh.anon
+        assert httpreq.url == "https://aws-publicdatasets.s3.amazonaws.com/"
+
+    @coroutine_test
+    async def test_anon_request_insecure(self):
+        req = Request("s3://aws-publicdatasets/", meta={"is_secure": False})
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Passing is_secure=False for s3:// requests is deprecated",
+        ):
+            httpreq = await self.download_request(req)
         assert httpreq.url == "http://aws-publicdatasets.s3.amazonaws.com/"
 
 
@@ -191,17 +201,30 @@ class TestS3:
 
     @contextlib.contextmanager
     def _mocked_date(self, date):
-        try:
-            import botocore.auth  # noqa: F401,PLC0415
-        except ImportError:
+        import botocore.auth  # noqa: F401,PLC0415
+
+        # We need to mock botocore.auth.formatdate, because otherwise
+        # botocore overrides Date header with current date and time
+        # and Authorization header is different each time
+        with mock.patch("botocore.auth.formatdate") as mock_formatdate:
+            mock_formatdate.return_value = date
             yield
-        else:
-            # We need to mock botocore.auth.formatdate, because otherwise
-            # botocore overrides Date header with current date and time
-            # and Authorization header is different each time
-            with mock.patch("botocore.auth.formatdate") as mock_formatdate:
-                mock_formatdate.return_value = date
-                yield
+
+    @coroutine_test
+    async def test_secure_by_default(self):
+        req = Request("s3://johnsmith/photos/puppy.jpg")
+        httpreq = await self.download_request(req)
+        assert httpreq.url == "https://johnsmith.s3.amazonaws.com/photos/puppy.jpg"
+
+    @coroutine_test
+    async def test_insecure_opt_out(self):
+        req = Request("s3://johnsmith/photos/puppy.jpg", meta={"is_secure": False})
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Passing is_secure=False for s3:// requests is deprecated",
+        ):
+            httpreq = await self.download_request(req)
+        assert httpreq.url == "http://johnsmith.s3.amazonaws.com/photos/puppy.jpg"
 
     @coroutine_test
     async def test_request_signing1(self):
@@ -339,6 +362,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "A brief note"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "US-ASCII"
 
     @coroutine_test
@@ -347,6 +371,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
     @coroutine_test
@@ -355,6 +380,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert response.body == b"\xbe\xd3\xbe"
+        assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
     @coroutine_test
@@ -367,6 +393,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "utf-8"
 
     @coroutine_test

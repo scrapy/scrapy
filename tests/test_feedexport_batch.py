@@ -12,18 +12,18 @@ from urllib.parse import urljoin
 import lxml.etree
 import pytest
 from packaging.version import Version
-from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy import Spider
 from scrapy.exceptions import NotConfigured
-from scrapy.extensions.feedexport import FeedExporter, IFeedStorage, S3FeedStorage
+from scrapy.extensions.feedexport import FeedExporter, S3FeedStorage
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
 from tests.test_feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.feedexport import MyItem
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -197,9 +197,9 @@ class TestBatchDeliveries(TestFeedExportBase):
     async def test_export_items(self):
         """Test partial deliveries in all supported formats"""
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
         rows = [
             {"egg": "spam1", "foo": "bar1", "baz": ""},
@@ -207,7 +207,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             {"foo": "bar3", "baz": "quux3", "egg": ""},
         ]
         settings = {"FEED_EXPORT_BATCH_ITEM_COUNT": 2}
-        header = self.MyItem.fields.keys()
+        header = MyItem.fields.keys()
         await self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
@@ -315,7 +315,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
                 assert got_batch == expected_batch
 
     @coroutine_test
@@ -339,7 +339,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
                 assert got_batch == expected_batch
 
     @coroutine_test
@@ -349,9 +349,9 @@ class TestBatchDeliveries(TestFeedExportBase):
         So %(batch_id)d replaced with the current id.
         """
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
         settings = {
             "FEEDS": {
@@ -378,6 +378,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(total=2, mockserver=self.mockserver)
+        assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
@@ -386,13 +387,15 @@ class TestBatchDeliveries(TestFeedExportBase):
     def test_s3_export(self):
         bucket = "mybucket"
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
 
         class CustomS3FeedStorage(S3FeedStorage):
-            stubs = []
+            from botocore.stub import Stubber  # noqa: PLC0415
+
+            stubs: list[Stubber] = []
 
             def open(self, *args, **kwargs):
                 from botocore import __version__ as botocore_version  # noqa: PLC0415
@@ -432,9 +435,6 @@ class TestBatchDeliveries(TestFeedExportBase):
                 },
             },
         }
-        crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(crawler, uri)
-        verifyObject(IFeedStorage, storage)
 
         class TestSpider(scrapy.Spider):
             name = "testspider"
@@ -447,8 +447,9 @@ class TestBatchDeliveries(TestFeedExportBase):
         yield crawler.crawl()
 
         assert len(CustomS3FeedStorage.stubs) == len(items)
-        for stub in CustomS3FeedStorage.stubs[:-1]:
+        for stub in CustomS3FeedStorage.stubs:
             stub.assert_no_pending_responses()
+        assert crawler.stats
         assert (
             "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
         )

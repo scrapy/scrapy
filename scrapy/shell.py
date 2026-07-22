@@ -28,13 +28,8 @@ from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import (
-    _schedule_coro,
-    deferred_f_from_coro_f,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import load_object
-from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
 
 if TYPE_CHECKING:
@@ -69,8 +64,8 @@ if TYPE_CHECKING:
 # 3. When fetch() is called, it prepares a request and calls Shell._schedule()
 # in the reactor thread (via threads.blockingCallFromThread()).
 # 4. Shell._schedule() calls Shell._open_spider() (on the first call).
-# 5. Shell._open_spider() calls engine.open_spider_async(close_if_idle=False)
-# and engine._start_request_processing().
+# 5. Shell._open_spider() calls
+# engine.open_spider_async(close_if_idle=False).
 # 6. Shell._schedule() calls engine.crawl(request), scheduling the request.
 # 7. Shell._schedule() via _request_deferred() waits until the request callback
 # is called. When it's called, the response becomes available.
@@ -80,8 +75,8 @@ if TYPE_CHECKING:
 # running event loop.
 #
 # Side note: it should be possible to remove _request_deferred() by using
-# engine.download() instead of engine.schedule(), losing the usual stuff like
-# spider middlewares (none of which should be important).
+# engine.download_async() instead of engine.crawl(), losing the usual stuff
+# like spider middlewares (none of which should be important).
 #
 # Other architecture problems:
 # * scrapy.cmdline.execute() creates an AsyncCrawlerProcess instance which
@@ -193,12 +188,9 @@ class Shell:
     async def _schedule(self, request: Request, spider: Spider | None) -> Response:
         """Send the request to the engine, wait for the result.
 
-        Runs in the reactor thread.
+        Runs in the reactor thread when using the reactor, or in the asyncio
+        event loop thread otherwise.
         """
-        if self._use_reactor and is_asyncio_reactor_installed():
-            # set the asyncio event loop for the current thread
-            event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
-            set_asyncio_event_loop(event_loop_path)
         if not self.spider:
             await self._open_spider(spider)
         assert self.crawler.engine is not None
@@ -214,7 +206,6 @@ class Shell:
         self.crawler.spider = spider
         assert self.crawler.engine
         await self.crawler.engine.open_spider_async(close_if_idle=False)
-        _schedule_coro(self.crawler.engine._start_request_processing())
         self.spider = spider
 
     def fetch(

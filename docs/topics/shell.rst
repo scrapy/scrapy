@@ -34,7 +34,9 @@ is unavailable.
 Through Scrapy's settings you can configure it to use any one of
 ``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
 are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
-variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
+variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`:
+
+.. code-block:: ini
 
     [settings]
     shell = bpython

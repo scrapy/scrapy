@@ -32,7 +32,11 @@ class TestCoreStatsExtension:
     @mock.patch("scrapy.extensions.corestats.monotonic", return_value=0)
     @mock.patch("scrapy.extensions.corestats.datetime")
     def test_core_stats_default_stats_collector(
-        self, mock_datetime: mock.Mock, crawler: Crawler, spider: Spider
+        self,
+        mock_datetime: mock.Mock,
+        mock_monotonic: mock.Mock,
+        crawler: Crawler,
+        spider: Spider,
     ) -> None:
         fixed_datetime = datetime(2019, 12, 1, 11, 38)
         mock_datetime.now = mock.Mock(return_value=fixed_datetime)
@@ -94,8 +98,13 @@ class TestStatsCollector:
         assert stats.get_value("test2") == 35
         stats.min_value("test4", 7)
         assert stats.get_value("test4") == 7
+        stats.set_stats({"replaced": "stats"})
+        assert stats.get_stats() == {"replaced": "stats"}
+        stats.clear_stats()
+        assert stats.get_stats() == {}
 
-    def test_dummy_collector(self, crawler: Crawler) -> None:
+    def test_dummy_collector(self) -> None:
+        crawler = get_crawler(Spider, {"STATS_DUMP": False})
         stats = DummyStatsCollector(crawler)
         assert stats.get_stats() == {}
         assert stats.get_value("anything") is None
@@ -104,9 +113,11 @@ class TestStatsCollector:
         stats.inc_value("v1")
         stats.max_value("v2", 100)
         stats.min_value("v3", 100)
+        stats.set_stats({"key": "val"})
         stats.open_spider()
         stats.set_value("test", "value")
         assert stats.get_stats() == {}
+        stats.close_spider()
 
     def test_deprecated_spider_arg(self, crawler: Crawler, spider: Spider) -> None:
         stats = StatsCollector(crawler)
@@ -124,6 +135,7 @@ class TestStatsCollector:
 
     @coroutine_test
     async def test_deprecated_spider_arg_custom_collector(self) -> None:
+        # the class reimplements many methods because those are called during the test crawl
         class CustomStatsCollector:
             def __init__(self, crawler):
                 self._stats = {}
@@ -134,9 +146,18 @@ class TestStatsCollector:
             def get_stats(self, spider=None):
                 return self._stats
 
+            def get_value(self, key, default=None, spider=None):
+                return self._stats.get(key, default)
+
+            def set_value(self, key, value, spider=None):
+                self._stats[key] = value
+
             def inc_value(self, key, count=1, start=0, spider=None):
                 d = self._stats
                 d[key] = d.setdefault(key, start) + count
+
+            def max_value(self, key, value, spider=None) -> None:
+                self._stats[key] = max(self._stats.setdefault(key, value), value)
 
             def close_spider(self, spider, reason):
                 pass

@@ -5,7 +5,6 @@ import pytest
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
-from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -64,9 +63,6 @@ class TestCrawl:
     @classmethod
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
-
-    def setup_method(self):
-        self.runner = CrawlerRunner()
 
     @inline_callbacks_test
     def test_delay(self):

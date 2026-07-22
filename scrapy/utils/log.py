@@ -12,7 +12,7 @@ from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings, _SettingsKey
+from scrapy.settings import Settings
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
@@ -89,7 +89,7 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(
-    settings: Settings | dict[_SettingsKey, Any] | None = None,
+    settings: Settings | dict[str, Any] | None = None,
     install_root_handler: bool = True,
 ) -> None:
     """
@@ -149,11 +149,12 @@ def install_scrapy_root_handler(settings: Settings) -> None:
 def _uninstall_scrapy_root_handler() -> None:
     global _scrapy_root_handler  # noqa: PLW0603
 
-    if (
-        _scrapy_root_handler is not None
-        and _scrapy_root_handler in logging.root.handlers
-    ):
+    if _scrapy_root_handler is None:
+        return
+
+    if _scrapy_root_handler in logging.root.handlers:
         logging.root.removeHandler(_scrapy_root_handler)
+    _scrapy_root_handler.close()
     _scrapy_root_handler = None
 
 
@@ -247,8 +248,7 @@ def logformatter_adapter(
 ) -> tuple[int, str, dict[str, Any] | tuple[Any, ...]]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
-    and adapts it into a tuple of positional arguments for logger.log calls,
-    handling backward compatibility as well.
+    and adapts it into a tuple of positional arguments for logger.log calls.
     """
 
     level = logkws.get("level", logging.INFO)

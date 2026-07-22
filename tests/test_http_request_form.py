@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import re
+import warnings
 from urllib.parse import parse_qs, unquote_to_bytes
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import FormRequest, HtmlResponse
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
@@ -26,14 +28,38 @@ def _qs(req, encoding="utf-8", to_unicode=False):
     return parse_qs(uqs, True)
 
 
+# FormRequest.from_response() is deprecated in favor of form2request, so the
+# many tests below that exercise it ignore the resulting deprecation warning.
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestFormRequest(TestRequest):
-    request_class = FormRequest  # type: ignore[assignment]
+    request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):
         first = to_unicode(first).split("&")
         second = to_unicode(second).split("&")
         assert sorted(first) == sorted(second), msg
+
+    def test_init_not_deprecated(self):
+        # Building a request directly from form data is not deprecated.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            self.request_class(
+                "http://www.example.com", formdata={"a": "1"}, method="POST"
+            )
+            self.request_class(
+                "http://www.example.com", method="GET", formdata={"a": "1"}
+            )
+
+    def test_from_response_deprecated(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            </form>"""
+        )
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"FormRequest\.from_response\(\)"
+        ):
+            self.request_class.from_response(response)
 
     def test_empty_formdata(self):
         r1 = self.request_class("http://www.example.com", formdata={})
@@ -294,6 +320,9 @@ class TestFormRequest(TestRequest):
         assert request.method == "GET"
         request = FormRequest.from_response(response, method="POST")
         assert request.method == "POST"
+        # an explicit method=None skips form-method normalization
+        request = FormRequest.from_response(response, method=None)
+        assert request.method == "NONE"
 
     def test_from_response_override_url(self):
         response = _buildresponse(

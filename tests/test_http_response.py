@@ -1,12 +1,18 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
-from packaging.version import Version as parse_version
-from w3lib import __version__ as w3lib_version
 from w3lib.encoding import resolve_encoding
 
 from scrapy.exceptions import NotSupported
 from scrapy.http import Headers, Request, Response
 from scrapy.link import Link
+from scrapy.utils._deps_compat import W3LIB_STRIPS_URLS
 from tests import get_testdata
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class TestResponse:
@@ -248,8 +254,13 @@ class TestResponse:
         with pytest.raises(ValueError, match="url can't be None"):
             r.follow(None)
 
+    def test_follow_None_encoding(self):
+        r = self.response_class("http://example.com")
+        with pytest.raises(ValueError, match="encoding can't be None"):
+            r.follow("foo", encoding=None)
+
     @pytest.mark.xfail(
-        parse_version(w3lib_version) < parse_version("2.1.1"),
+        not W3LIB_STRIPS_URLS,
         reason="https://github.com/scrapy/w3lib/pull/207",
         strict=True,
     )
@@ -257,7 +268,7 @@ class TestResponse:
         self._assert_followed_url("foo ", "http://example.com/foo")
 
     @pytest.mark.xfail(
-        parse_version(w3lib_version) < parse_version("2.1.1"),
+        not W3LIB_STRIPS_URLS,
         reason="https://github.com/scrapy/w3lib/pull/207",
         strict=True,
     )
@@ -325,16 +336,26 @@ class TestResponse:
             with pytest.raises(ValueError, match="url can't be None"):
                 list(r.follow_all(urls=[None]))
 
+    @pytest.mark.xfail(
+        not W3LIB_STRIPS_URLS,
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
     def test_follow_all_whitespace(self):
         relative = ["foo ", "bar ", "foo/bar ", "bar/foo "]
         absolute = [
-            "http://example.com/foo%20",
-            "http://example.com/bar%20",
-            "http://example.com/foo/bar%20",
-            "http://example.com/bar/foo%20",
+            "http://example.com/foo",
+            "http://example.com/bar",
+            "http://example.com/foo/bar",
+            "http://example.com/bar/foo",
         ]
         self._assert_followed_all_urls(relative, absolute)
 
+    @pytest.mark.xfail(
+        not W3LIB_STRIPS_URLS,
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
     def test_follow_all_whitespace_links(self):
         absolute = [
             "http://example.com/foo ",
@@ -342,8 +363,8 @@ class TestResponse:
             "http://example.com/foo/bar ",
             "http://example.com/bar/foo ",
         ]
-        links = map(Link, absolute)
-        expected = [u.replace(" ", "%20") for u in absolute]
+        links = [Link(u) for u in absolute]
+        expected = [u.strip() for u in absolute]
         self._assert_followed_all_urls(links, expected)
 
     def test_follow_all_flags(self):
@@ -357,25 +378,36 @@ class TestResponse:
         for req in fol:
             assert req.flags == ["cached", "allowed"]
 
-    def _assert_followed_url(self, follow_obj, target_url, response=None):
+    def _assert_followed_url(
+        self,
+        follow_obj: str | Link,
+        target_url: str,
+        response: Response | None = None,
+        encoding: str | None = None,
+    ) -> None:
         if response is None:
             response = self._links_response()
         req = response.follow(follow_obj)
         assert req.url == target_url
-        return req
+        if encoding is not None:
+            assert req.encoding == encoding
 
-    def _assert_followed_all_urls(self, follow_obj, target_urls, response=None):
+    def _assert_followed_all_urls(
+        self,
+        follow_obj: Iterable[str | Link],
+        target_urls: Iterable[str],
+        response: Response | None = None,
+    ) -> None:
         if response is None:
             response = self._links_response()
         followed = response.follow_all(follow_obj)
-        for req, target in zip(followed, target_urls, strict=False):
+        for req, target in zip(followed, target_urls, strict=True):
             assert req.url == target
-            yield req
 
-    def _links_response(self):
+    def _links_response(self) -> Response:
         body = get_testdata("link_extractor", "linkextractor.html")
         return self.response_class("http://example.com/index", body=body)
 
-    def _links_response_no_href(self):
+    def _links_response_no_href(self) -> Response:
         body = get_testdata("link_extractor", "linkextractor_no_href.html")
         return self.response_class("http://example.com/index", body=body)

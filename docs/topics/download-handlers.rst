@@ -39,6 +39,10 @@ for additional schemes and to replace or disable default ones:
         "sftp": "my.download_handlers.SftpHandler",
     }
 
+.. seealso:: :ref:`security-unencrypted-protocols` and
+    :ref:`security-local-resources`, for the security implications of the
+    default ``http``, ``ftp``, ``file`` and ``data`` handlers.
+
 Replacing HTTP(S) download handlers
 -----------------------------------
 
@@ -85,7 +89,7 @@ the following API:
         If ``True``, the handler will only be instantiated when the first
         request handled by it needs to be downloaded.
 
-    .. method:: download_request(request: Request) -> Response:
+    .. method:: download_request(request: Request) -> Response
         :async:
 
         Download the given request and return a response.
@@ -325,12 +329,12 @@ Other limitations:
 HTTPX_HTTP2_ENABLED
 ^^^^^^^^^^^^^^^^^^^
 
+.. versionadded:: 2.17.0
+
 Default: ``False``
 
 Whether to enable HTTP/2 support in this handler. The ``httpx[http2]`` extra
 needs to be installed if you want to enable this setting.
-
-.. versionadded:: VERSION
 
 Built-in non-HTTP download handlers reference
 =============================================

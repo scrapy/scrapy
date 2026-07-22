@@ -54,8 +54,6 @@ class ResponseTypes:
 
     def from_mimetype(self, mimetype: str) -> type[Response]:
         """Return the most appropriate Response class for the given mimetype"""
-        if mimetype is None:
-            return Response
         if mimetype in self.classes:
             return self.classes[mimetype]
         basetype = f"{mimetype.split('/', maxsplit=1)[0]}/*"
