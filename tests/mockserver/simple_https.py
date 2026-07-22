@@ -33,7 +33,7 @@ class SimpleMockServer(BaseMockServer):
         super().__init__()
         self.keyfile = keyfile
         self.certfile = certfile
-        self.cipher_string = cipher_string or ""
+        self.cipher_string = cipher_string
         self.tls_min_version = tls_min_version
         self.tls_max_version = tls_max_version
 

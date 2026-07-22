@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import importlib
+from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -11,7 +11,7 @@ from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
-from tests.mockserver.mitm_proxy import MitmProxy
+from tests.mockserver.mitm_proxy import MitmProxy, mitmdump_cmd
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -50,9 +50,7 @@ if not H2_ENABLED:
         )
     )
 
-try:
-    import httpx  # noqa: F401
-except ImportError:
+if not find_spec("httpx"):
     collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
 
 
@@ -74,40 +72,19 @@ def mockserver() -> Generator[MockServer]:
 
 
 @pytest.fixture  # function scope because it modifies os.environ
-def mitm_proxy_server(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
-    proxy = MitmProxy()
+def proxy_server(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Generator[str]:
+    kind = request.param
+    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
     url = proxy.start()
+    if kind == "https":
+        url = url.replace("http://", "https://")
     monkeypatch.setenv("http_proxy", url)
     monkeypatch.setenv("https_proxy", url)
 
     try:
-        yield proxy
-    finally:
-        proxy.stop()
-
-
-@pytest.fixture  # function scope because it modifies os.environ
-def mitm_proxy_server_https(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
-    proxy = MitmProxy()
-    url = proxy.start().replace("http://", "https://")
-    monkeypatch.setenv("http_proxy", url)
-    monkeypatch.setenv("https_proxy", url)
-
-    try:
-        yield proxy
-    finally:
-        proxy.stop()
-
-
-@pytest.fixture  # function scope because it modifies os.environ
-def socks5_proxy_server(monkeypatch: pytest.MonkeyPatch) -> Generator[MitmProxy]:
-    proxy = MitmProxy(mode="socks5")
-    url = proxy.start()
-    monkeypatch.setenv("http_proxy", url)
-    monkeypatch.setenv("https_proxy", url)
-
-    try:
-        yield proxy
+        yield kind
     finally:
         proxy.stop()
 
@@ -148,15 +125,14 @@ def pytest_runtest_setup(item):
         "uvloop",
         "botocore",
         "boto3",
-        "mitmproxy",
     ]
 
     for module in optional_deps:
-        if item.get_closest_marker(f"requires_{module}"):
-            try:
-                importlib.import_module(module)
-            except ImportError:
-                pytest.skip(f"{module} is not installed")
+        if item.get_closest_marker(f"requires_{module}") and find_spec(module) is None:
+            pytest.skip(f"{module} is not installed")
+
+    if item.get_closest_marker("requires_mitmproxy") and mitmdump_cmd() is None:
+        pytest.skip("mitmdump is not available")
 
 
 # Generate localhost certificate files, needed by some tests

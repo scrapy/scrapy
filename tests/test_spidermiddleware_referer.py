@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import pytest
 
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spidermiddlewares.referer import (
@@ -33,6 +34,9 @@ from scrapy.spidermiddlewares.referer import (
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class TestRefererMiddleware:
@@ -235,7 +239,7 @@ class MixinSameOrigin:
         ("https://example.com/page.html", "http://not.example.com/", None),
         ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
         ("ftp://example.com/urls.zip", "http://example.com/not-page.html", None),
-        ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
+        ("ftps://example.com/urls.zip", "http://example.com/not-page.html", None),
         # test for user/password stripping
         (
             "https://user:password@example.com/page.html",
@@ -391,7 +395,7 @@ class MixinOriginWhenCrossOrigin:
         ),
         (
             "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
+            "http://example4.com/not-page.html",
             b"ftps://example4.com/",
         ),
         # test for user/password stripping
@@ -502,9 +506,9 @@ class MixinStrictOriginWhenCrossOrigin:
             b"ftps://example4.com/",
         ),
         (
-            "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
-            b"ftps://example4.com/",
+            "ftp://example4.com/urls.zip",
+            "http://example4.com/not-page.html",
+            b"ftp://example4.com/",
         ),
         # test for user/password stripping
         (
@@ -836,19 +840,20 @@ class TestRequestMetaSettingFallback:
             request_meta,
             policy_class,
             check_warning,
-        ) in self.params[3:]:
+        ) in self.params:
             mw = RefererMiddleware(Settings(settings))
 
             response = Response(origin, headers=response_headers)
             request = Request(target, meta=request_meta)
 
-            with warnings.catch_warnings(record=True) as w:
+            if check_warning:
+                with pytest.warns(
+                    RuntimeWarning, match="Could not load referrer policy"
+                ):
+                    policy = mw.policy(response, request)
+            else:
                 policy = mw.policy(response, request)
-                assert isinstance(policy, policy_class)
-
-                if check_warning:
-                    assert len(w) == 1
-                    assert w[0].category is RuntimeWarning, w[0].message
+            assert isinstance(policy, policy_class)
 
 
 class TestSettingsPolicyByName:
@@ -973,49 +978,39 @@ class TestPolicyMethodResponseParamRename:
         self.response = Response("http://www.example.com")
 
     def test_pos_string(self):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Passing a response URL to RefererMiddleware\.policy\(\)",
+        ):
             self.mw.policy("http://old.com", self.request)
-            found = False
-            for warning in w:
-                if "Passing a response URL" in str(warning.message):
-                    found = True
-                    break
-            assert found
 
     def test_pos_response(self):
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error",
+                category=ScrapyDeprecationWarning,
+                message=r"Passing 'resp_or_url' is deprecated",
+            )
             self.mw.policy(self.response, self.request)
-            for warning in w:
-                assert "resp_or_url" not in str(warning.message)
 
     def test_key_resp_or_url(self):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"Passing 'resp_or_url' is deprecated"
+        ):
             self.mw.policy(resp_or_url=self.response, request=self.request)
-            found = False
-            for warning in w:
-                if "Passing 'resp_or_url' is deprecated, use 'response' instead" in str(
-                    warning.message
-                ):
-                    found = True
-                    break
-            assert found
 
     def test_key_response(self):
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error",
+                category=ScrapyDeprecationWarning,
+                message=r"Passing 'resp_or_url' is deprecated",
+            )
             self.mw.policy(response=self.response, request=self.request)
-            for warning in w:
-                assert "resp_or_url" not in str(warning.message)
 
     def test_key_response_string(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        with pytest.warns(ScrapyDeprecationWarning, match="Passing a response URL"):
             self.mw.policy(response="http://old.com", request=self.request)
-            found = False
-            for warning in w:
-                if "Passing a response URL" in str(warning.message):
-                    found = True
-                    break
-            assert found
 
     def test_both_resp_or_url_and_response(self):
         with pytest.raises(
@@ -1025,13 +1020,21 @@ class TestPolicyMethodResponseParamRename:
                 response=self.response, resp_or_url=self.response, request=self.request
             )
 
+    def test_missing_response(self):
+        with pytest.raises(TypeError, match="Missing required argument: 'response'"):
+            self.mw.policy(request=self.request)
+
+    def test_missing_request(self):
+        with pytest.raises(TypeError, match="Missing required argument: 'request'"):
+            self.mw.policy(response=self.response)
+
 
 @coroutine_test
 async def test_response_policy_only_supports_policy_names():
     crawler = get_crawler(settings_dict={"REFERRER_POLICY": "no-referrer"})
     mw = build_from_crawler(RefererMiddleware, crawler)
 
-    async def input_result():
+    async def input_result() -> AsyncIterator[Any]:
         yield Request("https://example.com/")
 
     response = Response(
@@ -1079,7 +1082,7 @@ async def test_referer_policies_setting():
     )
     mw = build_from_crawler(RefererMiddleware, crawler)
 
-    async def input_result():
+    async def input_result() -> AsyncIterator[Any]:
         yield Request("https://example.com/")
 
     # "no-referrer-when-downgrade": None,
@@ -1123,3 +1126,36 @@ async def test_referer_policies_setting():
     ]
     assert len(output) == 1
     assert output[0].headers == {b"Referer": [b"https://python.org/"]}
+
+
+class TestReferrerPolicyHelpers:
+    def test_origin_referrer_local_scheme(self):
+        # A local scheme yields no referrer.
+        assert UnsafeUrlPolicy().origin_referrer("data:,foo") is None
+
+    def test_strip_url_empty(self):
+        assert UnsafeUrlPolicy().strip_url("") is None
+
+    def test_potentially_trustworthy_data_scheme(self):
+        assert UnsafeUrlPolicy().potentially_trustworthy("data:,foo") is False
+
+
+def test_default_policy():
+    crawler = get_crawler()
+    mw = build_from_crawler(RefererMiddleware, crawler)
+    assert mw.default_policy is DefaultReferrerPolicy
+
+
+def test_no_settings_constructor():
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="Instantiating RefererMiddleware without a 'settings' argument",
+    ):
+        mw = RefererMiddleware()
+    assert mw.default_policy is DefaultReferrerPolicy
+
+
+def test_not_configured_when_disabled():
+    crawler = get_crawler(settings_dict={"REFERER_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        build_from_crawler(RefererMiddleware, crawler)

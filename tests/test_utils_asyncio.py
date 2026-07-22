@@ -72,7 +72,7 @@ class TestParallelAsyncio:
         for length in [20, 50, 100]:
             parallel_count = [0]
             max_parallel_count = [0]
-            results = []
+            results: list[int] = []
             ait = self.get_async_iterable(length)
             await _parallel_asyncio(
                 ait,
@@ -83,6 +83,7 @@ class TestParallelAsyncio:
                 max_parallel_count,
             )
             assert list(range(length)) == sorted(results)
+            assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
     @coroutine_test
@@ -90,7 +91,7 @@ class TestParallelAsyncio:
         for length in [20, 50, 100]:
             parallel_count = [0]
             max_parallel_count = [0]
-            results = []
+            results: list[int] = []
             ait = self.get_async_iterable_with_delays(length)
             await _parallel_asyncio(
                 ait,
@@ -101,6 +102,7 @@ class TestParallelAsyncio:
                 max_parallel_count,
             )
             assert list(range(length)) == sorted(results)
+            assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
 
@@ -147,3 +149,12 @@ class TestAsyncioLoopingCall:
         with pytest.raises(TypeError):
             looping_call.start(0.1)
         assert not looping_call.running
+
+    @coroutine_test
+    async def test_looping_function_raises(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        looping_call = AsyncioLoopingCall(lambda: 1 / 0)
+        looping_call.start(0.1)
+        assert not looping_call.running
+        assert "Error calling the AsyncioLoopingCall function" in caplog.text

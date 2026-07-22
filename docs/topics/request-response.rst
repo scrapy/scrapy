@@ -63,7 +63,7 @@ Request objects
 
         .. invisible-code-block: python
 
-            from scrapy.http import Request
+            from scrapy import Request
 
         1. Using a dict:
 
@@ -188,6 +188,13 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
+        .. note:: When :setting:`JOBDIR` is set, requests are serialized to disk
+            with :mod:`pickle` (see :ref:`request-serialization`). As a result,
+            the callback receives a deep copy of any object stored in
+            ``cb_kwargs``, so mutating such an object in the callback does not
+            affect the original. Avoid relying on shared mutable state passed
+            through ``cb_kwargs`` in that case.
+
     .. attribute:: Request.meta
        :value: {}
 
@@ -243,7 +250,7 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
+    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs, cls])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
@@ -432,7 +439,7 @@ errors if needed:
                 )
 
         def parse_httpbin(self, response):
-            self.logger.info("Got successful response from {}".format(response.url))
+            self.logger.info(f"Got successful response from {response.url}")
             # do something useful here...
 
         def errback_httpbin(self, failure):
@@ -713,6 +720,7 @@ Those are:
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
+* :reqmeta:`download_slot`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
@@ -720,6 +728,9 @@ Those are:
 * :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`http_auth_domain`
+* :reqmeta:`http_pass`
+* :reqmeta:`http_user`
 * :reqmeta:`is_start_request`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
@@ -799,8 +810,37 @@ Whether or not to fail on broken responses. See:
 give_up_log_level
 -----------------
 
+.. versionadded:: 2.17.0
+
 :ref:`Logging level <levels>` used for the message logged when a request
 exceeds its retries. See :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
+.. reqmeta:: http_auth_domain
+
+http_auth_domain
+----------------
+
+.. versionadded:: 2.17.0
+
+Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
+
+.. reqmeta:: http_pass
+
+http_pass
+---------
+
+.. versionadded:: 2.17.0
+
+Overrides :setting:`HTTPAUTH_PASS` for this request.
+
+.. reqmeta:: http_user
+
+http_user
+---------
+
+.. versionadded:: 2.17.0
+
+Overrides :setting:`HTTPAUTH_USER` for this request.
 
 .. reqmeta:: max_retry_times
 
@@ -816,6 +856,8 @@ The meta key is used set retry times per request. When set, the
 verbatim_url
 ------------
 
+.. versionadded:: 2.17.0
+
 Set this key to ``True`` to keep the request URL as passed to
 :class:`~scrapy.Request`, without URL percent-encoding.
 
@@ -825,7 +867,6 @@ characters that would otherwise be canonicalized get different fingerprints.
 
 In this mode, the ``keep_fragments`` parameter is ignored, and it is
 effectively true.
-
 
 .. _topics-stop-response-download:
 
@@ -882,6 +923,11 @@ Request subclasses
 
 Here is the list of built-in :class:`~scrapy.Request` subclasses. You can also subclass
 it to implement your own custom functionality.
+
+FormRequest
+-----------
+
+.. autoclass:: scrapy.FormRequest
 
 JsonRequest
 -----------
@@ -982,12 +1028,16 @@ Response objects
 
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the response headers. Values can be accessed using
-        :meth:`~scrapy.http.headers.Headers.get` to return the first header value with
+        :meth:`~scrapy.http.headers.Headers.get` to return the last header value with
         the specified name or :meth:`~scrapy.http.headers.Headers.getlist` to return
         all header values with the specified name. For example, this call will give you
-        all cookies in the headers::
+        all cookies in the headers:
 
-            response.headers.getlist('Set-Cookie')
+        .. skip: next
+
+        .. code-block:: python
+
+            response.headers.getlist("Set-Cookie")
 
     .. attribute:: Response.body
 
@@ -1043,7 +1093,7 @@ Response objects
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
-        tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
+        tagging Responses. For example: ``'cached'``, ``'redirected'``', etc. And
         they're shown on the string representation of the Response (``__str__()``
         method) which is used by the engine for logging.
 
@@ -1058,8 +1108,8 @@ Response objects
 
         The IP address of the server from which the Response originated.
 
-        This attribute is currently only populated by the HTTP 1.1 download
-        handler, i.e. for ``http(s)`` responses. For other handlers,
+        This attribute is currently only populated by the HTTP download
+        handlers, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`ip_address` is always ``None``.
 
     .. attribute:: Response.protocol
@@ -1077,7 +1127,7 @@ Response objects
 
        Returns a new Response which is a copy of this Response.
 
-    .. method:: Response.replace([url, status, headers, body, request, flags, cls])
+    .. method:: Response.replace([url, status, headers, body, request, flags, certificate, ip_address, protocol, cls])
 
        Returns a Response object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
@@ -1089,7 +1139,11 @@ Response objects
         a possible relative url.
 
         This is a wrapper over :func:`~urllib.parse.urljoin`, it's merely an alias for
-        making this call::
+        making this call:
+
+        .. skip: next
+
+        .. code-block:: python
 
             urllib.parse.urljoin(response.url, url)
 
@@ -1178,21 +1232,31 @@ TextResponse objects
 
     .. method:: TextResponse.jmespath(query)
 
-        A shortcut to ``TextResponse.selector.jmespath(query)``::
+        .. skip: start
 
-            response.jmespath('object.[*]')
+        A shortcut to ``TextResponse.selector.jmespath(query)``:
+
+        .. code-block:: python
+
+            response.jmespath("object.[*]")
 
     .. method:: TextResponse.xpath(query)
 
-        A shortcut to ``TextResponse.selector.xpath(query)``::
+        A shortcut to ``TextResponse.selector.xpath(query)``:
 
-            response.xpath('//p')
+        .. code-block:: python
+
+            response.xpath("//p")
 
     .. method:: TextResponse.css(query)
 
-        A shortcut to ``TextResponse.selector.css(query)``::
+        A shortcut to ``TextResponse.selector.css(query)``:
 
-            response.css('p')
+        .. code-block:: python
+
+            response.css("p")
+
+        .. skip: end
 
     .. automethod:: TextResponse.follow
 

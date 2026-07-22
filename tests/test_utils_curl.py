@@ -163,6 +163,39 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    def test_post_data_multiple(self):
+        # curl merges repeated -d/--data/--data-raw options into a single body
+        # joined with "&"; scrapy must do the same, not keep only the last one.
+        curl_command = "curl 'https://www.example.org/' -d 'a=1' -d 'b=2' -d 'c=3'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2&c=3",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_multiple_mixed_flag_names(self):
+        curl_command = (
+            "curl 'https://www.example.org/' --data 'a=1' --data-raw 'b=2' -d 'c=3'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2&c=3",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_multiple_with_string_prefix(self):
+        # The leading "$" left by bash $'...' quoting is stripped per option,
+        # before the values are merged.
+        curl_command = "curl 'https://www.example.org/' -d $'a=1' -d $'b=2'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_explicit_get_with_data(self):
         curl_command = "curl httpbin.org/anything -X GET --data asdf"
         expected_result = {
@@ -213,10 +246,12 @@ class TestCurlToRequestKwargs:
 
     def test_ignore_unknown_options(self):
         # case 1: ignore_unknown_options=True:
+        curl_command = "curl --bar --baz http://www.example.com"
+        expected_result = {"method": "GET", "url": "http://www.example.com"}
         with warnings.catch_warnings():  # avoid warning when executing tests
-            warnings.simplefilter("ignore")
-            curl_command = "curl --bar --baz http://www.example.com"
-            expected_result = {"method": "GET", "url": "http://www.example.com"}
+            warnings.filterwarnings(
+                "ignore", category=UserWarning, message="Unrecognized options:"
+            )
             assert curl_to_request_kwargs(curl_command) == expected_result
 
         # case 2: ignore_unknown_options=False (raise exception):

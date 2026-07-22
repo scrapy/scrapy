@@ -12,6 +12,7 @@ import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
@@ -109,6 +110,7 @@ class CrawlSpider(Spider):
                 "deprecated: it will be removed in future Scrapy releases. "
                 "Please override the CrawlSpider.parse_with_rules method "
                 "instead.",
+                ScrapyDeprecationWarning,
                 stacklevel=2,
             )
 
@@ -198,6 +200,7 @@ class CrawlSpider(Spider):
             "The CrawlSpider._parse_response method is deprecated: "
             "it will be removed in future Scrapy releases. "
             "Please use the CrawlSpider.parse_with_rules method instead.",
+            ScrapyDeprecationWarning,
             stacklevel=2,
         )
         return self.parse_with_rules(response, callback, cb_kwargs, follow)
@@ -220,4 +223,11 @@ class CrawlSpider(Spider):
     def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider._follow_links = crawler.settings.getbool("CRAWLSPIDER_FOLLOW_LINKS")
+        if not spider._follow_links:
+            warnings.warn(
+                "The CRAWLSPIDER_FOLLOW_LINKS setting is deprecated."
+                " You can set follow=False in your rules to achieve the same effect.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return spider

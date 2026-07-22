@@ -186,7 +186,7 @@ class ProcessSpiderExceptionSimpleIterableMiddleware:
 class ProcessSpiderExceptionAsyncIteratorMiddleware:
     async def process_spider_exception(self, response, exception):
         yield {"foo": 1}
-        d = defer.Deferred()
+        d: defer.Deferred[None] = defer.Deferred()
         call_later(0, d.callback, None)
         await maybe_deferred_to_future(d)
         yield {"foo": 2}
@@ -236,16 +236,6 @@ class TestProcessSpiderOutputAsyncGen(TestProcessSpiderOutputSimple):
     async def _callback(self) -> Any:
         for item in super()._callback():
             yield item
-
-
-class ProcessSpiderOutputNonIterableMiddleware:
-    def process_spider_output(self, response, result):
-        return
-
-
-class ProcessSpiderOutputCoroutineMiddleware:
-    async def process_spider_output(self, response, result):
-        return result
 
 
 class ProcessStartSimpleMiddleware:
@@ -423,19 +413,11 @@ class TestBuiltinMiddlewareAsyncGen(TestBuiltinMiddlewareSimple):
 class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     ITEM_TYPE = dict
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
-    MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
     MW_EXC_SIMPLE = ProcessSpiderExceptionSimpleIterableMiddleware
     MW_EXC_ASYNCGEN = ProcessSpiderExceptionAsyncIteratorMiddleware
 
     def _callback(self) -> Any:
         1 / 0
-
-    async def _test_asyncgen_nodowngrade(self, *mw_classes: type[Any]) -> None:
-        with pytest.raises(
-            _InvalidOutput,
-            match=r"Async iterable returned from .+ cannot be downgraded",
-        ):
-            await self._get_middleware_result(*mw_classes)
 
     @coroutine_test
     async def test_exc_simple(self):

@@ -1,5 +1,4 @@
 import copy
-import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, MutableMapping
 from typing import Any
@@ -227,17 +226,11 @@ class TestCaselessDict(TestCaseInsensitiveDictBase):
     dict_class = CaselessDict
 
     def test_deprecation_message(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.filterwarnings("always", category=ScrapyDeprecationWarning)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"scrapy.utils.datatypes.CaselessDict is deprecated",
+        ):
             self.dict_class({"foo": "bar"})
-
-            assert len(caught) == 1
-            assert issubclass(caught[0].category, ScrapyDeprecationWarning)
-            assert (
-                str(caught[0].message)
-                == "scrapy.utils.datatypes.CaselessDict is deprecated,"
-                " please use scrapy.utils.datatypes.CaseInsensitiveDict instead"
-            )
 
 
 class TestSequenceExclude:
@@ -315,6 +308,16 @@ class TestLocalCache:
         for x in range(maximum):
             assert str(x) in cache
             assert cache[str(x)] == x
+
+    def test_cache_with_zero_limit(self):
+        cache = LocalCache(limit=0)
+        cache["a"] = 1
+        cache["b"] = 2
+        cache["c"] = 3
+        assert len(cache) == 0
+        assert "a" not in cache
+        assert "b" not in cache
+        assert "c" not in cache
 
 
 class TestLocalWeakReferencedCache:

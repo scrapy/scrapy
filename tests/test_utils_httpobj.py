@@ -17,4 +17,4 @@ def test_urlparse_cached():
     assert req1a == urlp
     assert req1a is req1b
     assert req1a is not req2
-    assert req1a is not req2
+    assert req1b is not req2

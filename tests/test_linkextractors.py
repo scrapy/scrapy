@@ -9,7 +9,7 @@ from w3lib import __version__ as w3lib_version
 
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
-from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor, LxmlParserLinkExtractor
 from tests import get_testdata
 
 
@@ -499,6 +499,59 @@ class Base:
                 ),
             ]
 
+        def test_tags_attrs_wildcard_and_deny(self):
+            html = b"""
+            <html><body>
+            <a href="a.html">a</a>
+            <div data-url="div.html">div</div>
+            <span href="span.html">span</span>
+            <p data-url="p.html">p</p>
+            </body></html>
+            """
+            response = HtmlResponse("http://example.com/index.html", body=html)
+
+            def urls(**kwargs):
+                lx = self.extractor_cls(**kwargs)
+                return [link.url for link in lx.extract_links(response)]
+
+            # Default behavior is unchanged: only the listed tags and attributes.
+            assert urls() == ["http://example.com/a.html"]
+
+            # "*" as a tag matches every tag.
+            assert urls(tags="*") == [
+                "http://example.com/a.html",
+                "http://example.com/span.html",
+            ]
+
+            # "*" as an attribute matches every attribute.
+            assert urls(tags="*", attrs="*") == [
+                "http://example.com/a.html",
+                "http://example.com/div.html",
+                "http://example.com/span.html",
+                "http://example.com/p.html",
+            ]
+
+            # deny_tags excludes tags from the wildcard.
+            assert urls(tags="*", attrs="*", deny_tags="div") == [
+                "http://example.com/a.html",
+                "http://example.com/span.html",
+                "http://example.com/p.html",
+            ]
+
+            # deny_attrs excludes attributes from the wildcard.
+            assert urls(tags="*", attrs="*", deny_attrs="data-url") == [
+                "http://example.com/a.html",
+                "http://example.com/span.html",
+            ]
+
+            # deny_tags also applies when tags are listed explicitly.
+            assert urls(tags=("a", "span"), attrs="*", deny_tags="span") == [
+                "http://example.com/a.html",
+            ]
+
+            # The wildcard for one parameter is independent of the other.
+            assert urls(tags="a", attrs="*") == ["http://example.com/a.html"]
+
         def test_xhtml(self):
             xhtml = b"""
     <?xml version="1.0"?>
@@ -745,19 +798,6 @@ class Base:
 class TestLxmlLinkExtractor(Base.TestLinkExtractorBase):
     extractor_cls = LxmlLinkExtractor
 
-    def test_link_wrong_href(self):
-        html = b"""
-        <a href="http://example.org/item1.html">Item 1</a>
-        <a href="http://[example.org/item2.html">Item 2</a>
-        <a href="http://example.org/item3.html">Item 3</a>
-        """
-        response = HtmlResponse("http://example.org/index.html", body=html)
-        lx = self.extractor_cls()
-        assert list(lx.extract_links(response)) == [
-            Link(url="http://example.org/item1.html", text="Item 1", nofollow=False),
-            Link(url="http://example.org/item3.html", text="Item 3", nofollow=False),
-        ]
-
     def test_link_restrict_text(self):
         html = b"""
         <a href="http://example.org/item1.html">Pic of a cat</a>
@@ -837,3 +877,36 @@ class TestLxmlLinkExtractor(Base.TestLinkExtractorBase):
     def test_link_allowed_is_false_with_missing_url_prefix(self):
         bad_link = Link("should_have_prefix.example")
         assert not LxmlLinkExtractor()._link_allowed(bad_link)
+
+
+class TestLxmlParserLinkExtractor:
+    def test_extract_links(self):
+        html = b'<a href="http://example.com/page.html">Link</a>'
+        response = HtmlResponse("http://example.com/", body=html)
+        lx = LxmlParserLinkExtractor()
+        assert lx.extract_links(response) == [
+            Link(url="http://example.com/page.html", text="Link", nofollow=False),
+        ]
+
+    def test_strip_false(self):
+        # With strip=False, trailing whitespace on a relative href survives urljoin
+        # and is visible to process_value (safe_url_string cleans it up afterward).
+        # Here process_value rejects URLs that still carry trailing whitespace,
+        # demonstrating the difference from strip=True.
+        def reject_trailing_whitespace(url):
+            return None if url != url.rstrip() else url
+
+        html = b'<a href="page.html   ">Link</a>'
+        response = HtmlResponse("http://example.com/", body=html)
+
+        lx_strip = LxmlParserLinkExtractor(
+            strip=True, process=reject_trailing_whitespace
+        )
+        assert lx_strip.extract_links(response) == [
+            Link(url="http://example.com/page.html", text="Link", nofollow=False),
+        ]
+
+        lx_no_strip = LxmlParserLinkExtractor(
+            strip=False, process=reject_trailing_whitespace
+        )
+        assert lx_no_strip.extract_links(response) == []

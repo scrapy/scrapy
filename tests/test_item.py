@@ -48,6 +48,18 @@ class TestItem:
         with pytest.raises(KeyError):
             i["field"]
 
+    def test_delitem(self):
+        class TestItem(Item):
+            name = Field()
+
+        i = TestItem(name="John")
+        del i["name"]
+        with pytest.raises(KeyError):
+            i["name"]
+
+        with pytest.raises(KeyError):
+            del i["name"]
+
     def test_repr(self):
         class TestItem(Item):
             name = Field()
@@ -129,6 +141,30 @@ class TestItem:
         item = TestItem(new="New")
         self.assertSortedEqual(list(item.keys()), ["new"])
         self.assertSortedEqual(list(item.values()), ["New"])
+
+    def test_fields_order(self):
+        class TestItem(Item):
+            name = Field()
+            keys = Field()
+            values = Field()
+
+        assert list(TestItem.fields) == ["name", "keys", "values"]
+
+    def test_fields_order_inheritance(self):
+        class ParentItem(Item):
+            name = Field()
+            keys = Field()
+            values = Field()
+
+        class TestItem(ParentItem):
+            extra = Field()
+            keys = Field(serializer=str)
+
+        # Inherited fields come first, in their definition order, followed by
+        # the fields newly defined in the subclass. A redefined field keeps the
+        # position of its first definition while taking the new metadata.
+        assert list(TestItem.fields) == ["name", "keys", "values", "extra"]
+        assert TestItem.fields["keys"] == {"serializer": str}
 
     def test_metaclass_inheritance(self):
         class ParentItem(Item):
