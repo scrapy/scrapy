@@ -303,6 +303,26 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
         for protocol in ("http", "https")
     ),
+    # The filename parameter is taken into account regardless of its position
+    # among the Content-Disposition parameters.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                "headers": Headers(
+                    {
+                        "Content-Disposition": [content_disposition],
+                    }
+                ),
+            },
+            XmlResponse,
+        )
+        for protocol in ("http", "https")
+        for content_disposition in (
+            'attachment; filename="a.xml"; size=123',
+            'form-data; name="field"; filename="a.xml"',
+        )
+    ),
     # Without anything else, the body determines the response class.
     *(
         ({"body": body}, response_class)

@@ -92,16 +92,15 @@ def _get_encoding_or_mime_type_from_headers(
         return None, headers[b"Content-Type"]
     content_disposition = headers.get(b"Content-Disposition")
     if content_disposition:
-        path = (
-            content_disposition.split(b";")[-1]
-            .split(b"=")[-1]
-            .strip(b"\"'")
-            .decode("latin-1")
-        )
-        encoding, mime_type = _get_encoding_or_mime_type_from_path(path)
-        if encoding:
-            return encoding, None
-        return None, mime_type
+        for parameter in content_disposition.split(b";")[1:]:
+            name, sep, value = parameter.partition(b"=")
+            if not sep or name.strip().lower() != b"filename":
+                continue
+            path = value.strip().strip(b"\"'").decode("latin-1")
+            encoding, mime_type = _get_encoding_or_mime_type_from_path(path)
+            if encoding:
+                return encoding, None
+            return None, mime_type
     return None, None
 
 
