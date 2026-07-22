@@ -49,7 +49,6 @@ _ENCODING_MIME_TYPE_MAP = {
     b"gzip": b"application/gzip",
     b"zstd": b"application/zstd",
 }
-_ENCODING_MIME_TYPES = {*_ENCODING_MIME_TYPE_MAP.values()}
 _MIME_TYPES = MimeTypes()
 _mime_overrides = get_data("scrapy", "mime.types") or b""
 _MIME_TYPES.readfp(StringIO(_mime_overrides.decode()))
@@ -57,10 +56,6 @@ _MIME_TYPES.readfp(StringIO(_mime_overrides.decode()))
 _metaref_cache: WeakKeyDictionary[Response, tuple[None, None] | tuple[float, str]] = (
     WeakKeyDictionary()
 )
-
-
-def _is_compressed_mime_type(mime_type: bytes) -> bool:
-    return mime_type in _ENCODING_MIME_TYPES
 
 
 def _is_other_text_mime_type(mime_type: bytes) -> bool:
@@ -75,10 +70,11 @@ def _get_encoding_or_mime_type_from_headers(
     headers: Headers,
 ) -> tuple[bytes | None, bytes | None]:
     if b"Content-Encoding" in headers:
+        raw_encodings = b",".join(headers.getlist(b"Content-Encoding")).split(b",")
         encodings = [
-            item.strip()
-            for item in b",".join(headers.getlist(b"Content-Encoding")).split(b",")
-            if item.strip().lower() != b"identity"
+            encoding
+            for encoding in (item.strip() for item in raw_encodings)
+            if encoding and encoding.lower() != b"identity"
         ]
         if encodings:
             return encodings[-1], None
@@ -97,7 +93,10 @@ def _get_encoding_or_mime_type_from_headers(
     content_disposition = headers.get(b"Content-Disposition")
     if content_disposition:
         path = (
-            content_disposition.split(b";")[-1].split(b"=")[-1].strip(b"\"'").decode()
+            content_disposition.split(b";")[-1]
+            .split(b"=")[-1]
+            .strip(b"\"'")
+            .decode("latin-1")
         )
         encoding, mime_type = _get_encoding_or_mime_type_from_path(path)
         if encoding:

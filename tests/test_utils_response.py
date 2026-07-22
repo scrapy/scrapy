@@ -52,7 +52,7 @@ POST_XTRACTMIME_HTML_STARTS = (
     b"<!--",
 )
 
-NON_BINARY_ASCII_BYTES = (
+NON_BINARY_ASCII_BYTES = tuple(
     byte for byte in (bytes([byte]) for byte in range(128)) if byte not in BINARY_BYTES
 )
 
@@ -281,6 +281,25 @@ PRE_XTRACTMIME_SCENARIOS = (
                 ),
             },
             HtmlResponse,
+        )
+        for protocol in ("http", "https")
+    ),
+    # A non-UTF-8 (e.g. latin-1) filename in Content-Disposition must not
+    # raise while the response class is determined; the file extension is
+    # still taken into account.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                "headers": Headers(
+                    {
+                        "Content-Disposition": [
+                            'attachment; filename="caf\xe9.xml"'.encode("latin-1"),
+                        ],
+                    }
+                ),
+            },
+            XmlResponse,
         )
         for protocol in ("http", "https")
     ),
@@ -734,8 +753,20 @@ def test_get_response_class_http(kwargs, response_class):
                 (["gzip"], b"gzip"),
                 (["gzip", "compress"], b"compress"),
                 (["deflate, br"], b"br"),
+                # Empty tokens (e.g. from "identity" or trailing commas) are
+                # ignored rather than treated as an encoding.
+                (["identity, gzip"], b"gzip"),
+                (["gzip,"], b"gzip"),
             )
         ),
+        # A present but empty Content-Encoding header, as left behind by
+        # HttpCompressionMiddleware once the body is fully decompressed, must
+        # be ignored so that Content-Type is still taken into account.
+        (
+            Headers({"Content-Encoding": [], "Content-Type": "application/json"}),
+            (None, b"application/json"),
+        ),
+        (Headers({"Content-Encoding": []}), (None, None)),
     ],
 )
 def test_get_encoding_or_mime_type_from_headers(headers, expected):
