@@ -452,6 +452,12 @@ StartSpiderMiddleware
 .. autoclass:: StartSpiderMiddleware
 
 
+StickyMetaParamsMiddleware
+--------------------------
+
+.. autoclass:: scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware
+
+
 UrlLengthMiddleware
 -------------------
 
