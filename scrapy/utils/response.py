@@ -42,10 +42,15 @@ from scrapy.utils.python import to_bytes, to_unicode
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
+# Maps each compression Content-Encoding token to a MIME type for its
+# compressed format. The specific value only needs to be a binary (non-text)
+# MIME type: it is fed to xtractmime so that a compressed body is classified as
+# a plain Response until it is decompressed.
 _ENCODING_MIME_TYPE_MAP = {
     b"br": b"application/brotli",
     b"compress": b"application/x-compress",
-    b"deflate": b"application/zip",
+    # deflate is a zlib-wrapped DEFLATE stream and has no registered media type.
+    b"deflate": b"application/zlib",
     b"gzip": b"application/gzip",
     b"zstd": b"application/zstd",
 }

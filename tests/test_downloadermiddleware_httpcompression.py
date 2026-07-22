@@ -164,9 +164,9 @@ class TestHttpCompression:
         buf = BytesIO()
         with GzipFile(fileobj=buf, mode="wb") as f:
             f.write(b'{"foo": "bar"}')
-        request = Request("http://scrapytest.org")
+        request = Request("http://www.example.com")
         response = Response(
-            "http://scrapytest.org",
+            "http://www.example.com",
             body=buf.getvalue(),
             headers={
                 "Content-Type": "application/json",
