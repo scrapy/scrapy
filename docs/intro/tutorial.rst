@@ -140,7 +140,7 @@ slow, and it means the requests above are sent one after another rather than in
 parallel.
 
 ``quotes.toscrape.com`` is a sandbox meant for scraping practice, so we can
-safely crawl it faster. Open ``tutorial/settings.py`` and add a
+safely crawl it faster. Open :file:`tutorial/settings.py` and add a
 :setting:`THROTTLER_SCOPES` entry that raises the concurrency and lowers the
 delay for that domain only:
 

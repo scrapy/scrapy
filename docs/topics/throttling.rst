@@ -189,7 +189,7 @@ The global ``BACKOFF_*`` settings can be overridden per scope with the
 :class:`~scrapy.throttler.BackoffConfig`:
 
 .. code-block:: python
-    :caption: ``settings.py``
+    :caption: :file:`settings.py`
 
     THROTTLER_SCOPES = {
         "example.com": {
@@ -235,7 +235,7 @@ robots.txt
 ==========
 
 `Crawl-Delay <https://en.wikipedia.org/wiki/Robots.txt#Crawl-delay_directive>`__
-is a non-standard ``robots.txt`` directive that indicates a number of seconds
+is a non-standard :file:`robots.txt` directive that indicates a number of seconds
 to wait between requests.
 
 .. setting:: THROTTLER_ROBOTSTXT_OBEY
@@ -334,7 +334,7 @@ You can then use the :setting:`THROTTLER_SCOPES` setting to customize
 throttling for such requests:
 
 .. code-block:: python
-    :caption: ``settings.py``
+    :caption: :file:`settings.py`
 
     THROTTLER_SCOPES = {
         "api": {"concurrency": 2},
@@ -452,7 +452,7 @@ set :setting:`THROTTLER` (default:
 path as a string):
 
 .. code-block:: python
-    :caption: ``settings.py``
+    :caption: :file:`settings.py`
 
     THROTTLER = "myproject.throttling.MyThrottler"
 
@@ -482,7 +482,7 @@ Then use the :setting:`THROTTLER_SCOPES` setting to define the throttling
 quotas for each throttler scope:
 
 .. code-block:: python
-    :caption: ``settings.py``
+    :caption: :file:`settings.py`
 
     THROTTLER_SCOPES = {
         "api.toscrape.com": {
@@ -510,7 +510,7 @@ The :setting:`THROTTLER_SCOPE_MANAGER` setting (default:
 as a string):
 
 .. code-block:: python
-    :caption: ``settings.py``
+    :caption: :file:`settings.py`
 
     THROTTLER_SCOPE_MANAGER = "myproject.throttling.MyThrottlerScopeManager"
 
@@ -525,7 +525,7 @@ scope by setting the ``"manager"`` key in the :setting:`THROTTLER_SCOPES`
 setting:
 
 .. code-block:: python
-    :caption: ``settings.py``
+    :caption: :file:`settings.py`
 
     THROTTLER_SCOPES = {
         "api.toscrape.com": {
@@ -541,7 +541,7 @@ supported. For example, this manager disables exponential :ref:`backoff
 <backoff>`, so a scope relies solely on its configured delay and quota:
 
 .. code-block:: python
-    :caption: ``myproject/throttling.py``
+    :caption: :file:`myproject/throttling.py`
 
     from scrapy.throttler import ThrottlerScopeManager
 
@@ -566,7 +566,7 @@ requests start consuming the global concurrency budget while they wait).
 it:
 
 .. code-block:: python
-    :caption: ``settings.py``
+    :caption: :file:`settings.py`
 
     SCHEDULER = "scrapy.core.scheduler.ThrottlerAwareScheduler"
     SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ThrottlerAwarePriorityQueue"
@@ -598,7 +598,7 @@ Alternative approaches include:
     For example:
 
     .. code-block:: python
-        :caption: ``settings.py``
+        :caption: :file:`settings.py`
 
         import tldextract
         from scrapy.throttler import Throttler, scope_cache
@@ -627,7 +627,7 @@ Alternative approaches include:
     For example:
 
     .. code-block:: python
-        :caption: ``settings.py``
+        :caption: :file:`settings.py`
 
         import tldextract
         from scrapy.throttler import Throttler, scope_cache
@@ -686,7 +686,7 @@ different domains:
     settings per endpoint:
 
     .. code-block:: python
-        :caption: ``settings.py``
+        :caption: :file:`settings.py`
 
         THROTTLER_SCOPES = {
             "api.toscrape.com/fast-endpoint": {"concurrency": 1000, "delay": 0.08},
@@ -707,7 +707,7 @@ to:
     API requests. For example:
 
     .. code-block:: python
-        :caption: ``settings.py``
+        :caption: :file:`settings.py`
 
         THROTTLER_SCOPES = {
             "api.toscrape.com": {"concurrency": 1000, "delay": 0.08},
@@ -840,7 +840,7 @@ window (:setting:`THROTTLER_WINDOW`). You can use :ref:`throttler quotas
     window:
 
     .. code-block:: python
-        :caption: ``settings.py``
+        :caption: :file:`settings.py`
 
         THROTTLER_SCOPES = {
             "cost": {"quota": 100.0},
