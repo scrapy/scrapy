@@ -25,7 +25,9 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    _SettingsInput: TypeAlias = SupportsItems[str, Any] | str | None
+    _SettingsInput: TypeAlias = (
+        SupportsItems[str, Any] | Iterable[tuple[str, Any]] | str | None
+    )
 
 
 SETTINGS_PRIORITIES: dict[str, int] = {
@@ -577,7 +579,7 @@ class BaseSettings(MutableMapping[str, Any]):
         command.
 
         :param values: the settings names and values
-        :type values: dict or string or :class:`~scrapy.settings.BaseSettings`
+        :type values: dict, iterable, string or :class:`~scrapy.settings.BaseSettings`
 
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
@@ -591,7 +593,12 @@ class BaseSettings(MutableMapping[str, Any]):
                 for name, value in values.items():
                     self.set(name, value, cast("int", values.getpriority(name)))
             else:
-                for name, value in values.items():
+                items: Iterable[tuple[str, Any]]
+                if hasattr(values, "items"):
+                    items = cast("SupportsItems[str, Any]", values).items()
+                else:
+                    items = values
+                for name, value in items:
                     self.set(name, value, priority)
 
     def delete(self, name: str, priority: int | str = "project") -> None:
