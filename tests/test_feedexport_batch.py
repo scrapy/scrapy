@@ -213,7 +213,7 @@ class TestBatchDeliveries(TestFeedExportBase):
     @coroutine_test
     async def test_batch_delivered_when_full(self):
         """Full batches must be finalized and delivered as soon as they are
-        full, instead of when the spider closes (#7730)."""
+        full, instead of when the spider closes."""
         dir_path = self._random_temp_filename()
         batch1_path = Path(dir_path, "1.json")
         mockserver_url = self.mockserver.url("/")
