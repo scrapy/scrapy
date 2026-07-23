@@ -78,7 +78,8 @@ other domains:
 .. code-block:: python
 
     THROTTLER_SCOPES = {
-        "example.com": {"concurrency": 16, "delay": 0.1},
+        "books.toscrape.com": {"concurrency": 32, "delay": 0.1},
+        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
     }
 
 Additional keys like ``"jitter"`` and ``"backoff"`` can be used here and are
