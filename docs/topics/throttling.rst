@@ -117,9 +117,7 @@ The key settings are:
     :ref:`Retry-After <retry-after>` and :ref:`RateLimit-Reset
     <rate-limiting-headers>` delays.
 
-See :ref:`throttling-settings` for :setting:`BACKOFF_EXCEPTIONS`,
-:setting:`BACKOFF_JITTER`, :setting:`BACKOFF_MIN_DELAY` and
-:setting:`BACKOFF_WINDOW`.
+See :ref:`throttling-settings` for additional backoff settings.
 
 .. _backoff-algorithm:
 
