@@ -71,8 +71,7 @@ behavior for specific domains [1]_.
 It is a dict that maps scope IDs to
 :class:`~scrapy.throttler.ThrottlerScopeConfig` dicts. It is empty by default.
 
-:command:`startproject` scaffolds a commented-out example entry, so that you can
-uncomment and edit it to crawl domains you own (or that are meant for scraping)
+For example, you can crawl domains you own (or that are meant for scraping)
 faster, while the :ref:`conservative defaults <basic-throttling>` still apply to
 other domains:
 
