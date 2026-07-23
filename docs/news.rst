@@ -5155,7 +5155,7 @@ Bug fixes
 *   The system file mode creation mask no longer affects the permissions of
     files generated using the :command:`startproject` command (:issue:`4722`)
 
-*   :func:`scrapy.utils.iterators.xmliter` now supports namespaced node names
+*   ``scrapy.utils.iterators.xmliter`` now supports namespaced node names
     (:issue:`861`, :issue:`4746`)
 
 *   :class:`~scrapy.Request` objects can now have ``about:`` URLs, which can
