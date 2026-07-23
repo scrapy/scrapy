@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import logging
 import random
 import time
@@ -343,8 +344,10 @@ class ThrottlerProtocol(Protocol):
     def get_scopes_key(self, request: Request) -> str:
         """Return a single string key for *request*, derived from its scopes.
 
-        For a single scope this is the scope ID itself; for multiple scopes
-        the sorted scope IDs are joined with ``"+"``.  This is the synchronous
+        For a single scope this is the scope ID itself (so the key of a
+        single-domain request matches its historical ``download_slot``); for
+        multiple scopes the sorted scope IDs are JSON-encoded into an
+        order-independent, collision-free key. This is the synchronous
         counterpart of :meth:`get_scopes`, used wherever a plain string key is
         needed (e.g. scheduler priority queues).
         """
@@ -614,7 +617,11 @@ class Throttler:
     def get_scopes_key(self, request: Request) -> str:
         scopes = self._resolve_scopes_sync(request)
         scope_ids = sorted(iter_scopes(scopes))
-        return "+".join(scope_ids) if scope_ids else ""
+        if not scope_ids:
+            return ""
+        if len(scope_ids) == 1:
+            return scope_ids[0]
+        return json.dumps(scope_ids)
 
     def get_resolved_scopes(self, request: Request) -> RequestScopes:
         """Return the scopes under which *request* was (or will be) sent,
