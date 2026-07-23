@@ -103,7 +103,7 @@ def curl_to_request_kwargs(
 
     curl_args = split(curl_command)
 
-    if curl_args[0] != "curl":
+    if not curl_args or curl_args[0] != "curl":
         raise ValueError('A curl command must start with "curl"')
 
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])
