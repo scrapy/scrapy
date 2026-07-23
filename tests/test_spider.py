@@ -46,7 +46,9 @@ class RawFeedSpider(MockServerSpider):
         yield Request(self.mockserver.url("/raw?" + urlencode({"raw": raw})))
 
 
-async def run_feed_crawl(spider_cls, mockserver):
+async def run_feed_crawl(
+    spider_cls: type[Spider], mockserver: MockServer
+) -> tuple[list[Any], Crawler]:
     """Crawl a single feed with ``spider_cls`` and return the scraped items
     together with the crawler (for stats assertions)."""
     items = []
@@ -221,7 +223,7 @@ class TestXMLFeedSpider(TestSpider):
     @coroutine_test
     async def test_parse_node_uses_parse_item(self, mockserver: MockServer):
         # parse_node falls back to parse_item for backward compatibility.
-        class _Spider(self.spider_class, RawFeedSpider):
+        class _Spider(self.spider_class, RawFeedSpider):  # type: ignore[name-defined,misc]
             itertag = "item"
             feed_body = "<items><item><id>1</id></item></items>"
 
@@ -234,17 +236,18 @@ class TestXMLFeedSpider(TestSpider):
     @coroutine_test
     async def test_parse_node_not_defined(self, mockserver: MockServer):
         # Without parse_node (nor parse_item) parsing fails with NotImplementedError.
-        class _Spider(self.spider_class, RawFeedSpider):
+        class _Spider(self.spider_class, RawFeedSpider):  # type: ignore[name-defined,misc]
             itertag = "item"
             feed_body = "<items><item><id>1</id></item></items>"
 
         items, crawler = await run_feed_crawl(_Spider, mockserver)
         assert items == []
+        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
 
     @coroutine_test
     async def test_html_iterator(self, mockserver: MockServer):
-        class _Spider(self.spider_class, RawFeedSpider):
+        class _Spider(self.spider_class, RawFeedSpider):  # type: ignore[name-defined,misc]
             iterator = "html"
             itertag = "item"
             content_type = "text/html"
@@ -261,7 +264,7 @@ class TestXMLFeedSpider(TestSpider):
 
     @coroutine_test
     async def test_unsupported_iterator(self, mockserver: MockServer):
-        class _Spider(self.spider_class, RawFeedSpider):
+        class _Spider(self.spider_class, RawFeedSpider):  # type: ignore[name-defined,misc]
             iterator = "unsupported"
             feed_body = "<items><item/></items>"
 
@@ -270,6 +273,7 @@ class TestXMLFeedSpider(TestSpider):
 
         items, crawler = await run_feed_crawl(_Spider, mockserver)
         assert items == []
+        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotSupported") == 1
 
     @coroutine_test
@@ -277,7 +281,7 @@ class TestXMLFeedSpider(TestSpider):
         # The xml and html iterators require a text response.
         for iterator in ("xml", "html"):
 
-            class _Spider(self.spider_class, RawFeedSpider):
+            class _Spider(self.spider_class, RawFeedSpider):  # type: ignore[name-defined,misc]
                 content_type = "application/octet-stream"
                 # A binary (non-text) body so the response is a plain Response.
                 feed_body = "\x00\x01\x02\x03"
@@ -288,6 +292,7 @@ class TestXMLFeedSpider(TestSpider):
             _Spider.iterator = iterator
             items, crawler = await run_feed_crawl(_Spider, mockserver)
             assert items == []
+            assert crawler.stats
             assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
 
 
@@ -313,7 +318,7 @@ class TestCSVFeedSpider(TestSpider):
 
     @coroutine_test
     async def test_parse(self, mockserver: MockServer):
-        class _Spider(self.spider_class, RawFeedSpider):
+        class _Spider(self.spider_class, RawFeedSpider):  # type: ignore[name-defined,misc]
             content_type = "text/csv"
             delimiter = ","
             quotechar = "'"
@@ -329,12 +334,13 @@ class TestCSVFeedSpider(TestSpider):
     @coroutine_test
     async def test_parse_row_not_defined(self, mockserver: MockServer):
         # Without parse_row parsing fails with NotImplementedError.
-        class _Spider(self.spider_class, RawFeedSpider):
+        class _Spider(self.spider_class, RawFeedSpider):  # type: ignore[name-defined,misc]
             content_type = "text/csv"
             feed_body = "id\n1\n"
 
         items, crawler = await run_feed_crawl(_Spider, mockserver)
         assert items == []
+        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
 
 

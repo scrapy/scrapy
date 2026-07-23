@@ -6,7 +6,7 @@ from datetime import datetime
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 import pytest
@@ -22,6 +22,8 @@ from tests.test_spider import TestSpider
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
+    from scrapy.spiders import Spider
     from tests.mockserver.http import MockServer
 
 
@@ -55,7 +57,9 @@ class RawSitemapSpider(MockServerSpider):
             yield request
 
 
-async def run_sitemap_crawl(spider_cls, mockserver):
+async def run_sitemap_crawl(
+    spider_cls: type[Spider], mockserver: MockServer
+) -> tuple[list[Any], Crawler]:
     """Crawl a single sitemap with ``spider_cls`` and return the scraped items
     together with the crawler (for stats assertions)."""
     items = []
