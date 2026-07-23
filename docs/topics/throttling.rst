@@ -68,7 +68,7 @@ Per-domain throttling
 The :setting:`THROTTLER_SCOPES` setting allows you to customize throttling
 behavior for specific domains [1]_.
 
-It is a dict that maps scope names to
+It is a dict that maps scope IDs to
 :class:`~scrapy.throttler.ThrottlerScopeConfig` dicts. It is empty by default.
 
 :command:`startproject` scaffolds a commented-out example entry, so that you can
@@ -407,7 +407,7 @@ Customizing throttler scopes
 There are 2 ways to customize throttler scopes.
 
 To **configure existing scopes**, use the :setting:`THROTTLER_SCOPES` setting.
-Its keys are scope names and its values are
+Its keys are scope IDs and its values are
 :class:`~scrapy.throttler.ThrottlerScopeConfig` dicts, which accept the
 following keys:
 
@@ -492,7 +492,7 @@ quotas for each throttler scope:
 
 Then, in the :reqmeta:`throttler_scopes` request metadata key or in the return
 value of the :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes`
-method, define a :class:`dict` where keys are throttler scopes and values are
+method, define a :class:`dict` where keys are scope IDs and values are
 :class:`float` values that indicate the expected quota consumption (it does not
 need to be exact).
 

@@ -276,7 +276,7 @@ class ThrottlerProtocol(Protocol):
         to *request*.
 
         Return ``None`` if no scopes apply, a string for a single scope, an
-        iterable of strings for multiple scopes, or a dict with scope names as
+        iterable of strings for multiple scopes, or a dict with scope IDs as
         keys and :ref:`throttler quotas <throttling-quotas>` as values.
         """
 
