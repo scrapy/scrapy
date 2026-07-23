@@ -395,7 +395,7 @@ class ThrottlerProtocol(Protocol):
         *scopes* accepts the same shapes as the output of :meth:`get_scopes`
         (typically the result of :meth:`get_resolved_scopes` for a request).
 
-        An exponential backoff step is always applied to the scope's delay.
+        A backoff step is always applied to the scope's delay.
         When *delay* is given, the scope is *additionally* held back for at
         least *delay* seconds before its next request: a one-time gate (e.g.
         from a :ref:`Retry-After <retry-after>` header), not a change to the
@@ -1018,8 +1018,8 @@ class ThrottlerScopeManagerProtocol(Protocol):
         """Apply a backoff to this scope.
 
         *delay*, when given, is a hard minimum delay in seconds (e.g. from a
-        ``Retry-After`` header). When omitted, an exponential backoff step is
-        applied instead.
+        ``Retry-After`` header). When omitted, a backoff step is applied
+        instead.
 
         *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`. It is ``True`` for
         untrusted input such as response headers, and may be set to ``False``
@@ -1103,7 +1103,7 @@ _SLOT_WAIT_TIMEOUT = 1.0
 
 
 class ThrottlerScopeManager:
-    """The default :setting:`THROTTLER_SCOPE_MANAGER` class.
+    r"""The default :setting:`THROTTLER_SCOPE_MANAGER` class.
 
     It implements a per-scope state machine covering delay, exponential
     :ref:`backoff <backoff>`, concurrency and :ref:`quotas
@@ -1113,17 +1113,9 @@ class ThrottlerScopeManager:
         :setting:`DOWNLOAD_DELAY`) is enforced between consecutive requests for
         the scope.
 
-    -   On a backoff trigger (a :setting:`BACKOFF_HTTP_CODES` response or a
-        :setting:`BACKOFF_EXCEPTIONS` exception) the delay grows exponentially
-        by :setting:`BACKOFF_DELAY_FACTOR`, bounded by :setting:`BACKOFF_MIN_DELAY`
-        and :setting:`BACKOFF_MAX_DELAY`, with :setting:`BACKOFF_JITTER` applied.
-        A ``Retry-After`` / ``RateLimit-Reset`` delay additionally holds the
-        scope back until that time before its next request (a one-time gate,
-        capped at :setting:`BACKOFF_MAX_DELAY`), without becoming the
-        steady-state delay.
-
-    -   After :setting:`BACKOFF_WINDOW` seconds without a new trigger, the delay
-        recovers one step at a time back towards the base delay.
+    -   On a backoff trigger the delay grows (see :meth:`record_backoff`); after
+        quiet :setting:`BACKOFF_WINDOW`\ s it recovers (see :meth:`_recover`).
+        The :ref:`backoff docs <backoff>` describe the algorithm.
 
     -   When the scope is configured with a ``"concurrency"`` limit, no more
         than that many requests are allowed in flight at once.
@@ -1192,7 +1184,10 @@ class ThrottlerScopeManager:
 
         # State.
         self._delay: float = self._base_delay
-        self._backoff_level: int = 0
+        # Bracket for the recovery search (see _recover): highest delay known to
+        # trigger, lowest known safe. None until observed.
+        self._max_unsafe: float | None = None
+        self._min_safe: float | None = None
         self._next_allowed_time: float | None = None
         self._in_backoff_until: float | None = None
         self._last_backoff_time: float | None = None
@@ -1239,28 +1234,50 @@ class ThrottlerScopeManager:
         # applies; otherwise the plain delay jitter does.
         if self._delay <= 0:
             return self._delay
-        jitter = self._backoff_jitter if self._backoff_level > 0 else self._jitter
+        jitter = (
+            self._backoff_jitter if self._delay > self._base_delay else self._jitter
+        )
         return self._apply_jitter(self._delay, jitter)
 
     def _recover(self, now: float) -> None:
-        if self._backoff_level == 0 or self._last_backoff_time is None:
+        # Bracketing search for the smallest tolerated delay, one BACKOFF_WINDOW
+        # per step; see the "backoff" docs for the algorithm.
+        if self._last_backoff_time is None or self._delay <= self._base_delay:
             return
         if self._window <= 0:
-            # No window: no recovery cadence to step (would spin); recover at once.
-            self._backoff_level = 0
-            self._delay = self._base_delay
-            self._in_backoff_until = None
-            self._last_backoff_time = None
+            # Non-positive window: recover at once (no cadence to step, would spin).
+            self._reset_backoff()
             return
-        while self._backoff_level > 0 and now - self._last_backoff_time >= self._window:
-            self._backoff_level -= 1
+        while now - self._last_backoff_time >= self._window:
             self._last_backoff_time += self._window
-            if self._backoff_level == 0:
-                self._delay = self._base_delay
-                self._in_backoff_until = None
-                self._last_backoff_time = None
-                break
-            self._delay = max(self._base_delay, self._delay / self._delay_factor)
+            self._recover_step()
+            if self._delay - self._base_delay < self._min_delay:
+                self._reset_backoff()  # within one step of base: fully recovered
+                return
+
+    def _recover_step(self) -> None:
+        current = self._delay
+        # A full quiet window proves the current delay safe; probe halfway down
+        # toward _max_unsafe (or the base delay) to look for a smaller one.
+        self._min_safe = (
+            current if self._min_safe is None else min(self._min_safe, current)
+        )
+        lower = self._base_delay if self._max_unsafe is None else self._max_unsafe
+        self._delay = max(self._base_delay, (lower + self._min_safe) / 2)
+        # Decay _max_unsafe toward base so probing can descend past a stale bound
+        # and track a server that became more permissive.
+        if self._max_unsafe is not None:
+            self._max_unsafe = (self._base_delay + self._max_unsafe) / 2
+            if self._max_unsafe - self._base_delay < self._min_delay:
+                self._max_unsafe = None
+
+    def _reset_backoff(self) -> None:
+        """Return the scope to its non-backoff steady state."""
+        self._delay = self._base_delay
+        self._max_unsafe = None
+        self._min_safe = None
+        self._in_backoff_until = None
+        self._last_backoff_time = None
 
     def _maybe_reset_quota(self, now: float) -> None:
         if self._quota is None:
@@ -1358,21 +1375,31 @@ class ThrottlerScopeManager:
         now = self._now(now)
         self._last_seen = now
         self._last_backoff_time = now
-        self._backoff_level += 1
         if delay is not None:
-            # A hard delay (e.g. a Retry-After header) is a one-time gate: hold
-            # the scope back for at least this long *once*, matching the HTTP
-            # semantics of "do not retry before this time". It is deliberately
-            # not turned into the steady-state inter-request delay; the delay
-            # still grows by one exponential step below (and recovers over
-            # BACKOFF_WINDOW), so a small Retry-After does not become a long
-            # standing delay for every later request.
+            # A hard delay (e.g. Retry-After) is a one-time gate, not the
+            # steady-state delay; the exponential step below still applies.
             hard = min(float(delay), self._max_delay) if cap else float(delay)
             self._in_backoff_until = now + hard
-        grown = self._delay * self._delay_factor if self._delay > 0 else self._min_delay
-        # Store the deterministic, bounded delay; jitter is applied per use in
-        # _effective_delay(), so it neither compounds across successive backoff
-        # steps nor concentrates on BACKOFF_MIN_DELAY / BACKOFF_MAX_DELAY.
+        # The current delay just triggered: it is the new lower bound of the
+        # recovery search (see _recover).
+        self._max_unsafe = (
+            self._delay
+            if self._max_unsafe is None
+            else max(self._max_unsafe, self._delay)
+        )
+        if self._min_safe is not None and self._min_safe <= self._max_unsafe:
+            self._min_safe = None  # stale (server got stricter): rediscover it
+        if self._min_safe is not None:
+            # Jump straight back to the known-safe delay; recovery only probes
+            # below it, so triggering stops at once instead of creeping up.
+            grown = self._min_safe
+        else:
+            # No safe delay known yet: grow exponentially to find one.
+            grown = (
+                self._delay * self._delay_factor if self._delay > 0 else self._min_delay
+            )
+        # Deterministic, bounded delay; jitter is applied per use in
+        # _effective_delay() so it does not compound across steps.
         self._delay = min(max(self._min_delay, grown), self._max_delay)
         self._next_allowed_time = now + self._effective_delay()
 
@@ -1396,10 +1423,13 @@ class ThrottlerScopeManager:
     def set_base_delay(self, delay: float, *, only_increase: bool = True) -> None:
         if only_increase and delay <= self._base_delay:
             return
+        # Whether a backoff is currently raising the delay above the base must
+        # be checked before the base changes.
+        backing_off = self._delay > self._base_delay
         self._base_delay = delay
         # Reflect the change in the effective delay unless a backoff is raising
         # it above the base right now.
-        if self._backoff_level == 0:
+        if not backing_off:
             self._delay = delay
 
     def set_concurrency(self, concurrency: int) -> None:

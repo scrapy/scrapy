@@ -106,8 +106,9 @@ The key settings are:
 
     :setting:`BACKOFF_DELAY_FACTOR` (default: ``2.0``)
 
-    Factor by which the delay of a scope is multiplied on each backoff step
-    (2×, 4×, 8×, etc.).
+    Factor by which the delay of a scope is multiplied on each backoff trigger
+    (2×, 4×, 8×, etc.) while searching for a working delay. Once one is found,
+    recovery bisects toward it instead (see :ref:`backoff-algorithm`).
 
 -   .. setting:: BACKOFF_MAX_DELAY
 
@@ -134,14 +135,23 @@ A **backoff trigger** is a response whose status code is in
 the same response or exception may trigger backoff for one scope and not for
 another. On each trigger:
 
-#.  The delay grows exponentially:
+#.  The delay grows, bounded to the ``[BACKOFF_MIN_DELAY, BACKOFF_MAX_DELAY]``
+    range, with :setting:`BACKOFF_JITTER` applied so that requests that backed
+    off together do not retry in lockstep. How it grows depends on whether a
+    working delay is already known:
 
-    .. code-block:: text
+    -   While none is known yet, it grows **exponentially**, multiplied by
+        :setting:`BACKOFF_DELAY_FACTOR` on each trigger (2×, 4×, 8×, …), to find
+        a working delay quickly:
 
-        delay = min(BACKOFF_MAX_DELAY, max(BACKOFF_MIN_DELAY, delay * BACKOFF_DELAY_FACTOR))
+        .. code-block:: text
 
-    :setting:`BACKOFF_JITTER` is then applied so that requests that backed off
-    together do not retry in lockstep.
+            delay = min(BACKOFF_MAX_DELAY, max(BACKOFF_MIN_DELAY, delay * BACKOFF_DELAY_FACTOR))
+
+    -   Once recovery has found a safe delay — one that recently went a full
+        :setting:`BACKOFF_WINDOW` without triggering — the delay instead **jumps
+        straight back to it**, so the triggering stops at once rather than
+        creeping up one request at a time.
 
 #.  If the response carries a :ref:`Retry-After or RateLimit-Reset
     <rate-limiting-headers>` value, the scope is *also* held back until that
@@ -150,14 +160,21 @@ another. On each trigger:
     header for the next request without turning a short header value into a
     long-standing delay for every later request.
 
-**Recovery** is linear: after a scope goes a full :setting:`BACKOFF_WINDOW`
-without a new trigger, its delay drops by one :setting:`BACKOFF_DELAY_FACTOR`
-step toward the configured value, and keeps dropping one step per quiet window
-until it is back to the configured value. A new trigger resets the countdown.
+**Recovery** is a bracketing (binary) search for the smallest delay the server
+tolerates. Each time a scope goes a full :setting:`BACKOFF_WINDOW` without a new
+trigger, the current delay has proven safe, so recovery *probes* lower: it drops
+**halfway toward the highest delay that did trigger** (or toward the configured
+value, once no triggering delay is left to search). If that lower probe survives
+its own window it becomes the new safe delay; if it triggers, the delay jumps
+straight back up to the last safe delay. So rather than snapping straight back
+to the configured value, the delay converges on the ideal — the lowest delay
+that avoids triggers — and keeps tracking it as it drifts, up or down, over the
+course of a crawl.
 
-This exponential-increase / linear-decrease pattern, similar to TCP congestion
-control, makes a scope back off quickly when a server is unhappy and return to
-full speed gradually once it recovers.
+Because the search only narrows, at steady state the delay settles into a small
+flutter around the ideal value: it keeps probing slightly lower and is nudged
+back up by the occasional trigger. This is intended — it is how the scope keeps
+finding the fastest rate the server currently accepts.
 
 Backoff only ever *tightens* a scope, and recovery never goes past the
 configured value: the delay can grow above the configured ``"delay"`` and then
@@ -928,9 +945,10 @@ Additional settings
     :ref:`throttler scope <throttler-scopes>` must go this many seconds
     without a new backoff
     trigger (an HTTP error code from :setting:`BACKOFF_HTTP_CODES` or an
-    exception from :setting:`BACKOFF_EXCEPTIONS`) before its delay decreases
-    by one :setting:`BACKOFF_DELAY_FACTOR` step toward the configured value.
-    A new trigger resets the countdown.
+    exception from :setting:`BACKOFF_EXCEPTIONS`) before its delay bisects one
+    step down toward the configured value (see :ref:`backoff-algorithm`). Each
+    further quiet window bisects it one step lower; a new trigger raises the
+    lower bound of the search and bisects the delay back up.
 
 -   .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 

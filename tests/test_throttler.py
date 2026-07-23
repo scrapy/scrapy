@@ -227,14 +227,15 @@ class TestThrottler:
         manager._apply_backoff({"cost": {"consumed": 5.0}})
         # Quota was reconciled but no backoff step was applied.
         assert scope._consumed == pytest.approx(5.0)
-        assert scope._backoff_level == 0
+        assert scope._delay == scope._base_delay
+        assert scope._max_unsafe is None
 
     def test_apply_backoff_delay_and_consumed(self):
         manager = _manager({"THROTTLER_SCOPES": {"cost": {"quota": 100.0}}})
         scope = manager._get_scope_manager("cost")
         manager._apply_backoff({"cost": {"delay": 5.0, "consumed": 2.0}})
         assert scope._consumed == pytest.approx(2.0)
-        assert scope._backoff_level == 1
+        assert scope._delay > scope._base_delay
 
     @coroutine_test
     async def test_response_backoff_non_backoff_code(self):
@@ -532,9 +533,38 @@ class TestThrottlerScopeManager:
         scope.record_backoff(delay=999.0, now=0.0, cap=False)
         assert scope.can_send(now=0.0) == pytest.approx(999.0)
 
-    def test_recovery_after_window(self):
+    def test_recovery_bisects_toward_ideal(self):
         scope = _scope_manager(
             {
+                "DOWNLOAD_DELAY": 0.0,
+                "BACKOFF_MIN_DELAY": 1.0,
+                "BACKOFF_DELAY_FACTOR": 2.0,
+                "BACKOFF_WINDOW": 60.0,
+                "BACKOFF_JITTER": 0,
+            },
+        )
+        # No safe delay known yet: growth is exponential (1 -> 2 -> 4 -> 8), and
+        # the last delay to trigger is remembered as _max_unsafe.
+        for _ in range(4):
+            scope.record_backoff(now=0.0)
+        assert scope._delay == pytest.approx(8.0)
+        assert scope._max_unsafe == pytest.approx(4.0)
+        assert scope._min_safe is None
+        # A quiet window proves 8.0 is safe -> it becomes _min_safe, and the
+        # delay probes halfway down toward _max_unsafe: (4 + 8) / 2 = 6.
+        scope.can_send(now=60.0)
+        assert scope._min_safe == pytest.approx(8.0)
+        assert scope._delay == pytest.approx(6.0)
+        # The probe at 6.0 triggers: _max_unsafe rises to it and the delay jumps
+        # straight back up to the known-safe delay (8.0) rather than creeping.
+        scope.record_backoff(now=60.0)
+        assert scope._max_unsafe == pytest.approx(6.0)
+        assert scope._delay == pytest.approx(8.0)
+
+    def test_recovery_reaches_base_and_resets(self):
+        scope = _scope_manager(
+            {
+                "DOWNLOAD_DELAY": 0.0,
                 "BACKOFF_MIN_DELAY": 1.0,
                 "BACKOFF_DELAY_FACTOR": 2.0,
                 "BACKOFF_WINDOW": 60.0,
@@ -542,16 +572,58 @@ class TestThrottlerScopeManager:
             },
         )
         scope.record_backoff(now=0.0)
-        scope.record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(2.0)
-        # One window passes with no new backoff -> one step down.
-        scope.can_send(now=60.0)
-        assert scope._backoff_level == 1
-        assert scope._delay == pytest.approx(1.0)
-        # Another window -> back to base (0).
-        scope.can_send(now=120.0)
-        assert scope._backoff_level == 0
+        assert scope._delay > scope._base_delay
+        # Enough quiet windows bring the delay back within one step of the base
+        # delay, at which point the backoff state is fully cleared.
+        scope.can_send(now=600.0)
         assert scope._delay == pytest.approx(0.0)
+        assert scope._max_unsafe is None
+        assert scope._min_safe is None
+
+    def test_recovery_tracks_a_more_permissive_server(self):
+        # A delay that used to trigger stops doing so (the server's ideal delay
+        # dropped): _max_unsafe must not pin the delay above the new ideal.
+        scope = _scope_manager(
+            {
+                "DOWNLOAD_DELAY": 0.0,
+                "BACKOFF_MIN_DELAY": 1.0,
+                "BACKOFF_DELAY_FACTOR": 2.0,
+                "BACKOFF_WINDOW": 60.0,
+                "BACKOFF_JITTER": 0,
+            },
+        )
+        for _ in range(4):
+            scope.record_backoff(now=0.0)
+        assert scope._max_unsafe == pytest.approx(4.0)
+        # Many quiet windows in a row: the delay keeps probing down, _max_unsafe
+        # is retired once reached, and recovery converges all the way to base.
+        scope.can_send(now=6000.0)
+        assert scope._delay == pytest.approx(0.0)
+        assert scope._max_unsafe is None
+
+    def test_backoff_escapes_stale_safe_delay(self):
+        # Once a delay that recovery had marked safe starts triggering again
+        # (the server got stricter), the stale _min_safe is dropped and growth
+        # goes back to exponential to find a working delay quickly.
+        scope = _scope_manager(
+            {
+                "DOWNLOAD_DELAY": 0.0,
+                "BACKOFF_MIN_DELAY": 1.0,
+                "BACKOFF_DELAY_FACTOR": 2.0,
+                "BACKOFF_WINDOW": 60.0,
+                "BACKOFF_JITTER": 0,
+            },
+        )
+        for _ in range(4):
+            scope.record_backoff(now=0.0)
+        scope.can_send(now=60.0)  # _min_safe = 8.0, delay = 6.0
+        assert scope._min_safe == pytest.approx(8.0)
+        # A trigger at or above _min_safe means it is no longer safe: drop it
+        # and resume exponential growth (8.0 * 2 = 16.0).
+        scope._delay = 8.0
+        scope.record_backoff(now=60.0)
+        assert scope._min_safe is None
+        assert scope._delay == pytest.approx(16.0)
 
     def test_per_scope_backoff_override(self):
         scope = _scope_manager(
@@ -625,10 +697,11 @@ class TestThrottlerScopeManager:
         # fully on the next can_send() instead.
         scope = _scope_manager(settings={"BACKOFF_WINDOW": 0}, config={"id": "x"})
         scope.record_backoff(now=0.0)
-        assert scope._backoff_level == 1
+        assert scope._delay > scope._base_delay
         scope.can_send(now=10.0)
-        assert scope._backoff_level == 0
         assert scope._delay == scope._base_delay
+        assert scope._max_unsafe is None
+        assert scope._min_safe is None
 
     def test_zero_quota_window_keeps_quota_reset(self):
         # A non-positive quota window must not make _maybe_reset_quota spin
@@ -1023,14 +1096,16 @@ class TestThrottlerEdges:
         manager = _manager()
         request = Request("http://example.com/a")
         await manager.process_exception(request, DownloadTimeoutError())
-        assert manager._get_scope_manager("example.com")._backoff_level == 1
+        scope = manager._get_scope_manager("example.com")
+        assert scope._delay > scope._base_delay
 
     def test_apply_backoff_debug_logging(self, caplog):
         manager = _manager({"THROTTLER_DEBUG": True})
         with caplog.at_level(logging.DEBUG, logger="scrapy.throttler"):
             manager._apply_backoff("example.com")
         assert "Backoff for scope" in caplog.text
-        assert manager._get_scope_manager("example.com")._backoff_level == 1
+        scope = manager._get_scope_manager("example.com")
+        assert scope._delay > scope._base_delay
 
     def test_on_robots_parsed_disabled(self):
         manager = _manager({"THROTTLER_ROBOTSTXT_OBEY": False})
@@ -1143,7 +1218,7 @@ class TestThrottlerIntegration:
         assert throttler is not None
         managers = throttler._scope_managers
         assert managers, "no throttler scope was created"
-        assert any(manager._backoff_level >= 1 for manager in managers.values())
+        assert any(m._delay > m._base_delay for m in managers.values())
 
     @coroutine_test
     async def test_backoff_recorded_on_download_error(self, mockserver):
@@ -1157,7 +1232,7 @@ class TestThrottlerIntegration:
         assert throttler is not None
         managers = throttler._scope_managers
         assert managers, "no throttler scope was created"
-        assert any(manager._backoff_level >= 1 for manager in managers.values())
+        assert any(m._delay > m._base_delay for m in managers.values())
 
     @coroutine_test
     async def test_no_backoff_on_200(self, mockserver):
@@ -1168,6 +1243,5 @@ class TestThrottlerIntegration:
         throttler = crawler.throttler
         assert throttler is not None
         assert all(
-            manager._backoff_level == 0
-            for manager in throttler._scope_managers.values()
+            m._delay == m._base_delay for m in throttler._scope_managers.values()
         )
