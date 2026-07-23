@@ -562,7 +562,7 @@ class BaseSettings(MutableMapping[str, Any]):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
 
-    # BaseSettings.update() doesn't support all inputs that MutableMapping.update() supports
+    # BaseSettings.update() doesn't support kwargs input like MutableMapping.update().
     def update(self, values: _SettingsInput, priority: int | str = "project") -> None:  # type: ignore[override]
         """
         Store key/value pairs with a given priority.
