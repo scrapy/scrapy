@@ -317,11 +317,11 @@ class Scheduler(BaseScheduler):
 
         :param dqclass: A class to be used as persistent request queue.
                         The value for the :setting:`SCHEDULER_DISK_QUEUE` setting is used by default.
-        :type dqclass: class
+        :type dqclass: type
 
         :param mqclass: A class to be used as non-persistent request queue.
                         The value for the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used by default.
-        :type mqclass: class
+        :type mqclass: type
 
         :param logunser: A boolean that indicates whether or not unserializable requests should be logged.
                         The value for the :setting:`SCHEDULER_DEBUG` setting is used by default.
@@ -334,7 +334,7 @@ class Scheduler(BaseScheduler):
 
         :param pqclass: A class to be used as priority queue for requests.
                         The value for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is used by default.
-        :type pqclass: class
+        :type pqclass: type
 
         :param crawler: The crawler object corresponding to the current crawl.
         :type crawler: :class:`scrapy.crawler.Crawler`

@@ -8,7 +8,7 @@ import pytest
 
 from scrapy.commands import parse
 from scrapy.settings import Settings
-from tests.test_commands import TestProjectBase
+from tests.utils.base_commands import TestProjectBase
 from tests.utils.cmdline import call, proc
 
 if TYPE_CHECKING:

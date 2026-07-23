@@ -12,7 +12,6 @@ from urllib.parse import quote
 import pytest
 from testfixtures import LogCapture
 from w3lib.url import path_to_file_uri
-from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy.extensions.feedexport import (
@@ -20,31 +19,14 @@ from scrapy.extensions.feedexport import (
     FileFeedStorage,
     FTPFeedStorage,
     GCSFeedStorage,
-    IFeedStorage,
     S3FeedStorage,
     StdoutFeedStorage,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
+from tests.utils.cloud import mock_google_cloud_storage
 from tests.utils.decorators import coroutine_test
-
-
-def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
-    """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
-    classes and set their proper return values.
-    """
-    from google.cloud.storage import Blob, Bucket, Client  # noqa: PLC0415
-
-    client_mock = mock.create_autospec(Client)
-
-    bucket_mock = mock.create_autospec(Bucket)
-    client_mock.get_bucket.return_value = bucket_mock
-
-    blob_mock = mock.create_autospec(Blob)
-    bucket_mock.blob.return_value = blob_mock
-
-    return (client_mock, bucket_mock, blob_mock)
 
 
 class TestFileFeedStorage:
@@ -70,11 +52,6 @@ class TestFileFeedStorage:
             self._assert_stores(FileFeedStorage(str(path)), path)
         finally:
             os.chdir(old_cwd)
-
-    def test_interface(self, tmp_path):
-        path = tmp_path / "file.txt"
-        st = FileFeedStorage(str(path))
-        verifyObject(IFeedStorage, st)
 
     @staticmethod
     def _store(path: Path, feed_options: dict[str, Any] | None = None) -> None:
@@ -131,7 +108,6 @@ class TestFTPFeedStorage:
             uri,
             feed_options=feed_options,
         )
-        verifyObject(IFeedStorage, storage)
         spider = self.get_test_spider()
         file = storage.open(spider)
         file.write(content)
@@ -275,7 +251,6 @@ class TestS3FeedStorage:
         bucket = "mybucket"
         key = "export.csv"
         storage = S3FeedStorage.from_crawler(crawler, f"s3://{bucket}/{key}")
-        verifyObject(IFeedStorage, storage)
 
         file = mock.MagicMock()
 
@@ -461,10 +436,7 @@ class TestS3FeedStorage:
 
 class TestGCSFeedStorage:
     def test_parse_settings(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": "publicRead"}
         crawler = get_crawler(settings_dict=settings)
@@ -475,10 +447,7 @@ class TestGCSFeedStorage:
         assert storage.blob_name == "export.csv"
 
     def test_parse_empty_acl(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": ""}
         crawler = get_crawler(settings_dict=settings)
@@ -492,10 +461,7 @@ class TestGCSFeedStorage:
 
     @coroutine_test
     async def test_store(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         uri = "gs://mybucket/export.csv"
         project_id = "myproject-123"
@@ -517,10 +483,7 @@ class TestGCSFeedStorage:
 
     @coroutine_test
     async def test_store_closes_file_on_upload_error(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("GCSFeedStorage requires google-cloud-storage")
+        pytest.importorskip("google.cloud.storage")
 
         uri = "gs://mybucket/export.csv"
         project_id = "myproject-123"

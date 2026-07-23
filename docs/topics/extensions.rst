@@ -341,9 +341,6 @@ closing the spider. If the spider generates more than that number of errors,
 it will be closed with the reason ``closespider_errorcount``. If zero (or non
 set), spiders won't be closed by number of errors.
 
-.. module:: scrapy.extensions.debug
-   :synopsis: Extensions for debugging Scrapy
-
 .. module:: scrapy.extensions.periodic_log
    :synopsis: Periodic stats logging
 
@@ -418,7 +415,7 @@ Example extension configuration:
     custom_settings = {
         "LOG_LEVEL": "INFO",
         "PERIODIC_LOG_STATS": {
-            "include": ["downloader/", "scheduler/", "log_count/", "item_scraped_count/"],
+            "include": ["downloader/", "scheduler/", "log_count/", "item_scraped_count"],
         },
         "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
         "PERIODIC_LOG_TIMING_ENABLED": True,
@@ -462,6 +459,9 @@ Default: ``False``
 
 Debugging extensions
 --------------------
+
+.. module:: scrapy.extensions.debug
+   :synopsis: Extensions for debugging Scrapy
 
 Stack trace dump extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -7,7 +7,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, Mock, PropertyMock, call, patch
 
 from scrapy.commands.check import Command, TextTestResult
-from tests.test_commands import TestProjectBase
+from tests.utils.base_commands import TestProjectBase
 from tests.utils.cmdline import proc
 
 if TYPE_CHECKING:

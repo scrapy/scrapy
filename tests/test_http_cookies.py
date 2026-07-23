@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from http.cookiejar import DefaultCookiePolicy
 
 from scrapy.http import Request, Response
@@ -46,7 +48,7 @@ class TestCookieJar:
     def test_set_policy(self):
         policy = DefaultCookiePolicy()
         self.jar.set_policy(policy)
-        assert self.jar.jar._policy is policy
+        assert self.jar.jar._policy is policy  # type: ignore[attr-defined]
 
     def test_check_expired_frequency(self):
         jar = CookieJar(check_expired_frequency=1)

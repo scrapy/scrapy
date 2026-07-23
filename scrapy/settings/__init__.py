@@ -279,10 +279,10 @@ class BaseSettings(MutableMapping[str, Any]):
         -   ``['one', 'two']`` if set to ``'["one", "two"]'`` or ``'one,two'``
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         value = self.get(name, default)
         if value is None:

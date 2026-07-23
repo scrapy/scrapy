@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from importlib.util import find_spec
 from itertools import chain
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
@@ -51,11 +52,7 @@ else:
     else:
         ACCEPTED_ENCODINGS.append(b"br")
 
-try:
-    import zstandard  # noqa: F401
-except ImportError:
-    pass
-else:
+if find_spec("zstandard") is not None:
     ACCEPTED_ENCODINGS.append(b"zstd")
 
 
@@ -123,12 +120,14 @@ class HttpCompressionMiddleware:
                     response.body, content_encoding, max_size
                 )
             except _DecompressionMaxSizeExceeded as e:
-                raise IgnoreRequest(
+                msg = (
                     f"Ignored response {response} because its body "
                     f"({len(response.body)} B compressed, "
                     f"{e.decompressed_size} B decompressed so far) exceeded "
                     f"DOWNLOAD_MAXSIZE ({max_size} B) during decompression."
-                ) from e
+                )
+                logger.warning(msg)
+                raise IgnoreRequest(msg) from e
             if len(response.body) < warn_size <= len(decoded_body):
                 logger.warning(
                     f"{response} body size after decompression "

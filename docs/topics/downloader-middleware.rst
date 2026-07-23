@@ -358,6 +358,8 @@ HttpAuthMiddleware
 HTTPAUTH_USER
 ~~~~~~~~~~~~~
 
+.. versionadded:: 2.17.0
+
 Default: ``""``
 
 The username to use for HTTP basic authentication, applied to all requests
@@ -368,6 +370,8 @@ whose URL matches :setting:`HTTPAUTH_DOMAIN`.
 HTTPAUTH_PASS
 ~~~~~~~~~~~~~
 
+.. versionadded:: 2.17.0
+
 Default: ``""``
 
 The password to use for HTTP basic authentication.
@@ -376,6 +380,8 @@ The password to use for HTTP basic authentication.
 
 HTTPAUTH_DOMAIN
 ~~~~~~~~~~~~~~~
+
+.. versionadded:: 2.17.0
 
 Default: ``None``
 
@@ -506,7 +512,7 @@ Filesystem storage backend (default)
 
     *   ``response_body`` - the plain response body
 
-    *   ``response_headers`` - the request headers (in raw HTTP format)
+    *   ``response_headers`` - the response headers (in raw HTTP format)
 
     *   ``meta`` - some metadata of this cache resource in Python ``repr()``
         format (grep-friendly format)
@@ -548,7 +554,7 @@ defines the methods described below.
     .. method:: open_spider(spider)
 
       This method gets called after a spider has been opened for crawling. It handles
-      the :signal:`open_spider <spider_opened>` signal.
+      the :signal:`spider_opened` signal.
 
       :param spider: the spider which has been opened
       :type spider: :class:`~scrapy.Spider` object
@@ -556,7 +562,7 @@ defines the methods described below.
     .. method:: close_spider(spider)
 
       This method gets called after a spider has been closed. It handles
-      the :signal:`close_spider <spider_closed>` signal.
+      the :signal:`spider_closed` signal.
 
       :param spider: the spider which has been closed
       :type spider: :class:`~scrapy.Spider` object
@@ -592,8 +598,8 @@ In order to use your storage backend, set:
 HTTPCache middleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :class:`HttpCacheMiddleware` can be configured through the following
-settings:
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` can be
+configured through the following settings:
 
 .. setting:: HTTPCACHE_ENABLED
 
@@ -728,6 +734,8 @@ We assume that the spider will not issue Cache-Control directives
 in requests unless it actually needs them, so directives in requests are
 not filtered.
 
+.. _http-compression:
+
 HttpCompressionMiddleware
 -------------------------
 
@@ -739,14 +747,12 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
-   This middleware also supports decoding `brotli-compressed`_ as well as
-   `zstd-compressed`_ responses, provided that `brotli`_ or `zstandard`_ is
-   installed, respectively.
+   This middleware also supports decoding `brotli-compressed`_ responses with
+   the :ref:`brotli <extras>` extra, and `zstd-compressed`_
+   responses with the :ref:`zstd <extras>` extra.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotli: https://pypi.org/project/Brotli/
 .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
-.. _zstandard: https://pypi.org/project/zstandard/
 
 
 HttpCompressionMiddleware Settings
@@ -815,7 +821,6 @@ HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. setting:: HTTPPROXY_ENABLED
-.. setting:: HTTPPROXY_AUTH_ENCODING
 
 HTTPPROXY_ENABLED
 ^^^^^^^^^^^^^^^^^
@@ -823,6 +828,8 @@ HTTPPROXY_ENABLED
 Default: ``True``
 
 Whether or not to enable the :class:`HttpProxyMiddleware`.
+
+.. setting:: HTTPPROXY_AUTH_ENCODING
 
 HTTPPROXY_AUTH_ENCODING
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -868,9 +875,9 @@ OffsiteMiddleware
    .. reqmeta:: allow_offsite
 
    If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
-   ``True`` or :attr:`Request.meta` has ``allow_offsite`` set to ``True``, then
-   the OffsiteMiddleware will allow the request even if its domain is not listed
-   in allowed domains.
+   ``True`` or :attr:`Request.meta <scrapy.Request.meta>` has ``allow_offsite``
+   set to ``True``, then the OffsiteMiddleware will allow the request even if
+   its domain is not listed in allowed domains.
 
 RedirectMiddleware
 ------------------
@@ -1001,7 +1008,7 @@ Whether the Meta Refresh middleware will be enabled.
 METAREFRESH_IGNORE_TAGS
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``[]``
+Default: ``["noscript"]``
 
 Meta tags within these tags are ignored.
 
@@ -1030,17 +1037,6 @@ RetryMiddleware
 
    A middleware to retry failed requests that are potentially caused by
    temporary problems such as a connection timeout or HTTP 500 error.
-
-Failed pages are collected on the scraping process and rescheduled at the
-end, once the spider has finished crawling all regular (non failed) pages.
-
-The :class:`RetryMiddleware` can be configured through the following
-settings (see the settings documentation for more info):
-
-* :setting:`RETRY_ENABLED`
-* :setting:`RETRY_TIMES`
-* :setting:`RETRY_HTTP_CODES`
-* :setting:`RETRY_EXCEPTIONS`
 
 .. reqmeta:: dont_retry
 
@@ -1108,7 +1104,7 @@ Default::
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
-        IOError,
+        OSError,
         'scrapy.core.downloader.handlers.http11.TunnelError',
     ]
 
@@ -1126,6 +1122,8 @@ exception propagation, see
 
 RETRY_GIVE_UP_LOG_LEVEL
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.17.0
 
 Default: ``"ERROR"``
 
@@ -1264,8 +1262,7 @@ Based on `Robotexclusionrulesparser <https://pypi.org/project/robotexclusionrule
 
 In order to use this parser:
 
-* Install ``Robotexclusionrulesparser`` by running
-  ``pip install robotexclusionrulesparser``
+* Install the :ref:`robotparser <extras>` extra.
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.RerpRobotParser``

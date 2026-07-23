@@ -46,7 +46,7 @@ previous (or subsequent) middleware being applied.
 If you want to disable a builtin middleware (the ones defined in
 :setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
 in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
-value.  For example, if you want to disable the off-site middleware:
+value.  For example, if you want to disable the referer middleware:
 
 .. code-block:: python
 
@@ -314,6 +314,35 @@ HTTPERROR_ALLOW_ALL
 Default: ``False``
 
 Pass all responses, regardless of its status code.
+
+
+MetaCopyDetectionMiddleware
+---------------------------
+
+.. module:: scrapy.spidermiddlewares.metacopy
+   :synopsis: Meta Copy Detection Spider Middleware
+
+.. class:: MetaCopyDetectionMiddleware
+
+   Warns when a spider yields a request that contains internal meta keys which
+   should not be copied from :attr:`response.meta <scrapy.http.Response.meta>`
+   into new requests. See :attr:`~scrapy.http.Request.meta` to learn why.
+
+   Only 1 warning is emitted per crawl.
+
+   MetaCopyDetectionMiddleware settings
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   .. setting:: META_COPY_WARN_SKIP_KEYS
+
+   META_COPY_WARN_SKIP_KEYS
+   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Default: ``[]``
+
+   A list of internal meta key names to exclude from the internal-keys check.
+   Use this when you intentionally copy one of the monitored keys and want to
+   suppress the resulting warning without disabling the middleware entirely.
 
 
 RefererMiddleware

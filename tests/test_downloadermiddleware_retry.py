@@ -42,17 +42,18 @@ class TestRetry:
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": True})
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
-        # first retry
+        # no retry
         r = self.mw.process_response(req, rsp)
         assert r is rsp
 
         # Test retry when dont_retry set to False
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": False})
-        rsp = Response("http://www.scrapytest.org/503")
+        rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
         # first retry
-        r = self.mw.process_response(req, rsp)
-        assert r is rsp
+        req = self.mw.process_response(req, rsp)
+        assert isinstance(req, Request)
+        assert req.meta["retry_times"] == 1
 
     def test_dont_retry_exc(self):
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": True})
