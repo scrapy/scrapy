@@ -82,9 +82,6 @@ other domains:
         "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
     }
 
-Additional keys like ``"jitter"`` and ``"backoff"`` can be used here and are
-covered later on.
-
 .. _backoff:
 
 Backoff
