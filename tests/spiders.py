@@ -496,6 +496,23 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
         self.logger.info("[errback] status %i", failure.value.response.status)
 
 
+class CrawlSpiderWithoutErrback(CrawlSpiderWithParseMethod):
+    name = "crawl_spider_without_errback"
+
+    async def start(self):
+        test_body = b"""
+        <html>
+            <head><title>Page title</title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
+                <p><a href="/status?n=404">Item 404</a></p>  <!-- failure, no errback -->
+            </body>
+        </html>
+        """
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
+
+
 class CrawlSpiderWithProcessRequestCallbackKeywordArguments(CrawlSpiderWithParseMethod):
     name = "crawl_spider_with_process_request_cb_kwargs"
     rules = (
