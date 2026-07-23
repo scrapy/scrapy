@@ -260,6 +260,8 @@ Request objects
 
     .. automethod:: from_curl
 
+    .. automethod:: to_curl
+
     .. automethod:: to_dict
 
 
