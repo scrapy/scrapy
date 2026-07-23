@@ -16,7 +16,9 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import GCSFilesStore, S3FilesStore
 from scrapy.pipelines.images import ImageException, ImagesPipeline
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
 
 try:
     from PIL import Image
@@ -34,8 +36,10 @@ else:
 class TestImagesPipeline:
     def setup_method(self):
         self.tempdir = mkdtemp()
-        crawler = get_crawler()
-        self.pipeline = ImagesPipeline(self.tempdir, crawler=crawler)
+        crawler = get_crawler(DefaultSpider, settings_dict={"IMAGES_STORE": self.tempdir})
+        crawler.spider = crawler._create_spider()
+        self.pipeline = ImagesPipeline.from_crawler(crawler)
+        self.pipeline.open_spider()
 
     def teardown_method(self):
         rmtree(self.tempdir)
@@ -176,6 +180,22 @@ class TestImagesPipeline:
         thumb_path, _, thumb_buf = next(get_images_gen)
         assert thumb_path == "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert orig_thumb_buf.getvalue() == thumb_buf.getvalue()
+
+    @coroutine_test
+    async def test_media_downloaded_accepts_created_response(self) -> None:
+        self.pipeline.min_width = 0
+        self.pipeline.min_height = 0
+        _, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
+        url = "https://dev.mydeco.com/mydeco.gif"
+        request = Request(url)
+        response = Response(url=url, status=201, body=buf.getvalue())
+
+        result = await self.pipeline.media_downloaded(
+            response, request, self.pipeline.spiderinfo
+        )
+
+        assert result["status"] == "downloaded"
+        assert result["path"] == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
 
     def test_get_transposed_images(self):
         orig_im = Image.new("RGB", (2, 2), (0, 0, 0))

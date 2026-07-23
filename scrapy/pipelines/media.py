@@ -238,8 +238,8 @@ class MediaPipeline(ABC):
             #
             # What happens when the media_downloaded callback raises an
             # exception, for example a FileException('download-error') when
-            # the Response status code is not 200 OK, is that the original
-            # StopIteration exception (which in turn contains the failed
+            # the Response status code is not a successful 2xx code, is that the
+            # original StopIteration exception (which in turn contains the failed
             # Response and by extension, the original Request) gets encapsulated
             # within the FileException context.
             #

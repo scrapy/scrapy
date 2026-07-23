@@ -6,6 +6,16 @@ Release notes
 Scrapy VERSION (unreleased)
 ---------------------------
 
+Bug fixes
+~~~~~~~~~
+
+-   :class:`~scrapy.pipelines.files.FilesPipeline` and
+    :class:`~scrapy.pipelines.images.ImagesPipeline` now accept any successful
+    HTTP ``2xx`` response when downloading media, not only ``200 OK``. This
+    fixes downloads that fail when servers return ``201 Created`` for
+    on-the-fly generated files.
+    (:issue:`1615`)
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
