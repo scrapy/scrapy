@@ -612,10 +612,10 @@ class TestThrottlerScopeManager:
         scope.record_done(now=0.0)
         assert scope.concurrency_blocked() is False
 
-    def test_record_done_fires_slot_event(self):
+    def test_record_done_fires_slot_available_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
         scope.record_sent(now=0.0)
-        event = scope.slot_event()
+        event = scope.slot_available_event()
         assert not event.called
         scope.record_done(now=0.0)
         assert event.called
@@ -638,19 +638,19 @@ class TestThrottlerScopeManager:
         assert scope.can_send(now=1.0, amount=5.0) == 0.0
         assert scope._consumed == 0.0
 
-    def test_set_concurrency_fires_slot_event(self):
+    def test_set_concurrency_fires_slot_available_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
         scope.record_sent(now=0.0)
-        event = scope.slot_event()
+        event = scope.slot_available_event()
         assert not event.called
         scope.set_concurrency(5)
         assert event.called
 
-    def test_discard_slot_event(self):
+    def test_discard_slot_available_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
-        event = scope.slot_event()
-        scope.discard_slot_event(event)
-        scope.discard_slot_event(event)  # idempotent
+        event = scope.slot_available_event()
+        scope.discard_slot_available_event(event)
+        scope.discard_slot_available_event(event)  # idempotent
         scope.record_sent(now=0.0)
         scope.record_done(now=0.0)
         assert not event.called
@@ -658,7 +658,7 @@ class TestThrottlerScopeManager:
     def test_fire_slot_waiters_skips_already_fired(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
         scope.record_sent(now=0.0)
-        event = scope.slot_event()
+        event = scope.slot_available_event()
         event.callback(None)  # fired out-of-band before the slot frees up
         # record_done() fires the waiters; the already-fired one is skipped
         # rather than called a second time (which would raise).

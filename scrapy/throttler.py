@@ -340,7 +340,7 @@ class ThrottlerProtocol(Protocol):
         requests are time-blocked.
         """
 
-    def get_slot_key(self, request: Request) -> str:
+    def get_scopes_key(self, request: Request) -> str:
         """Return a single string key for *request*, derived from its scopes.
 
         For a single scope this is the scope ID itself; for multiple scopes
@@ -611,7 +611,7 @@ class Throttler:
             return cast("RequestScopes", download_slot)
         return urlparse_cached(request).hostname or ""
 
-    def get_slot_key(self, request: Request) -> str:
+    def get_scopes_key(self, request: Request) -> str:
         scopes = self._resolve_scopes_sync(request)
         scope_ids = sorted(iter_scopes(scopes))
         return "+".join(scope_ids) if scope_ids else ""
@@ -794,12 +794,12 @@ class Throttler:
         bounds the wait in case no slot is ever freed (it always should be, via
         :meth:`release`).
         """
-        pairs = [(manager, manager.slot_event()) for manager in managers]
+        pairs = [(manager, manager.slot_available_event()) for manager in managers]
         events = [event for _, event in pairs]
         _, pending = await wait_for_first(events, timeout=_SLOT_WAIT_TIMEOUT)
         for manager, event in pairs:
             if event in pending:
-                manager.discard_slot_event(event)
+                manager.discard_slot_available_event(event)
 
     async def _delay_request(self, request: Request) -> None:
         """Honor the :reqmeta:`delay` meta key by holding *request*
@@ -1067,14 +1067,14 @@ class ThrottlerScopeManagerProtocol(Protocol):
         none is meaningful.
         """
 
-    def slot_event(self) -> Deferred[None]:
+    def slot_available_event(self) -> Deferred[None]:
         """Return a :class:`~twisted.internet.defer.Deferred` that fires when
         a concurrency slot next becomes available (e.g. when
         :meth:`record_done` is called or the limit is raised via
         :meth:`set_concurrency`)."""
 
-    def discard_slot_event(self, event: Deferred[None]) -> None:
-        """Cancel a pending slot event returned by :meth:`slot_event`.
+    def discard_slot_available_event(self, event: Deferred[None]) -> None:
+        """Cancel a pending event returned by :meth:`slot_available_event`.
 
         Called by :class:`Throttler` when the wait ends without the
         event firing (e.g. another scope's slot opened first).
@@ -1089,7 +1089,7 @@ class ThrottlerScopeManagerProtocol(Protocol):
 
 
 # Safety timeout for acquire() while it waits, event-driven, for a concurrency
-# slot to free up: a slot_event normally fires first (from record_done() or
+# slot to free up: a slot_available_event normally fires first (from record_done() or
 # set_concurrency()); this only guards against a request that never reaches
 # release() so the wait can never hang forever.
 _SLOT_WAIT_TIMEOUT = 1.0
@@ -1289,7 +1289,8 @@ class ThrottlerScopeManager:
                 start = self._quota_window_start or now
                 waits.append(start + self._quota_window - now)
         # Concurrency is enforced separately, via concurrency_blocked() and
-        # slot_event(), so acquire() can wait for a freed slot without polling.
+        # slot_available_event(), so acquire() can wait for a freed slot without
+        # polling.
         return max(waits)
 
     def record_sent(
@@ -1323,7 +1324,7 @@ class ThrottlerScopeManager:
             return 0.0
         return self._active / limit
 
-    def slot_event(self) -> Deferred[None]:
+    def slot_available_event(self) -> Deferred[None]:
         """Return a Deferred that fires when a concurrency slot next frees up
         (via :meth:`record_done`) or the limit is raised (via
         :meth:`set_concurrency`)."""
@@ -1331,7 +1332,7 @@ class ThrottlerScopeManager:
         self._slot_waiters.append(event)
         return event
 
-    def discard_slot_event(self, event: Deferred[None]) -> None:
+    def discard_slot_available_event(self, event: Deferred[None]) -> None:
         with contextlib.suppress(ValueError):
             self._slot_waiters.remove(event)
 

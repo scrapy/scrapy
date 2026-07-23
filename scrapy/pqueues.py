@@ -396,7 +396,7 @@ class DownloaderAwarePriorityQueue:
         return request
 
     def push(self, request: Request) -> None:
-        slot = self._throttler.get_slot_key(request)
+        slot = self._throttler.get_scopes_key(request)
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
         queue = self.pqueues[slot]

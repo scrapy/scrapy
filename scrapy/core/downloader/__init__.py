@@ -268,7 +268,7 @@ class Downloader:
 
     def _get_slot_key(self, request: Request) -> str:
         assert self.crawler.throttler is not None
-        return self.crawler.throttler.get_slot_key(request)
+        return self.crawler.throttler.get_scopes_key(request)
 
     def get_slot_key(self, request: Request) -> str:
         # Retained as public backward-compatible API. It mirrors the historical

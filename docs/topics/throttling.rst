@@ -34,10 +34,6 @@ The main throttling :ref:`settings <topics-settings>` are:
     <throttler-scopes>`. Requests are grouped by domain by default, so this is
     the maximum number of simultaneous requests per domain.
 
-    It defines a number of “slots” per scope. Each slot can send 1 request at a
-    time: it sends a request, waits for the response, then sends the next
-    request, and so on.
-
 -   .. setting:: DOWNLOAD_DELAY
 
     :setting:`DOWNLOAD_DELAY` (default: ``1``
