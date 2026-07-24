@@ -7,6 +7,7 @@ import pickle
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from unittest import mock
 from urllib.parse import urljoin
 
 import lxml.etree
@@ -384,7 +385,12 @@ class TestBatchDeliveries(TestFeedExportBase):
 
     @pytest.mark.requires_boto3
     @inline_callbacks_test
-    def test_s3_export(self):
+    def test_s3_export(self, monkeypatch):
+        # Force the blocking boto3 code path so that the botocore Stubber below
+        # intercepts the uploads.
+        monkeypatch.setattr(
+            "scrapy.extensions.feedexport.is_aioboto3_available", lambda: False
+        )
         bucket = "mybucket"
         items = [
             MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -456,3 +462,54 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert (
             crawler.stats.get_value("feedexport/success_count/CustomS3FeedStorage") == 3
         )
+
+    @pytest.mark.requires_aioboto3
+    @pytest.mark.only_asyncio
+    @inline_callbacks_test
+    def test_s3_export_async(self, monkeypatch):
+        """One batch per item is uploaded through the aioboto3 code path."""
+        import aioboto3  # noqa: PLC0415
+
+        bucket = "mybucket"
+        items = [
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
+        ]
+
+        upload_fileobj = mock.AsyncMock()
+
+        def make_client(self, *args, **kwargs):
+            client = mock.MagicMock()
+            client.upload_fileobj = upload_fileobj
+            client_cm = mock.MagicMock()
+            client_cm.__aenter__ = mock.AsyncMock(return_value=client)
+            client_cm.__aexit__ = mock.AsyncMock(return_value=False)
+            return client_cm
+
+        monkeypatch.setattr(aioboto3.Session, "client", make_client)
+
+        key = "export.csv"
+        uri = f"s3://{bucket}/{key}/%(batch_id)d.json"
+        settings = {
+            "AWS_ACCESS_KEY_ID": "access_key",
+            "AWS_SECRET_ACCESS_KEY": "secret_key",
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+            "FEEDS": {uri: {"format": "json"}},
+        }
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+
+            def parse(self, response):
+                yield from items
+
+        TestSpider.start_urls = [self.mockserver.url("/")]
+        crawler = get_crawler(TestSpider, settings)
+        yield crawler.crawl()
+
+        assert upload_fileobj.await_count == len(items)
+        for call in upload_fileobj.await_args_list:
+            assert call.kwargs["Bucket"] == bucket
+        assert crawler.stats
+        assert crawler.stats.get_value("feedexport/success_count/S3FeedStorage") == 3

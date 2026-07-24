@@ -72,7 +72,7 @@ images = ["Pillow>=8.3.2"]
 ipython = ["ipython>=7.1.0"]
 ptpython = ["ptpython>=2.0.1"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
-s3 = ["boto3>=1.20.0"]
+s3 = ["aioboto3>=9.0.0", "boto3>=1.20.0"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
     "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
@@ -217,6 +217,8 @@ ignore_errors = true
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
+    "aioboto3",
+    "aiobotocore.*",
     "bpython",
     "brotli",
     "brotlicffi",
@@ -363,6 +365,8 @@ markers = [
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
+    "requires_aiobotocore: marks tests that need aiobotocore (but not aioboto3)",
+    "requires_aioboto3: marks tests that need aiobotocore and aioboto3",
     "requires_mitmproxy: marks tests that need a mitmdump executable",
     "requires_internet: marks tests that need real Internet access",
 ]

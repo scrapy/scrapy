@@ -125,6 +125,8 @@ def pytest_runtest_setup(item):
         "uvloop",
         "botocore",
         "boto3",
+        "aiobotocore",
+        "aioboto3",
     ]
 
     for module in optional_deps:

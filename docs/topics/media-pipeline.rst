@@ -268,6 +268,14 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
     AWS_USE_SSL = False  # or True (None by default)
     AWS_VERIFY = False  # or True (None by default)
 
+.. versionchanged:: VERSION
+    When :ref:`asyncio support is available <using-asyncio>` and aiobotocore_ is
+    installed (it is part of the :ref:`s3 <extras>` extra), files are stat'ed and
+    uploaded using genuinely-asynchronous I/O. Otherwise, the blocking botocore_
+    client is run in a separate thread.
+
+.. _aiobotocore: https://github.com/aio-libs/aiobotocore
+.. _botocore: https://github.com/boto/botocore
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/

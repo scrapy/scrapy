@@ -28,6 +28,7 @@ from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
+from scrapy.utils.boto import is_aioboto3_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
@@ -229,15 +230,18 @@ class S3FeedStorage(BlockingFeedStorage):
         self.endpoint_url: str | None = endpoint_url
         self.region_name: str | None = region_name
 
+        self._client_kwargs: dict[str, Any] = {
+            "aws_access_key_id": self.access_key,
+            "aws_secret_access_key": self.secret_key,
+            "aws_session_token": self.session_token,
+            "endpoint_url": self.endpoint_url,
+            "region_name": self.region_name,
+        }
+
+        # Synchronous boto3 client, used when asyncio support or aioboto3 is not
+        # available (its calls are then run in a thread).
         boto3_session = boto3.session.Session()
-        self.s3_client = boto3_session.client(
-            "s3",
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            aws_session_token=self.session_token,
-            endpoint_url=self.endpoint_url,
-            region_name=self.region_name,
-        )
+        self.s3_client = boto3_session.client("s3", **self._client_kwargs)
 
         if feed_options and feed_options.get("overwrite", True) is False:
             logger.warning(
@@ -264,6 +268,28 @@ class S3FeedStorage(BlockingFeedStorage):
             region_name=crawler.settings["AWS_REGION_NAME"] or None,
             feed_options=feed_options,
         )
+
+    def store(self, file: IO[bytes]) -> Deferred[None] | None:
+        if is_asyncio_available() and is_aioboto3_available():
+            return deferred_from_coro(self._store_async(file))
+        return super().store(file)
+
+    async def _store_async(self, file: IO[bytes]) -> None:
+        import aioboto3  # noqa: PLC0415
+
+        file.seek(0)
+        extra_args = {"ACL": self.acl} if self.acl else {}
+        session = aioboto3.Session()
+        try:
+            async with session.client("s3", **self._client_kwargs) as client:
+                await client.upload_fileobj(
+                    Fileobj=file,
+                    Bucket=self.bucketname,
+                    Key=self.keyname,
+                    ExtraArgs=extra_args,
+                )
+        finally:
+            file.close()
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
