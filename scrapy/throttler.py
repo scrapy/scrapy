@@ -36,8 +36,13 @@ class BackoffConfig(TypedDict, total=False):
 
     Used as the value of the ``"backoff"`` key of :class:`ThrottlingScopeConfig`
     entries. Any key left out falls back to the corresponding global
-    ``BACKOFF_*`` setting.
+    ``BACKOFF_*`` setting (or, for ``enabled``, to ``True``).
     """
+
+    enabled: bool
+    """Whether :ref:`backoff <backoff>` applies to this scope. Defaults to
+    ``True``; set it to ``False`` to disable backoff for the scope, so it relies
+    solely on its configured delay and quota."""
 
     http_codes: list[int]
     exceptions: list[str]
@@ -1114,7 +1119,9 @@ class ThrottlingScopeManager:
 
     -   On a backoff trigger the delay grows (see :meth:`record_backoff`); after
         quiet recovery windows it recovers (see :meth:`_recover`). The
-        :ref:`backoff docs <backoff>` describe the algorithm.
+        :ref:`backoff docs <backoff>` describe the algorithm. Backoff can be
+        turned off for a scope with the ``"backoff"`` config's ``"enabled"``
+        key, leaving it to rely solely on its delay and quota.
 
     -   When the scope is configured with a ``"concurrency"`` limit, no more
         than that many requests are allowed in flight at once.
@@ -1131,6 +1138,7 @@ class ThrottlingScopeManager:
         settings = crawler.settings
         backoff: dict[str, Any] = config.get("backoff", {})
         self._id: ScopeID = config.get("id", "")
+        self._backoff_enabled: bool = backoff.get("enabled", True)
         # The per-scope delay defaults to DOWNLOAD_DELAY; a scope can override
         # it with its own "delay" config (see THROTTLING_SCOPES).
         self._base_delay: float = float(
@@ -1363,6 +1371,8 @@ class ThrottlingScopeManager:
         now: float | None = None,
         cap: bool = True,
     ) -> None:
+        if not self._backoff_enabled:
+            return
         now = self._now(now)
         self._last_seen = now
         self._last_backoff_time = now

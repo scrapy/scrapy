@@ -173,12 +173,10 @@ The global ``BACKOFF_*`` settings can be overridden per scope with the
     }
 
 Every key overrides the matching global ``BACKOFF_*`` setting for that scope
-(``http_codes`` overrides :setting:`BACKOFF_HTTP_CODES`, ``exceptions``
-overrides :setting:`BACKOFF_EXCEPTIONS`, ``max_delay`` overrides
-:setting:`BACKOFF_MAX_DELAY`), and any key left out falls back to
-it. So a scope can, for example, treat an extra status code as a backoff
-trigger, or stop treating one of the defaults as a trigger, independently of
-every other scope.
+(e.g. ``http_codes`` overrides :setting:`BACKOFF_HTTP_CODES`), and any key left
+out falls back to it. So a scope can, for example, treat an extra status code
+as a backoff trigger, or stop treating one of the defaults as a trigger,
+independently of every other scope.
 
 .. _retry-after:
 .. _rate-limiting-headers:
@@ -497,18 +495,23 @@ The simplest approach is to subclass the default
 :class:`~scrapy.throttler.ThrottlingScopeManager` and override only the methods
 whose behavior you want to change; implementing the
 :class:`~scrapy.throttler.ThrottlingScopeManagerProtocol` from scratch is also
-supported. For example, this manager disables exponential :ref:`backoff
-<backoff>`, so a scope relies solely on its configured delay and quota:
+supported. For example, this manager logs a message whenever a scope backs off,
+to keep an eye on which scopes are getting throttled:
 
 .. code-block:: python
     :caption: :file:`myproject/throttling.py`
 
+    import logging
+
     from scrapy.throttler import ThrottlingScopeManager
 
+    logger = logging.getLogger(__name__)
 
-    class FixedWindowScopeManager(ThrottlingScopeManager):
+
+    class LoggingScopeManager(ThrottlingScopeManager):
         def record_backoff(self, *args, **kwargs):
-            pass  # never back off
+            logger.info(f"Backing off scope {self._id}")
+            super().record_backoff(*args, **kwargs)
 
 .. _throttler-aware-scheduler:
 

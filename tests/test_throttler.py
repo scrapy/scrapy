@@ -564,6 +564,24 @@ class TestThrottlingScopeManager:
         assert scope._min_safe is None
         assert scope._delay == pytest.approx(16.0)
 
+    def test_backoff_disabled(self):
+        # With backoff disabled for the scope, triggers (including hard delays)
+        # are ignored: the delay stays at the base and no gate is applied.
+        scope = _scope_manager(
+            {"DOWNLOAD_DELAY": 0.0},
+            {"id": "x", "backoff": {"enabled": False}},
+        )
+        scope.record_backoff(now=0.0)
+        assert scope._delay == pytest.approx(0.0)
+        assert scope.can_send(now=0.0) == 0
+        scope.record_backoff(delay=999.0, now=0.0)
+        assert scope.can_send(now=0.0) == 0
+
+    def test_backoff_enabled_by_default(self):
+        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0}, {"id": "x"})
+        scope.record_backoff(now=0.0)
+        assert scope._delay == pytest.approx(1.0)
+
     def test_per_scope_backoff_override(self):
         scope = _scope_manager(
             {"DOWNLOAD_DELAY": 0.0, "BACKOFF_MAX_DELAY": 100.0},
