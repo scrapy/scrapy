@@ -41,10 +41,7 @@ class BackoffConfig(TypedDict, total=False):
 
     http_codes: list[int]
     exceptions: list[str]
-    delay_factor: float
     max_delay: float
-    min_delay: float
-    jitter: float | list[float]
 
 
 class ThrottlerScopeConfig(TypedDict, total=False):
@@ -977,10 +974,7 @@ class ThrottlerScopeManagerProtocol(Protocol):
             "backoff": {
                 "http_codes": [429, 503],
                 "exceptions": ["builtins.IOError"],
-                "delay_factor": 1.2,
                 "max_delay": 180.0,
-                "min_delay": 5.0,
-                "jitter": [0.01, 0.33],
             },
         }
 
@@ -1101,6 +1095,14 @@ class ThrottlerScopeManagerProtocol(Protocol):
 # release() so the wait can never hang forever.
 _SLOT_WAIT_TIMEOUT = 1.0
 
+# Internal tuning of the backoff algorithm, hardcoded rather than exposed as
+# settings. _BACKOFF_MIN_DELAY must stay positive: it seeds the exponential
+# when the base delay is 0 (a 0 seed would pin the delay at 0 forever).
+_BACKOFF_DELAY_FACTOR = 2.0
+_BACKOFF_JITTER = 0.1
+_BACKOFF_MIN_DELAY = 1.0
+_BACKOFF_WINDOW = 60.0
+
 
 class ThrottlerScopeManager:
     r"""The default :setting:`THROTTLER_SCOPE_MANAGER` class.
@@ -1114,8 +1116,8 @@ class ThrottlerScopeManager:
         the scope.
 
     -   On a backoff trigger the delay grows (see :meth:`record_backoff`); after
-        quiet :setting:`BACKOFF_WINDOW`\ s it recovers (see :meth:`_recover`).
-        The :ref:`backoff docs <backoff>` describe the algorithm.
+        quiet recovery windows it recovers (see :meth:`_recover`). The
+        :ref:`backoff docs <backoff>` describe the algorithm.
 
     -   When the scope is configured with a ``"concurrency"`` limit, no more
         than that many requests are allowed in flight at once.
@@ -1146,22 +1148,18 @@ class ThrottlerScopeManager:
                 "jitter", 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
             )
         )
-        self._delay_factor: float = float(
-            backoff.get("delay_factor", settings.getfloat("BACKOFF_DELAY_FACTOR"))
-        )
+        self._delay_factor: float = _BACKOFF_DELAY_FACTOR
         self._max_delay: float = float(
             backoff.get("max_delay", settings.getfloat("BACKOFF_MAX_DELAY"))
         )
-        self._min_delay: float = float(
-            backoff.get("min_delay", settings.getfloat("BACKOFF_MIN_DELAY"))
-        )
+        self._min_delay: float = _BACKOFF_MIN_DELAY
         self._backoff_jitter: tuple[float, float] | None = self._normalize_jitter(
-            backoff.get("jitter", settings.getfloat("BACKOFF_JITTER"))
+            _BACKOFF_JITTER
         )
         # Which responses/exceptions trigger backoff is decided by the backoff
         # middleware (see BackoffMiddleware), which reads the same per-scope
         # "http_codes"/"exceptions" config and the global BACKOFF_* settings.
-        self._window: float = settings.getfloat("BACKOFF_WINDOW")
+        self._window: float = _BACKOFF_WINDOW
 
         # Concurrency. ``None`` means no scope-level limit (the downloader slots
         # enforce concurrency instead); a limit is only set when configured
@@ -1240,13 +1238,9 @@ class ThrottlerScopeManager:
         return self._apply_jitter(self._delay, jitter)
 
     def _recover(self, now: float) -> None:
-        # Bracketing search for the smallest tolerated delay, one BACKOFF_WINDOW
-        # per step; see the "backoff" docs for the algorithm.
+        # Bracketing search for the smallest tolerated delay, one recovery
+        # window per step; see the "backoff" docs for the algorithm.
         if self._last_backoff_time is None or self._delay <= self._base_delay:
-            return
-        if self._window <= 0:
-            # Non-positive window: recover at once (no cadence to step, would spin).
-            self._reset_backoff()
             return
         while now - self._last_backoff_time >= self._window:
             self._last_backoff_time += self._window

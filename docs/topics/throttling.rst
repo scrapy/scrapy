@@ -102,14 +102,6 @@ The key settings are:
     HTTP response status codes that trigger backoff. Can be overridden per
     scope with the ``http_codes`` key (see :ref:`per-scope-backoff`).
 
--   .. setting:: BACKOFF_DELAY_FACTOR
-
-    :setting:`BACKOFF_DELAY_FACTOR` (default: ``2.0``)
-
-    Factor by which the delay of a scope is multiplied on each backoff trigger
-    (2×, 4×, 8×, etc.) while searching for a working delay. Once one is found,
-    recovery bisects toward it instead (see :ref:`backoff-algorithm`).
-
 -   .. setting:: BACKOFF_MAX_DELAY
 
     :setting:`BACKOFF_MAX_DELAY` (default: ``300.0``)
@@ -130,58 +122,25 @@ starts at its configured ``"delay"`` (:setting:`DOWNLOAD_DELAY` by default).
 
 A **backoff trigger** is a response whose status code is in
 :setting:`BACKOFF_HTTP_CODES` or a download exception whose type is in
-:setting:`BACKOFF_EXCEPTIONS`. Both can be :ref:`overridden per scope
-<per-scope-backoff>` (through the ``http_codes`` and ``exceptions`` keys), so
-the same response or exception may trigger backoff for one scope and not for
-another. On each trigger:
+:setting:`BACKOFF_EXCEPTIONS` (both :ref:`overridable per scope
+<per-scope-backoff>`). On each trigger the scope's delay grows
+**exponentially**, bounded above by :setting:`BACKOFF_MAX_DELAY`, until the
+triggers stop — so a scope that starts getting throttled quickly slows down to
+a rate the server accepts.
 
-#.  The delay grows, bounded to the ``[BACKOFF_MIN_DELAY, BACKOFF_MAX_DELAY]``
-    range, with :setting:`BACKOFF_JITTER` applied so that requests that backed
-    off together do not retry in lockstep. How it grows depends on whether a
-    working delay is already known:
+Once things are quiet again, the delay **drifts back down**, probing for the
+lowest delay that does not trigger backoff and settling around it. It keeps
+tracking that ideal as it changes over the course of a crawl, rather than
+snapping back to the configured delay and having to ramp up all over again. If
+a response carries a :ref:`Retry-After or RateLimit-Reset
+<rate-limiting-headers>` value, the scope also honors it as a one-time delay
+before its next request.
 
-    -   While none is known yet, it grows **exponentially**, multiplied by
-        :setting:`BACKOFF_DELAY_FACTOR` on each trigger (2×, 4×, 8×, …), to find
-        a working delay quickly:
-
-        .. code-block:: text
-
-            delay = min(BACKOFF_MAX_DELAY, max(BACKOFF_MIN_DELAY, delay * BACKOFF_DELAY_FACTOR))
-
-    -   Once recovery has found a safe delay — one that recently went a full
-        :setting:`BACKOFF_WINDOW` without triggering — the delay instead **jumps
-        straight back to it**, so the triggering stops at once rather than
-        creeping up one request at a time.
-
-#.  If the response carries a :ref:`Retry-After or RateLimit-Reset
-    <rate-limiting-headers>` value, the scope is *also* held back until that
-    time (capped at :setting:`BACKOFF_MAX_DELAY`) before its next request. This
-    is a one-time gate, on top of the exponential step above: it honors the
-    header for the next request without turning a short header value into a
-    long-standing delay for every later request.
-
-**Recovery** is a bracketing (binary) search for the smallest delay the server
-tolerates. Each time a scope goes a full :setting:`BACKOFF_WINDOW` without a new
-trigger, the current delay has proven safe, so recovery *probes* lower: it drops
-**halfway toward the highest delay that did trigger** (or toward the configured
-value, once no triggering delay is left to search). If that lower probe survives
-its own window it becomes the new safe delay; if it triggers, the delay jumps
-straight back up to the last safe delay. So rather than snapping straight back
-to the configured value, the delay converges on the ideal — the lowest delay
-that avoids triggers — and keeps tracking it as it drifts, up or down, over the
-course of a crawl.
-
-Because the search only narrows, at steady state the delay settles into a small
-flutter around the ideal value: it keeps probing slightly lower and is nudged
-back up by the occasional trigger. This is intended — it is how the scope keeps
-finding the fastest rate the server currently accepts.
-
-Backoff only ever *tightens* a scope, and recovery never goes past the
-configured value: the delay can grow above the configured ``"delay"`` and then
-recover back down to it, but never below it, and backoff never raises the
-concurrency limit. So set the ``"delay"`` and ``"concurrency"`` you actually
-want for a scope; backoff makes things gentler from there when a server pushes
-back, and returns to those values once it recovers.
+Backoff only ever *tightens* a scope: the delay can grow above the configured
+``"delay"`` and recover back down to it, but never below it, and backoff never
+raises the concurrency limit. So set the ``"delay"`` and ``"concurrency"`` you
+actually want for a scope; backoff makes things gentler from there when a server
+pushes back, and returns to them once it recovers.
 
 Backoff triggers are detected by the
 :class:`~scrapy.downloadermiddlewares.backoff.BackoffMiddleware`, a built-in
@@ -208,18 +167,15 @@ The global ``BACKOFF_*`` settings can be overridden per scope with the
             "backoff": {
                 "http_codes": [429, 503],
                 "exceptions": ["builtins.IOError"],
-                "delay_factor": 1.2,
                 "max_delay": 180.0,
-                "min_delay": 5.0,
-                "jitter": [0.01, 0.33],
             },
         },
     }
 
 Every key overrides the matching global ``BACKOFF_*`` setting for that scope
 (``http_codes`` overrides :setting:`BACKOFF_HTTP_CODES`, ``exceptions``
-overrides :setting:`BACKOFF_EXCEPTIONS`, ``delay_factor`` overrides
-:setting:`BACKOFF_DELAY_FACTOR`, and so on), and any key left out falls back to
+overrides :setting:`BACKOFF_EXCEPTIONS`, ``max_delay`` overrides
+:setting:`BACKOFF_MAX_DELAY`), and any key left out falls back to
 it. So a scope can, for example, treat an extra status code as a backoff
 trigger, or stop treating one of the defaults as a trigger, independently of
 every other scope.
@@ -921,34 +877,6 @@ Additional settings
     :ref:`per-scope-backoff`).
 
     .. seealso:: :setting:`RETRY_EXCEPTIONS`
-
--   .. setting:: BACKOFF_JITTER
-
-    :setting:`BACKOFF_JITTER` (default: ``0.1``)
-
-    Random jitter applied to each backoff delay, as a fraction of the delay.
-    With the default value of ``0.1`` the delay is randomized by ±10%.
-    Overrides :setting:`RANDOMIZE_DOWNLOAD_DELAY` during backoff.
-
--   .. setting:: BACKOFF_MIN_DELAY
-
-    :setting:`BACKOFF_MIN_DELAY` (default: ``1.0``)
-
-    Delay, in seconds, applied on the first backoff step (and the minimum
-    delay during backoff).
-
--   .. setting:: BACKOFF_WINDOW
-
-    :setting:`BACKOFF_WINDOW` (default: ``60.0``)
-
-    Time window, in seconds, used by :ref:`backoff <backoff>`. A
-    :ref:`throttler scope <throttler-scopes>` must go this many seconds
-    without a new backoff
-    trigger (an HTTP error code from :setting:`BACKOFF_HTTP_CODES` or an
-    exception from :setting:`BACKOFF_EXCEPTIONS`) before its delay bisects one
-    step down toward the configured value (see :ref:`backoff-algorithm`). Each
-    further quiet window bisects it one step lower; a new trigger raises the
-    lower bound of the search and bisects the delay back up.
 
 -   .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 
