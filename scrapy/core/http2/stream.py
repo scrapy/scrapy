@@ -315,7 +315,7 @@ class Stream:
             0, self.metadata["remaining_content_length"]
         )
 
-        # End the stream if no more data needs to be send
+        # End the stream if no more data needs to be sent
         if self.metadata["remaining_content_length"] == 0:
             self._protocol.conn.end_stream(self.stream_id)
 
