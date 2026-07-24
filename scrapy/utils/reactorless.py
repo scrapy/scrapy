@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import sys
 from importlib.abc import MetaPathFinder
 from typing import TYPE_CHECKING
@@ -47,7 +48,19 @@ class ReactorImportHook(MetaPathFinder):
         return None
 
 
-def install_reactor_import_hook() -> None:
-    """Prevent importing :mod:`twisted.internet.reactor`."""
+def install_reactor_import_hook() -> ReactorImportHook:
+    """Prevent importing :mod:`twisted.internet.reactor`.
 
-    sys.meta_path.insert(0, ReactorImportHook())
+    The hook is returned and can later be uninstalled with
+    :func:`uninstall_reactor_import_hook()`.
+    """
+
+    hook = ReactorImportHook()
+    sys.meta_path.insert(0, hook)
+    return hook
+
+
+def uninstall_reactor_import_hook(hook: ReactorImportHook) -> None:
+    """Uninstall the hook installed with :func:`install_reactor_import_hook()`."""
+    with contextlib.suppress(ValueError):
+        sys.meta_path.remove(hook)

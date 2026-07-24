@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spidermiddlewares.referer import (
@@ -34,6 +34,9 @@ from scrapy.spidermiddlewares.referer import (
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class TestRefererMiddleware:
@@ -236,7 +239,7 @@ class MixinSameOrigin:
         ("https://example.com/page.html", "http://not.example.com/", None),
         ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
         ("ftp://example.com/urls.zip", "http://example.com/not-page.html", None),
-        ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
+        ("ftps://example.com/urls.zip", "http://example.com/not-page.html", None),
         # test for user/password stripping
         (
             "https://user:password@example.com/page.html",
@@ -392,7 +395,7 @@ class MixinOriginWhenCrossOrigin:
         ),
         (
             "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
+            "http://example4.com/not-page.html",
             b"ftps://example4.com/",
         ),
         # test for user/password stripping
@@ -503,9 +506,9 @@ class MixinStrictOriginWhenCrossOrigin:
             b"ftps://example4.com/",
         ),
         (
-            "ftps://example4.com/urls.zip",
-            "https://example4.com/not-page.html",
-            b"ftps://example4.com/",
+            "ftp://example4.com/urls.zip",
+            "http://example4.com/not-page.html",
+            b"ftp://example4.com/",
         ),
         # test for user/password stripping
         (
@@ -1017,13 +1020,21 @@ class TestPolicyMethodResponseParamRename:
                 response=self.response, resp_or_url=self.response, request=self.request
             )
 
+    def test_missing_response(self):
+        with pytest.raises(TypeError, match="Missing required argument: 'response'"):
+            self.mw.policy(request=self.request)
+
+    def test_missing_request(self):
+        with pytest.raises(TypeError, match="Missing required argument: 'request'"):
+            self.mw.policy(response=self.response)
+
 
 @coroutine_test
 async def test_response_policy_only_supports_policy_names():
     crawler = get_crawler(settings_dict={"REFERRER_POLICY": "no-referrer"})
     mw = build_from_crawler(RefererMiddleware, crawler)
 
-    async def input_result():
+    async def input_result() -> AsyncIterator[Any]:
         yield Request("https://example.com/")
 
     response = Response(
@@ -1071,7 +1082,7 @@ async def test_referer_policies_setting():
     )
     mw = build_from_crawler(RefererMiddleware, crawler)
 
-    async def input_result():
+    async def input_result() -> AsyncIterator[Any]:
         yield Request("https://example.com/")
 
     # "no-referrer-when-downgrade": None,
@@ -1115,3 +1126,36 @@ async def test_referer_policies_setting():
     ]
     assert len(output) == 1
     assert output[0].headers == {b"Referer": [b"https://python.org/"]}
+
+
+class TestReferrerPolicyHelpers:
+    def test_origin_referrer_local_scheme(self):
+        # A local scheme yields no referrer.
+        assert UnsafeUrlPolicy().origin_referrer("data:,foo") is None
+
+    def test_strip_url_empty(self):
+        assert UnsafeUrlPolicy().strip_url("") is None
+
+    def test_potentially_trustworthy_data_scheme(self):
+        assert UnsafeUrlPolicy().potentially_trustworthy("data:,foo") is False
+
+
+def test_default_policy():
+    crawler = get_crawler()
+    mw = build_from_crawler(RefererMiddleware, crawler)
+    assert mw.default_policy is DefaultReferrerPolicy
+
+
+def test_no_settings_constructor():
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="Instantiating RefererMiddleware without a 'settings' argument",
+    ):
+        mw = RefererMiddleware()
+    assert mw.default_policy is DefaultReferrerPolicy
+
+
+def test_not_configured_when_disabled():
+    crawler = get_crawler(settings_dict={"REFERER_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        build_from_crawler(RefererMiddleware, crawler)

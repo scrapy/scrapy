@@ -8,6 +8,7 @@ from testfixtures import LogCapture
 
 from scrapy import signals
 from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse, XmlResponse
 from scrapy.settings import Settings
 from scrapy.spiders import CSVFeedSpider, Spider, XMLFeedSpider
@@ -30,7 +31,7 @@ class TestSpider:
         assert spider.foo == "bar"
 
     def test_spider_without_name(self):
-        """``__init__`` method arguments are assigned to spider attributes"""
+        """``__init__`` raises when the name is not provided."""
         msg = "must have a name"
         with pytest.raises(ValueError, match=msg):
             self.spider_class()
@@ -116,7 +117,12 @@ class TestSpider:
 
     def test_log(self):
         spider = self.spider_class("example.com")
-        with mock.patch("scrapy.spiders.Spider.logger") as mock_logger:
+        with (
+            mock.patch("scrapy.spiders.Spider.logger") as mock_logger,
+            pytest.warns(
+                ScrapyDeprecationWarning, match=r"Spider.log\(\) is deprecated"
+            ),
+        ):
             spider.log("test log msg", "INFO")
         mock_logger.log.assert_called_once_with("INFO", "test log msg")
 

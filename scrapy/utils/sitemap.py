@@ -97,10 +97,11 @@ class Sitemap:
 
     @staticmethod
     def _get_tag_name(elem: lxml.etree._Element) -> str:
-        if TYPE_CHECKING:
-            assert isinstance(elem.tag, str)
-        _, _, localname = elem.tag.partition("}")
-        return localname or elem.tag
+        tag = elem.tag
+        if not isinstance(tag, str):
+            return ""
+        _, _, localname = tag.partition("}")
+        return localname or tag
 
 
 def sitemap_urls_from_robots(

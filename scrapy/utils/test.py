@@ -67,6 +67,7 @@ def get_crawler(
     priority.
     """
     settings: dict[str, Any] = {
+        "TELNETCONSOLE_ENABLED": False,
         **get_reactor_settings(),
         **(settings_dict or {}),
     }

@@ -39,7 +39,11 @@ from scrapy.utils.reactor import (
     verify_installed_asyncio_event_loop,
     verify_installed_reactor,
 )
-from scrapy.utils.reactorless import install_reactor_import_hook
+from scrapy.utils.reactorless import (
+    ReactorImportHook,
+    install_reactor_import_hook,
+    uninstall_reactor_import_hook,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Generator, Iterable
@@ -381,9 +385,12 @@ class CrawlerRunnerBase(ABC):
         """
         Return a :class:`~scrapy.crawler.Crawler` object.
 
-        * If ``crawler_or_spidercls`` is a Crawler, it is returned as-is.
+        * If ``crawler_or_spidercls`` is a Crawler, the runner's settings are
+          merged into it as defaults: for each setting, the runner's value
+          is applied only if the Crawler does not already have that setting at
+          an equal or higher priority. The Crawler is then returned.
         * If ``crawler_or_spidercls`` is a Spider subclass, a new Crawler
-          is constructed for it.
+          is constructed for it using this runner's settings.
         * If ``crawler_or_spidercls`` is a string, this function finds
           a spider with this name in a Scrapy project (using spider loader),
           then creates a Crawler instance for it.
@@ -394,6 +401,7 @@ class CrawlerRunnerBase(ABC):
                 "it must be a spider class (or a Crawler object)"
             )
         if isinstance(crawler_or_spidercls, Crawler):
+            crawler_or_spidercls.settings.update(self.settings)
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
 
@@ -545,8 +553,8 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         """
         Run a crawler with the provided arguments.
 
-        It will call the given Crawler's :meth:`~Crawler.crawl` method, while
-        keeping track of it so it can be stopped later.
+        It will call the given Crawler's :meth:`~Crawler.crawl_async` method,
+        while keeping track of it so it can be stopped later.
 
         If ``crawler_or_spidercls`` isn't a :class:`~scrapy.crawler.Crawler`
         instance, this method will try to create one using this parameter as
@@ -787,7 +795,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
         """
         This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
         size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS
-        resolver based on :setting:`DNSCACHE_ENABLED`.
+        resolver based on :setting:`TWISTED_DNS_RESOLVER`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
@@ -851,6 +859,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
         self._reactorless_loop: asyncio.AbstractEventLoop | None = None
+        self._reactor_import_hook: ReactorImportHook | None = None
         # We want the asyncio event loop to be installed early, so that it's
         # always the correct one. And as we do that, we can also install the
         # reactor here.
@@ -863,7 +872,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
                     "TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed."
                 )
             self._reactorless_loop = set_asyncio_event_loop(loop_path)
-            install_reactor_import_hook()
+            self._reactor_import_hook = install_reactor_import_hook()
         elif is_reactor_installed():
             # The user could install a reactor before this class is instantiated.
             # We need to make sure the reactor is the correct one and the loop
@@ -889,10 +898,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
         When using a reactor it adjusts its pool size to
         :setting:`REACTOR_THREADPOOL_MAXSIZE` and installs a DNS resolver based
-        on :setting:`DNSCACHE_ENABLED`.
+        on :setting:`TWISTED_DNS_RESOLVER`.
 
-        If ``stop_after_crawl`` is True, the reactor will be stopped after all
-        crawlers have finished, using :meth:`join`.
+        If ``stop_after_crawl`` is True, the reactor/event loop will be stopped
+        after all crawlers have finished, using :meth:`join`.
 
         :param bool stop_after_crawl: stop or not the reactor when all
             crawlers have finished
@@ -993,6 +1002,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.run_until_complete(loop.shutdown_default_executor())
         finally:
+            # loop.close() can raise, so we uninstall the hook first
+            if self._reactor_import_hook:  # pragma: no branch
+                uninstall_reactor_import_hook(self._reactor_import_hook)
+                self._reactor_import_hook = None
             self._reactorless_main_task = None
             asyncio.set_event_loop(None)
             loop.close()

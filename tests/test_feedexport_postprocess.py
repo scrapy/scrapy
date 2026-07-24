@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from scrapy.utils.test import get_crawler
-from tests.test_feedexport import TestFeedExportBase, path_to_url, printf_escape
+from tests.test_feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test
+from tests.utils.feedexport import path_to_url, printf_escape
 
 if TYPE_CHECKING:
     from scrapy import Spider

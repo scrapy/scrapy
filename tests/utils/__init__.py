@@ -1,12 +1,18 @@
+from __future__ import annotations
+
 import asyncio
 import os
-from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from twisted.internet.defer import Deferred
 
+from scrapy.settings import Settings, default_settings
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import maybe_deferred_to_future
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def twisted_sleep(seconds: float):
@@ -48,3 +54,8 @@ class OneShotLoop:
 
     def stop(self) -> None:
         self.running = False
+
+
+def assert_option_is_default(settings: Settings, key: str) -> None:
+    assert isinstance(settings, Settings)
+    assert settings[key] == getattr(default_settings, key)

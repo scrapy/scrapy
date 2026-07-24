@@ -309,6 +309,16 @@ class TestLocalCache:
             assert str(x) in cache
             assert cache[str(x)] == x
 
+    def test_cache_with_zero_limit(self):
+        cache = LocalCache(limit=0)
+        cache["a"] = 1
+        cache["b"] = 2
+        cache["c"] = 3
+        assert len(cache) == 0
+        assert "a" not in cache
+        assert "b" not in cache
+        assert "c" not in cache
+
 
 class TestLocalWeakReferencedCache:
     def test_cache_with_limit(self):

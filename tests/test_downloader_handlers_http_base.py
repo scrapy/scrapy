@@ -539,13 +539,6 @@ class TestHttpBase(ABC):
             assert latency > 0
 
     @coroutine_test
-    async def test_download_without_maxsize_limit(self, mockserver: MockServer) -> None:
-        request = Request(mockserver.url("/text", is_secure=self.is_secure))
-        async with self.get_dh() as download_handler:
-            response = await download_handler.download_request(request)
-        assert response.body == b"Works"
-
-    @coroutine_test
     async def test_response_class_choosing_request(
         self, mockserver: MockServer
     ) -> None:
@@ -559,6 +552,13 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert type(response) is TextResponse  # pylint: disable=unidiomatic-typecheck
+
+    @coroutine_test
+    async def test_download_without_maxsize_limit(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh({"DOWNLOAD_MAXSIZE": 0}) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
 
     @coroutine_test
     async def test_download_with_maxsize(

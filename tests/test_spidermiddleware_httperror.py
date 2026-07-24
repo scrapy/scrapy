@@ -22,6 +22,7 @@ class _HttpErrorSpider(MockServerSpider):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        assert self.mockserver
         self.start_urls = [
             self.mockserver.url("/status?n=200"),
             self.mockserver.url("/status?n=404"),
@@ -36,7 +37,7 @@ class _HttpErrorSpider(MockServerSpider):
         for url in self.start_urls:
             yield Request(url, self.parse, errback=self.on_error)
 
-    def parse(self, response):
+    def parse(self, response: Response) -> None:
         self.parsed.add(response.url[-3:])
 
     def on_error(self, failure):

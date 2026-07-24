@@ -5,9 +5,6 @@ problems such as a connection timeout or HTTP 500 error.
 You can change the behaviour of this middleware by modifying the scraping settings:
 RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
-
-Failed pages are collected on the scraping process and rescheduled at the end,
-once the spider has finished crawling all regular (non-failed) pages.
 """
 
 from __future__ import annotations
@@ -70,8 +67,9 @@ def get_retry_request(
     and :ref:`stats <topics-stats>`, and to provide extra logging context (see
     :func:`logging.debug`).
 
-    *reason* is a string or an :class:`Exception` object that indicates the
-    reason why the request needs to be retried. It is used to name retry stats.
+    *reason* is a string, an :class:`Exception` subclass or an
+    :class:`Exception` object that indicates the reason why the request needs
+    to be retried. It is used to name retry stats.
 
     *max_retry_times* is a number that determines the maximum number of times
     that *request* can be retried. If not specified or ``None``, the number is
@@ -88,6 +86,9 @@ def get_retry_request(
     *give_up_log_level* is the :ref:`logging level <levels>` used for the
     message logged when a request exceeds its retries. See
     :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
+
+    .. versionadded:: 2.17.0
+       The *give_up_log_level* parameter.
 
     *stats_base_key* is a string to be used as the base key for the
     retry-related job stats
