@@ -359,12 +359,9 @@ request normally without letting its outcome trigger :ref:`backoff <backoff>`:
 Throttling scopes
 =================
 
-Throttling scopes represent aspects of requests that can be throttled
-independently.
-
-..
-    For future reference, the “throttling scope” name was taken from
-    https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#section-1.4-4.4
+`Throttling scopes
+<https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#section-1.4-4.4>`__
+represent aspects of requests that can be throttled independently.
 
 .. _custom-throttling-scopes:
 
