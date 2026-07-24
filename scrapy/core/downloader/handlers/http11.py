@@ -285,10 +285,11 @@ class _TunnelFactory(ClientFactory):
     def doStop(self) -> None:
         self._wrappedFactory.doStop()
 
-    def buildProtocol(self, addr: IAddress) -> _TunnelProtocol | None:
+    def buildProtocol(self, addr: IAddress) -> _TunnelProtocol:
         wrappedProtocol = self._wrappedFactory.buildProtocol(addr)
-        if wrappedProtocol is None:
-            return None
+        # The wrapped factory is always the destination TLS factory built by
+        # wrapClientTLS, whose buildProtocol never returns None.
+        assert wrappedProtocol is not None
         return _TunnelProtocol(
             self._connectedDeferred,
             wrappedProtocol,
@@ -347,8 +348,9 @@ class _TunnelEndpoint:
     def _connectFailed(
         failure: Failure, connectedDeferred: Deferred[IProtocol]
     ) -> None:
-        if not connectedDeferred.called:
-            connectedDeferred.errback(failure)
+        # Reached only when connecting to the proxy fails, i.e. before the
+        # tunnel deferred has been fired.
+        connectedDeferred.errback(failure)
 
 
 def _tunnel_request_data(
