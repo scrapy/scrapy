@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 from tests.utils.cmdline import proc
@@ -36,3 +37,20 @@ class TestFetchCommand:
             "fetch", "-s", "TWISTED_REACTOR_ENABLED=False", mockserver.url("/text")
         )
         assert out.strip() == "Works"
+
+    def test_curl(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/echo")
+        _, out, _ = proc("fetch", "--curl", f"curl -d a=1 -H 'X-Test: foo' {url}")
+        echo = json.loads(out)
+        assert echo["body"] == "a=1"
+        assert echo["headers"]["X-Test"] == ["foo"]
+
+    def test_curl_with_url(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/echo")
+        code, _, _ = proc("fetch", "--curl", f"curl {url}", url)
+        assert code != 0
+
+    def test_curl_invalid(self) -> None:
+        code, _, err = proc("fetch", "--curl", "not-a-curl-command")
+        assert code != 0
+        assert "curl" in err

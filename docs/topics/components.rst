@@ -11,8 +11,6 @@ That includes the classes that you may assign to the following settings:
 
 -   :setting:`ADDONS`
 
--   :setting:`TWISTED_DNS_RESOLVER`
-
 -   :setting:`DOWNLOAD_HANDLERS`
 
 -   :setting:`DOWNLOADER_MIDDLEWARES`
@@ -40,6 +38,8 @@ That includes the classes that you may assign to the following settings:
 -   :setting:`SCHEDULER_START_MEMORY_QUEUE`
 
 -   :setting:`SPIDER_MIDDLEWARES`
+
+-   :setting:`TWISTED_DNS_RESOLVER`
 
 Third-party Scrapy components may also let you define additional Scrapy
 components, usually configurable through :ref:`settings <topics-settings>`, to

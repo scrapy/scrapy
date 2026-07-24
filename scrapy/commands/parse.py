@@ -10,7 +10,7 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from w3lib.url import is_url
 
-from scrapy.commands import BaseRunSpiderCommand
+from scrapy.commands import BaseRunSpiderCommand, _add_curl_option, _request_from_curl
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
 from scrapy.utils import display
@@ -53,6 +53,7 @@ class Command(BaseRunSpiderCommand):
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         super().add_options(parser)
+        _add_curl_option(parser)
         parser.add_argument(
             "--spider",
             dest="spider",
@@ -242,7 +243,7 @@ class Command(BaseRunSpiderCommand):
             )
         return None
 
-    def set_spidercls(self, url: str, opts: argparse.Namespace) -> None:
+    def set_spidercls(self, request: Request, opts: argparse.Namespace) -> None:
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
         if opts.spider:
@@ -253,12 +254,12 @@ class Command(BaseRunSpiderCommand):
                     "Unable to find spider: %(spider)s", {"spider": opts.spider}
                 )
         else:
-            self.spidercls = spidercls_for_request(spider_loader, Request(url))
+            self.spidercls = spidercls_for_request(spider_loader, request)
             if not self.spidercls:
-                logger.error("Unable to find spider for: %(url)s", {"url": url})
+                logger.error("Unable to find spider for: %(url)s", {"url": request.url})
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
-            yield self.prepare_request(spider, Request(url), opts)
+            yield self.prepare_request(spider, request, opts)
 
         if self.spidercls:
             self.spidercls.start = start  # type: ignore[assignment,method-assign]
@@ -401,12 +402,18 @@ class Command(BaseRunSpiderCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # parse arguments
-        if not len(args) == 1 or not is_url(args[0]):
-            raise UsageError
-        url = args[0]
+        if opts.curl:
+            if args:
+                raise UsageError("--curl cannot be combined with a URL argument")
+            request = _request_from_curl(opts.curl)
+        else:
+            if not len(args) == 1 or not is_url(args[0]):
+                raise UsageError
+            request = Request(args[0])
+        url = request.url
 
         # prepare spidercls
-        self.set_spidercls(url, opts)
+        self.set_spidercls(request, opts)
 
         if self.spidercls and opts.depth > 0:
             self.start_parsing(url, opts)

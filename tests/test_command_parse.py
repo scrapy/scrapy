@@ -199,6 +199,35 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         )
         assert "DEBUG: It Works!" in stderr
 
+    def test_curl(self, proj_path: Path, mockserver: MockServer) -> None:
+        _, _, stderr = proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-a",
+            "test_arg=1",
+            "--curl",
+            f"curl {mockserver.url('/html')}",
+            "-c",
+            "parse",
+            "--verbose",
+            cwd=proj_path,
+        )
+        assert "DEBUG: It Works!" in stderr
+
+    def test_curl_with_url(self, proj_path: Path, mockserver: MockServer) -> None:
+        url = mockserver.url("/html")
+        code, _, _ = proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "--curl",
+            f"curl {url}",
+            url,
+            cwd=proj_path,
+        )
+        assert code != 0
+
     def test_request_with_meta(self, proj_path: Path, mockserver: MockServer) -> None:
         raw_json_string = '{"foo" : "baz"}'
         _, _, stderr = proc(
