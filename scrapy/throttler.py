@@ -35,8 +35,7 @@ class BackoffConfig(TypedDict, total=False):
     """Per-scope override of the backoff settings.
 
     Used as the value of the ``"backoff"`` key of :class:`ThrottlingScopeConfig`
-    entries. Any key left out falls back to the corresponding global
-    ``BACKOFF_*`` setting (or, for ``enabled``, to ``True``).
+    entries.
     """
 
     enabled: bool
@@ -45,20 +44,23 @@ class BackoffConfig(TypedDict, total=False):
     solely on its configured delay and quota."""
 
     http_codes: list[int]
+    """Per-scope override of :setting:`BACKOFF_HTTP_CODES`."""
+
     exceptions: list[str]
+    """Per-scope override of :setting:`BACKOFF_EXCEPTIONS`."""
+
     max_delay: float
+    """Per-scope override of :setting:`BACKOFF_MAX_DELAY`."""
 
 
 class ThrottlingScopeConfig(TypedDict, total=False):
-    """Accepted keys of :setting:`THROTTLING_SCOPES` entries.
-
-    Every key is optional; missing keys fall back to the matching global
-    setting (e.g. ``delay`` falls back to :setting:`DOWNLOAD_DELAY`).
-    """
+    """Accepted keys of :setting:`THROTTLING_SCOPES` entries."""
 
     concurrency: int
+    """Per-scope override of :setting:`THROTTLING_SCOPE_CONCURRENCY`."""
 
     delay: float
+    """Per-scope override of :setting:`DOWNLOAD_DELAY`."""
 
     jitter: float | list[float]
     """Magnitude of the random variation applied to ``delay``; the per-scope
@@ -66,13 +68,20 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     means ±50%)."""
 
     quota: float
+    """Maximum :ref:`throttler quota <throttling-quotas>` the scope may consume
+    per ``window``. Unlimited when unset."""
+
     window: float
+    """Length in seconds of the ``quota`` window; per-scope override of
+    :setting:`THROTTLER_WINDOW`."""
 
     manager: str | type
     """Import path or class of a custom :setting:`THROTTLING_SCOPE_MANAGER` for
     this scope."""
 
     backoff: BackoffConfig
+    """Per-scope override of the :ref:`backoff <backoff>` settings; see
+    :class:`BackoffConfig`."""
 
     ignore_robots_txt: bool
     """Silence the warning logged when this configuration is more aggressive
