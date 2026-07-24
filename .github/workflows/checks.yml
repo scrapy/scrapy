@@ -13,6 +13,7 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -53,6 +54,7 @@ jobs:
 
   pre-commit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
     - uses: actions/checkout@v6
     - uses: pre-commit/action@v3.0.1

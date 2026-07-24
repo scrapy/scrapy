@@ -6,8 +6,8 @@ import re
 import signal
 import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar
-from unittest.mock import MagicMock
+from typing import TYPE_CHECKING, Any, ClassVar, cast
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -610,9 +610,10 @@ class TestAsyncCrawlerProcessReactorlessHelpers:
         process, installed_handlers = self._bare_process(monkeypatch)
         process._reactorless_loop = None
         # No loop to schedule the shutdown task on, so it returns early, but it
-        # must still escalate the handler so a second signal forces a kill.
+        # must still escalate the handler so a second signal forces a fast
+        # shutdown.
         process._signal_shutdown_reactorless(signal.SIGINT, None)
-        assert installed_handlers == [process._signal_kill_reactorless]
+        assert installed_handlers == [process._signal_fast_shutdown_reactorless]
 
     def test_signal_kill_reactorless_without_loop(
         self, monkeypatch: pytest.MonkeyPatch
@@ -637,13 +638,13 @@ class TestAsyncCrawlerProcessReactorlessHelpers:
         assert installed_handlers == [signal.SIG_IGN]
         loop.call_soon_threadsafe.assert_not_called()
 
-    def test_shutdown_graceful_reactorless_main_task_already_done(
+    def test_shutdown_reactorless_main_task_already_done(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         process, _ = self._bare_process(monkeypatch)
         process._stop_after_crawl = False
 
-        async def noop() -> None:
+        async def noop(*args: Any, **kwargs: Any) -> None:
             return None
 
         monkeypatch.setattr(process, "stop", noop)
@@ -656,24 +657,12 @@ class TestAsyncCrawlerProcessReactorlessHelpers:
                 main_task.set_result(None)
                 process._reactorless_main_task = main_task
                 # The main task is already done, so it is not cancelled.
-                loop.run_until_complete(process._shutdown_graceful_reactorless())
+                loop.run_until_complete(process._shutdown_reactorless(mode="graceful"))
                 assert not main_task.cancelled()
             finally:
                 loop.close()
 
         self._run_in_thread(run)
-
-    def test_create_shutdown_task_closed_loop(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        process, _ = self._bare_process(monkeypatch)
-        loop = asyncio.new_event_loop()
-        loop.close()
-        process._reactorless_loop = loop
-        process._stop_after_crawl = True
-        # create_task() raises RuntimeError on a closed loop; the coroutine
-        # must be closed instead of leaking.
-        process._create_shutdown_task()
 
     def test_cancel_all_tasks_logs_task_exception(self) -> None:
         contexts: list[dict[str, Any]] = []
@@ -748,3 +737,282 @@ async def test_deprecated_crawler_stop() -> None:
         ScrapyDeprecationWarning, match=r"Crawler.stop\(\) is deprecated"
     ):
         await maybe_deferred_to_future(crawler.stop())
+
+
+@coroutine_test
+async def test_crawler_stop_async_invalid_mode() -> None:
+    crawler = get_crawler(DefaultSpider)
+    with pytest.raises(ValueError, match=r"Unknown stop mode"):
+        await crawler.stop_async(mode="invalid")  # type: ignore[arg-type]
+
+
+@coroutine_test
+async def test_crawler_graceful_stop_non_running_engine_is_noop() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = False
+        called = False
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called = True
+
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
+
+    await crawler.stop_async(mode="graceful")
+
+    assert dummy_engine.called is False
+
+
+@coroutine_test
+async def test_crawler_force_stop_falls_back_to_fast(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    crawler = get_crawler(DefaultSpider)
+
+    class DummyEngine:
+        called_mode: str | None = None
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called_mode = mode
+
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
+
+    with caplog.at_level(logging.WARNING):
+        await crawler.stop_async(mode="force")
+
+    assert dummy_engine.called_mode == "fast"
+    assert "Falling back to fast stop" in caplog.text
+
+
+@coroutine_test
+async def test_crawler_force_stop_uses_force_callback() -> None:
+    crawler = get_crawler(DefaultSpider)
+    called = False
+
+    def force_stop_callback() -> None:
+        nonlocal called
+        called = True
+
+    crawler._set_force_stop_callback(force_stop_callback)
+    await crawler.stop_async(mode="force")
+    assert called
+
+
+@coroutine_test
+async def test_crawler_stop_async_without_engine_is_noop() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    await crawler.stop_async(mode="graceful")
+
+    assert crawler.crawling is False
+
+
+@coroutine_test
+async def test_crawler_stop_async_ignores_engine_not_running_runtime_error() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = True
+        called = False
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            self.called = True
+            raise RuntimeError("Engine not running")
+
+    dummy_engine = DummyEngine()
+    crawler.engine = dummy_engine  # type: ignore[assignment]
+
+    await crawler.stop_async(mode="graceful")
+
+    assert dummy_engine.called is True
+
+
+@coroutine_test
+async def test_crawler_stop_async_reraises_other_runtime_errors() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.crawling = True
+
+    class DummyEngine:
+        running = True
+
+        async def stop_async(self, *, mode: str = "graceful") -> None:
+            raise RuntimeError("different runtime error")
+
+    crawler.engine = DummyEngine()  # type: ignore[assignment]
+
+    with pytest.raises(RuntimeError, match="different runtime error"):
+        await crawler.stop_async(mode="graceful")
+
+
+@pytest.mark.requires_reactor
+@coroutine_test
+async def test_crawler_process_force_stop_via_public_crawler_api() -> None:
+    crawler_process = CrawlerProcess(install_root_handler=False)
+    called = False
+
+    def stop_reactor(_: Any = None) -> None:
+        nonlocal called
+        called = True
+
+    crawler_process._stop_reactor = stop_reactor  # type: ignore[method-assign]
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert called
+
+
+@pytest.mark.only_asyncio
+@pytest.mark.requires_reactor
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactor_enabled_via_public_crawler_api() -> (
+    None
+):
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": True},
+        install_root_handler=False,
+    )
+    called = False
+
+    def stop_reactor(_: Any = None) -> None:
+        nonlocal called
+        called = True
+
+    crawler_process._stop_reactor = stop_reactor  # type: ignore[method-assign]
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert called
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_without_main_task(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False},
+        install_root_handler=False,
+    )
+    assert crawler_process._reactorless_loop is not None
+    assert crawler_process._reactorless_main_task is None
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_without_loop(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False},
+        install_root_handler=False,
+    )
+    crawler_process._reactorless_loop = None
+    crawler_process._reactorless_main_task = None
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_async_crawler_process_force_stop_reactorless_with_task(
+    reactor_pytest: str,
+) -> None:
+    if reactor_pytest != "none":
+        pytest.skip("This test is only for --reactor=none")
+
+    crawler_process = AsyncCrawlerProcess(
+        {"TWISTED_REACTOR_ENABLED": False},
+        install_root_handler=False,
+    )
+
+    class DummyLoop:
+        callback = None
+
+        def call_soon_threadsafe(self, callback) -> None:
+            self.callback = callback
+
+    class DummyTask:
+        called = False
+
+        def cancel(self) -> None:
+            self.called = True
+
+    loop = DummyLoop()
+    task = DummyTask()
+    crawler_process._reactorless_loop = cast("asyncio.AbstractEventLoop", loop)
+    crawler_process._reactorless_main_task = cast("asyncio.Future[None]", task)
+    crawler = crawler_process.create_crawler(DefaultSpider)
+
+    await crawler.stop_async(mode="force")
+
+    assert loop.callback is not None
+    loop.callback()
+    assert task.called is True
+
+
+def test_async_crawler_process_schedule_reactorless_shutdown_without_loop() -> None:
+    crawler_process = object.__new__(AsyncCrawlerProcess)
+    crawler_process._reactorless_loop = None
+
+    crawler_process._schedule_reactorless_shutdown(mode="graceful")
+
+
+def test_async_crawler_process_schedule_reactorless_shutdown_runtime_error() -> None:
+    crawler_process = object.__new__(AsyncCrawlerProcess)
+
+    class DummyLoop:
+        scheduled = False
+        create_task_called = False
+
+        def call_soon_threadsafe(self, callback) -> None:
+            self.scheduled = True
+            callback()
+
+        def create_task(self, coro) -> None:
+            self.create_task_called = True
+            raise RuntimeError("event loop is closing")
+
+    class DummyCoro:
+        closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    loop = DummyLoop()
+    coro = DummyCoro()
+    called_mode: str | None = None
+
+    def shutdown_reactorless(*, mode: str) -> DummyCoro:
+        nonlocal called_mode
+        called_mode = mode
+        return coro
+
+    crawler_process._reactorless_loop = cast("asyncio.AbstractEventLoop", loop)
+    with patch.object(
+        crawler_process, "_shutdown_reactorless", new=shutdown_reactorless
+    ):
+        crawler_process._schedule_reactorless_shutdown(mode="graceful")
+
+    assert called_mode == "graceful"
+
+    assert loop.scheduled
+    assert loop.create_task_called
+    assert coro.closed
