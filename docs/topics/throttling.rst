@@ -473,11 +473,12 @@ as a string):
 
     THROTTLING_SCOPE_MANAGER = "myproject.throttling.MyThrottlingScopeManager"
 
-For each throttling scope, an instance of this class is created to manage any
-gradual :ref:`backoff <backoff>` required at run time.
+For each throttling scope, an instance of this class manages that scope's
+run-time throttling state: its delay and concurrency limits, its quota, and any
+gradual :ref:`backoff <backoff>`.
 
 You can implement your own throttling scope manager if you wish to change the
-backoff behavior beyond what settings allow.
+throttling behavior beyond what settings allow.
 
 You can also define a custom throttling scope manager for a specific throttling
 scope by setting the ``"manager"`` key in the :setting:`THROTTLING_SCOPES`

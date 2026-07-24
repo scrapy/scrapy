@@ -952,6 +952,10 @@ class ThrottlingScopeManagerProtocol(Protocol):
     """A protocol for :setting:`THROTTLING_SCOPE_MANAGER` :ref:`components
     <topics-components>`.
 
+    An instance manages one throttling scope's run-time throttling state: its
+    delay and concurrency limits, its quota, and any gradual :ref:`backoff
+    <backoff>`.
+
     The ``__init__`` method gets a ``config`` dict with the base configuration
     of the managed throttling scope. For example:
 
