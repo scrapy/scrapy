@@ -271,6 +271,8 @@ Scrapy provides unified helpers for some of these examples:
 .. autofunction:: scrapy.utils.asyncio.create_looping_call
 .. autoclass:: scrapy.utils.asyncio.AsyncioLoopingCall
 .. autofunction:: scrapy.utils.asyncio.run_in_thread
+.. autofunction:: scrapy.utils.decorators.inthread
+.. autofunction:: scrapy.utils.decorators.inthread
 
 If your code needs to know whether the reactor is available, you can either
 check for the value of the :setting:`TWISTED_REACTOR_ENABLED` setting (you need
