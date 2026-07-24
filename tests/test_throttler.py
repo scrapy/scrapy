@@ -16,7 +16,7 @@ from scrapy.throttler import (
     _parse_retry_after,
     _to_scope_dict,
     add_scope,
-    iter_scope_values,
+    iter_scope_quota_amounts,
     iter_scopes,
     scope_cache,
     update_scope_backoff,
@@ -162,7 +162,7 @@ class TestThrottler:
         # readiness path must still recover its scopes (with quota values) from
         # the persisted meta, without re-running get_scopes.
         restored = request_from_dict(request.to_dict())
-        assert manager._cached_scope_values(restored) == [("bucket", 3.0)]
+        assert manager._cached_scope_quota_amounts(restored) == [("bucket", 3.0)]
 
     @coroutine_test
     async def test_get_scopes_reresolved_after_cross_host_replace(self):
@@ -897,11 +897,11 @@ class TestScopeHelpers:
         assert list(iter_scopes({"a": 1.0, "b": 2.0})) == ["a", "b"]
         assert list(iter_scopes(["a", "b"])) == ["a", "b"]
 
-    def test_iter_scope_values(self):
-        assert list(iter_scope_values(None)) == []
-        assert list(iter_scope_values("a")) == [("a", None)]
-        assert list(iter_scope_values({"a": 1.0})) == [("a", 1.0)]
-        assert list(iter_scope_values(["a", "b"])) == [("a", None), ("b", None)]
+    def test_iter_scope_quota_amounts(self):
+        assert list(iter_scope_quota_amounts(None)) == []
+        assert list(iter_scope_quota_amounts("a")) == [("a", None)]
+        assert list(iter_scope_quota_amounts({"a": 1.0})) == [("a", 1.0)]
+        assert list(iter_scope_quota_amounts(["a", "b"])) == [("a", None), ("b", None)]
 
     def test_to_scope_dict(self):
         assert _to_scope_dict({"a": 1}, list) == {"a": 1}

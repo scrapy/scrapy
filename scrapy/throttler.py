@@ -104,10 +104,10 @@ def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
     this helper normalizes any of those into an iterable of scope IDs, e.g. to
     react to a request's scopes in a custom middleware.
     """
-    return (scope for scope, _ in iter_scope_values(scopes))
+    return (scope for scope, _ in iter_scope_quota_amounts(scopes))
 
 
-def iter_scope_values(
+def iter_scope_quota_amounts(
     scopes: RequestScopes,
 ) -> Iterable[tuple[ScopeID, QuotaAmount | None]]:
     """Iterate over *scopes* as ``(scope_id, quota_amount)`` pairs.
@@ -654,12 +654,12 @@ class Throttler:
             return cast("RequestScopes", request.meta[_RESOLVED_SCOPES_META_KEY])
         return self._resolve_scopes_sync(request)
 
-    def _cached_scope_values(
+    def _cached_scope_quota_amounts(
         self, request: Request
     ) -> list[tuple[ScopeID, QuotaAmount | None]]:
         """Return the ``(scope_id, quota_amount)`` pairs of *request*, from the
         scopes returned by :meth:`get_resolved_scopes`."""
-        return list(iter_scope_values(self.get_resolved_scopes(request)))
+        return list(iter_scope_quota_amounts(self.get_resolved_scopes(request)))
 
     # -- Scope-state coordination (called from the request lifecycle) --------
 
@@ -713,7 +713,7 @@ class Throttler:
         now = time.monotonic()
         self._maybe_evict(now)
         await self._delay_request(request)
-        scope_values = list(iter_scope_values(await self.get_scopes(request)))
+        scope_values = list(iter_scope_quota_amounts(await self.get_scopes(request)))
         if not scope_values:
             return
         managers = [
@@ -778,7 +778,7 @@ class Throttler:
         now = time.monotonic()
         if self._request_delay_deadline(request, now) > now:
             return False
-        for scope_id, quota_amount in self._cached_scope_values(request):
+        for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
             manager = self.get_scope_manager(scope_id)
             if manager.can_send(now=now, quota_amount=quota_amount) > 0:
                 return False
@@ -794,14 +794,14 @@ class Throttler:
         self._maybe_evict(time.monotonic())
         managers = [
             (self.get_scope_manager(scope_id), quota_amount)
-            for scope_id, quota_amount in self._cached_scope_values(request)
+            for scope_id, quota_amount in self._cached_scope_quota_amounts(request)
         ]
         self._record_reservation(request, managers)
 
     def get_time_until_ready(self, request: Request) -> float | None:
         now = time.monotonic()
         wait = max(0.0, self._request_delay_deadline(request, now) - now)
-        for scope_id, quota_amount in self._cached_scope_values(request):
+        for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
             manager = self.get_scope_manager(scope_id)
             wait = max(wait, manager.can_send(now=now, quota_amount=quota_amount))
         return wait if wait > 0 else None
