@@ -15,6 +15,7 @@ from twisted.web.client import Agent
 
 from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner, CrawlerRunnerBase
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import default_settings
 from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
@@ -66,13 +67,16 @@ def get_crawler(
     will be used to populate the crawler settings with a project level
     priority.
     """
-    # When needed, useful settings can be added here, e.g. ones that prevent
-    # deprecation warnings.
     settings: dict[str, Any] = {
         "TELNETCONSOLE_ENABLED": False,
         **get_reactor_settings(),
         **(settings_dict or {}),
     }
+    if prevent_warnings:
+        settings.setdefault(
+            "THROTTLING_SCOPE_CONCURRENCY",
+            default_settings.CONCURRENT_REQUESTS_PER_DOMAIN,
+        )
     runner: CrawlerRunnerBase
     if is_reactor_installed():
         runner = CrawlerRunner(settings)

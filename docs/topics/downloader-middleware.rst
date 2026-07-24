@@ -169,6 +169,13 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
+.. _backoff-mw:
+
+BackoffMiddleware
+-----------------
+
+.. autoclass:: scrapy.downloadermiddlewares.backoff.BackoffMiddleware
+
 .. _cookies-mw:
 
 CookiesMiddleware
@@ -948,6 +955,7 @@ Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
 If maximum redirections are exceeded, the request is aborted and ignored.
+
 
 MetaRefreshMiddleware
 ---------------------

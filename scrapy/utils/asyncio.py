@@ -5,11 +5,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
+from collections.abc import AsyncIterator, Callable, Coroutine, Iterable, Sequence
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
-from twisted.internet.task import LoopingCall
+from twisted.internet.task import LoopingCall, deferLater
 from twisted.internet.threads import deferToThread
 
 from scrapy.utils.asyncgen import as_async_generator
@@ -311,3 +311,106 @@ async def run_in_thread(
     from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
     return await maybe_deferred_to_future(deferToThread(func, *args, **kwargs))
+
+
+async def sleep(seconds: float) -> None:
+    """Sleep for *seconds*, working in asyncio-reactor, non-asyncio-reactor,
+    and reactorless modes.
+
+    Uses :func:`asyncio.sleep` when asyncio is available, and
+    :func:`~twisted.internet.task.deferLater` otherwise.
+
+    .. versionadded:: VERSION
+    """
+    if is_asyncio_available():
+        await asyncio.sleep(seconds)
+    else:
+        from twisted.internet import reactor
+
+        # circular import
+        from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
+
+        await maybe_deferred_to_future(deferLater(reactor, seconds, lambda: None))
+
+
+async def wait_for_first(
+    deferreds: Sequence[Deferred[Any]],
+    *,
+    timeout: float | None = None,
+) -> tuple[set[Deferred[Any]], set[Deferred[Any]]]:
+    """Wait for the first of *deferreds* to fire, or until *timeout* seconds pass.
+
+    Returns ``(done, pending)`` — two sets partitioning the input
+    :class:`~twisted.internet.defer.Deferred` objects — mirroring the API of
+    :func:`asyncio.wait`.
+
+    Unfired deferreds in the ``pending`` set are neither cancelled nor
+    otherwise modified; the caller is responsible for any cleanup.
+
+    A deferred that fails counts as done and its failure is **not** re-raised
+    here (it stays on the deferred for the caller to inspect or handle), exactly
+    as a failed awaitable lands in the ``done`` set of :func:`asyncio.wait`.
+
+    Returns ``(set(), set())`` immediately when *deferreds* is empty.
+
+    Works transparently in asyncio-reactor, non-asyncio-reactor, and
+    reactorless modes.
+
+    .. versionadded:: VERSION
+    """
+    if not deferreds:
+        return set(), set()
+
+    if is_asyncio_available():
+        # circular import
+        from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
+
+        future_to_deferred = {maybe_deferred_to_future(d): d for d in deferreds}
+        done_futures, pending_futures = await asyncio.wait(
+            list(future_to_deferred),
+            timeout=timeout,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        return (
+            {future_to_deferred[f] for f in done_futures},
+            {future_to_deferred[f] for f in pending_futures},
+        )
+
+    from twisted.internet import reactor
+
+    # circular import
+    from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
+
+    # Fire a single signal Deferred as soon as any input Deferred (or the
+    # timeout) completes, whether it succeeds or fails. Unlike a DeferredList
+    # with fireOnOneErrback (which would raise the first failure into this
+    # coroutine), _fire passes each result through untouched, so a failure just
+    # marks its Deferred as done and stays there for the caller — matching the
+    # asyncio branch and asyncio.wait(return_when=FIRST_COMPLETED).
+    signal: Deferred[None] = Deferred()
+
+    def _fire(result: Any) -> Any:
+        if not signal.called:
+            signal.callback(None)
+        return result
+
+    for d in deferreds:
+        d.addBoth(_fire)
+
+    timeout_deferred: Deferred[Any] | None = None
+    if timeout is not None:
+        timeout_deferred = deferLater(reactor, timeout, lambda: None)
+        timeout_deferred.addBoth(_fire)
+        # Swallow the CancelledError from the finally-block cancel() below.
+        timeout_deferred.addErrback(lambda _: None)
+
+    try:
+        await maybe_deferred_to_future(signal)
+    finally:
+        if timeout_deferred is not None and not timeout_deferred.called:
+            timeout_deferred.cancel()
+
+    return (
+        {d for d in deferreds if d.called},
+        {d for d in deferreds if not d.called},
+    )

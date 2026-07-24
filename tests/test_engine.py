@@ -545,3 +545,151 @@ async def test_request_scheduled_signal():
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )
     crawler.signals.disconnect(signal_handler, signals.request_scheduled)
+
+
+class TestEngineThrottler:
+    @pytest.fixture
+    def engine(self):
+        crawler = get_crawler(MySpider)
+        engine = ExecutionEngine(crawler, lambda _: None)
+        yield engine
+        engine.downloader.close()
+
+    def test_pause_cancels_delay_wakeup(self, engine):
+        wakeup = Mock()
+        engine._delay_wakeup = wakeup
+        engine.pause()
+        assert engine.paused is True
+        wakeup.cancel.assert_called_once_with()
+        assert engine._delay_wakeup is None
+        engine.unpause()
+        assert engine.paused is False
+
+    @pytest.mark.requires_reactor  # call_later() needs a reactor or asyncio loop
+    def test_maybe_arm_delay_wakeup_arms_timer(self, engine):
+        engine._get_next_request_delay = lambda: 5.0
+        engine._slot = Mock()
+        engine._slot.scheduler.has_pending_requests.return_value = True
+        engine._maybe_arm_delay_wakeup()
+        assert engine._delay_wakeup is not None
+        # Cancel the scheduled reactor call so it does not leak into other tests.
+        engine._cancel_delay_wakeup()
+
+    def test_maybe_arm_delay_wakeup_no_delay(self, engine):
+        engine._get_next_request_delay = lambda: None
+        engine._slot = Mock()
+        engine._slot.scheduler.has_pending_requests.return_value = True
+        engine._maybe_arm_delay_wakeup()
+        assert engine._delay_wakeup is None
+
+    def test_maybe_arm_delay_wakeup_zero_delay(self, engine):
+        # A 0 delay means a request is ready but could not be sent (e.g. the
+        # downloader is at capacity); arming a 0-second timer would busy-loop
+        # the engine, so no timer must be armed.
+        engine._get_next_request_delay = lambda: 0.0
+        engine._slot = Mock()
+        engine._slot.scheduler.has_pending_requests.return_value = True
+        engine._maybe_arm_delay_wakeup()
+        assert engine._delay_wakeup is None
+
+    def test_maybe_arm_delay_wakeup_not_supported(self, engine):
+        # A scheduler without get_next_request_delay never arms a timer.
+        engine._get_next_request_delay = None
+        engine._slot = Mock()
+        engine._slot.scheduler.has_pending_requests.return_value = True
+        engine._maybe_arm_delay_wakeup()
+        assert engine._delay_wakeup is None
+
+    def test_maybe_warn_throttler_backout(self, engine):
+        # A scheduler without get_next_request_delay is not throttler-aware, so
+        # the warning recommends switching to one.
+        engine._get_next_request_delay = None
+        with LogCapture() as log:
+            engine._maybe_warn_throttler_backout()
+            # A second call is a no-op (the warning is emitted only once).
+            engine._maybe_warn_throttler_backout()
+        assert engine._throttler_backout_warned is True
+        assert str(log).count("ThrottlerAwareScheduler") == 1
+
+    def test_maybe_warn_throttler_backout_throttler_aware(self, engine):
+        # A throttler-aware scheduler (one with get_next_request_delay) holds
+        # throttled requests itself, so no warning is emitted.
+        engine._get_next_request_delay = lambda: None
+        with LogCapture() as log:
+            engine._maybe_warn_throttler_backout()
+        assert engine._throttler_backout_warned is False
+        assert "ThrottlerAwareScheduler" not in str(log)
+
+    def test_spider_is_idle_false_while_scheduling(self, engine):
+        engine._slot = Mock()
+        engine.scraper.slot = Mock()
+        engine.scraper.slot.is_idle.return_value = True
+        engine.downloader = Mock()
+        engine.downloader.active = []
+        engine._throttler_waiting = set()
+        engine._start = None
+        engine._scheduling = 1
+        # An in-flight async enqueue keeps the spider from being considered idle.
+        assert engine.spider_is_idle() is False
+
+    @coroutine_test
+    async def test_enqueue_request_async_dropped(self, engine):
+        scheduler = Mock()
+
+        async def enqueue_request_async(request):
+            return False
+
+        scheduler.enqueue_request_async = enqueue_request_async
+        engine._slot = Mock()
+        engine._slot.scheduler = scheduler
+        engine.spider = Mock()
+        dropped = []
+
+        def on_dropped(request, spider):
+            dropped.append(request)
+
+        engine.signals.connect(on_dropped, signals.request_dropped, weak=False)
+        engine._scheduling = 1
+        request = Request("http://a.example")
+        await engine._enqueue_request_async(request)
+        assert dropped == [request]
+        assert engine._scheduling == 0
+        engine._slot.nextcall.schedule.assert_called_once_with()
+
+    @coroutine_test
+    async def test_enqueue_request_async_error(self, engine):
+        scheduler = Mock()
+
+        async def enqueue_request_async(request):
+            raise RuntimeError("boom")
+
+        scheduler.enqueue_request_async = enqueue_request_async
+        engine._slot = Mock()
+        engine._slot.scheduler = scheduler
+        engine.spider = Mock()
+        engine._scheduling = 1
+        with LogCapture() as log:
+            await engine._enqueue_request_async(Request("http://a.example"))
+        assert "Error while enqueuing request" in str(log)
+        assert engine._scheduling == 0
+        engine._slot.nextcall.schedule.assert_called_once_with()
+
+    @coroutine_test
+    async def test_enqueue_request_async_slot_gone(self, engine):
+        scheduler = Mock()
+
+        async def enqueue_request_async(request):
+            # The spider is closed while the enqueue is in flight.
+            engine._slot = None
+            return True
+
+        scheduler.enqueue_request_async = enqueue_request_async
+        slot = Mock()
+        slot.scheduler = scheduler
+        engine._slot = slot
+        engine.spider = Mock()
+        engine._scheduling = 1
+        await engine._enqueue_request_async(Request("http://a.example"))
+        assert engine._scheduling == 0
+        # No reschedule is attempted once the slot is gone.
+        slot.nextcall.schedule.assert_not_called()

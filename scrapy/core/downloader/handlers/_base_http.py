@@ -7,10 +7,33 @@ from .base import BaseDownloadHandler
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
     """Base class for built-in HTTP download handlers."""
+
+    @staticmethod
+    def _max_per_host_concurrency(settings: BaseSettings) -> int:
+        """Highest per-host concurrency the throttler may admit: the per-domain
+        limit, the default ``other``-scope limit, and any explicit
+        :setting:`THROTTLING_SCOPES` concurrency.
+
+        Since :setting:`CONCURRENT_REQUESTS` caps the total number of requests in
+        flight, no host can ever exceed it, so it is also the upper bound of the
+        result.
+        """
+        global_concurrency = settings.getint("CONCURRENT_REQUESTS")
+        candidates = [
+            settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN"),
+            settings.getint("THROTTLING_SCOPE_CONCURRENCY"),
+        ]
+        candidates += [
+            int(scope["concurrency"])
+            for scope in settings.getdict("THROTTLING_SCOPES").values()
+            if "concurrency" in scope
+        ]
+        return min(max(candidates), global_concurrency)
 
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)

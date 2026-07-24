@@ -1519,7 +1519,7 @@ Deprecations
     (:issue:`7005`, :issue:`7043`)
 
 -   The ``CONCURRENT_REQUESTS_PER_IP`` setting is deprecated, use
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` instead.
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` instead.
     (:issue:`6917`, :issue:`6921`)
 
 -   The ``scrapy.core.downloader.handlers.http`` module is deprecated. You
@@ -1851,7 +1851,7 @@ Scrapy 2.13.3 (2025-07-02)
 --------------------------
 
 -   Changed the values for :setting:`DOWNLOAD_DELAY` (from ``0`` to ``1``) and
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (from ``8`` to ``1``) in the
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` (from ``8`` to ``1``) in the
     default project template.
     (:issue:`6597`, :issue:`6918`, :issue:`6923`)
 
@@ -2837,10 +2837,9 @@ New features
     :meth:`~scrapy.crawler.Crawler.get_spider_middleware`.
     (:issue:`6181`)
 
--   Slot delay updates by the :ref:`AutoThrottle extension
-    <topics-autothrottle>` based on response latencies can now be disabled for
-    specific requests via the :reqmeta:`autothrottle_dont_adjust_delay` meta
-    key.
+-   Slot delay updates by the ``scrapy.extensions.throttle.AutoThrottle``
+    extension based on response latencies can now be disabled for specific
+    requests via the ``autothrottle_dont_adjust_delay`` meta key.
     (:issue:`6246`, :issue:`6527`)
 
 -   If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
@@ -3606,9 +3605,9 @@ New features
 ~~~~~~~~~~~~
 
 -   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` and
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
-    via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
+    via the new ``DOWNLOAD_SLOTS`` setting. (:issue:`5328`)
 
 -   Added :meth:`.TextResponse.jmespath`, a shortcut for JMESPath selectors
     available since parsel_ 1.8.1. (:issue:`5894`, :issue:`5915`)
@@ -6822,8 +6821,7 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
 *   From :class:`~scrapy.spiders.Spider` (and subclasses):
 
-    *   ``DOWNLOAD_DELAY`` (use :ref:`download_delay
-        <spider-download_delay-attribute>`)
+    *   ``DOWNLOAD_DELAY`` (use ``download_delay``)
 
     *   ``set_crawler`` (use :meth:`~scrapy.spiders.Spider.from_crawler`)
 
@@ -7796,7 +7794,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
 
   - Item loaders now support nested loaders (:issue:`1467`).
   - ``FormRequest.from_response`` improvements (:issue:`1382`, :issue:`1137`).
-  - Added setting :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` and improved
+  - Added setting ``AUTOTHROTTLE_TARGET_CONCURRENCY`` and improved
     AutoThrottle docs (:issue:`1324`).
   - Added ``response.text`` to get body as unicode (:issue:`1730`).
   - Anonymous S3 connections (:issue:`1358`).
@@ -8999,7 +8997,7 @@ Scrapy changes:
 
 - added :ref:`topics-contracts`, a mechanism for testing spiders in a formal/reproducible way
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
-- documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
+- documented ``scrapy.extensions.throttle.AutoThrottle`` and added to extensions installed by default. You still need to enable it with ``AUTOTHROTTLE_ENABLED``
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
 - added a ``process_start_requests()`` method to spider middlewares
 - dropped Signals singleton. Signals should now be accessed through the Crawler.signals attribute. See the signals documentation for more info.
@@ -9101,7 +9099,7 @@ New features and settings
 - In request errbacks, offending requests are now received in ``failure.request`` attribute (:rev:`2738`)
 - Big downloader refactoring to support per domain/ip concurrency limits (:rev:`2732`)
    - ``CONCURRENT_REQUESTS_PER_SPIDER`` setting has been deprecated and replaced by:
-      - :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, ``CONCURRENT_REQUESTS_PER_IP``
+      - :setting:`CONCURRENT_REQUESTS`, ``CONCURRENT_REQUESTS_PER_DOMAIN``, ``CONCURRENT_REQUESTS_PER_IP``
    - check the documentation for more details
 - Added builtin caching DNS resolver (:rev:`2728`)
 - Moved Amazon AWS-related components/extensions (SQS spider queue, SimpleDB stats collector) to a separate project: [scaws](https://github.com/scrapinghub/scaws) (:rev:`2706`, :rev:`2714`)

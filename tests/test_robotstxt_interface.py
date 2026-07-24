@@ -78,6 +78,16 @@ class BaseRobotParserTest:
         assert rp.allowed("https://site.local/index.html", "*")
         assert rp.allowed("https://site.local/disallowed", "*")
 
+    def test_crawl_delay(self):
+        robotstxt_body = b"User-agent: *\nCrawl-delay: 10\n"
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_body)
+        assert rp.crawl_delay("*") == 10.0
+
+    def test_crawl_delay_unset(self):
+        robotstxt_body = b"User-agent: *\nDisallow: /private\n"
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_body)
+        assert rp.crawl_delay("*") is None
+
     def test_unicode_url_and_useragent(self):
         robotstxt_robotstxt_body = """
         User-Agent: *
@@ -160,6 +170,9 @@ class TestRerpRobotParser(BaseRobotParserTest):
 
     def test_length_based_precedence(self):
         pytest.skip("Rerp does not support length based directives precedence.")
+
+    def test_crawl_delay(self):
+        pytest.skip("Rerp does not expose Crawl-delay directives.")
 
 
 class TestProtegoRobotParser(BaseRobotParserTest):

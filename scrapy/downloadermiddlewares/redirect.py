@@ -10,6 +10,7 @@ from scrapy import signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
 from scrapy.spidermiddlewares.referer import RefererMiddleware
+from scrapy.utils._headers import _parse_retry_after
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import global_object_name
@@ -36,6 +37,7 @@ class BaseRedirectMiddleware:
             raise NotConfigured
 
         self.max_redirect_times: int = settings.getint("REDIRECT_MAX_TIMES")
+        self.max_delay: float = settings.getfloat("BACKOFF_MAX_DELAY")
         self.priority_adjust: int = settings.getint("REDIRECT_PRIORITY_ADJUST")
         self._referer_spider_middleware: RefererMiddleware | None = None
 
@@ -174,8 +176,29 @@ class BaseRedirectMiddleware:
                 del redirect_request.headers["Authorization"]
 
         self.handle_referer(redirect_request, response)
+        self._apply_retry_after(redirect_request, response)
 
         return redirect_request
+
+    def _apply_retry_after(self, redirect_request: Request, response: Response) -> None:
+        """Delay the redirect when *response* carries a ``Retry-After`` header.
+
+        The delay is capped at :setting:`BACKOFF_MAX_DELAY` and applied through
+        the :reqmeta:`delay` request metadata key, which holds back
+        this request only (without counting as a :ref:`backoff <backoff>`
+        trigger for its scopes). :setting:`BACKOFF_MAX_DELAY` set to ``0``
+        disables it.
+        """
+        if not self.max_delay:
+            return
+        retry_after = _parse_retry_after(response)
+        if retry_after is None:
+            return
+        redirect_request.meta["delay"] = min(retry_after, self.max_delay)
+        # This is a fresh request that may inherit an already-honored delay from
+        # its source request's meta; clear that state so the new delay applies.
+        redirect_request.meta.pop("_throttler_delayed", None)
+        redirect_request.meta.pop("_throttler_delay_deadline", None)
 
     def _redirect_request_using_get(
         self, request: Request, response: Response, redirect_url: str

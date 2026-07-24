@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 
     from scrapy.logformatter import LogFormatter
     from scrapy.statscollectors import StatsCollector
+    from scrapy.throttler import ThrottlerProtocol
     from scrapy.utils.request import RequestFingerprinterProtocol
 
 
@@ -87,6 +88,13 @@ class Crawler:
         self.stats: StatsCollector | None = None
         self.logformatter: LogFormatter | None = None
         self.request_fingerprinter: RequestFingerprinterProtocol | None = None
+        self.throttler: ThrottlerProtocol | None = None
+        """The throttler of this crawler, an instance of
+        :setting:`THROTTLER`.
+
+        It is ``None`` until the crawl starts. Components can use it to inspect
+        or drive :ref:`throttling <throttling>` at run time, e.g. through
+        :meth:`~scrapy.throttler.ThrottlerProtocol.back_off`."""
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
@@ -100,6 +108,10 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
+        self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
+        self._apply_deprecated_spider_attr(
+            "max_concurrent_requests", "THROTTLING_SCOPE_CONCURRENCY"
+        )
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
@@ -107,6 +119,10 @@ class Crawler:
 
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
+            self,
+        )
+        self.throttler = build_from_crawler(
+            load_object(self.settings["THROTTLER"]),
             self,
         )
 
@@ -154,6 +170,30 @@ class Crawler:
         logger.info(
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
+
+    def _apply_deprecated_spider_attr(self, attr: str, setting: str) -> None:
+        """Bridge a deprecated spider attribute onto *setting*, warning about
+        the deprecation (and about being ignored when *setting* is already set
+        at spider or higher priority)."""
+        spider = self.spider if self.spider is not None else self.spidercls
+        if not hasattr(spider, attr):
+            return
+        if (self.settings.getpriority(setting) or 0) >= SETTINGS_PRIORITIES["spider"]:
+            warnings.warn(
+                f"The {attr!r} spider attribute is deprecated. It is also being "
+                f"ignored because {setting} is already set at spider or higher "
+                f"priority. Remove the {attr!r} attribute from your spider.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=3,
+            )
+            return
+        warnings.warn(
+            f"The {attr!r} spider attribute is deprecated. Use the {setting} "
+            f"setting or THROTTLING_SCOPES instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=3,
+        )
+        self.settings.set(setting, getattr(spider, attr), priority="spider")
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.

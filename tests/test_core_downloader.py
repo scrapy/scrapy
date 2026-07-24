@@ -14,7 +14,7 @@ from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
-from scrapy.core.downloader import Downloader, Slot, tls
+from scrapy.core.downloader import Downloader, Slot, _Slot, tls
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
@@ -41,8 +41,31 @@ if TYPE_CHECKING:
 
 class TestSlot:
     def test_repr(self):
-        slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
+        slot = _Slot(concurrency=8, delay=0.1, randomize_delay=True)
+        assert repr(slot) == "_Slot(concurrency=8, delay=0.1, randomize_delay=True)"
+
+    def test_methods(self):
+        slot = _Slot(concurrency=2, delay=0.0, randomize_delay=False)
+        assert slot.free_transfer_slots() == 2
+        assert slot.download_delay() == 0.0
+        assert "downloader.Slot" in str(slot)
+        slot.close()  # no latercall scheduled: harmless
+
+    def test_randomized_download_delay(self):
+        slot = _Slot(concurrency=1, delay=1.0, randomize_delay=True)
+        assert 0.5 <= slot.download_delay() <= 1.5
+
+    def test_deprecated(self):
+        with pytest.warns(ScrapyDeprecationWarning, match="Slot class is deprecated"):
+            Slot(concurrency=8, delay=0.1, randomize_delay=True)
+
+    def test_deprecated_subclass(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="inherits from the deprecated Slot"
+        ):
+
+            class MySlot(Slot):
+                pass
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code

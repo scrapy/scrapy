@@ -33,6 +33,10 @@ __all__ = [
     "AWS_SESSION_TOKEN",
     "AWS_USE_SSL",
     "AWS_VERIFY",
+    "BACKOFF_ENABLED",
+    "BACKOFF_EXCEPTIONS",
+    "BACKOFF_HTTP_CODES",
+    "BACKOFF_MAX_DELAY",
     "BOT_NAME",
     "CLOSESPIDER_ERRORCOUNT",
     "CLOSESPIDER_ITEMCOUNT",
@@ -208,6 +212,16 @@ __all__ = [
     "TELNETCONSOLE_PORT",
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
+    "THROTTLER",
+    "THROTTLER_DEBUG",
+    "THROTTLER_ROBOTSTXT_MAX_DELAY",
+    "THROTTLER_ROBOTSTXT_OBEY",
+    "THROTTLER_WINDOW",
+    "THROTTLING_SCOPES",
+    "THROTTLING_SCOPE_CONCURRENCY",
+    "THROTTLING_SCOPE_LIMIT",
+    "THROTTLING_SCOPE_MANAGER",
+    "THROTTLING_SCOPE_MAX_IDLE",
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
@@ -233,6 +247,15 @@ AWS_REGION_NAME = None
 AWS_SESSION_TOKEN = None
 AWS_USE_SSL = None
 AWS_VERIFY = None
+
+BACKOFF_ENABLED = True
+BACKOFF_EXCEPTIONS = [
+    "scrapy.exceptions.DownloadFailedError",
+    "scrapy.exceptions.DownloadTimeoutError",
+    "scrapy.exceptions.ResponseDataLossError",
+]
+BACKOFF_HTTP_CODES = [429, 502, 503, 504, 520, 521, 522, 523, 524]
+BACKOFF_MAX_DELAY = 300.0
 
 BOT_NAME = "scrapybot"
 
@@ -323,6 +346,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
+    "scrapy.downloadermiddlewares.backoff.BackoffMiddleware": 650,
     "scrapy.downloadermiddlewares.cookies.CookiesMiddleware": 700,
     "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 750,
     "scrapy.downloadermiddlewares.stats.DownloaderStats": 850,
@@ -572,6 +596,17 @@ TELNETCONSOLE_USERNAME = "scrapy"
 TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
+
+THROTTLER = "scrapy.throttler.Throttler"
+THROTTLING_SCOPE_MANAGER = "scrapy.throttler.ThrottlingScopeManager"
+THROTTLING_SCOPES = {}
+THROTTLER_WINDOW = 60.0
+THROTTLER_ROBOTSTXT_OBEY = True
+THROTTLER_ROBOTSTXT_MAX_DELAY = 60.0
+THROTTLING_SCOPE_CONCURRENCY = 1
+THROTTLING_SCOPE_LIMIT = 100000
+THROTTLING_SCOPE_MAX_IDLE = 3600.0
+THROTTLER_DEBUG = False
 
 TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
