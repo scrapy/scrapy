@@ -183,16 +183,16 @@ class TestBlockingFeedStorage:
     def test_default_temp_dir(self):
         b = MyBlockingFeedStorage()
 
-        storage_file = b.open(self.get_test_spider())
-        storage_dir = Path(storage_file.name).parent
+        with b.open(self.get_test_spider()) as storage_file:
+            storage_dir = Path(storage_file.name).parent
         assert str(storage_dir) == tempfile.gettempdir()
 
     def test_temp_file(self, tmp_path):
         b = MyBlockingFeedStorage()
 
         spider = self.get_test_spider({"FEED_TEMPDIR": str(tmp_path)})
-        storage_file = b.open(spider)
-        storage_dir = Path(storage_file.name).parent
+        with b.open(spider) as storage_file:
+            storage_dir = Path(storage_file.name).parent
         assert storage_dir == tmp_path
 
     def test_invalid_folder(self, tmp_path):
