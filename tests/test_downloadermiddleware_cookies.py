@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 
 import pytest
 from testfixtures import LogCapture
@@ -8,30 +9,34 @@ from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
+from scrapy.http.request import CookiesT, VerboseCookie
 from scrapy.utils.python import to_bytes
+from scrapy.utils.request import _to_verbose_cookies
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 UNSET = object()
 
 
-def _cookie_to_set_cookie_value(cookie):
+def _cookie_to_set_cookie_value(cookie: VerboseCookie) -> str | None:
     """Given a cookie defined as a dictionary with name and value keys, and
     optional path and domain keys, return the equivalent string that can be
     associated to a ``Set-Cookie`` header."""
     decoded = {}
     for key in ("name", "value", "path", "domain"):
-        if cookie.get(key) is None:
-            if key in ("name", "value"):
+        value = cookie.get(key)
+        if value is None:
+            if key in {"name", "value"}:
                 return None
             continue
-        if isinstance(cookie[key], (bool, float, int, str)):
-            decoded[key] = str(cookie[key])
+        if isinstance(value, (bool, float, int, str)):
+            decoded[key] = str(value)
         else:
+            assert isinstance(value, bytes)
             try:
-                decoded[key] = cookie[key].decode("utf8")
+                decoded[key] = value.decode("utf8")
             except UnicodeDecodeError:
-                decoded[key] = cookie[key].decode("latin1", errors="replace")
+                decoded[key] = value.decode("latin1", errors="replace")
 
     cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
     for key, value in decoded.items():  # path, domain
@@ -39,24 +44,30 @@ def _cookie_to_set_cookie_value(cookie):
     return cookie_str
 
 
-def _cookies_to_set_cookie_list(cookies):
+def _cookies_to_set_cookie_list(cookies: CookiesT) -> Iterable[str]:
     """Given a group of cookie defined either as a dictionary or as a list of
     dictionaries (i.e. in a format supported by the cookies parameter of
     Request), return the equivalent list of strings that can be associated to a
     ``Set-Cookie`` header."""
     if not cookies:
         return []
-    if isinstance(cookies, dict):
-        cookies = ({"name": k, "value": v} for k, v in cookies.items())
-    return filter(None, (_cookie_to_set_cookie_value(cookie) for cookie in cookies))
+    return filter(
+        None,
+        (
+            _cookie_to_set_cookie_value(cookie)
+            for cookie in _to_verbose_cookies(cookies)
+        ),
+    )
 
 
 class TestCookiesMiddleware:
-    def assertCookieValEqual(self, first, second, msg=None):
-        def split_cookies(cookies):
+    @staticmethod
+    def assertCookieValEqual(first: bytes | str | None, second: bytes | str) -> None:
+        def split_cookies(cookies: bytes | str) -> list[bytes]:
             return sorted([s.strip() for s in to_bytes(cookies).split(b";")])
 
-        assert split_cookies(first) == split_cookies(second), msg
+        assert first is not None
+        assert split_cookies(first) == split_cookies(second)
 
     def setup_method(self):
         crawler = get_crawler(DefaultSpider)
@@ -130,6 +141,20 @@ class TestCookiesMiddleware:
                     "Cookie: C1=value1\n",
                 ),
             )
+
+    def test_debug_no_cookies(self):
+        crawler = get_crawler(settings_dict={"COOKIES_DEBUG": True})
+        mw = CookiesMiddleware.from_crawler(crawler)
+        with LogCapture(
+            "scrapy.downloadermiddlewares.cookies",
+            propagate=False,
+            level=logging.DEBUG,
+        ) as log:
+            req = Request("http://scrapytest.org/")
+            res = Response("http://scrapytest.org/")  # no Set-Cookie header
+            mw.process_response(req, res)
+            mw.process_request(req)  # no cookies to send either
+            log.check()  # no log output since cl is empty in both cases
 
     def test_setting_disabled_cookies_debug(self):
         crawler = get_crawler(settings_dict={"COOKIES_DEBUG": False})
@@ -358,21 +383,25 @@ class TestCookiesMiddleware:
         assert self.mw.process_request(req3) is None
         self.assertCookieValEqual(req3.headers["Cookie"], "a=new; c=d; e=f")
 
-    def test_request_cookies_encoding(self):
-        # 1) UTF8-encoded bytes
-        req1 = Request("http://example.org", cookies={"a": "á".encode()})
-        assert self.mw.process_request(req1) is None
-        self.assertCookieValEqual(req1.headers["Cookie"], b"a=\xc3\xa1")
-
-        # 2) Non UTF8-encoded bytes
-        req2 = Request("http://example.org", cookies={"a": "á".encode("latin1")})
-        assert self.mw.process_request(req2) is None
-        self.assertCookieValEqual(req2.headers["Cookie"], b"a=\xc3\xa1")
-
-        # 3) String
-        req3 = Request("http://example.org", cookies={"a": "á"})
-        assert self.mw.process_request(req3) is None
-        self.assertCookieValEqual(req3.headers["Cookie"], b"a=\xc3\xa1")
+    @pytest.mark.parametrize(
+        "cookies",
+        [
+            # UTF8-encoded bytes
+            {"a": "á".encode()},
+            # non UTF8-encoded bytes
+            {"a": "á".encode("latin1")},
+            # string
+            {"a": "á"},
+            # key as bytes
+            {b"a": "á"},
+            # key and value as bytes
+            {b"a": "á".encode()},
+        ],
+    )
+    def test_request_cookies_encoding(self, cookies: CookiesT) -> None:
+        req = Request("http://example.org", cookies=cookies)
+        assert self.mw.process_request(req) is None
+        self.assertCookieValEqual(req.headers["Cookie"], b"a=\xc3\xa1")
 
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_request_headers_cookie_encoding(self):
@@ -396,7 +425,7 @@ class TestCookiesMiddleware:
         Invalid cookies are logged as warnings and discarded
         """
         with LogCapture(
-            "scrapy.downloadermiddlewares.cookies",
+            "scrapy.utils.request",
             propagate=False,
             level=logging.INFO,
         ) as lc:
@@ -411,19 +440,19 @@ class TestCookiesMiddleware:
             assert self.mw.process_request(req3) is None
             lc.check(
                 (
-                    "scrapy.downloadermiddlewares.cookies",
+                    "scrapy.utils.request",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/1>:"
                     " {'value': 'bar', 'secure': False} ('name' is missing)",
                 ),
                 (
-                    "scrapy.downloadermiddlewares.cookies",
+                    "scrapy.utils.request",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/2>:"
                     " {'name': 'foo', 'secure': False} ('value' is missing)",
                 ),
                 (
-                    "scrapy.downloadermiddlewares.cookies",
+                    "scrapy.utils.request",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/3>:"
                     " {'name': 'foo', 'value': None, 'secure': False} ('value' is missing)",

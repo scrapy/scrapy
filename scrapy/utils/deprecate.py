@@ -43,15 +43,18 @@ def create_deprecated_class(
     It can be used to rename a base class in a library. For example, if we
     have
 
-        class OldName(SomeClass):
-            # ...
+    .. code-block:: python
 
-    and we want to rename it to NewName, we can do the following::
+        class OldName(SomeClass): ...
 
-        class NewName(SomeClass):
-            # ...
+    and we want to rename it to NewName, we can do the following:
 
-        OldName = create_deprecated_class('OldName', NewName)
+    .. code-block:: python
+
+        class NewName(SomeClass): ...
+
+
+        OldName = create_deprecated_class("OldName", NewName)
 
     Then, if user class inherits from OldName, warning is issued. Also, if
     some code uses ``issubclass(sub, OldName)`` or ``isinstance(sub(), OldName)``

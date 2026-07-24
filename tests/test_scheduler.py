@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from collections import deque
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 from unittest.mock import Mock
@@ -10,8 +9,9 @@ from unittest.mock import Mock
 import pytest
 
 from scrapy.core.downloader import Downloader
-from scrapy.core.scheduler import BaseScheduler, Scheduler
+from scrapy.core.scheduler import Scheduler
 from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
@@ -24,38 +24,6 @@ from tests.utils.decorators import coroutine_test, inline_callbacks_test
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from pathlib import Path
-
-
-class MemoryScheduler(BaseScheduler):
-    paused = False
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.queue: deque[Request] = deque(
-            Request(value) if isinstance(value, str) else value
-            for value in getattr(self, "queue", [])
-        )
-
-    def enqueue_request(self, request: Request) -> bool:
-        self.queue.append(request)
-        return True
-
-    def has_pending_requests(self) -> bool:
-        return self.paused or bool(self.queue)
-
-    def next_request(self) -> Request | None:
-        if self.paused:
-            return None
-        try:
-            return self.queue.pop()
-        except IndexError:
-            return None
-
-    def pause(self) -> None:
-        self.paused = True
-
-    def unpause(self) -> None:
-        self.paused = False
 
 
 class MockSlot(NamedTuple):
@@ -378,13 +346,14 @@ class TestIntegrationWithDownloaderAwareInMemory:
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)
+            assert self.crawler.stats
             assert self.crawler.stats.get_value("downloader/response_count") == len(
                 start_urls
             )
 
 
 class TestIncompatibility:
-    def _incompatible(self):
+    def _incompatible(self) -> None:
         settings = {
             "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.DownloaderAwarePriorityQueue",
             "CONCURRENT_REQUESTS_PER_IP": 1,
@@ -396,7 +365,11 @@ class TestIncompatibility:
 
     def test_incompatibility(self):
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore")
+            warnings.filterwarnings(
+                "ignore",
+                category=ScrapyDeprecationWarning,
+                message="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
+            )
             with pytest.raises(
                 ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
             ):

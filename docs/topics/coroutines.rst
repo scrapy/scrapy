@@ -16,7 +16,7 @@ Supported callables
 The following callables may be defined as coroutines using ``async def``, and
 hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
--   The :meth:`~scrapy.spiders.Spider.start` spider method, which *must* be
+-   The :meth:`~scrapy.Spider.start` spider method, which *must* be
     defined as an :term:`asynchronous generator`.
 
     .. versionadded:: 2.13
@@ -204,13 +204,15 @@ This means you can use many useful Python libraries providing such code:
 Common use cases for asynchronous code include:
 
 * requesting data from websites, databases and other services (in
-  :meth:`~scrapy.spiders.Spider.start`, callbacks, pipelines and
+  :meth:`~scrapy.Spider.start`, callbacks, pipelines and
   middlewares);
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler);
-* calling asynchronous Scrapy methods like :meth:`ExecutionEngine.download`
-  (see :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
+* calling asynchronous Scrapy methods like
+  :meth:`ExecutionEngine.download_async()
+  <scrapy.core.engine.ExecutionEngine.download_async>` (see :ref:`the
+  screenshot pipeline example <ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
 
@@ -267,6 +269,6 @@ You can also send multiple requests in parallel:
             responses = await asyncio.gather(*tasks)
             yield {
                 "h1": response.css("h1::text").get(),
-                "price": responses[0][1].css(".price::text").get(),
-                "price2": responses[1][1].css(".color::text").get(),
+                "price": responses[0].css(".price::text").get(),
+                "color": responses[1].css(".color::text").get(),
             }

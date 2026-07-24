@@ -4,6 +4,8 @@ import json
 import warnings
 from unittest import mock
 
+import pytest
+
 from scrapy.http import JsonRequest
 from scrapy.utils.python import to_bytes
 from tests.test_http_request import TestRequest
@@ -63,40 +65,40 @@ class TestJsonRequest(TestRequest):
         data = {
             "name": "value",
         }
-        with warnings.catch_warnings(record=True) as _warnings:
+        with pytest.warns(UserWarning, match="data will be ignored"):
             r5 = self.request_class(url="http://www.example.com/", body=body, data=data)
-            assert r5.body == body
-            assert r5.method == "GET"
-            assert len(_warnings) == 1
-            assert "data will be ignored" in str(_warnings[0].message)
+        assert r5.body == body
+        assert r5.method == "GET"
 
     def test_empty_body_data(self):
         """passing any body value and data should result a warning"""
         data = {
             "name": "value",
         }
-        with warnings.catch_warnings(record=True) as _warnings:
+        with pytest.warns(UserWarning, match="data will be ignored"):
             r6 = self.request_class(url="http://www.example.com/", body=b"", data=data)
-            assert r6.body == b""
-            assert r6.method == "GET"
-            assert len(_warnings) == 1
-            assert "data will be ignored" in str(_warnings[0].message)
+        assert r6.body == b""
+        assert r6.method == "GET"
 
     def test_body_none_data(self):
         data = {
             "name": "value",
         }
-        with warnings.catch_warnings(record=True) as _warnings:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error", category=UserWarning, message="Both body and data passed"
+            )
             r7 = self.request_class(url="http://www.example.com/", body=None, data=data)
-            assert r7.body == to_bytes(json.dumps(data))
-            assert r7.method == "POST"
-            assert len(_warnings) == 0
+        assert r7.body == to_bytes(json.dumps(data))
+        assert r7.method == "POST"
 
     def test_body_data_none(self):
-        with warnings.catch_warnings(record=True) as _warnings:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "error", category=UserWarning, message="Both body and data passed"
+            )
             r8 = self.request_class(url="http://www.example.com/", body=None, data=None)
-            assert r8.method == "GET"
-            assert len(_warnings) == 0
+        assert r8.method == "GET"
 
     def test_dumps_sort_keys(self):
         """Test that sort_keys=True is passed to json.dumps by default"""
@@ -183,8 +185,5 @@ class TestJsonRequest(TestRequest):
         }
         r1 = self.request_class(url="http://www.example.com/", data=data1, body=body1)
 
-        with warnings.catch_warnings(record=True) as _warnings:
+        with pytest.warns(UserWarning, match="data will be ignored"):
             r1.replace(data=data2, body=body2)
-            assert "Both body and data passed. data will be ignored" in str(
-                _warnings[0].message
-            )

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from itertools import product
-
 import pytest
 
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
@@ -9,43 +7,6 @@ from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.utils.misc import set_environ
 from scrapy.utils.test import get_crawler
-
-SCHEME_PARAMS = ("url", "location", "target")
-HTTP_SCHEMES = ("http", "https")
-NON_HTTP_SCHEMES = ("data", "file", "ftp", "s3", "foo")
-REDIRECT_SCHEME_CASES = (
-    # http/https → http/https redirects
-    *(
-        (
-            f"{input_scheme}://example.com/a",
-            f"{output_scheme}://example.com/b",
-            f"{output_scheme}://example.com/b",
-        )
-        for input_scheme, output_scheme in product(HTTP_SCHEMES, repeat=2)
-    ),
-    # http/https → data/file/ftp/s3/foo does not redirect
-    *(
-        (
-            f"{input_scheme}://example.com/a",
-            f"{output_scheme}://example.com/b",
-            None,
-        )
-        for input_scheme in HTTP_SCHEMES
-        for output_scheme in NON_HTTP_SCHEMES
-    ),
-    # http/https → relative redirects
-    *(
-        (
-            f"{scheme}://example.com/a",
-            location,
-            f"{scheme}://example.com/b",
-        )
-        for scheme in HTTP_SCHEMES
-        for location in ("//example.com/b", "/b")
-    ),
-    # Note: We do not test data/file/ftp/s3 schemes for the initial URL
-    # because their download handlers cannot return a status code of 3xx.
-)
 
 
 class Base:
@@ -122,7 +83,7 @@ class Base:
             req1 = Request("http://a.example/first")
             rsp1 = self.get_response(req1, "/redirected")
             req2 = self.mw.process_response(req1, rsp1)
-            rsp2 = self.get_response(req1, "/redirected2")
+            rsp2 = self.get_response(req2, "/redirected2")
             req3 = self.mw.process_response(req2, rsp2)
 
             assert req2.url == "http://a.example/redirected"

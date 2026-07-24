@@ -15,8 +15,8 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
-from tests.test_robotstxt_interface import rerp_available
 from tests.utils.decorators import coroutine_test
+from tests.utils.robotstxt import rerp_available
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler

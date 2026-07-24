@@ -33,7 +33,10 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
-from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
+from scrapy.utils._deps_compat import (
+    PYOPENSSL_X509_DEPRECATED,
+    TWISTED_TLS_LIMITS_OFFBY1,
+)
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
@@ -536,13 +539,6 @@ class TestHttpBase(ABC):
             assert latency > 0
 
     @coroutine_test
-    async def test_download_without_maxsize_limit(self, mockserver: MockServer) -> None:
-        request = Request(mockserver.url("/text", is_secure=self.is_secure))
-        async with self.get_dh() as download_handler:
-            response = await download_handler.download_request(request)
-        assert response.body == b"Works"
-
-    @coroutine_test
     async def test_response_class_choosing_request(
         self, mockserver: MockServer
     ) -> None:
@@ -558,12 +554,19 @@ class TestHttpBase(ABC):
         assert type(response) is TextResponse  # pylint: disable=unidiomatic-typecheck
 
     @coroutine_test
+    async def test_download_without_maxsize_limit(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh({"DOWNLOAD_MAXSIZE": 0}) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+
+    @coroutine_test
     async def test_download_with_maxsize(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
 
-        # 10 is minimal size for this request and the limit is only counted on
+        # 5 is minimal size for this request and the limit is only counted on
         # response body. (regardless of headers)
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 5}) as download_handler:
             response = await download_handler.download_request(request)
@@ -831,8 +834,15 @@ class TestHttpsBase(TestHttpBase):
     is_secure = True
 
     tls_log_message = (
-        'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
-        'subject "/C=IE/O=Scrapy/CN=localhost"'
+        (
+            'SSL connection certificate: issuer "CN=localhost,O=Scrapy,C=IE", '
+            'subject "CN=localhost,O=Scrapy,C=IE"'
+        )
+        if PYOPENSSL_X509_DEPRECATED
+        else (
+            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
+            'subject "/C=IE/O=Scrapy/CN=localhost"'
+        )
     )
 
     def test_download_conn_lost(self) -> None:  # type: ignore[override]
@@ -896,16 +906,17 @@ class TestSimpleHttpsBase(ABC):
     cipher_string: str | None = None
 
     @pytest.fixture(scope="class")
-    def simple_mockserver(self) -> Generator[SimpleMockServer]:
+    @classmethod
+    def simple_mockserver(cls) -> Generator[SimpleMockServer]:
         with SimpleMockServer(
-            self.keyfile, self.certfile, cipher_string=self.cipher_string
+            cls.keyfile, cls.certfile, cipher_string=cls.cipher_string
         ) as simple_mockserver:
             yield simple_mockserver
 
     @pytest.fixture(scope="class")
-    def url(self, simple_mockserver: SimpleMockServer) -> str:
-        # need to use self.host instead of what mockserver returns
-        return f"https://{self.host}:{simple_mockserver.port(is_secure=True)}/file"
+    @classmethod
+    def url(cls, simple_mockserver: SimpleMockServer) -> str:
+        return f"https://{cls.host}:{simple_mockserver.port(is_secure=True)}/file"
 
     @property
     @abstractmethod
@@ -1137,6 +1148,9 @@ class TestHttpWithCrawlerBase(ABC):
         reason = crawler.spider.meta["close_reason"]  # type: ignore[attr-defined]
         assert reason == "finished"
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
     @coroutine_test
     async def test_response_ssl_certificate(self, mockserver: MockServer) -> None:
         if not self.is_secure:
@@ -1317,6 +1331,9 @@ class TestHttpProxyBase(ABC):
         assert response.body == self.expected_http_proxy_request_body
 
 
+PROXY_KINDS = ["http", "https", "socks5"]
+
+
 class TestMitmProxyBase(ABC):
     # whether the handler supports HTTPS proxies with HTTPS destinations
     handler_supports_tls_in_tls: bool = True
@@ -1327,57 +1344,54 @@ class TestMitmProxyBase(ABC):
     def settings_dict(self) -> dict[str, Any] | None:
         raise NotImplementedError
 
-    @pytest.mark.parametrize(
-        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
-    )
-    @pytest.mark.usefixtures("mitm_proxy_server")
-    @coroutine_test
-    async def test_http_proxy(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, https_dest: bool
-    ) -> None:
-        """HTTP proxy, HTTP or HTTPS destination."""
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
-        with caplog.at_level(logging.DEBUG):
-            await crawler.crawl_async(
-                seed=mockserver.url("/status?n=200", is_secure=https_dest)
-            )
-        assert isinstance(crawler.spider, SingleRequestSpider)
-        self._assert_got_response_code(200, caplog.text)
-        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
-
-    @pytest.mark.parametrize(
-        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
-    )
-    @pytest.mark.usefixtures("mitm_proxy_server_https")
-    @coroutine_test
-    async def test_https_proxy(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, https_dest: bool
-    ) -> None:
-        """HTTPS proxy, HTTP or HTTPS destination."""
-        if https_dest and not self.handler_supports_tls_in_tls:
+    def _maybe_skip(self, proxy_kind: str, https_dest: bool) -> None:
+        if proxy_kind == "socks5" and not self.handler_supports_socks:
+            pytest.skip("SOCKS proxies are not supported")
+        if (
+            proxy_kind == "https"
+            and https_dest
+            and not self.handler_supports_tls_in_tls
+        ):
             pytest.skip("HTTPS proxies for HTTPS destinations are not supported")
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
-        with caplog.at_level(logging.DEBUG):
-            await crawler.crawl_async(
-                seed=mockserver.url("/status?n=200", is_secure=https_dest)
-            )
-        assert isinstance(crawler.spider, SingleRequestSpider)
-        self._assert_got_response_code(200, caplog.text)
-        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
 
+    @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
     @pytest.mark.parametrize(
         "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
     )
-    @pytest.mark.usefixtures("mitm_proxy_server")
     @coroutine_test
-    async def test_http_proxy_auth_error(
+    async def test_proxy(
         self,
         caplog: pytest.LogCaptureFixture,
-        monkeypatch: pytest.MonkeyPatch,
+        proxy_server: str,
         mockserver: MockServer,
         https_dest: bool,
     ) -> None:
-        """HTTP proxy, HTTP or HTTPS destination, wrong proxy creds."""
+        """HTTP/HTTPS/SOCKS5 proxy, HTTP or HTTPS destination."""
+        self._maybe_skip(proxy_server, https_dest)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver.url("/status?n=200", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
+
+    @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_proxy_auth_error(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+        proxy_server: str,
+        mockserver: MockServer,
+        https_dest: bool,
+    ) -> None:
+        """HTTP/HTTPS/SOCKS5 proxy, HTTP or HTTPS destination, wrong proxy creds."""
+        self._maybe_skip(proxy_server, https_dest)
         envvar = "https_proxy" if https_dest else "http_proxy"
         monkeypatch.setenv(envvar, wrong_credentials(os.environ[envvar]))
         crawler = get_crawler(SimpleSpider, self.settings_dict)
@@ -1385,20 +1399,28 @@ class TestMitmProxyBase(ABC):
             await crawler.crawl_async(
                 mockserver.url("/status?n=200", is_secure=https_dest)
             )
-        # The proxy returns a 407 error code but it does not reach the client;
-        # it just sees an exception.
-        self._assert_got_auth_exception(caplog.text)
+        if proxy_server == "socks5":
+            assert "DownloadConnectionRefusedError" in caplog.text
+        else:
+            # The proxy returns a 407 error code but it does not reach the
+            # client; it just sees an exception.
+            self._assert_got_auth_exception(caplog.text)
 
+    @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
     @pytest.mark.parametrize(
         "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
     )
-    @pytest.mark.usefixtures("mitm_proxy_server")
     @coroutine_test
-    async def test_dont_leak_proxy_authorization_header(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, https_dest: bool
+    async def test_proxy_dont_leak_auth_header(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        proxy_server: str,
+        mockserver: MockServer,
+        https_dest: bool,
     ) -> None:
-        """HTTP proxy, HTTP or HTTPS destination. Check that the auth header
-        is not sent to the destination."""
+        """HTTP/HTTPS/SOCKS5 proxy, HTTP or HTTPS destination. Check that the
+        auth header is not sent to the destination."""
+        self._maybe_skip(proxy_server, https_dest)
         request = Request(mockserver.url("/echo", is_secure=https_dest))
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         with caplog.at_level(logging.DEBUG):
@@ -1409,48 +1431,36 @@ class TestMitmProxyBase(ABC):
         echo = json.loads(crawler.spider.meta["responses"][0].text)
         assert "Proxy-Authorization" not in echo["headers"]
 
+    @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
     @pytest.mark.parametrize(
         "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
     )
-    @pytest.mark.usefixtures("socks5_proxy_server")
     @coroutine_test
-    async def test_download_with_socks_proxy(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer, https_dest: bool
-    ) -> None:
-        """SOCKS5 proxy, HTTP or HTTPS destination."""
-        if not self.handler_supports_socks:
-            pytest.skip("SOCKS proxies are not supported")
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
-        with caplog.at_level(logging.DEBUG):
-            await crawler.crawl_async(
-                seed=mockserver.url("/status?n=200", is_secure=https_dest)
-            )
-        assert isinstance(crawler.spider, SingleRequestSpider)
-        self._assert_got_response_code(200, caplog.text)
-        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
-
-    @pytest.mark.parametrize(
-        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
-    )
-    @pytest.mark.usefixtures("socks5_proxy_server")
-    @coroutine_test
-    async def test_socks_proxy_auth_error(
+    async def test_proxy_redirect(
         self,
         caplog: pytest.LogCaptureFixture,
-        monkeypatch: pytest.MonkeyPatch,
+        proxy_server: str,
         mockserver: MockServer,
         https_dest: bool,
     ) -> None:
-        if not self.handler_supports_socks:
-            pytest.skip("SOCKS proxies are not supported")
-        envvar = "https_proxy" if https_dest else "http_proxy"
-        monkeypatch.setenv(envvar, wrong_credentials(os.environ[envvar]))
-        crawler = get_crawler(SimpleSpider, self.settings_dict)
+        """HTTP/HTTPS/SOCKS5 proxy, HTTP or HTTPS destination, following a
+        redirect. Check that the redirected request still goes through the
+        proxy and doesn't lose the proxy auth.
+        """
+        self._maybe_skip(proxy_server, https_dest)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(
-                mockserver.url("/status?n=200", is_secure=https_dest)
+                seed=mockserver.url("/redirect", is_secure=https_dest)
             )
-        assert "DownloadConnectionRefusedError" in caplog.text
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        assert crawler.spider.meta.get("failure") is None
+        responses = crawler.spider.meta.get("responses", [])
+        assert len(responses) == 1
+        assert responses[0].status == 200
+        assert responses[0].url == mockserver.url("/redirected", is_secure=https_dest)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(responses[0].headers, https_dest)
 
     @staticmethod
     def _assert_headers(headers: Headers, https_dest: bool) -> None:

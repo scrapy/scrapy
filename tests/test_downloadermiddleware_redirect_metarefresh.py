@@ -7,16 +7,17 @@ from unittest.mock import MagicMock
 import pytest
 
 from scrapy.downloadermiddlewares.redirect import MetaRefreshMiddleware
+from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
-from tests.test_downloadermiddleware_redirect_base import (
+from tests.test_downloadermiddleware_redirect_base import Base
+from tests.utils.redirect import (
     HTTP_SCHEMES,
     NON_HTTP_SCHEMES,
     REDIRECT_SCHEME_CASES,
     SCHEME_PARAMS,
-    Base,
 )
 
 
@@ -157,3 +158,9 @@ def test_warning_meta_refresh_middleware(caplog):
         "replace scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware "
         "with a subclass that overrides the handle_referer() method"
     ) in caplog.text
+
+
+def test_not_configured():
+    crawler = get_crawler(Spider, {"METAREFRESH_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        MetaRefreshMiddleware.from_crawler(crawler)

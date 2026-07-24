@@ -24,6 +24,7 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpWithCrawlerBase,
     TestMitmProxyBase,
     TestRealWebsiteBase,
+    TestSimpleHttpsBase,
 )
 from tests.utils.decorators import coroutine_test
 
@@ -154,6 +155,10 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
         async with self.get_dh() as download_handler:
             with pytest.raises(DownloadFailedError):
                 await download_handler.download_request(request)
+
+
+class TestSimpleHttp2(H2DownloadHandlerMixin, TestSimpleHttpsBase):
+    pass
 
 
 class TestHttp2WrongHostname(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):

@@ -4,19 +4,27 @@
 asyncio
 =======
 
-Scrapy has partial support for :mod:`asyncio`. After you :ref:`install the
-asyncio reactor <install-asyncio>`, you may use :mod:`asyncio` and
-:mod:`asyncio`-powered libraries in any :doc:`coroutine <coroutines>`.
+Scrapy supports :mod:`asyncio` natively. New projects created with
+:command:`startproject` have asyncio enabled by default, and you can use
+:mod:`asyncio` and :mod:`asyncio`-powered libraries in any :doc:`coroutine
+<coroutines>`.
+
+The rest of this page covers advanced topics. If you are starting a new project,
+no additional setup is needed.
 
 
 .. _install-asyncio:
 
-Installing the asyncio reactor
-==============================
+Configuring the asyncio reactor
+===============================
 
-To enable :mod:`asyncio` support, your :setting:`TWISTED_REACTOR` setting needs
-to be set to ``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``,
-which is the default value.
+New projects generated with :command:`startproject` have the asyncio
+reactor configured by default. No manual setup is needed.
+
+The :setting:`TWISTED_REACTOR` setting controls which Twisted reactor Scrapy
+uses. Its default value is
+``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``, which enables
+:mod:`asyncio` support.
 
 If you are using :class:`~scrapy.crawler.AsyncCrawlerRunner` or
 :class:`~scrapy.crawler.CrawlerRunner`, you also need to
@@ -97,6 +105,9 @@ Scrapy API requires passing a Deferred to it) using the following helpers:
 
 .. autofunction:: scrapy.utils.defer.deferred_from_coro
 .. autofunction:: scrapy.utils.defer.deferred_f_from_coro_f
+
+The following function helps with a reverse wrapping:
+
 .. autofunction:: scrapy.utils.defer.ensure_awaitable
 
 
@@ -138,6 +149,12 @@ Using Scrapy without a Twisted reactor
 
 .. warning::
     This is currently experimental and may not be suitable for production use.
+
+.. note:: As the Twisted download handlers cannot be used without a reactor,
+    the default download handler in this mode is
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`. You
+    will need to additionally install the :ref:`httpx <extras>` extra to use
+    it, unless you switch to some different handler.
 
 It's possible to use Scrapy without installing a Twisted reactor at all, by
 setting the :setting:`TWISTED_REACTOR_ENABLED` setting to ``False``. In this
@@ -182,7 +199,7 @@ in future Scrapy versions. The following features are not available:
   :class:`~scrapy.crawler.CrawlerProcess`
   (:class:`~scrapy.crawler.AsyncCrawlerProcess` and
   :class:`~scrapy.crawler.AsyncCrawlerRunner` are available)
-* Twisted-specific DNS resolvers (the :setting:`DNS_RESOLVER` setting)
+* Twisted-specific DNS resolvers (the :setting:`TWISTED_DNS_RESOLVER` setting)
 * User and 3rd-party code that requires a reactor (see :ref:`below
   <asyncio-without-reactor-migrate>` for examples)
 
@@ -210,7 +227,8 @@ for its differences and limitations compared to
 
 Additionally, :class:`~scrapy.crawler.AsyncCrawlerProcess` will install a
 :term:`meta path finder` that prevents :mod:`twisted.internet.reactor` from
-being imported.
+being imported. It will be uninstalled when :meth:`AsyncCrawlerProcess.start()
+<scrapy.crawler.AsyncCrawlerProcess.start>` exits.
 
 .. _asyncio-without-reactor-migrate:
 
@@ -307,8 +325,7 @@ implementations, :class:`~asyncio.ProactorEventLoop` (default) and
 :class:`~asyncio.SelectorEventLoop` works with Twisted.
 
 Scrapy changes the event loop class to :class:`~asyncio.SelectorEventLoop`
-automatically when you change the :setting:`TWISTED_REACTOR` setting or call
-:func:`~scrapy.utils.reactor.install_reactor`.
+automatically when installing the asyncio reactor.
 
 .. note:: Other libraries you use may require
           :class:`~asyncio.ProactorEventLoop`, e.g. because it supports

@@ -354,16 +354,18 @@ class TestCustomRequestFingerprinter:
 
 
 class TestRequestToCurl:
-    def _test_request(self, request_object, expected_curl_command):
+    def _test_request(
+        self, request_object: Request, expected_curl_command: str
+    ) -> None:
         curl_command = request_to_curl(request_object)
         assert curl_command == expected_curl_command
 
-    def test_get(self):
+    def test_get(self) -> None:
         request_object = Request("https://www.example.com")
         expected_curl_command = "curl -X GET https://www.example.com"
         self._test_request(request_object, expected_curl_command)
 
-    def test_post(self):
+    def test_post(self) -> None:
         request_object = Request(
             "https://www.httpbin.org/post",
             method="POST",
@@ -374,7 +376,7 @@ class TestRequestToCurl:
         )
         self._test_request(request_object, expected_curl_command)
 
-    def test_headers(self):
+    def test_headers(self) -> None:
         request_object = Request(
             "https://www.httpbin.org/post",
             method="POST",
@@ -388,7 +390,7 @@ class TestRequestToCurl:
         )
         self._test_request(request_object, expected_curl_command)
 
-    def test_cookies_dict(self):
+    def test_cookies_dict(self) -> None:
         request_object = Request(
             "https://www.httpbin.org/post",
             method="POST",
@@ -401,15 +403,57 @@ class TestRequestToCurl:
         )
         self._test_request(request_object, expected_curl_command)
 
-    def test_cookies_list(self):
+    def test_cookies_dict_bytes(self) -> None:
         request_object = Request(
             "https://www.httpbin.org/post",
             method="POST",
-            cookies=[{"foo": "bar"}],
+            cookies={b"foo": b"bar"},
             body=json.dumps({"foo": "bar"}),
         )
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list_verbose(self) -> None:
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[
+                {
+                    "name": b"foo",
+                    "value": b"bar",
+                    "domain": "example.com",
+                    "path": "/",
+                    "secure": True,
+                }
+            ],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list_verbose_non_string_value(self) -> None:
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[
+                {
+                    "name": "foo",
+                    "value": 1,
+                    "domain": "example.com",
+                    "path": "/",
+                    "secure": True,
+                }
+            ],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=1'"
         )
         self._test_request(request_object, expected_curl_command)

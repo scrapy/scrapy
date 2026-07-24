@@ -16,6 +16,8 @@ from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
+from scrapy.utils.deprecate import method_is_overridden
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -36,6 +38,14 @@ class ScrapyCommand(ABC):
 
     def __init__(self) -> None:
         self.settings: Settings | None = None  # set in scrapy.cmdline
+        if method_is_overridden(self.__class__, ScrapyCommand, "help"):
+            warnings.warn(
+                "The ScrapyCommand.help() method is deprecated and overriding "
+                f"it, as the {global_object_name(self.__class__)} class does, "
+                "has no effect; override long_desc() instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     def set_crawler(self, crawler: Crawler) -> None:  # pragma: no cover
         warnings.warn(
@@ -63,15 +73,16 @@ class ScrapyCommand(ABC):
     def long_desc(self) -> str:
         """A long description of the command. Return short description when not
         available. It cannot contain newlines since contents will be formatted
-        by optparser which removes newlines and wraps text.
+        by argparse which removes newlines and wraps text.
         """
         return self.short_desc()
 
     def help(self) -> str:
-        """An extensive help for the command. It will be shown when using the
-        "help" command. It can contain newlines since no post-formatting will
-        be applied to its contents.
-        """
+        warnings.warn(
+            "ScrapyCommand.help() is deprecated, use long_desc() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return self.long_desc()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:

@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 import pytest
 
 from scrapy.exceptions import UsageError
@@ -106,7 +110,7 @@ class TestFeedExportConfig:
             )
 
     def test_feed_complete_default_values_from_settings_empty(self):
-        feed = {}
+        feed: dict[str, Any] = {}
         settings = Settings(
             {
                 "FEED_EXPORT_ENCODING": "custom encoding",

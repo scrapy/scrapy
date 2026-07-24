@@ -73,7 +73,6 @@ def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
 class TestPeriodicLog:
     def test_extension_enabled(self):
         # Expected that settings for this extension loaded successfully
-        # And on certain conditions - extension raising NotConfigured
 
         # "PERIODIC_LOG_STATS": True -> set to {"enabled": True}
         # due to TypeError exception from settings.getdict
@@ -102,7 +101,9 @@ class TestPeriodicLog:
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict[str, Any], condition: Callable) -> None:
+        def check(
+            settings: dict[str, Any], condition: Callable[[str, Any], bool]
+        ) -> None:
             ext, a, b = emulate(settings)
             assert list(a["delta"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
@@ -168,7 +169,9 @@ class TestPeriodicLog:
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict[str, Any], condition: Callable) -> None:
+        def check(
+            settings: dict[str, Any], condition: Callable[[str, Any], bool]
+        ) -> None:
             ext, a, b = emulate(settings)
             assert list(a["stats"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)

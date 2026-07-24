@@ -1,8 +1,8 @@
+import base64
 import dataclasses
-import os
+import logging
 import random
 import time
-import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
 from ftplib import FTP
@@ -14,7 +14,6 @@ from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
 from unittest.mock import MagicMock
-from urllib.parse import urlparse
 
 import attr
 import pytest
@@ -31,28 +30,21 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
+from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 from .test_pipeline_media import _mocked_download_func
+from .utils.cloud import mock_google_cloud_storage
 
-
-def get_gcs_content_and_delete(
-    bucket: Any, path: str
-) -> tuple[bytes, list[dict[str, str]], Any]:
-    from google.cloud import storage  # noqa: PLC0415
-
-    client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
-    bucket = client.get_bucket(bucket)
-    blob = bucket.get_blob(path)
-    content = blob.download_as_string()
-    acl = list(blob.acl)  # loads acl before it will be deleted
-    bucket.delete_blob(path)
-    return content, acl, blob
+# required by persist_file() and stat_file(), but as some stores don't use the argument
+# we can pass this singleton to keep type hints correct
+DUMMY_SPIDER_INFO = MediaPipeline.SpiderInfo(DefaultSpider())
 
 
 def get_ftp_content_and_delete(
@@ -626,7 +618,7 @@ class TestS3FilesStore:
             yield store.persist_file(
                 path,
                 buffer,
-                info=None,
+                info=DUMMY_SPIDER_INFO,
                 meta=meta,
                 headers={"Content-Type": content_type},
             )
@@ -659,7 +651,7 @@ class TestS3FilesStore:
                 },
             )
 
-            file_stats = yield store.stat_file("", info=None)
+            file_stats = yield store.stat_file("", info=DUMMY_SPIDER_INFO)
             assert file_stats == {
                 "checksum": checksum,
                 "last_modified": last_modified.timestamp(),
@@ -668,59 +660,144 @@ class TestS3FilesStore:
             stub.assert_no_pending_responses()
 
 
-@pytest.mark.skipif(
-    "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
-)
 class TestGCSFilesStore:
-    @inline_callbacks_test
-    def test_persist(self):
-        uri = os.environ.get("GCS_TEST_FILE_URI")
-        if not uri:
-            pytest.skip("No GCS URI available for testing")
-        data = b"TestGCSFilesStore: \xe2\x98\x83"
-        buf = BytesIO(data)
-        meta = {"foo": "bar"}
-        path = "full/filename"
-        store = GCSFilesStore(uri)
-        store.POLICY = "authenticatedRead"
-        expected_policy = {"role": "READER", "entity": "allAuthenticatedUsers"}
-        yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
-        s = yield store.stat_file(path, info=None)
-        assert "last_modified" in s
-        assert "checksum" in s
-        assert s["checksum"] == "cdcda85605e46d0af6110752770dce3c"
-        u = urlparse(uri)
-        content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:] + path)
-        assert content == data
-        assert blob.metadata == {"foo": "bar"}
-        assert blob.cache_control == GCSFilesStore.CACHE_CONTROL
-        assert blob.content_type == "application/octet-stream"
-        assert expected_policy in acl
+    @staticmethod
+    def build_gcs_files_store(
+        *,
+        permissions: tuple[str, ...] = (
+            "storage.objects.get",
+            "storage.objects.create",
+        ),
+    ) -> tuple[GCSFilesStore, Any, Any]:
+        """Build a :class:`GCSFilesStore` mock.
 
-    @inline_callbacks_test
-    def test_blob_path_consistency(self):
+        Returns ``(store, bucket_mock, blob_mock)``. Skips the test if
+        google-cloud-storage is not installed. ``permissions`` is what
+        ``Bucket.test_iam_permissions`` will return.
+        """
+        pytest.importorskip("google.cloud.storage")
+
+        client_mock, bucket_mock, blob_mock = mock_google_cloud_storage()
+        bucket_mock.test_iam_permissions.return_value = list(permissions)
+
+        with mock.patch("google.cloud.storage.Client", return_value=client_mock):
+            store = GCSFilesStore("gs://my_bucket/my_prefix/")
+        return store, bucket_mock, blob_mock
+
+    def test_init(self, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level(logging.WARNING):
+            self.build_gcs_files_store()
+        assert not caplog.records
+
+    def test_get_perm_missing(self, caplog: pytest.LogCaptureFixture) -> None:
+        self.build_gcs_files_store(permissions=("storage.objects.create",))
+        assert (
+            "No 'storage.objects.get' permission for GCS bucket my_bucket"
+            in caplog.text
+        )
+
+    def test_create_perm_missing(self, caplog: pytest.LogCaptureFixture) -> None:
+        self.build_gcs_files_store(permissions=("storage.objects.get",))
+        assert (
+            "No 'storage.objects.create' permission for GCS bucket my_bucket"
+            in caplog.text
+        )
+
+    def test_update_stores(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(GCSFilesStore, "GCS_PROJECT_ID", None)
+        monkeypatch.setattr(GCSFilesStore, "POLICY", None)
+
+        settings = Settings(
+            {"GCS_PROJECT_ID": "my-project", "FILES_STORE_GCS_ACL": "publicRead"}
+        )
+        FilesPipeline._update_stores(settings)
+        assert GCSFilesStore.GCS_PROJECT_ID == "my-project"
+        assert GCSFilesStore.POLICY == "publicRead"
+
+        # An empty FILES_STORE_GCS_ACL is normalised to None.
+        settings = Settings({"GCS_PROJECT_ID": "my-project", "FILES_STORE_GCS_ACL": ""})
+        FilesPipeline._update_stores(settings)
+        assert GCSFilesStore.POLICY is None
+
+    @coroutine_test
+    async def test_persist(self) -> None:
+        store, bucket, blob = self.build_gcs_files_store()
+        await maybe_deferred_to_future(
+            store.persist_file(
+                "full/filename",
+                BytesIO(b"hello"),
+                info=DUMMY_SPIDER_INFO,
+                meta={"foo": 1},
+                headers={"Content-Type": "image/png"},
+            )
+        )
+        bucket.blob.assert_called_once_with("my_prefix/full/filename")
+        assert blob.cache_control == GCSFilesStore.CACHE_CONTROL
+        assert blob.metadata == {"foo": "1"}
+        blob.upload_from_string.assert_called_once_with(
+            data=b"hello",
+            content_type="image/png",
+            predefined_acl=store.POLICY,
+        )
+
+    @coroutine_test
+    async def test_persist_defaults(self) -> None:
+        store, _, blob = self.build_gcs_files_store()
+        await maybe_deferred_to_future(
+            store.persist_file(
+                "full/filename",
+                BytesIO(b"hello"),
+                info=DUMMY_SPIDER_INFO,
+            )
+        )
+        blob.upload_from_string.assert_called_once_with(
+            data=b"hello",
+            content_type="application/octet-stream",
+            predefined_acl=store.POLICY,
+        )
+        assert blob.metadata == {}
+
+    @coroutine_test
+    async def test_stat(self) -> None:
+        store, bucket, blob = self.build_gcs_files_store()
+        checksum = "cdcda85605e46d0af6110752770dce3c"
+        blob.md5_hash = base64.b64encode(bytes.fromhex(checksum)).decode()
+        updated = datetime(2019, 12, 1)
+        blob.updated = updated
+        bucket.get_blob.return_value = blob
+        stat = await maybe_deferred_to_future(
+            store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
+        )
+        bucket.get_blob.assert_called_once_with("my_prefix/full/filename")
+        assert stat == {
+            "checksum": checksum,
+            "last_modified": time.mktime(updated.timetuple()),
+        }
+
+    @coroutine_test
+    async def test_stat_missing_blob(self) -> None:
+        store, bucket, _ = self.build_gcs_files_store()
+        bucket.get_blob.return_value = None
+        stat = await maybe_deferred_to_future(
+            store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
+        )
+        assert stat == {}
+
+    @coroutine_test
+    async def test_blob_path_consistency(self) -> None:
         """Test to make sure that paths used to store files is the same as the one used to get
         already uploaded files.
         """
-        try:
-            import google.cloud.storage  # noqa: F401,PLC0415
-        except ModuleNotFoundError:
-            pytest.skip("google-cloud-storage is not installed")
-        with (
-            mock.patch("google.cloud.storage"),
-            mock.patch("scrapy.pipelines.files.time"),
-        ):
-            uri = "gs://my_bucket/my_prefix/"
-            store = GCSFilesStore(uri)
-            store.bucket = mock.Mock()
-            path = "full/my_data.txt"
-            yield store.persist_file(
-                path, mock.Mock(), info=None, meta=None, headers=None
-            )
-            yield store.stat_file(path, info=None)
-            expected_blob_path = store.prefix + path
-            store.bucket.blob.assert_called_with(expected_blob_path)
-            store.bucket.get_blob.assert_called_with(expected_blob_path)
+        store, bucket, _ = self.build_gcs_files_store()
+        bucket.get_blob.return_value = None
+        path = "full/my_data.txt"
+        await maybe_deferred_to_future(
+            store.persist_file(path, BytesIO(b""), info=DUMMY_SPIDER_INFO)
+        )
+        await maybe_deferred_to_future(store.stat_file(path, info=DUMMY_SPIDER_INFO))
+        expected_blob_path = store.prefix + path
+        bucket.blob.assert_called_with(expected_blob_path)
+        bucket.get_blob.assert_called_with(expected_blob_path)
 
 
 class TestFTPFileStore:
@@ -736,10 +813,12 @@ class TestFTPFileStore:
             FTPFilesStore.FTP_PASSWORD = "guest"
 
             store = FTPFilesStore(ftp_server.url("/"))
-            empty_dict = yield store.stat_file(path, info=None)
+            empty_dict = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
             assert empty_dict == {}
-            yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
-            stat = yield store.stat_file(path, info=None)
+            yield store.persist_file(
+                path, buf, info=DUMMY_SPIDER_INFO, meta=meta, headers=None
+            )
+            stat = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
             assert "last_modified" in stat
             assert "checksum" in stat
             assert stat["checksum"] == "d113d66b2ec7258724a268bd88eef6b6"
@@ -786,12 +865,10 @@ class TestBuildFromCrawler:
         class Pipeline(FilesPipeline):
             pass
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe.store
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe.store
 
     def test_has_from_crawler_and_init(self):
         class Pipeline(FilesPipeline):
@@ -805,13 +882,11 @@ class TestBuildFromCrawler:
                 o._from_crawler_called = True
                 return o
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe.store
-            assert pipe._from_crawler_called
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe.store
+        assert pipe._from_crawler_called
 
 
 @pytest.mark.parametrize("store", [None, ""])

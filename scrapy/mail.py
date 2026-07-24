@@ -1,7 +1,5 @@
 """
 Mail sending helpers
-
-See documentation in docs/topics/email.rst
 """
 
 from __future__ import annotations

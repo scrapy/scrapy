@@ -1,4 +1,5 @@
 from gzip import GzipFile
+from importlib.util import find_spec
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
@@ -11,7 +12,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -65,10 +66,7 @@ def _skip_if_no_br() -> None:
 
 
 def _skip_if_no_zstd() -> None:
-    try:
-        import zstandard  # noqa: F401,PLC0415
-    except ImportError:
-        pytest.skip("no zstd support (zstandard)")
+    pytest.importorskip("zstandard")
 
 
 class TestHttpCompression:
@@ -124,6 +122,22 @@ class TestHttpCompression:
             HttpCompressionMiddleware,
         )
 
+    def test_no_crawler_constructor(self):
+        with pytest.warns(ScrapyDeprecationWarning, match="HttpCompressionMiddleware"):
+            mw = HttpCompressionMiddleware()
+        buf = BytesIO()
+        with GzipFile(fileobj=buf, mode="wb") as f:
+            f.write(b"hello")
+        body = buf.getvalue()
+        request = Request("http://scrapytest.org")
+        response = Response(
+            "http://scrapytest.org",
+            body=body,
+            headers={"Content-Encoding": "gzip"},
+        )
+        newresponse = mw.process_response(request, response)
+        assert newresponse.body == b"hello"
+
     def test_process_request(self):
         request = Request("http://scrapytest.org")
         assert "Accept-Encoding" not in request.headers
@@ -156,17 +170,8 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
     def test_process_response_br_unsupported(self):
-        try:
-            try:
-                import brotli  # noqa: F401,PLC0415
-
-                pytest.skip("Requires not having brotli support")
-            except ImportError:
-                import brotlicffi  # noqa: F401,PLC0415
-
-                pytest.skip("Requires not having brotli support")
-        except ImportError:
-            pass
+        if find_spec("brotli") is not None or find_spec("brotlicffi") is not None:
+            pytest.skip("Requires not having brotli support")
         response = self._getresponse("br")
         request = response.request
         assert response.headers["Content-Encoding"] == b"br"
@@ -210,12 +215,8 @@ class TestHttpCompression:
             assert "Content-Encoding" not in newresponse.headers
 
     def test_process_response_zstd_unsupported(self):
-        try:
-            import zstandard  # noqa: F401,PLC0415
-
+        if find_spec("zstandard") is not None:
             pytest.skip("Requires not having zstandard support")
-        except ImportError:
-            pass
         response = self._getresponse("zstd-static-content-size")
         request = response.request
         assert response.headers["Content-Encoding"] == b"zstd"
@@ -361,7 +362,7 @@ class TestHttpCompression:
         zf.write(plainbody)
         zf.close()
         response = Response(
-            "http;//www.example.com/", headers=headers, body=f.getvalue()
+            "http://www.example.com/", headers=headers, body=f.getvalue()
         )
         request = Request("http://www.example.com/")
 
@@ -386,7 +387,7 @@ class TestHttpCompression:
         zf.write(plainbody)
         zf.close()
         response = HtmlResponse(
-            "http;//www.example.com/page.html", headers=headers, body=f.getvalue()
+            "http://www.example.com/page.html", headers=headers, body=f.getvalue()
         )
         request = Request("http://www.example.com/")
 
@@ -493,7 +494,7 @@ class TestHttpCompression:
         gz_resp.close()
 
         response = Response(
-            "http;//www.example.com/", headers=headers, body=r.getvalue()
+            "http://www.example.com/", headers=headers, body=r.getvalue()
         )
         request = Request("http://www.example.com/")
 
@@ -541,6 +542,30 @@ class TestHttpCompression:
         _skip_if_no_zstd()
 
         self._test_compression_bomb_setting("zstd")
+
+    def test_compression_bomb_setting_logs_warning(self, caplog):
+        settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
+        crawler = get_crawler(Spider, settings_dict=settings)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+
+        response = self._getresponse("bomb-gzip")  # 11_511_612 B
+        caplog.clear()
+        with (
+            caplog.at_level(
+                WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+            ),
+            pytest.raises(IgnoreRequest) as exc_info,
+        ):
+            mw.process_response(response.request, response)
+        assert caplog.record_tuples == [
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                WARNING,
+                str(exc_info.value),
+            )
+        ]
 
     def _test_compression_bomb_spider_attr(self, compression_id):
         class DownloadMaxSizeSpider(Spider):

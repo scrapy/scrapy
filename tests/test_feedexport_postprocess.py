@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from scrapy.utils.test import get_crawler
-from tests.test_feedexport import TestFeedExportBase, path_to_url, printf_escape
+from tests.test_feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test
+from tests.utils.feedexport import path_to_url, printf_escape
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -270,7 +271,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             self._named_tempfile("check_CHECK_NONE"): lzma.compress(
                 self.expected, check=lzma.CHECK_NONE
             ),
-            self._named_tempfile("check_CHECK_CRC256"): lzma.compress(
+            self._named_tempfile("CHECK_SHA256"): lzma.compress(
                 self.expected, check=lzma.CHECK_SHA256
             ),
         }
@@ -282,7 +283,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
                     "postprocessing": ["scrapy.extensions.postprocessing.LZMAPlugin"],
                     "lzma_check": lzma.CHECK_NONE,
                 },
-                self._named_tempfile("check_CHECK_CRC256"): {
+                self._named_tempfile("CHECK_SHA256"): {
                     "format": "csv",
                     "postprocessing": ["scrapy.extensions.postprocessing.LZMAPlugin"],
                     "lzma_check": lzma.CHECK_SHA256,

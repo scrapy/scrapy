@@ -1,5 +1,4 @@
 import os
-import warnings
 from pathlib import Path
 
 import pytest
@@ -41,11 +40,8 @@ class TestGetProjectSettings:
         envvars = {
             "SCRAPY_SETTINGS_MODULE": value,
         }
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            with set_environ(**envvars):
-                settings = get_project_settings()
-
+        with set_environ(**envvars):
+            settings = get_project_settings()
         assert settings.get("SETTINGS_MODULE") == value
 
     def test_invalid_envvar(self):

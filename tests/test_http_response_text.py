@@ -14,6 +14,13 @@ from tests.test_http_response import TestResponse
 class TestTextResponse(TestResponse):
     response_class = TextResponse
 
+    def test_follow_None_encoding(self):
+        # unlike the base Response, TextResponse.follow() falls back to the
+        # response encoding when encoding is None instead of raising
+        r = self.response_class("http://example.com", body=b"hello", encoding="cp1252")
+        req = r.follow("foo", encoding=None)
+        assert req.encoding == "cp1252"
+
     def test_replace(self):
         super().test_replace()
         r1 = self.response_class(
@@ -156,12 +163,13 @@ class TestTextResponse(TestResponse):
 
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""
+        body = b"\xff\xfeh\x00i\x00"
         r = self.response_class(
             "http://www.example.com",
-            body=b"\xff\xfeh\x00i\x00",
+            body=body,
             encoding="utf-16",
         )
-        self._assert_response_values(r, "utf-16", "hi")
+        self._assert_response_values(r, "utf-16", body)
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
         r6 = self.response_class(
@@ -178,7 +186,6 @@ class TestTextResponse(TestResponse):
     def test_bom_is_removed_from_body(self):
         # Inferring encoding from body also cache decoded body as sideeffect,
         # this test tries to ensure that calling response.encoding and
-        # response.text in indistinct order doesn't affect final
         # response.text in indistinct order doesn't affect final
         # values for encoding and decoded body.
         url = "http://example.com"
@@ -308,11 +315,12 @@ class TestTextResponse(TestResponse):
             "http://example.com/sample3.html#foo",
             "http://www.google.com/something",
             "http://example.com/innertag.html",
+            "http://example.com/page%204.html",
         ]
 
         # select <a> elements
         for sellist in [resp.css("a"), resp.xpath("//a")]:
-            for sel, url in zip(sellist, urls, strict=False):
+            for sel, url in zip(sellist, urls, strict=True):
                 self._assert_followed_url(sel, url, response=resp)
 
         # select <link> elements
@@ -324,7 +332,7 @@ class TestTextResponse(TestResponse):
 
         # href attributes should work
         for sellist in [resp.css("a::attr(href)"), resp.xpath("//a/@href")]:
-            for sel, url in zip(sellist, urls, strict=False):
+            for sel, url in zip(sellist, urls, strict=True):
                 self._assert_followed_url(sel, url, response=resp)
 
         # non-a elements are not supported
@@ -376,12 +384,12 @@ class TestTextResponse(TestResponse):
             encoding="utf8",
             body='<html><body><a href="foo?привет">click me</a></body></html>'.encode(),
         )
-        req = self._assert_followed_url(
+        self._assert_followed_url(
             resp1.css("a")[0],
             "http://example.com/foo?%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82",
             response=resp1,
+            encoding="utf8",
         )
-        assert req.encoding == "utf8"
 
         resp2 = self.response_class(
             "http://example.com",
@@ -390,28 +398,12 @@ class TestTextResponse(TestResponse):
                 "cp1251"
             ),
         )
-        req = self._assert_followed_url(
+        self._assert_followed_url(
             resp2.css("a")[0],
             "http://example.com/foo?%EF%F0%E8%E2%E5%F2",
             response=resp2,
+            encoding="cp1251",
         )
-        assert req.encoding == "cp1251"
-
-    def test_follow_flags(self):
-        res = self.response_class("http://example.com/")
-        fol = res.follow("http://example.com/", flags=["cached", "allowed"])
-        assert fol.flags == ["cached", "allowed"]
-
-    def test_follow_all_flags(self):
-        re = self.response_class("http://www.example.com/")
-        urls = [
-            "http://www.example.com/",
-            "http://www.example.com/2",
-            "http://www.example.com/foo",
-        ]
-        fol = re.follow_all(urls, flags=["cached", "allowed"])
-        for req in fol:
-            assert req.flags == ["cached", "allowed"]
 
     def test_follow_all_css(self):
         expected = [
