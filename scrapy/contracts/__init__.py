@@ -22,7 +22,16 @@ if TYPE_CHECKING:
 
 
 class Contract:
-    """Abstract class for contracts"""
+    """Base class for :ref:`custom contracts <topics-contracts>`.
+
+    *method* is the callback function to which the contract is associated.
+
+    *args* is the list of arguments passed into the docstring, separated by
+    whitespace.
+
+    Subclasses may override :meth:`adjust_request_args`, and define a
+    ``pre_process`` method or a ``post_process`` method, or both.
+    """
 
     request_cls: type[Request] | None = None
     name: str
@@ -90,6 +99,13 @@ class Contract:
         return request
 
     def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Receive a ``dict`` with the default arguments for the sample request
+        and return it, either unmodified or with changes.
+
+        :class:`~scrapy.Request` is used by default, but this can be changed
+        with the ``request_cls`` attribute. If multiple contracts in the chain
+        define this attribute, the last one is used.
+        """
         return args
 
 
