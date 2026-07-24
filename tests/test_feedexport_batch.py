@@ -374,8 +374,8 @@ class TestBatchDeliveries(TestFeedExportBase):
         batch files.
         """
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2"}),
         ]
         feed_dir = self._random_temp_filename()
         jobdir = self._random_temp_filename()
@@ -406,8 +406,8 @@ class TestBatchDeliveries(TestFeedExportBase):
         # Second run with the same JOBDIR: must NOT overwrite the prior files
         # and must start the batch_id counter at 3.
         more_items = [
-            self.MyItem({"foo": "bar3", "egg": "spam3"}),
-            self.MyItem({"foo": "bar4", "egg": "spam4"}),
+            MyItem({"foo": "bar3", "egg": "spam3"}),
+            MyItem({"foo": "bar4", "egg": "spam4"}),
         ]
         await self.exported_data(more_items, make_settings())
 
