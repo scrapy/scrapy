@@ -534,8 +534,6 @@ it:
     SCHEDULER = "scrapy.core.scheduler.ThrottlerAwareScheduler"
     SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ThrottlerAwarePriorityQueue"
 
-.. autoclass:: scrapy.core.scheduler.ThrottlerAwareScheduler
-
 .. _throttling-examples:
 
 Examples
@@ -925,6 +923,10 @@ Additional settings
 API
 ===
 
+.. autoclass:: scrapy.core.scheduler.ThrottlerAwareScheduler
+
+.. autoclass:: scrapy.pqueues.ThrottlerAwarePriorityQueue
+
 .. autoclass:: scrapy.throttler.ThrottlerProtocol
     :members:
     :member-order: bysource
@@ -936,8 +938,6 @@ API
     :member-order: bysource
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeManager
-
-.. autoclass:: scrapy.pqueues.ThrottlerAwarePriorityQueue
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeConfig
 
