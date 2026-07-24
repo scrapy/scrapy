@@ -73,9 +73,6 @@ def get_crawler(
         **(settings_dict or {}),
     }
     if prevent_warnings:
-        # Pin the per-scope concurrency to CONCURRENT_REQUESTS_PER_DOMAIN's
-        # default: keeps the suite's historical behavior and silences the
-        # warn-then-flip warning (see throttler._warn_on_deprecated_concurrency).
         settings.setdefault(
             "THROTTLING_SCOPE_CONCURRENCY",
             default_settings.CONCURRENT_REQUESTS_PER_DOMAIN,
