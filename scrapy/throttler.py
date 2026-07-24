@@ -873,7 +873,7 @@ class Throttler:
 
         It reads the ``Crawl-delay`` directive for the configured user agent from
         the parsed robots.txt and, if present, applies it to the scope of the
-        host that *request* targets via :meth:`apply_robots_crawl_delay`.
+        host that *request* targets via :meth:`_apply_robots_crawl_delay`.
         """
         if not self._robotstxt_obey:
             return
@@ -883,11 +883,11 @@ class Throttler:
         except Exception:  # pragma: no cover - backend-specific failures
             return
         if delay:
-            self.apply_robots_crawl_delay(
+            self._apply_robots_crawl_delay(
                 urlparse_cached(request).hostname or "", delay
             )
 
-    def apply_robots_crawl_delay(self, scope_id: ScopeID, delay: float) -> None:
+    def _apply_robots_crawl_delay(self, scope_id: ScopeID, delay: float) -> None:
         if not self._robotstxt_obey:
             return
         capped = min(delay, self._robotstxt_max_delay)
