@@ -89,6 +89,26 @@ async def test_slots_deprecated():
 
 
 @coroutine_test
+async def test_get_slot_key_deprecated():
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match=r"Downloader\.get_slot_key\(\) is deprecated",
+    ):
+        assert downloader.get_slot_key(Request("https://example.com")) == "example.com"
+    request = Request("https://example.com")
+    request.meta[Downloader.DOWNLOAD_SLOT] = "custom"
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match=r"Downloader\.get_slot_key\(\) is deprecated",
+    ):
+        assert downloader.get_slot_key(request) == "custom"
+    downloader.close()
+
+
+@coroutine_test
 async def test_download_slot_meta_deprecated():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
