@@ -355,30 +355,12 @@ class TestThrottler:
         manager.apply_robots_crawl_delay("example.com", 3.0)
         assert manager._get_scope_manager("example.com")._base_delay == 0.0
 
-    def test_apply_robots_crawl_delay_sets_concurrency(self):
-        manager = _manager({"ROBOTSTXT_OBEY": True})
-        manager.apply_robots_crawl_delay("example.com", 3.0)
-        assert manager._get_scope_manager("example.com")._concurrency == 1
-
-    def test_apply_robots_crawl_delay_warns_on_conflict(self, caplog):
-        manager = _manager(
-            {
-                "ROBOTSTXT_OBEY": True,
-                "THROTTLER_SCOPES": {"example.com": {"concurrency": 8}},
-            }
-        )
-        with caplog.at_level(logging.WARNING, logger="scrapy.throttler"):
-            manager.apply_robots_crawl_delay("example.com", 3.0)
-        assert "Crawl-delay" in caplog.text
-        # The configured value takes precedence (crawl-delay not applied).
-        assert manager._get_scope_manager("example.com")._base_delay == 0.0
-
     def test_apply_robots_crawl_delay_ignored(self, caplog):
         manager = _manager(
             {
                 "ROBOTSTXT_OBEY": True,
                 "THROTTLER_SCOPES": {
-                    "example.com": {"concurrency": 8, "ignore_robots_txt": True}
+                    "example.com": {"delay": 0.5, "ignore_robots_txt": True}
                 },
             }
         )
@@ -386,7 +368,7 @@ class TestThrottler:
             manager.apply_robots_crawl_delay("example.com", 3.0)
         # No warning is logged and the crawl-delay is not applied.
         assert "Crawl-delay" not in caplog.text
-        assert manager._get_scope_manager("example.com")._base_delay == 0.0
+        assert manager._get_scope_manager("example.com")._base_delay == 0.5
 
     def test_scope_eviction(self):
         manager = _manager({"THROTTLER_SCOPE_MAX_IDLE": 100.0})
@@ -1065,6 +1047,8 @@ class TestThrottlerEdges:
         with caplog.at_level(logging.WARNING, logger="scrapy.throttler"):
             manager.apply_robots_crawl_delay("example.com", 3.0)
         assert "Crawl-delay" in caplog.text
+        # The configured value takes precedence (crawl-delay not applied).
+        assert manager._get_scope_manager("example.com")._base_delay == 0.5
 
     def test_apply_robots_crawl_delay_debug_logging(self, caplog):
         manager = _manager({"ROBOTSTXT_OBEY": True, "THROTTLER_DEBUG": True})

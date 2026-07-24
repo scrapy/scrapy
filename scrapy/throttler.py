@@ -892,8 +892,8 @@ class Throttler:
 
     def apply_robots_crawl_delay(self, scope_id: ScopeID, delay: float) -> None:
         """Honor a robots.txt ``Crawl-delay`` directive of *delay* seconds for
-        *scope_id* by setting its delay (capped at
-        :setting:`THROTTLER_ROBOTSTXT_MAX_DELAY`) and its concurrency to ``1``.
+        *scope_id* by raising its delay to at least that value (capped at
+        :setting:`THROTTLER_ROBOTSTXT_MAX_DELAY`).
 
         Called from the :signal:`robots_parsed` signal handler when
         :setting:`THROTTLER_ROBOTSTXT_OBEY` is enabled. An explicit
@@ -907,25 +907,18 @@ class Throttler:
         config = self._scopes_config.get(scope_id, {})
         if config.get("ignore_robots_txt"):
             return
-        conflicts = []
         if config.get("delay") is not None and float(config["delay"]) < capped:
-            conflicts.append(f"delay={config['delay']!r} < Crawl-delay {capped}")
-        if config.get("concurrency") is not None and int(config["concurrency"]) > 1:
-            conflicts.append(f"concurrency={config['concurrency']!r} > 1")
-        if conflicts:
             logger.warning(
-                f"Throttler scope {scope_id!r} is configured with {' and '.join(conflicts)}, "
-                f"which is more aggressive than its robots.txt Crawl-delay of "
-                f"{capped}s. The configured values take precedence; set "
-                "'ignore_robots_txt': True in its THROTTLER_SCOPES entry to "
-                "silence this warning."
+                f"Throttler scope {scope_id!r} is configured with "
+                f"delay={config['delay']!r}, which is more aggressive than its "
+                f"robots.txt Crawl-delay of {capped}s. The configured value takes "
+                "precedence; set 'ignore_robots_txt': True in its THROTTLER_SCOPES "
+                "entry to silence this warning."
             )
             return
         if self._debug:
             logger.debug(f"robots.txt Crawl-delay for scope {scope_id}: {capped}s")
-        manager = self.get_scope_manager(scope_id)
-        manager.set_base_delay(capped)
-        manager.set_concurrency(1)
+        self.get_scope_manager(scope_id).set_base_delay(capped)
 
     def delay_scope(self, scope_id: ScopeID, delay: float) -> None:
         # Like a Retry-After / RateLimit-Reset header, this gates the scope's

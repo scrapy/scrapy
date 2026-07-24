@@ -211,12 +211,11 @@ to wait between requests.
 
 If :setting:`ROBOTSTXT_OBEY` and :setting:`THROTTLER_ROBOTSTXT_OBEY` are
 ``True`` (default), valid ``Crawl-Delay`` directives override
-:setting:`THROTTLER_SCOPE_CONCURRENCY` and :setting:`DOWNLOAD_DELAY`.
-Concurrency is set to ``1`` and the delay is raised to at least the
-``Crawl-Delay`` value (a larger configured delay is kept), capped at
+:setting:`DOWNLOAD_DELAY`. The delay is raised to at least the ``Crawl-Delay``
+value (a larger configured delay is kept), capped at
 :setting:`THROTTLER_ROBOTSTXT_MAX_DELAY` (default: ``60.0``).
 
-If :setting:`THROTTLER_SCOPES` defines a different concurrency or delay, it
+If :setting:`THROTTLER_SCOPES` defines a smaller (more aggressive) delay, it
 will be respected, but a warning will be logged about the discrepancy with
 ``Crawl-Delay``. Set ``ignore_robots_txt`` to ``True`` to silence this warning.
 
