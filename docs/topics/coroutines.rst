@@ -217,6 +217,88 @@ Common use cases for asynchronous code include:
 .. _aio-libs: https://github.com/aio-libs
 
 
+.. _running-in-a-thread:
+
+Running blocking code in a thread
+=================================
+
+If you need to call code that does not support asynchronous execution and may
+block, such as a web service client library with no async support, you can
+run it in a separate thread with the
+:func:`~scrapy.utils.decorators.inthread` decorator, so that it does not
+block the reactor or the event loop:
+
+.. code-block:: python
+
+    from scrapy.utils.decorators import inthread
+
+
+    @inthread
+    def call_blocking_client(value):
+        return blocking_client.get(value)  # some call that blocks
+
+:func:`~scrapy.utils.decorators.inthread` turns *call_blocking_client* into a
+function that runs in a separate thread and returns a
+:class:`~twisted.internet.defer.Deferred`. You can await that Deferred from a
+coroutine, wrapping it with
+:func:`~scrapy.utils.defer.maybe_deferred_to_future` if you need your code to
+work both with and without the asyncio reactor (see :ref:`asyncio-await-dfd`):
+
+.. code-block:: python
+
+    from scrapy.utils.defer import maybe_deferred_to_future
+
+
+    class MySpider(Spider):
+        # ...
+        async def parse(self, response):
+            result = await maybe_deferred_to_future(
+                call_blocking_client(response.url)
+            )
+            # ... use result to yield items and requests
+
+
+.. _running-in-a-thread:
+
+Running blocking code in a thread
+=================================
+
+If you need to call code that does not support asynchronous execution and may
+block, such as a web service client library with no async support, you can
+run it in a separate thread with the
+:func:`~scrapy.utils.decorators.inthread` decorator, so that it does not
+block the reactor or the event loop:
+
+.. code-block:: python
+
+    from scrapy.utils.decorators import inthread
+
+
+    @inthread
+    def call_blocking_client(value):
+        return blocking_client.get(value)  # some call that blocks
+
+:func:`~scrapy.utils.decorators.inthread` turns *call_blocking_client* into a
+function that runs in a separate thread and returns a
+:class:`~twisted.internet.defer.Deferred`. You can await that Deferred from a
+coroutine, wrapping it with
+:func:`~scrapy.utils.defer.maybe_deferred_to_future` if you need your code to
+work both with and without the asyncio reactor (see :ref:`asyncio-await-dfd`):
+
+.. code-block:: python
+
+    from scrapy.utils.defer import maybe_deferred_to_future
+
+
+    class MySpider(Spider):
+        # ...
+        async def parse(self, response):
+            result = await maybe_deferred_to_future(
+                call_blocking_client(response.url)
+            )
+            # ... use result to yield items and requests
+
+
 .. _inline-requests:
 
 Inline requests
