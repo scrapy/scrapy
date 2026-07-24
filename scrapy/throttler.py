@@ -623,17 +623,6 @@ class Throttler:
         return json.dumps(scope_ids)
 
     def get_resolved_scopes(self, request: Request) -> RequestScopes:
-        """Return the scopes under which *request* was (or will be) sent,
-        reusing those persisted on ``request.meta`` by an earlier
-        :meth:`get_scopes` call (see :func:`scope_cache`) and falling back to
-        :meth:`_resolve_scopes_sync` only when none were persisted.
-
-        The persisted value is authoritative: a request reaching a reader of
-        this method (the readiness API, or a component reacting to its response)
-        has already been enqueued and, for a request restored from a disk queue,
-        re-resolving could attribute it to different scopes than the ones it was
-        sent under.
-        """
         if _RESOLVED_SCOPES_META_KEY in request.meta:
             return cast("RequestScopes", request.meta[_RESOLVED_SCOPES_META_KEY])
         return self._resolve_scopes_sync(request)
@@ -899,16 +888,6 @@ class Throttler:
             )
 
     def apply_robots_crawl_delay(self, scope_id: ScopeID, delay: float) -> None:
-        """Honor a robots.txt ``Crawl-delay`` directive of *delay* seconds for
-        *scope_id* by raising its delay to at least that value (capped at
-        :setting:`THROTTLER_ROBOTSTXT_MAX_DELAY`).
-
-        Called from the :signal:`robots_parsed` signal handler when
-        :setting:`THROTTLER_ROBOTSTXT_OBEY` is enabled. An explicit
-        :setting:`THROTTLING_SCOPES` configuration for the scope is respected, but
-        a warning is logged about the discrepancy unless its ``ignore_robots_txt``
-        key is ``True``.
-        """
         if not self._robotstxt_obey:
             return
         capped = min(delay, self._robotstxt_max_delay)
@@ -1350,9 +1329,6 @@ class ThrottlingScopeManager:
         return self._active / limit
 
     def slot_available_event(self) -> Deferred[None]:
-        """Return a Deferred that fires when a concurrency slot next frees up
-        (via :meth:`record_done`) or the limit is raised (via
-        :meth:`set_concurrency`)."""
         event: Deferred[None] = Deferred()
         self._slot_waiters.append(event)
         return event
