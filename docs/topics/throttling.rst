@@ -363,6 +363,9 @@ Throttling scopes
 <https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#section-1.4-4.4>`__
 represent aspects of requests that can be throttled independently.
 
+When a request has multiple throttling scopes, it is not sent until all of its
+throttling scopes allow it.
+
 .. _custom-throttling-scopes:
 
 Customizing throttling scopes
@@ -411,22 +414,14 @@ following keys:
 To **change how scopes are assigned** (or anything beyond per-scope settings),
 set :setting:`THROTTLER` (default:
 :class:`~scrapy.throttler.Throttler`) to a :ref:`component
-<topics-components>` that implements the
-:class:`~scrapy.throttler.ThrottlerProtocol` protocol (or its import
+<topics-components>` that implements
+:class:`~scrapy.throttler.ThrottlerProtocol` (or its import
 path as a string):
 
 .. code-block:: python
     :caption: :file:`settings.py`
 
     THROTTLER = "myproject.throttling.MyThrottler"
-
-.. _multiple-throttling-scopes:
-
-Handling of multiple throttling scopes
---------------------------------------
-
-When a request has multiple throttling scopes, it is not sent until all of its
-throttling scopes allow it.
 
 .. _throttler-quotas:
 
@@ -821,7 +816,7 @@ Per-IP concurrency limiting
 A concurrency limit keyed by IP is just a throttling scope whose id is the
 request's IP, with a ``concurrency`` limit. A request then carries two scopes,
 its domain and its IP, and is only sent when **both** allow it (see
-:ref:`multiple-throttling-scopes`).
+:ref:`throttling-scopes`).
 
 -   Implement a :ref:`throttler <custom-throttling-scopes>` that adds
     the request's IP as a second scope:
