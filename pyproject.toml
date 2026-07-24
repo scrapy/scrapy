@@ -107,6 +107,7 @@ pattern = "^(?P<version>.+)$"
 strict = true
 extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
+    "keyring",
     "twisted",
 ]
 
