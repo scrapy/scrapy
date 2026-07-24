@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest.mock import Mock
 
 import pytest
+from twisted.internet.address import IPv4Address, IPv6Address
 
 from scrapy.resolver import CachingHostnameResolver, CachingThreadedResolver, dnscache
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -53,6 +54,24 @@ def test_caching_hostname_resolver_no_addresses_not_cached():
     resolver.resolveHostName(Mock(), "example.com")
 
     assert "example.com" not in dnscache
+
+
+def test_caching_hostname_resolver_cache_hit_uses_requested_port():
+    dnscache["example.com"] = [
+        IPv4Address("TCP", "1.2.3.4", 80),
+        IPv6Address("TCP", "::1", 80),
+    ]
+
+    receiver = Mock()
+    resolver = CachingHostnameResolver(Mock(), cache_size=10)
+    resolver.resolveHostName(receiver, "example.com", portNumber=443)
+
+    resolved_ports = [
+        call.args[0].port for call in receiver.addressResolved.call_args_list
+    ]
+    assert resolved_ports == [443, 443]
+    # The cached addresses must not be mutated in place.
+    assert [addr.port for addr in dnscache["example.com"]] == [80, 80]
 
 
 def test_caching_hostname_resolver_dnscache_disabled_rejects_storage():
