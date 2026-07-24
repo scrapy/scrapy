@@ -107,6 +107,7 @@ pattern = "^(?P<version>.+)$"
 strict = true
 extra_checks = false # weird addErrback() errors
 untyped_calls_exclude = [
+    "keyring",
     "twisted",
 ]
 
@@ -364,6 +365,8 @@ markers = [
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_mitmproxy: marks tests that need a mitmdump executable",
+    "requires_keyring: marks tests that need keyring",
+    "requires_dotenv: marks tests that need python-dotenv",
     "requires_internet: marks tests that need real Internet access",
 ]
 filterwarnings = [

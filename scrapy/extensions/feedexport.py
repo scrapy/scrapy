@@ -256,9 +256,9 @@ class S3FeedStorage(BlockingFeedStorage):
     ) -> Self:
         return cls(
             uri,
-            access_key=crawler.settings["AWS_ACCESS_KEY_ID"],
-            secret_key=crawler.settings["AWS_SECRET_ACCESS_KEY"],
-            session_token=crawler.settings["AWS_SESSION_TOKEN"],
+            access_key=crawler.settings.getsecret("AWS_ACCESS_KEY_ID"),
+            secret_key=crawler.settings.getsecret("AWS_SECRET_ACCESS_KEY"),
+            session_token=crawler.settings.getsecret("AWS_SESSION_TOKEN"),
             acl=crawler.settings["FEED_STORAGE_S3_ACL"] or None,
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
             region_name=crawler.settings["AWS_REGION_NAME"] or None,
