@@ -4,11 +4,6 @@
 Logging
 =======
 
-.. note::
-    :mod:`scrapy.log` has been deprecated alongside its functions in favor of
-    explicit calls to the Python standard logging. Keep reading to learn more
-    about the new logging system.
-
 Scrapy uses :mod:`logging` for event logging. We'll
 provide some simple examples to get you started, but for more advanced
 use-cases it's strongly suggested to read thoroughly its documentation.

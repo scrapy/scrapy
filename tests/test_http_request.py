@@ -24,6 +24,10 @@ class TestRequest:
         with pytest.raises(TypeError):
             self.request_class(123)
 
+        # priority argument must be an integer
+        with pytest.raises(TypeError, match="Request priority not an integer"):
+            self.request_class("http://www.example.com", priority="1")
+
         r = self.request_class("http://www.example.com")
         assert isinstance(r.url, str)
         assert r.url == "http://www.example.com"
@@ -274,6 +278,12 @@ class TestRequest:
         assert r4.meta == {}
         assert r4.dont_filter is False
 
+        # the cls argument allows changing the resulting class
+        custom_request_cls = type("CustomRequest", (self.request_class,), {})
+        r5 = r1.replace(cls=custom_request_cls)
+        assert isinstance(r5, custom_request_cls)
+        assert r5.url == r1.url
+
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method="POST")
         assert isinstance(r.method, str)
@@ -460,11 +470,13 @@ class TestRequest:
     def test_from_curl_ignore_unknown_options(self):
         # By default: it works and ignores the unknown options: --foo and -z
         with warnings.catch_warnings():  # avoid warning when executing tests
-            warnings.simplefilter("ignore")
+            warnings.filterwarnings(
+                "ignore", category=UserWarning, message="Unrecognized options:"
+            )
             r = self.request_class.from_curl(
                 'curl -X DELETE "http://example.org" --foo -z',
             )
-            assert r.method == "DELETE"
+        assert r.method == "DELETE"
 
         # If `ignore_unknown_options` is set to `False` it raises an error with
         # the unknown options: --foo and -z

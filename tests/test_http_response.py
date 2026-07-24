@@ -254,6 +254,11 @@ class TestResponse:
         with pytest.raises(ValueError, match="url can't be None"):
             r.follow(None)
 
+    def test_follow_None_encoding(self):
+        r = self.response_class("http://example.com")
+        with pytest.raises(ValueError, match="encoding can't be None"):
+            r.follow("foo", encoding=None)
+
     @pytest.mark.xfail(
         not W3LIB_STRIPS_URLS,
         reason="https://github.com/scrapy/w3lib/pull/207",

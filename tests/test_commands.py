@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from io import StringIO
-from shutil import copytree
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -12,9 +12,11 @@ import pytest
 import scrapy
 from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
 from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
-from tests.utils.cmdline import call, proc
+from tests.utils.base_commands import TestProjectBase
+from tests.utils.cmdline import call, proc, write_recording_editor
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,6 +28,50 @@ class EmptyCommand(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         pass
+
+
+class TestHelpDeprecation:
+    def test_calling_help_is_deprecated(self) -> None:
+        command = EmptyCommand()
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"ScrapyCommand\.help\(\) is deprecated, use long_desc\(\) instead\.",
+        ):
+            result = command.help()
+        # help() still delegates to long_desc() for backward compatibility.
+        assert result == command.long_desc()
+
+    def test_overriding_help_is_deprecated(self) -> None:
+        class HelpCommand(ScrapyCommand):
+            def short_desc(self) -> str:
+                return ""
+
+            def run(self, args: list[str], opts: argparse.Namespace) -> None:
+                pass
+
+            def help(self) -> str:
+                return "custom help"
+
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"The ScrapyCommand\.help\(\) method is deprecated and "
+            r"overriding it, as the .*HelpCommand class does, has no effect; "
+            r"override long_desc\(\) instead\.",
+        ):
+            HelpCommand()
+
+    def test_not_overriding_help_does_not_warn(self, recwarn) -> None:
+        # Commands that do not override help() must not emit the
+        # override-deprecation warning when instantiated, including subclasses
+        # several levels below ScrapyCommand (as the built-in commands are).
+        class SubCommand(EmptyCommand):
+            pass
+
+        EmptyCommand()
+        SubCommand()
+        assert not [
+            w for w in recwarn.list if issubclass(w.category, ScrapyDeprecationWarning)
+        ]
 
 
 class TestCommandSettings:
@@ -43,6 +89,7 @@ class TestCommandSettings:
             args=["-s", f"FEEDS={feeds_json}", "spider.py"]
         )
         self.command.process_options(args, opts)
+        assert self.command.settings is not None
         assert isinstance(self.command.settings["FEEDS"], scrapy.settings.BaseSettings)
         assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
 
@@ -60,29 +107,6 @@ class TestCommandSettings:
             "Optional Arguments\n==================\n\n"
             "Global Options\n--------------\n"
         )
-
-
-class TestProjectBase:
-    """A base class for tests that may need a Scrapy project."""
-
-    project_name = "testproject"
-
-    @pytest.fixture(scope="session")
-    def _proj_path_cached(self, tmp_path_factory: pytest.TempPathFactory) -> Path:
-        """Create a Scrapy project in a temporary directory and return its path.
-
-        Used as a cache for ``proj_path``.
-        """
-        tmp_path = tmp_path_factory.mktemp("proj")
-        call("startproject", self.project_name, cwd=tmp_path)
-        return tmp_path / self.project_name
-
-    @pytest.fixture
-    def proj_path(self, tmp_path: Path, _proj_path_cached: Path) -> Path:
-        """Copy a pre-generated Scrapy project into a temporary directory and return its path."""
-        proj_path = tmp_path / self.project_name
-        copytree(_proj_path_cached, proj_path)
-        return proj_path
 
 
 class TestCommandCrawlerProcess(TestProjectBase):
@@ -373,6 +397,31 @@ class TestViewCommand:
         command.add_options(parser)
         assert command.short_desc() == "Open URL in browser, as seen by Scrapy"
         assert "URL using the Scrapy downloader and show its" in command.long_desc()
+
+
+class TestEditCommand(TestProjectBase):
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell editor script"
+    )
+    def test_edit(self, proj_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider = proj_path / self.project_name / "spiders" / "example.py"
+        edited = proj_path / "edited.txt"
+        editor = proj_path / "fake-editor.sh"
+        write_recording_editor(editor)
+        monkeypatch.setenv("EDITOR", f"{editor} {edited}")
+
+        assert call("genspider", "example", "example.com", cwd=proj_path) == 0
+        returncode, _, err = proc("edit", "example", cwd=proj_path)
+
+        assert returncode == 0, err
+        assert (proj_path / edited.read_text(encoding="utf-8")).resolve() == (
+            spider.resolve()
+        )
+
+    def test_edit_spider_not_found(self, proj_path: Path) -> None:
+        returncode, _, err = proc("edit", "nonexistent", cwd=proj_path)
+        assert returncode == 1
+        assert "Spider not found: nonexistent" in err
 
 
 class TestHelpMessage(TestProjectBase):

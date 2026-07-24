@@ -55,19 +55,24 @@ class DepthMiddleware(BaseSpiderMiddleware):
 
     @_warn_spider_arg
     def process_spider_output(
-        self, response: Response, result: Iterable[Any], spider: Spider | None = None
+        self,
+        response: Response | None,
+        result: Iterable[Any],
+        spider: Spider | None = None,
     ) -> Iterable[Any]:
-        self._init_depth(response)
+        if response is not None:
+            self._init_depth(response)
         yield from super().process_spider_output(response, result)
 
     @_warn_spider_arg
     async def process_spider_output_async(
         self,
-        response: Response,
+        response: Response | None,
         result: AsyncIterator[Any],
         spider: Spider | None = None,
     ) -> AsyncIterator[Any]:
-        self._init_depth(response)
+        if response is not None:
+            self._init_depth(response)
         async for o in super().process_spider_output_async(response, result):
             yield o
 

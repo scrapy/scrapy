@@ -43,6 +43,13 @@ _openssl_methods: dict[str, int] = {
 
 
 def __getattr__(name: str) -> Any:
+    if name == "DEFAULT_CIPHERS":
+        warnings.warn(
+            "scrapy.core.downloader.tls.DEFAULT_CIPHERS is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")
     deprecated = {
         "METHOD_TLS": "TLS",
         "METHOD_TLSv10": "TLSv1.0",
@@ -177,8 +184,3 @@ class _ScrapyClientTLSOptions26(ClientTLSOptions):
             return True
 
         return verifyCallback
-
-
-DEFAULT_CIPHERS: AcceptableCiphers = AcceptableCiphers.fromOpenSSLCipherString(
-    "DEFAULT"
-)

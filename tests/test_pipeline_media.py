@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from unittest.mock import MagicMock
 
 import pytest
@@ -395,7 +394,7 @@ class TestMediaPipelineAllowRedirectSettings:
             # the downloader to handle itself
             (301, False),
             (302, False),
-            (302, False),
+            (303, False),
             (307, False),
             (308, False),
             # we still want to get 4xx and 5xx
@@ -425,11 +424,9 @@ class TestBuildFromCrawler:
         class Pipeline(UserDefinedPipeline):
             pass
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
 
     def test_has_from_crawler_and_init(self):
         class Pipeline(UserDefinedPipeline):
@@ -447,13 +444,11 @@ class TestBuildFromCrawler:
                 o._from_crawler_called = True
                 return o
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe._from_crawler_called
-            assert pipe._init_called
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe._from_crawler_called
+        assert pipe._init_called
 
     def test_has_from_crawler(self):
         class Pipeline(UserDefinedPipeline):
@@ -467,13 +462,10 @@ class TestBuildFromCrawler:
                 o.store_uri = settings["FILES_STORE"]
                 return o
 
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            # this and the next assert will fail as MediaPipeline.from_crawler() wasn't called
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 0
-            assert pipe._from_crawler_called
+        pipe = Pipeline.from_crawler(self.crawler)
+        assert pipe.crawler == self.crawler
+        assert pipe._fingerprinter
+        assert pipe._from_crawler_called
 
 
 class MediaFailedFailurePipeline(MockedMediaPipeline):

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import gzip
 import re
-import warnings
 from datetime import datetime
 from io import BytesIO
 from logging import WARNING
@@ -429,9 +428,7 @@ Sitemap: /sitemap-relative-url.xml
 
         crawler = get_crawler(TestSpider)
         spider = TestSpider.from_crawler(crawler)
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            requests = [request async for request in spider.start()]
+        requests = [request async for request in spider.start()]
 
         assert len(requests) == 1
         request = requests[0]

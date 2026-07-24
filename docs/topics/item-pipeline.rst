@@ -57,6 +57,8 @@ Any of these methods may be defined as a coroutine function (``async def``).
 Item pipeline example
 =====================
 
+.. _price-pipeline-example:
+
 Price validation and dropping items with no prices
 --------------------------------------------------
 
@@ -119,7 +121,7 @@ Write items to MongoDB
 
 In this example we'll write items to MongoDB_ using pymongo_.
 MongoDB address and database name are specified in Scrapy settings;
-MongoDB collection is named after item class.
+MongoDB collection is specified in a class attribute.
 
 The main point of this example is to show how to :ref:`get the crawler
 <from-crawler>` and how to clean up the resources properly.
@@ -246,6 +248,8 @@ returns multiples items with the same id:
                 return item
 
 
+.. _activating-item-pipeline:
+
 Activating an Item Pipeline component
 =====================================
 
@@ -262,3 +266,110 @@ To activate an Item Pipeline component you must add its class to the
 The integer values you assign to classes in this setting determine the
 order in which they run: items go through from lower valued to higher
 valued classes. It's customary to define these numbers in the 0-1000 range.
+
+A complete example
+==================
+
+The examples above show item pipeline components on their own. In a project, a
+pipeline is one of four pieces that work together: the :ref:`item
+<topics-items>` your spider produces, the :ref:`spider <topics-spiders>` that
+yields it, the pipeline that processes it, and the :setting:`ITEM_PIPELINES`
+setting that enables the pipeline.
+
+The following example wires those pieces together to validate the price of
+books scraped from `books.toscrape.com`_, reusing the ``PricePipeline`` from
+:ref:`price-pipeline-example` above.
+
+Define the item in ``myproject/items.py``:
+
+.. code-block:: python
+
+    from dataclasses import dataclass
+
+
+    @dataclass
+    class BookItem:
+        title: str
+        price: float
+
+Yield instances of that item from your spider, e.g. in
+``myproject/spiders/books.py``:
+
+.. skip: next
+.. code-block:: python
+
+    import scrapy
+
+    from myproject.items import BookItem
+
+
+    class BooksSpider(scrapy.Spider):
+        name = "books"
+        start_urls = ["https://books.toscrape.com/"]
+
+        def parse(self, response):
+            for book in response.css("article.product_pod"):
+                yield BookItem(
+                    title=book.css("h3 a::attr(title)").get(),
+                    price=float(book.css("p.price_color::text").re_first(r"[\d.]+")),
+                )
+
+Put the ``PricePipeline`` shown earlier in ``myproject/pipelines.py``, and
+enable it in ``myproject/settings.py``:
+
+.. code-block:: python
+
+    ITEM_PIPELINES = {
+        "myproject.pipelines.PricePipeline": 300,
+    }
+
+With these pieces in place, every ``BookItem`` that ``BooksSpider`` yields
+passes through ``PricePipeline`` before it reaches the :ref:`feed exports
+<topics-feed-exports>` or any other output.
+
+.. _books.toscrape.com: https://books.toscrape.com/
+
+
+Common pitfalls
+===============
+
+The pipeline does not run
+-------------------------
+
+A pipeline component only runs if its class is listed in the
+:setting:`ITEM_PIPELINES` setting, normally in your project's
+:file:`settings.py` file (see :ref:`activating-item-pipeline`). Adding it to
+the spider or elsewhere has no effect.
+
+To confirm that Scrapy loaded your pipeline, look for a line like this near the
+start of the crawl log::
+
+    [scrapy.middleware] INFO: Enabled item pipelines:
+    ['myproject.pipelines.PricePipeline']
+
+If your pipeline is missing from that list, check that its import path matches
+the :setting:`ITEM_PIPELINES` entry, and that the setting is not being
+overridden, for example by :attr:`~scrapy.Spider.custom_settings` or by a
+redefinition of :setting:`ITEM_PIPELINES` in :file:`settings.py`.
+
+The item is not returned
+------------------------
+
+:meth:`process_item` must return the item (or raise
+:exc:`~scrapy.exceptions.DropItem`). A common mistake is to modify the item but
+forget to return it:
+
+.. code-block:: python
+
+    def process_item(self, item):
+        ItemAdapter(item)["price"] *= 1.15
+        # Bug: returns None, so the next component gets None instead of the item.
+
+Return the item so that the next component, and the rest of Scrapy, can keep
+processing it:
+
+.. code-block:: python
+
+    def process_item(self, item):
+        ItemAdapter(item)["price"] *= 1.15
+        return item
