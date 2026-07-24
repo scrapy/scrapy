@@ -4,6 +4,7 @@ import hashlib
 import heapq
 import json
 import logging
+import re
 import time
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -30,12 +31,16 @@ def _path_safe(text: str) -> str:
     True
     >>> _path_safe('dash-underscore_.org').startswith('dash-underscore_.org')
     True
-    >>> _path_safe('some@symbol?').startswith('some_symbol_')
+    >>> _path_safe('some@symbol?').startswith('some_symbol')
     True
     """
     pathable_slot = "".join([c if c.isalnum() or c in "-._" else "_" for c in text])
-    # as we replace some letters we can get collision for different slots
-    # add we add unique part
+    # Collapse runs of underscores and trim leading/trailing ones so the
+    # readable prefix stays tidy (e.g. '["a", "b"]' becomes 'a_b' rather than
+    # '__a____b__').
+    pathable_slot = re.sub(r"_+", "_", pathable_slot).strip("_")
+    # Replacing characters can make different inputs collapse to the same
+    # prefix, so a hash of the original text keeps the result unique.
     unique_slot = hashlib.md5(text.encode("utf8")).hexdigest()  # noqa: S324
     return f"{pathable_slot}-{unique_slot}"
 
@@ -282,8 +287,9 @@ class DownloaderAwarePriorityQueue:
     class creates a subdirectory per download slot (domain).
 
     Those subdirectories are named after the corresponding download slot, with
-    path-unsafe characters replaced by underscores and an MD5 hash suffix to
-    avoid collisions.
+    path-unsafe characters replaced by underscores (runs of which are collapsed
+    and leading/trailing ones trimmed) and an MD5 hash suffix to avoid
+    collisions.
 
     For each download slot, this class creates an instance of
     :class:`ScrapyPriorityQueue` with the download slot subdirectory as *key*
@@ -477,10 +483,11 @@ class ThrottlerAwarePriorityQueue:
 
     #.  That key is made path-safe: every character outside ``[A-Za-z0-9-._]``
         becomes ``_`` (here the ``:`` and the JSON quotes, brackets and spaces;
-        the ``-`` and ``.`` are kept), and an MD5 suffix disambiguates keys that
-        collapse to the same path::
+        the ``-`` and ``.`` are kept), runs of ``_`` are collapsed and
+        leading/trailing ``_`` are trimmed, and an MD5 suffix disambiguates keys
+        that collapse to the same path::
 
-            __cost_group-1____example.com__-fc6ba2aff8f421bf981b662d77739902
+            cost_group-1_example.com-fc6ba2aff8f421bf981b662d77739902
     """
 
     @classmethod
