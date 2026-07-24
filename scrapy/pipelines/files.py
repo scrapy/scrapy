@@ -6,6 +6,7 @@ See documentation in topics/media-pipeline.rst
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import functools
 import hashlib
@@ -28,9 +29,10 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWar
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
-from scrapy.utils.asyncio import run_in_thread
-from scrapy.utils.boto import is_botocore_available
+from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
+from scrapy.utils.boto import is_aiobotocore_available, is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.httpobj import urlparse_cached
@@ -47,6 +49,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
 
@@ -169,22 +172,57 @@ class S3FilesStore:
     def __init__(self, uri: str):
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
-        import botocore.session  # noqa: PLC0415
-
-        session = botocore.session.get_session()
-        self.s3_client = session.create_client(
-            "s3",
-            aws_access_key_id=self.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
-            aws_session_token=self.AWS_SESSION_TOKEN,
-            endpoint_url=self.AWS_ENDPOINT_URL,
-            region_name=self.AWS_REGION_NAME,
-            use_ssl=self.AWS_USE_SSL,
-            verify=self.AWS_VERIFY,
-        )
         if not uri.startswith("s3://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split("/", 1)
+
+        self._client_kwargs: dict[str, Any] = {
+            "aws_access_key_id": self.AWS_ACCESS_KEY_ID,
+            "aws_secret_access_key": self.AWS_SECRET_ACCESS_KEY,
+            "aws_session_token": self.AWS_SESSION_TOKEN,
+            "endpoint_url": self.AWS_ENDPOINT_URL,
+            "region_name": self.AWS_REGION_NAME,
+            "use_ssl": self.AWS_USE_SSL,
+            "verify": self.AWS_VERIFY,
+        }
+
+        # Synchronous botocore client, used when asyncio support or aiobotocore
+        # is not available (its calls are then run in a thread).
+        import botocore.session  # noqa: PLC0415
+
+        session = botocore.session.get_session()
+        self.s3_client = session.create_client("s3", **self._client_kwargs)
+
+        # Asynchronous aiobotocore client. It's created lazily (it must be
+        # instantiated from within the running event loop), reused across calls
+        # and closed by close().
+        self._aio_client: Any = None
+        self._aio_client_cm: Any = None
+        self._aio_client_lock = asyncio.Lock()
+
+    def _use_async(self) -> bool:
+        """Whether to use the genuinely-asynchronous aiobotocore client instead
+        of running the blocking botocore client in a thread."""
+        return is_asyncio_available() and is_aiobotocore_available()
+
+    async def _get_aio_client(self) -> Any:
+        if self._aio_client is None:
+            async with self._aio_client_lock:
+                # Another concurrent call may have created it in the meantime.
+                if self._aio_client is None:
+                    from aiobotocore.session import get_session  # noqa: PLC0415
+
+                    self._aio_client_cm = get_session().create_client(
+                        "s3", **self._client_kwargs
+                    )
+                    self._aio_client = await self._aio_client_cm.__aenter__()
+        return self._aio_client
+
+    async def close(self) -> None:
+        """Close the underlying aiobotocore client, if one was created."""
+        if self._aio_client is not None:
+            await self._aio_client_cm.__aexit__(None, None, None)
+            self._aio_client = self._aio_client_cm = None
 
     @staticmethod
     def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
@@ -196,18 +234,20 @@ class S3FilesStore:
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
+        return deferred_from_coro(self._stat_file(path))
 
-        return self._get_boto_key(path).addCallback(self._onsuccess)
-
-    def _get_boto_key(self, path: str) -> Deferred[dict[str, Any]]:
+    async def _stat_file(self, path: str) -> StatInfo:
         key_name = f"{self.prefix}{path}"
-        return deferred_from_coro(
-            run_in_thread(
+        if self._use_async():
+            client = await self._get_aio_client()
+            boto_key = await client.head_object(Bucket=self.bucket, Key=key_name)
+        else:
+            boto_key = await run_in_thread(
                 self.s3_client.head_object,  # type: ignore[attr-defined]
                 Bucket=self.bucket,
                 Key=key_name,
             )
-        )
+        return self._onsuccess(boto_key)
 
     def persist_file(
         self,
@@ -218,21 +258,34 @@ class S3FilesStore:
         headers: dict[str, str] | None = None,
     ) -> Deferred[Any]:
         """Upload file to S3 storage"""
+        return deferred_from_coro(self._persist_file(path, buf, meta, headers))
+
+    async def _persist_file(
+        self,
+        path: str,
+        buf: BytesIO,
+        meta: dict[str, Any] | None,
+        headers: dict[str, str] | None,
+    ) -> Any:
         key_name = f"{self.prefix}{path}"
         buf.seek(0)
         extra = self._headers_to_botocore_kwargs(self.HEADERS)
         if headers:
             extra.update(self._headers_to_botocore_kwargs(headers))
-        return deferred_from_coro(
-            run_in_thread(
-                self.s3_client.put_object,  # type: ignore[attr-defined]
-                Bucket=self.bucket,
-                Key=key_name,
-                Body=buf,
-                Metadata={k: str(v) for k, v in meta.items()} if meta else {},
-                ACL=self.POLICY,
-                **extra,
-            )
+        kwargs: dict[str, Any] = {
+            "Bucket": self.bucket,
+            "Key": key_name,
+            "Body": buf,
+            "Metadata": {k: str(v) for k, v in meta.items()} if meta else {},
+            "ACL": self.POLICY,
+            **extra,
+        }
+        if self._use_async():
+            client = await self._get_aio_client()
+            return await client.put_object(**kwargs)
+        return await run_in_thread(
+            self.s3_client.put_object,  # type: ignore[attr-defined]
+            **kwargs,
         )
 
     def _headers_to_botocore_kwargs(self, headers: dict[str, Any]) -> dict[str, Any]:
@@ -505,6 +558,12 @@ class FilesPipeline(MediaPipeline):
         cls._update_stores(settings)
         store_uri = settings["FILES_STORE"]
         return cls(store_uri, crawler=crawler)
+
+    @_warn_spider_arg
+    async def close_spider(self, spider: Spider | None = None) -> None:
+        close = getattr(self.store, "close", None)
+        if close is not None:
+            await ensure_awaitable(close())
 
     @classmethod
     def _update_stores(cls, settings: BaseSettings) -> None:

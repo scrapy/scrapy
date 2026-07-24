@@ -242,7 +242,12 @@ class TestS3FeedStorage:
         assert storage.secret_key == "uri_secret"
 
     @coroutine_test
-    async def test_store(self):
+    async def test_store(self, monkeypatch):
+        """The blocking boto3 client is used when asyncio/aioboto3 support is
+        not available."""
+        monkeypatch.setattr(
+            "scrapy.extensions.feedexport.is_aioboto3_available", lambda: False
+        )
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
             "AWS_SECRET_ACCESS_KEY": "secret_key",
@@ -382,7 +387,10 @@ class TestS3FeedStorage:
         assert storage.s3_client._client_config.region_name == region_name
 
     @coroutine_test
-    async def test_store_without_acl(self):
+    async def test_store_without_acl(self, monkeypatch):
+        monkeypatch.setattr(
+            "scrapy.extensions.feedexport.is_aioboto3_available", lambda: False
+        )
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
             "access_key",
@@ -402,7 +410,10 @@ class TestS3FeedStorage:
         assert acl is None
 
     @coroutine_test
-    async def test_store_with_acl(self):
+    async def test_store_with_acl(self, monkeypatch):
+        monkeypatch.setattr(
+            "scrapy.extensions.feedexport.is_aioboto3_available", lambda: False
+        )
         storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
         )
@@ -414,6 +425,40 @@ class TestS3FeedStorage:
         await maybe_deferred_to_future(storage.store(BytesIO(b"test file")))
         acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
         assert acl == "custom-acl"
+
+    @pytest.mark.requires_aioboto3
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_store_async(self, monkeypatch):
+        """The genuinely-asynchronous aioboto3 client is used when
+        asyncio/aioboto3 support is available."""
+        import aioboto3  # noqa: PLC0415
+
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
+        )
+
+        client = mock.MagicMock()
+        client.upload_fileobj = mock.AsyncMock()
+        client_cm = mock.MagicMock()
+        client_cm.__aenter__ = mock.AsyncMock(return_value=client)
+        client_cm.__aexit__ = mock.AsyncMock(return_value=False)
+
+        file = BytesIO(b"test file")
+        with mock.patch.object(
+            aioboto3.Session, "client", return_value=client_cm
+        ) as client_call:
+            await maybe_deferred_to_future(storage.store(file))
+
+        client_call.assert_called_once_with("s3", **storage._client_kwargs)
+        client.upload_fileobj.assert_awaited_once_with(
+            Fileobj=file,
+            Bucket="mybucket",
+            Key="export.csv",
+            ExtraArgs={"ACL": "custom-acl"},
+        )
+        client_cm.__aexit__.assert_awaited_once()
+        assert file.closed
 
     def test_overwrite_default(self):
         with LogCapture() as log:

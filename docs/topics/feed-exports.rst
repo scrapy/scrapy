@@ -233,6 +233,12 @@ storage backend is: ``True``.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
+.. versionchanged:: VERSION
+    When :ref:`asyncio support is available <using-asyncio>` and aioboto3_ is
+    installed (it is part of the :ref:`s3 <extras>` extra), feeds are uploaded
+    using genuinely-asynchronous I/O. Otherwise, the blocking boto3_ client is
+    run in a separate thread.
+
 
 .. _topics-feed-storage-gcs:
 
@@ -790,6 +796,8 @@ source spider in the feed URI:
 
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
+.. _aioboto3: https://github.com/terricain/aioboto3
 .. _Amazon S3: https://aws.amazon.com/s3/
+.. _boto3: https://github.com/boto/boto3
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/
