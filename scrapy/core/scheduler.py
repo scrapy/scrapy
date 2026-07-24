@@ -538,22 +538,14 @@ class Scheduler(BaseScheduler):
 class ThrottlerAwareScheduler(Scheduler):
     """A :setting:`SCHEDULER` that only ever hands the engine requests that
     their :ref:`throttling scopes <throttling-scopes>` allow to be sent **right
-    now**.
+    now**, so held-back requests occupy no concurrency slot (only the memory
+    needed to track each distinct scope set) and cannot cause the head-of-line
+    blocking described under :ref:`throttler-aware-scheduler`.
 
-    The default scheduler hands requests to the engine as concurrency allows
-    and lets them wait at the throttling gate
-    (:meth:`~scrapy.throttler.ThrottlerProtocol.acquire`) while holding
-    a concurrency slot. When a crawl mixes heavily-throttled scopes with
-    unthrottled ones, enough throttled requests waiting on a clock can fill
-    :setting:`CONCURRENT_REQUESTS` and starve unthrottled requests that could be
-    sent right away. This scheduler instead withholds a request until it is
-    sendable, so held-back requests occupy neither concurrency slots nor memory
-    (beyond what is needed to track each distinct scope set) and cannot starve
-    other scopes.
-
-    It also honors the per-request :reqmeta:`delay`, holding an
-    individual request back without blocking others that share its scopes, which
-    the default scheduler cannot do.
+    The same applies to the per-request :reqmeta:`delay`: the delayed request
+    waits in the scheduler queue, whereas under the default scheduler it waits at
+    the throttling gate (:meth:`~scrapy.throttler.ThrottlerProtocol.acquire`)
+    while occupying a concurrency slot for the whole delay.
 
     When several requests could be sent at the same time, the one with the
     highest request :attr:`~scrapy.Request.priority` is sent first; ties are

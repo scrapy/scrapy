@@ -337,6 +337,11 @@ Without a higher priority, a backlog of requests ahead of it in a FIFO queue
 could keep it waiting well past the configured delay; a higher priority puts it
 at the front of the queue, so it goes out right after its delay.
 
+.. note:: Under the default scheduler a delayed request occupies a concurrency
+    slot for the whole delay while it waits at the throttling gate. The
+    :ref:`throttling-aware scheduler <throttler-aware-scheduler>` instead holds
+    it back in the queue, so its delay costs no concurrency slot.
+
 .. reqmeta:: dont_throttle
 
 Excluding a request from throttling state
