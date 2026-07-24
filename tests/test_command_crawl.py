@@ -143,3 +143,49 @@ class MySpider(scrapy.Spider):
         assert "[myspider] DEBUG: It works!" in log
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
+
+    def test_spider_reactor_without_force_crawler_process(
+        self, proj_path: Path
+    ) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    custom_settings = {
+        'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor',
+    }
+
+    async def start(self):
+        self.logger.debug('It works!')
+        return
+        yield
+"""
+        log = self.get_log(spider_code, proj_path)
+        assert "[myspider] DEBUG: It works!" not in log
+        assert "does not match the one requested by spider 'myspider'" in log
+        assert "FORCE_CRAWLER_PROCESS=True" in log
+        assert "Spider closed (finished)" not in log
+
+    def test_spider_reactor_with_force_crawler_process(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    custom_settings = {
+        'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor',
+    }
+
+    async def start(self):
+        self.logger.debug('It works!')
+        return
+        yield
+"""
+        log = self.get_log(
+            spider_code, proj_path, args=("-s", "FORCE_CRAWLER_PROCESS=True")
+        )
+        assert "[myspider] DEBUG: It works!" in log
+        assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
+        assert "does not match the one requested by spider 'myspider'" not in log
+        assert "Spider closed (finished)" in log

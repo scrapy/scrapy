@@ -30,6 +30,7 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import (
     _asyncio_reactor_path,
     install_reactor,
@@ -132,7 +133,7 @@ class Crawler:
                 )
             if reactor_class:
                 # We need to check that the correct reactor is installed.
-                verify_installed_reactor(reactor_class)
+                self._verify_installed_reactor(reactor_class)
                 if is_asyncio_reactor_installed() and event_loop:
                     verify_installed_asyncio_event_loop(event_loop)
 
@@ -154,6 +155,29 @@ class Crawler:
         logger.info(
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
+
+    def _verify_installed_reactor(self, reactor_class: str) -> None:
+        try:
+            verify_installed_reactor(reactor_class)
+        except RuntimeError:
+            if (
+                self._init_reactor
+                or self.settings.getbool("FORCE_CRAWLER_PROCESS")
+                or not is_asyncio_reactor_installed()
+            ):
+                raise
+            from twisted.internet import reactor
+
+            raise RuntimeError(
+                f"The installed reactor ({global_object_name(type(reactor))}) "
+                f"does not match the one requested by spider "
+                f"{self.spidercls.name!r} ({reactor_class}). When running "
+                f"'scrapy crawl' (and similar commands), the TWISTED_REACTOR "
+                f"value from per-spider settings is only applied if "
+                f"FORCE_CRAWLER_PROCESS is True. Set FORCE_CRAWLER_PROCESS=True "
+                f"(in the project settings or with '-s FORCE_CRAWLER_PROCESS=True' "
+                f"on the command line) to use the spider's reactor."
+            ) from None
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.

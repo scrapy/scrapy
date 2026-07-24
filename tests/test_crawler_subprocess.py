@@ -346,10 +346,12 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         log = self.run_script("twisted_reactor_custom_settings_select.py")
         assert "Spider closed (finished)" not in log
         assert (
-            "(twisted.internet.asyncioreactor.AsyncioSelectorReactor) "
-            "does not match the requested one "
+            "The installed reactor "
+            "(twisted.internet.asyncioreactor.AsyncioSelectorReactor) does not "
+            "match the one requested by spider 'asyncio_reactor' "
             "(twisted.internet.selectreactor.SelectReactor)"
         ) in log
+        assert "FORCE_CRAWLER_PROCESS=True" in log
 
     @pytest.mark.requires_uvloop
     def test_asyncio_custom_loop_custom_settings_same(self) -> None:
