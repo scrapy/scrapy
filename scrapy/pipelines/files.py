@@ -215,6 +215,7 @@ class S3FilesStore:
                     self._aio_client_cm = get_session().create_client(
                         "s3", **self._client_kwargs
                     )
+                    # pylint: disable-next=unnecessary-dunder-call
                     self._aio_client = await self._aio_client_cm.__aenter__()
         return self._aio_client
 
