@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import attr
 from twisted.internet import defer
 from twisted.internet.base import ReactorBase, ThreadedResolver
 from twisted.internet.interfaces import (
@@ -143,6 +144,8 @@ class CachingHostnameResolver:
             )
         resolutionReceiver.resolutionBegan(HostResolution(hostName))
         for addr in addresses:
+            if getattr(addr, "port", portNumber) != portNumber:
+                addr = attr.evolve(addr, port=portNumber)  # noqa: PLW2901
             resolutionReceiver.addressResolved(addr)
         resolutionReceiver.resolutionComplete()
         return resolutionReceiver
