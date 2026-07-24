@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import logging
 import tempfile
+from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
 import pytest
@@ -17,6 +21,9 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.test_scheduler import MockDownloader
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from scrapy.http.request import CallbackT
 
 
 class TestPriorityQueue:
@@ -236,7 +243,7 @@ class TestDownloaderAwarePriorityQueue:
         assert slots == ["slot-a", "slot-b", "slot-c", "slot-a"]
 
     def test_pop_prefers_slot_with_fewer_active_downloads(self):
-        throttler = self.queue._downloader_interface._throttler
+        throttler = self.queue._throttler
         assert throttler is not None
 
         req_a = Request("https://example.org/a")
@@ -249,8 +256,8 @@ class TestDownloaderAwarePriorityQueue:
         for req in (req_a, req_b, req_c):
             self.queue.push(req)
 
-        throttler._get_scope_manager("slot-a")._active = 1
-        throttler._get_scope_manager("slot-c")._active = 1
+        throttler.get_scope_manager("slot-a")._active = 1
+        throttler.get_scope_manager("slot-c")._active = 1
 
         popped = self.queue.pop()
         assert popped.url == req_b.url
@@ -459,6 +466,36 @@ class TestThrottlerAwarePriorityQueue:
         # Its delay is marked consumed, so it does not re-block on resume.
         assert popped.meta["_throttler_delayed"] is True
         resumed.close()
+
+    @coroutine_test
+    async def test_delayed_unserializable_request_dropped(self, caplog):
+        # A held-back request defers disk serialization until it is promoted; a
+        # non-serializable one is dropped with a warning and a stat bump instead
+        # of taking the disk queue down.
+        crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
+        temp_dir = tempfile.mkdtemp()
+        queue = build_from_crawler(
+            ThrottlerAwarePriorityQueue,
+            crawler,
+            downstream_queue_cls=PickleFifoDiskQueue,
+            key=temp_dir,
+        )
+        request = Request(
+            "http://example.com/slow",
+            meta={"delay": 1000.0},
+            callback=cast("CallbackT", lambda response: None),
+        )
+        await self._push(queue, crawler, request)
+        assert len(queue) == 1  # held in memory
+
+        with caplog.at_level(logging.WARNING):
+            queue._promote_ready(queue._delayed[0][0])
+
+        assert "Unable to serialize request" in caplog.text
+        assert crawler.stats is not None
+        assert crawler.stats.get_value("scheduler/unserializable") == 1
+        assert len(queue) == 0
+        queue.close()
 
     @coroutine_test
     async def test_least_loaded_first(self):

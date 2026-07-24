@@ -57,6 +57,45 @@ class TestRedirectMiddleware(Base.Test):
         _test("POST", status=308)
         _test("HEAD", status=308)
 
+    def test_retry_after_sets_delay(self):
+        url = "http://www.example.com/302"
+        url2 = "http://www.example.com/redirected"
+        # A source request whose delay was already honored must not leak that
+        # state into the fresh redirect request.
+        req = Request(url, meta={"_throttler_delayed": True})
+        rsp = Response(url, headers={"Location": url2, "Retry-After": "5"}, status=302)
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.meta["delay"] == 5.0
+        assert "_throttler_delayed" not in req2.meta
+
+    def test_retry_after_capped(self):
+        crawler = get_crawler(DefaultSpider, settings_dict={"BACKOFF_MAX_DELAY": 2.0})
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
+        url = "http://www.example.com/302"
+        url2 = "http://www.example.com/redirected"
+        rsp = Response(url, headers={"Location": url2, "Retry-After": "30"}, status=302)
+        req2 = mw.process_response(Request(url), rsp)
+        assert req2.meta["delay"] == 2.0
+
+    def test_retry_after_disabled(self):
+        crawler = get_crawler(DefaultSpider, settings_dict={"BACKOFF_MAX_DELAY": 0})
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
+        url = "http://www.example.com/302"
+        url2 = "http://www.example.com/redirected"
+        rsp = Response(url, headers={"Location": url2, "Retry-After": "5"}, status=302)
+        req2 = mw.process_response(Request(url), rsp)
+        assert "delay" not in req2.meta
+
+    def test_no_retry_after_leaves_no_delay(self):
+        url = "http://www.example.com/302"
+        url2 = "http://www.example.com/redirected"
+        rsp = Response(url, headers={"Location": url2}, status=302)
+        req2 = self.mw.process_response(Request(url), rsp)
+        assert "delay" not in req2.meta
+
     @pytest.mark.parametrize("status", [301, 302, 303])
     def test_method_becomes_get(self, status):
         source_url = f"http://www.example.com/{status}"

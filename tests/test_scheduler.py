@@ -17,7 +17,7 @@ from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
@@ -66,6 +66,9 @@ class MockCrawler(Crawler):
             "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         }
         super().__init__(Spider, settings)
+        self.throttler = build_from_crawler(
+            load_object(self.settings["THROTTLER"]), self
+        )
         self.engine = Mock(downloader=MockDownloader())
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
@@ -568,6 +571,7 @@ class TestIntegrationWithThrottlerAwareScheduler:
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield crawler.crawl(start_urls)
+            assert crawler.stats is not None
             assert crawler.stats.get_value("downloader/response_count") == len(
                 start_urls
             )
@@ -602,6 +606,7 @@ class TestIntegrationWithThrottlerAwareScheduler:
                 },
             )
             yield crawler.crawl(base_url=base_url)
+            assert crawler.stats is not None
             assert crawler.stats.get_value("downloader/response_count") == 2
 
     @inline_callbacks_test
@@ -622,6 +627,7 @@ class TestIntegrationWithThrottlerAwareScheduler:
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 4
             yield crawler.crawl(start_urls)
+            assert crawler.stats is not None
             assert crawler.stats.get_value("downloader/response_count") == len(
                 start_urls
             )

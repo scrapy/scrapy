@@ -1,26 +1,28 @@
 from __future__ import annotations
 
 import logging
+import warnings
+from typing import Any, cast
 
 import pytest
 
 from scrapy import signals
-from scrapy.exceptions import DownloadTimeoutError
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.settings import default_settings
+from scrapy.settings import Settings, default_settings
 from scrapy.throttler import (
+    RequestScopes,
     Throttler,
     ThrottlingScopeManager,
-    _add_bare_scope,
-    _parse_ratelimit_reset,
-    _parse_retry_after,
+    _default_scope_concurrency,
     _to_scope_dict,
+    _warn_on_deprecated_concurrency,
     add_scope,
     iter_scope_quota_amounts,
     iter_scopes,
     scope_cache,
-    update_scope_backoff,
 )
+from scrapy.utils._headers import _parse_ratelimit_reset, _parse_retry_after
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
@@ -28,14 +30,35 @@ from tests.spiders import SimpleSpider
 from tests.utils.decorators import coroutine_test
 
 
-def _manager(settings=None):
+def _manager(settings: dict[str, Any] | None = None) -> Throttler:
     crawler = get_crawler(settings_dict=settings)
     return Throttler.from_crawler(crawler)
 
 
-def _scope_manager(settings=None, config=None):
+def _scope_manager(
+    settings: dict[str, Any] | None = None, config: dict[str, Any] | None = None
+) -> ThrottlingScopeManager:
     crawler = get_crawler(settings_dict=settings)
     return ThrottlingScopeManager.from_crawler(crawler, config or {"id": "example.com"})
+
+
+def _scope(manager: Throttler, scope_id: str) -> ThrottlingScopeManager:
+    """Return the concrete scope manager for *scope_id*, for tests that inspect
+    its private state (``get_scope_manager`` is only typed to return the
+    protocol)."""
+    manager_ = manager.get_scope_manager(scope_id)
+    assert isinstance(manager_, ThrottlingScopeManager)
+    return manager_
+
+
+def _scope_managers(crawler: Any) -> list[ThrottlingScopeManager]:
+    """Return the concrete scope managers a crawl created, for integration
+    tests that inspect their private state."""
+    throttler = crawler.throttler
+    assert isinstance(throttler, Throttler)
+    managers = list(throttler._scope_managers.values())
+    assert all(isinstance(m, ThrottlingScopeManager) for m in managers)
+    return cast("list[ThrottlingScopeManager]", managers)
 
 
 class _FakeRobotParser:
@@ -45,16 +68,21 @@ class _FakeRobotParser:
     which case it is raised to emulate a backend-specific failure.
     """
 
-    def __init__(self, delay):
+    def __init__(self, delay: float | Exception | None):
         self._delay = delay
 
-    def crawl_delay(self, useragent):
+    def crawl_delay(self, useragent: str) -> float | None:
         if isinstance(self._delay, Exception):
             raise self._delay
         return self._delay
 
 
-def _response(status=200, headers=None, url="http://example.com", meta=None):
+def _response(
+    status: int = 200,
+    headers: dict[str, str] | None = None,
+    url: str = "http://example.com",
+    meta: dict[str, Any] | None = None,
+) -> Response:
     request = Request(url, meta=meta or {})
     return Response(url, status=status, headers=headers or {}, request=request)
 
@@ -118,7 +146,7 @@ class TestThrottler:
 
         class CrawlerlessManager:
             @scope_cache
-            async def get_scopes(self, request):
+            async def get_scopes(self, request: Request) -> RequestScopes:
                 return "scope"
 
         request = Request("http://example.com/a")
@@ -126,26 +154,24 @@ class TestThrottler:
         assert request.meta[_RESOLVED_SCOPES_META_KEY] == "scope"
 
     @coroutine_test
-    async def test_backoff_reuses_persisted_scopes(self):
-        # Once get_scopes has resolved and persisted the scopes, the backoff
-        # path reuses them instead of resolving again.
-        calls = []
+    async def test_get_resolved_scopes_reuses_persisted_scopes(self):
+        # Once get_scopes has resolved and persisted the scopes, the synchronous
+        # get_resolved_scopes accessor reuses them instead of resolving again.
+        calls: list[str] = []
 
         class CountingManager(Throttler):
             @scope_cache
-            async def get_scopes(self, request):
+            async def get_scopes(self, request: Request) -> RequestScopes:
                 calls.append(request.url)
                 return urlparse_cached(request).netloc
 
-        manager = CountingManager(
-            get_crawler(settings_dict={"BACKOFF_EXCEPTIONS": ["builtins.ValueError"]})
-        )
+        manager = CountingManager(get_crawler())
         request = Request("http://example.com/a")
         await manager.get_scopes(request)
         assert calls == ["http://example.com/a"]
-        assert (
-            await manager.get_exception_backoff(request, ValueError()) == "example.com"
-        )
+        assert list(iter_scopes(manager.get_resolved_scopes(request))) == [
+            "example.com"
+        ]
         # No second resolution.
         assert calls == ["http://example.com/a"]
 
@@ -176,21 +202,33 @@ class TestThrottler:
         redirected = request.replace(url="http://other.example/a")
         assert await manager.get_scopes(redirected) == "other.example"
 
-    @coroutine_test
-    async def test_get_initial_backoff_none(self):
-        manager = _manager()
-        assert await manager.get_initial_backoff() is None
-
     def test_scope_manager_class_in_config(self):
         manager = _manager(
             {"THROTTLING_SCOPES": {"example.com": {"manager": ThrottlingScopeManager}}}
         )
-        scope = manager._get_scope_manager("example.com")
+        scope = manager.get_scope_manager("example.com")
         assert isinstance(scope, ThrottlingScopeManager)
+
+    def test_get_scopes_key_single(self):
+        manager = _manager()
+        assert manager.get_scopes_key(Request("http://example.com/a")) == "example.com"
+
+    def test_get_scopes_key_empty(self):
+        manager = _manager()
+        request = Request("http://example.com/a", meta={"throttling_scopes": []})
+        assert manager.get_scopes_key(request) == ""
+
+    def test_get_scopes_key_multiple(self):
+        manager = _manager()
+        request = Request(
+            "http://example.com/a", meta={"throttling_scopes": {"b": 1.0, "a": 2.0}}
+        )
+        # Multiple scopes yield a deterministic (sorted) JSON key.
+        assert manager.get_scopes_key(request) == '["a", "b"]'
 
     def test_release_frees_concurrency(self):
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         request = Request("http://example.com")
         scope.record_sent(now=0.0)
         manager._reserved[request] = [(scope, None)]
@@ -211,7 +249,7 @@ class TestThrottler:
         # Drive acquire() the way the engine does, so it runs as a real task that
         # can await the slot event under the asyncio reactor.
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(r1)))
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         assert scope.concurrency_blocked() is True
         assert scope.concurrency_blocked() is True
         # acquire(r2) must block until r1 frees the slot; release it on the next
@@ -221,98 +259,22 @@ class TestThrottler:
         assert scope.concurrency_blocked() is True
         assert r2 in manager._reserved
 
-    def test_apply_backoff_reconciles_quota_without_backoff(self):
+    def test_reconcile_quota_without_backoff(self):
         manager = _manager({"THROTTLING_SCOPES": {"cost": {"quota": 100.0}}})
-        scope = manager._get_scope_manager("cost")
-        manager._apply_backoff({"cost": {"consumed": 5.0}})
+        scope = _scope(manager, "cost")
+        manager.reconcile_quota("cost", consumed=5.0)
         # Quota was reconciled but no backoff step was applied.
         assert scope._consumed == pytest.approx(5.0)
         assert scope._delay == scope._base_delay
         assert scope._max_unsafe is None
 
-    def test_apply_backoff_delay_and_consumed(self):
+    def test_back_off_and_reconcile_quota(self):
         manager = _manager({"THROTTLING_SCOPES": {"cost": {"quota": 100.0}}})
-        scope = manager._get_scope_manager("cost")
-        manager._apply_backoff({"cost": {"delay": 5.0, "consumed": 2.0}})
+        scope = _scope(manager, "cost")
+        manager.back_off("cost", delay=5.0)
+        manager.reconcile_quota("cost", consumed=2.0)
         assert scope._consumed == pytest.approx(2.0)
         assert scope._delay > scope._base_delay
-
-    @coroutine_test
-    async def test_response_backoff_non_backoff_code(self):
-        manager = _manager()
-        assert await manager.get_response_backoff(_response(status=200)) is None
-
-    @coroutine_test
-    async def test_response_backoff_429_without_header(self):
-        manager = _manager()
-        assert (
-            await manager.get_response_backoff(_response(status=429)) == "example.com"
-        )
-
-    @pytest.mark.parametrize(
-        ("header", "expected_delay"),
-        [
-            ({"Retry-After": "7"}, 7.0),
-            ({"RateLimit-Reset": "12"}, 12.0),
-        ],
-        ids=["retry-after", "ratelimit-reset"],
-    )
-    @coroutine_test
-    async def test_response_backoff_delay_header(self, header, expected_delay):
-        manager = _manager()
-        data = await manager.get_response_backoff(_response(status=429, headers=header))
-        assert data == {"example.com": {"delay": expected_delay}}
-
-    @coroutine_test
-    async def test_response_backoff_retry_after_http_date(self):
-        manager = _manager()
-        # A date far in the past yields no positive delay.
-        data = await manager.get_response_backoff(
-            _response(
-                status=503,
-                headers={"Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT"},
-            )
-        )
-        assert data == "example.com"
-
-    @coroutine_test
-    async def test_response_backoff_max_of_both_headers(self):
-        manager = _manager()
-        data = await manager.get_response_backoff(
-            _response(
-                status=429,
-                headers={"Retry-After": "5", "RateLimit-Reset": "9"},
-            )
-        )
-        assert data == {"example.com": {"delay": 9.0}}
-
-    @coroutine_test
-    async def test_response_backoff_dont_track(self):
-        manager = _manager()
-        response = _response(status=429, meta={"dont_throttle": True})
-        assert await manager.get_response_backoff(response) is None
-
-    @pytest.mark.parametrize(
-        ("exception", "expected"),
-        [
-            (DownloadTimeoutError(), "example.com"),
-            (ValueError(), None),
-        ],
-        ids=["tracked", "untracked"],
-    )
-    @coroutine_test
-    async def test_exception_backoff(self, exception, expected):
-        manager = _manager()
-        request = Request("http://example.com")
-        assert await manager.get_exception_backoff(request, exception) == expected
-
-    @coroutine_test
-    async def test_exception_backoff_dont_track(self):
-        manager = _manager()
-        request = Request("http://example.com", meta={"dont_throttle": True})
-        assert (
-            await manager.get_exception_backoff(request, DownloadTimeoutError()) is None
-        )
 
     @pytest.mark.parametrize(
         ("settings", "parser_delay", "expected_base_delay"),
@@ -331,13 +293,13 @@ class TestThrottler:
             robotparser=_FakeRobotParser(parser_delay),
             request=Request("http://example.com/page"),
         )
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         assert scope._base_delay == expected_base_delay
 
     def test_apply_robots_crawl_delay(self):
         manager = _manager({"ROBOTSTXT_OBEY": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
         manager._apply_robots_crawl_delay("example.com", 3.0)
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         assert scope._base_delay == 3.0
         assert scope.can_send(now=0) == 0  # nothing sent yet
         scope.record_sent(now=0)
@@ -348,12 +310,12 @@ class TestThrottler:
             {"ROBOTSTXT_OBEY": True, "THROTTLER_ROBOTSTXT_MAX_DELAY": 2.0}
         )
         manager._apply_robots_crawl_delay("example.com", 30.0)
-        assert manager._get_scope_manager("example.com")._base_delay == 2.0
+        assert _scope(manager, "example.com")._base_delay == 2.0
 
     def test_apply_robots_crawl_delay_disabled(self):
         manager = _manager({"ROBOTSTXT_OBEY": True, "THROTTLER_ROBOTSTXT_OBEY": False})
         manager._apply_robots_crawl_delay("example.com", 3.0)
-        assert manager._get_scope_manager("example.com")._base_delay == 0.0
+        assert _scope(manager, "example.com")._base_delay == 0.0
 
     def test_apply_robots_crawl_delay_ignored(self, caplog):
         manager = _manager(
@@ -368,11 +330,11 @@ class TestThrottler:
             manager._apply_robots_crawl_delay("example.com", 3.0)
         # No warning is logged and the crawl-delay is not applied.
         assert "Crawl-delay" not in caplog.text
-        assert manager._get_scope_manager("example.com")._base_delay == 0.5
+        assert _scope(manager, "example.com")._base_delay == 0.5
 
     def test_scope_eviction(self):
         manager = _manager({"THROTTLING_SCOPE_MAX_IDLE": 100.0})
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         scope.record_sent(now=0.0)
         scope.record_done(now=0.0)
         # Not idle yet.
@@ -388,7 +350,7 @@ class TestThrottler:
         manager = _manager(
             {"THROTTLING_SCOPE_MAX_IDLE": 100.0, "BACKOFF_MAX_DELAY": 100_000.0}
         )
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         scope.record_backoff(delay=10_000.0, now=0.0)
         manager._last_eviction = None
         manager._maybe_evict(now=5_000.0)
@@ -402,7 +364,7 @@ class TestThrottler:
         # must be the hook that evicts idle scope managers; otherwise they pile
         # up unbounded on broad crawls.
         manager = _manager({"THROTTLING_SCOPE_MAX_IDLE": 1.0})
-        idle = manager._get_scope_manager("idle.example")
+        idle = _scope(manager, "idle.example")
         # Make it look long-idle: a finished send in the distant monotonic past.
         idle.record_sent(now=0.0)
         idle.record_done(now=0.0)
@@ -415,7 +377,7 @@ class TestThrottler:
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 2})
         # Use three scopes in order; each send/done leaves them idle.
         for scope_id in ("a.example", "b.example", "c.example"):
-            scope = manager._get_scope_manager(scope_id)
+            scope = _scope(manager, scope_id)
             scope.record_sent(now=0.0)
             scope.record_done(now=0.0)
         # The limit caps live managers at 2, dropping the least-recently-used.
@@ -426,13 +388,13 @@ class TestThrottler:
         # Two scopes with in-flight requests cannot be evicted, so the limit is
         # exceeded rather than dropping a scope that still tracks a live send.
         for scope_id in ("a.example", "b.example"):
-            manager._get_scope_manager(scope_id).record_sent(now=0.0)
+            _scope(manager, scope_id).record_sent(now=0.0)
         assert set(manager._scope_managers) == {"a.example", "b.example"}
 
     def test_scope_limit_disabled(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})
         for i in range(5):
-            scope = manager._get_scope_manager(f"{i}.example")
+            scope = _scope(manager, f"{i}.example")
             scope.record_sent(now=0.0)
             scope.record_done(now=0.0)
         assert len(manager._scope_managers) == 5
@@ -680,10 +642,11 @@ class TestThrottlingScopeManager:
         scope.record_done(now=0.0)
         assert event.called
 
-    def test_set_concurrency_respects_min(self):
-        scope = _scope_manager(config={"id": "x", "min_concurrency": 3})
-        scope.set_concurrency(1)
-        assert scope._concurrency == 3
+    def test_set_concurrency_clamps_to_one(self):
+        scope = _scope_manager(config={"id": "x", "concurrency": 4})
+        # A concurrency below 1 is clamped up to 1.
+        scope.set_concurrency(0)
+        assert scope._concurrency == 1
         scope.set_concurrency(5)
         assert scope._concurrency == 5
 
@@ -843,7 +806,7 @@ class TestThrottlerReadiness:
         # A reserved request fast-paths through acquire() without re-recording
         # the send or waiting for the delay.
         await manager.acquire(request)
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         assert scope._active == 1  # reserve recorded exactly one send
 
     @coroutine_test
@@ -904,50 +867,26 @@ class TestScopeHelpers:
         assert list(iter_scope_quota_amounts(["a", "b"])) == [("a", None), ("b", None)]
 
     def test_to_scope_dict(self):
-        assert _to_scope_dict({"a": 1}, list) == {"a": 1}
-        assert _to_scope_dict(None, list) == {}
-        assert _to_scope_dict("a", lambda: None) == {"a": None}
-        assert _to_scope_dict(["a", "b"], dict) == {"a": {}, "b": {}}
+        assert _to_scope_dict({"a": 1}) == {"a": 1}
+        assert _to_scope_dict(None) == {}
+        assert _to_scope_dict("a") == {"a": None}
+        assert _to_scope_dict(["a", "b"]) == {"a": None, "b": None}
         with pytest.raises(TypeError):
-            _to_scope_dict(123, dict)
-
-    def test_add_bare_scope(self):
-        assert _add_bare_scope(None, "a", None) == "a"
-        assert _add_bare_scope("a", "a", None) == "a"
-        assert _add_bare_scope("a", "b", None) == {"a", "b"}
-        assert _add_bare_scope({"a": 1}, "b", {}) == {"a": 1, "b": {}}
-        assert _add_bare_scope({"a": 1}, "a", {}) == {"a": 1}
-        assert _add_bare_scope(["a"], "b", None) == {"a", "b"}
-        assert _add_bare_scope(["a"], "a", None) == ["a"]
-        with pytest.raises(TypeError):
-            _add_bare_scope(123, "a", None)
+            _to_scope_dict(123)  # type: ignore[arg-type]
 
     def test_add_scope_without_value(self):
-        assert add_scope(None, "a") == "a"
-        assert add_scope("a", "b") == {"a", "b"}
+        # add_scope always returns a {scope_id: quota} dict, using None as the
+        # quota of scopes added without one.
+        assert add_scope(None, "a") == {"a": None}
+        assert add_scope("a", "b") == {"a": None, "b": None}
 
     def test_add_scope_with_value(self):
         assert add_scope(None, "a", 2.0) == {"a": 2.0}
         assert add_scope({"a": None}, "b", 3.0) == {"a": None, "b": 3.0}
 
-    def test_add_scope_with_value_rejects_non_dict_entry(self):
+    def test_add_scope_with_value_rejects_existing_entry(self):
         with pytest.raises(TypeError):
             add_scope({"a": 1.0}, "a", 2.0)
-
-    def test_update_scope_backoff_without_params(self):
-        assert update_scope_backoff(None, "a") == "a"
-        assert update_scope_backoff("a", "b") == {"a", "b"}
-
-    def test_update_scope_backoff_with_params(self):
-        assert update_scope_backoff(None, "a", delay=5.0, consumed=2.0) == {
-            "a": {"delay": 5.0, "consumed": 2.0}
-        }
-        assert update_scope_backoff({"a": {}}, "a", delay=1.0) == {"a": {"delay": 1.0}}
-        assert update_scope_backoff(None, "a", consumed=2.0) == {"a": {"consumed": 2.0}}
-
-    def test_update_scope_backoff_rejects_non_dict_entry(self):
-        with pytest.raises(TypeError):
-            update_scope_backoff({"a": 1.0}, "a", delay=1.0)
 
 
 class TestThrottlerEdges:
@@ -1033,20 +972,12 @@ class TestThrottlerEdges:
         # The still-pending m2 event is discarded from its waiter list.
         assert m2._slot_waiters == []
 
-    @coroutine_test
-    async def test_process_exception_applies_backoff(self):
-        manager = _manager()
-        request = Request("http://example.com/a")
-        await manager.process_exception(request, DownloadTimeoutError())
-        scope = manager._get_scope_manager("example.com")
-        assert scope._delay > scope._base_delay
-
-    def test_apply_backoff_debug_logging(self, caplog):
+    def test_back_off_debug_logging(self, caplog):
         manager = _manager({"THROTTLER_DEBUG": True})
         with caplog.at_level(logging.DEBUG, logger="scrapy.throttler"):
-            manager._apply_backoff("example.com")
+            manager.back_off("example.com")
         assert "Backoff for scope" in caplog.text
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         assert scope._delay > scope._base_delay
 
     def test_on_robots_parsed_disabled(self):
@@ -1066,7 +997,7 @@ class TestThrottlerEdges:
             manager._apply_robots_crawl_delay("example.com", 3.0)
         assert "Crawl-delay" in caplog.text
         # The configured value takes precedence (crawl-delay not applied).
-        assert manager._get_scope_manager("example.com")._base_delay == 0.5
+        assert _scope(manager, "example.com")._base_delay == 0.5
 
     def test_apply_robots_crawl_delay_debug_logging(self, caplog):
         manager = _manager({"ROBOTSTXT_OBEY": True, "THROTTLER_DEBUG": True})
@@ -1076,7 +1007,7 @@ class TestThrottlerEdges:
 
     def test_maybe_evict_disabled(self):
         manager = _manager({"THROTTLING_SCOPE_MAX_IDLE": 0})
-        scope = manager._get_scope_manager("example.com")
+        scope = _scope(manager, "example.com")
         scope.record_sent(now=0.0)
         scope.record_done(now=0.0)
         # Eviction disabled (max idle <= 0): the scope is kept regardless.
@@ -1146,6 +1077,72 @@ class TestThrottlingScopeManagerEdges:
         # A scope that was never used (no last_seen) is idle.
         assert scope.is_idle(now=0.0, max_idle=1.0) is True
 
+    def test_get_load_with_zero_limit(self):
+        # No scope concurrency limit and CONCURRENT_REQUESTS=0 leaves a zero
+        # denominator; the load is reported as 0 instead of dividing by zero.
+        scope = _scope_manager(
+            {
+                "CONCURRENT_REQUESTS": 0,
+                "CONCURRENT_REQUESTS_PER_DOMAIN": 0,
+                "THROTTLING_SCOPE_CONCURRENCY": 0,
+            },
+            {"id": "x"},
+        )
+        assert scope._concurrency is None
+        scope.record_sent(now=0.0)
+        assert scope.get_load() == 0.0
+
+
+class TestConcurrencyBridging:
+    def _settings(
+        self, per_domain: int | None = None, scope: int | None = None
+    ) -> Settings:
+        settings = Settings()
+        if per_domain is not None:
+            settings.set(
+                "CONCURRENT_REQUESTS_PER_DOMAIN", per_domain, priority="spider"
+            )
+        if scope is not None:
+            settings.set("THROTTLING_SCOPE_CONCURRENCY", scope, priority="spider")
+        return settings
+
+    def test_default_when_neither_set(self):
+        # Neither setting is set explicitly: the historical per-domain default
+        # (8) is kept for backward compatibility over the scope default (1).
+        assert _default_scope_concurrency(Settings()) == 8
+
+    def test_per_domain_wins_when_higher_priority(self):
+        settings = self._settings(per_domain=5)
+        assert _default_scope_concurrency(settings) == 5
+
+    def test_scope_wins_when_higher_priority(self):
+        settings = self._settings(scope=3)
+        assert _default_scope_concurrency(settings) == 3
+
+    def test_scope_wins_on_explicit_tie(self):
+        # Both set at the same (higher-than-default) priority: the new setting
+        # wins.
+        settings = self._settings(per_domain=5, scope=3)
+        assert _default_scope_concurrency(settings) == 3
+
+    def test_warns_when_per_domain_set(self):
+        settings = self._settings(per_domain=5)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="CONCURRENT_REQUESTS_PER_DOMAIN setting is deprecated",
+        ):
+            _warn_on_deprecated_concurrency(settings)
+
+    def test_warns_when_neither_set(self):
+        with pytest.warns(ScrapyDeprecationWarning, match="effective per-scope"):
+            _warn_on_deprecated_concurrency(Settings())
+
+    def test_no_warning_when_scope_set(self):
+        settings = self._settings(scope=3)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _warn_on_deprecated_concurrency(settings)
+
 
 class TestThrottlerIntegration:
     @coroutine_test
@@ -1154,11 +1151,9 @@ class TestThrottlerIntegration:
         await crawler.crawl_async(
             mockserver.url("/status?n=429"), mockserver=mockserver
         )
-        throttler = crawler.throttler
-        assert throttler is not None
-        managers = throttler._scope_managers
+        managers = _scope_managers(crawler)
         assert managers, "no throttling scope was created"
-        assert any(m._delay > m._base_delay for m in managers.values())
+        assert any(m._delay > m._base_delay for m in managers)
 
     @coroutine_test
     async def test_backoff_recorded_on_download_error(self, mockserver):
@@ -1168,11 +1163,9 @@ class TestThrottlerIntegration:
         await crawler.crawl_async(
             mockserver.url("/drop?abort=1"), mockserver=mockserver
         )
-        throttler = crawler.throttler
-        assert throttler is not None
-        managers = throttler._scope_managers
+        managers = _scope_managers(crawler)
         assert managers, "no throttling scope was created"
-        assert any(m._delay > m._base_delay for m in managers.values())
+        assert any(m._delay > m._base_delay for m in managers)
 
     @coroutine_test
     async def test_no_backoff_on_200(self, mockserver):
@@ -1180,8 +1173,4 @@ class TestThrottlerIntegration:
         await crawler.crawl_async(
             mockserver.url("/status?n=200"), mockserver=mockserver
         )
-        throttler = crawler.throttler
-        assert throttler is not None
-        assert all(
-            m._delay == m._base_delay for m in throttler._scope_managers.values()
-        )
+        assert all(m._delay == m._base_delay for m in _scope_managers(crawler))
