@@ -154,7 +154,6 @@ __all__ = [
     "MAIL_TLS",
     "MAIL_USER",
     "MEMDEBUG_ENABLED",
-    "MEMDEBUG_NOTIFY",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
     "MEMUSAGE_LIMIT_MB",
@@ -240,7 +239,7 @@ BOT_NAME = "scrapybot"
 CLOSESPIDER_ERRORCOUNT = 0
 CLOSESPIDER_ITEMCOUNT = 0
 CLOSESPIDER_PAGECOUNT = 0
-CLOSESPIDER_TIMEOUT = 0
+CLOSESPIDER_TIMEOUT = 0.0
 CLOSESPIDER_PAGECOUNT_NO_ITEM = 0
 CLOSESPIDER_TIMEOUT_NO_ITEM = 0
 
@@ -470,7 +469,6 @@ MAIL_SSL = False
 MAIL_TLS = False
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
-MEMDEBUG_NOTIFY = []  # send memory debugging report by mail at engine shutdown
 
 MEMUSAGE_ENABLED = True
 MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
@@ -556,6 +554,7 @@ SPIDER_MIDDLEWARES_BASE = {
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 1000,
     # Spider side
 }
 

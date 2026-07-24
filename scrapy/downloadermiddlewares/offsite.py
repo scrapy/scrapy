@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import re
-import warnings
 from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
@@ -75,25 +74,10 @@ class OffsiteMiddleware:
         allowed_domains = getattr(spider, "allowed_domains", None)
         if not allowed_domains:
             return re.compile("")  # allow all by default
-        url_pattern = re.compile(r"^https?://.*$")
-        port_pattern = re.compile(r":\d+$")
         domains = []
         for domain in allowed_domains:
             if domain is None:
                 continue
-            if url_pattern.match(domain):
-                message = (
-                    "allowed_domains accepts only domains, not URLs. "
-                    f"Ignoring URL entry {domain} in allowed_domains."
-                )
-                warnings.warn(message, stacklevel=2)
-            elif port_pattern.search(domain):
-                message = (
-                    "allowed_domains accepts only domains without ports. "
-                    f"Ignoring entry {domain} in allowed_domains."
-                )
-                warnings.warn(message, stacklevel=2)
-            else:
-                domains.append(re.escape(domain))
+            domains.append(re.escape(domain))
         regex = rf"^(.*\.)?({'|'.join(domains)})$"
         return re.compile(regex)

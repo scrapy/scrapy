@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from io import StringIO
-from shutil import copytree
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -15,7 +15,8 @@ from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
-from tests.utils.cmdline import call, proc
+from tests.utils.base_commands import TestProjectBase
+from tests.utils.cmdline import call, proc, write_recording_editor
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -88,6 +89,7 @@ class TestCommandSettings:
             args=["-s", f"FEEDS={feeds_json}", "spider.py"]
         )
         self.command.process_options(args, opts)
+        assert self.command.settings is not None
         assert isinstance(self.command.settings["FEEDS"], scrapy.settings.BaseSettings)
         assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
 
@@ -105,29 +107,6 @@ class TestCommandSettings:
             "Optional Arguments\n==================\n\n"
             "Global Options\n--------------\n"
         )
-
-
-class TestProjectBase:
-    """A base class for tests that may need a Scrapy project."""
-
-    project_name = "testproject"
-
-    @pytest.fixture(scope="session")
-    def _proj_path_cached(self, tmp_path_factory: pytest.TempPathFactory) -> Path:
-        """Create a Scrapy project in a temporary directory and return its path.
-
-        Used as a cache for ``proj_path``.
-        """
-        tmp_path = tmp_path_factory.mktemp("proj")
-        call("startproject", self.project_name, cwd=tmp_path)
-        return tmp_path / self.project_name
-
-    @pytest.fixture
-    def proj_path(self, tmp_path: Path, _proj_path_cached: Path) -> Path:
-        """Copy a pre-generated Scrapy project into a temporary directory and return its path."""
-        proj_path = tmp_path / self.project_name
-        copytree(_proj_path_cached, proj_path)
-        return proj_path
 
 
 class TestCommandCrawlerProcess(TestProjectBase):
@@ -418,6 +397,31 @@ class TestViewCommand:
         command.add_options(parser)
         assert command.short_desc() == "Open URL in browser, as seen by Scrapy"
         assert "URL using the Scrapy downloader and show its" in command.long_desc()
+
+
+class TestEditCommand(TestProjectBase):
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell editor script"
+    )
+    def test_edit(self, proj_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider = proj_path / self.project_name / "spiders" / "example.py"
+        edited = proj_path / "edited.txt"
+        editor = proj_path / "fake-editor.sh"
+        write_recording_editor(editor)
+        monkeypatch.setenv("EDITOR", f"{editor} {edited}")
+
+        assert call("genspider", "example", "example.com", cwd=proj_path) == 0
+        returncode, _, err = proc("edit", "example", cwd=proj_path)
+
+        assert returncode == 0, err
+        assert (proj_path / edited.read_text(encoding="utf-8")).resolve() == (
+            spider.resolve()
+        )
+
+    def test_edit_spider_not_found(self, proj_path: Path) -> None:
+        returncode, _, err = proc("edit", "nonexistent", cwd=proj_path)
+        assert returncode == 1
+        assert "Spider not found: nonexistent" in err
 
 
 class TestHelpMessage(TestProjectBase):

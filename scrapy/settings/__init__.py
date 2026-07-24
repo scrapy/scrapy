@@ -25,7 +25,9 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    _SettingsInput: TypeAlias = SupportsItems[str, Any] | str | None
+    _SettingsInput: TypeAlias = (
+        SupportsItems[str, Any] | Iterable[tuple[str, Any]] | str | None
+    )
 
 
 SETTINGS_PRIORITIES: dict[str, int] = {
@@ -288,10 +290,10 @@ class BaseSettings(MutableMapping[str, Any]):
         -   ``['one', 'two']`` if set to ``'["one", "two"]'`` or ``'one,two'``
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         value = self.get(name, default)
         if value is None:
@@ -454,9 +456,10 @@ class BaseSettings(MutableMapping[str, Any]):
         """
         Store a key/value attribute with a given priority.
 
-        Settings should be populated *before* configuring the Crawler object
-        (through the :meth:`~scrapy.crawler.Crawler.configure` method),
-        otherwise they won't have any effect.
+        Settings should be populated *before* the Crawler object applies them
+        (in the :meth:`~scrapy.crawler.Crawler.crawl_async` or
+        :meth:`~scrapy.crawler.Crawler.crawl` method), otherwise they won't
+        have any effect.
 
         :param name: the setting name
         :type name: str
@@ -559,7 +562,7 @@ class BaseSettings(MutableMapping[str, Any]):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
 
-    # BaseSettings.update() doesn't support all inputs that MutableMapping.update() supports
+    # BaseSettings.update() doesn't support kwargs input like MutableMapping.update().
     def update(self, values: _SettingsInput, priority: int | str = "project") -> None:  # type: ignore[override]
         """
         Store key/value pairs with a given priority.
@@ -576,7 +579,7 @@ class BaseSettings(MutableMapping[str, Any]):
         command.
 
         :param values: the settings names and values
-        :type values: dict or string or :class:`~scrapy.settings.BaseSettings`
+        :type values: dict, iterable, string or :class:`~scrapy.settings.BaseSettings`
 
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
@@ -590,7 +593,12 @@ class BaseSettings(MutableMapping[str, Any]):
                 for name, value in values.items():
                     self.set(name, value, cast("int", values.getpriority(name)))
             else:
-                for name, value in values.items():
+                items: Iterable[tuple[str, Any]]
+                if hasattr(values, "items"):
+                    items = cast("SupportsItems[str, Any]", values).items()
+                else:
+                    items = values
+                for name, value in items:
                     self.set(name, value, priority)
 
     def delete(self, name: str, priority: int | str = "project") -> None:
@@ -613,7 +621,7 @@ class BaseSettings(MutableMapping[str, Any]):
         """
         Make a deep copy of current settings.
 
-        This method returns a new instance of the :class:`Settings` class,
+        This method returns a new instance of this class,
         populated with the same values and their priorities.
 
         Modifications to the new object won't be reflected on the original
@@ -658,7 +666,7 @@ class BaseSettings(MutableMapping[str, Any]):
         Make a copy of current settings and convert to a dict.
 
         This method returns a new dict populated with the same values
-        and their priorities as the current settings.
+        as the current settings.
 
         Modifications to the returned dict won't be reflected on the original
         settings.

@@ -34,7 +34,7 @@ Here is a simple example showing how you can catch signals and perform some acti
 
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
-            spider = super(DmozSpider, cls).from_crawler(crawler, *args, **kwargs)
+            spider = super().from_crawler(crawler, *args, **kwargs)
             crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
             return spider
 
@@ -60,6 +60,8 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 .. skip: next
 .. code-block:: python
 
+    import json
+
     import scrapy
     import treq
 
@@ -70,7 +72,7 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
-            spider = super(SignalSpider, cls).from_crawler(crawler, *args, **kwargs)
+            spider = super().from_crawler(crawler, *args, **kwargs)
             crawler.signals.connect(spider.item_scraped, signal=signals.item_scraped)
             return spider
 
@@ -505,7 +507,7 @@ bytes_received
 .. signal:: bytes_received
 .. function:: bytes_received(data, request, spider)
 
-    Sent by the HTTP 1.1 and S3 download handlers when a group of bytes is
+    Sent by some download handlers when a group of bytes is
     received for a specific request. This signal might be fired multiple
     times for the same request, with partial data each time. For instance,
     a possible scenario for a 25 kb response would be two signals fired
@@ -533,7 +535,7 @@ headers_received
 .. signal:: headers_received
 .. function:: headers_received(headers, body_length, request, spider)
 
-    Sent by the HTTP 1.1 and S3 download handlers when the response headers are
+    Sent by some download handlers when the response headers are
     available for a given request, before downloading any additional content.
 
     Handlers for this signal can stop the download of a response while it

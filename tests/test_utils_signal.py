@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import asyncio
+from typing import TYPE_CHECKING
 
 import pytest
 from pydispatch import dispatcher
@@ -16,6 +19,9 @@ from scrapy.utils.signal import (
 from scrapy.utils.test import get_from_asyncio_queue
 from tests.utils.decorators import inline_callbacks_test
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 class TestSendCatchLog:
     # whether the function being tested returns exceptions or failures
@@ -24,7 +30,7 @@ class TestSendCatchLog:
     @inline_callbacks_test
     def test_send_catch_log(self):
         test_signal = object()
-        handlers_called = set()
+        handlers_called: set[Callable[..., None]] = set()
 
         dispatcher.connect(self.error_handler, signal=test_signal)
         dispatcher.connect(self.ok_handler, signal=test_signal)
@@ -74,7 +80,7 @@ class TestSendCatchLogDeferred2(TestSendCatchLogDeferred):
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
         assert arg == "test"
-        d = defer.Deferred()
+        d: defer.Deferred[str] = defer.Deferred()
         call_later(0, d.callback, "OK")
         return d
 
@@ -108,7 +114,7 @@ class TestSendCatchLogAsync2(TestSendCatchLogAsync):
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
         assert arg == "test"
-        d = defer.Deferred()
+        d: defer.Deferred[str] = defer.Deferred()
         call_later(0, d.callback, "OK")
         return d
 
