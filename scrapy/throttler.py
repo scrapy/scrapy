@@ -580,7 +580,6 @@ class Throttler:
                 translated["delay"] = slot_config["delay"]
             if "randomize_delay" in slot_config:
                 translated["jitter"] = 0.5 if slot_config["randomize_delay"] else 0.0
-            # An explicit THROTTLING_SCOPES entry wins over the translated one.
             scopes[slot_id] = {**translated, **scopes.get(slot_id, {})}
         return scopes
 
@@ -803,14 +802,12 @@ class Throttler:
                 manager.discard_slot_available_event(event)
 
     async def _delay_request(self, request: Request) -> None:
-        """Honor the :reqmeta:`delay` meta key by holding *request*
-        for the requested number of seconds the first time it is processed.
+        """Honor the :reqmeta:`delay` meta key by holding *request* for the
+        requested number of seconds the first time it is processed.
 
         This is the blocking (:meth:`acquire`) counterpart of
-        :meth:`_request_delay_deadline`, which the readiness API polls instead;
-        both share the deadline bookkeeping and the one-time debug log. Here the
-        deadline is honored by sleeping until it, then marking the delay as
-        consumed so the request is never held again."""
+        :meth:`_request_delay_deadline`, which the readiness API polls instead.
+        """
         now = time.monotonic()
         wait = self._request_delay_deadline(request, now) - now
         if wait <= 0:
@@ -822,16 +819,13 @@ class Throttler:
         """Return the monotonic time before which *request* must not be sent due
         to its :reqmeta:`delay`, or ``0.0`` if it has none.
 
-        This is the readiness-API counterpart of :meth:`_delay_request`:
-        a throttler-aware scheduler gates requests through :meth:`is_ready` and
-        :meth:`get_time_until_ready` instead of awaiting :meth:`acquire`, so the
-        delay is enforced by holding back the request until this deadline rather
-        than by sleeping. The deadline is computed once, the first time the
-        request reaches the gate, and stored so later polls reuse it.
-
-        A request whose delay has already been honored (the ``_throttler_delayed``
-        flag, also set by :meth:`_delay_request`) is never delayed again,
-        which keeps a resumed crawl from re-blocking on a stale deadline."""
+        This is the readiness-API counterpart of :meth:`_delay_request`: a
+        throttler-aware scheduler holds the request back until this deadline
+        instead of awaiting :meth:`acquire`. The deadline is computed once, the
+        first time the request reaches the gate, and stored so later polls reuse
+        it. A request whose delay was already honored (the ``_throttler_delayed``
+        flag) is never delayed again, so a resumed crawl does not re-block on a
+        stale deadline."""
         delay = request.meta.get("delay")
         if not delay or request.meta.get("_throttler_delayed"):
             return 0.0
