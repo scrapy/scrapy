@@ -444,7 +444,7 @@ quotas for each throttling scope:
     :caption: :file:`settings.py`
 
     THROTTLING_SCOPES = {
-        "api.toscrape.com": {
+        "api.example": {
             "quota": 500.0,
         },
     }
@@ -487,7 +487,7 @@ setting:
     :caption: :file:`settings.py`
 
     THROTTLING_SCOPES = {
-        "api.toscrape.com": {
+        "api.example": {
             "manager": "myproject.throttling.MyThrottlingScopeManager",
         },
     }
@@ -637,7 +637,7 @@ different domains:
             @scope_cache
             async def get_scopes(self, request):
                 parsed_url = urlparse_cached(request)
-                if parsed_url.netloc != "api.toscrape.com":
+                if parsed_url.netloc != "api.example":
                     return await super().get_scopes(request)
                 return f"{parsed_url.netloc}{parsed_url.path}"
 
@@ -648,8 +648,8 @@ different domains:
         :caption: :file:`settings.py`
 
         THROTTLING_SCOPES = {
-            "api.toscrape.com/fast-endpoint": {"concurrency": 1000, "delay": 0.08},
-            "api.toscrape.com/slow-endpoint": {"delay": 5.0},
+            "api.example/fast-endpoint": {"concurrency": 1000, "delay": 0.08},
+            "api.example/slow-endpoint": {"delay": 5.0},
         }
 
 
@@ -669,7 +669,7 @@ to:
         :caption: :file:`settings.py`
 
         THROTTLING_SCOPES = {
-            "api.toscrape.com": {"concurrency": 1000, "delay": 0.08},
+            "api.example": {"concurrency": 1000, "delay": 0.08},
         }
 
 -   Implement a :ref:`throttler <custom-throttling-scopes>` that:
@@ -677,8 +677,8 @@ to:
     -   Adds a throttling scope for the URL being scraped.
 
         For example, if you request
-        ``https://api.toscrape.com/?url=https://example.com``, by default it
-        will get a ``api.toscrape.com`` throttling scope, but it should also
+        ``https://api.example/?url=https://example.com``, by default it
+        will get a ``api.example`` throttling scope, but it should also
         get the ``example.com`` throttling scope:
 
         .. code-block:: python
@@ -694,7 +694,7 @@ to:
                 @scope_cache
                 async def get_scopes(self, request):
                     scopes = await super().get_scopes(request)
-                    if urlparse_cached(request).netloc != "api.toscrape.com":
+                    if urlparse_cached(request).netloc != "api.example":
                         return scopes
                     target_url = url_query_parameter(request.url, "url")
                     if not target_url:
@@ -727,7 +727,7 @@ to:
                 return cls(crawler)
 
             def process_response(self, request, response, spider):
-                if urlparse_cached(request).netloc == "api.toscrape.com":
+                if urlparse_cached(request).netloc == "api.example":
                     upstream_status = int(
                         response.headers.get("X-Upstream-Status-Code", b"200")
                     )
@@ -737,7 +737,7 @@ to:
                             for scope in iter_scopes(
                                 self.throttler.get_resolved_scopes(request)
                             )
-                            if scope != "api.toscrape.com"
+                            if scope != "api.example"
                         ]
                         self.throttler.back_off(scopes)
                 return response
@@ -769,7 +769,7 @@ window (:setting:`THROTTLER_WINDOW`). You can use :ref:`throttler quotas
                 async def get_scopes(self, request):
                     scopes = await super().get_scopes(request)
                     parsed_url = urlparse_cached(request)
-                    if parsed_url.netloc != "api.toscrape.com":
+                    if parsed_url.netloc != "api.example":
                         return scopes
                     return add_scope(scopes, "cost", estimate_request_cost(request))
 
