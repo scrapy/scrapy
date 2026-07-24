@@ -894,7 +894,7 @@ Additional settings
 
 -   .. setting:: THROTTLING_SCOPE_LIMIT
 
-    :setting:`THROTTLING_SCOPE_LIMIT` (default: ``100000``)
+    :setting:`THROTTLING_SCOPE_LIMIT` (default: ``100_000``)
 
     Maximum number of :ref:`throttling scope <throttling-scopes>` states kept
     in memory at once, to bound memory usage on broad crawls that touch a large
