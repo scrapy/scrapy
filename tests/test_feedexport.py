@@ -1585,6 +1585,52 @@ class TestFeedExporterBatchIdState:
             assert Path(f"{tmpdir}/feed-4.jl").exists()
 
     @coroutine_test
+    async def test_feed_added_on_resume_starts_at_one(self):
+        """A feed added on a resume run starts fresh instead of resuming.
+
+        The first run only knows feed A, so its saved state records a batch ID
+        for A but nothing for B.  On the resume run B is present in FEEDS but
+        absent from the saved feed_batch_ids, so its slot's saved_id is 0 and it
+        keeps the default batch_id of 1 (feed A still resumes from its saved ID).
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jobdir = Path(tmpdir) / "jobdir"
+            jobdir.mkdir()
+            feed_a = f"{path_to_url(tmpdir)}/a-%(batch_id)d.jl"
+            feed_b = f"{path_to_url(tmpdir)}/b-%(batch_id)d.jl"
+
+            class BatchSpider(scrapy.Spider):
+                name = "batchspider"
+
+                async def start(self):
+                    for item in [{"foo": "bar"}, {"foo": "baz"}]:
+                        yield item
+
+            # First run: only feed A configured → a-1.jl, a-2.jl
+            settings_run1 = {
+                "FEEDS": {feed_a: {"format": "jl", "batch_item_count": 1}},
+                "JOBDIR": str(jobdir),
+            }
+            await get_crawler(BatchSpider, settings_run1).crawl_async()
+
+            # Second run (resume): feed B added. Saved state has feed A but not
+            # feed B, so feed B's slot hits the saved_id == 0 branch.
+            settings_run2 = {
+                "FEEDS": {
+                    feed_a: {"format": "jl", "batch_item_count": 1},
+                    feed_b: {"format": "jl", "batch_item_count": 1},
+                },
+                "JOBDIR": str(jobdir),
+            }
+            await get_crawler(BatchSpider, settings_run2).crawl_async()
+
+            # Feed A resumed from its saved batch ID; feed B started fresh at 1.
+            assert Path(f"{tmpdir}/a-3.jl").exists()
+            assert Path(f"{tmpdir}/a-4.jl").exists()
+            assert Path(f"{tmpdir}/b-1.jl").exists()
+            assert Path(f"{tmpdir}/b-2.jl").exists()
+
+    @coroutine_test
     async def test_feed_slots_initialized_fires_after_state_loaded(self):
         """feed_slots_initialized fires with correct slots when state is restored."""
         with tempfile.TemporaryDirectory() as tmpdir:
