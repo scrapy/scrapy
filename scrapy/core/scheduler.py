@@ -69,6 +69,8 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     Asynchronous API
     ================
 
+    .. versionadded:: VERSION
+
     Beyond the minimal interface above, the engine also uses the following
     optional members when a scheduler defines them, to support asynchronous
     scheduling. :meth:`next_request` itself stays synchronous.
@@ -90,8 +92,6 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         When a scheduler defines it, the engine uses it to schedule a single
         wakeup after :meth:`next_request` returns ``None`` while requests remain
         pending, so a crawl held back only by time does not stall.
-
-    .. versionadded:: VERSION
     """
 
     @classmethod
