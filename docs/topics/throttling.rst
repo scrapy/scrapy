@@ -221,20 +221,24 @@ Delaying a scope programmatically
 =================================
 
 You can delay a :ref:`throttling scope <throttling-scopes>` on demand through
-:meth:`crawler.throttler.delay_scope()
-<scrapy.throttler.ThrottlerProtocol.delay_scope>`:
+:meth:`crawler.throttler.back_off()
+<scrapy.throttler.ThrottlerProtocol.back_off>`:
 
 .. skip: next
 
 .. code-block:: python
 
-    crawler.throttler.delay_scope("example.com", 30.0)
+    crawler.throttler.back_off("example.com", delay=30.0, cap=False)
 
 This holds back the scope's next request for at least the given number of
 seconds and registers a :ref:`backoff <backoff>` trigger. Like a
 ``Retry-After`` header, it is a one-time delay rather than a permanent one (the
 scope's delay also grows by one backoff step and then recovers); call it again,
 e.g. on each matching response, to keep a scope slowed down for longer.
+
+Passing ``cap=False`` marks the delay as trusted, so it is **not** capped at
+:setting:`BACKOFF_MAX_DELAY` the way :ref:`untrusted delays
+<rate-limiting-headers>` from response headers are.
 
 It is useful to react to situations that :ref:`automatic backoff <backoff>`
 cannot detect on its own, such as a soft block that comes back as a ``200``
@@ -254,13 +258,10 @@ detects a maintenance page, and reschedule the current request:
         def parse(self, response):
             if "under maintenance" in response.text:
                 scope = urlparse_cached(response).netloc
-                self.crawler.throttler.delay_scope(scope, 600.0)
+                self.crawler.throttler.back_off(scope, delay=600.0, cap=False)
                 yield response.request.replace(dont_filter=True)
                 return
             # Normal parsing follows.
-
-Unlike :ref:`untrusted delays <rate-limiting-headers>`, this delay is **not**
-capped at :setting:`BACKOFF_MAX_DELAY`.
 
 .. _per-request-throttling:
 

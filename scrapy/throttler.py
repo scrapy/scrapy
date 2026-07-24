@@ -418,22 +418,6 @@ class ThrottlerProtocol(Protocol):
         set it to ``False`` for trusted, programmatic delays.
         """
 
-    def delay_scope(self, scope_id: str, delay: float) -> None:
-        """Hold back the scope identified by *scope_id* for at least *delay*
-        seconds before its next request, and register a :ref:`backoff
-        <backoff>` trigger for the scope.
-
-        Like a :ref:`Retry-After <retry-after>` response header, this is a
-        one-time delay (the scope's steady-state delay grows by one backoff
-        step and then recovers), not a permanent one; call it again to keep a
-        scope slowed down for longer.
-
-        This is shorthand for :meth:`back_off(scope_id, delay=delay,
-        cap=False) <back_off>`. Unlike a ``Retry-After`` header, *delay* is
-        **not** capped at :setting:`BACKOFF_MAX_DELAY`: that cap guards against
-        untrusted input, whereas a ``delay_scope`` call is trusted.
-        """
-
     def reconcile_quota(
         self,
         scopes: RequestScopes,
@@ -457,7 +441,7 @@ class ThrottlerProtocol(Protocol):
     def set_scope_delay(self, scope_id: str, delay: float) -> None:
         """Set the base (non-backoff) delay of *scope_id* to *delay* seconds.
 
-        Unlike :meth:`delay_scope`, this both raises and lowers the delay and is
+        Unlike :meth:`back_off`, this both raises and lowers the delay and is
         not counted as backoff; it lets a component drive the scope delay
         directly (e.g. an adaptive-delay extension).
         """
@@ -944,12 +928,6 @@ class Throttler:
             logger.debug(f"robots.txt Crawl-delay for scope {scope_id}: {capped}s")
         self.get_scope_manager(scope_id).set_base_delay(capped)
 
-    def delay_scope(self, scope_id: ScopeID, delay: float) -> None:
-        # Like a Retry-After / RateLimit-Reset header, this gates the scope's
-        # next request by delay seconds (a one-time hold, not a steady-state
-        # delay); unlike those, it is trusted, so it bypasses BACKOFF_MAX_DELAY.
-        self.back_off(scope_id, delay=float(delay), cap=False)
-
     def get_scope_delay(self, scope_id: ScopeID) -> float:
         return self.get_scope_manager(scope_id).get_base_delay()
 
@@ -1042,7 +1020,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
         *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`. It is ``True`` for
         untrusted input such as response headers, and may be set to ``False``
         for trusted, programmatic delays (see
-        :meth:`ThrottlerProtocol.delay_scope`).
+        :meth:`ThrottlerProtocol.back_off`).
         """
 
     def reconcile_quota(

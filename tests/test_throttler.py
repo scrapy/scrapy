@@ -499,7 +499,7 @@ class TestThrottlingScopeManager:
         assert scope.can_send(now=0.0) == pytest.approx(expected)
 
     def test_uncapped_backoff_delay(self):
-        # cap=False (used by trusted delay_scope() calls) ignores BACKOFF_MAX_DELAY.
+        # cap=False (used by trusted back_off() calls) ignores BACKOFF_MAX_DELAY.
         scope = _scope_manager({"BACKOFF_MAX_DELAY": 10.0})
         scope.record_backoff(delay=999.0, now=0.0, cap=False)
         assert scope.can_send(now=0.0) == pytest.approx(999.0)
@@ -737,7 +737,7 @@ class TestThrottlerReadiness:
         assert manager.is_ready(request) is True
 
     @coroutine_test
-    async def test_reserve_blocks_delay_scope(self):
+    async def test_reserve_blocks_scope_by_base_delay(self):
         manager = _manager(
             {
                 "THROTTLING_SCOPES": {"example.com": {"delay": 100.0}},
@@ -792,27 +792,27 @@ class TestThrottlerReadiness:
         assert manager.get_request_delay(Request("http://example.com/b")) == 0.0
 
     @coroutine_test
-    async def test_delay_scope(self):
+    async def test_back_off_delay(self):
         manager = _manager({"THROTTLER_DEBUG": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
         request = Request("http://example.com/a")
         await manager.get_scopes(request)
         assert manager.is_ready(request) is True
         # A component can delay a whole scope on demand, like a Retry-After
         # response header does.
-        manager.delay_scope("example.com", 50.0)
+        manager.back_off("example.com", delay=50.0, cap=False)
         assert manager.is_ready(request) is False
         assert manager.get_time_until_ready(request) == pytest.approx(50.0, abs=1.0)
 
     @coroutine_test
-    async def test_delay_scope_bypasses_max_delay(self):
-        # BACKOFF_MAX_DELAY caps untrusted input (headers), but delay_scope is a
-        # trusted call, so it may exceed the cap.
+    async def test_back_off_uncapped_delay_bypasses_max_delay(self):
+        # BACKOFF_MAX_DELAY caps untrusted input (headers), but a cap=False
+        # back_off() is a trusted call, so it may exceed the cap.
         manager = _manager(
             {"BACKOFF_MAX_DELAY": 30.0, "RANDOMIZE_DOWNLOAD_DELAY": False}
         )
         request = Request("http://example.com/a")
         await manager.get_scopes(request)
-        manager.delay_scope("example.com", 1000.0)
+        manager.back_off("example.com", delay=1000.0, cap=False)
         assert manager.get_time_until_ready(request) == pytest.approx(1000.0, abs=1.0)
 
     @coroutine_test

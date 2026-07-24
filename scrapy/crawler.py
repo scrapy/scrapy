@@ -94,7 +94,7 @@ class Crawler:
 
         It is ``None`` until the crawl starts. Components can use it to inspect
         or drive :ref:`throttling <throttling>` at run time, e.g. through
-        :meth:`~scrapy.throttler.ThrottlerProtocol.delay_scope`."""
+        :meth:`~scrapy.throttler.ThrottlerProtocol.back_off`."""
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
