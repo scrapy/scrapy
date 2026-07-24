@@ -381,7 +381,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         jobdir = self._random_temp_filename()
         uri_template = feed_dir / "%(batch_id)d.jl"
 
-        def make_settings():
+        def make_settings() -> dict[str, Any]:
             return {
                 "FEEDS": {
                     uri_template: {"format": "jl"},
