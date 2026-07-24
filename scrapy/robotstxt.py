@@ -70,11 +70,7 @@ class RobotParser(metaclass=ABCMeta):
     def crawl_delay(self, user_agent: str | bytes) -> float | None:
         """Return the ``Crawl-delay`` directive for ``user_agent`` as a number
         of seconds, or ``None`` if it is not set or the backend does not support
-        it.
-
-        :param user_agent: User agent
-        :type user_agent: str or bytes
-        """
+        it."""
         return None
 
 
