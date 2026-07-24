@@ -22,6 +22,7 @@ dependencies = [
     "service_identity>=23.1.0",
     "tldextract",
     "w3lib>=1.17.0",
+    "xtractmime>=0.2.0",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
@@ -226,6 +227,8 @@ module = [
     "pytest_twisted",
     "robotexclusionrulesparser",
     "testfixtures",
+    "xtractmime",
+    "xtractmime.*",
     "zope.interface.*",
 ]
 ignore_missing_imports = true
@@ -368,6 +371,14 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",
+    # These deprecated APIs are exercised on purpose by the test suite, but
+    # Scrapy itself must not use them: the warning is ignored when it
+    # originates from a test module and turned into an error when it
+    # originates from Scrapy, so that any accidental internal use fails CI.
+    "ignore:scrapy.responsetypes is deprecated::tests\\..*",
+    "error:scrapy.responsetypes is deprecated::scrapy\\..*",
+    "ignore:scrapy.utils.response.get_base_url is deprecated::tests\\..*",
+    "error:scrapy.utils.response.get_base_url is deprecated::scrapy\\..*",
     # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
     "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
 ]

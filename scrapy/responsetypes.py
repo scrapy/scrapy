@@ -5,17 +5,27 @@ based on different criteria.
 
 from __future__ import annotations
 
-from io import StringIO
-from mimetypes import MimeTypes
-from pkgutil import get_data
 from typing import TYPE_CHECKING, ClassVar
+from warnings import warn
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
+from scrapy.utils.python import _binary_is_text, to_bytes, to_unicode
+from scrapy.utils.response import _MIME_TYPES
+
+warn(
+    (
+        "scrapy.responsetypes is deprecated, use "
+        "scrapy.utils.response.get_response_class instead"
+    ),
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from mimetypes import MimeTypes
 
 
 class ResponseTypes:
@@ -38,10 +48,7 @@ class ResponseTypes:
 
     def __init__(self) -> None:
         self.classes: dict[str, type[Response]] = {}
-        self.mimetypes: MimeTypes = MimeTypes()
-        mimedata = get_data("scrapy", "mime.types")
-        assert mimedata is not None
-        self.mimetypes.readfp(StringIO(mimedata.decode("utf8")))
+        self.mimetypes: MimeTypes = _MIME_TYPES
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
@@ -105,7 +112,7 @@ class ResponseTypes:
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
         chunk = to_bytes(chunk)
-        if not binary_is_text(chunk):
+        if not _binary_is_text(chunk):
             return self.from_mimetype("application/octet-stream")
         lowercase_chunk = chunk.lower()
         if b"<html>" in lowercase_chunk:
