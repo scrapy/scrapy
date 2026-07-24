@@ -796,12 +796,8 @@ HttpProxyMiddleware
 .. note::
 
     Usually a proxy URL uses the ``http://`` scheme. More rarely, it uses the
-    ``https://`` one. While both kinds of proxy URLs can be used with both HTTP
-    and HTTPS destination URLs, the specifics of the network exchange are
-    different for all 4 cases and it's possible that HTTPS proxies are fully or
-    partially unsupported by a given download handler. Currently,
-    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
-    supports HTTPS proxies only for HTTP destinations.
+    ``https://`` one. Both kinds of proxy URLs can be used with both HTTP and
+    HTTPS destination URLs.
 
 .. note::
 
