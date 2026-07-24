@@ -110,7 +110,7 @@ class Crawler:
         self.addons.load_settings(self.settings)
         self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
         self._apply_deprecated_spider_attr(
-            "max_concurrent_requests", "THROTTLER_SCOPE_CONCURRENCY"
+            "max_concurrent_requests", "THROTTLING_SCOPE_CONCURRENCY"
         )
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
@@ -189,7 +189,7 @@ class Crawler:
             return
         warnings.warn(
             f"The {attr!r} spider attribute is deprecated. Use the {setting} "
-            f"setting or THROTTLER_SCOPES instead.",
+            f"setting or THROTTLING_SCOPES instead.",
             category=ScrapyDeprecationWarning,
             stacklevel=3,
         )

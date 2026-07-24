@@ -25,7 +25,7 @@ That includes the classes that you may assign to the following settings:
 - :setting:`SCHEDULER_START_MEMORY_QUEUE`
 - :setting:`SPIDER_MIDDLEWARES`
 - :setting:`THROTTLER`
-- :setting:`THROTTLER_SCOPE_MANAGER`
+- :setting:`THROTTLING_SCOPE_MANAGER`
 - :setting:`TWISTED_DNS_RESOLVER`
 
 Third-party Scrapy components may also let you define additional Scrapy

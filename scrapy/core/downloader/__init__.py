@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
-    from scrapy.throttler import ThrottlerProtocol, ThrottlerScopeManagerProtocol
+    from scrapy.throttler import ThrottlerProtocol, ThrottlingScopeManagerProtocol
     from scrapy.utils.asyncio import CallLaterResult
 
 
@@ -89,7 +89,7 @@ class _DeprecatedSlotView:
         self,
         downloader: Downloader,
         key: str,
-        scope: ThrottlerScopeManagerProtocol,
+        scope: ThrottlingScopeManagerProtocol,
     ) -> None:
         self._downloader = downloader
         self._key = key
@@ -111,10 +111,10 @@ class _DeprecatedSlotView:
             if r.meta.get(Downloader.DOWNLOAD_SLOT) == self._key
         }
 
-    # This deprecated view reads throttler scope state from private attributes
+    # This deprecated view reads throttling scope state from private attributes
     # of the default scope manager rather than through the scope manager
     # protocol: these are read-only compatibility accessors, so keeping them off
-    # the protocol avoids forcing custom THROTTLER_SCOPE_MANAGER implementations
+    # the protocol avoids forcing custom THROTTLING_SCOPE_MANAGER implementations
     # to provide members that only exist to feed this shim. A custom manager that
     # lacks the attribute simply falls back to the historical default.
     @property
@@ -211,7 +211,7 @@ class Downloader:
         )
         if self.per_slot_settings:
             warnings.warn(
-                "The DOWNLOAD_SLOTS setting is deprecated. Use THROTTLER_SCOPES for "
+                "The DOWNLOAD_SLOTS setting is deprecated. Use THROTTLING_SCOPES for "
                 "per-domain configuration instead.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,

@@ -443,7 +443,7 @@ def _scope_set_from_key(key: str) -> frozenset[ScopeID]:
 
 class ThrottlerAwarePriorityQueue:
     """Priority queue that only ever pops a request that can be sent right now
-    based on its :ref:`throttler scope set <throttler-scopes>` and
+    based on its :ref:`throttling scope set <throttling-scopes>` and
     per-request :reqmeta:`delay`.
 
     The downstream queue class must support ``peek``.

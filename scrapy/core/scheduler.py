@@ -79,7 +79,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         Asynchronous counterpart of :meth:`enqueue_request`, following the same
         return contract. When a scheduler defines it, the engine awaits it
         *instead of* calling :meth:`enqueue_request`. Define it when enqueuing a
-        request needs to ``await`` (e.g. to resolve throttler scopes
+        request needs to ``await`` (e.g. to resolve throttling scopes
         asynchronously).
 
     .. method:: get_next_request_delay()
@@ -238,7 +238,7 @@ class Scheduler(BaseScheduler):
     -------------------------
 
     While pending requests are below the configured values of
-    :setting:`CONCURRENT_REQUESTS` or :setting:`THROTTLER_SCOPE_CONCURRENCY`,
+    :setting:`CONCURRENT_REQUESTS` or :setting:`THROTTLING_SCOPE_CONCURRENCY`,
     those requests are sent concurrently.
 
     As a result, the first few requests of a crawl may not follow the desired
@@ -410,7 +410,7 @@ class Scheduler(BaseScheduler):
 
         Extra positional arguments are forwarded to the underlying queue
         ``push`` calls; subclasses that store requests under additional keys
-        (e.g. a throttler scope set) pass them through here.
+        (e.g. a throttling scope set) pass them through here.
         """
         assert self.stats is not None
         if self._dqpush(request, *push_args):
@@ -537,7 +537,7 @@ class Scheduler(BaseScheduler):
 
 class ThrottlerAwareScheduler(Scheduler):
     """A :setting:`SCHEDULER` that only ever hands the engine requests that
-    their :ref:`throttler scopes <throttler-scopes>` allow to be sent **right
+    their :ref:`throttling scopes <throttling-scopes>` allow to be sent **right
     now**.
 
     The default scheduler hands requests to the engine as concurrency allows

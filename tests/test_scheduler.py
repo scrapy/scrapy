@@ -431,7 +431,7 @@ class TestThrottlerAwareScheduler:
     async def test_delay_blocks_and_reports_delay(self) -> None:
         crawler = self._crawler(
             {
-                "THROTTLER_SCOPES": {"slow.com": {"delay": 1000.0}},
+                "THROTTLING_SCOPES": {"slow.com": {"delay": 1000.0}},
                 "RANDOMIZE_DOWNLOAD_DELAY": False,
             },
         )
@@ -449,7 +449,7 @@ class TestThrottlerAwareScheduler:
     @coroutine_test
     async def test_no_delay_when_only_concurrency_blocked(self) -> None:
         crawler = self._crawler(
-            {"THROTTLER_SCOPES": {"slow.com": {"concurrency": 1}}},
+            {"THROTTLING_SCOPES": {"slow.com": {"concurrency": 1}}},
         )
         scheduler = self._scheduler(crawler)
         await scheduler.enqueue_request_async(Request("http://slow.com/1"))
@@ -615,7 +615,7 @@ class TestIntegrationWithThrottlerAwareScheduler:
                 "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlerAwarePriorityQueue",
                 "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
                 "RANDOMIZE_DOWNLOAD_DELAY": False,
-                "THROTTLER_SCOPES": {"127.0.0.1": {"delay": 0.05}},
+                "THROTTLING_SCOPES": {"127.0.0.1": {"delay": 0.05}},
             },
         )
         with MockServer() as mockserver:

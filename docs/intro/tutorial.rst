@@ -141,12 +141,12 @@ parallel.
 
 ``quotes.toscrape.com`` is a sandbox meant for scraping practice, so we can
 safely crawl it faster. Open :file:`tutorial/settings.py` and add a
-:setting:`THROTTLER_SCOPES` entry that raises the concurrency and lowers the
+:setting:`THROTTLING_SCOPES` entry that raises the concurrency and lowers the
 delay for that domain only:
 
 .. code-block:: python
 
-    THROTTLER_SCOPES = {
+    THROTTLING_SCOPES = {
         "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
     }
 

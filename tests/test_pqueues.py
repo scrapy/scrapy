@@ -191,22 +191,22 @@ class TestDownloaderAwarePriorityQueue:
         # No active downloads are tracked in the downloader, so every slot has
         # the same score and tie-breaking must not starve a slot.
         req_a1 = Request("https://example.org/a1")
-        req_a1.meta["throttler_scopes"] = "slot-a"
+        req_a1.meta["throttling_scopes"] = "slot-a"
         req_b1 = Request("https://example.org/b1")
-        req_b1.meta["throttler_scopes"] = "slot-b"
+        req_b1.meta["throttling_scopes"] = "slot-b"
         req_a2 = Request("https://example.org/a2")
-        req_a2.meta["throttler_scopes"] = "slot-a"
+        req_a2.meta["throttling_scopes"] = "slot-a"
         req_b2 = Request("https://example.org/b2")
-        req_b2.meta["throttler_scopes"] = "slot-b"
+        req_b2.meta["throttling_scopes"] = "slot-b"
 
         for request in (req_a1, req_b1, req_a2, req_b2):
             self.queue.push(request)
 
         slots = [
-            self.queue.pop().meta["throttler_scopes"],
-            self.queue.pop().meta["throttler_scopes"],
-            self.queue.pop().meta["throttler_scopes"],
-            self.queue.pop().meta["throttler_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
         ]
 
         assert slots == ["slot-a", "slot-b", "slot-a", "slot-b"]
@@ -215,22 +215,22 @@ class TestDownloaderAwarePriorityQueue:
         # If the selected slot becomes empty, rotation should continue from
         # that slot marker to avoid restarting from the smallest slot.
         req_a1 = Request("https://example.org/a1")
-        req_a1.meta["throttler_scopes"] = "slot-a"
+        req_a1.meta["throttling_scopes"] = "slot-a"
         req_a2 = Request("https://example.org/a2")
-        req_a2.meta["throttler_scopes"] = "slot-a"
+        req_a2.meta["throttling_scopes"] = "slot-a"
         req_b1 = Request("https://example.org/b1")
-        req_b1.meta["throttler_scopes"] = "slot-b"
+        req_b1.meta["throttling_scopes"] = "slot-b"
         req_c1 = Request("https://example.org/c1")
-        req_c1.meta["throttler_scopes"] = "slot-c"
+        req_c1.meta["throttling_scopes"] = "slot-c"
 
         for request in (req_a1, req_a2, req_b1, req_c1):
             self.queue.push(request)
 
         slots = [
-            self.queue.pop().meta["throttler_scopes"],
-            self.queue.pop().meta["throttler_scopes"],
-            self.queue.pop().meta["throttler_scopes"],
-            self.queue.pop().meta["throttler_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
+            self.queue.pop().meta["throttling_scopes"],
         ]
 
         assert slots == ["slot-a", "slot-b", "slot-c", "slot-a"]
@@ -240,11 +240,11 @@ class TestDownloaderAwarePriorityQueue:
         assert throttler is not None
 
         req_a = Request("https://example.org/a")
-        req_a.meta["throttler_scopes"] = "slot-a"
+        req_a.meta["throttling_scopes"] = "slot-a"
         req_b = Request("https://example.org/b")
-        req_b.meta["throttler_scopes"] = "slot-b"
+        req_b.meta["throttling_scopes"] = "slot-b"
         req_c = Request("https://example.org/c")
-        req_c.meta["throttler_scopes"] = "slot-c"
+        req_c.meta["throttling_scopes"] = "slot-c"
 
         for req in (req_a, req_b, req_c):
             self.queue.push(req)
@@ -257,7 +257,7 @@ class TestDownloaderAwarePriorityQueue:
 
     def test_contains(self):
         req = Request("https://example.org/")
-        req.meta["throttler_scopes"] = "example-slot"
+        req.meta["throttling_scopes"] = "example-slot"
         assert "example-slot" not in self.queue
         self.queue.push(req)
         assert "example-slot" in self.queue
@@ -346,7 +346,7 @@ class TestThrottlerAwarePriorityQueue:
         crawler = get_crawler(
             Spider,
             settings_dict={
-                "THROTTLER_SCOPES": {"slow.com": {"delay": 1000.0}},
+                "THROTTLING_SCOPES": {"slow.com": {"delay": 1000.0}},
                 "RANDOMIZE_DOWNLOAD_DELAY": False,
             },
         )
@@ -465,7 +465,7 @@ class TestThrottlerAwarePriorityQueue:
         crawler = get_crawler(
             Spider,
             settings_dict={
-                "THROTTLER_SCOPES": {
+                "THROTTLING_SCOPES": {
                     "a.com": {"concurrency": 4},
                     "b.com": {"concurrency": 4},
                 }
@@ -486,7 +486,7 @@ class TestThrottlerAwarePriorityQueue:
         crawler = get_crawler(
             Spider,
             settings_dict={
-                "THROTTLER_SCOPES": {
+                "THROTTLING_SCOPES": {
                     "a.com": {"concurrency": 4},
                     "b.com": {"concurrency": 4},
                 }
@@ -533,7 +533,7 @@ class TestThrottlerAwarePriorityQueue:
         crawler = get_crawler(
             Spider,
             settings_dict={
-                "THROTTLER_SCOPES": {
+                "THROTTLING_SCOPES": {
                     "a.com": {"delay": 10.0},
                     "b.com": {"delay": 1000.0},
                 },

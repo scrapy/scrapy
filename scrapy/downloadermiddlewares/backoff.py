@@ -28,7 +28,7 @@ class BackoffMiddleware:
 
     It observes every response and download exception and, for those matching
     :setting:`BACKOFF_HTTP_CODES` or :setting:`BACKOFF_EXCEPTIONS` (globally or
-    per :setting:`THROTTLER_SCOPES` scope), tells the :ref:`throttler
+    per :setting:`THROTTLING_SCOPES` scope), tells the :ref:`throttler
     <throttling>` to back off the request's scopes through its
     :meth:`~scrapy.throttler.ThrottlerProtocol.back_off` API.
 
@@ -61,7 +61,7 @@ class BackoffMiddleware:
         # pre-filter to skip outcomes that no scope backs off on.
         self._any_http_codes: set[int] = set(self._http_codes)
         self._any_exceptions: tuple[type[BaseException], ...] = self._exceptions
-        for scope_id, scope_config in settings.getdict("THROTTLER_SCOPES").items():
+        for scope_id, scope_config in settings.getdict("THROTTLING_SCOPES").items():
             backoff = scope_config.get("backoff") or {}
             if "http_codes" in backoff:
                 codes = {int(code) for code in backoff["http_codes"]}
