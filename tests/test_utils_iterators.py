@@ -1,28 +1,13 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
-
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse, XmlResponse
-from scrapy.utils.iterators import _body_or_str, csviter, xmliter, xmliter_lxml
+from scrapy.utils.iterators import _body_or_str, csviter, xmliter_lxml
 from tests import get_testdata
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator
 
-    from scrapy import Selector
-
-
-class TestXmliterBase(ABC):
-    @abstractmethod
-    def xmliter(
-        self, obj: Response | str | bytes, nodename: str, *args: Any
-    ) -> Iterator[Selector]:
-        raise NotImplementedError
-
+class TestXmliter:
     def test_xmliter(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -46,7 +31,7 @@ class TestXmliterBase(ABC):
                 x.xpath("name/text()").getall(),
                 x.xpath("./type/text()").getall(),
             )
-            for x in self.xmliter(response, "product")
+            for x in xmliter_lxml(response, "product")
         ]
 
         assert attrs == [
@@ -63,7 +48,7 @@ class TestXmliterBase(ABC):
         """
         response = XmlResponse(url="http://example.com", body=body)
         nodenames = [
-            e.xpath("name()").getall() for e in self.xmliter(response, "matchme...")
+            e.xpath("name()").getall() for e in xmliter_lxml(response, "matchme...")
         ]
         assert nodenames == [["matchme..."]]
 
@@ -117,7 +102,7 @@ class TestXmliterBase(ABC):
                     x.xpath("./skammstafanir/stuttskammstöfun/text()").getall(),
                     x.xpath("./tímabil/fyrstaþing/text()").getall(),
                 )
-                for x in self.xmliter(r, "þingflokkur")
+                for x in xmliter_lxml(r, "þingflokkur")
             ]
 
             assert attrs == [
@@ -132,7 +117,7 @@ class TestXmliterBase(ABC):
             "<products><product>one</product><product>two</product></products>"
         )
 
-        assert [x.xpath("text()").getall() for x in self.xmliter(body, "product")] == [
+        assert [x.xpath("text()").getall() for x in xmliter_lxml(body, "product")] == [
             ["one"],
             ["two"],
         ]
@@ -157,7 +142,7 @@ class TestXmliterBase(ABC):
             </rss>
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
-        my_iter = self.xmliter(response, "item")
+        my_iter = xmliter_lxml(response, "item")
         node = next(my_iter)
         node.register_namespace("g", "http://base.google.com/ns/1.0")
         assert node.xpath("title/text()").getall() == ["Item 1"]
@@ -194,7 +179,7 @@ class TestXmliterBase(ABC):
             </rss>
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
-        my_iter = self.xmliter(response, "g:image_link")
+        my_iter = xmliter_lxml(response, "g:image_link")
         node = next(my_iter)
         node.register_namespace("g", "http://base.google.com/ns/1.0")
         assert node.xpath("text()").extract() == [
@@ -221,7 +206,7 @@ class TestXmliterBase(ABC):
             </rss>
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
-        my_iter = self.xmliter(response, "g:link_image")
+        my_iter = xmliter_lxml(response, "g:link_image")
         with pytest.raises(StopIteration):
             next(my_iter)
 
@@ -231,14 +216,14 @@ class TestXmliterBase(ABC):
             "<products><product>one</product><product>two</product></products>"
         )
 
-        my_iter = self.xmliter(body, "product")
+        my_iter = xmliter_lxml(body, "product")
         next(my_iter)
         next(my_iter)
         with pytest.raises(StopIteration):
             next(my_iter)
 
     def test_xmliter_objtype_exception(self):
-        i = self.xmliter(42, "product")  # type: ignore[arg-type]
+        i = xmliter_lxml(42, "product")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
             next(i)
 
@@ -251,37 +236,9 @@ class TestXmliterBase(ABC):
         )
         response = XmlResponse("http://www.example.com", body=body)
         assert (
-            next(self.xmliter(response, "item")).get()
+            next(xmliter_lxml(response, "item")).get()
             == "<item>Some Turkish Characters \xd6\xc7\u015e\u0130\u011e\xdc \xfc\u011f\u0131\u015f\xe7\xf6</item>"
         )
-
-
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestXmliter(TestXmliterBase):
-    def xmliter(
-        self, obj: Response | str | bytes, nodename: str, *args: Any
-    ) -> Iterator[Selector]:
-        return xmliter(obj, nodename)
-
-    def test_deprecation(self):
-        body = b"""
-            <?xml version="1.0" encoding="UTF-8"?>
-            <products>
-              <product></product>
-            </products>
-        """
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="xmliter",
-        ):
-            next(self.xmliter(body, "product"))
-
-
-class TestLxmlXmliter(TestXmliterBase):
-    def xmliter(
-        self, obj: Response | str | bytes, nodename: str, *args: Any
-    ) -> Iterator[Selector]:
-        return xmliter_lxml(obj, nodename, *args)
 
     def test_xmliter_iterate_namespace(self):
         body = b"""
@@ -303,10 +260,10 @@ class TestLxmlXmliter(TestXmliterBase):
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
 
-        no_namespace_iter = self.xmliter(response, "image_link")
+        no_namespace_iter = xmliter_lxml(response, "image_link")
         assert len(list(no_namespace_iter)) == 0
 
-        namespace_iter = self.xmliter(
+        namespace_iter = xmliter_lxml(
             response, "image_link", "http://base.google.com/ns/1.0"
         )
         node = next(namespace_iter)
@@ -338,14 +295,14 @@ class TestLxmlXmliter(TestXmliterBase):
         </root>
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
-        my_iter = self.xmliter(response, "table", "http://www.w3.org/TR/html4/", "h")
+        my_iter = xmliter_lxml(response, "table", "http://www.w3.org/TR/html4/", "h")
 
         node = next(my_iter)
         assert len(node.xpath("h:tr/h:td").getall()) == 2
         assert node.xpath("h:tr/h:td[1]/text()").getall() == ["Apples"]
         assert node.xpath("h:tr/h:td[2]/text()").getall() == ["Bananas"]
 
-        my_iter = self.xmliter(
+        my_iter = xmliter_lxml(
             response, "table", "http://www.w3schools.com/furniture", "f"
         )
 

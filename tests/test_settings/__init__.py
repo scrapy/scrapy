@@ -221,13 +221,11 @@ class TestBaseSettings:
         settings = BaseSettings({"key": 0})
         settings.update(key=1)  # pylint: disable=unexpected-keyword-arg
 
-    @pytest.mark.xfail(
-        raises=AttributeError,
-        reason="BaseSettings.update doesn't support iterable input",
-    )
     def test_update_iterable(self):
-        settings = BaseSettings({"key": 0})
-        settings.update([("key", 1)])
+        settings = BaseSettings({"key": 0}, priority=0)
+        settings.update([("key", 1)], priority=10)
+        assert settings["key"] == 1
+        assert settings.getpriority("key") == 10
 
     def test_update_jsonstring(self):
         settings = BaseSettings({"number": 0, "dict": BaseSettings({"key": "val"})})
