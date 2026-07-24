@@ -610,7 +610,6 @@ THROTTLER_DEBUG = False
 TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
-
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 URLLENGTH_LIMIT = 2083
