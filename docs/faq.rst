@@ -136,7 +136,7 @@ middleware with a :ref:`custom downloader middleware
 <topics-downloader-middleware-custom>` that requires less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
-    instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
+    instead of joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
     a complex regular expression.
 
 -   If you can meet the installation requirements, use pyre2_ instead of
