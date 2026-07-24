@@ -493,9 +493,9 @@ setting:
         },
     }
 
-Most custom scope managers subclass the default
+The simplest approach is to subclass the default
 :class:`~scrapy.throttler.ThrottlingScopeManager` and override only the methods
-whose behavior they want to change; implementing the
+whose behavior you want to change; implementing the
 :class:`~scrapy.throttler.ThrottlingScopeManagerProtocol` from scratch is also
 supported. For example, this manager disables exponential :ref:`backoff
 <backoff>`, so a scope relies solely on its configured delay and quota:
