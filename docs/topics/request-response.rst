@@ -807,6 +807,32 @@ download_fail_on_dataloss
 Whether or not to fail on broken responses. See:
 :setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
 
+.. reqmeta:: download_slot
+
+download_slot
+-------------
+
+The name of the download slot (see :setting:`DOWNLOAD_SLOTS`) that this
+request is assigned to, which determines the concurrency and delay settings
+applied to it.
+
+By default, Scrapy assigns each request to a slot based on the request URL
+domain. Setting this meta key overrides that, forcing the request into a
+specific slot instead, e.g. to share concurrency/delay limits between
+requests to different domains:
+
+.. code-block:: python
+
+    Request(
+        "https://example.org",
+        meta={"download_slot": "example-group"},
+    )
+
+Once a request has been assigned to a slot, Scrapy sets this meta key to the
+name of that slot, so you can also read it, e.g. from
+``response.request.meta["download_slot"]``, to find out which slot a given
+request went through.
+
 .. reqmeta:: give_up_log_level
 
 give_up_log_level
