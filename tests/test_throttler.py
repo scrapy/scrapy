@@ -649,8 +649,8 @@ class TestThrottlingScopeManager:
         # A non-positive quota window must not make _maybe_reset_quota spin
         # forever; the quota stays continuously reset instead.
         scope = _scope_manager(config={"id": "x", "quota": 10.0, "window": 0})
-        scope.record_sent(now=0.0, amount=10.0)
-        assert scope.can_send(now=1.0, amount=5.0) == 0.0
+        scope.record_sent(now=0.0, quota_amount=10.0)
+        assert scope.can_send(now=1.0, quota_amount=5.0) == 0.0
         assert scope._consumed == 0.0
 
     def test_set_concurrency_fires_slot_available_event(self):
@@ -689,22 +689,22 @@ class TestThrottlingScopeManager:
 
     def test_quota_blocks_when_exhausted(self):
         scope = _scope_manager(config={"id": "x", "quota": 10.0, "window": 60.0})
-        scope.record_sent(now=0.0, amount=6.0)
-        assert scope.can_send(now=0.0, amount=3.0) == 0  # 9 <= 10
-        scope.record_sent(now=0.0, amount=3.0)
+        scope.record_sent(now=0.0, quota_amount=6.0)
+        assert scope.can_send(now=0.0, quota_amount=3.0) == 0  # 9 <= 10
+        scope.record_sent(now=0.0, quota_amount=3.0)
         # 9 spent; a 3.0 request would exceed the quota -> wait for the window.
-        assert scope.can_send(now=0.0, amount=3.0) == pytest.approx(60.0)
+        assert scope.can_send(now=0.0, quota_amount=3.0) == pytest.approx(60.0)
         # The window resets and quota is available again.
-        assert scope.can_send(now=60.0, amount=3.0) == 0
+        assert scope.can_send(now=60.0, quota_amount=3.0) == 0
 
     def test_quota_allows_oversized_request(self):
         scope = _scope_manager(config={"id": "x", "quota": 10.0})
         # A single request larger than the whole quota is still allowed.
-        assert scope.can_send(now=0.0, amount=999.0) == 0
+        assert scope.can_send(now=0.0, quota_amount=999.0) == 0
 
     def test_quota_reconcile_consumed_delta(self):
         scope = _scope_manager(config={"id": "x", "quota": 10.0})
-        scope.record_sent(now=0.0, amount=2.0)
+        scope.record_sent(now=0.0, quota_amount=2.0)
         assert scope._consumed == pytest.approx(2.0)
         # The response reports it actually consumed 0.5 more than estimated.
         scope.reconcile_quota(consumed=0.5, now=0.0)
@@ -712,7 +712,7 @@ class TestThrottlingScopeManager:
 
     def test_quota_reconcile_remaining(self):
         scope = _scope_manager(config={"id": "x", "quota": 10.0})
-        scope.record_sent(now=0.0, amount=2.0)
+        scope.record_sent(now=0.0, quota_amount=2.0)
         scope.reconcile_quota(remaining=3.0, now=0.0)
         assert scope._consumed == pytest.approx(7.0)
 
@@ -1106,7 +1106,7 @@ class TestThrottlingScopeManagerEdges:
 
     def test_reconcile_quota_no_change(self):
         scope = _scope_manager(config={"id": "x", "quota": 10.0})
-        scope.record_sent(now=0.0, amount=4.0)
+        scope.record_sent(now=0.0, quota_amount=4.0)
         # Neither consumed nor remaining given: the estimate is left untouched.
         scope.reconcile_quota(now=0.0)
         assert scope._consumed == pytest.approx(4.0)

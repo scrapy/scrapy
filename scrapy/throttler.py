@@ -89,7 +89,10 @@ class ThrottlingScopeConfig(TypedDict, total=False):
 
 
 ScopeID = str
-RequestScopes = None | ScopeID | Iterable[ScopeID] | dict[ScopeID, float | None]
+QuotaAmount = float
+ScopeQuotas = dict[ScopeID, QuotaAmount | None]
+JitterRange = tuple[float, float]  # (low, high) multiplier range
+RequestScopes = None | ScopeID | Iterable[ScopeID] | ScopeQuotas
 
 
 def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
@@ -104,12 +107,13 @@ def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
     return (scope for scope, _ in iter_scope_values(scopes))
 
 
-def iter_scope_values(scopes: RequestScopes) -> Iterable[tuple[ScopeID, float | None]]:
-    """Iterate over *scopes* as ``(scope_id, value)`` pairs.
+def iter_scope_values(
+    scopes: RequestScopes,
+) -> Iterable[tuple[ScopeID, QuotaAmount | None]]:
+    """Iterate over *scopes* as ``(scope_id, quota_amount)`` pairs.
 
-    For dict scopes the value is the expected :ref:`throttler quota
-    <throttling-quotas>` consumption; for every other form the value is
-    ``None``.
+    For dict scopes the quota amount is the expected :ref:`throttler quota
+    <throttling-quotas>` consumption; for every other form it is ``None``.
     """
     if scopes is None:
         return
@@ -233,7 +237,7 @@ def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
         )
 
 
-def _to_scope_dict(scopes: RequestScopes) -> dict[ScopeID, float | None]:
+def _to_scope_dict(scopes: RequestScopes) -> ScopeQuotas:
     """Normalize *scopes* (``None``, a scope id, an iterable of scope ids or a
     ``{scope_id: quota}`` dict) into a ``{scope_id: quota}`` dict, using ``None``
     as the quota of scopes that have none."""
@@ -254,27 +258,27 @@ def _to_scope_dict(scopes: RequestScopes) -> dict[ScopeID, float | None]:
 def add_scope(
     scopes: RequestScopes,
     scope: ScopeID,
-    value: float | None = None,
+    quota_amount: QuotaAmount | None = None,
     /,
-) -> dict[ScopeID, float | None]:
-    """Add *scope* to *scopes* with *value*, returning a ``{scope_id: quota}``
-    dict.
+) -> ScopeQuotas:
+    """Add *scope* to *scopes* with *quota_amount*, returning a
+    ``{scope_id: quota}`` dict.
 
     This is a utility function to help extending the output of
     :meth:`~ThrottlerProtocol.get_scopes`, e.g. in
     :class:`Throttler` subclasses.
 
-    Adding a scope with a *value* fails if it is already present, so an existing
-    :ref:`quota <throttling-quotas>` is never silently overwritten; adding it
-    without a value leaves any existing entry untouched.
+    Adding a scope with a *quota_amount* fails if it is already present, so an
+    existing :ref:`quota <throttling-quotas>` is never silently overwritten;
+    adding it without a quota amount leaves any existing entry untouched.
     """
     result = _to_scope_dict(scopes)
-    if value is None:
+    if quota_amount is None:
         result.setdefault(scope, None)
         return result
     if scope in result:
-        raise TypeError(f"Scope {scope!r} already has a value in {scopes!r}")
-    result[scope] = value
+        raise TypeError(f"Scope {scope!r} already has a quota amount in {scopes!r}")
+    result[scope] = quota_amount
     return result
 
 
@@ -564,7 +568,7 @@ class Throttler:
         # Concurrency slots reserved by acquire(), to be released once the
         # request finishes downloading.
         self._reserved: WeakKeyDictionary[
-            Request, list[tuple[ThrottlingScopeManagerProtocol, float | None]]
+            Request, list[tuple[ThrottlingScopeManagerProtocol, QuotaAmount | None]]
         ] = WeakKeyDictionary()
 
     @staticmethod
@@ -652,7 +656,7 @@ class Throttler:
 
     def _cached_scope_values(
         self, request: Request
-    ) -> list[tuple[ScopeID, float | None]]:
+    ) -> list[tuple[ScopeID, QuotaAmount | None]]:
         """Return the ``(scope_id, quota_amount)`` pairs of *request*, from the
         scopes returned by :meth:`get_resolved_scopes`."""
         return list(iter_scope_values(self.get_resolved_scopes(request)))
@@ -713,12 +717,18 @@ class Throttler:
         if not scope_values:
             return
         managers = [
-            (self.get_scope_manager(scope_id), value)
-            for scope_id, value in scope_values
+            (self.get_scope_manager(scope_id), quota_amount)
+            for scope_id, quota_amount in scope_values
         ]
         while True:
             wait = max(
-                [0.0, *(manager.can_send(amount=value) for manager, value in managers)]
+                [
+                    0.0,
+                    *(
+                        manager.can_send(quota_amount=quota_amount)
+                        for manager, quota_amount in managers
+                    ),
+                ]
             )
             if wait > 0:
                 if self._debug:
@@ -746,13 +756,13 @@ class Throttler:
     def _record_reservation(
         self,
         request: Request,
-        managers: list[tuple[ThrottlingScopeManagerProtocol, float | None]],
+        managers: list[tuple[ThrottlingScopeManagerProtocol, QuotaAmount | None]],
     ) -> None:
         """Record a send on each of *request*'s scope *managers* and mark
         *request* as reserved, so :meth:`release` can later free the slots. This
         is the shared tail of :meth:`acquire` and :meth:`reserve`."""
-        for manager, value in managers:
-            manager.record_sent(amount=value)
+        for manager, quota_amount in managers:
+            manager.record_sent(quota_amount=quota_amount)
         self._reserved[request] = managers
 
     def release(self, request: Request) -> None:
@@ -768,9 +778,9 @@ class Throttler:
         now = time.monotonic()
         if self._request_delay_deadline(request, now) > now:
             return False
-        for scope_id, value in self._cached_scope_values(request):
+        for scope_id, quota_amount in self._cached_scope_values(request):
             manager = self.get_scope_manager(scope_id)
-            if manager.can_send(now=now, amount=value) > 0:
+            if manager.can_send(now=now, quota_amount=quota_amount) > 0:
                 return False
             if manager.concurrency_blocked():
                 return False
@@ -783,17 +793,17 @@ class Throttler:
         # up on broad crawls.
         self._maybe_evict(time.monotonic())
         managers = [
-            (self.get_scope_manager(scope_id), value)
-            for scope_id, value in self._cached_scope_values(request)
+            (self.get_scope_manager(scope_id), quota_amount)
+            for scope_id, quota_amount in self._cached_scope_values(request)
         ]
         self._record_reservation(request, managers)
 
     def get_time_until_ready(self, request: Request) -> float | None:
         now = time.monotonic()
         wait = max(0.0, self._request_delay_deadline(request, now) - now)
-        for scope_id, value in self._cached_scope_values(request):
+        for scope_id, quota_amount in self._cached_scope_values(request):
             manager = self.get_scope_manager(scope_id)
-            wait = max(wait, manager.can_send(now=now, amount=value))
+            wait = max(wait, manager.can_send(now=now, quota_amount=quota_amount))
         return wait if wait > 0 else None
 
     def get_scope_load(self, scope_id: ScopeID) -> float:
@@ -996,19 +1006,22 @@ class ThrottlingScopeManagerProtocol(Protocol):
 
     def __init__(self, crawler: Crawler, config: dict[str, Any]) -> None: ...
 
-    def can_send(self, now: float | None = None, amount: float | None = None) -> float:
+    def can_send(
+        self, now: float | None = None, quota_amount: QuotaAmount | None = None
+    ) -> float:
         """Return the number of seconds to wait before a request for this scope
         may be sent, or ``0`` if it may be sent right away.
 
-        *amount* is the expected :ref:`throttler quota <throttling-quotas>`
-        consumption of the request, if any.
+        *quota_amount* is the expected :ref:`throttler quota
+        <throttling-quotas>` consumption of the request, if any.
         """
 
     def record_sent(
-        self, now: float | None = None, amount: float | None = None
+        self, now: float | None = None, quota_amount: QuotaAmount | None = None
     ) -> None:
         """Record that a request for this scope has just been sent, consuming
-        *amount* of its :ref:`throttler quota <throttling-quotas>` if given."""
+        *quota_amount* of its :ref:`throttler quota <throttling-quotas>` if
+        given."""
 
     def record_done(self, now: float | None = None) -> None:
         """Record that a previously :meth:`record_sent` request has finished
@@ -1157,7 +1170,7 @@ class ThrottlingScopeManager:
         # normalized to a (low, high) multiplier range (or None for no jitter).
         # Defaults to RANDOMIZE_DOWNLOAD_DELAY's historical ±50% when delay
         # randomization is on, or to no variation when it is off.
-        self._jitter: tuple[float, float] | None = self._normalize_jitter(
+        self._jitter: JitterRange | None = self._normalize_jitter(
             config.get(
                 "jitter", 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
             )
@@ -1167,7 +1180,7 @@ class ThrottlingScopeManager:
             backoff.get("max_delay", settings.getfloat("BACKOFF_MAX_DELAY"))
         )
         self._min_delay: float = _BACKOFF_MIN_DELAY
-        self._backoff_jitter: tuple[float, float] | None = self._normalize_jitter(
+        self._backoff_jitter: JitterRange | None = self._normalize_jitter(
             _BACKOFF_JITTER
         )
         # Which responses/exceptions trigger backoff is decided by the backoff
@@ -1189,7 +1202,7 @@ class ThrottlingScopeManager:
 
         # Quota.
         quota = config.get("quota")
-        self._quota: float | None = None if quota is None else float(quota)
+        self._quota: QuotaAmount | None = None if quota is None else float(quota)
         self._quota_window: float = float(
             config.get("window", settings.getfloat("THROTTLER_WINDOW"))
         )
@@ -1216,7 +1229,7 @@ class ThrottlingScopeManager:
     @staticmethod
     def _normalize_jitter(
         jitter: float | list[float],
-    ) -> tuple[float, float] | None:
+    ) -> JitterRange | None:
         """Normalize a ``jitter`` config value to a ``(low, high)`` multiplier
         range, or ``None`` when no jitter applies.
 
@@ -1232,7 +1245,7 @@ class ThrottlingScopeManager:
         return (-float(jitter), float(jitter))
 
     @staticmethod
-    def _apply_jitter(value: float, jitter: tuple[float, float] | None) -> float:
+    def _apply_jitter(value: float, jitter: JitterRange | None) -> float:
         if jitter is None:
             return value
         return value * (1 + random.uniform(*jitter))  # noqa: S311
@@ -1302,7 +1315,9 @@ class ThrottlingScopeManager:
             self._quota_window_start += self._quota_window
             self._consumed = 0.0
 
-    def can_send(self, now: float | None = None, amount: float | None = None) -> float:
+    def can_send(
+        self, now: float | None = None, quota_amount: QuotaAmount | None = None
+    ) -> float:
         # can_send() only refreshes passive, time-based state (backoff recovery
         # and the quota window) to reflect the current time.
         now = self._now(now)
@@ -1314,7 +1329,7 @@ class ThrottlingScopeManager:
         if self._next_allowed_time is not None:
             waits.append(self._next_allowed_time - now)
         if self._quota is not None:
-            need = 0.0 if amount is None else float(amount)
+            need = 0.0 if quota_amount is None else float(quota_amount)
             # Block until the window resets only if some quota is already spent;
             # a single oversized request is always allowed through.
             if self._consumed > 0 and self._consumed + need > self._quota:
@@ -1326,7 +1341,7 @@ class ThrottlingScopeManager:
         return max(waits)
 
     def record_sent(
-        self, now: float | None = None, amount: float | None = None
+        self, now: float | None = None, quota_amount: QuotaAmount | None = None
     ) -> None:
         now = self._now(now)
         self._last_seen = now
@@ -1334,9 +1349,9 @@ class ThrottlingScopeManager:
             self._in_backoff_until = None
         self._next_allowed_time = now + self._effective_delay()
         self._active += 1
-        if self._quota is not None and amount is not None:
+        if self._quota is not None and quota_amount is not None:
             self._maybe_reset_quota(now)
-            self._consumed += float(amount)
+            self._consumed += float(quota_amount)
 
     def record_done(self, now: float | None = None) -> None:
         if self._active > 0:
