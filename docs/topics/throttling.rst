@@ -193,8 +193,6 @@ respected automatically during :ref:`backoff <backoff>`: the scope's next
 request is held back until the indicated time (capped at
 :setting:`BACKOFF_MAX_DELAY`), on top of the usual exponential backoff step.
 
-.. seealso:: :setting:`REDIRECT_MAX_DELAY`
-
 .. _crawl-delay:
 
 robots.txt

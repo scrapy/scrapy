@@ -37,7 +37,7 @@ class BaseRedirectMiddleware:
             raise NotConfigured
 
         self.max_redirect_times: int = settings.getint("REDIRECT_MAX_TIMES")
-        self.max_delay: float = settings.getfloat("REDIRECT_MAX_DELAY")
+        self.max_delay: float = settings.getfloat("BACKOFF_MAX_DELAY")
         self.priority_adjust: int = settings.getint("REDIRECT_PRIORITY_ADJUST")
         self._referer_spider_middleware: RefererMiddleware | None = None
 
@@ -183,10 +183,10 @@ class BaseRedirectMiddleware:
     def _apply_retry_after(self, redirect_request: Request, response: Response) -> None:
         """Delay the redirect when *response* carries a ``Retry-After`` header.
 
-        The delay is capped at :setting:`REDIRECT_MAX_DELAY` and applied through
+        The delay is capped at :setting:`BACKOFF_MAX_DELAY` and applied through
         the :reqmeta:`delay` request metadata key, which holds back
         this request only (without counting as a :ref:`backoff <backoff>`
-        trigger for its scopes). :setting:`REDIRECT_MAX_DELAY` set to ``0``
+        trigger for its scopes). :setting:`BACKOFF_MAX_DELAY` set to ``0``
         disables it.
         """
         if not self.max_delay:
