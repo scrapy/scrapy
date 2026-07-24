@@ -429,7 +429,7 @@ Throttler quotas
 ----------------
 
 When different requests can consume different amounts of a throttling scope,
-you can express this using **throttler quotas**.
+you can express this using **throttler quotas** to optimize request scheduling.
 
 .. setting:: THROTTLER_WINDOW
 
