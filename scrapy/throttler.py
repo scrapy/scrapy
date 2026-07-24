@@ -937,8 +937,9 @@ class ThrottlingScopeManagerProtocol(Protocol):
     delay and concurrency limits, its quota, and any gradual :ref:`backoff
     <backoff>`.
 
-    The ``__init__`` method gets a ``config`` dict with the base configuration
-    of the managed throttling scope. For example:
+    Instances are built with :func:`~scrapy.utils.misc.build_from_crawler`,
+    which passes the :class:`~scrapy.crawler.Crawler` and a ``config`` dict with
+    the base configuration of the managed throttling scope. For example:
 
     .. code-block:: python
 
@@ -957,11 +958,6 @@ class ThrottlingScopeManagerProtocol(Protocol):
         }
 
     """
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler, config: dict[str, Any]) -> Self: ...
-
-    def __init__(self, crawler: Crawler, config: dict[str, Any]) -> None: ...
 
     def can_send(
         self, now: float | None = None, quota_amount: QuotaAmount | None = None
