@@ -13,7 +13,7 @@ import re
 import sys
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
@@ -475,7 +475,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
-        self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
+        self._pending_close_futures: list[asyncio.Task[None] | Deferred[None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -539,22 +539,28 @@ class FeedExporter:
             )
 
     async def close_spider(self, spider: Spider) -> None:
-        self._pending_close_coros.extend(
-            self._close_slot(slot, spider) for slot in self.slots
-        )
+        for slot in self.slots:
+            self._schedule_close_slot(slot, spider)
 
-        if self._pending_close_coros:
+        if self._pending_close_futures:
             if is_asyncio_available():
-                await asyncio.wait(
-                    [asyncio.create_task(coro) for coro in self._pending_close_coros]
-                )
+                await asyncio.wait(self._pending_close_futures)
             else:
-                await DeferredList(
-                    deferred_from_coro(coro) for coro in self._pending_close_coros
-                )
+                await DeferredList(self._pending_close_futures)
 
         # Send FEED_EXPORTER_CLOSED signal
         await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
+
+    def _schedule_close_slot(self, slot: FeedSlot, spider: Spider) -> None:
+        # Schedule the slot to close (and its batch to be finalized/uploaded)
+        # right away instead of merely recording the coroutine, so that
+        # mid-crawl batches are delivered as soon as they fill up instead of
+        # only when the whole crawl finishes (see GH #7730).
+        coro = self._close_slot(slot, spider)
+        if is_asyncio_available():
+            self._pending_close_futures.append(asyncio.create_task(coro))
+        else:
+            self._pending_close_futures.append(deferred_from_coro(coro))
 
     @staticmethod
     def _get_file(slot_: FeedSlot) -> IO[bytes]:
@@ -652,7 +658,7 @@ class FeedExporter:
                 uri_params = self._get_uri_params(
                     spider, self.feeds[slot.uri_template]["uri_params"], slot
                 )
-                self._pending_close_coros.append(self._close_slot(slot, spider))
+                self._schedule_close_slot(slot, spider)
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import json
 import marshal
@@ -381,6 +382,40 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
+
+    @coroutine_test
+    async def test_batch_closed_without_waiting_for_spider_close(self):
+        """Regression test for GH #7730.
+
+        A full batch must be scheduled to close (and its file finalized)
+        as soon as it fills up. Previously, the closing coroutine was only
+        recorded in a plain list and never actually scheduled to run until
+        close_spider() wrapped and awaited it, so every batch ended up
+        being finalized/uploaded all at once at the end of the crawl
+        instead of as each batch filled up.
+        """
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename() / "%(batch_id)d": {"format": "json"},
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter(crawler)
+        spider = Spider("test")
+        exporter.open_spider(spider)
+
+        exporter.item_scraped({"foo": "bar"}, spider)
+        assert exporter._pending_close_futures, "batch rollover should schedule a close"
+
+        # Give the event loop a chance to run already-scheduled work.
+        # close_spider() is deliberately never called here: the batch
+        # should already be finalized without it.
+        await asyncio.sleep(0.05)
+
+        written = [p for p in Path(self.temp_dir).rglob("*") if p.is_file()]
+        assert written, "batch was not finalized until spider close"
+        assert json.loads(written[0].read_text()) == [{"foo": "bar"}]
 
     @pytest.mark.requires_boto3
     @inline_callbacks_test
