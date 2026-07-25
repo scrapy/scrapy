@@ -11,10 +11,10 @@ from scrapy.http import HtmlResponse, Request, TextResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.utils.test import get_crawler
-from tests.test_spider import TestSpider
+from tests.utils.bases.spider import TestSpiderBase
 
 
-class TestCrawlSpider(TestSpider):
+class TestCrawlSpider(TestSpiderBase):
     test_body = b"""<html><head><title>Page title</title></head>
     <body>
     <p><a href="item/12.html">Item 12</a></p>

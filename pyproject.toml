@@ -188,7 +188,8 @@ module = [
     "tests.test_utils_misc.test_return_with_argument_inside_generator",
     "tests.test_utils_python",
     "tests.test_utils_request",
-    "tests.utils.bases.http_request"
+    "tests.utils.bases.http_request",
+    "tests.utils.bases.spider",
 ]
 check_untyped_defs = false
 
