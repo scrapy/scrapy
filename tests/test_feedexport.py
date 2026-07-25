@@ -29,14 +29,9 @@ from scrapy.extensions.feedexport import (
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
+from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
-from tests.utils.feedexport import (
-    MyItem,
-    MyItem2,
-    TestFeedExportBase,
-    path_to_url,
-    printf_escape,
-)
+from tests.utils.feedexport import MyItem, MyItem2, path_to_url, printf_escape
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable

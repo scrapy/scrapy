@@ -16,7 +16,8 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.utils.redirect import REDIRECT_SCHEME_CASES, SCHEME_PARAMS, TestRedirectBase
+from tests.utils.bases.redirect import TestRedirectBase
+from tests.utils.redirect import REDIRECT_SCHEME_CASES, SCHEME_PARAMS
 
 
 class TestRedirectMiddleware(TestRedirectBase):
