@@ -111,12 +111,12 @@ class TestResponseBase(ABC):
     def test_unavailable_meta(self):
         r1 = self.response_class("http://www.example.com", body=b"Some body")
         with pytest.raises(AttributeError, match=r"Response\.meta not available"):
-            r1.meta
+            r1.meta  # pylint: disable=pointless-statement
 
     def test_unavailable_cb_kwargs(self):
         r1 = self.response_class("http://www.example.com", body=b"Some body")
         with pytest.raises(AttributeError, match=r"Response\.cb_kwargs not available"):
-            r1.cb_kwargs
+            r1.cb_kwargs  # pylint: disable=pointless-statement
 
     def test_copy_inherited_classes(self):
         """Test Response children copies preserve their class"""
@@ -228,7 +228,7 @@ class TestResponseBase(ABC):
         if self.response_class == Response:
             msg = "Response content isn't text"
             with pytest.raises(AttributeError, match=msg):
-                r.text
+                r.text  # pylint: disable=pointless-statement
             with pytest.raises(NotSupported, match=msg):
                 r.css("body")
             with pytest.raises(NotSupported, match=msg):
@@ -236,7 +236,7 @@ class TestResponseBase(ABC):
             with pytest.raises(NotSupported, match=msg):
                 r.jmespath("body")
         else:
-            r.text
+            r.text  # pylint: disable=pointless-statement
             r.css("body")
             r.xpath("//body")
 

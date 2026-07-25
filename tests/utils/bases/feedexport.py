@@ -27,7 +27,7 @@ class TestFeedExportBase(ABC):
     @classmethod
     def setup_class(cls):
         cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
+        cls.mockserver.__enter__()  # pylint: disable=unnecessary-dunder-call
 
     @classmethod
     def teardown_class(cls):
