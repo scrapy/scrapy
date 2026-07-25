@@ -189,6 +189,7 @@ module = [
     "tests.test_utils_python",
     "tests.test_utils_request",
     "tests.utils.bases.http_request",
+    "tests.utils.bases.http_response",
     "tests.utils.bases.spider",
 ]
 check_untyped_defs = false
