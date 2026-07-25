@@ -1,5 +1,3 @@
-"""Base classes for HTTP download handler tests."""
-
 from __future__ import annotations
 
 import gzip

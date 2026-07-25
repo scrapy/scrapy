@@ -13,7 +13,7 @@ from scrapy import Spider
 from scrapy.crawler import Crawler
 from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import Request
-from tests.test_downloader_handlers_http_base import (
+from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
     TestHttpsBase,
     TestHttpsCustomCiphersBase,
