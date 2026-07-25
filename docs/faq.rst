@@ -332,8 +332,8 @@ section of the site (which varies each time). In that case, the credentials to
 log in would be settings, while the url of the section to scrape would be a
 spider argument.
 
-I'm scraping a XML document and my XPath selector doesn't return any items
---------------------------------------------------------------------------
+I'm scraping an XML document and my XPath selector doesn't return any items
+---------------------------------------------------------------------------
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
