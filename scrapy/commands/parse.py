@@ -270,11 +270,6 @@ class Command(BaseRunSpiderCommand):
         assert self.spidercls
         self.crawler_process.crawl(self.spidercls, **opts.spargs)
         self.pcrawler = next(iter(self.crawler_process.crawlers))
-        self._tracker = _current_async_backend_tracker_factory()
-        self.pcrawler.signals.connect(self._tracker.drain, signal=signals.spider_closed)
-        self.pcrawler.signals.connect(
-            self._tracker.drain, signal=signals.engine_stopped
-        )
         self.crawler_process.start()
 
         if not self.first_response:
@@ -291,6 +286,14 @@ class Command(BaseRunSpiderCommand):
             assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
+                if not getattr(self, "_tracker", None):
+                    self._tracker = _current_async_backend_tracker_factory()
+                    self.pcrawler.signals.connect(
+                        self._tracker.drain, signal=signals.spider_closed
+                    )
+                    self.pcrawler.signals.connect(
+                        self._tracker.drain, signal=signals.engine_stopped
+                    )
                 for item in items:
                     self._tracker.schedule(itemproc.process_item_async(item))
             else:
