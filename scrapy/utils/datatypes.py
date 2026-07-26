@@ -132,6 +132,13 @@ class CaseInsensitiveDict(collections.UserDict[str | bytes, Any]):
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {super().__repr__()}>"
 
+    # UserDict.copy() shallow-copies the instance, which would share self._keys
+    # between the copy and the original.
+    def __copy__(self) -> Self:
+        return self.__class__(self)
+
+    copy = __copy__
+
     def _normkey(self, key: str | bytes) -> str | bytes:
         return key
 

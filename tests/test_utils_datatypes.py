@@ -204,6 +204,15 @@ class TestCaseInsensitiveDictBase(ABC):
         assert h1.get("header1") == h3.get("header1")
         assert h1.get("header1") == h3.get("HEADER1")
 
+    def test_copy_is_independent(self):
+        h1 = self.dict_class({"header1": "value1", "header2": "value2"})
+        for h2 in (copy.copy(h1), h1.copy()):
+            del h2["header1"]
+            h2["header3"] = "value3"
+            assert "header1" in h1
+            assert "header3" not in h1
+            assert dict(h1) == {"header1": "value1", "header2": "value2"}
+
 
 class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
     dict_class = CaseInsensitiveDict  # type: ignore[assignment]
