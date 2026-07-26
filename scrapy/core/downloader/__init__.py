@@ -23,12 +23,15 @@ from scrapy.utils.asyncio import (
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
-    _schedule_coro,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import (
+    _BackgroundTaskTracker,
+    _current_async_backend_tracker_factory,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -120,6 +123,7 @@ class Downloader:
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
+        self._tracker: _BackgroundTaskTracker | None = None
 
     @inlineCallbacks
     @_warn_spider_arg
@@ -193,6 +197,14 @@ class Downloader:
             slot.active.remove(request)
 
     def _process_queue(self, slot: Slot) -> None:
+        if self._tracker is None:
+            self._tracker = _current_async_backend_tracker_factory()
+            self.crawler.signals.connect(
+                self._tracker.drain, signal=signals.spider_closed
+            )
+            self.crawler.signals.connect(
+                self._tracker.drain, signal=signals.engine_stopped
+            )
         if slot.latercall:
             # block processing until slot.latercall is called
             return
@@ -210,7 +222,7 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, queue_dfd = slot.queue.popleft()
-            _schedule_coro(self._wait_for_download(slot, request, queue_dfd))
+            self._tracker.schedule(self._wait_for_download(slot, request, queue_dfd))
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(slot)

@@ -311,3 +311,19 @@ async def run_in_thread(
     from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
     return await maybe_deferred_to_future(deferToThread(func, *args, **kwargs))
+
+
+class _AsyncioTaskTracker:
+    __slots__ = ("__weakref__", "_tracking")
+
+    def __init__(self) -> None:
+        self._tracking: set[asyncio.Task[Any]] = set()
+
+    def schedule(self, coro: Coroutine[Any, Any, Any]) -> None:
+        t = asyncio.get_running_loop().create_task(coro)
+        self._tracking.add(t)
+        t.add_done_callback(self._tracking.discard)
+
+    async def drain(self) -> None:
+        while self._tracking:
+            await asyncio.wait(self._tracking)

@@ -579,3 +579,22 @@ def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitab
         return o
 
     return coro()
+
+
+class _DeferredTracker:
+    __slots__ = ("__weakref__", "_tracking")
+
+    def __init__(self) -> None:
+        self._tracking: set[Deferred[Any]] = set()
+
+    def _discard(self, _result: Any, d: Deferred[Any]) -> None:
+        self._tracking.discard(d)
+
+    def schedule(self, coro: Coroutine[Any, Any, Any]) -> None:
+        d = Deferred.fromCoroutine(coro)
+        self._tracking.add(d)
+        d.addBoth(self._discard, d)
+
+    async def drain(self) -> None:
+        while self._tracking:
+            await maybe_deferred_to_future(DeferredList(self._tracking))
