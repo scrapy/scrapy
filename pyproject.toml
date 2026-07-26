@@ -156,7 +156,6 @@ module = [
     "tests.test_linkextractors",
     "tests.test_loader",
     "tests.test_logformatter",
-    "tests.test_logstats",
     "tests.test_mail",
     "tests.test_pipeline_crawl",
     "tests.test_pipeline_files",
