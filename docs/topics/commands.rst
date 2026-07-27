@@ -209,6 +209,48 @@ Project-only commands:
 * :command:`edit`
 * :command:`parse`
 
+.. _topics-global-options:
+
+Global options
+==============
+
+These options are available for all Scrapy commands:
+
+``--logfile FILE``
+    Log output to *FILE* instead of stderr.
+
+``-L LEVEL``, ``--loglevel LEVEL``
+    Set the logging level. Available levels (in increasing severity):
+    ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``, ``CRITICAL``.
+    Default: ``WARNING``.
+
+``--nolog``
+    Disable logging completely.
+
+``--pidfile FILE``
+    Write the process ID to *FILE*.
+
+``-s NAME=VALUE``, ``--set NAME=VALUE``
+    Override a Scrapy setting (may be repeated)::
+
+        scrapy crawl myspider -s LOG_LEVEL=DEBUG -s CONCURRENT_REQUESTS=4
+
+``--profile FILE``
+    Run the command under ``cProfile`` and write the binary stats dump to
+    *FILE*. After the run, a human-readable summary of the top 20 functions
+    sorted by cumulative time is printed to the log at ``INFO`` level.
+
+    Usage example::
+
+        scrapy crawl myspider --profile stats.prof
+
+    To inspect the saved binary dump later::
+
+        python -c "import pstats; pstats.Stats('stats.prof').sort_stats('cumulative').print_stats(20)"
+
+``--pdb``
+    Enable ``pdb`` on failure.
+
 .. command:: startproject
 
 startproject
