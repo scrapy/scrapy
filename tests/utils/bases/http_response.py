@@ -1,0 +1,417 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+import pytest
+from w3lib.encoding import resolve_encoding
+
+from scrapy.exceptions import NotSupported
+from scrapy.http import Headers, Request, Response
+from scrapy.link import Link
+from scrapy.utils._deps_compat import W3LIB_STRIPS_URLS
+from tests import get_testdata
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+
+class TestResponseBase(ABC):
+    @property
+    @abstractmethod
+    def response_class(self) -> type[Response]:
+        raise NotImplementedError
+
+    def test_init(self):
+        # Response requires url in the constructor
+        with pytest.raises(TypeError):
+            self.response_class()
+        assert isinstance(
+            self.response_class("http://example.com/"), self.response_class
+        )
+        with pytest.raises(TypeError):
+            self.response_class(b"http://example.com")
+        with pytest.raises(TypeError):
+            self.response_class(url="http://example.com", body={})
+        # body can be str or None
+        assert isinstance(
+            self.response_class("http://example.com/", body=b""),
+            self.response_class,
+        )
+        assert isinstance(
+            self.response_class("http://example.com/", body=b"body"),
+            self.response_class,
+        )
+        # test presence of all optional parameters
+        assert isinstance(
+            self.response_class(
+                "http://example.com/", body=b"", headers={}, status=200
+            ),
+            self.response_class,
+        )
+
+        r = self.response_class("http://www.example.com")
+        assert isinstance(r.url, str)
+        assert r.url == "http://www.example.com"
+        assert r.status == 200
+
+        assert isinstance(r.headers, Headers)
+        assert not r.headers
+
+        headers = {"foo": "bar"}
+        body = b"a body"
+        r = self.response_class("http://www.example.com", headers=headers, body=body)
+
+        assert r.headers is not headers
+        assert r.headers[b"foo"] == b"bar"
+
+        r = self.response_class("http://www.example.com", status=301)
+        assert r.status == 301
+        r = self.response_class("http://www.example.com", status="301")
+        assert r.status == 301
+        with pytest.raises(ValueError, match=r"invalid literal for int\(\)"):
+            self.response_class("http://example.com", status="lala200")
+
+    def test_copy(self):
+        """Test Response copy"""
+
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        r1.flags.append("cached")
+        r2 = r1.copy()
+
+        assert r1.status == r2.status
+        assert r1.body == r2.body
+
+        # make sure flags list is shallow copied
+        assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"
+        assert r1.flags == r2.flags
+
+        # make sure headers attribute is shallow copied
+        assert r1.headers is not r2.headers, (
+            "headers must be a shallow copy, not identical"
+        )
+        assert r1.headers == r2.headers
+
+    def test_copy_meta(self):
+        req = Request("http://www.example.com")
+        req.meta["foo"] = "bar"
+        r1 = self.response_class(
+            "http://www.example.com", body=b"Some body", request=req
+        )
+        assert r1.meta is req.meta
+
+    def test_copy_cb_kwargs(self):
+        req = Request("http://www.example.com")
+        req.cb_kwargs["foo"] = "bar"
+        r1 = self.response_class(
+            "http://www.example.com", body=b"Some body", request=req
+        )
+        assert r1.cb_kwargs is req.cb_kwargs
+
+    def test_unavailable_meta(self):
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        with pytest.raises(AttributeError, match=r"Response\.meta not available"):
+            r1.meta  # pylint: disable=pointless-statement
+
+    def test_unavailable_cb_kwargs(self):
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        with pytest.raises(AttributeError, match=r"Response\.cb_kwargs not available"):
+            r1.cb_kwargs  # pylint: disable=pointless-statement
+
+    def test_copy_inherited_classes(self):
+        """Test Response children copies preserve their class"""
+
+        class CustomResponse(self.response_class):
+            pass
+
+        r1 = CustomResponse("http://www.example.com")
+        r2 = r1.copy()
+
+        assert isinstance(r2, CustomResponse)
+
+    def test_replace(self):
+        """Test Response.replace() method"""
+        hdrs = Headers({"key": "value"})
+        r1 = self.response_class("http://www.example.com")
+        r2 = r1.replace(status=301, body=b"New body", headers=hdrs)
+        assert r1.body == b""
+        assert r1.url == r2.url
+        assert (r1.status, r2.status) == (200, 301)
+        assert (r1.body, r2.body) == (b"", b"New body")
+        assert (r1.headers, r2.headers) == ({}, hdrs)
+
+        # Empty attributes (which may fail if not compared properly)
+        r3 = self.response_class("http://www.example.com", flags=["cached"])
+        r4 = r3.replace(body=b"", flags=[])
+        assert r4.body == b""
+        assert not r4.flags
+
+    def _assert_response_values(self, response, encoding, body):
+        if isinstance(body, str):
+            body_unicode = body
+            body_bytes = body.encode(encoding)
+        else:
+            body_unicode = body.decode(encoding)
+            body_bytes = body
+
+        assert isinstance(response.body, bytes)
+        assert isinstance(response.text, str)
+        self._assert_response_encoding(response, encoding)
+        assert response.body == body_bytes
+        assert response.text == body_unicode
+
+    def _assert_response_encoding(self, response, encoding):
+        assert response.encoding == resolve_encoding(encoding)
+
+    def test_immutable_attributes(self):
+        r = self.response_class("http://example.com")
+        with pytest.raises(AttributeError):
+            r.url = "http://example2.com"
+        with pytest.raises(AttributeError):
+            r.body = "xxx"
+
+    def test_setter_mutable_lazy_loading(self):
+        """Mutable attributes are set internally to None only until they are
+        read, then they always return the same falsy instance of the
+        corresponding mutable structure.
+
+        Setting them to None causes the next read to return a different object.
+        """
+
+        response = self.response_class("http://example.com")
+
+        response.request = Request("http://example.com")
+
+        assert response._flags is None
+        assert response.flags == []
+        assert response.flags is response.flags
+        assert response._flags == []
+        original_flags = response.flags
+        response.flags = None
+        assert response._flags is None
+        assert response.flags == []
+        assert response.flags is not original_flags
+
+        assert response._headers is None
+        assert response.headers == {}
+        assert response.headers is response.headers
+        assert isinstance(response.headers, Headers)
+        assert isinstance(response._headers, Headers)
+        original_headers = response.headers
+        response.headers = None
+        assert response._headers is None
+        assert response.headers == {}
+        assert response._headers == {}
+        assert response.headers is not original_headers
+
+    def test_setters(self):
+        response = self.response_class("http://example.com")
+
+        response.flags = ["f1"]
+        assert response.flags == ["f1"]
+
+        headers = Headers({b"X-Test": b"1"})
+        response.headers = headers
+        assert response._headers is headers
+        response.headers = {b"A": b"b"}
+        assert isinstance(response.headers, Headers)
+        assert response._headers[b"A"] == b"b"
+
+    def test_urljoin(self):
+        """Test urljoin shortcut (only for existence, since behavior equals urljoin)"""
+        joined = self.response_class("http://www.example.com").urljoin("/test")
+        absolute = "http://www.example.com/test"
+        assert joined == absolute
+
+    def test_shortcut_attributes(self):
+        r = self.response_class("http://example.com", body=b"hello")
+        if self.response_class == Response:
+            msg = "Response content isn't text"
+            with pytest.raises(AttributeError, match=msg):
+                r.text  # pylint: disable=pointless-statement
+            with pytest.raises(NotSupported, match=msg):
+                r.css("body")
+            with pytest.raises(NotSupported, match=msg):
+                r.xpath("//body")
+            with pytest.raises(NotSupported, match=msg):
+                r.jmespath("body")
+        else:
+            r.text  # pylint: disable=pointless-statement
+            r.css("body")
+            r.xpath("//body")
+
+    # Response.follow
+
+    def test_follow_url_absolute(self):
+        self._assert_followed_url("http://foo.example.com", "http://foo.example.com")
+
+    def test_follow_url_relative(self):
+        self._assert_followed_url("foo", "http://example.com/foo")
+
+    def test_follow_link(self):
+        self._assert_followed_url(
+            Link("http://example.com/foo"), "http://example.com/foo"
+        )
+
+    def test_follow_None_url(self):
+        r = self.response_class("http://example.com")
+        with pytest.raises(ValueError, match="url can't be None"):
+            r.follow(None)
+
+    def test_follow_None_encoding(self):
+        r = self.response_class("http://example.com")
+        with pytest.raises(ValueError, match="encoding can't be None"):
+            r.follow("foo", encoding=None)
+
+    @pytest.mark.xfail(
+        not W3LIB_STRIPS_URLS,
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
+    def test_follow_whitespace_url(self):
+        self._assert_followed_url("foo ", "http://example.com/foo")
+
+    @pytest.mark.xfail(
+        not W3LIB_STRIPS_URLS,
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
+    def test_follow_whitespace_link(self):
+        self._assert_followed_url(
+            Link("http://example.com/foo "), "http://example.com/foo"
+        )
+
+    def test_follow_flags(self):
+        res = self.response_class("http://example.com/")
+        fol = res.follow("http://example.com/", flags=["cached", "allowed"])
+        assert fol.flags == ["cached", "allowed"]
+
+    # Response.follow_all
+
+    def test_follow_all_absolute(self):
+        url_list = [
+            "http://example.org",
+            "http://www.example.org",
+            "http://example.com",
+            "http://www.example.com",
+        ]
+        self._assert_followed_all_urls(url_list, url_list)
+
+    def test_follow_all_relative(self):
+        relative = ["foo", "bar", "foo/bar", "bar/foo"]
+        absolute = [
+            "http://example.com/foo",
+            "http://example.com/bar",
+            "http://example.com/foo/bar",
+            "http://example.com/bar/foo",
+        ]
+        self._assert_followed_all_urls(relative, absolute)
+
+    def test_follow_all_links(self):
+        absolute = [
+            "http://example.com/foo",
+            "http://example.com/bar",
+            "http://example.com/foo/bar",
+            "http://example.com/bar/foo",
+        ]
+        links = map(Link, absolute)
+        self._assert_followed_all_urls(links, absolute)
+
+    def test_follow_all_empty(self):
+        r = self.response_class("http://example.com")
+        assert not list(r.follow_all([]))
+
+    def test_follow_all_invalid(self):
+        r = self.response_class("http://example.com")
+        if self.response_class == Response:
+            with pytest.raises(TypeError):
+                list(r.follow_all(urls=None))
+            with pytest.raises(TypeError):
+                list(r.follow_all(urls=12345))
+            with pytest.raises(ValueError, match="url can't be None"):
+                list(r.follow_all(urls=[None]))
+        else:
+            with pytest.raises(
+                ValueError, match="Please supply exactly one of the following arguments"
+            ):
+                list(r.follow_all(urls=None))
+            with pytest.raises(TypeError):
+                list(r.follow_all(urls=12345))
+            with pytest.raises(ValueError, match="url can't be None"):
+                list(r.follow_all(urls=[None]))
+
+    @pytest.mark.xfail(
+        not W3LIB_STRIPS_URLS,
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
+    def test_follow_all_whitespace(self):
+        relative = ["foo ", "bar ", "foo/bar ", "bar/foo "]
+        absolute = [
+            "http://example.com/foo",
+            "http://example.com/bar",
+            "http://example.com/foo/bar",
+            "http://example.com/bar/foo",
+        ]
+        self._assert_followed_all_urls(relative, absolute)
+
+    @pytest.mark.xfail(
+        not W3LIB_STRIPS_URLS,
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
+    def test_follow_all_whitespace_links(self):
+        absolute = [
+            "http://example.com/foo ",
+            "http://example.com/bar ",
+            "http://example.com/foo/bar ",
+            "http://example.com/bar/foo ",
+        ]
+        links = [Link(u) for u in absolute]
+        expected = [u.strip() for u in absolute]
+        self._assert_followed_all_urls(links, expected)
+
+    def test_follow_all_flags(self):
+        re = self.response_class("http://www.example.com/")
+        urls = [
+            "http://www.example.com/",
+            "http://www.example.com/2",
+            "http://www.example.com/foo",
+        ]
+        fol = re.follow_all(urls, flags=["cached", "allowed"])
+        for req in fol:
+            assert req.flags == ["cached", "allowed"]
+
+    def _assert_followed_url(
+        self,
+        follow_obj: str | Link,
+        target_url: str,
+        response: Response | None = None,
+        encoding: str | None = None,
+    ) -> None:
+        if response is None:
+            response = self._links_response()
+        req = response.follow(follow_obj)
+        assert req.url == target_url
+        if encoding is not None:
+            assert req.encoding == encoding
+
+    def _assert_followed_all_urls(
+        self,
+        follow_obj: Iterable[str | Link],
+        target_urls: Iterable[str],
+        response: Response | None = None,
+    ) -> None:
+        if response is None:
+            response = self._links_response()
+        followed = response.follow_all(follow_obj)
+        for req, target in zip(followed, target_urls, strict=True):
+            assert req.url == target
+
+    def _links_response(self) -> Response:
+        body = get_testdata("link_extractor", "linkextractor.html")
+        return self.response_class("http://example.com/index", body=body)
+
+    def _links_response_no_href(self) -> Response:
+        body = get_testdata("link_extractor", "linkextractor_no_href.html")
+        return self.response_class("http://example.com/index", body=body)

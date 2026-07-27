@@ -14,11 +14,11 @@ from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlRespon
 from scrapy.spiders import SitemapSpider
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
-from tests.test_spider import TestSpider
+from tests.utils.bases.spider import TestSpiderBase
 from tests.utils.decorators import coroutine_test
 
 
-class TestSitemapSpider(TestSpider):
+class TestSitemapSpider(TestSpiderBase):
     spider_class = SitemapSpider
 
     BODY = b"SITEMAP"

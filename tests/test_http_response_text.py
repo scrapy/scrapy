@@ -8,10 +8,10 @@ import pytest
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import to_unicode
-from tests.test_http_response import TestResponse
+from tests.utils.bases.http_response import TestResponseBase
 
 
-class TestTextResponse(TestResponse):
+class TestTextResponse(TestResponseBase):
     response_class = TextResponse
 
     def test_follow_None_encoding(self):

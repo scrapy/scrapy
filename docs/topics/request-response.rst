@@ -342,6 +342,8 @@ Other functions related to requests
 
 .. autofunction:: scrapy.utils.request.request_from_dict
 
+.. autofunction:: scrapy.utils.httpobj.urlparse_cached
+
 
 .. _topics-request-response-ref-request-callback-arguments:
 

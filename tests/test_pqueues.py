@@ -11,7 +11,7 @@ from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
-from tests.test_scheduler import MockDownloader
+from tests.utils.downloader import MockDownloader
 
 
 class TestPriorityQueue:
