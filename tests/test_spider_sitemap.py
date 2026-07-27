@@ -8,7 +8,6 @@ from logging import WARNING
 from pathlib import Path
 
 import pytest
-from testfixtures import LogCapture
 
 from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import SitemapSpider
@@ -254,22 +253,23 @@ Sitemap: /sitemap-relative-url.xml
         urls = [req.url for req in spider._parse_sitemap(r)]
         assert urls == result
 
-    def test_parse_sitemap_empty_body(self):
+    def test_parse_sitemap_empty_body(self, caplog: pytest.LogCaptureFixture) -> None:
         r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
         spider = self.spider_class("example.com")
 
-        with LogCapture() as lc:
+        caplog.clear()
+        with caplog.at_level(WARNING):
             results = list(spider._parse_sitemap(r))
 
         assert not results
 
-        lc.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.spiders.sitemap",
-                "WARNING",
+                WARNING,
                 "Ignoring invalid sitemap: <200 http://www.example.com/sitemap.xml>",
             )
-        )
+        ]
 
     def test_parse_sitemap_not_sitemap(self):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -342,7 +342,7 @@ Sitemap: /sitemap-relative-url.xml
         response = Response(url="https://example.com", body=body, request=request)
         assert spider._get_sitemap_body(response) is None
 
-    def test_download_warnsize_setting(self):
+    def test_download_warnsize_setting(self, caplog: pytest.LogCaptureFixture) -> None:
         settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
         crawler = get_crawler(settings_dict=settings)
         spider = self.spider_class.from_crawler(crawler, "example.com")
@@ -350,25 +350,26 @@ Sitemap: /sitemap-relative-url.xml
         body = body_path.read_bytes()
         request = Request(url="https://example.com")
         response = Response(url="https://example.com", body=body, request=request)
-        with LogCapture(
-            "scrapy.spiders.sitemap", propagate=False, level=WARNING
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(WARNING, logger="scrapy.spiders.sitemap"):
             spider._get_sitemap_body(response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.spiders.sitemap",
-                "WARNING",
+                WARNING,
                 (
                     "<200 https://example.com> body size after decompression "
                     "(11511612 B) is larger than the download warning size "
                     "(10000000 B)."
                 ),
             ),
-        )
+        ]
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-    def test_download_warnsize_spider_attr(self):
-        class DownloadWarnSizeSpider(self.spider_class):
+    def test_download_warnsize_spider_attr(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        class DownloadWarnSizeSpider(self.spider_class):  # type: ignore[name-defined,misc]
             download_warnsize = 10_000_000
 
         crawler = get_crawler()
@@ -379,23 +380,24 @@ Sitemap: /sitemap-relative-url.xml
             url="https://example.com", meta={"download_warnsize": 10_000_000}
         )
         response = Response(url="https://example.com", body=body, request=request)
-        with LogCapture(
-            "scrapy.spiders.sitemap", propagate=False, level=WARNING
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(WARNING, logger="scrapy.spiders.sitemap"):
             spider._get_sitemap_body(response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.spiders.sitemap",
-                "WARNING",
+                WARNING,
                 (
                     "<200 https://example.com> body size after decompression "
                     "(11511612 B) is larger than the download warning size "
                     "(10000000 B)."
                 ),
             ),
-        )
+        ]
 
-    def test_download_warnsize_request_meta(self):
+    def test_download_warnsize_request_meta(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         crawler = get_crawler()
         spider = self.spider_class.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
@@ -404,21 +406,20 @@ Sitemap: /sitemap-relative-url.xml
             url="https://example.com", meta={"download_warnsize": 10_000_000}
         )
         response = Response(url="https://example.com", body=body, request=request)
-        with LogCapture(
-            "scrapy.spiders.sitemap", propagate=False, level=WARNING
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(WARNING, logger="scrapy.spiders.sitemap"):
             spider._get_sitemap_body(response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.spiders.sitemap",
-                "WARNING",
+                WARNING,
                 (
                     "<200 https://example.com> body size after decompression "
                     "(11511612 B) is larger than the download warning size "
                     "(10000000 B)."
                 ),
             ),
-        )
+        ]
 
     @coroutine_test
     async def test_sitemap_urls(self):

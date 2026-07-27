@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import marshal
 import pickle
 import tempfile
@@ -12,7 +13,6 @@ from unittest import mock
 
 import lxml.etree
 import pytest
-from testfixtures import LogCapture
 from w3lib.url import file_uri_to_path
 
 import scrapy
@@ -563,7 +563,9 @@ class TestFeedExport(TestFeedExportBase):
             assert expctd == data[fmt]
 
     @coroutine_test
-    async def test_export_no_items_multiple_feeds(self):
+    async def test_export_no_items_multiple_feeds(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Make sure that `storage.store` is not called."""
         settings = {
             "FEEDS": {
@@ -575,10 +577,10 @@ class TestFeedExport(TestFeedExportBase):
             "FEED_STORE_EMPTY": False,
         }
 
-        with LogCapture() as log:
+        with caplog.at_level(logging.INFO):
             await self.exported_no_data(settings)
 
-        assert str(log).count("Storage.store is called") == 0
+        assert caplog.text.count("Storage.store is called") == 0
 
     @coroutine_test
     async def test_export_multiple_item_classes(self):
@@ -1080,7 +1082,9 @@ class TestFeedExport(TestFeedExportBase):
         assert data["csv"] == b""
 
     @coroutine_test
-    async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
+    async def test_multiple_feeds_success_logs_blocking_feed_storage(
+        self, caplog: pytest.LogCaptureFixture
+    ):
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1093,14 +1097,16 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar1", "baz": ""},
             {"foo": "bar2", "baz": "quux"},
         ]
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             await self.exported_data(items, settings)
 
         for fmt in ["json", "xml", "csv"]:
-            assert f"Stored {fmt} feed (2 items)" in str(log)
+            assert f"Stored {fmt} feed (2 items)" in caplog.text
 
     @coroutine_test
-    async def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
+    async def test_multiple_feeds_failing_logs_blocking_feed_storage(
+        self, caplog: pytest.LogCaptureFixture
+    ):
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1113,11 +1119,11 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar1", "baz": ""},
             {"foo": "bar2", "baz": "quux"},
         ]
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             await self.exported_data(items, settings)
 
         for fmt in ["json", "xml", "csv"]:
-            assert f"Error storing {fmt} feed (2 items)" in str(log)
+            assert f"Error storing {fmt} feed (2 items)" in caplog.text
 
     @coroutine_test
     async def test_extend_kwargs(self):

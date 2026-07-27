@@ -1,11 +1,17 @@
-from testfixtures import LogCapture
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
 
 from scrapy import Request, signals
 from scrapy.http.response import Response
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SingleRequestSpider
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
+
+if TYPE_CHECKING:
+    import pytest
 
 OVERRIDDEN_URL = "https://example.org"
 
@@ -63,6 +69,8 @@ class AlternativeCallbacksMiddleware:
 
 
 class TestCrawl:
+    mockserver: MockServer
+
     @classmethod
     def setup_class(cls):
         cls.mockserver = MockServer()
@@ -107,8 +115,10 @@ class TestCrawl:
         assert failure.request.url == url
         assert isinstance(failure.value, ZeroDivisionError)
 
-    @inline_callbacks_test
-    def test_downloader_middleware_override_request_in_process_response(self):
+    @coroutine_test
+    async def test_downloader_middleware_override_request_in_process_response(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         Downloader middleware which returns a response with an specific 'request' attribute.
 
@@ -133,22 +143,21 @@ class TestCrawl:
         )
         crawler.signals.connect(signal_handler, signal=signals.response_received)
 
-        with LogCapture() as log:
-            yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(seed=url, mockserver=self.mockserver)
 
+        assert isinstance(crawler.spider, SingleRequestSpider)
         response = crawler.spider.meta["responses"][0]
         assert response.request.url == OVERRIDDEN_URL
 
         assert signal_params["response"].url == url
         assert signal_params["request"].url == OVERRIDDEN_URL
 
-        log.check_present(
-            (
-                "scrapy.core.engine",
-                "DEBUG",
-                f"Crawled (200) <GET {OVERRIDDEN_URL}> (referer: None)",
-            ),
-        )
+        assert (
+            "scrapy.core.engine",
+            logging.DEBUG,
+            f"Crawled (200) <GET {OVERRIDDEN_URL}> (referer: None)",
+        ) in caplog.record_tuples
 
     @inline_callbacks_test
     def test_downloader_middleware_override_in_process_exception(self):
@@ -196,8 +205,10 @@ class TestCrawl:
         assert response.body == b"Caught ZeroDivisionError"
         assert response.request.url == url
 
-    @inline_callbacks_test
-    def test_downloader_middleware_alternative_callback(self):
+    @coroutine_test
+    async def test_downloader_middleware_alternative_callback(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         Downloader middleware which returns a response with a
         specific 'request' attribute, with an alternative callback
@@ -211,14 +222,11 @@ class TestCrawl:
             },
         )
 
-        with LogCapture() as log:
-            url = self.mockserver.url("/status?n=200")
-            yield crawler.crawl(seed=url, mockserver=self.mockserver)
-
-        log.check_present(
-            (
-                "alternative_callbacks_spider",
-                "INFO",
-                "alt_callback was invoked with foo=bar",
-            ),
-        )
+        url = self.mockserver.url("/status?n=200")
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(seed=url, mockserver=self.mockserver)
+        assert (
+            "alternative_callbacks_spider",
+            logging.INFO,
+            "alt_callback was invoked with foo=bar",
+        ) in caplog.record_tuples

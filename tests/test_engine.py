@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 import pytest
-from testfixtures import LogCapture
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine, _Slot
@@ -145,8 +145,10 @@ class TestEngine(TestEngineBase):
             await asyncio.gather(e.start_async(), e.start_async())
         await e.stop_async()
 
-    @inline_callbacks_test
-    def test_start_request_processing_exception(self):
+    @coroutine_test
+    async def test_start_request_processing_exception(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         class BadRequestFingerprinter:
             def fingerprint(self, request):
                 raise ValueError  # to make Scheduler.enqueue_request() fail
@@ -160,10 +162,10 @@ class TestEngine(TestEngineBase):
         crawler = get_crawler(
             SimpleSpider, {"REQUEST_FINGERPRINTER_CLASS": BadRequestFingerprinter}
         )
-        with LogCapture() as log:
-            yield crawler.crawl()
-        assert "Error while processing requests from start()" in str(log)
-        assert "Spider closed (shutdown)" in str(log)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async()
+        assert "Error while processing requests from start()" in caplog.text
+        assert "Spider closed (shutdown)" in caplog.text
 
     def test_short_timeout(self):
         args = (

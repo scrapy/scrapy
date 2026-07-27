@@ -4,7 +4,6 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
-from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -129,7 +128,7 @@ class TestBaseMediaPipeline:
         context = getattr(info.downloaded[fp].value, "__context__", None)
         assert context is None
 
-    def test_default_item_completed(self):
+    def test_default_item_completed(self, caplog: pytest.LogCaptureFixture) -> None:
         item = {"name": "name"}
         assert self.pipe.item_completed([], item, self.info) is item
 
@@ -137,21 +136,20 @@ class TestBaseMediaPipeline:
         fail = Failure(Exception())
         results = [(True, 1), (False, fail)]
 
-        with LogCapture() as log:
-            new_item = self.pipe.item_completed(results, item, self.info)
-
+        caplog.clear()
+        new_item = self.pipe.item_completed(results, item, self.info)
         assert new_item is item
-        assert len(log.records) == 1
-        record = log.records[0]
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
         assert record.levelname == "ERROR"
         assert record.exc_info == failure_to_exc_info(fail)
 
         # disable failure logging and check again
+        caplog.clear()
         self.pipe.LOG_FAILED_RESULTS = False
-        with LogCapture() as log:
-            new_item = self.pipe.item_completed(results, item, self.info)
+        new_item = self.pipe.item_completed(results, item, self.info)
         assert new_item is item
-        assert len(log.records) == 0
+        assert len(caplog.records) == 0
 
     def test_item_completed_filtered_request_not_logged(
         self, caplog: pytest.LogCaptureFixture
