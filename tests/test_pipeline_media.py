@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from unittest.mock import MagicMock
 
 import pytest
@@ -10,7 +11,7 @@ from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.pipelines.files import FileException
-from scrapy.pipelines.media import MediaPipeline
+from scrapy.pipelines.media import MediaPipeline, _MediaRequestFiltered
 from scrapy.utils.defer import _defer_sleep_async
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
@@ -151,6 +152,21 @@ class TestBaseMediaPipeline:
             new_item = self.pipe.item_completed(results, item, self.info)
         assert new_item is item
         assert len(log.records) == 0
+
+    def test_item_completed_filtered_request_not_logged(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Filtered media requests (e.g. offsite ones) are not logged as errors
+        by item_completed(), as they are not download errors."""
+        item = {"name": "name"}
+        fail = Failure(_MediaRequestFiltered("Filtered offsite request"))
+        results = [(True, 1), (False, fail)]
+
+        with caplog.at_level(logging.DEBUG):
+            new_item = self.pipe.item_completed(results, item, self.info)
+
+        assert new_item is item
+        assert len(caplog.records) == 0
 
     @coroutine_test
     async def test_default_process_item(self):
