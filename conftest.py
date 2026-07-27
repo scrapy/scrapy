@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -135,5 +136,6 @@ def pytest_runtest_setup(item):
         pytest.skip("mitmdump is not available")
 
 
-# Generate localhost certificate files, needed by some tests
-generate_keys()
+# Generate localhost certificate files, needed by some tests (but only once if xdist is used)
+if "PYTEST_XDIST_WORKER" not in os.environ:
+    generate_keys()
