@@ -39,8 +39,8 @@ from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
-from .test_pipeline_media import _mocked_download_func
 from .utils.cloud import mock_google_cloud_storage
+from .utils.media_pipelines import mocked_download_func
 
 # required by persist_file() and stat_file(), but as some stores don't use the argument
 # we can pass this singleton to keep type hints correct
@@ -94,7 +94,7 @@ class TestFilesPipeline:
         settings_dict = {"FILES_STORE": self.tempdir}
         crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
         crawler.spider = crawler._create_spider()
-        crawler.engine = MagicMock(download_async=_mocked_download_func)
+        crawler.engine = MagicMock(download_async=mocked_download_func)
         self.pipeline = FilesPipeline.from_crawler(crawler)
         self.pipeline.open_spider()
 

@@ -9,7 +9,6 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.utils.defer import _defer_sleep_async
@@ -18,16 +17,7 @@ from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
-
-
-async def _mocked_download_func(request):
-    assert request.callback is NO_CALLBACK
-    response = request.meta.get("response")
-    if callable(response):
-        response = await response()
-    if isinstance(response, Exception):
-        raise response
-    return response
+from tests.utils.media_pipelines import mocked_download_func
 
 
 class UserDefinedPipeline(MediaPipeline):
@@ -54,7 +44,7 @@ class TestBaseMediaPipeline:
     def setup_method(self):
         crawler = get_crawler(DefaultSpider, self.settings)
         crawler.spider = crawler._create_spider()
-        crawler.engine = MagicMock(download_async=_mocked_download_func)
+        crawler.engine = MagicMock(download_async=mocked_download_func)
         self.pipe = self.pipeline_class.from_crawler(crawler)
         self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
