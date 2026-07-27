@@ -36,7 +36,7 @@ class Command(ScrapyCommand):
 
 class _BenchServer:
     def __enter__(self) -> None:
-        pargs = [sys.executable, "-u", "-m", "scrapy.utils.benchserver"]
+        pargs = [sys.executable, "-u", "-m", "scrapy.utils._benchserver"]
         self.proc = subprocess.Popen(  # noqa: S603
             pargs, stdout=subprocess.PIPE, env=get_testenv()
         )
