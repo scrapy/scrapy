@@ -71,6 +71,12 @@ class CachingThreadedResolver(ThreadedResolver):
         return result
 
 
+def _address_with_port(address: IAddress, port: int) -> IAddress:
+    if getattr(address, "port", port) == port:
+        return address
+    return attr.evolve(address, port=port)
+
+
 @implementer(IHostResolution)
 class HostResolution:
     def __init__(self, name: str):
@@ -98,7 +104,11 @@ class _CachingResolutionReceiver:
     def resolutionComplete(self) -> None:
         self.resolutionReceiver.resolutionComplete()
         if self.addresses:
-            dnscache[self.hostName] = self.addresses
+            # Name resolution does not depend on the port, so cache entries are
+            # kept port-agnostic and the requested port is set on cache hits.
+            dnscache[self.hostName] = [
+                _address_with_port(address, 0) for address in self.addresses
+            ]
 
 
 @implementer(IHostnameResolver)
@@ -143,9 +153,7 @@ class CachingHostnameResolver:
                 transportSemantics,
             )
         resolutionReceiver.resolutionBegan(HostResolution(hostName))
-        for addr in addresses:
-            if getattr(addr, "port", portNumber) != portNumber:
-                addr = attr.evolve(addr, port=portNumber)  # noqa: PLW2901
-            resolutionReceiver.addressResolved(addr)
+        for address in addresses:
+            resolutionReceiver.addressResolved(_address_with_port(address, portNumber))
         resolutionReceiver.resolutionComplete()
         return resolutionReceiver
