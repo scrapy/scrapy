@@ -80,6 +80,27 @@ def test_caching_hostname_resolver_cached_addresses_have_no_port():
     assert [address.port for address in dnscache["example.com"]] == [0, 0]
 
 
+def test_caching_hostname_resolver_cache_hit_without_port():
+    cached_addresses = [
+        IPv4Address("TCP", "1.2.3.4", 0),
+        IPv6Address("TCP", "::1", 0),
+    ]
+    dnscache["example.com"] = cached_addresses
+
+    receiver = Mock()
+    resolver = CachingHostnameResolver(Mock(), cache_size=10)
+    resolver.resolveHostName(receiver, "example.com")
+
+    # Cached addresses already use the requested port, so they are reused as is.
+    resolved_addresses = [
+        call.args[0] for call in receiver.addressResolved.call_args_list
+    ]
+    assert all(
+        resolved is cached
+        for resolved, cached in zip(resolved_addresses, cached_addresses, strict=True)
+    )
+
+
 def test_caching_hostname_resolver_cache_hit_uses_requested_port():
     dnscache["example.com"] = [
         IPv4Address("TCP", "1.2.3.4", 0),
