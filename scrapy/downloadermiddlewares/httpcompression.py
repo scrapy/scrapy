@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import Response, TextResponse
+from scrapy.http import Response, TextResponse, response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
     _DecompressionMaxSizeExceeded,
@@ -80,6 +80,7 @@ class HttpCompressionMiddleware:
         self.stats = crawler.stats
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+        self._keep_content_encoding = crawler.settings.getbool("HTTPCOMPRESSION_KEEP_CONTENT_ENCODING")
         crawler.signals.connect(self.open_spider, signals.spider_opened)
 
     @classmethod
@@ -112,6 +113,7 @@ class HttpCompressionMiddleware:
         if request.method == "HEAD":
             return response
         content_encoding = response.headers.getlist("Content-Encoding")
+        original_content_encoding = content_encoding.copy()
         if content_encoding:
             max_size = request.meta.get("download_maxsize", self._max_size)
             warn_size = request.meta.get("download_warnsize", self._warn_size)
@@ -152,7 +154,9 @@ class HttpCompressionMiddleware:
                 # responsetypes guessing is reliable
                 kwargs["encoding"] = None
             response = response.replace(cls=respcls, **kwargs)
-            if not content_encoding:
+            if self._keep_content_encoding:
+                response.headers["Content-Encoding"] = original_content_encoding
+            elif not content_encoding:
                 del response.headers["Content-Encoding"]
         return response
 

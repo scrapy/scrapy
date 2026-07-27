@@ -13,12 +13,13 @@ from scrapy.downloadermiddlewares.httpcompression import (
     HttpCompressionMiddleware,
 )
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import HtmlResponse, Request, Response
+from scrapy.http import HtmlResponse, Request, Response, response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils.gz import gunzip
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
+from tests.test_middleware import crawler
 
 SAMPLEDIR = Path(tests_datadir, "compressed")
 
@@ -155,6 +156,26 @@ class TestHttpCompression:
         assert "Content-Encoding" not in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
+
+    def test_process_response_gzip_keep_content_encoding(self):
+        crawler = get_crawler(
+            Spider,
+            settings_dict={
+                "HTTPCOMPRESSION_KEEP_CONTENT_ENCODING": True,
+            },
+        )
+
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        crawler.stats.open_spider()
+
+        response = self._getresponse("gzip")
+        request = response.request
+
+        newresponse = mw.process_response(request, response)
+
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert newresponse.headers["Content-Encoding"] == b"gzip"
 
     def test_process_response_br(self):
         _skip_if_no_br()
