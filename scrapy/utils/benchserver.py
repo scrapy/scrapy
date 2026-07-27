@@ -1,10 +1,13 @@
 import warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils._benchserver import *  # noqa: F403
+from scrapy.utils._benchserver import main
 
 warnings.warn(
-    "scrapy.utils.benchserver is deprecated, use scrapy.utils._benchserver instead.",
+    "scrapy.utils.benchserver is deprecated.",
     category=ScrapyDeprecationWarning,
     stacklevel=2,
 )
+
+if __name__ == "__main__":
+    main()
