@@ -91,6 +91,8 @@ class Root(resource.Resource):
         return self
 
     def render(self, request):
+        if request.args.get(b"echo_uri") == [b"1"]:
+            return request.uri
         return b"Scrapy mock HTTP server\n"
 
 

@@ -460,6 +460,9 @@ class _ScrapyAgent:
 
         # request details
         url = urldefrag(request.url)[0]
+        parsed_url = urlparse(url)
+        if not parsed_url.path and (parsed_url.params or parsed_url.query):
+            url = parsed_url._replace(path="/").geturl()
         method = to_bytes(request.method)
         headers = TxHeaders(request.headers)
         if isinstance(agent, _TunnelingAgent):

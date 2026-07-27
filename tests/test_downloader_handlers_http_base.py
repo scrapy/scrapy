@@ -114,6 +114,15 @@ class TestHttpBase(ABC):
         assert response.body == b"Works"
 
     @coroutine_test
+    async def test_download_with_query_and_no_path(
+        self, mockserver: MockServer
+    ) -> None:
+        request = Request(f"{mockserver.url('', is_secure=self.is_secure)}?echo_uri=1")
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"/?echo_uri=1"
+
+    @coroutine_test
     async def test_download_head(self, mockserver: MockServer) -> None:
         request = Request(
             mockserver.url("/text", is_secure=self.is_secure), method="HEAD"
