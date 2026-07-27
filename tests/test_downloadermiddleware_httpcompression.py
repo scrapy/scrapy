@@ -13,10 +13,10 @@ from scrapy.downloadermiddlewares.httpcompression import (
     HttpCompressionMiddleware,
 )
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import HtmlResponse, Request, Response
-from scrapy.responsetypes import responsetypes
+from scrapy.http import HtmlResponse, JsonResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.gz import gunzip
+from scrapy.utils.response import get_response_class
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
 
@@ -30,6 +30,7 @@ FORMAT = {
     "gzip-deflate": ("html-gzip-deflate.bin", "gzip, deflate"),
     "gzip-deflate-gzip": ("html-gzip-deflate-gzip.bin", "gzip, deflate, gzip"),
     "br": ("html-br.bin", "br"),
+    "br,gzip": ("html-br-gzip.bin", "br,gzip"),
     # $ zstd raw.html --content-size -o html-zstd-static-content-size.bin
     "zstd-static-content-size": ("html-zstd-static-content-size.bin", "zstd"),
     # $ zstd raw.html --no-content-size -o html-zstd-static-no-content-size.bin
@@ -156,12 +157,58 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
+    def test_process_response_gzip_json(self):
+        # Once the body is fully decompressed, the Content-Encoding header is
+        # left empty until after the response class is determined; that empty
+        # header must not prevent Content-Type from being taken into account.
+        buf = BytesIO()
+        with GzipFile(fileobj=buf, mode="wb") as f:
+            f.write(b'{"foo": "bar"}')
+        request = Request("http://www.example.com")
+        response = Response(
+            "http://www.example.com",
+            body=buf.getvalue(),
+            headers={
+                "Content-Type": "application/json",
+                "Content-Encoding": "gzip",
+            },
+        )
+        newresponse = self.mw.process_response(request, response)
+        assert isinstance(newresponse, JsonResponse)
+        assert newresponse.body == b'{"foo": "bar"}'
+        assert "Content-Encoding" not in newresponse.headers
+
     def test_process_response_br(self):
         _skip_if_no_br()
 
         response = self._getresponse("br")
         request = response.request
         assert response.headers["Content-Encoding"] == b"br"
+        newresponse = self.mw.process_response(request, response)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" not in newresponse.headers
+        self.assertStatsEqual("httpcompression/response_count", 1)
+        self.assertStatsEqual("httpcompression/response_bytes", 74837)
+
+    def test_process_response_br_gzip(self):
+        _skip_if_no_br()
+        response = self._getresponse("br,gzip")
+        request = response.request
+        assert response.headers["Content-Encoding"] == b"br,gzip"
+        newresponse = self.mw.process_response(request, response)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" not in newresponse.headers
+        self.assertStatsEqual("httpcompression/response_count", 1)
+        self.assertStatsEqual("httpcompression/response_bytes", 74837)
+
+    def test_process_response_br_gzip_header_list(self):
+        _skip_if_no_br()
+        response = self._getresponse("br,gzip")
+        request = response.request
+        assert response.headers["Content-Encoding"] == b"br,gzip"
+        response.headers.setlist("Content-Encoding", [b"br", b"gzip"])
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
@@ -406,8 +453,10 @@ class TestHttpCompression:
             b"<html><head><title>Some page</title>"
             b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">'
         )
-        respcls = responsetypes.from_args(
-            url="http://www.example.com/index", headers=headers, body=plainbody
+        respcls = get_response_class(
+            url="http://www.example.com/index",
+            http_headers=headers,
+            body=plainbody,
         )
         response = respcls(
             "http://www.example.com/index", headers=headers, body=plainbody

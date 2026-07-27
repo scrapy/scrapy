@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, TypeVar
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
@@ -137,6 +138,11 @@ def test_memoizemethod_noargs():
 )
 def test_binaryistext(value: bytes, expected: bool) -> None:
     assert binary_is_text(value) is expected
+
+
+def test_binaryistext_non_bytes() -> None:
+    with pytest.warns(ScrapyDeprecationWarning), pytest.raises(TypeError):
+        binary_is_text("not bytes")  # type: ignore[arg-type]
 
 
 def test_get_func_args():

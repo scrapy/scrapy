@@ -6,7 +6,6 @@ from parsel import Selector as _ParselSelector
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.utils.python import to_bytes
-from scrapy.utils.response import get_base_url
 from scrapy.utils.trackref import object_ref
 
 __all__ = ["Selector", "SelectorList"]
@@ -78,7 +77,7 @@ class Selector(_ParselSelector, object_ref):
 
         if response is not None:
             text = response.text
-            kwargs.setdefault("base_url", get_base_url(response))
+            kwargs.setdefault("base_url", response.base_url)
 
         self.response = response
 

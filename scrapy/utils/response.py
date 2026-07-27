@@ -9,35 +9,157 @@ import os
 import re
 import tempfile
 import webbrowser
+from io import StringIO
+from mimetypes import MimeTypes
+from pkgutil import get_data
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
+from warnings import warn
 from weakref import WeakKeyDictionary
 
 from twisted.web import http
 from w3lib import html
+from xtractmime import RESOURCE_HEADER_BUFFER_LENGTH as BODY_LIMIT
+from xtractmime import extract_mime
+from xtractmime.mimegroups import (
+    is_html_mime_type,
+    is_javascript_mime_type,
+    is_json_mime_type,
+    is_xml_mime_type,
+)
 
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http import (
+    Headers,
+    HtmlResponse,
+    JsonResponse,
+    Response,
+    TextResponse,
+    XmlResponse,
+)
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from scrapy.http import Response, TextResponse
-
-_baseurl_cache: WeakKeyDictionary[Response, str] = WeakKeyDictionary()
-
-
-def get_base_url(response: TextResponse) -> str:
-    """Return the base url of the given response, joined with the response url"""
-    if response not in _baseurl_cache:
-        text = response.text[0:4096]
-        _baseurl_cache[response] = html.get_base_url(
-            text, response.url, response.encoding
-        )
-    return _baseurl_cache[response]
-
+# Maps each compression Content-Encoding token to a MIME type for its
+# compressed format. The specific value only needs to be a binary (non-text)
+# MIME type: it is fed to xtractmime so that a compressed body is classified as
+# a plain Response until it is decompressed.
+_ENCODING_MIME_TYPE_MAP = {
+    b"br": b"application/brotli",
+    b"compress": b"application/x-compress",
+    # deflate is a zlib-wrapped DEFLATE stream and has no registered media type.
+    b"deflate": b"application/zlib",
+    b"gzip": b"application/gzip",
+    b"zstd": b"application/zstd",
+}
+# Content-Encoding tokens that stand for compression, and hence mean the body
+# should be treated as binary until it is decompressed. Any other token (e.g. a
+# charset mistakenly sent as Content-Encoding, such as "UTF-8") is ignored, so
+# that response class detection falls back to Content-Type and the body.
+_COMPRESSION_ENCODINGS = frozenset(_ENCODING_MIME_TYPE_MAP)
+_MIME_TYPES = MimeTypes()
+_mime_overrides = get_data("scrapy", "mime.types") or b""
+_MIME_TYPES.readfp(StringIO(_mime_overrides.decode()))
 
 _metaref_cache: WeakKeyDictionary[Response, tuple[None, None] | tuple[float, str]] = (
     WeakKeyDictionary()
 )
+
+
+def _is_other_text_mime_type(mime_type: bytes) -> bool:
+    return (
+        mime_type.startswith(b"text/")
+        or mime_type == b"application/x-javascript"
+        or is_javascript_mime_type(mime_type)
+    )
+
+
+def _get_encoding_or_mime_type_from_headers(
+    headers: Headers,
+) -> tuple[bytes | None, bytes | None]:
+    if b"Content-Encoding" in headers:
+        raw_encodings = b",".join(headers.getlist(b"Content-Encoding")).split(b",")
+        encodings = [
+            encoding
+            for encoding in (item.strip().lower() for item in raw_encodings)
+            if encoding in _COMPRESSION_ENCODINGS
+        ]
+        if encodings:
+            return encodings[-1], None
+    if (
+        b"Content-Type" in headers
+        and headers[b"Content-Type"]
+        and headers[b"Content-Type"].split(b";")[0].strip().lower()
+        not in (
+            b"",
+            b"unknown/unknown",
+            b"application/unknown",
+            b"*/*",
+        )
+    ):
+        return None, headers[b"Content-Type"]
+    content_disposition = headers.get(b"Content-Disposition")
+    if content_disposition:
+        for parameter in content_disposition.split(b";")[1:]:
+            name, sep, value = parameter.partition(b"=")
+            if not sep or name.strip().lower() != b"filename":
+                continue
+            path = value.strip().strip(b"\"'").decode("latin-1")
+            encoding, mime_type = _get_encoding_or_mime_type_from_path(path)
+            if encoding:
+                return encoding, None
+            return None, mime_type
+    return None, None
+
+
+def _get_mime_type_from_encoding(encoding: bytes) -> bytes:
+    return _ENCODING_MIME_TYPE_MAP.get(encoding) or b"application/" + encoding
+
+
+def _get_encoding_or_mime_type_from_path(
+    path: str,
+) -> tuple[bytes | None, bytes | None]:
+    mimetype, encoding = _MIME_TYPES.guess_type(path, strict=False)
+    if encoding:
+        return encoding.encode(), None
+    if mimetype:
+        return None, mimetype.encode()
+    return None, None
+
+
+def _get_response_class_from_mime_type(mime_type: bytes | None) -> type[Response]:
+    if not mime_type:
+        return Response
+    if is_html_mime_type(mime_type):
+        return HtmlResponse
+    if is_xml_mime_type(mime_type):
+        return XmlResponse
+    if is_json_mime_type(mime_type) or (
+        mime_type
+        in (
+            b"application/x-json",
+            b"application/json-amazonui-streaming",
+        )
+    ):
+        return JsonResponse
+    if _is_other_text_mime_type(mime_type):
+        return TextResponse
+    return Response
+
+
+def get_base_url(response: TextResponse) -> str:
+    """Return the base url of the given response, joined with the response url"""
+    warn(
+        (
+            "scrapy.utils.response.get_base_url is deprecated, use "
+            "scrapy.http.TextResponse.base_url instead."
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return response.base_url
 
 
 def get_meta_refresh(
@@ -48,9 +170,63 @@ def get_meta_refresh(
     if response not in _metaref_cache:
         text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(
-            text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
+            text, response.base_url, response.encoding, ignore_tags=ignore_tags
         )
     return _metaref_cache[response]
+
+
+def get_response_class(
+    *,
+    url: str | None = None,
+    body: bytes | None = None,
+    declared_mime_type: bytes | None = None,
+    http_headers: Headers | None = None,
+) -> type[Response]:
+    """Guess the most appropriate Response class based on the given
+    arguments."""
+    mime_type = declared_mime_type
+    encoding = None  # as in compression (e.g. gzip), not charset
+    if http_headers:
+        encoding, header_mime_type = _get_encoding_or_mime_type_from_headers(
+            http_headers
+        )
+        if encoding is None and mime_type is None:
+            mime_type = header_mime_type
+    if url is not None:
+        url_parts = urlparse(url)
+        http_origin = url_parts.scheme in ("http", "https")
+        if not http_origin and not encoding:
+            encoding, path_mime_type = _get_encoding_or_mime_type_from_path(
+                url_parts.path
+            )
+            if encoding is None and mime_type is None:
+                mime_type = path_mime_type
+    else:
+        http_origin = True
+    body = (body or b"")[:BODY_LIMIT]
+    if encoding:
+        content_types = (_get_mime_type_from_encoding(encoding),)
+    elif mime_type:
+        content_types = (mime_type,)
+    else:
+        content_types = None
+    mime_type = extract_mime(
+        body,
+        content_types=content_types,
+        http_origin=http_origin,
+    )
+    cls = _get_response_class_from_mime_type(mime_type)
+    if cls is not Response or not content_types or encoding or not http_origin:
+        return cls
+    # In scenarios where there was a declared Content-Type, no
+    # Content-Encoding, HTTP/HTTPS was used, and xtractmime determined the
+    # output to be binary, repeat MIME extraction ignoring the declared
+    # Content-Type, so that the body is taken into account.
+    mime_type = extract_mime(
+        body,
+        http_origin=http_origin,
+    )
+    return _get_response_class_from_mime_type(mime_type)
 
 
 def response_status_message(status: bytes | float | str) -> str:
@@ -91,9 +267,6 @@ def open_in_browser(
             if "item name" not in response.text:
                 open_in_browser(response)
     """
-    # circular imports
-    from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
-
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
