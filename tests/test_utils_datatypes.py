@@ -229,6 +229,28 @@ class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
         assert isinstance(iterkeys, Iterator)
         assert list(iterkeys) == ["AsDf", "FoO"]
 
+    def test_copy_keeps_values(self):
+        class MyDict(self.dict_class):
+            def _normvalue(self, value):
+                return value + 1
+
+        d = MyDict({"key": 1})
+        for copied in (copy.copy(d), d.copy()):
+            assert copied["key"] == 2
+
+    def test_ior(self):
+        d = self.dict_class({"header1": "value1"})
+        d |= {"HEADER1": "value2", "header2": "value3"}
+        assert len(d) == 2
+        assert d["HeAdEr1"] == "value2"
+        assert d["HeAdEr2"] == "value3"
+
+    def test_ior_mapping(self):
+        d = self.dict_class({"header1": "value1"})
+        d |= self.dict_class({"HEADER1": "value2"})
+        assert len(d) == 1
+        assert d["HeAdEr1"] == "value2"
+
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestCaselessDict(TestCaseInsensitiveDictBase):
