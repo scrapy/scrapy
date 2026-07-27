@@ -11,7 +11,7 @@ from scrapy import Spider
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
-from tests.test_downloader_handlers_http_base import (
+from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
     TestHttpsBase,

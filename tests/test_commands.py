@@ -15,7 +15,7 @@ from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
-from tests.utils.base_commands import TestProjectBase
+from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import call, proc, write_recording_editor
 
 if TYPE_CHECKING:
