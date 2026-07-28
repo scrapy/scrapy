@@ -4,7 +4,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import TYPE_CHECKING, Any, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import Mock
 
 import pytest
@@ -16,43 +16,17 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
-from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.downloader import MockDownloader
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
     from pathlib import Path
 
     from scrapy.http.request import CallbackT
-
-
-class MockSlot(NamedTuple):
-    active: list[Any]
-
-
-class MockDownloader:
-    def __init__(self) -> None:
-        self.slots: dict[str, MockSlot] = {}
-
-    def get_slot_key(self, request: Request) -> str:
-        if Downloader.DOWNLOAD_SLOT in request.meta:
-            return cast("str", request.meta[Downloader.DOWNLOAD_SLOT])
-
-        return urlparse_cached(request).hostname or ""
-
-    def increment(self, slot_key: str) -> None:
-        slot = self.slots.setdefault(slot_key, MockSlot(active=[]))
-        slot.active.append(1)
-
-    def decrement(self, slot_key: str) -> None:
-        slot = self.slots[slot_key]
-        slot.active.pop()
-
-    def close(self) -> None:
-        pass
 
 
 class MockCrawler(Crawler):

@@ -19,8 +19,8 @@ from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
 from scrapy.throttler import iter_scopes
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
-from tests.test_scheduler import MockDownloader
 from tests.utils.decorators import coroutine_test
+from tests.utils.downloader import MockDownloader
 
 if TYPE_CHECKING:
     from scrapy.http.request import CallbackT
