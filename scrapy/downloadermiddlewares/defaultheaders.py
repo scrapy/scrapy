@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
@@ -30,8 +31,9 @@ class DefaultHeadersMiddleware:
         headers = without_none_values(crawler.settings["DEFAULT_REQUEST_HEADERS"])
         return cls(headers.items())
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         for k, v in self._headers:
             request.headers.setdefault(k, v)

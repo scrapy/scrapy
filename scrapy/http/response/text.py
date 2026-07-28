@@ -41,15 +41,22 @@ _NONE = object()
 
 class TextResponse(Response):
     _DEFAULT_ENCODING = "ascii"
-    _cached_decoded_json = _NONE
 
     attributes: tuple[str, ...] = (*Response.attributes, "encoding")
+    __slots__ = (
+        "_cached_benc",
+        "_cached_decoded_json",
+        "_cached_selector",
+        "_cached_ubody",
+        "_encoding",
+    )
 
     def __init__(self, *args: Any, **kwargs: Any):
         self._encoding: str | None = kwargs.pop("encoding", None)
         self._cached_benc: str | None = None
         self._cached_ubody: str | None = None
         self._cached_selector: Selector | None = None
+        self._cached_decoded_json: object = _NONE
         super().__init__(*args, **kwargs)
 
     def _set_body(self, body: str | bytes | None) -> None:
@@ -77,11 +84,7 @@ class TextResponse(Response):
         )
 
     def json(self) -> Any:
-        """
-        .. versionadded:: 2.2
-
-        Deserialize a JSON document to a Python object.
-        """
+        """Deserialize a JSON document to a Python object."""
         if self._cached_decoded_json is _NONE:
             self._cached_decoded_json = json.loads(self.body)
         return self._cached_decoded_json
@@ -104,13 +107,14 @@ class TextResponse(Response):
 
     @memoizemethod_noargs
     def _headers_encoding(self) -> str | None:
-        content_type = cast(bytes, self.headers.get(b"Content-Type", b""))
+        content_type = self.headers.get(b"Content-Type") or b""
         return http_content_type_encoding(to_unicode(content_type, encoding="latin-1"))
 
     def _body_inferred_encoding(self) -> str:
         if self._cached_benc is None:
             content_type = to_unicode(
-                cast(bytes, self.headers.get(b"Content-Type", b"")), encoding="latin-1"
+                cast("bytes", self.headers.get(b"Content-Type", b"")),
+                encoding="latin-1",
             )
             benc, ubody = html_to_unicode(
                 content_type,
@@ -141,31 +145,25 @@ class TextResponse(Response):
 
     @property
     def selector(self) -> Selector:
-        from scrapy.selector import Selector
-
         if self._cached_selector is None:
+            # circular import
+            from scrapy.selector import Selector  # noqa: PLC0415
+
             self._cached_selector = Selector(self)
         return self._cached_selector
 
     def jmespath(self, query: str, **kwargs: Any) -> SelectorList:
-        from scrapy.selector import SelectorList
-
         if not hasattr(self.selector, "jmespath"):
             raise AttributeError(
                 "Please install parsel >= 1.8.1 to get jmespath support"
             )
-
-        return cast(SelectorList, self.selector.jmespath(query, **kwargs))
+        return cast("SelectorList", self.selector.jmespath(query, **kwargs))
 
     def xpath(self, query: str, **kwargs: Any) -> SelectorList:
-        from scrapy.selector import SelectorList
-
-        return cast(SelectorList, self.selector.xpath(query, **kwargs))
+        return cast("SelectorList", self.selector.xpath(query, **kwargs))
 
     def css(self, query: str) -> SelectorList:
-        from scrapy.selector import SelectorList
-
-        return cast(SelectorList, self.selector.css(query))
+        return cast("SelectorList", self.selector.css(query))
 
     def follow(
         self,
@@ -222,7 +220,7 @@ class TextResponse(Response):
 
     def follow_all(
         self,
-        urls: Iterable[str | Link] | parsel.SelectorList | None = None,
+        urls: Iterable[str | Link] | parsel.SelectorList[Any] | None = None,
         callback: CallbackT | None = None,
         method: str = "GET",
         headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
@@ -306,7 +304,7 @@ def _url_from_selector(sel: parsel.Selector) -> str:
         return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, "tag"):
         raise _InvalidSelector(f"Unsupported selector: {sel}")
-    if sel.root.tag not in ("a", "link"):
+    if sel.root.tag not in {"a", "link"}:
         raise _InvalidSelector(
             f"Only <a> and <link> elements are supported; got <{sel.root.tag}>"
         )

@@ -67,7 +67,7 @@ value of one of their fields:
                 self.year_to_exporter[year] = (exporter, xml_file)
             return self.year_to_exporter[year][0]
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             exporter = self._exporter_for_item(item)
             exporter.export_item(item)
             return item
@@ -93,33 +93,34 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-If you use :class:`~scrapy.Item` you can declare a serializer in the
-:ref:`field metadata <topics-items-fields>`. The serializer must be
-a callable which receives a value and returns its serialized form.
+Every :ref:`item type <item-types>` except :class:`dict` lets you declare a
+serializer in the :ref:`field metadata <topics-items-fields>`. The serializer
+must be a callable which receives a value and returns its serialized form.
 
 Example:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
 
 
     def serialize_price(value):
         return f"$ {str(value)}"
 
 
-    class Product(scrapy.Item):
-        name = scrapy.Field()
-        price = scrapy.Field(serializer=serialize_price)
+    @dataclass
+    class Product:
+        name: str
+        price: float = field(metadata={"serializer": serialize_price})
 
 
 2. Overriding the serialize_field() method
 ------------------------------------------
 
-You can also override the :meth:`~BaseItemExporter.serialize_field()` method to
+You can also override the :meth:`~BaseItemExporter.serialize_field` method to
 customize how your field value will be exported.
 
-Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
+Make sure you call the base class :meth:`~BaseItemExporter.serialize_field` method
 after your custom code.
 
 Example:
@@ -152,7 +153,7 @@ output examples, which assume you're exporting these two items:
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=0, dont_fail=False)
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding=None, indent=None, dont_fail=False)
 
    This is the (abstract) base class for all Item Exporters. It provides
    support for common features used by all (concrete) Item Exporters, such as
@@ -162,9 +163,6 @@ BaseItemExporter
    These features can be configured through the ``__init__`` method arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
-
-   .. versionadded:: 2.0
-      The *dont_fail* parameter.
 
    .. method:: export_item(item)
 
@@ -213,18 +211,22 @@ BaseItemExporter
 
       -   ``None`` (all fields [2]_, default)
 
-      -   A list of fields::
+      -   A list of fields:
 
-              ['field1', 'field2']
+          .. code-block:: python
 
-      -   A dict where keys are fields and values are output names::
+              ["field1", "field2"]
 
-              {'field1': 'Field 1', 'field2': 'Field 2'}
+      -   A dict where keys are fields and values are output names:
+
+          .. code-block:: python
+
+              {"field1": "Field 1", "field2": "Field 2"}
 
       .. [1] Not all exporters respect the specified field order.
       .. [2] When using :ref:`item objects <item-types>` that do not expose
              all their possible fields, exporters that do not support exporting
-             a different subset of fields per item will only export the fields 
+             a different subset of fields per item will only export the fields
              found in the first item exported.
 
    .. attribute:: export_empty_fields
@@ -241,7 +243,7 @@ BaseItemExporter
 
    .. attribute:: indent
 
-      Amount of spaces used to indent the output on each level. Defaults to ``0``.
+      Amount of spaces used to indent the output on each level. Defaults to ``None``.
 
       * ``indent=None`` selects the most compact representation,
         all items in the same line with no indentation
@@ -275,7 +277,9 @@ XmlItemExporter
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: xml
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -293,11 +297,17 @@ XmlItemExporter
    exported by serializing each value inside a ``<value>`` element. This is for
    convenience, as multi-valued fields are very common.
 
-   For example, the item::
+   For example, the item:
 
-        Item(name=['John', 'Doe'], age='23')
+   .. skip: next
 
-   Would be serialized as::
+   .. code-block:: python
+
+        Item(name=["John", "Doe"], age="23")
+
+   Would be serialized as:
+
+   .. code-block:: xml
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -330,7 +340,7 @@ CsvItemExporter
 
    :param join_multivalued: The char (or chars) that will be used for joining
       multi-valued fields, if found.
-   :type include_headers_line: str
+   :type join_multivalued: str
 
    :param errors: The optional string that specifies how encoding and decoding
       errors are to be handled. For more information see
@@ -344,14 +354,14 @@ CsvItemExporter
 
    A typical output of this exporter would be::
 
-      product,price
+      name,price
       Color TV,1200
       DVD player,200
 
 PickleItemExporter
 ------------------
 
-.. class:: PickleItemExporter(file, protocol=0, **kwargs)
+.. class:: PickleItemExporter(file, protocol=4, **kwargs)
 
    Exports items in pickle format to the given file-like object.
 
@@ -381,10 +391,12 @@ PprintItemExporter
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
 
-        {'name': 'Color TV', 'price': '1200'}
-        {'name': 'DVD player', 'price': '200'}
+   .. code-block:: python
+
+        {"name": "Color TV", "price": "1200"}
+        {"name": "DVD player", "price": "200"}
 
    Longer lines (when present) are pretty-formatted.
 
@@ -402,7 +414,9 @@ JsonItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: json
 
         [{"name": "Color TV", "price": "1200"},
         {"name": "DVD player", "price": "200"}]
@@ -431,7 +445,9 @@ JsonLinesItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: json
 
         {"name": "Color TV", "price": "1200"}
         {"name": "DVD player", "price": "200"}

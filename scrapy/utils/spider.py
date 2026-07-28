@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
 
     from scrapy import Request
-    from scrapy.spiderloader import SpiderLoader
+    from scrapy.spiderloader import SpiderLoaderProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,10 @@ def iterate_spider_output(
 ) -> Iterable[Any] | AsyncGenerator[_T] | Deferred[_T]:
     if inspect.isasyncgen(result):
         return result
+    d: Deferred[_T] = deferred_from_coro(result)
     if inspect.iscoroutine(result):
-        d = deferred_from_coro(result)
-        d.addCallback(iterate_spider_output)
-        return d
-    return arg_to_iter(deferred_from_coro(result))
+        return d.addCallback(iterate_spider_output)
+    return arg_to_iter(d)
 
 
 def iter_spider_classes(module: ModuleType) -> Iterable[type[Spider]]:
@@ -64,7 +63,7 @@ def iter_spider_classes(module: ModuleType) -> Iterable[type[Spider]]:
 
 @overload
 def spidercls_for_request(
-    spider_loader: SpiderLoader,
+    spider_loader: SpiderLoaderProtocol,
     request: Request,
     default_spidercls: type[Spider],
     log_none: bool = ...,
@@ -74,9 +73,9 @@ def spidercls_for_request(
 
 @overload
 def spidercls_for_request(
-    spider_loader: SpiderLoader,
+    spider_loader: SpiderLoaderProtocol,
     request: Request,
-    default_spidercls: Literal[None],
+    default_spidercls: None,
     log_none: bool = ...,
     log_multiple: bool = ...,
 ) -> type[Spider] | None: ...
@@ -84,7 +83,7 @@ def spidercls_for_request(
 
 @overload
 def spidercls_for_request(
-    spider_loader: SpiderLoader,
+    spider_loader: SpiderLoaderProtocol,
     request: Request,
     *,
     log_none: bool = ...,
@@ -93,7 +92,7 @@ def spidercls_for_request(
 
 
 def spidercls_for_request(
-    spider_loader: SpiderLoader,
+    spider_loader: SpiderLoaderProtocol,
     request: Request,
     default_spidercls: type[Spider] | None = None,
     log_none: bool = False,

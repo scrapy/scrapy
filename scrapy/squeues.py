@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 def _with_mkdir(queue_class: type[queue.BaseQueue]) -> type[queue.BaseQueue]:
     class DirectoriesCreated(queue_class):  # type: ignore[valid-type,misc]
-        def __init__(self, path: str | PathLike, *args: Any, **kwargs: Any):
+        def __init__(self, path: str | PathLike[str], *args: Any, **kwargs: Any):
             dirname = Path(path).parent
             if not dirname.exists():
                 dirname.mkdir(parents=True, exist_ok=True)
@@ -147,16 +147,24 @@ def _pickle_serialize(obj: Any) -> bytes:
 
 # queue.*Queue aren't subclasses of queue.BaseQueue
 _PickleFifoSerializationDiskQueue = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue), _pickle_serialize, pickle.loads  # type: ignore[arg-type]
+    _with_mkdir(queue.FifoDiskQueue),  # type: ignore[arg-type]
+    _pickle_serialize,
+    pickle.loads,
 )
 _PickleLifoSerializationDiskQueue = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue), _pickle_serialize, pickle.loads  # type: ignore[arg-type]
+    _with_mkdir(queue.LifoDiskQueue),  # type: ignore[arg-type]
+    _pickle_serialize,
+    pickle.loads,
 )
 _MarshalFifoSerializationDiskQueue = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue), marshal.dumps, marshal.loads  # type: ignore[arg-type]
+    _with_mkdir(queue.FifoDiskQueue),  # type: ignore[arg-type]
+    marshal.dumps,
+    marshal.loads,
 )
 _MarshalLifoSerializationDiskQueue = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue), marshal.dumps, marshal.loads  # type: ignore[arg-type]
+    _with_mkdir(queue.LifoDiskQueue),  # type: ignore[arg-type]
+    marshal.dumps,
+    marshal.loads,
 )
 
 # public queue classes

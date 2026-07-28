@@ -59,7 +59,7 @@ def test_spider_parse_override_no_kwargs() -> None:
 @pytest.mark.mypy_testing
 def test_spider_parse_override_specific_kwargs() -> None:
     spider = SpecificKwargsSpider()
-    reveal_type(spider.parse)  # R: def (response: scrapy.http.response.Response, page: builtins.int) -> Any
+    reveal_type(spider.parse)  # R: def (response: scrapy.http.response.Response, page: int) -> Any
 
 
 @pytest.mark.mypy_testing

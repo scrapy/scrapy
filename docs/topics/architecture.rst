@@ -63,7 +63,7 @@ this:
    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`).
 
 8. The :ref:`Engine <component-engine>` sends processed items to
-   :ref:`Item Pipelines <component-pipelines>`, then send processed Requests to
+   :ref:`Item Pipelines <component-pipelines>`, then sends processed Requests to
    the :ref:`Scheduler <component-scheduler>` and asks for possible next Requests
    to crawl.
 
@@ -87,8 +87,8 @@ of the system, and triggering events when certain actions occur. See the
 Scheduler
 ---------
 
-The :ref:`scheduler <topics-scheduler>` receives requests from the engine and 
-enqueues them for feeding them later (also to the engine) when the engine 
+The :ref:`scheduler <topics-scheduler>` receives requests from the engine and
+enqueues them for feeding them later (also to the engine) when the engine
 requests them.
 
 .. _component-downloader:
@@ -150,7 +150,7 @@ requests).
 Use a Spider middleware if you need to
 
 * post-process output of spider callbacks - change/add/remove requests or items;
-* post-process start_requests;
+* post-process start requests or items;
 * handle spider exceptions;
 * call errback instead of callback for some of the requests based on response
   content.

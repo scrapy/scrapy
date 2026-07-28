@@ -1,22 +1,22 @@
-import unittest
 import warnings
+from typing import Any
 
+import pytest
 from w3lib.http import basic_auth_header
 
 from scrapy import Request
 from scrapy.utils.curl import curl_to_request_kwargs
 
 
-class CurlToRequestKwargsTest(unittest.TestCase):
-    maxDiff = 5000
-
-    def _test_command(self, curl_command, expected_result):
+class TestCurlToRequestKwargs:
+    @staticmethod
+    def _test_command(curl_command: str, expected_result: dict[str, Any]) -> None:
         result = curl_to_request_kwargs(curl_command)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
         try:
             Request(**result)
         except TypeError as e:
-            self.fail(f"Request kwargs are not correct {e}")
+            pytest.fail(f"Request kwargs are not correct {e}")
 
     def test_get(self):
         curl_command = "curl http://example.org/"
@@ -49,8 +49,8 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             "ml,application/xhtml+xml,application/xml;q=0.9,image/webp,image/a"
             "png,*/*;q=0.8' -H 'Referer: http://httpbin.org/' -H 'Cookie: _gau"
             "ges_unique_year=1; _gauges_unique=1; _gauges_unique_month=1; _gau"
-            "ges_unique_hour=1; _gauges_unique_day=1' -H 'Connection: keep-ali"
-            "ve' --compressed"
+            "ges_unique_hour=1' -H 'Connection: keep-alive' --compressed -b '_"
+            "gauges_unique_day=1'"
         )
         expected_result = {
             "method": "GET",
@@ -163,6 +163,39 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         }
         self._test_command(curl_command, expected_result)
 
+    def test_post_data_multiple(self):
+        # curl merges repeated -d/--data/--data-raw options into a single body
+        # joined with "&"; scrapy must do the same, not keep only the last one.
+        curl_command = "curl 'https://www.example.org/' -d 'a=1' -d 'b=2' -d 'c=3'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2&c=3",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_multiple_mixed_flag_names(self):
+        curl_command = (
+            "curl 'https://www.example.org/' --data 'a=1' --data-raw 'b=2' -d 'c=3'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2&c=3",
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_post_data_multiple_with_string_prefix(self):
+        # The leading "$" left by bash $'...' quoting is stripped per option,
+        # before the values are merged.
+        curl_command = "curl 'https://www.example.org/' -d $'a=1' -d $'b=2'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": "a=1&b=2",
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_explicit_get_with_data(self):
         curl_command = "curl httpbin.org/anything -X GET --data asdf"
         expected_result = {
@@ -202,34 +235,31 @@ class CurlToRequestKwargsTest(unittest.TestCase):
     def test_get_silent(self):
         curl_command = 'curl --silent "www.example.com"'
         expected_result = {"method": "GET", "url": "http://www.example.com"}
-        self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
+        assert curl_to_request_kwargs(curl_command) == expected_result
 
     def test_too_few_arguments_error(self):
-        self.assertRaisesRegex(
+        with pytest.raises(
             ValueError,
-            r"too few arguments|the following arguments are required:\s*url",
-            lambda: curl_to_request_kwargs("curl"),
-        )
+            match=r"too few arguments|the following arguments are required:\s*url",
+        ):
+            curl_to_request_kwargs("curl")
 
     def test_ignore_unknown_options(self):
         # case 1: ignore_unknown_options=True:
+        curl_command = "curl --bar --baz http://www.example.com"
+        expected_result = {"method": "GET", "url": "http://www.example.com"}
         with warnings.catch_warnings():  # avoid warning when executing tests
-            warnings.simplefilter("ignore")
-            curl_command = "curl --bar --baz http://www.example.com"
-            expected_result = {"method": "GET", "url": "http://www.example.com"}
-            self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
+            warnings.filterwarnings(
+                "ignore", category=UserWarning, message="Unrecognized options:"
+            )
+            assert curl_to_request_kwargs(curl_command) == expected_result
 
         # case 2: ignore_unknown_options=False (raise exception):
-        self.assertRaisesRegex(
-            ValueError,
-            "Unrecognized options:.*--bar.*--baz",
-            lambda: curl_to_request_kwargs(
+        with pytest.raises(ValueError, match=r"Unrecognized options:.*--bar.*--baz"):
+            curl_to_request_kwargs(
                 "curl --bar --baz http://www.example.com", ignore_unknown_options=False
-            ),
-        )
+            )
 
     def test_must_start_with_curl_error(self):
-        self.assertRaises(
-            ValueError,
-            lambda: curl_to_request_kwargs("carl -X POST http://example.org"),
-        )
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs("carl -X POST http://example.org")

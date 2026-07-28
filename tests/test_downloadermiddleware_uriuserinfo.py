@@ -1,90 +1,73 @@
-import unittest
+from __future__ import annotations
+
+import pytest
 
 from scrapy.downloadermiddlewares.uriuserinfo import UriUserInfoMiddleware
 from scrapy.http import Request
-from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 
 
-class AbstractWrapper:
-    """Class to define base test case classes that can be inherited but are not
-    executed themselves."""
-
-    class BaseTestCase(unittest.TestCase):
-        def setUp(self):
-            self.mw = UriUserInfoMiddleware()
-            self.spider = Spider("bar")
-
-    class ProtocolTestCase(BaseTestCase):
-        def test_username_and_password(self):
-            req = Request(f"{self.protocol}://foo:bar@example.com/")
-            userinfoless_url = f"{self.protocol}://example.com/"
-            processed_request = self.mw.process_request(req, self.spider)
-            assert processed_request.url == userinfoless_url
-            self.assertEqual(req.meta[self.username_field], "foo")
-            self.assertEqual(req.meta[self.password_field], "bar")
-
-        def test_username_and_empty_password(self):
-            req = Request(f"{self.protocol}://foo:@example.com/")
-            userinfoless_url = f"{self.protocol}://example.com/"
-            processed_request = self.mw.process_request(req, self.spider)
-            assert processed_request.url == userinfoless_url
-            self.assertEqual(req.meta[self.username_field], "foo")
-            self.assertEqual(req.meta[self.password_field], "")
-
-        def test_username_and_no_password(self):
-            req = Request(f"{self.protocol}://foo@example.com/")
-            userinfoless_url = f"{self.protocol}://example.com/"
-            processed_request = self.mw.process_request(req, self.spider)
-            assert processed_request.url == userinfoless_url
-            self.assertEqual(req.meta[self.username_field], "foo")
-            self.assertNotIn(self.password_field, req.meta)
-
-        def test_empty_username_and_nonempty_password(self):
-            req = Request(f"{self.protocol}://:bar@example.com/")
-            userinfoless_url = f"{self.protocol}://example.com/"
-            processed_request = self.mw.process_request(req, self.spider)
-            assert processed_request.url == userinfoless_url
-            self.assertEqual(req.meta[self.username_field], "")
-            self.assertEqual(req.meta[self.password_field], "bar")
-
-        def test_no_username_and_no_password(self):
-            req = Request(f"{self.protocol}://example.com/")
-            assert self.mw.process_request(req, self.spider) is None
-            self.assertNotIn(self.username_field, req.meta)
-            self.assertNotIn(self.password_field, req.meta)
-
-        def test_unquoting(self):
-            req = Request(f"{self.protocol}://foo%3A:b%40r@example.com/")
-            userinfoless_url = f"{self.protocol}://example.com/"
-            processed_request = self.mw.process_request(req, self.spider)
-            assert processed_request.url == userinfoless_url
-            self.assertEqual(req.meta[self.username_field], "foo:")
-            self.assertEqual(req.meta[self.password_field], "b@r")
+def _meta_fields(protocol: str) -> tuple[str, str]:
+    if protocol == "ftp":
+        return "ftp_user", "ftp_password"
+    return "http_user", "http_pass"
 
 
-class FTPTest(AbstractWrapper.ProtocolTestCase):
-    protocol = "ftp"
-    username_field = "ftp_user"
-    password_field = "ftp_password"
+@pytest.mark.parametrize("protocol", ["ftp", "http", "https"])
+@pytest.mark.parametrize(
+    ("userinfo", "user", "password"),
+    [
+        ("foo:bar@", "foo", "bar"),
+        ("foo:@", "foo", ""),
+        # No password in the URL means no password meta key.
+        ("foo@", "foo", None),
+        (":bar@", "", "bar"),
+        # Percent-encoded delimiters are unquoted.
+        ("foo%3A:b%40r@", "foo:", "b@r"),
+    ],
+)
+def test_userinfo(
+    protocol: str, userinfo: str, user: str, password: str | None
+) -> None:
+    user_field, password_field = _meta_fields(protocol)
+    mw = build_from_crawler(UriUserInfoMiddleware, get_crawler())
+    request = Request(f"{protocol}://{userinfo}example.com/")
+    processed_request = mw.process_request(request)
+    assert isinstance(processed_request, Request)
+    assert processed_request.url == f"{protocol}://example.com/"
+    assert request.meta[user_field] == user
+    if password is None:
+        assert password_field not in request.meta
+    else:
+        assert request.meta[password_field] == password
 
 
-class HTTPTest(AbstractWrapper.ProtocolTestCase):
-    protocol = "http"
-    username_field = "http_user"
-    password_field = "http_pass"
+@pytest.mark.parametrize("protocol", ["ftp", "http", "https"])
+def test_no_userinfo(protocol: str) -> None:
+    mw = build_from_crawler(UriUserInfoMiddleware, get_crawler())
+    request = Request(f"{protocol}://example.com/")
+    assert mw.process_request(request) is None
+    assert not request.meta
 
 
-class HTTPSTest(AbstractWrapper.ProtocolTestCase):
-    protocol = "https"
-    username_field = "http_user"
-    password_field = "http_pass"
+@pytest.mark.parametrize("protocol", ["ftp", "http", "https"])
+def test_meta_takes_precedence(protocol: str) -> None:
+    user_field, password_field = _meta_fields(protocol)
+    mw = build_from_crawler(UriUserInfoMiddleware, get_crawler())
+    request = Request(
+        f"{protocol}://foo:bar@example.com/",
+        meta={user_field: "baz", password_field: "qux"},
+    )
+    processed_request = mw.process_request(request)
+    assert isinstance(processed_request, Request)
+    assert processed_request.url == f"{protocol}://example.com/"
+    assert request.meta[user_field] == "baz"
+    assert request.meta[password_field] == "qux"
 
 
-class UnhandledProtocolTest(AbstractWrapper.BaseTestCase):
-    protocol = "s3"
-
-    def test_unhandled_protocol(self):
-        req = Request(f"{self.protocol}://foo:bar@example.com/")
-        processed_request = self.mw.process_request(req, self.spider)
-        assert processed_request is None
-        assert not req.meta
+def test_unhandled_protocol() -> None:
+    mw = build_from_crawler(UriUserInfoMiddleware, get_crawler())
+    request = Request("s3://foo:bar@example.com/")
+    assert mw.process_request(request) is None
+    assert not request.meta

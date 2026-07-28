@@ -200,7 +200,7 @@ the same spider:
            # extract item from response
            return item
 
-The Spider Middleware that implements spider code 
+The Spider Middleware that implements spider code
 =================================================
 
 There's gonna be one middleware that will take care of calling the proper
@@ -619,13 +619,13 @@ Resolved:
      ``manager.scraper.process_request()`` instead of
      ``manager.engine.crawl()``
 - should we support adding additional start requests from a spider middleware?
-   - Yes - there is a spider middleware method (``start_requests``) for that
+   - Yes - there is a spider middleware method (``start_requests()``) for that
 - should ``process_response()`` receive a ``request`` argument with the
   ``request`` that originated it?. ``response.request`` is the latest request,
   not the original one (think of redirections), but it does carry the ``meta``
   of the original one. The original one may not be available anymore (in
   memory) if we're using a persistent scheduler., but in that case it would be
-  the deserialized request from the persistent scheduler queue. 
+  the deserialized request from the persistent scheduler queue.
 
    - No - this would make implementation more complex and we're not sure it's
      really needed

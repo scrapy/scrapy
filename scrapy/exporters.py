@@ -5,9 +5,11 @@ Item Exporters are used to export/serialize items into different formats.
 from __future__ import annotations
 
 import csv
+import logging
 import marshal
 import pickle
 import pprint
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
 from typing import TYPE_CHECKING, Any
@@ -23,6 +25,8 @@ from scrapy.utils.serialize import ScrapyJSONEncoder
 if TYPE_CHECKING:
     from json import JSONEncoder
 
+logger = logging.getLogger(__name__)
+
 __all__ = [
     "BaseItemExporter",
     "CsvItemExporter",
@@ -35,7 +39,7 @@ __all__ = [
 ]
 
 
-class BaseItemExporter:
+class BaseItemExporter(ABC):
     def __init__(self, *, dont_fail: bool = False, **kwargs: Any):
         self._kwargs: dict[str, Any] = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
@@ -54,6 +58,7 @@ class BaseItemExporter:
         if not dont_fail and options:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
+    @abstractmethod
     def export_item(self, item: Any) -> None:
         raise NotImplementedError
 
@@ -63,10 +68,10 @@ class BaseItemExporter:
         serializer: Callable[[Any], Any] = field.get("serializer", lambda x: x)
         return serializer(value)
 
-    def start_exporting(self) -> None:
+    def start_exporting(self) -> None:  # noqa: B027
         pass
 
-    def finish_exporting(self) -> None:
+    def finish_exporting(self) -> None:  # noqa: B027
         pass
 
     def _get_serialized_fields(
@@ -169,7 +174,15 @@ class XmlItemExporter(BaseItemExporter):
         super().__init__(**kwargs)
         if not self.encoding:
             self.encoding = "utf-8"
-        self.xg = XMLGenerator(file, encoding=self.encoding)
+        # copied from xml.sax.saxutils._gettextwriter()
+        self.stream = TextIOWrapper(
+            file,
+            encoding=self.encoding,
+            errors="xmlcharrefreplace",
+            newline="\n",
+            write_through=True,
+        )
+        self.xg = XMLGenerator(self.stream, encoding=self.encoding)
 
     def _beautify_newline(self, new_item: bool = False) -> None:
         if self.indent is not None and (self.indent > 0 or new_item):
@@ -197,6 +210,7 @@ class XmlItemExporter(BaseItemExporter):
     def finish_exporting(self) -> None:
         self.xg.endElement(self.root_element)
         self.xg.endDocument()
+        self.stream.detach()  # Avoid closing the wrapped file.
 
     def _export_xml_field(self, name: str, serialized_value: Any, depth: int) -> None:
         self._beautify_indent(depth=depth)
@@ -243,6 +257,8 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
+        self._autodetected_fields = False
+        self._data_loss_warned = False
 
     def serialize_field(
         self, field: Mapping[str, Any] | Field, name: str, value: Any
@@ -263,6 +279,22 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
+        if (
+            self._autodetected_fields
+            and self.fields_to_export is not None
+            and not self._data_loss_warned
+        ):
+            item_fields = ItemAdapter(item).field_names()
+            dropped_fields = set(item_fields) - set(self.fields_to_export)
+
+            if dropped_fields:
+                dropped_fields_display = sorted(dropped_fields)
+                logger.warning(
+                    f"CSVExporter dropped fields {dropped_fields_display}. "
+                    f"To avoid this, fully configure your FEED_EXPORT_FIELDS setting. "
+                    f"See: https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-fields",
+                )
+                self._data_loss_warned = True
         fields = self._get_serialized_fields(item, default_value="", include_empty=True)
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
@@ -282,6 +314,7 @@ class CsvItemExporter(BaseItemExporter):
             if not self.fields_to_export:
                 # use declared field names, or keys if the item is a dict
                 self.fields_to_export = ItemAdapter(item).field_names()
+                self._autodetected_fields = True
             fields: Iterable[str]
             if isinstance(self.fields_to_export, Mapping):
                 fields = self.fields_to_export.values()
@@ -356,12 +389,12 @@ class PythonItemExporter(BaseItemExporter):
     def _serialize_value(self, value: Any) -> Any:
         if isinstance(value, Item):
             return self.export_item(value)
+        if isinstance(value, (str, bytes)):
+            return to_unicode(value, encoding=self.encoding)
         if is_item(value):
             return dict(self._serialize_item(value))
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        if isinstance(value, (str, bytes)):
-            return to_unicode(value, encoding=self.encoding)
         return value
 
     def _serialize_item(self, item: Any) -> Iterable[tuple[str | bytes, Any]]:

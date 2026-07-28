@@ -6,8 +6,13 @@ Contributing to Scrapy
 
 .. important::
 
-    Double check that you are reading the most recent version of this document at
-    https://docs.scrapy.org/en/master/contributing.html
+    Double check that you are reading the most recent version of this document
+    at https://docs.scrapy.org/en/master/contributing.html
+
+    By participating in this project you agree to abide by the terms of our
+    `Code of Conduct
+    <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_. Please
+    report unacceptable behavior to opensource@zyte.com.
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
@@ -246,14 +251,14 @@ Coding style
 Please follow these coding conventions when writing code for inclusion in
 Scrapy:
 
-* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting.
+* We use `Ruff <https://docs.astral.sh/ruff/>`_ for code formatting.
   There is a hook in the pre-commit config
   that will automatically format your code before every commit. You can also
-  run black manually with ``tox -e pre-commit``.
+  run Ruff manually with ``tox -e pre-commit``.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
-  See https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git
+  See https://docs.github.com/en/get-started/git-basics/setting-your-username-in-git
   for setup instructions.
 
 .. _scrapy-pre-commit:
@@ -318,9 +323,10 @@ deprecation removals are documented in the :ref:`release notes <news>`.
 Tests
 =====
 
-Tests are implemented using the :doc:`Twisted unit-testing framework
-<twisted:development/test-standard>`. Running tests requires
-:doc:`tox <tox:index>`.
+Tests are implemented using pytest_. Running tests requires :doc:`tox
+<tox:index>`.
+
+.. _pytest: https://pytest.org
 
 .. _running-tests:
 
@@ -366,6 +372,21 @@ To see coverage report install :doc:`coverage <coverage:index>`
 
 see output of ``coverage --help`` for more options like html or xml report.
 
+Some tests need a ``mitmdump`` executable (from mitmproxy_) to test against a
+fully featured proxy server; they are skipped when one cannot be found
+(``mitmproxy`` is intentionally not a test dependency that would be installed
+into test venvs, as that sometimes leads to various dependency conflicts).
+To run these tests, make ``mitmdump`` available in one of these ways:
+
+* install ``mitmproxy`` so that ``mitmdump`` is on your ``PATH``, e.g. with
+  pipx_ (``pipx install mitmproxy``) or uv_ (``uv tool install mitmproxy``);
+
+* have uv_ installed, in which case the tests will run
+  ``uvx --from mitmproxy mitmdump``;
+
+* set the ``MITMDUMP`` environment variable to the path of a ``mitmdump``
+  executable.
+
 Writing tests
 -------------
 
@@ -385,8 +406,7 @@ And their unit-tests are in::
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
-.. _Scrapy subreddit: https://reddit.com/r/scrapy
-.. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
+.. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _PEP 257: https://peps.python.org/pep-0257/
@@ -394,3 +414,6 @@ And their unit-tests are in::
 .. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist
 .. _help wanted issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
 .. _test coverage: https://app.codecov.io/gh/scrapy/scrapy
+.. _mitmproxy: https://mitmproxy.org/
+.. _pipx: https://pipx.pypa.io/
+.. _uv: https://docs.astral.sh/uv/
