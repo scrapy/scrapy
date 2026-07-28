@@ -8,21 +8,23 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.decorators import _warn_spider_arg
-from scrapy.utils.defer import _defer_sleep_async, deferred_from_coro
+from scrapy.utils.defer import (
+    _defer_sleep_async,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-
-    from twisted.internet.defer import Deferred
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -201,6 +203,7 @@ class Downloader:
         self.signals: SignalManager = crawler.signals
         self.active: set[Request] = set()
         self._transferring: set[Request] = set()
+        self._transfer_waiters: list[Deferred[None]] = []
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
         self.middleware: DownloaderMiddlewareManager = (
@@ -235,6 +238,27 @@ class Downloader:
 
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
+
+    @property
+    def transferring(self) -> set[Request]:
+        """Requests that are being transferred, i.e. that a :ref:`download
+        handler <topics-download-handlers>` is working on.
+
+        The rest of :attr:`active` is being processed by the downloader
+        middlewares instead (see :meth:`is_parked`).
+        """
+        return self._transferring
+
+    def is_parked(self, request: Request) -> bool:
+        """Return whether *request* is being processed by the downloader
+        middlewares rather than transferred.
+
+        A parked request is not using the network, even though it may be
+        holding a :ref:`throttling <throttling>` concurrency slot, and it may be
+        parked waiting for another request that a downloader middleware is
+        downloading.
+        """
+        return request in self.active and request not in self._transferring
 
     @property
     def domain_concurrency(self) -> int:
@@ -297,7 +321,37 @@ class Downloader:
         )
         return await self._download(request)
 
+    async def _acquire_transfer_slot(self) -> None:
+        """Wait until fewer than :setting:`CONCURRENT_REQUESTS` requests are
+        being transferred.
+
+        Requests coming from the scheduler are kept under that limit by the
+        engine, which stops dequeuing them (see
+        :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`), but
+        requests sent outside the scheduling cycle
+        never went through the scheduler, so this is what limits them.
+
+        Waiting here cannot deadlock a crawl: only requests that a download
+        handler is working on hold a transfer slot, and those complete on their
+        own. A request waiting on the downloader middlewares, e.g. for a
+        robots.txt request that a middleware is downloading, holds none.
+        """
+        while 0 < self.total_concurrency <= len(self._transferring):
+            # A finished transfer is the only way for a slot to free up, and
+            # the waiter is registered before this coroutine gives up control,
+            # so no wake-up can be missed.
+            waiter: Deferred[None] = Deferred()
+            self._transfer_waiters.append(waiter)
+            await maybe_deferred_to_future(waiter)
+
+    def _fire_transfer_waiters(self) -> None:
+        waiters, self._transfer_waiters = self._transfer_waiters, []
+        for waiter in waiters:
+            if not waiter.called:
+                waiter.callback(None)
+
     async def _download(self, request: Request) -> Response:
+        await self._acquire_transfer_slot()
         self._transferring.add(request)
         try:
             response: Response = await self.handlers.download_request_async(request)
@@ -313,6 +367,7 @@ class Downloader:
             raise
         finally:
             self._transferring.discard(request)
+            self._fire_transfer_waiters()
             self.signals.send_catch_log(
                 signal=signals.request_left_downloader,
                 request=request,

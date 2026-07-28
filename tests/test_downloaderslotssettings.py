@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 from urllib.parse import urlparse
 
@@ -6,11 +7,15 @@ import pytest
 from scrapy import Request
 from scrapy.core.downloader import Downloader
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http.request import NO_CALLBACK
 from scrapy.throttler import Throttler
+from scrapy.utils.asyncio import wait_for_first
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
-from tests.spiders import MetaSpider
+from tests.spiders import MetaSpider, SimpleSpider
+from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test
 
 
@@ -89,6 +94,109 @@ async def test_slots_deprecated():
     assert request in slot.active
     downloader.active.discard(request)
     downloader.close()
+
+
+@coroutine_test
+async def test_is_parked():
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    # Not being downloaded at all.
+    assert downloader.is_parked(request) is False
+    # In the downloader middlewares, holding a concurrency slot it is not using.
+    downloader.active.add(request)
+    assert downloader.is_parked(request) is True
+    # On the wire.
+    downloader._transferring.add(request)
+    assert downloader.is_parked(request) is False
+    downloader._transferring.discard(request)
+    downloader.active.discard(request)
+    downloader.close()
+
+
+class OffCycleFloodSpider(MetaSpider):
+    """Send many requests outside the scheduling cycle at once, like a media
+    pipeline does for the files of an item."""
+
+    name = "off_cycle_flood"
+    request_count = 8
+
+    custom_settings = {
+        "CONCURRENT_REQUESTS": 2,
+        # High enough that per-scope throttling is not what bounds anything.
+        "THROTTLING_SCOPE_CONCURRENCY": 100,
+    }
+
+    peak_transferring = 0
+
+    async def start(self):
+        assert self.mockserver
+        yield Request(self.mockserver.url("/status?n=200"), callback=self.parse)
+
+    async def parse(self, response):
+        assert self.mockserver
+        assert self.crawler.engine
+        downloader = self.crawler.engine.downloader
+
+        async def watch() -> None:
+            for _ in range(100):
+                type(self).peak_transferring = max(
+                    type(self).peak_transferring, len(downloader.transferring)
+                )
+                await async_sleep(0.02)
+
+        watcher = asyncio.ensure_future(watch())
+        await asyncio.gather(
+            *(
+                self.crawler.engine.download_async(
+                    Request(
+                        self.mockserver.url(f"/delay?n=0.2&i={i}"),
+                        callback=NO_CALLBACK,
+                        dont_filter=True,
+                    )
+                )
+                for i in range(self.request_count)
+            )
+        )
+        await watcher
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_off_cycle_requests_are_bound_by_concurrent_requests():
+    with MockServer() as mockserver:
+        crawler = get_crawler(OffCycleFloodSpider)
+        await crawler.crawl_async(mockserver=mockserver)
+    assert crawler.stats
+    # Every request went out, but never more than CONCURRENT_REQUESTS at a time.
+    assert (
+        crawler.stats.get_value("downloader/request_count")
+        == OffCycleFloodSpider.request_count + 1
+    )
+    assert OffCycleFloodSpider.peak_transferring == 2
+
+
+@coroutine_test
+async def test_transfer_slots_do_not_deadlock_on_robotstxt():
+    """With room for a single transfer, a request parked on the downloader
+    middlewares while they download its robots.txt holds no transfer slot, so
+    the robots.txt request can be transferred and the crawl goes on."""
+    with MockServer() as mockserver:
+        crawler = get_crawler(
+            SimpleSpider,
+            settings_dict={"CONCURRENT_REQUESTS": 1, "ROBOTSTXT_OBEY": True},
+        )
+        crawl = deferred_from_coro(
+            crawler.crawl_async(mockserver.url("/status?n=200"), mockserver=mockserver)
+        )
+        # A bounded wait, so that a regression fails instead of hanging.
+        done, _ = await wait_for_first([crawl], timeout=30)
+        assert done, "the crawl deadlocked waiting for a transfer slot"
+        await maybe_deferred_to_future(crawl)
+    assert crawler.stats
+    assert crawler.stats.get_value("robotstxt/request_count") == 1
+    assert crawler.stats.get_value("response_received_count") == 2
 
 
 @coroutine_test

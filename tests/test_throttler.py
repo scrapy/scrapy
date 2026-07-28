@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -23,11 +23,16 @@ from scrapy.throttler import (
     scope_cache,
 )
 from scrapy.utils._headers import _parse_ratelimit_reset, _parse_retry_after
+from scrapy.utils.asyncio import wait_for_first
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
+from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
 
 
 def _manager(settings: dict[str, Any] | None = None) -> Throttler:
@@ -231,7 +236,7 @@ class TestThrottler:
         scope = _scope(manager, "example.com")
         request = Request("http://example.com")
         scope.record_sent(now=0.0)
-        manager._reserved[request] = [(scope, None)]
+        manager._reserved[request] = [("example.com", scope, None)]
         assert scope.concurrency_blocked() is True
         manager.release(request)
         assert scope.concurrency_blocked() is False
@@ -258,6 +263,30 @@ class TestThrottler:
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(r2)))
         assert scope.concurrency_blocked() is True
         assert r2 in manager._reserved
+
+    @coroutine_test
+    async def test_dont_throttle_skips_the_gate(self):
+        manager = _manager(
+            {
+                "THROTTLING_SCOPES": {
+                    "example.com": {"concurrency": 1, "delay": 100.0}
+                },
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            }
+        )
+        blocking = Request("http://example.com/1")
+        await maybe_deferred_to_future(deferred_from_coro(manager.acquire(blocking)))
+        scope = _scope(manager, "example.com")
+        assert scope.concurrency_blocked() is True
+        # Without dont_throttle this would wait for the scope delay and then
+        # forever for the slot that `blocking` holds.
+        exempt = Request("http://example.com/2", meta={"dont_throttle": True})
+        await maybe_deferred_to_future(deferred_from_coro(manager.acquire(exempt)))
+        # No slot was taken for it, so releasing it is a no-op and the scope
+        # state stays as `blocking` left it.
+        assert exempt not in manager._reserved
+        manager.release(exempt)
+        assert scope.concurrency_blocked() is True
 
     def test_reconcile_quota_without_backoff(self):
         manager = _manager({"THROTTLING_SCOPES": {"cost": {"quota": 100.0}}})
@@ -398,6 +427,146 @@ class TestThrottler:
             scope.record_sent(now=0.0)
             scope.record_done(now=0.0)
         assert len(manager._scope_managers) == 5
+
+
+class TestOffCycleRequests:
+    """Requests sent outside the scheduling cycle, i.e. through
+    engine.download_async(), can be prerequisites of a request that is parked
+    on the downloader middlewares holding a slot of the same scope, so they can
+    borrow a parked slot and they get freed slots before the scheduler does."""
+
+    @staticmethod
+    def _park(
+        monkeypatch: pytest.MonkeyPatch, manager: Throttler, *requests: Request
+    ) -> None:
+        """Make *requests* look parked on the downloader middlewares, which is
+        otherwise the downloader's business."""
+        parked = set(requests)
+        monkeypatch.setattr(manager, "_is_parked", lambda request: request in parked)
+
+    @staticmethod
+    async def _acquire(manager: Throttler, request: Request, **kwargs: Any) -> None:
+        # Drive acquire() the way the engine does, so it runs as a real task
+        # that can await slot events under the asyncio reactor.
+        await maybe_deferred_to_future(
+            deferred_from_coro(manager.acquire(request, **kwargs))
+        )
+
+    @staticmethod
+    async def _start_waiting(manager: Throttler, request: Request) -> Deferred[None]:
+        """Start an off-cycle acquire() and let it run up to the point where it
+        blocks waiting for a concurrency slot."""
+        blocked = deferred_from_coro(manager.acquire(request, off_cycle=True))
+        await async_sleep(0)
+        return blocked
+
+    @coroutine_test
+    async def test_borrows_the_slot_of_a_parked_holder(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        holder = Request("http://example.com/1")
+        await self._acquire(manager, holder)
+        scope = _scope(manager, "example.com")
+        assert scope.concurrency_blocked() is True
+        self._park(monkeypatch, manager, holder)
+        # The holder is not using the slot it took, and it may well be parked
+        # waiting for this very request, so this one borrows it instead of
+        # waiting for a slot that would never free up.
+        prerequisite = Request("http://example.com/robots.txt")
+        await self._acquire(manager, prerequisite, off_cycle=True)
+        assert prerequisite in manager._reserved
+
+    @coroutine_test
+    async def test_does_not_borrow_while_a_holder_transfers(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
+
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}})
+        parked = Request("http://example.com/1")
+        transferring = Request("http://example.com/2")
+        await self._acquire(manager, parked)
+        await self._acquire(manager, transferring)
+        self._park(monkeypatch, manager, parked)
+        # One of the holders is on the wire, so it will free its slot on its
+        # own and there is nothing to break: this request waits for it.
+        off_cycle = Request("http://example.com/3")
+        call_later(0, manager.release, transferring)
+        await self._acquire(manager, off_cycle, off_cycle=True)
+        assert manager.crawler.stats
+        assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
+
+    @coroutine_test
+    async def test_borrows_at_nesting_depth_two(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        holder = Request("http://example.com/1")
+        await self._acquire(manager, holder)
+        self._park(monkeypatch, manager, holder)
+        first = Request("http://example.com/2")
+        await self._acquire(manager, first, off_cycle=True)
+        # The borrower is now parked on the downloader middlewares too, and its
+        # own middlewares download a request of their own: it can borrow in
+        # turn, so that nesting of any depth cannot deadlock.
+        self._park(monkeypatch, manager, holder, first)
+        second = Request("http://example.com/3")
+        await self._acquire(manager, second, off_cycle=True)
+        assert second in manager._reserved
+        assert manager.crawler.stats
+        assert manager.crawler.stats.get_value("throttler/borrowed_slots") == 2
+
+    @coroutine_test
+    async def test_scheduler_yields_a_free_slot_to_an_off_cycle_waiter(self) -> None:
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        holder = Request("http://example.com/1")
+        await self._acquire(manager, holder)
+        waiting = Request("http://example.com/2")
+        blocked = await self._start_waiting(manager, waiting)
+        scheduled = Request("http://example.com/3")
+        await manager.get_scopes(scheduled)
+        # The scope is full, so nothing is ready yet.
+        assert manager.is_ready(scheduled) is False
+        manager.release(holder)
+        # Now there is a free slot, but the waiting off-cycle request has a
+        # claim on it: a request from the scheduler must not take it.
+        assert manager.is_ready(scheduled) is False
+        await maybe_deferred_to_future(blocked)
+        assert waiting in manager._reserved
+        # Once it is served it no longer holds a claim on the scope.
+        manager.release(waiting)
+        assert manager.is_ready(scheduled) is True
+
+    @coroutine_test
+    async def test_scheduler_keeps_a_slot_the_off_cycle_waiter_cannot_use(
+        self,
+    ) -> None:
+        manager = _manager(
+            {"THROTTLING_SCOPES": {scope: {"concurrency": 1} for scope in "ab"}}
+        )
+        blocker = Request("http://example.com/1", meta={"throttling_scopes": "b"})
+        await self._acquire(manager, blocker)
+        waiting = Request(
+            "http://example.com/2", meta={"throttling_scopes": ["a", "b"]}
+        )
+        blocked = await self._start_waiting(manager, waiting)
+        # The off-cycle request is waiting for scope b, so it cannot use a free
+        # slot of scope a: the scheduler gets it.
+        scheduled = Request("http://example.com/3", meta={"throttling_scopes": "a"})
+        await manager.get_scopes(scheduled)
+        assert manager.is_ready(scheduled) is True
+        manager.release(blocker)
+        # Now it can use both, so it takes precedence again.
+        assert manager.is_ready(scheduled) is False
+        await maybe_deferred_to_future(blocked)
+
+    @coroutine_test
+    async def test_waiters_are_forgotten_once_served(self) -> None:
+        manager = _manager()
+        request = Request("http://example.com/1")
+        await self._acquire(manager, request, off_cycle=True)
+        assert not manager._off_cycle_waiters
 
 
 class TestThrottlingScopeManager:
@@ -716,6 +885,40 @@ class TestThrottlerReadiness:
         # The base delay now blocks any further request for the scope.
         assert manager.is_ready(second) is False
         assert manager.get_time_until_ready(second) == pytest.approx(100.0, abs=1.0)
+
+    @coroutine_test
+    async def test_dont_throttle_is_ready_and_reserves_nothing(self):
+        manager = _manager(
+            {
+                "THROTTLING_SCOPES": {
+                    "example.com": {"concurrency": 1, "delay": 100.0}
+                },
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            }
+        )
+        blocking = Request("http://example.com/1")
+        await manager.get_scopes(blocking)
+        manager.reserve(blocking)
+        scope = _scope(manager, "example.com")
+        load = scope.get_load()
+        exempt = Request("http://example.com/2", meta={"dont_throttle": True})
+        await manager.get_scopes(exempt)
+        assert manager.is_ready(exempt) is True
+        assert manager.get_time_until_ready(exempt) is None
+        # Reserving it neither takes a slot nor pushes the scope delay forward.
+        manager.reserve(exempt)
+        assert exempt not in manager._reserved
+        assert scope.get_load() == load
+
+    @coroutine_test
+    async def test_dont_throttle_still_honors_the_request_delay(self):
+        manager = _manager()
+        request = Request(
+            "http://example.com/a", meta={"delay": 100.0, "dont_throttle": True}
+        )
+        await manager.get_scopes(request)
+        assert manager.is_ready(request) is False
+        assert manager.get_time_until_ready(request) == pytest.approx(100.0, abs=1.0)
 
     @coroutine_test
     async def test_delay_blocks_until_deadline(self):
@@ -1174,3 +1377,25 @@ class TestThrottlerIntegration:
             mockserver.url("/status?n=200"), mockserver=mockserver
         )
         assert all(m._delay == m._base_delay for m in _scope_managers(crawler))
+
+    @coroutine_test
+    async def test_robotstxt_does_not_wait_for_a_concurrency_slot(self, mockserver):
+        """A robots.txt request is downloaded from a downloader middleware,
+        while the request that triggered it is holding the only concurrency
+        slot of the very same scope and waiting for it, so it has to borrow
+        that parked slot."""
+        crawler = get_crawler(
+            SimpleSpider,
+            {"ROBOTSTXT_OBEY": True, "THROTTLING_SCOPE_CONCURRENCY": 1},
+        )
+        crawl = deferred_from_coro(
+            crawler.crawl_async(mockserver.url("/status?n=200"), mockserver=mockserver)
+        )
+        # A bounded wait, so that a regression fails instead of hanging.
+        done, _ = await wait_for_first([crawl], timeout=30)
+        assert done, "the crawl deadlocked at the throttling gate"
+        await maybe_deferred_to_future(crawl)
+        assert crawler.stats
+        assert crawler.stats.get_value("robotstxt/request_count") == 1
+        assert crawler.stats.get_value("response_received_count") == 2
+        assert crawler.stats.get_value("throttler/borrowed_slots") == 1

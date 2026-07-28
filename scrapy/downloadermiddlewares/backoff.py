@@ -79,11 +79,7 @@ class BackoffMiddleware:
         response: Response,
         spider: scrapy.Spider | None = None,
     ) -> Response:
-        if (
-            response.status not in self._any_http_codes
-            or "cached" in response.flags
-            or request.meta.get("dont_throttle")
-        ):
+        if response.status not in self._any_http_codes or "cached" in response.flags:
             return response
         matched = [
             scope
@@ -101,9 +97,7 @@ class BackoffMiddleware:
         exception: Exception,
         spider: scrapy.Spider | None = None,
     ) -> None:
-        if request.meta.get("dont_throttle") or not isinstance(
-            exception, self._any_exceptions
-        ):
+        if not isinstance(exception, self._any_exceptions):
             return
         matched = [
             scope

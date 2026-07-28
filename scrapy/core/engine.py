@@ -603,7 +603,9 @@ class ExecutionEngine:
         while True:
             try:
                 response_or_request = await maybe_deferred_to_future(
-                    self._download(request)
+                    # This is the only way to download a request outside the
+                    # scheduling cycle, so anything that gets here is off-cycle.
+                    self._download(request, off_cycle=True)
                 )
             finally:
                 assert self._slot is not None
@@ -614,7 +616,7 @@ class ExecutionEngine:
 
     @inlineCallbacks
     def _acquire_throttler(
-        self, request: Request
+        self, request: Request, off_cycle: bool
     ) -> Generator[Deferred[Any], Any, None]:
         """Wait at the throttling gate before *request* is sent, tracking it as
         held meanwhile."""
@@ -622,13 +624,13 @@ class ExecutionEngine:
         throttler = self.crawler.throttler
         assert throttler is not None
         try:
-            yield deferred_from_coro(throttler.acquire(request))
+            yield deferred_from_coro(throttler.acquire(request, off_cycle=off_cycle))
         finally:
             self._throttler_waiting.discard(request)
 
     @inlineCallbacks
     def _download(
-        self, request: Request
+        self, request: Request, off_cycle: bool = False
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         assert self._slot is not None  # typing
         assert self.spider is not None
@@ -640,7 +642,7 @@ class ExecutionEngine:
         # try/finally that releases it, even if add_request() were to raise.
         try:
             self._slot.add_request(request)
-            yield self._acquire_throttler(request)
+            yield self._acquire_throttler(request, off_cycle)
             result: Response | Request
             if self._downloader_fetch_needs_spider:
                 result = yield self.downloader.fetch(request, self.spider)

@@ -124,12 +124,14 @@ class TestProcessResponse:
         mw.process_response(request, _response(request, status=429, flags=["cached"]))
         assert calls == []
 
-    def test_dont_throttle_skipped(self):
+    def test_dont_throttle_still_backs_off(self):
+        # dont_throttle exempts a request from the throttling gate, not from
+        # reporting what the server answered.
         mw = _middleware()
         calls = _spy_back_off(mw)
         request = _request(meta={"dont_throttle": True})
         mw.process_response(request, _response(request, status=429))
-        assert calls == []
+        assert calls == [(["example.com"], None)]
 
     def test_per_scope_http_codes_override(self):
         mw = _middleware(
@@ -166,12 +168,12 @@ class TestProcessException:
         )
         assert calls == []
 
-    def test_dont_throttle_skipped(self):
+    def test_dont_throttle_still_backs_off(self):
         mw = _middleware()
         calls = _spy_back_off(mw)
         request = _request("http://example.com/a", meta={"dont_throttle": True})
         mw.process_exception(request, DownloadTimeoutError())
-        assert calls == []
+        assert calls == [(["example.com"], None)]
 
     def test_per_scope_exceptions_override(self):
         mw = _middleware(

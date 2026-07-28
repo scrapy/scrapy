@@ -10,7 +10,7 @@ from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Iterable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, TypeVar, cast
-from weakref import WeakKeyDictionary
+from weakref import WeakKeyDictionary, WeakSet
 
 from twisted.internet.defer import Deferred
 from typing_extensions import Self
@@ -93,6 +93,10 @@ QuotaAmount = float
 ScopeQuotas = dict[ScopeID, QuotaAmount | None]
 JitterRange = tuple[float, float]  # (low, high) multiplier range
 RequestScopes = None | ScopeID | Iterable[ScopeID] | ScopeQuotas
+if TYPE_CHECKING:
+    # A scope of a request at the throttling gate: its ID, its manager, and the
+    # quota amount the request consumes from it.
+    ScopeSlot = tuple[ScopeID, "ThrottlingScopeManagerProtocol", QuotaAmount | None]
 
 
 def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
@@ -308,11 +312,26 @@ class ThrottlerProtocol(Protocol):
         a spider callback that wants to :meth:`back_off` based on the response.
         """
 
-    async def acquire(self, request: Request) -> None:
+    async def acquire(self, request: Request, *, off_cycle: bool = False) -> None:
         """Block until *request* is allowed to be sent by all of its scopes.
 
         This is the throttling gate that the engine awaits before releasing a
         request to the downloader.
+
+        *off_cycle* tells whether *request* was sent outside the scheduling
+        cycle, i.e. through :meth:`crawler.engine.download_async()
+        <scrapy.core.engine.ExecutionEngine.download_async>` instead of coming
+        from the scheduler. Such a request may be a prerequisite of a request
+        that is holding a concurrency slot of the same scope while it waits for
+        it — a downloader middleware downloading something from
+        :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`,
+        as the built-in robots.txt middleware does — so an implementation must
+        make sure it can never be blocked by such a request forever.
+
+        A request with the :reqmeta:`dont_throttle` metadata key is not held by
+        its scopes and does not count towards them; only its own
+        :reqmeta:`delay`, if any, still applies. The same goes for
+        :meth:`is_ready`, :meth:`reserve` and :meth:`get_time_until_ready`.
         """
 
     def release(self, request: Request) -> None:
@@ -334,6 +353,10 @@ class ThrottlerProtocol(Protocol):
         <throttler-aware-scheduler>` to decide whether a request can be
         dequeued now. It assumes the scopes of *request* have already been
         resolved (e.g. by an earlier :meth:`get_scopes` call at enqueue time).
+
+        It also returns ``False`` when a free slot of one of the scopes of
+        *request* is claimed by an off-cycle request waiting at the gate, which
+        gets it first.
         """
 
     def reserve(self, request: Request) -> None:
@@ -551,9 +574,17 @@ class Throttler:
         self._last_eviction: float | None = None
         # Concurrency slots reserved by acquire(), to be released once the
         # request finishes downloading.
-        self._reserved: WeakKeyDictionary[
-            Request, list[tuple[ThrottlingScopeManagerProtocol, QuotaAmount | None]]
-        ] = WeakKeyDictionary()
+        self._reserved: WeakKeyDictionary[Request, list[ScopeSlot]] = (
+            WeakKeyDictionary()
+        )
+        # Requests holding a reserved slot of each scope, i.e. the reverse of
+        # _reserved, used to tell whether a scope can lend a slot to an
+        # off-cycle request (see _can_lend_slot).
+        self._scope_holders: dict[ScopeID, WeakSet[Request]] = {}
+        # Off-cycle requests currently waiting at the gate, by scope, so that a
+        # slot freed in one of those scopes goes to them before it goes to the
+        # scheduler (see _off_cycle_claims).
+        self._off_cycle_waiters: dict[ScopeID, WeakSet[Request]] = {}
 
     @staticmethod
     def _merge_download_slots(settings: BaseSettings) -> dict[str, dict[str, Any]]:
@@ -677,7 +708,7 @@ class Throttler:
             if scope_id != keep and self._scope_managers[scope_id].is_idle(now, 0):
                 del self._scope_managers[scope_id]
 
-    async def acquire(self, request: Request) -> None:
+    async def acquire(self, request: Request, *, off_cycle: bool = False) -> None:
         # A throttler-aware scheduler reserves the request before handing it
         # to the engine, so there is nothing left to wait for or record here.
         if request in self._reserved:
@@ -685,64 +716,178 @@ class Throttler:
         now = time.monotonic()
         self._maybe_evict(now)
         await self._delay_request(request)
+        if request.meta.get("dont_throttle"):
+            return
         scope_values = list(iter_scope_quota_amounts(await self.get_scopes(request)))
         if not scope_values:
             return
-        managers = [
-            (self.get_scope_manager(scope_id), quota_amount)
+        scopes: list[ScopeSlot] = [
+            (scope_id, self.get_scope_manager(scope_id), quota_amount)
             for scope_id, quota_amount in scope_values
         ]
+        if not off_cycle:
+            await self._wait_at_gate(request, scopes, off_cycle=False)
+            return
+        for scope_id, _, _ in scopes:
+            self._off_cycle_waiters.setdefault(scope_id, WeakSet()).add(request)
+        try:
+            await self._wait_at_gate(request, scopes, off_cycle=True)
+        finally:
+            for scope_id, _, _ in scopes:
+                waiters = self._off_cycle_waiters.get(scope_id)
+                if waiters is not None:
+                    waiters.discard(request)
+                    if not waiters:
+                        del self._off_cycle_waiters[scope_id]
+
+    async def _wait_at_gate(
+        self, request: Request, scopes: list[ScopeSlot], *, off_cycle: bool
+    ) -> None:
+        """Block until every scope in *scopes* allows *request* through, then
+        reserve a slot on each of them."""
+        scope_ids = [scope_id for scope_id, _, _ in scopes]
+        yielded_to_off_cycle = False
         while True:
             wait = max(
                 [
                     0.0,
                     *(
                         manager.can_send(quota_amount=quota_amount)
-                        for manager, quota_amount in managers
+                        for _, manager, quota_amount in scopes
                     ),
                 ]
             )
             if wait > 0:
                 if self._debug:
                     logger.debug(
-                        f"Throttling {request} for {wait:.2f}s "
-                        f"(scopes: {[scope_id for scope_id, _ in scope_values]})"
+                        f"Throttling {request} for {wait:.2f}s (scopes: {scope_ids})"
                     )
                 await sleep(wait)
                 continue
             # All time-based gates (delay, backoff, quota) are open; the only
             # remaining reason to wait is a full concurrency slot.
             blocked = [
-                manager for manager, _ in managers if manager.concurrency_blocked()
+                (scope_id, manager)
+                for scope_id, manager, _ in scopes
+                if manager.concurrency_blocked()
             ]
             if not blocked:
-                self._record_reservation(request, managers)
+                if (
+                    not off_cycle
+                    and not yielded_to_off_cycle
+                    and self._off_cycle_claims(scope_ids)
+                ):
+                    # An off-cycle request waiting for one of these scopes can
+                    # use the free slot right now, and something in flight may
+                    # be waiting for it, so let it go first. Only once, so that
+                    # a claim that no one takes cannot spin here.
+                    yielded_to_off_cycle = True
+                    await sleep(0)
+                    continue
+                self._record_reservation(request, scopes)
+                return
+            if off_cycle and all(
+                self._can_lend_slot(scope_id) for scope_id, _ in blocked
+            ):
+                self._borrow_slots(
+                    request, scopes, [scope_id for scope_id, _ in blocked]
+                )
                 return
             if self._debug:
                 logger.debug(
                     f"Throttling {request} until a concurrency slot frees up "
-                    f"(scopes: {[scope_id for scope_id, _ in scope_values]})"
+                    f"(scopes: {scope_ids})"
                 )
-            await self._wait_for_slot(blocked)
+            await self._wait_for_slot([manager for _, manager in blocked])
 
-    def _record_reservation(
-        self,
-        request: Request,
-        managers: list[tuple[ThrottlingScopeManagerProtocol, QuotaAmount | None]],
-    ) -> None:
-        """Record a send on each of *request*'s scope *managers* and mark
-        *request* as reserved, so :meth:`release` can later free the slots. This
-        is the shared tail of :meth:`acquire` and :meth:`reserve`."""
-        for manager, quota_amount in managers:
+    def _record_reservation(self, request: Request, scopes: list[ScopeSlot]) -> None:
+        """Record a send on each of *request*'s *scopes* and mark *request* as
+        reserved, so :meth:`release` can later free the slots. This is the
+        shared tail of :meth:`acquire` and :meth:`reserve`."""
+        for scope_id, manager, quota_amount in scopes:
             manager.record_sent(quota_amount=quota_amount)
-        self._reserved[request] = managers
+            self._scope_holders.setdefault(scope_id, WeakSet()).add(request)
+        self._reserved[request] = scopes
 
     def release(self, request: Request) -> None:
-        managers = self._reserved.pop(request, None)
-        if not managers:
+        scopes = self._reserved.pop(request, None)
+        if not scopes:
             return
-        for manager, _ in managers:
+        for scope_id, manager, _ in scopes:
+            holders = self._scope_holders.get(scope_id)
+            if holders is not None:
+                holders.discard(request)
+                if not holders:
+                    del self._scope_holders[scope_id]
             manager.record_done()
+
+    # -- Off-cycle requests ---------------------------------------------------
+
+    def _is_parked(self, request: Request) -> bool:
+        """Return whether *request* holds a concurrency slot that it is not
+        using, i.e. it is being processed by the downloader middlewares instead
+        of being transferred."""
+        engine = self.crawler.engine
+        return engine is not None and engine.downloader.is_parked(request)
+
+    def _can_lend_slot(self, scope_id: ScopeID) -> bool:
+        """Return whether *scope_id* can lend a concurrency slot to an
+        off-cycle request.
+
+        It can when every request holding one of its slots is parked, i.e. none
+        of them is on the wire: a parked request may be parked precisely because
+        it is waiting for the off-cycle request, in which case nothing in the
+        scope can ever complete unless the off-cycle request is let through, and
+        lending is free because the borrowed slot was not being used anyway.
+        """
+        holders = self._scope_holders.get(scope_id)
+        if not holders:
+            return False
+        return all(self._is_parked(holder) for holder in holders)
+
+    def _borrow_slots(
+        self, request: Request, scopes: list[ScopeSlot], borrowed: list[ScopeID]
+    ) -> None:
+        """Reserve the *scopes* of *request*, borrowing a parked slot from each
+        scope in *borrowed*, which has none free."""
+        if self.crawler.stats:
+            self.crawler.stats.inc_value("throttler/borrowed_slots")
+        if self._debug:
+            logger.debug(
+                f"Letting {request} borrow a concurrency slot of every scope in "
+                f"{borrowed}, whose slots are all held by requests parked on the "
+                f"downloader middlewares"
+            )
+        self._record_reservation(request, scopes)
+
+    def _off_cycle_claims(self, scope_ids: list[ScopeID]) -> bool:
+        """Return whether an off-cycle request waiting at the gate could use a
+        free slot of any of *scope_ids* right now, in which case it gets it
+        before a request from the scheduler does."""
+        return any(
+            self._can_use_slot_now(waiter, scope_id)
+            for scope_id in scope_ids
+            for waiter in self._off_cycle_waiters.get(scope_id, ())
+        )
+
+    def _can_use_slot_now(self, request: Request, scope_id: ScopeID) -> bool:
+        """Return whether *request* would be sent right away if it got a free
+        slot of *scope_id*, i.e. whether every one of its other scopes already
+        allows it through. A request that would keep waiting on another scope
+        has no claim on the slot, so the scheduler may take it."""
+        now = time.monotonic()
+        if self._request_delay_deadline(request, now) > now:
+            return False
+        for other_id, quota_amount in self._cached_scope_quota_amounts(request):
+            if other_id == scope_id:
+                continue
+            manager = self.get_scope_manager(other_id)
+            if (
+                manager.can_send(now=now, quota_amount=quota_amount) > 0
+                or manager.concurrency_blocked()
+            ):
+                return False
+        return True
 
     # -- Synchronous readiness API (used by a throttler-aware scheduler) ------
 
@@ -750,13 +895,18 @@ class Throttler:
         now = time.monotonic()
         if self._request_delay_deadline(request, now) > now:
             return False
-        for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
+        if request.meta.get("dont_throttle"):
+            return True
+        scope_values = self._cached_scope_quota_amounts(request)
+        for scope_id, quota_amount in scope_values:
             manager = self.get_scope_manager(scope_id)
             if manager.can_send(now=now, quota_amount=quota_amount) > 0:
                 return False
             if manager.concurrency_blocked():
                 return False
-        return True
+        # Every scope has a free slot, but an off-cycle request waiting for one
+        # of them gets it first.
+        return not self._off_cycle_claims([scope_id for scope_id, _ in scope_values])
 
     def reserve(self, request: Request) -> None:
         # A throttler-aware scheduler reserves every request before handing it
@@ -764,18 +914,21 @@ class Throttler:
         # gets to evict idle scopes; do it here so their managers do not pile
         # up on broad crawls.
         self._maybe_evict(time.monotonic())
-        managers = [
-            (self.get_scope_manager(scope_id), quota_amount)
+        if request.meta.get("dont_throttle"):
+            return
+        scopes: list[ScopeSlot] = [
+            (scope_id, self.get_scope_manager(scope_id), quota_amount)
             for scope_id, quota_amount in self._cached_scope_quota_amounts(request)
         ]
-        self._record_reservation(request, managers)
+        self._record_reservation(request, scopes)
 
     def get_time_until_ready(self, request: Request) -> float | None:
         now = time.monotonic()
         wait = max(0.0, self._request_delay_deadline(request, now) - now)
-        for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
-            manager = self.get_scope_manager(scope_id)
-            wait = max(wait, manager.can_send(now=now, quota_amount=quota_amount))
+        if not request.meta.get("dont_throttle"):
+            for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
+                manager = self.get_scope_manager(scope_id)
+                wait = max(wait, manager.can_send(now=now, quota_amount=quota_amount))
         return wait if wait > 0 else None
 
     def get_scope_load(self, scope_id: ScopeID) -> float:
@@ -790,13 +943,13 @@ class Throttler:
 
         Each manager hands out an event Deferred that fires when a slot is freed
         (via :meth:`ThrottlingScopeManager.record_done`) or the limit is raised
-        (via :meth:`ThrottlingScopeManager.set_concurrency`). A long safety timer
-        bounds the wait in case no slot is ever freed (it always should be, via
-        :meth:`release`).
+        (via :meth:`ThrottlingScopeManager.set_concurrency`). Those are the only
+        two ways for a slot to become available, and the events are registered
+        before this coroutine gives up control, so no wake-up can be missed.
         """
         pairs = [(manager, manager.slot_available_event()) for manager in managers]
         events = [event for _, event in pairs]
-        _, pending = await wait_for_first(events, timeout=_SLOT_WAIT_TIMEOUT)
+        _, pending = await wait_for_first(events)
         for manager, event in pairs:
             if event in pending:
                 manager.discard_slot_available_event(event)
@@ -1059,12 +1212,6 @@ class ThrottlingScopeManagerProtocol(Protocol):
         not currently in an active (future) backoff.
         """
 
-
-# Safety timeout for acquire() while it waits, event-driven, for a concurrency
-# slot to free up: a slot_available_event normally fires first (from record_done() or
-# set_concurrency()); this only guards against a request that never reaches
-# release() so the wait can never hang forever.
-_SLOT_WAIT_TIMEOUT = 1.0
 
 # Internal tuning of the backoff algorithm, hardcoded rather than exposed as
 # settings. _BACKOFF_MIN_DELAY must stay positive: it seeds the exponential

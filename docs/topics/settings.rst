@@ -540,12 +540,10 @@ CONCURRENT_REQUESTS
 
 Default: ``16``
 
-Maximum number of total concurrent requests allowed.
-
-.. seealso:: :ref:`throttling`
+Maximum number of total concurrent requests allowed, ``0`` for no limit.
 
 It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
+:setting:`THROTTLING_SCOPES`.
 
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 

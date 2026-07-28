@@ -343,18 +343,21 @@ at the front of the queue, so it goes out right after its delay.
 
 .. reqmeta:: dont_throttle
 
-Excluding a request from throttling state
------------------------------------------
+Excluding a request from throttling
+-----------------------------------
 
-Some requests (authentication flows, one-off API calls, file downloads) should
-not influence throttling state even if they get a :setting:`BACKOFF_HTTP_CODES`
-response or raise a :setting:`BACKOFF_EXCEPTIONS` exception. Set the
-:reqmeta:`dont_throttle` request metadata key to ``True`` to process such a
-request normally without letting its outcome trigger :ref:`backoff <backoff>`:
+To send a request as soon as possible, regardless of what its scopes would
+otherwise impose, set the :reqmeta:`dont_throttle` request metadata key to
+``True``:
 
 .. code-block:: python
 
     Request("https://example.com/login", meta={"dont_throttle": True})
+
+Its own :reqmeta:`delay`, if any, is still honored, and so is what its outcome
+says about the server: a :setting:`BACKOFF_HTTP_CODES` response or a
+:setting:`BACKOFF_EXCEPTIONS` exception still triggers :ref:`backoff <backoff>`
+for its scopes.
 
 .. _throttling-scopes:
 
