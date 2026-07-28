@@ -3,6 +3,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import pytest
+from twisted.internet.defer import Deferred
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader
@@ -200,6 +201,21 @@ async def test_transfer_slots_do_not_deadlock_on_robotstxt():
 
 
 @coroutine_test
+async def test_fire_transfer_waiters_skips_already_fired():
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    waiter: Deferred[None] = Deferred()
+    downloader._transfer_waiters.append(waiter)
+    waiter.callback(None)  # fired out-of-band before a slot freed up
+    # The already-fired waiter is skipped rather than called a second time
+    # (which would raise).
+    downloader._fire_transfer_waiters()
+    assert downloader._transfer_waiters == []
+    downloader.close()
+
+
+@coroutine_test
 async def test_deprecated_downloader_properties():
     crawler = get_crawler(
         DefaultSpider,
@@ -259,6 +275,32 @@ async def test_deprecated_slot_view():
     slot.delay = 5.0
     assert slot.delay == 5.0
     slot.close()
+
+    downloader.active.discard(request)
+    downloader.close()
+
+
+@coroutine_test
+async def test_deprecated_slot_view_without_randomization():
+    crawler = get_crawler(
+        DefaultSpider,
+        settings_dict={
+            "THROTTLING_SCOPES": {"example.com": {"delay": 2.0}},
+            "RANDOMIZE_DOWNLOAD_DELAY": False,
+        },
+    )
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    request.meta[Downloader.DOWNLOAD_SLOT] = "example.com"
+    downloader.active.add(request)
+
+    with pytest.warns(ScrapyDeprecationWarning, match="Downloader.slots is deprecated"):
+        slots = downloader.slots
+    slot = slots["example.com"]
+    # Without randomization the reported delay is the plain scope delay.
+    assert slot.randomize_delay is False
+    assert slot.download_delay() == 2.0
 
     downloader.active.discard(request)
     downloader.close()

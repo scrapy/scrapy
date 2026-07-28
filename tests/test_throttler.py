@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import warnings
 from typing import TYPE_CHECKING, Any, cast
+from weakref import WeakSet
 
 import pytest
 
@@ -567,6 +568,117 @@ class TestOffCycleRequests:
         request = Request("http://example.com/1")
         await self._acquire(manager, request, off_cycle=True)
         assert not manager._off_cycle_waiters
+
+    @coroutine_test
+    async def test_a_served_waiter_does_not_forget_the_others(self) -> None:
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        holder = Request("http://example.com/1")
+        await self._acquire(manager, holder)
+        first = Request("http://example.com/2")
+        second = Request("http://example.com/3")
+        first_blocked = await self._start_waiting(manager, first)
+        second_blocked = await self._start_waiting(manager, second)
+        assert len(manager._off_cycle_waiters["example.com"]) == 2
+        manager.release(holder)
+        await wait_for_first([first_blocked, second_blocked])
+        # Whichever of the two took the freed slot, forgetting it must not
+        # forget the other one, which is still waiting for the scope.
+        served = [
+            request for request in (first, second) if request in manager._reserved
+        ]
+        assert len(served) == 1
+        pending = second if served[0] is first else first
+        assert pending in manager._off_cycle_waiters["example.com"]
+        manager.release(served[0])
+        await maybe_deferred_to_future(first_blocked)
+        await maybe_deferred_to_future(second_blocked)
+        assert not manager._off_cycle_waiters
+
+    @coroutine_test
+    async def test_a_shared_waiter_entry_is_only_forgotten_once(self) -> None:
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}})
+        holders = [Request("http://example.com/1"), Request("http://example.com/2")]
+        for holder in holders:
+            await self._acquire(manager, holder)
+        # The same request object can be sent off-cycle twice concurrently, e.g.
+        # by two middlewares awaiting the same prerequisite. Both waits share a
+        # single waiter entry, so the second one to be served finds it gone.
+        request = Request("http://example.com/3")
+        first_blocked = await self._start_waiting(manager, request)
+        second_blocked = await self._start_waiting(manager, request)
+        assert len(manager._off_cycle_waiters["example.com"]) == 1
+        for holder in holders:
+            manager.release(holder)
+        await maybe_deferred_to_future(first_blocked)
+        await maybe_deferred_to_future(second_blocked)
+        assert not manager._off_cycle_waiters
+
+    @coroutine_test
+    async def test_does_not_borrow_from_a_scope_without_holders(self) -> None:
+        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
+
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        scope = _scope(manager, "example.com")
+        # The scope is full but the throttler is not tracking any holder for it,
+        # so there is no parked slot to borrow: instead of assuming that an
+        # untracked holder is parked, the off-cycle request waits for a slot.
+        scope.record_sent()
+        assert scope.concurrency_blocked() is True
+        off_cycle = Request("http://example.com/1")
+        call_later(0, scope.record_done)
+        await self._acquire(manager, off_cycle, off_cycle=True)
+        assert manager.crawler.stats
+        assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
+
+    @coroutine_test
+    async def test_borrow_debug_logging_without_stats(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        manager = _manager(
+            {
+                "THROTTLING_SCOPES": {"example.com": {"concurrency": 1}},
+                "THROTTLER_DEBUG": True,
+            }
+        )
+        # Borrowing is reported through debug logging, and works without a stats
+        # collector to count it.
+        monkeypatch.setattr(manager.crawler, "stats", None)
+        holder = Request("http://example.com/1")
+        await self._acquire(manager, holder)
+        self._park(monkeypatch, manager, holder)
+        prerequisite = Request("http://example.com/robots.txt")
+        with caplog.at_level(logging.DEBUG, logger="scrapy.throttler"):
+            await self._acquire(manager, prerequisite, off_cycle=True)
+        assert "borrow a concurrency slot" in caplog.text
+        assert prerequisite in manager._reserved
+
+    @coroutine_test
+    async def test_a_free_slot_is_yielded_to_a_waiter_only_once(self) -> None:
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        # Recreate the transient state in which an off-cycle request is waiting
+        # at the gate for a slot that has just freed up but has not resumed yet
+        # to take it.
+        waiting = Request("http://example.com/1")
+        await manager.get_scopes(waiting)
+        manager._off_cycle_waiters["example.com"] = WeakSet([waiting])
+        # A request from the scheduler yields control so that the waiter gets
+        # the slot first, but only once, so that a claim that no one takes
+        # cannot make it spin.
+        scheduled = Request("http://example.com/2")
+        await self._acquire(manager, scheduled)
+        assert scheduled in manager._reserved
+
+    @coroutine_test
+    async def test_a_waiter_under_its_own_delay_has_no_claim(self) -> None:
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        waiting = Request("http://example.com/1", meta={"delay": 1000.0})
+        await manager.get_scopes(waiting)
+        manager._off_cycle_waiters["example.com"] = WeakSet([waiting])
+        # The waiter cannot use a free slot until its own delay elapses, so it
+        # has no claim on it and the scheduler may take it.
+        scheduled = Request("http://example.com/2")
+        await manager.get_scopes(scheduled)
+        assert manager.is_ready(scheduled) is True
 
 
 class TestThrottlingScopeManager:

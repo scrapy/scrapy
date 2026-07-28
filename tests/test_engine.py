@@ -250,6 +250,14 @@ class TestEngineThrottler:
         engine.unpause()
         assert engine.paused is False
 
+    def test_unpause_reruns_the_loop(self, engine):
+        engine._slot = Mock()
+        engine.pause()
+        # Pausing stops the loop from re-running itself, so unpausing must kick
+        # it, or a crawl held only by a time-based gate would stall.
+        engine.unpause()
+        engine._slot.nextcall.schedule.assert_called_once_with()
+
     @pytest.mark.requires_reactor  # call_later() needs a reactor or asyncio loop
     def test_maybe_arm_delay_wakeup_arms_timer(self, engine):
         engine._get_next_request_delay = lambda: 5.0
@@ -358,6 +366,16 @@ class TestEngineThrottler:
         assert "Error while enqueuing request" in caplog.text
         assert engine._scheduling == 0
         engine._slot.nextcall.schedule.assert_called_once_with()
+
+    @coroutine_test
+    async def test_enqueue_request_async_without_slot(self, engine):
+        # The spider was closed before the enqueue coroutine got to run, so
+        # there is no scheduler left to enqueue into; the in-flight count must
+        # still be decremented.
+        engine._slot = None
+        engine._scheduling = 1
+        await engine._enqueue_request_async(Request("http://a.example"))
+        assert engine._scheduling == 0
 
     @coroutine_test
     async def test_enqueue_request_async_slot_gone(self, engine):

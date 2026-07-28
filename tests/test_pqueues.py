@@ -498,6 +498,56 @@ class TestThrottlerAwarePriorityQueue:
         queue.close()
 
     @coroutine_test
+    async def test_delayed_unserializable_request_dropped_without_stats(
+        self, caplog, monkeypatch
+    ):
+        # Same as above, but without a stats collector to count the drop.
+        crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
+        temp_dir = tempfile.mkdtemp()
+        queue = build_from_crawler(
+            ThrottlerAwarePriorityQueue,
+            crawler,
+            downstream_queue_cls=PickleFifoDiskQueue,
+            key=temp_dir,
+        )
+        request = Request(
+            "http://example.com/slow",
+            meta={"delay": 1000.0},
+            callback=cast("CallbackT", lambda response: None),
+        )
+        await self._push(queue, crawler, request)
+        monkeypatch.setattr(crawler, "stats", None)
+
+        with caplog.at_level(logging.WARNING):
+            queue._promote_ready(queue._delayed[0][0])
+
+        assert "Unable to serialize request" in caplog.text
+        assert len(queue) == 0
+        queue.close()
+
+    @coroutine_test
+    async def test_get_next_request_delay_keeps_minimum_over_delayed(self):
+        crawler = get_crawler(
+            Spider,
+            settings_dict={
+                "THROTTLING_SCOPES": {"a.com": {"delay": 10.0}},
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            },
+        )
+        queue = self._queue(crawler)
+        await self._push(queue, crawler, Request("http://a.com/1"))
+        await self._push(queue, crawler, Request("http://a.com/2"))
+        await self._push(
+            queue, crawler, Request("http://b.com/1", meta={"delay": 1000.0})
+        )
+        # Popping the first a.com request makes the second one wait out the
+        # per-scope delay.
+        assert queue.pop().url == "http://a.com/1"
+        # The held-back request is due much later than that, so it does not
+        # lower the running minimum.
+        assert queue.get_next_request_delay() == pytest.approx(10.0, abs=1.0)
+
+    @coroutine_test
     async def test_least_loaded_first(self):
         crawler = get_crawler(
             Spider,

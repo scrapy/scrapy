@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from typing import TYPE_CHECKING, cast
+from unittest.mock import Mock
 
 import OpenSSL.SSL
 import pytest
@@ -54,6 +55,14 @@ class TestSlot:
     def test_randomized_download_delay(self):
         slot = _Slot(concurrency=1, delay=1.0, randomize_delay=True)
         assert 0.5 <= slot.download_delay() <= 1.5
+
+    def test_close_cancels_latercall(self):
+        slot = _Slot(concurrency=1, delay=0.0, randomize_delay=False)
+        latercall = Mock()
+        slot.latercall = latercall
+        slot.close()
+        latercall.cancel.assert_called_once_with()
+        assert slot.latercall is None
 
     def test_deprecated(self):
         with pytest.warns(ScrapyDeprecationWarning, match="Slot class is deprecated"):
