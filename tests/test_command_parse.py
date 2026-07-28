@@ -136,6 +136,22 @@ class RetryRequestSpider(BaseSpider):
         response.meta['retried'] = True
         yield response.request.replace(dont_filter=True)
 
+class CustomCallbackRetryRequestSpider(BaseSpider):
+    name = 'retry_request_custom_callback'
+
+    def parse(self, response):
+        yield response.request.replace(
+            callback=self.parse_retry,
+            dont_filter=True,
+        )
+
+    def parse_retry(self, response):
+        if response.meta.get('retried'):
+            yield {{'retried_with_custom_callback': True}}
+            return
+        response.meta['retried'] = True
+        yield response.request.replace(dont_filter=True)
+
 class MyGoodCrawlSpider(CrawlSpider):
     name = 'goodcrawl{self.spider_name}'
 
@@ -405,6 +421,21 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         )
         assert "RecursionError" not in stderr
         assert "{'retried': True}" in out
+
+    def test_retry_response_request_with_custom_callback(
+        self, proj_path: Path, mockserver: MockServer
+    ) -> None:
+        _, out, stderr = proc(
+            "parse",
+            "--spider",
+            "retry_request_custom_callback",
+            "-d",
+            "3",
+            mockserver.url("/html"),
+            cwd=proj_path,
+        )
+        assert "RecursionError" not in stderr
+        assert "{'retried_with_custom_callback': True}" in out
 
     def test_wrong_callback_passed(
         self, proj_path: Path, mockserver: MockServer
