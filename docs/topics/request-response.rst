@@ -736,6 +736,7 @@ Those are:
 * :reqmeta:`is_start_request`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
+* :reqmeta:`redirect_http_codes`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
@@ -1152,6 +1153,8 @@ Response objects
     .. automethod:: Response.follow
 
     .. automethod:: Response.follow_all
+
+    .. automethod:: Response.follow_redirect
 
 
 .. _topics-request-response-ref-response-subclasses:

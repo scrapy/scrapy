@@ -109,6 +109,9 @@ class MediaPipeline(ABC):
         resolve = functools.partial(
             self._key_for_pipe, base_class_name="MediaPipeline", settings=settings
         )
+        self._redirect_http_codes: set[int] = {
+            int(x) for x in settings.getlist("REDIRECT_HTTP_CODES")
+        }
         self.allow_redirects: bool = settings.getbool(
             resolve("MEDIA_ALLOW_REDIRECTS"), False
         )
@@ -117,7 +120,11 @@ class MediaPipeline(ABC):
     def _handle_statuses(self, allow_redirects: bool) -> None:
         self.handle_httpstatus_list = None
         if allow_redirects:
-            self.handle_httpstatus_list = SequenceExclude(range(300, 400))
+            # Statuses that RedirectMiddleware may redirect, i.e. those from
+            # REDIRECT_HTTP_CODES, are left for it to handle.
+            self.handle_httpstatus_list = SequenceExclude(
+                {*range(300, 400), *self._redirect_http_codes}
+            )
 
     def _key_for_pipe(
         self,

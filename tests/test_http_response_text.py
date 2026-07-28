@@ -305,6 +305,18 @@ class TestTextResponse(TestResponseBase):
         absolute = "http://www.example.com/elsewhere/test"
         assert joined == absolute
 
+    def test_follow_redirect_ignores_base_url(self):
+        """The Location header is resolved against the response URL, not against
+        the base URL of the document, which only applies to its own links."""
+        body = b'<html><body><base href="https://example.net"></body></html>'
+        response = self.response_class(
+            "http://www.example.com/dir/index",
+            body=body,
+            headers={"Location": "/test"},
+        )
+        assert response.urljoin("/test") == "https://example.net/test"
+        assert response.follow_redirect().url == "http://www.example.com/test"
+
     def test_follow_selector(self):
         resp = self._links_response()
         urls = [
