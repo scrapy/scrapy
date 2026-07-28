@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from unittest.mock import Mock, call
 
 import pytest
@@ -72,6 +73,25 @@ class TestEngineDownloadAsync:
         engine._slot.remove_request.assert_has_calls(
             [call(original_request), call(redirect_request)]
         )
+
+    @coroutine_test
+    async def test_download_async_many_redirects(self, engine):
+        """A long chain of requests being replaced by new ones is handled
+        iteratively, without hitting the recursion limit."""
+        count = sys.getrecursionlimit() * 2
+        requests = [Request(f"http://example.com/{i}") for i in range(count)]
+        final_response = Response("http://example.com/final", body=b"done")
+        engine.downloader.fetch.side_effect = [
+            *(defer.succeed(request) for request in requests[1:]),
+            defer.succeed(final_response),
+        ]
+        engine.spider = Mock()
+        engine._slot.add_request = Mock()
+        engine._slot.remove_request = Mock()
+
+        result = await self._download(engine, requests[0])
+        assert result == final_response
+        assert engine.downloader.fetch.call_count == count
 
     @coroutine_test
     async def test_download_async_no_spider(self, engine):

@@ -15,7 +15,7 @@ from scrapy.core.downloader.handlers._httpx import (
     HttpxDownloadHandler,
 )
 from scrapy.exceptions import DownloadFailedError
-from tests.test_downloader_handlers_http_base import (
+from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
     TestHttpsBase,

@@ -1,33 +1,23 @@
 from __future__ import annotations
 
+import logging
 from unittest.mock import MagicMock
 
 import pytest
-from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
-from scrapy.pipelines.media import MediaPipeline
+from scrapy.pipelines.media import MediaPipeline, _MediaRequestFiltered
 from scrapy.utils.defer import _defer_sleep_async
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
-
-
-async def _mocked_download_func(request):
-    assert request.callback is NO_CALLBACK
-    response = request.meta.get("response")
-    if callable(response):
-        response = await response()
-    if isinstance(response, Exception):
-        raise response
-    return response
+from tests.utils.media_pipelines import mocked_download_func
 
 
 class UserDefinedPipeline(MediaPipeline):
@@ -54,7 +44,7 @@ class TestBaseMediaPipeline:
     def setup_method(self):
         crawler = get_crawler(DefaultSpider, self.settings)
         crawler.spider = crawler._create_spider()
-        crawler.engine = MagicMock(download_async=_mocked_download_func)
+        crawler.engine = MagicMock(download_async=mocked_download_func)
         self.pipe = self.pipeline_class.from_crawler(crawler)
         self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
@@ -138,7 +128,7 @@ class TestBaseMediaPipeline:
         context = getattr(info.downloaded[fp].value, "__context__", None)
         assert context is None
 
-    def test_default_item_completed(self):
+    def test_default_item_completed(self, caplog: pytest.LogCaptureFixture) -> None:
         item = {"name": "name"}
         assert self.pipe.item_completed([], item, self.info) is item
 
@@ -146,21 +136,35 @@ class TestBaseMediaPipeline:
         fail = Failure(Exception())
         results = [(True, 1), (False, fail)]
 
-        with LogCapture() as log:
-            new_item = self.pipe.item_completed(results, item, self.info)
-
+        caplog.clear()
+        new_item = self.pipe.item_completed(results, item, self.info)
         assert new_item is item
-        assert len(log.records) == 1
-        record = log.records[0]
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
         assert record.levelname == "ERROR"
         assert record.exc_info == failure_to_exc_info(fail)
 
         # disable failure logging and check again
+        caplog.clear()
         self.pipe.LOG_FAILED_RESULTS = False
-        with LogCapture() as log:
-            new_item = self.pipe.item_completed(results, item, self.info)
+        new_item = self.pipe.item_completed(results, item, self.info)
         assert new_item is item
-        assert len(log.records) == 0
+        assert len(caplog.records) == 0
+
+    def test_item_completed_filtered_request_not_logged(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Filtered media requests (e.g. offsite ones) are not logged as errors
+        by item_completed(), as they are not download errors."""
+        item = {"name": "name"}
+        fail = Failure(_MediaRequestFiltered("Filtered offsite request"))
+        results = [(True, 1), (False, fail)]
+
+        with caplog.at_level(logging.DEBUG):
+            new_item = self.pipe.item_completed(results, item, self.info)
+
+        assert new_item is item
+        assert len(caplog.records) == 0
 
     @coroutine_test
     async def test_default_process_item(self):

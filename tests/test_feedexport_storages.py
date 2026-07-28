@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import string
 import tempfile
@@ -10,7 +11,6 @@ from unittest import mock
 from urllib.parse import quote
 
 import pytest
-from testfixtures import LogCapture
 from w3lib.url import path_to_file_uri
 
 import scrapy
@@ -415,23 +415,21 @@ class TestS3FeedStorage:
         acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
         assert acl == "custom-acl"
 
-    def test_overwrite_default(self):
-        with LogCapture() as log:
-            S3FeedStorage(
-                "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
-            )
-        assert "S3 does not support appending to files" not in str(log)
+    def test_overwrite_default(self, caplog: pytest.LogCaptureFixture) -> None:
+        S3FeedStorage(
+            "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
+        )
+        assert "S3 does not support appending to files" not in caplog.text
 
-    def test_overwrite_false(self):
-        with LogCapture() as log:
-            S3FeedStorage(
-                "s3://mybucket/export.csv",
-                "access_key",
-                "secret_key",
-                "custom-acl",
-                feed_options={"overwrite": False},
-            )
-        assert "S3 does not support appending to files" in str(log)
+    def test_overwrite_false(self, caplog: pytest.LogCaptureFixture) -> None:
+        S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            "custom-acl",
+            feed_options={"overwrite": False},
+        )
+        assert "S3 does not support appending to files" in caplog.text
 
 
 class TestGCSFeedStorage:
@@ -505,20 +503,20 @@ class TestGCSFeedStorage:
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()
 
-    def test_overwrite_default(self):
-        with LogCapture() as log:
+    def test_overwrite_default(self, caplog: pytest.LogCaptureFixture):
+        with caplog.at_level(logging.DEBUG):
             GCSFeedStorage("gs://mybucket/export.csv", "myproject-123", "custom-acl")
-        assert "GCS does not support appending to files" not in str(log)
+        assert "GCS does not support appending to files" not in caplog.text
 
-    def test_overwrite_false(self):
-        with LogCapture() as log:
+    def test_overwrite_false(self, caplog: pytest.LogCaptureFixture):
+        with caplog.at_level(logging.DEBUG):
             GCSFeedStorage(
                 "gs://mybucket/export.csv",
                 "myproject-123",
                 "custom-acl",
                 feed_options={"overwrite": False},
             )
-        assert "GCS does not support appending to files" in str(log)
+        assert "GCS does not support appending to files" in caplog.text
 
 
 class TestStdoutFeedStorage:
@@ -530,17 +528,18 @@ class TestStdoutFeedStorage:
         storage.store(file)
         assert out.getvalue() == b"content"
 
-    def test_overwrite_default(self):
-        with LogCapture() as log:
+    def test_overwrite_default(self, caplog: pytest.LogCaptureFixture):
+        with caplog.at_level(logging.DEBUG):
             StdoutFeedStorage("stdout:")
         assert (
             "Standard output (stdout) storage does not support overwriting"
-            not in str(log)
+            not in caplog.text
         )
 
-    def test_overwrite_true(self):
-        with LogCapture() as log:
+    def test_overwrite_true(self, caplog: pytest.LogCaptureFixture):
+        with caplog.at_level(logging.DEBUG):
             StdoutFeedStorage("stdout:", feed_options={"overwrite": True})
-        assert "Standard output (stdout) storage does not support overwriting" in str(
-            log
+        assert (
+            "Standard output (stdout) storage does not support overwriting"
+            in caplog.text
         )
