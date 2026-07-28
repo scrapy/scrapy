@@ -58,7 +58,7 @@ class TestBaseMediaPipeline:
     def test_modify_media_request(self):
         request = Request("http://url")
         self.pipe._modify_media_request(request)
-        assert request.meta == {"handle_httpstatus_all": True}
+        assert request.meta == {"handle_http_codes": True}
 
     def test_should_remove_req_res_references_before_caching_the_results(self):
         """Regression test case to prevent a memory leak in the Media Pipeline.
@@ -391,7 +391,7 @@ class TestMediaPipelineAllowRedirectSettings:
         request = Request("http://url")
         pipe._modify_media_request(request)
 
-        assert "handle_httpstatus_list" in request.meta
+        assert "handle_http_codes" in request.meta
         for status, check in [
             (200, True),
             # These are the status codes we want
@@ -407,9 +407,9 @@ class TestMediaPipelineAllowRedirectSettings:
             (500, True),
         ]:
             if check:
-                assert status in request.meta["handle_httpstatus_list"]
+                assert status in request.meta["handle_http_codes"]
             else:
-                assert status not in request.meta["handle_httpstatus_list"]
+                assert status not in request.meta["handle_http_codes"]
 
     def test_subclass_standard_setting(self):
         self._assert_request_no3xx(UserDefinedPipeline, {"MEDIA_ALLOW_REDIRECTS": True})

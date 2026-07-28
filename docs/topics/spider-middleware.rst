@@ -250,21 +250,16 @@ HttpErrorMiddleware
 .. module:: scrapy.spidermiddlewares.httperror
    :synopsis: HTTP Error Spider Middleware
 
-.. class:: HttpErrorMiddleware
-
-    Filter out unsuccessful (erroneous) HTTP responses so that spiders don't
-    have to deal with them, which (most of the time) imposes an overhead,
-    consumes more resources, and makes the spider logic more complex.
+.. autoclass:: HttpErrorMiddleware
 
 According to the `HTTP standard`_, successful responses are those whose
 status codes are in the 200-300 range.
 
 .. _HTTP standard: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
-If you still want to process response codes outside that range, you can
-specify which response codes the spider is able to handle using the
-``handle_httpstatus_list`` spider attribute or
-:setting:`HTTPERROR_ALLOWED_CODES` setting.
+If you still want to process response codes outside that range, use the
+:setting:`HANDLE_HTTP_CODES` setting or the :reqmeta:`handle_http_codes`
+request meta key to declare which status codes your spider handles itself.
 
 For example, if you want your spider to handle 404 responses you can do
 this:
@@ -275,45 +270,13 @@ this:
 
 
     class MySpider(CrawlSpider):
-        handle_httpstatus_list = [404]
+        custom_settings = {"HANDLE_HTTP_CODES": [404]}
 
-.. reqmeta:: handle_httpstatus_list
+Responses whose status code your spider does not handle reach your errback as
+an :exc:`HttpError` exception:
 
-.. reqmeta:: handle_httpstatus_all
-
-The ``handle_httpstatus_list`` key of :attr:`Request.meta
-<scrapy.Request.meta>` can also be used to specify which response codes to
-allow on a per-request basis. You can also set the meta key ``handle_httpstatus_all``
-to ``True`` if you want to allow any response code for a request, and ``False`` to
-disable the effects of the ``handle_httpstatus_all`` key.
-
-Keep in mind, however, that it's usually a bad idea to handle non-200
-responses, unless you really know what you're doing.
-
-For more information see: `HTTP Status Code Definitions`_.
-
-.. _HTTP Status Code Definitions: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
-
-HttpErrorMiddleware settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. setting:: HTTPERROR_ALLOWED_CODES
-
-HTTPERROR_ALLOWED_CODES
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Default: ``[]``
-
-Pass all responses with non-200 status codes contained in this list.
-
-.. setting:: HTTPERROR_ALLOW_ALL
-
-HTTPERROR_ALLOW_ALL
-^^^^^^^^^^^^^^^^^^^
-
-Default: ``False``
-
-Pass all responses, regardless of its status code.
+.. autoexception:: HttpError
+   :members:
 
 
 MetaCopyDetectionMiddleware
