@@ -220,24 +220,21 @@ the :ref:`topics-signals-ref` to know which ones.
 What does the response status code 999 mean?
 --------------------------------------------
 
-999 is a custom response status code used by Yahoo sites to throttle requests.
+999 is a custom response status code used by some sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
-higher) in your spider:
+higher) for the affected domains, with the :setting:`THROTTLING_SCOPES`
+setting:
 
 .. code-block:: python
 
-    from scrapy.spiders import CrawlSpider
-
-
-    class MySpider(CrawlSpider):
-        name = "myspider"
-
-        download_delay = 2
-
-        # [ ... rest of the spider code ... ]
+    THROTTLING_SCOPES = {
+        "example.com": {"delay": 2},
+    }
 
 Or by setting a global download delay in your project with the
 :setting:`DOWNLOAD_DELAY` setting.
+
+See :ref:`throttling` for details.
 
 Can I call ``pdb.set_trace()`` from my spiders to debug them?
 -------------------------------------------------------------
