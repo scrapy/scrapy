@@ -6,70 +6,37 @@ from datetime import datetime
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-from urllib.parse import urlencode
+from typing import TYPE_CHECKING
 
 import pytest
 
-from scrapy import signals
 from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import SitemapSpider
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
-from tests.spiders import MockServerSpider
+from tests.spiders import RawResponseSpider
 from tests.utils.bases.spider import TestSpiderBase
+from tests.utils.crawl import crawl_items
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from scrapy.crawler import Crawler
-    from scrapy.spiders import Spider
     from tests.mockserver.http import MockServer
 
 
-class RawSitemapSpider(MockServerSpider):
-    """Serves ``sitemap_body`` from the mock server so that it reaches the
-    spider through a regular crawl.
+class RawSitemapSpider(RawResponseSpider):
+    """Feeds :meth:`raw_body` to :class:`~scrapy.spiders.SitemapSpider` as a
+    sitemap, so that it is fetched and followed through a regular crawl.
 
-    Subclasses build the document in :meth:`sitemap_body`, typically using
-    :attr:`mockserver` to point ``<loc>`` entries at real endpoints. The
-    spider's own ``start()`` then fetches it and dispatches the follow-up
-    requests, so the tests exercise the sitemap logic through the public
-    interface instead of calling internal methods directly.
+    Subclasses build the document in :meth:`raw_body`, typically using
+    :attr:`mockserver` to point ``<loc>`` entries at real endpoints.
     """
 
-    name = "test"
     content_type = "application/xml"
 
-    def sitemap_body(self) -> str:
-        raise NotImplementedError
-
     async def start(self):
-        raw = (
-            f"HTTP/1.1 200 OK\r\n"
-            f"Content-Type: {self.content_type}\r\n"
-            f"Connection: close\r\n"
-            f"\r\n"
-            f"{self.sitemap_body()}"
-        )
-        self.sitemap_urls = [self.mockserver.url("/raw?" + urlencode({"raw": raw}))]
+        self.sitemap_urls = [self.raw_url]
         async for request in super().start():
             yield request
-
-
-async def run_sitemap_crawl(
-    spider_cls: type[Spider], mockserver: MockServer
-) -> tuple[list[Any], Crawler]:
-    """Crawl a single sitemap with ``spider_cls`` and return the scraped items
-    together with the crawler (for stats assertions)."""
-    items = []
-
-    def collect(item):
-        items.append(item)
-
-    crawler = get_crawler(spider_cls)
-    crawler.signals.connect(collect, signals.item_scraped)
-    await crawler.crawl_async(mockserver=mockserver)
-    return items, crawler
 
 
 class TestSitemapSpider(TestSpiderBase):
@@ -317,7 +284,7 @@ Sitemap: /sitemap-relative-url.xml
         class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
             sitemap_rules = [("", parse_item)]
 
-            def sitemap_body(self):
+            def raw_body(self):
                 loc = self.mockserver.url("/text")
                 return (
                     '<?xml version="1.0" encoding="UTF-8"?>'
@@ -326,17 +293,16 @@ Sitemap: /sitemap-relative-url.xml
                     "</urlset>"
                 )
 
-        items, _ = await run_sitemap_crawl(_Spider, mockserver)
+        items, _ = await crawl_items(_Spider, mockserver)
         assert items == [{"url": mockserver.url("/text")}]
 
     @coroutine_test
     async def test_sitemap_empty_loc(self, mockserver: MockServer):
-        # Entries with an empty <loc> are skipped.
         class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
             def parse(self, response):
                 yield {"url": response.url}
 
-            def sitemap_body(self):
+            def raw_body(self):
                 loc = self.mockserver.url("/text")
                 return (
                     '<?xml version="1.0" encoding="UTF-8"?>'
@@ -346,7 +312,7 @@ Sitemap: /sitemap-relative-url.xml
                     "</urlset>"
                 )
 
-        items, _ = await run_sitemap_crawl(_Spider, mockserver)
+        items, _ = await crawl_items(_Spider, mockserver)
         assert items == [{"url": mockserver.url("/text")}]
 
     def test_parse_sitemap_empty_body(self, caplog: pytest.LogCaptureFixture) -> None:

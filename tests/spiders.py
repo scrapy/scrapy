@@ -38,6 +38,35 @@ class MockServerSpider(Spider):
         self.is_secure = is_secure
 
 
+class RawResponseSpider(MockServerSpider):
+    """Base class for spiders that fetch a response built by the test itself.
+
+    Subclasses return the body from :meth:`raw_body` and request
+    :attr:`raw_url`, which the mock server answers with that body verbatim
+    under :attr:`content_type`. This lets tests reach parsing code that only
+    a specific kind of response triggers while still going through a regular
+    crawl, instead of calling internal parsing methods directly.
+    """
+
+    name = "raw_response"
+    content_type = "text/plain"
+
+    def raw_body(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def raw_url(self) -> str:
+        assert self.mockserver
+        raw = (
+            "HTTP/1.1 200 OK\r\n"
+            f"Content-Type: {self.content_type}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            f"{self.raw_body()}"
+        )
+        return self.mockserver.url("/raw?" + urlencode({"raw": raw}))
+
+
 class MetaSpider(MockServerSpider):
     name = "meta"
 
