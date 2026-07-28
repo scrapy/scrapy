@@ -210,17 +210,15 @@ class S3FilesStore:
         return is_asyncio_available() and is_aiobotocore_available()
 
     async def _get_aio_client(self) -> Any:
-        if self._aio_client is None:
-            async with self._aio_client_lock:
-                # Another concurrent call may have created it in the meantime.
-                if self._aio_client is None:
-                    from aiobotocore.session import get_session  # noqa: PLC0415
+        async with self._aio_client_lock:
+            if self._aio_client is None:
+                from aiobotocore.session import get_session  # noqa: PLC0415
 
-                    self._aio_client_cm = get_session().create_client(
-                        "s3", **self._client_kwargs
-                    )
-                    # pylint: disable-next=unnecessary-dunder-call
-                    self._aio_client = await self._aio_client_cm.__aenter__()
+                self._aio_client_cm = get_session().create_client(
+                    "s3", **self._client_kwargs
+                )
+                # pylint: disable-next=unnecessary-dunder-call
+                self._aio_client = await self._aio_client_cm.__aenter__()
         return self._aio_client
 
     async def close(self) -> None:
