@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import copy
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, MutableMapping
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import pytest
 
@@ -16,11 +18,13 @@ from scrapy.utils.datatypes import (
 )
 from scrapy.utils.python import garbage_collect
 
+_DictT = TypeVar("_DictT", bound="CaselessDict | CaseInsensitiveDict")
 
-class TestCaseInsensitiveDictBase(ABC):
+
+class TestCaseInsensitiveDictBase(ABC, Generic[_DictT]):
     @property
     @abstractmethod
-    def dict_class(self) -> type[MutableMapping[str, Any]]:
+    def dict_class(self) -> type[_DictT]:
         raise NotImplementedError
 
     def test_init_dict(self):
@@ -36,17 +40,17 @@ class TestCaseInsensitiveDictBase(ABC):
         assert d["black"] == 3
 
     def test_init_mapping(self):
-        class MyMapping(Mapping):
-            def __init__(self, **kwargs):
+        class MyMapping(Mapping[str, int]):
+            def __init__(self, **kwargs: int) -> None:
                 self._d = kwargs
 
-            def __getitem__(self, key):
+            def __getitem__(self, key: str) -> int:
                 return self._d[key]
 
-            def __iter__(self):
+            def __iter__(self) -> Iterator[str]:
                 return iter(self._d)
 
-            def __len__(self):
+            def __len__(self) -> int:
                 return len(self._d)
 
         seq = MyMapping(red=1, black=3)
@@ -55,23 +59,23 @@ class TestCaseInsensitiveDictBase(ABC):
         assert d["black"] == 3
 
     def test_init_mutable_mapping(self):
-        class MyMutableMapping(MutableMapping):
-            def __init__(self, **kwargs):
+        class MyMutableMapping(MutableMapping[str, int]):
+            def __init__(self, **kwargs: int) -> None:
                 self._d = kwargs
 
-            def __getitem__(self, key):
+            def __getitem__(self, key: str) -> int:
                 return self._d[key]
 
-            def __setitem__(self, key, value):
+            def __setitem__(self, key: str, value: int) -> None:
                 self._d[key] = value
 
-            def __delitem__(self, key):
+            def __delitem__(self, key: str) -> None:
                 del self._d[key]
 
-            def __iter__(self):
+            def __iter__(self) -> Iterator[str]:
                 return iter(self._d)
 
-            def __len__(self):
+            def __len__(self) -> int:
                 return len(self._d)
 
         seq = MyMutableMapping(red=1, black=3)
@@ -149,7 +153,7 @@ class TestCaseInsensitiveDictBase(ABC):
             d.pop("A")
 
     def test_normkey(self):
-        class MyDict(self.dict_class):
+        class MyDict(self.dict_class):  # type: ignore[misc,name-defined]
             def _normkey(self, key):
                 return key.title()
 
@@ -160,7 +164,7 @@ class TestCaseInsensitiveDictBase(ABC):
         assert list(d.keys()) == ["Key-One"]
 
     def test_normvalue(self):
-        class MyDict(self.dict_class):
+        class MyDict(self.dict_class):  # type: ignore[misc,name-defined]
             def _normvalue(self, value):
                 if value is not None:
                     return value + 1
@@ -214,8 +218,8 @@ class TestCaseInsensitiveDictBase(ABC):
             assert dict(h1) == {"header1": "value1", "header2": "value2"}
 
 
-class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
-    dict_class = CaseInsensitiveDict  # type: ignore[assignment]
+class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase[CaseInsensitiveDict]):
+    dict_class = CaseInsensitiveDict
 
     def test_repr(self):
         d1 = self.dict_class({"foo": "bar"})
@@ -230,7 +234,7 @@ class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
         assert list(iterkeys) == ["AsDf", "FoO"]
 
     def test_copy_keeps_values(self):
-        class MyDict(self.dict_class):
+        class MyDict(self.dict_class):  # type: ignore[misc,name-defined]
             def _normvalue(self, value):
                 return value + 1
 
@@ -253,7 +257,7 @@ class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestCaselessDict(TestCaseInsensitiveDictBase):
+class TestCaselessDict(TestCaseInsensitiveDictBase[CaselessDict]):
     dict_class = CaselessDict
 
     def test_deprecation_message(self):
@@ -319,7 +323,7 @@ class TestSequenceExclude:
 
 class TestLocalCache:
     def test_cache_with_limit(self):
-        cache = LocalCache(limit=2)
+        cache: LocalCache[str, int] = LocalCache(limit=2)
         cache["a"] = 1
         cache["b"] = 2
         cache["c"] = 3
@@ -332,7 +336,7 @@ class TestLocalCache:
 
     def test_cache_without_limit(self):
         maximum = 10**4
-        cache = LocalCache()
+        cache: LocalCache[str, int] = LocalCache()
         for x in range(maximum):
             cache[str(x)] = x
         assert len(cache) == maximum
@@ -341,7 +345,7 @@ class TestLocalCache:
             assert cache[str(x)] == x
 
     def test_cache_with_zero_limit(self):
-        cache = LocalCache(limit=0)
+        cache: LocalCache[str, int] = LocalCache(limit=0)
         cache["a"] = 1
         cache["b"] = 2
         cache["c"] = 3
@@ -353,7 +357,9 @@ class TestLocalCache:
 
 class TestLocalWeakReferencedCache:
     def test_cache_with_limit(self):
-        cache = LocalWeakReferencedCache(limit=2)
+        cache: LocalWeakReferencedCache[Request, int] = LocalWeakReferencedCache(
+            limit=2
+        )
         r1 = Request("https://example.org")
         r2 = Request("https://example.com")
         r3 = Request("https://example.net")
@@ -375,7 +381,7 @@ class TestLocalWeakReferencedCache:
         assert len(cache) == 1
 
     def test_cache_non_weak_referenceable_objects(self):
-        cache = LocalWeakReferencedCache()
+        cache: LocalWeakReferencedCache[Any, int] = LocalWeakReferencedCache()
         k1 = None
         k2 = 1
         k3 = [1, 2, 3]
@@ -389,7 +395,7 @@ class TestLocalWeakReferencedCache:
 
     def test_cache_without_limit(self):
         maximum = 10**4
-        cache = LocalWeakReferencedCache()
+        cache: LocalWeakReferencedCache[Request, int] = LocalWeakReferencedCache()
         refs = []
         for x in range(maximum):
             refs.append(Request(f"https://example.org/{x}"))

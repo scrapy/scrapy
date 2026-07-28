@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, AnyStr, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
 
 import parsel
@@ -170,7 +170,10 @@ class TextResponse(Response):
         url: str | Link | parsel.Selector,
         callback: CallbackT | None = None,
         method: str = "GET",
-        headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        headers: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         body: bytes | str | None = None,
         cookies: CookiesT | None = None,
         meta: dict[str, Any] | None = None,
@@ -223,7 +226,10 @@ class TextResponse(Response):
         urls: Iterable[str | Link] | parsel.SelectorList[Any] | None = None,
         callback: CallbackT | None = None,
         method: str = "GET",
-        headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        headers: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         body: bytes | str | None = None,
         cookies: CookiesT | None = None,
         meta: dict[str, Any] | None = None,
