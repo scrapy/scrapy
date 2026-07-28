@@ -88,7 +88,7 @@ def open_in_browser(
 
 
         def parse_details(self, response):
-            if "item name" not in response.body:
+            if "item name" not in response.text:
                 open_in_browser(response)
     """
     # circular imports

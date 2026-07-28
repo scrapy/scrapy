@@ -104,7 +104,6 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         self._disconnect_timeout: int = 1
 
     async def download_request(self, request: Request) -> Response:
-        """Return a deferred for the HTTP download"""
         if hasattr(self._crawler.spider, "download_maxsize"):  # pragma: no cover
             warn_on_deprecated_spider_attribute("download_maxsize", "DOWNLOAD_MAXSIZE")
         if hasattr(self._crawler.spider, "download_warnsize"):  # pragma: no cover
@@ -283,7 +282,7 @@ def _tunnel_request_data(
 
 
 class _TunnelingAgent(Agent):
-    """An agent that uses a L{TunnelingTCP4ClientEndpoint} to make HTTPS
+    """An agent that uses a ``_TunnelingTCP4ClientEndpoint`` to make HTTPS
     downloads. It may look strange that we have chosen to subclass Agent and not
     ProxyAgent but consider that after the tunnel is opened the proxy is
     transparent to the client; thus the agent should behave like there is no
@@ -545,7 +544,8 @@ class _ScrapyAgent:
                 expected_size, maxsize, request, expected=True
             )
             logger.warning(warning_msg)
-            txresponse._transport.loseConnection()
+            # Abort connection immediately.
+            txresponse._transport._producer.abortConnection()
             raise DownloadCancelledError(warning_msg)
 
         if warnsize and expected_size > warnsize:

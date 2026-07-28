@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from asyncio import sleep
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -11,6 +11,9 @@ from scrapy.utils.test import get_crawler
 
 from .utils import twisted_sleep
 from .utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable
 
 SLEEP_SECONDS = 0.1
 
@@ -67,7 +70,11 @@ class TestMain:
 
         await self._test_spider(TestSpider, [ITEM_A])
 
-    async def _test_start(self, start_, expected_items=None):
+    async def _test_start(
+        self,
+        start_: Callable[[Any], AsyncIterator[Any]],
+        expected_items: list[Any] | None = None,
+    ) -> None:
         class TestSpider(Spider):
             name = "test"
             start = start_

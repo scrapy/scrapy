@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import socket
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -16,6 +17,13 @@ from scrapy.utils.ssl import _get_cert_options_version_kwargs
 
 if TYPE_CHECKING:
     from twisted.internet.interfaces import IOpenSSLContextFactory
+
+
+def _free_port() -> int:
+    # racy but should be fine for tests
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return cast("int", s.getsockname()[1])
 
 
 def ssl_context_factory(

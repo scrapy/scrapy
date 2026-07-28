@@ -151,8 +151,8 @@ Where:
 -   :class:`~scrapy.pqueues.ScrapyPriorityQueue` creates the ``{priority}{s?}``
     directories.
 
--   :class:`scrapy.squeues.PickleLifoDiskQueue`, a subclass of
-    :class:`queuelib.LifoDiskQueue` that uses :mod:`pickle` to serialize
+-   :class:`scrapy.squeues.PickleFifoDiskQueue`, a subclass of
+    :class:`queuelib.FifoDiskQueue` that uses :mod:`pickle` to serialize
     :class:`dict` representations of :class:`scrapy.Request` objects, creates
     the ``info.json`` and ``q{00000}`` files.
 

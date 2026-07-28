@@ -220,12 +220,6 @@ scrapy.Spider
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
 
-   .. method:: log(message, [level, component])
-
-       Wrapper that sends a log message through the Spider's :attr:`logger`,
-       kept for backward compatibility. For more information see
-       :ref:`topics-logging-from-spiders`.
-
    .. method:: closed(reason)
 
        Called when the spider closes. This method provides a shortcut to
@@ -326,7 +320,7 @@ Spiders can access arguments in their `__init__` methods:
         name = "myspider"
 
         def __init__(self, category=None, *args, **kwargs):
-            super(MySpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
             self.start_urls = [f"http://www.example.com/categories/{category}"]
             # ...
 
@@ -347,8 +341,8 @@ The above example can also be written as follows:
 
 If you are :ref:`running Scrapy from a script <run-from-script>`, you can
 specify spider arguments when calling
-:class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
-:class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
+:meth:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
+:meth:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
 
 .. skip: next
 .. code-block:: python
@@ -605,7 +599,7 @@ Let's now take a look at an example CrawlSpider with rules:
 This spider would start crawling example.com's home page, collecting category
 links, and item links, parsing the latter with the ``parse_item`` method. For
 each item response, some data will be extracted from the HTML using XPath, and
-an :class:`~scrapy.Item` will be filled with it.
+a dictionary will be filled with it.
 
 XMLFeedSpider
 -------------
@@ -626,7 +620,7 @@ XMLFeedSpider
 
         A string which defines the iterator to use. It can be either:
 
-           - ``'iternodes'`` - a fast iterator based on regular expressions
+           - ``'iternodes'`` - a fast iterator based on ``lxml``
 
            - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory
@@ -640,9 +634,11 @@ XMLFeedSpider
 
     .. attribute:: itertag
 
-        A string with the name of the node (or element) to iterate in. Example::
+        A string with the name of the node (or element) to iterate in. Example:
 
-            itertag = 'product'
+        .. code-block:: python
+
+            itertag = "product"
 
     .. attribute:: namespaces
 
@@ -655,12 +651,17 @@ XMLFeedSpider
         You can then specify nodes with namespaces in the :attr:`itertag`
         attribute.
 
-        Example::
+        Example:
+
+        .. code-block:: python
+
+            from scrapy.spiders import XMLFeedSpider
+
 
             class YourSpider(XMLFeedSpider):
 
-                namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]
-                itertag = 'n:url'
+                namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
+                itertag = "n:url"
                 # ...
 
     Apart from these new attributes, this spider has the following overridable
@@ -820,9 +821,11 @@ SitemapSpider
           the regular expression. ``callback`` can be a string (indicating the
           name of a spider method) or a callable.
 
-        For example::
+        For example:
 
-            sitemap_rules = [('/product/', 'parse_product')]
+        .. code-block:: python
+
+            sitemap_rules = [("/product/", "parse_product")]
 
         Rules are applied in order, and only the first one that matches will be
         used.
@@ -844,7 +847,9 @@ SitemapSpider
         are links for the same website in another language passed within
         the same ``url`` block.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>
@@ -862,7 +867,9 @@ SitemapSpider
         This is a filter function that could be overridden to select sitemap entries
         based on their attributes.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>
@@ -965,6 +972,7 @@ Combine SitemapSpider with other sources of urls:
 
 .. code-block:: python
 
+    from scrapy import Request
     from scrapy.spiders import SitemapSpider
 
 

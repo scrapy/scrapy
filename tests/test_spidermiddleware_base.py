@@ -56,6 +56,11 @@ async def test_processed_request(crawler: Crawler) -> None:
     spider_output = [test_req1, {"foo": "bar"}, test_req2, test_req3]
     for processed in [
         list(mw.process_spider_output(Response("data:,"), spider_output)),
+        await collect_asyncgen(
+            mw.process_spider_output_async(
+                Response("data:,"), as_async_generator(spider_output)
+            )
+        ),
         await collect_asyncgen(mw.process_start(as_async_generator(spider_output))),
     ]:
         assert len(processed) == 3

@@ -79,9 +79,9 @@ def test_get_oldest():
     stale entries in `live_refs`, affecting results unless explicitly cleared.
     """
 
-    def _delete_o1():
+    def _delete_o1() -> None:
         """Delete `o1` and ensure it is actually collected on PyPy."""
-        nonlocal o1
+        nonlocal o1  # type: ignore[misc]
         del o1
 
         if _IS_PYPY:
@@ -89,7 +89,7 @@ def test_get_oldest():
             # still exist until the GC runs, so we force a collection cycle.
             garbage_collect()
 
-    def _do_asserts():
+    def _do_asserts() -> None:
         assert trackref.get_oldest("Foo") is o1
         assert trackref.get_oldest("Bar") is o2
         # Ensure the newer Foo is not incorrectly considered the oldest

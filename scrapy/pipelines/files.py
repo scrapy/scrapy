@@ -27,7 +27,15 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
+from scrapy.pipelines.media import (
+    FileException as FileException,  # noqa: PLC0414  # re-exported for backward compatibility
+)
+from scrapy.pipelines.media import (
+    FileInfo,
+    FileInfoOrError,
+    MediaPipeline,
+    _MediaRequestFiltered,
+)
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
@@ -73,10 +81,6 @@ def _md5sum(file: IO[bytes]) -> str:
             break
         m.update(d)
     return m.hexdigest()
-
-
-class FileException(Exception):
-    """General media error exception"""
 
 
 class StatInfo(TypedDict, total=False):
@@ -300,13 +304,13 @@ class GCSFilesStore:
         )
         if "storage.objects.get" not in permissions:
             logger.warning(
-                "No 'storage.objects.get' permission for GSC bucket %(bucket)s. "
+                "No 'storage.objects.get' permission for GCS bucket %(bucket)s. "
                 "Checking if files are up to date will be impossible. Files will be downloaded every time.",
                 {"bucket": bucket},
             )
         if "storage.objects.create" not in permissions:
             logger.error(
-                "No 'storage.objects.create' permission for GSC bucket %(bucket)s. Saving files will be impossible!",
+                "No 'storage.objects.create' permission for GCS bucket %(bucket)s. Saving files will be impossible!",
                 {"bucket": bucket},
             )
 
@@ -423,7 +427,7 @@ class FTPFilesStore:
 
 
 class FilesPipeline(MediaPipeline):
-    """Abstract pipeline that implement the file downloading
+    """Pipeline that implements file downloading.
 
     This pipeline tries to minimize network transfers and file processing,
     doing stat of the files and determining if file is new, up-to-date or
@@ -597,20 +601,20 @@ class FilesPipeline(MediaPipeline):
     def media_failed(
         self, failure: Failure, request: Request, info: MediaPipeline.SpiderInfo
     ) -> NoReturn:
-        if not isinstance(failure.value, IgnoreRequest):
-            referer = referer_str(request)
-            logger.warning(
-                "File (unknown-error): Error downloading %(medianame)s from "
-                "%(request)s referred in <%(referer)s>: %(exception)s",
-                {
-                    "medianame": self.MEDIA_NAME,
-                    "request": request,
-                    "referer": referer,
-                    "exception": failure.value,
-                },
+        referer = referer_str(request)
+        if isinstance(failure.value, IgnoreRequest):
+            logger.debug(
+                f"File (filtered): Not downloading {self.MEDIA_NAME} from "
+                f"{request} referred in <{referer}>: {failure.value}",
                 extra={"spider": info.spider},
             )
+            raise _MediaRequestFiltered(str(failure.value)) from failure.value
 
+        logger.warning(
+            f"File (unknown-error): Error downloading {self.MEDIA_NAME} from "
+            f"{request} referred in <{referer}>: {failure.value}",
+            extra={"spider": info.spider},
+        )
         raise FileException
 
     async def media_downloaded(

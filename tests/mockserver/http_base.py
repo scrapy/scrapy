@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 
     from twisted.web import resource
 
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
 
 class BaseMockServer(ABC):
     listen_http: bool = True
@@ -39,13 +42,14 @@ class BaseMockServer(ABC):
         self.http_port: int | None = None
         self.https_port: int | None = None
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.proc = Popen(
             [sys.executable, "-u", "-m", self.module_name, *self.get_additional_args()],
             stdout=PIPE,
             env=get_script_run_env(),
             text=True,
         )
+        assert self.proc.stdout is not None
         if self.listen_http:
             http_address = self.proc.stdout.readline().strip()
             http_parsed = urlparse(http_address)
@@ -56,7 +60,7 @@ class BaseMockServer(ABC):
             self.https_port = https_parsed.port
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         if self.proc:
             self.proc.kill()
             self.proc.communicate()

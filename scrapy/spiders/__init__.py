@@ -7,9 +7,11 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
@@ -66,6 +68,11 @@ class Spider(object_ref):
         can use it directly (e.g. Spider.logger.info('msg')) or use any other
         Python logger too.
         """
+        warnings.warn(
+            "Spider.log() is deprecated, use methods of Spider.logger instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self.logger.log(level, message, **kw)
 
     @classmethod

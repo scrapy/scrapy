@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path
@@ -37,7 +39,7 @@ class TestUtilsMisc:
         with pytest.raises(NameError):
             load_object("scrapy.utils.misc.load_object999")
         with pytest.raises(TypeError):
-            load_object({})
+            load_object({})  # type: ignore[arg-type]
 
     def test_walk_modules(self):
         mods = walk_modules_iter("tests.test_utils_misc.test_walk_modules")
@@ -114,7 +116,7 @@ class TestUtilsMisc:
         args = (True, 100.0)
         kwargs = {"key": "val"}
 
-        def _test_with_crawler(mock, crawler):
+        def _test_with_crawler(mock: mock.MagicMock, crawler: mock.MagicMock) -> None:
             build_from_crawler(mock, crawler, *args, **kwargs)
             if hasattr(mock, "from_crawler"):
                 mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)

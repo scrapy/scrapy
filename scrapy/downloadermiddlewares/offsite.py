@@ -78,7 +78,7 @@ class OffsiteMiddleware:
             )
             self.stats.inc_value("offsite/domains")
         self.stats.inc_value("offsite/filtered")
-        raise IgnoreRequest
+        raise IgnoreRequest(f"Filtered offsite request to {domain!r}")
 
     def should_follow(self, request: Request, spider: Spider) -> bool:
         # hostname can be None for wrong urls (like javascript links)

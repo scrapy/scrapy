@@ -7,17 +7,7 @@ from scrapy.robotstxt import (
     decode_robotstxt,
 )
 from scrapy.utils._deps_compat import STDLIB_IMPROVED_ROBOTFILEPARSER
-
-
-def rerp_available() -> bool:
-    # check if robotexclusionrulesparser is installed
-    try:
-        from robotexclusionrulesparser import (  # noqa: PLC0415
-            RobotExclusionRulesParser,  # noqa: F401
-        )
-    except ImportError:
-        return False
-    return True
+from tests.utils.robotstxt import rerp_available
 
 
 class BaseRobotParserTest:

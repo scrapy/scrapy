@@ -1,8 +1,6 @@
 """
 This module contains data types used by Scrapy which are not included in the
 Python Standard Library.
-
-This module must not depend on any module outside the Standard Library.
 """
 
 from __future__ import annotations
@@ -134,6 +132,22 @@ class CaseInsensitiveDict(collections.UserDict[str | bytes, Any]):
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {super().__repr__()}>"
 
+    # UserDict.copy() shallow-copies the instance, which would share self._keys
+    # between the copy and the original.
+    def __copy__(self) -> Self:
+        new = self.__class__()
+        new.data = self.data.copy()
+        new._keys = self._keys.copy()
+        return new
+
+    copy = __copy__
+
+    # UserDict.__ior__ updates self.data directly, which would leave self._keys
+    # out of date.
+    def __ior__(self, other: Any) -> Self:  # type: ignore[override,misc]
+        self.update(other)
+        return self
+
     def _normkey(self, key: str | bytes) -> str | bytes:
         return key
 
@@ -152,7 +166,9 @@ class LocalCache(OrderedDict[_KT, _VT]):
         self.limit: int | None = limit
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
-        if self.limit:
+        if self.limit is not None:
+            if self.limit == 0:
+                return
             while len(self) >= self.limit:
                 self.popitem(last=False)
         super().__setitem__(key, value)

@@ -79,9 +79,6 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: botocore
-        - python-version: "3.14"
-          env:
-            TOXENV: mitmproxy
 
     steps:
     - uses: actions/checkout@v6
@@ -96,6 +93,9 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
+
+    - name: Install mitmproxy
+      run: pipx install mitmproxy
 
     - name: Run tests
       env: ${{ matrix.env }}

@@ -113,7 +113,7 @@ def _chunk_iter(text: str, chunk_size: int) -> Iterable[tuple[str, int]]:
 
 def re_rsearch(
     pattern: str | Pattern[str], text: str, chunk_size: int = 1024
-) -> tuple[int, int] | None:
+) -> tuple[int, int] | None:  # pragma: no cover
     """
     This function does a reverse search in a text using a regular expression
     given in the attribute 'pattern'.
@@ -126,6 +126,12 @@ def re_rsearch(
     In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
     the start position of the match, and the ending (regarding the entire text).
     """
+
+    warnings.warn(
+        "re_rsearch() is deprecated and will be removed in a future Scrapy version.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     if isinstance(pattern, str):
         pattern = re.compile(pattern)
