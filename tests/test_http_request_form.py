@@ -10,7 +10,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import FormRequest, HtmlResponse
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
-from tests.test_http_request import TestRequest
+from tests.utils.bases.http_request import TestRequestBase
 
 
 def _buildresponse(body, **kwargs):
@@ -31,7 +31,7 @@ def _qs(req, encoding="utf-8", to_unicode=False):
 # FormRequest.from_response() is deprecated in favor of form2request, so the
 # many tests below that exercise it ignore the resulting deprecation warning.
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestFormRequest(TestRequest):
+class TestFormRequest(TestRequestBase):
     request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):

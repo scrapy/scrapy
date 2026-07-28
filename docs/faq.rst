@@ -136,7 +136,7 @@ middleware with a :ref:`custom downloader middleware
 <topics-downloader-middleware-custom>` that requires less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
-    instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
+    instead of joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
     a complex regular expression.
 
 -   If you can meet the installation requirements, use pyre2_ instead of
@@ -332,8 +332,8 @@ section of the site (which varies each time). In that case, the credentials to
 log in would be settings, while the url of the section to scrape would be a
 spider argument.
 
-I'm scraping a XML document and my XPath selector doesn't return any items
---------------------------------------------------------------------------
+I'm scraping an XML document and my XPath selector doesn't return any items
+---------------------------------------------------------------------------
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 

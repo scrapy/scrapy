@@ -24,7 +24,7 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.utils import _free_port
-from tests.test_downloader_handlers_http_base import (
+from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
     TestHttpsBase,
