@@ -150,7 +150,7 @@ class TestCrawler:
         class DelaySpider(DefaultSpider):
             download_delay = 2.5
 
-        crawler = Crawler(DelaySpider)
+        crawler = get_raw_crawler(DelaySpider)
         with pytest.warns(
             ScrapyDeprecationWarning, match="'download_delay' spider attribute"
         ):
@@ -161,7 +161,7 @@ class TestCrawler:
         class DelaySpider(DefaultSpider):
             download_delay = 2.5
 
-        crawler = Crawler(DelaySpider)
+        crawler = get_raw_crawler(DelaySpider)
         crawler.settings.set("DOWNLOAD_DELAY", 5.0, priority="spider")
         with pytest.warns(
             ScrapyDeprecationWarning,
