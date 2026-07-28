@@ -225,7 +225,6 @@ module = [
     "pyftpdlib.*",
     "pytest_twisted",
     "robotexclusionrulesparser",
-    "testfixtures",
     "zope.interface.*",
 ]
 ignore_missing_imports = true

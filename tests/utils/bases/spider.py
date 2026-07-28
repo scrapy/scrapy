@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
-from testfixtures import LogCapture
 
 from scrapy import signals
 from scrapy.crawler import Crawler
@@ -109,15 +109,15 @@ class TestSpiderBase(ABC):
         yield crawler.crawl()
         assert crawler.settings.get("TEST1") == "spider_instance"
 
-    def test_logger(self):
+    def test_logger(self, caplog: pytest.LogCaptureFixture) -> None:
         spider = self.spider_class("example.com")
-        with LogCapture() as lc:
+        caplog.clear()
+        with caplog.at_level(logging.INFO):
             spider.logger.info("test log msg")
-        lc.check(("example.com", "INFO", "test log msg"))
+        assert caplog.record_tuples == [("example.com", logging.INFO, "test log msg")]
 
-        record = lc.records[0]
-        assert "spider" in record.__dict__
-        assert record.spider is spider
+        record = caplog.records[0]
+        assert getattr(record, "spider", None) is spider
 
     def test_log(self):
         spider = self.spider_class("example.com")
