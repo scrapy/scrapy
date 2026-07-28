@@ -298,6 +298,28 @@ soon as a file reaches the maximum item count, that file is delivered to the
 feed URI, allowing item delivery to start way before the end of the crawl.
 
 
+.. _topics-feed-storage-custom:
+
+Custom storage backends
+-----------------------
+
+To write your own storage backend, define a class that follows
+:class:`~scrapy.extensions.feedexport.FeedStorageProtocol` and assign it to a
+URI scheme through the :setting:`FEED_STORAGES` setting.
+
+.. autoclass:: scrapy.extensions.feedexport.FeedStorageProtocol(uri, *, feed_options=None)
+   :members:
+
+If your storage backend blocks, subclass
+:class:`~scrapy.extensions.feedexport.BlockingFeedStorage` instead: it writes
+items into a temporary local file (see :ref:`delayed file delivery
+<delayed-file-delivery>`) and calls your ``_store_in_thread()`` method in a
+separate thread once the crawl is done, keeping the reactor free.
+
+.. autoclass:: scrapy.extensions.feedexport.BlockingFeedStorage
+   :members: _store_in_thread
+
+
 .. _item-filter:
 
 Item filtering
