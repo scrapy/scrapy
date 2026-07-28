@@ -727,6 +727,33 @@ class TestS3FilesStore:
 
             stub.assert_no_pending_responses()
 
+    def test_default_max_pool_connections(self) -> None:
+        store = S3FilesStore("s3://mybucket/prefix/")
+        config: Any = store.s3_client.meta.config
+        assert config.max_pool_connections == 10
+
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
+            ({}, 10),
+            ({"REACTOR_THREADPOOL_MAXSIZE": 20}, 20),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30}, 30),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30, "REACTOR_THREADPOOL_MAXSIZE": 20}, 30),
+        ],
+    )
+    def test_max_pool_connections(
+        self, monkeypatch: pytest.MonkeyPatch, settings: dict[str, Any], expected: int
+    ) -> None:
+        # restores the value that FilesPipeline.from_crawler() sets on the class
+        monkeypatch.setattr(S3FilesStore, "AWS_MAX_POOL_CONNECTIONS", None)
+        crawler = get_crawler(
+            settings_dict={"FILES_STORE": "s3://mybucket/prefix/", **settings}
+        )
+        store = FilesPipeline.from_crawler(crawler).store
+        assert isinstance(store, S3FilesStore)
+        config: Any = store.s3_client.meta.config
+        assert config.max_pool_connections == expected
+
 
 class TestGCSFilesStore:
     @staticmethod
