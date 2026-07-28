@@ -265,10 +265,12 @@ class TestImagesPipeline:
     ) -> None:
         """Pillow older than 9.1.0 has Image.ANTIALIAS instead of
         Image.Resampling.LANCZOS."""
+        # Image.LANCZOS is the only spelling that exists in every supported
+        # Pillow version, but Pillow defines it dynamically, hence the ignore.
         monkeypatch.setattr(
             self.pipeline,
             "_Image",
-            SimpleNamespace(ANTIALIAS=Image.Resampling.LANCZOS),
+            SimpleNamespace(ANTIALIAS=Image.LANCZOS),  # type: ignore[attr-defined]
         )
         im, buf = _create_image("JPEG", "RGB", (100, 100), (0, 127, 255))
 
