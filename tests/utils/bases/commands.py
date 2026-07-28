@@ -32,3 +32,9 @@ class TestProjectBase:
         proj_path = tmp_path / self.project_name
         copytree(_proj_path_cached, proj_path)
         return proj_path
+
+    @staticmethod
+    def _append_settings(proj_mod_path: Path, text: str) -> None:
+        """Add text to the end of the project settings.py."""
+        with (proj_mod_path / "settings.py").open("a", encoding="utf-8") as f:
+            f.write(text)
