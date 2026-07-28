@@ -22,7 +22,7 @@ from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
-from tests.test_feedexport import TestFeedExportBase
+from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 from tests.utils.feedexport import MyItem
 

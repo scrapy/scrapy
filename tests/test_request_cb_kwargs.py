@@ -1,10 +1,17 @@
-from testfixtures import LogCapture
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    import pytest
+
+    from tests.mockserver.http import MockServer
 
 
 class InjectArgumentsDownloaderMiddleware:
@@ -147,33 +154,32 @@ class KeywordArgumentsSpider(MockServerSpider):
 
 
 class TestCallbackKeywordArguments:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    @inline_callbacks_test
-    def test_callback_kwargs(self):
+    @coroutine_test
+    async def test_callback_kwargs(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         crawler = get_crawler(KeywordArgumentsSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(mockserver=self.mockserver)
+        with caplog.at_level(logging.ERROR):
+            await crawler.crawl_async(mockserver=mockserver)
+        assert isinstance(crawler.spider, KeywordArgumentsSpider)
         assert all(crawler.spider.checks)
+        assert crawler.stats
         assert len(crawler.spider.checks) == crawler.stats.get_value("boolean_checks")
         # check exceptions for argument mismatch
         exceptions = {}
-        for line in log.records:
+        for line in caplog.records:
             for key in ("takes_less", "takes_more"):
                 if key in line.getMessage():
                     exceptions[key] = line
-        assert exceptions["takes_less"].exc_info[0] is TypeError
-        assert str(exceptions["takes_less"].exc_info[1]).endswith(
+        takes_less_exc_info = exceptions["takes_less"].exc_info
+        assert takes_less_exc_info is not None
+        assert takes_less_exc_info[0] is TypeError
+        assert str(takes_less_exc_info[1]).endswith(
             "parse_takes_less() got an unexpected keyword argument 'number'"
-        ), "Exception message: " + str(exceptions["takes_less"].exc_info[1])
-        assert exceptions["takes_more"].exc_info[0] is TypeError
-        assert str(exceptions["takes_more"].exc_info[1]).endswith(
+        )
+        takes_more_exc_info = exceptions["takes_more"].exc_info
+        assert takes_more_exc_info is not None
+        assert takes_more_exc_info[0] is TypeError
+        assert str(takes_more_exc_info[1]).endswith(
             "parse_takes_more() missing 1 required positional argument: 'other'"
-        ), "Exception message: " + str(exceptions["takes_more"].exc_info[1])
+        )
