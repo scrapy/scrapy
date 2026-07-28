@@ -22,8 +22,7 @@ from scrapy.utils.python import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
-
+    from collections.abc import AsyncIterator, Iterable, Mapping
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -31,22 +30,22 @@ _VT = TypeVar("_VT")
 
 class TestMutableAsyncChain:
     @staticmethod
-    async def g1():
+    async def g1() -> AsyncIterator[int]:
         for i in range(3):
             yield i
 
     @staticmethod
-    async def g2():
+    async def g2() -> AsyncIterator[int]:
         return
         yield
 
     @staticmethod
-    async def g3():
+    async def g3() -> AsyncIterator[int]:
         for i in range(7, 10):
             yield i
 
     @staticmethod
-    async def g4():
+    async def g4() -> AsyncIterator[int]:
         for i in range(3, 5):
             yield i
         1 / 0
@@ -85,7 +84,7 @@ class TestToUnicode:
 
     def test_converting_a_strange_object_should_raise_type_error(self):
         with pytest.raises(TypeError):
-            to_unicode(423)
+            to_unicode(423)  # type: ignore[arg-type]
 
     def test_errors_argument(self):
         assert to_unicode(b"a\xedb", "utf-8", errors="replace") == "a\ufffdb"
@@ -103,7 +102,7 @@ class TestToBytes:
 
     def test_converting_a_strange_object_should_raise_type_error(self):
         with pytest.raises(TypeError):
-            to_bytes(pytest)
+            to_bytes(pytest)  # type: ignore[arg-type]
 
     def test_errors_argument(self):
         assert to_bytes("a\ufffdb", "latin-1", errors="replace") == b"a?b"
@@ -112,10 +111,10 @@ class TestToBytes:
 def test_memoizemethod_noargs():
     class A:
         @memoizemethod_noargs
-        def cached(self):
+        def cached(self) -> object:
             return object()
 
-        def noncached(self):
+        def noncached(self) -> object:
             return object()
 
     a = A()
@@ -150,7 +149,7 @@ def test_get_func_args():
         pass
 
     class A:
-        def __init__(self, a, b, c):
+        def __init__(self, a: int, b: int, c: int):
             pass
 
         def method(self, a, b, c):

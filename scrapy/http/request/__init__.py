@@ -11,7 +11,6 @@ import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
-    AnyStr,
     Concatenate,
     NoReturn,
     TypeAlias,
@@ -125,7 +124,10 @@ class Request(object_ref):
         url: str,
         callback: CallbackT | None = None,
         method: str = "GET",
-        headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        headers: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         body: bytes | str | None = None,
         cookies: CookiesT | None = None,
         meta: dict[str, Any] | None = None,
@@ -310,7 +312,11 @@ class Request(object_ref):
 
     @headers.setter
     def headers(
-        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None
+        self,
+        value: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None,
     ) -> None:
         if isinstance(value, Headers):
             self._headers = value

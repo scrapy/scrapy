@@ -126,5 +126,4 @@ class FTPDownloadHandler(BaseDownloadHandler):
         headers = {"local filename": protocol.filename or b"", "size": protocol.size}
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
-        # hints for Headers-related types may need to be fixed to not use AnyStr
-        return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]
+        return respcls(url=request.url, status=200, body=body, headers=headers)
