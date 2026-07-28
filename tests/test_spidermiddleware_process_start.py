@@ -5,7 +5,6 @@ import pytest
 from scrapy import Spider, signals
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
-from tests.test_spider_start import SLEEP_SECONDS
 
 from .utils import twisted_sleep
 from .utils.decorators import coroutine_test
@@ -13,6 +12,8 @@ from .utils.decorators import coroutine_test
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 ITEM_C = {"id": "c"}
+
+SLEEP_SECONDS = 0.1
 
 
 class AsyncioSleepSpiderMiddleware:

@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from scrapy import Request, Spider
@@ -231,3 +233,15 @@ def test_repeated_offsite_domain():
         mw.process_request(req2)
     assert crawler.stats.get_value("offsite/domains") == 1  # not incremented again
     assert crawler.stats.get_value("offsite/filtered") == 2
+
+
+def test_ignore_request_reason():
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", allowed_domains=["example.com"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+    request = Request("http://other.org/1")
+    with pytest.raises(
+        IgnoreRequest, match=re.escape("Filtered offsite request to 'other.org'")
+    ):
+        mw.process_request(request)
