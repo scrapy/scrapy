@@ -768,42 +768,47 @@ class _LenientHTTPClientParser(HTTPClientParser):
         if self.state == STATUS:
             self.statusReceived(line)  # type: ignore[no-untyped-call]
             self.state = HEADER
-        elif self.state == HEADER:
-            if not line or line[0] not in b" \t":
-                if self._partialHeader is not None:
-                    header = b"".join(self._partialHeader)
-                    if b":" in header:
-                        name, value = header.split(b":", 1)
-                        self.headerReceived(name, value.strip())  # type: ignore[no-untyped-call]
-                    else:
-                        logger.debug(
-                            "Skipping the bad response header line "
-                            f"{header!r}, as it has no colon."
-                        )
-                if not line:
-                    # Empty line means the header section is over.
-                    self.allHeadersReceived()  # type: ignore[no-untyped-call]
+            return
+
+        # HEADER is the only other state in which lines are received, as the
+        # parser switches to raw mode for the response body.
+        if not line or line[0] not in b" \t":
+            if self._partialHeader is not None:
+                header = b"".join(self._partialHeader)
+                if b":" in header:
+                    name, value = header.split(b":", 1)
+                    self.headerReceived(name, value.strip())  # type: ignore[no-untyped-call]
                 else:
-                    # Line not beginning with LWS is another header.
-                    self._partialHeader = [line]
+                    logger.debug(
+                        f"Skipping the bad response header line {header!r}, as "
+                        f"it has no colon."
+                    )
+            if not line:
+                # Empty line means the header section is over.
+                self.allHeadersReceived()  # type: ignore[no-untyped-call]
             else:
-                # A line beginning with LWS is a continuation of a header
-                # begun on a previous line.
-                self._partialHeader.append(line)  # type: ignore[union-attr]
+                # Line not beginning with LWS is another header.
+                self._partialHeader = [line]
+        else:
+            # A line beginning with LWS is a continuation of a header begun on
+            # a previous line.
+            self._partialHeader.append(line)  # type: ignore[union-attr]
 
 
 class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
     """Protocol that parses responses with :class:`_LenientHTTPClientParser`."""
 
     def request(self, request: TxRequest) -> Deferred[IResponse]:
-        previous_parser = self._parser
         d: Deferred[IResponse] = super().request(request)
         # HTTP11ClientProtocol.request() hardcodes the parser class, so the
         # only way to use a different one is to replace the class of the parser
         # object that it creates. This is safe because
-        # _LenientHTTPClientParser defines no additional state.
-        if self._parser is not None and self._parser is not previous_parser:
-            self._parser.__class__ = _LenientHTTPClientParser
+        # _LenientHTTPClientParser defines no additional state. The parser is
+        # always there because HTTPConnectionPool only reuses connections whose
+        # protocol is in the QUIESCENT state, for which request() always
+        # creates a parser.
+        assert self._parser is not None
+        self._parser.__class__ = _LenientHTTPClientParser
         return d
 
 
