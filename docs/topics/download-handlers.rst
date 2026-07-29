@@ -169,10 +169,9 @@ returns IPv4 addresses, so IPv6 requires setting it to
 as to target hosts.
 
 :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` does not
-use the Twisted resolver, so it needs no setting for IPv6. It has a different
-limitation instead: a request to a URL whose host is an IPv6 address literal
-fails if it goes through a proxy, because ``httpx`` sends the target address to
-the proxy without the required square brackets.
+use the Twisted resolver, so it needs no setting for IPv6. However, IPv6
+address literals `do not work through a proxy
+<https://github.com/pydantic/httpx2/pull/1091>`__.
 
 You can find additional HTTP download handlers in the
 scrapy-download-handlers-incubator_ package. This package is made by the Scrapy
@@ -344,8 +343,8 @@ Other limitations:
     using proxy rotation.
 
 -   Requests to a URL with an IPv6 address literal, such as
-    ``https://[::1]/``, fail when they go through a proxy, because ``httpx``
-    sends the target address to the proxy without the required square brackets.
+    ``https://[::1]/``, `do not work through a proxy
+    <https://github.com/pydantic/httpx2/pull/1091>`__.
 
 Unlike the Twisted-based handlers, this handler does not use the resolver
 configured with :setting:`TWISTED_DNS_RESOLVER`, so it resolves IPv6 hosts
