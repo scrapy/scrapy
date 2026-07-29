@@ -88,6 +88,32 @@ class TestPriorityQueue:
         assert queue.pop().url == req3.url
         assert not queue.close()
 
+    def test_peek_after_draining_a_higher_priority_queue(self):
+        """Draining the queue of the current priority while start requests
+        remain at a different one must not leave ``curprio`` pointing at a
+        priority that no queue has, which ``peek()`` cannot recover from."""
+        temp_dir = tempfile.mkdtemp()
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler,
+            FifoMemoryQueue,
+            temp_dir,
+            start_queue_cls=FifoMemoryQueue,
+        )
+        start_request = Request(
+            "https://example.org/start", meta={"is_start_request": True}
+        )
+        queue.push(start_request)
+        # A redirect of a start request, which REDIRECT_PRIORITY_ADJUST puts at
+        # a higher priority, i.e. in a separate, non-start queue.
+        queue.push(Request("https://example.org/redirect", priority=2))
+
+        assert queue.peek().url == "https://example.org/redirect"
+        assert queue.pop().url == "https://example.org/redirect"
+        assert queue.peek().url == start_request.url
+        assert queue.pop().url == start_request.url
+        assert queue.peek() is None
+        queue.close()
+
     def test_init_prios_with_start_queue(self):
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
@@ -325,12 +351,13 @@ def test_pop_order(input_, output):
 
 
 class TestThrottlerAwarePriorityQueue:
-    def _queue(self, crawler, key=""):
+    def _queue(self, crawler, key="", start_queue_cls=None):
         return build_from_crawler(
             ThrottlerAwarePriorityQueue,
             crawler,
             downstream_queue_cls=FifoMemoryQueue,
             key=key,
+            start_queue_cls=start_queue_cls,
         )
 
     async def _push(self, queue, crawler, request):
@@ -347,6 +374,25 @@ class TestThrottlerAwarePriorityQueue:
         # Two distinct scope sets -> two internal queues, three requests.
         assert len(queue.pqueues) == 2
         assert len(queue) == 3
+
+    @coroutine_test
+    async def test_pop_after_draining_a_higher_priority_queue(self):
+        """This queue peeks at every scope-set queue on every pop, so a
+        scope-set queue left in a state that only pop() can recover from would
+        break the whole crawl, not just that queue."""
+        crawler = get_crawler(Spider)
+        queue = self._queue(crawler, start_queue_cls=FifoMemoryQueue)
+        await self._push(
+            queue,
+            crawler,
+            Request("http://a.com/start", meta={"is_start_request": True}),
+        )
+        await self._push(queue, crawler, Request("http://a.com/redirect", priority=2))
+
+        assert queue.pop().url == "http://a.com/redirect"
+        assert queue.pop().url == "http://a.com/start"
+        assert queue.pop() is None
+        assert len(queue) == 0
 
     @coroutine_test
     async def test_pop_skips_blocked_scope(self):

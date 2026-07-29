@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 from typing import Any
 from urllib.parse import urlparse
 
@@ -176,6 +177,33 @@ async def test_off_cycle_requests_are_bound_by_concurrent_requests():
         == OffCycleFloodSpider.request_count + 1
     )
     assert OffCycleFloodSpider.peak_transferring == 2
+
+
+@coroutine_test
+async def test_unlimited_concurrent_requests():
+    """A CONCURRENT_REQUESTS of 0 means no global limit, so neither the engine
+    nor the downloader holds anything back."""
+    crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 0})
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    assert downloader.needs_backout() is False
+    downloader.active.update(Request(f"https://example.com/{i}") for i in range(100))
+    assert downloader.needs_backout() is False
+    assert downloader._transfer_slots_full() is False
+    downloader.active.clear()
+    downloader.close()
+
+    with MockServer() as mockserver:
+        crawler = get_crawler(SimpleSpider, settings_dict={"CONCURRENT_REQUESTS": 0})
+        crawl = deferred_from_coro(
+            crawler.crawl_async(mockserver.url("/status?n=200"), mockserver=mockserver)
+        )
+        # A bounded wait, so that a regression fails instead of hanging.
+        done, _ = await wait_for_first([crawl], timeout=30)
+        assert done, "the crawl stalled instead of running without a limit"
+        await maybe_deferred_to_future(crawl)
+    assert crawler.stats
+    assert crawler.stats.get_value("response_received_count") == 1
 
 
 @coroutine_test
@@ -400,6 +428,27 @@ async def test_download_slot_meta_deprecated():
         key = downloader._get_slot_key(request)
     downloader.close()
     assert key == "custom"
+
+
+@coroutine_test
+async def test_inherited_download_slot_meta_not_deprecated():
+    """The downloader sets download_slot on every request it handles, and a
+    redirect inherits it along with the rest of its meta, so it must not be
+    reported as a deprecated user-set value."""
+    with MockServer() as mockserver:
+        crawler = get_crawler(SimpleSpider)
+        url = mockserver.url(f"/redirect-to?goto={mockserver.url('/status?n=200')}")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            await crawler.crawl_async(url, mockserver=mockserver)
+    assert crawler.stats
+    assert crawler.stats.get_value("response_received_count") == 1
+    assert crawler.stats.get_value("downloader/request_count") == 2
+    assert not [
+        str(w.message)
+        for w in caught
+        if "'download_slot' request meta key is deprecated" in str(w.message)
+    ]
 
 
 @coroutine_test

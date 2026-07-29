@@ -220,9 +220,12 @@ def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
 
     :setting:`CONCURRENT_REQUESTS` caps the total number of requests in flight,
     so a per-scope (or per-domain) concurrency limit above it can never be
-    reached.
+    reached. A :setting:`CONCURRENT_REQUESTS` of ``0`` caps nothing, so no
+    per-scope limit is unachievable then.
     """
     global_concurrency = settings.getint("CONCURRENT_REQUESTS")
+    if not global_concurrency:
+        return
     offenders: list[str] = [
         f"{name}={settings.getint(name)}"
         for name in ("CONCURRENT_REQUESTS_PER_DOMAIN", "THROTTLING_SCOPE_CONCURRENCY")
@@ -486,6 +489,12 @@ _GetScopesMethod = TypeVar(
 # they survive a request being serialized to and restored from a disk queue.
 _RESOLVED_SCOPES_META_KEY = "_throttler_resolved_scopes"
 
+# Request.meta key under which the downloader records the 'download_slot' value
+# it set itself (see Downloader._enqueue_request), so that the deprecation of
+# that meta key is only reported for values that a user set; see
+# Throttler._resolve_scopes_sync.
+_STAMPED_SLOT_META_KEY = "_throttler_stamped_download_slot"
+
 
 def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
     """Decorator for :meth:`~ThrottlerProtocol.get_scopes`
@@ -638,12 +647,17 @@ class Throttler:
             return cast("RequestScopes", scopes)
         download_slot = request.meta.get("download_slot")
         if download_slot is not None:
-            warnings.warn(
-                "The 'download_slot' request meta key is deprecated. Use "
-                "'throttling_scopes' instead.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+            # The downloader sets this key itself on every request it handles,
+            # and requests derived from those (a redirect, a retry) inherit it
+            # along with the rest of their meta, so only a value that does not
+            # match what the downloader recorded can have come from a user.
+            if download_slot != request.meta.get(_STAMPED_SLOT_META_KEY):
+                warnings.warn(
+                    "The 'download_slot' request meta key is deprecated. Use "
+                    "'throttling_scopes' instead.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
             return cast("RequestScopes", download_slot)
         return urlparse_cached(request).hostname or ""
 
@@ -702,15 +716,26 @@ class Throttler:
         the just-created *keep* scope is never evicted. A scope evicted while
         still throttling is simply recreated from its configuration the next
         time it is needed.
+
+        This runs on every scope creation once the limit is reached, so it walks
+        the coldest end of the LRU order and stops as soon as it has enough
+        candidates, rather than copying the (potentially very long) list of scope
+        ids to be able to delete while iterating.
         """
-        if self._scope_limit <= 0 or len(self._scope_managers) <= self._scope_limit:
+        if self._scope_limit <= 0:
+            return
+        excess = len(self._scope_managers) - self._scope_limit
+        if excess <= 0:
             return
         now = time.monotonic()
-        for scope_id in list(self._scope_managers):
-            if len(self._scope_managers) <= self._scope_limit:
+        evictable: list[ScopeID] = []
+        for scope_id, manager in self._scope_managers.items():
+            if len(evictable) >= excess:
                 break
-            if scope_id != keep and self._scope_managers[scope_id].is_idle(now, 0):
-                del self._scope_managers[scope_id]
+            if scope_id != keep and manager.is_idle(now, 0):
+                evictable.append(scope_id)
+        for scope_id in evictable:
+            del self._scope_managers[scope_id]
 
     async def acquire(self, request: Request, *, off_cycle: bool = False) -> None:
         # A throttler-aware scheduler reserves the request before handing it

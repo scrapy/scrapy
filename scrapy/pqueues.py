@@ -205,8 +205,11 @@ class ScrapyPriorityQueue:
                 if not q:
                     del self.queues[self.curprio]
                     q.close()
-                    if not self._start_queues:
-                        self._update_curprio()
+                    # Always refresh, even if _start_queues is not empty: it may
+                    # have no queue at this priority, and leaving curprio
+                    # pointing at a priority that neither dict has would break
+                    # peek() (which, unlike this method, cannot recover from it).
+                    self._update_curprio()
                 return m
             if self._start_queues:
                 try:

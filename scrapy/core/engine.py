@@ -425,9 +425,12 @@ class ExecutionEngine:
         """
         if not self._throttler_waiting:
             return False
+        total_concurrency = self.downloader.total_concurrency
+        if not total_concurrency:  # no global limit to count them against
+            return False
         if (
             len(self._throttler_waiting) + len(self.downloader.active)
-            < self.downloader.total_concurrency
+            < total_concurrency
         ):
             return False
         self._maybe_warn_throttler_backout()

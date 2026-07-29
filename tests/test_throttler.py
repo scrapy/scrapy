@@ -22,6 +22,7 @@ from scrapy.throttler import (
     _default_scope_concurrency,
     _to_scope_dict,
     _warn_on_deprecated_concurrency,
+    _warn_on_unachievable_concurrency,
     add_scope,
     iter_scope_quota_amounts,
     iter_scopes,
@@ -1712,6 +1713,22 @@ class TestConcurrencyBridging:
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             _warn_on_deprecated_concurrency(settings)
+
+    def test_unachievable_concurrency_warning(self, caplog):
+        settings = self._settings(scope=100)
+        settings.set("CONCURRENT_REQUESTS", 16, priority="spider")
+        with caplog.at_level(logging.WARNING):
+            _warn_on_unachievable_concurrency(settings)
+        assert "THROTTLING_SCOPE_CONCURRENCY=100" in caplog.text
+
+    def test_no_unachievable_concurrency_warning_without_a_global_limit(self, caplog):
+        # A CONCURRENT_REQUESTS of 0 caps nothing, so no per-scope limit is out
+        # of reach.
+        settings = self._settings(scope=100)
+        settings.set("CONCURRENT_REQUESTS", 0, priority="spider")
+        with caplog.at_level(logging.WARNING):
+            _warn_on_unachievable_concurrency(settings)
+        assert not caplog.text
 
 
 class _SharedPrerequisiteMiddleware:

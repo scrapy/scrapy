@@ -15,6 +15,7 @@ from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.throttler import _STAMPED_SLOT_META_KEY
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
@@ -243,7 +244,9 @@ class Downloader:
             self.active.remove(request)
 
     def needs_backout(self) -> bool:
-        return len(self.active) >= self.total_concurrency
+        """Return whether the :setting:`CONCURRENT_REQUESTS` limit is reached.
+        A limit of ``0`` means no limit, so nothing is ever held back."""
+        return 0 < self.total_concurrency <= len(self.active)
 
     def _is_parked(self, request: Request) -> bool:
         """Return whether *request* is in the downloader but not being
@@ -311,6 +314,10 @@ class Downloader:
     async def _enqueue_request(self, request: Request) -> Response:
         key = self._get_slot_key(request)
         request.meta[self.DOWNLOAD_SLOT] = key
+        # Record that this value is ours, so that a request that inherits it
+        # (e.g. a redirect or a retry, which copy meta) is not mistaken for one
+        # whose download_slot a user set; see Throttler._resolve_scopes_sync.
+        request.meta[_STAMPED_SLOT_META_KEY] = key
         self.signals.send_catch_log(
             signal=signals.request_reached_downloader,
             request=request,

@@ -47,7 +47,8 @@ The main throttling :ref:`settings <topics-settings>` are:
 
 When configuring these settings, note that:
 
--   :setting:`CONCURRENT_REQUESTS` caps :setting:`THROTTLING_SCOPE_CONCURRENCY`.
+-   :setting:`CONCURRENT_REQUESTS` caps
+    :setting:`THROTTLING_SCOPE_CONCURRENCY`.
 
 -   If ``DOWNLOAD_DELAY`` ≥ response time, concurrency is effectively ``1``,
     because the next request to the domain is not sent until the delay elapses,
