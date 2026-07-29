@@ -572,6 +572,25 @@ class TestHttpBase(ABC):
         assert "download headers warn size" in caplog.text
 
     @coroutine_test
+    async def test_get_headers_warnsize_disabled(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        if self.headers_maxsize is not None:
+            pytest.skip(
+                f"{type(self).__name__} does not support DOWNLOAD_HEADERS_WARNSIZE"
+            )
+        size = 32 * 1024
+        request = Request(
+            mockserver.url(f"/large-headers?size={size}", is_secure=self.is_secure)
+        )
+        settings = {"DOWNLOAD_HEADERS_WARNSIZE": 0}
+        with caplog.at_level(logging.WARNING):
+            async with self.get_dh(settings) as download_handler:
+                response = await download_handler.download_request(request)
+        assert response.headers[b"X-Large-0"] == b"a" * size
+        assert "download headers warn size" not in caplog.text
+
+    @coroutine_test
     async def test_download_is_not_automatically_gzip_decoded(
         self, mockserver: MockServer
     ) -> None:

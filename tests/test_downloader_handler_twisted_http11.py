@@ -7,10 +7,15 @@ from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import Mock
 
 import pytest
+from twisted.internet.testing import StringTransport
+from twisted.web._newclient import Request as TxClientRequest
+from twisted.web._newclient import RequestNotSent
+from twisted.web.http_headers import Headers as TxHeaders
 
 from scrapy import Spider
 from scrapy.core.downloader.handlers.http11 import (
     HTTP11DownloadHandler,
+    _ScrapyHTTP11ClientProtocol,
     _TunnelingTCP4ClientEndpoint,
 )
 from scrapy.crawler import Crawler
@@ -178,3 +183,51 @@ class TestTunnelingHeadersMaxsize:
             endpoint.processProxyResponse(b"a" * 512)
 
         assert not failures
+
+
+class TestScrapyHTTP11ClientProtocol:
+    """Tests for the response header size limiting that
+    ``_ScrapyHTTP11ClientProtocol`` installs on the response parser that
+    Twisted builds for each request."""
+
+    @staticmethod
+    def _get_protocol() -> _ScrapyHTTP11ClientProtocol:
+        protocol = _ScrapyHTTP11ClientProtocol(lambda _: None, 64 * 1024, 32 * 1024)
+        protocol.makeConnection(StringTransport())  # type: ignore[no-untyped-call]
+        return protocol
+
+    @staticmethod
+    def _get_request() -> TxClientRequest:
+        return TxClientRequest(
+            b"GET", b"/", TxHeaders({b"host": [b"example.com"]}), None
+        )
+
+    def test_parser_is_limited(self) -> None:
+        protocol = self._get_protocol()
+        protocol.request(self._get_request())
+        assert protocol._parser is not None
+        assert protocol._parser.MAX_LENGTH == 64 * 1024
+        # _limit_response_headers() overrides these on the instance.
+        assert "lineReceived" in vars(protocol._parser)
+        assert "lineLengthExceeded" in vars(protocol._parser)
+
+    def test_refused_request_keeps_previous_parser_limits(self) -> None:
+        """A request that Twisted refuses leaves the parser of the previous
+        request untouched, so that its size counter is not reset while its
+        response is still being read."""
+        protocol = self._get_protocol()
+        protocol.request(self._get_request())
+        parser = protocol._parser
+        assert parser is not None
+        line_received = vars(parser)["lineReceived"]
+
+        # A second request over the same connection is refused, as the first one
+        # is still in progress.
+        deferred = protocol.request(self._get_request())
+        failures: list[Failure] = []
+        deferred.addErrback(failures.append)
+
+        assert len(failures) == 1
+        assert failures[0].check(RequestNotSent)
+        assert protocol._parser is parser
+        assert vars(parser)["lineReceived"] is line_received

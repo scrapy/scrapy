@@ -157,12 +157,17 @@ class _ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):
         self._headers_warnsize: int = headers_warnsize
 
     def request(self, request: TxClientRequest) -> Deferred[IResponse]:
+        previous_parser = self._parser
         deferred = super().request(request)
-        # super() builds the response parser, and a new one is built for every
-        # request, so the size counter resets as intended on pooled connections.
-        if self._parser is not None:
+        # super() builds a new response parser for every request it accepts, so
+        # the size counter resets as intended on pooled connections. It can also
+        # refuse a request, e.g. on a pooled connection that just died, in which
+        # case it leaves the parser of the previous request in place, and
+        # limiting that one again would reset its counter mid-response.
+        parser = self._parser
+        if parser is not None and parser is not previous_parser:
             _limit_response_headers(
-                self._parser, self._headers_maxsize, self._headers_warnsize
+                parser, self._headers_maxsize, self._headers_warnsize
             )
         return deferred
 
