@@ -58,7 +58,8 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     """Accepted keys of :setting:`THROTTLING_SCOPES` entries."""
 
     concurrency: int
-    """Per-scope override of :setting:`THROTTLING_SCOPE_CONCURRENCY`."""
+    """Per-scope override of :setting:`THROTTLING_SCOPE_CONCURRENCY`. Must be
+    ``1`` or higher: a scope always enforces a concurrency limit."""
 
     delay: float
     """Per-scope override of :setting:`DOWNLOAD_DELAY`."""
@@ -140,9 +141,9 @@ def _effective_priority(settings: BaseSettings, name: str) -> int:
     return SETTINGS_PRIORITIES["default"] - 1 if priority is None else priority
 
 
-def _default_scope_concurrency(settings: BaseSettings) -> int:
-    """Return the default concurrency of a throttling scope that does not set
-    its own ``concurrency``.
+def _default_scope_concurrency_setting(settings: BaseSettings) -> str:
+    """Return the name of the setting that defines the concurrency of a
+    throttling scope that does not set its own ``concurrency``.
 
     This is :setting:`THROTTLING_SCOPE_CONCURRENCY`, except that the deprecated
     :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is bridged in when set at a
@@ -151,20 +152,31 @@ def _default_scope_concurrency(settings: BaseSettings) -> int:
     kept for backward compatibility (its default flips to
     :setting:`THROTTLING_SCOPE_CONCURRENCY` in a future version; see
     :func:`_warn_on_deprecated_concurrency`).
+
+    Which setting wins is what makes the difference between the effective
+    per-scope concurrency and a value that is merely configured, so it is
+    resolved here once and reused by everything that needs to name or read it.
     """
     default_priority = SETTINGS_PRIORITIES["default"]
     domain_priority = _effective_priority(settings, "CONCURRENT_REQUESTS_PER_DOMAIN")
     scope_priority = _effective_priority(settings, "THROTTLING_SCOPE_CONCURRENCY")
     if domain_priority > scope_priority:
-        return settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
+        return "CONCURRENT_REQUESTS_PER_DOMAIN"
     if scope_priority > domain_priority:
-        return settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+        return "THROTTLING_SCOPE_CONCURRENCY"
     # Equal priority: on an explicit (higher-than-default) tie the new setting
     # wins; when neither is set (both at "default") keep the historical
     # per-domain value so existing behavior is preserved.
     if domain_priority <= default_priority:
-        return settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
-    return settings.getint("THROTTLING_SCOPE_CONCURRENCY")
+        return "CONCURRENT_REQUESTS_PER_DOMAIN"
+    return "THROTTLING_SCOPE_CONCURRENCY"
+
+
+def _default_scope_concurrency(settings: BaseSettings) -> int:
+    """Return the default concurrency of a throttling scope that does not set
+    its own ``concurrency``, i.e. the value of the setting chosen by
+    :func:`_default_scope_concurrency_setting`."""
+    return settings.getint(_default_scope_concurrency_setting(settings))
 
 
 def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
@@ -222,15 +234,19 @@ def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
     so a per-scope (or per-domain) concurrency limit above it can never be
     reached. A :setting:`CONCURRENT_REQUESTS` of ``0`` caps nothing, so no
     per-scope limit is unachievable then.
+
+    Only the setting that actually defines the default per-scope concurrency is
+    reported, so that a deprecated setting the user never set is not named as an
+    offender when the new one overrides it.
     """
     global_concurrency = settings.getint("CONCURRENT_REQUESTS")
     if not global_concurrency:
         return
-    offenders: list[str] = [
-        f"{name}={settings.getint(name)}"
-        for name in ("CONCURRENT_REQUESTS_PER_DOMAIN", "THROTTLING_SCOPE_CONCURRENCY")
-        if settings.getint(name) > global_concurrency
-    ]
+    offenders: list[str] = []
+    default_name = _default_scope_concurrency_setting(settings)
+    default_concurrency = settings.getint(default_name)
+    if default_concurrency > global_concurrency:
+        offenders.append(f"{default_name}={default_concurrency}")
     offenders += [
         f"THROTTLING_SCOPES[{scope_id!r}]['concurrency']={config['concurrency']}"
         for scope_id, config in settings.getdict("THROTTLING_SCOPES").items()
@@ -245,12 +261,47 @@ def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
         )
 
 
+def _check_scope_concurrency(
+    settings: BaseSettings, scopes_config: dict[str, dict[str, Any]]
+) -> None:
+    """Reject non-positive throttling scope concurrency limits. Call once per
+    crawl (see :meth:`Throttler.__init__`).
+
+    Every throttling scope enforces a concurrency limit; unlike
+    :setting:`CONCURRENT_REQUESTS`, there is no value that turns it off. A limit
+    of ``0`` would leave the scope with no slot to give, holding its requests
+    back forever, so it is rejected up front rather than left to stall the
+    crawl.
+
+    *scopes_config* is the merged per-scope configuration (see
+    :meth:`Throttler._merge_download_slots`), so a limit coming from the
+    deprecated :setting:`DOWNLOAD_SLOTS` setting is checked too.
+    """
+    name = _default_scope_concurrency_setting(settings)
+    concurrency = settings.getint(name)
+    if concurrency < 1:
+        raise ValueError(f"{name} must be 1 or higher, got {concurrency!r}.")
+    for scope_id, config in scopes_config.items():
+        if config.get("concurrency") is None:
+            continue
+        concurrency = int(config["concurrency"])
+        if concurrency < 1:
+            raise ValueError(
+                f"The concurrency of throttling scope {scope_id!r} must be 1 or "
+                f"higher, got {concurrency!r}."
+            )
+
+
 def _to_scope_dict(scopes: RequestScopes) -> ScopeQuotas:
     """Normalize *scopes* (``None``, a scope id, an iterable of scope ids or a
-    ``{scope_id: quota}`` dict) into a ``{scope_id: quota}`` dict, using ``None``
-    as the quota of scopes that have none."""
+    ``{scope_id: quota}`` dict) into a new ``{scope_id: quota}`` dict, using
+    ``None`` as the quota of scopes that have none.
+
+    A dict input is copied rather than returned as is, so that the caller's dict
+    (which, for the scopes of a request, is the one persisted on
+    ``request.meta``; see :func:`scope_cache`) is never modified."""
     if isinstance(scopes, dict):
-        return scopes
+        return dict(scopes)
     if scopes is None:
         return {}
     if isinstance(scopes, str):
@@ -269,8 +320,8 @@ def add_scope(
     quota_amount: QuotaAmount | None = None,
     /,
 ) -> ScopeQuotas:
-    """Add *scope* to *scopes* with *quota_amount*, returning a
-    ``{scope_id: quota}`` dict.
+    """Add *scope* to *scopes* with *quota_amount*, returning a new
+    ``{scope_id: quota}`` dict and leaving *scopes* untouched.
 
     This is a utility function to help extending the output of
     :meth:`~ThrottlerProtocol.get_scopes`, e.g. in
@@ -398,8 +449,7 @@ class ThrottlerProtocol(Protocol):
 
     def get_scope_load(self, scope_id: str) -> float:
         """Return the current load of the scope identified by *scope_id*: its
-        active sends divided by its concurrency limit (or by the global
-        :setting:`CONCURRENT_REQUESTS` when the scope has no explicit limit).
+        active sends divided by its concurrency limit.
 
         Used by a :ref:`throttler-aware scheduler
         <throttler-aware-scheduler>` to balance dequeuing across scopes,
@@ -583,6 +633,7 @@ class Throttler:
         self._scopes_config: dict[str, dict[str, Any]] = self._merge_download_slots(
             crawler.settings
         )
+        _check_scope_concurrency(crawler.settings, self._scopes_config)
         # Ordered by least-recently-used first (see get_scope_manager), so the
         # scope limit can evict the coldest idle scopes (see THROTTLING_SCOPE_LIMIT).
         self._scope_managers: OrderedDict[ScopeID, ThrottlingScopeManagerProtocol] = (
@@ -1276,7 +1327,10 @@ class ThrottlingScopeManagerProtocol(Protocol):
 
     def set_concurrency(self, concurrency: int) -> None:
         """Set the maximum number of concurrent requests allowed for this
-        scope."""
+        scope, which must be ``1`` or higher.
+
+        There is no way to lift the limit: a scope always enforces one. The
+        reference implementation raises :exc:`ValueError` on a lower value."""
 
     def concurrency_blocked(self) -> bool:
         """Return whether this scope is at its concurrency limit.
@@ -1293,10 +1347,8 @@ class ThrottlingScopeManagerProtocol(Protocol):
         A :ref:`throttler-aware scheduler <throttler-aware-scheduler>` uses
         this to break ties between equally-prioritized requests, preferring the
         least-loaded scopes. The reference implementation returns active sends
-        divided by the concurrency limit (falling back to
-        :setting:`CONCURRENT_REQUESTS` when the scope enforces no explicit
-        limit), but any consistent busyness metric works; return ``0.0`` when
-        none is meaningful.
+        divided by the concurrency limit, but any consistent busyness metric
+        works; return ``0.0`` when none is meaningful.
         """
 
     def slot_available_event(self) -> Deferred[None]:
@@ -1347,8 +1399,9 @@ class ThrottlingScopeManager:
         turned off for a scope with the ``"backoff"`` config's ``"enabled"``
         key, leaving it to rely solely on its delay and quota.
 
-    -   When the scope is configured with a ``"concurrency"`` limit, no more
-        than that many requests are allowed in flight at once.
+    -   No more than ``"concurrency"`` requests (defaulting to
+        :setting:`THROTTLING_SCOPE_CONCURRENCY`) are allowed in flight at once.
+        There is no way to lift this limit.
 
     -   When the scope is configured with a ``"quota"``, no more than that much
         quota is consumed per ``"window"`` (default: :setting:`THROTTLER_WINDOW`).
@@ -1390,17 +1443,11 @@ class ThrottlingScopeManager:
         # "http_codes"/"exceptions" config and the global BACKOFF_* settings.
         self._window: float = _BACKOFF_WINDOW
 
-        # Concurrency. ``None`` means no scope-level limit (the downloader slots
-        # enforce concurrency instead); a limit is only set when configured
-        # explicitly.
-        configured_concurrency = config.get("concurrency")
-        if configured_concurrency is not None:
-            self._concurrency: int | None = int(configured_concurrency)
-        else:
-            self._concurrency = _default_scope_concurrency(settings) or None
-        # Used as the load denominator when the scope enforces no explicit
-        # concurrency limit (see get_load()).
-        self._global_concurrency: int = settings.getint("CONCURRENT_REQUESTS")
+        # Concurrency. Always limited: a scope has no way to express "no limit"
+        # (see _check_scope_concurrency), so this is a positive integer.
+        self._concurrency: int = int(
+            config.get("concurrency", _default_scope_concurrency(settings))
+        )
 
         # Quota.
         quota = config.get("quota")
@@ -1561,17 +1608,10 @@ class ThrottlingScopeManager:
             self._fire_slot_waiters()
 
     def concurrency_blocked(self) -> bool:
-        return self._concurrency is not None and self._active >= self._concurrency
+        return self._active >= self._concurrency
 
     def get_load(self) -> float:
-        limit = (
-            self._concurrency
-            if self._concurrency is not None
-            else self._global_concurrency
-        )
-        if not limit:
-            return 0.0
-        return self._active / limit
+        return self._active / self._concurrency
 
     def slot_available_event(self) -> Deferred[None]:
         event: Deferred[None] = Deferred()
@@ -1657,7 +1697,12 @@ class ThrottlingScopeManager:
             self._delay = delay
 
     def set_concurrency(self, concurrency: int) -> None:
-        self._concurrency = max(1, int(concurrency))
+        concurrency = int(concurrency)
+        if concurrency < 1:
+            raise ValueError(
+                f"Scope concurrency must be 1 or higher, got {concurrency!r}."
+            )
+        self._concurrency = concurrency
         self._fire_slot_waiters()
 
     def is_idle(self, now: float, max_idle: float) -> bool:

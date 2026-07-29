@@ -1702,7 +1702,7 @@ Bug fixes
     a relative URL.
     (:issue:`7042`, :issue:`7047`)
 
--   Passing ``None`` as a value of the :reqmeta:`download_slot` request meta
+-   Passing ``None`` as a value of the ``download_slot`` request meta
     key is now handled in the same way as not setting this meta key at all.
     (:issue:`7172`)
 

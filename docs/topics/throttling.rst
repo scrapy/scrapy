@@ -34,6 +34,9 @@ The main throttling :ref:`settings <topics-settings>` are:
     <throttling-scopes>`. Requests are grouped by domain by default, so this is
     the maximum number of simultaneous requests per domain.
 
+    Must be ``1`` or higher. Unlike :setting:`CONCURRENT_REQUESTS`, it cannot be
+    set to ``0``: a throttling scope always enforces a concurrency limit.
+
 -   .. setting:: DOWNLOAD_DELAY
 
     :setting:`DOWNLOAD_DELAY` (default: ``1``
@@ -193,6 +196,11 @@ headers to indicate when you should make your next request. These headers are
 respected automatically during :ref:`backoff <backoff>`: the scope's next
 request is held back until the indicated time (capped at
 :setting:`BACKOFF_MAX_DELAY`), on top of the usual exponential backoff step.
+
+A ``Retry-After`` header on a redirect response instead delays only the redirect
+itself, through its :reqmeta:`delay` request metadata key, leaving the rest of
+the scope unaffected. See
+:class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware`.
 
 .. _crawl-delay:
 
@@ -395,8 +403,8 @@ Its keys are scope IDs and its values are
 following keys:
 
 ``concurrency`` (:class:`int`)
-    Maximum number of concurrent requests for the scope. Defaults to
-    :setting:`THROTTLING_SCOPE_CONCURRENCY`.
+    Maximum number of concurrent requests for the scope, ``1`` or higher.
+    Defaults to :setting:`THROTTLING_SCOPE_CONCURRENCY`.
 
 ``delay`` (:class:`float`)
     Minimum seconds between requests for the scope. Defaults to

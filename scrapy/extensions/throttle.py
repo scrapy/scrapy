@@ -6,7 +6,7 @@ from warnings import warn
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.utils.httpobj import urlparse_cached
+from scrapy.throttler import iter_scopes
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -80,24 +80,28 @@ class AutoThrottle:
         ):
             return
 
-        scope_id = urlparse_cached(request).hostname or ""
-        olddelay = self._scope_delay(throttler, scope_id)
-        newdelay = self._adjust_delay(olddelay, latency, response)
-        throttler.set_scope_delay(scope_id, newdelay)
-        if self.debug:
-            logger.info(
-                "slot: %(slot)s | "
-                "delay:%(delay)5d ms (%(delaydiff)+d) | "
-                "latency:%(latency)5d ms | size:%(size)6d bytes",
-                {
-                    "slot": scope_id,
-                    "delay": newdelay * 1000,
-                    "delaydiff": (newdelay - olddelay) * 1000,
-                    "latency": latency * 1000,
-                    "size": len(response.body),
-                },
-                extra={"spider": spider},
-            )
+        # The scopes the request was sent under, rather than its host name: a
+        # request may be throttled under scopes of the user's choosing (see
+        # THROTTLING_SCOPES), and the delay of any other scope has no effect on
+        # how this request was throttled.
+        for scope_id in iter_scopes(throttler.get_resolved_scopes(request)):
+            olddelay = self._scope_delay(throttler, scope_id)
+            newdelay = self._adjust_delay(olddelay, latency, response)
+            throttler.set_scope_delay(scope_id, newdelay)
+            if self.debug:
+                logger.info(
+                    "slot: %(slot)s | "
+                    "delay:%(delay)5d ms (%(delaydiff)+d) | "
+                    "latency:%(latency)5d ms | size:%(size)6d bytes",
+                    {
+                        "slot": scope_id,
+                        "delay": newdelay * 1000,
+                        "delaydiff": (newdelay - olddelay) * 1000,
+                        "latency": latency * 1000,
+                        "size": len(response.body),
+                    },
+                    extra={"spider": spider},
+                )
 
     def _scope_delay(self, throttler: ThrottlerProtocol, scope_id: str) -> float:
         """Return the current delay of *scope_id*, applying AUTOTHROTTLE_START_DELAY

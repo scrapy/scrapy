@@ -909,6 +909,11 @@ redirect. For example, :class:`RedirectMiddleware` indicates the triggering
 response status code as an integer, while :class:`MetaRefreshMiddleware`
 always uses the ``'meta refresh'`` string as reason.
 
+If the response carries a ``Retry-After`` header, the redirect is held back for
+that long through the :reqmeta:`delay` request metadata key, capped at
+:setting:`BACKOFF_MAX_DELAY` (set it to ``0`` to disable this). See
+:ref:`retry-after`.
+
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 

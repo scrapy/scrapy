@@ -288,7 +288,9 @@ async def test_discard_parked_event():
     # Discarding an event that is no longer tracked is a no-op.
     downloader._discard_parked_event(event)
     # The dropped event is not fired by a later request being parked.
-    downloader._end_transfer(Request("https://example.com"))
+    request = Request("https://example.com")
+    downloader._transferring.add(request)
+    downloader._end_transfer(request)
     assert not event.called
     downloader.close()
 

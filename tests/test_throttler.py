@@ -19,7 +19,9 @@ from scrapy.throttler import (
     RequestScopes,
     Throttler,
     ThrottlingScopeManager,
+    _check_scope_concurrency,
     _default_scope_concurrency,
+    _default_scope_concurrency_setting,
     _to_scope_dict,
     _warn_on_deprecated_concurrency,
     _warn_on_unachievable_concurrency,
@@ -1099,17 +1101,13 @@ class TestThrottlingScopeManager:
         scope = _scope_manager()
         assert scope._concurrency == 8
 
-    def test_no_scope_concurrency_limit_when_zero(self):
-        # THROTTLING_SCOPE_CONCURRENCY governs scopes that are neither a domain
-        # nor an IP (here a bare "custom" group name).
+    def test_scope_concurrency_setting(self):
+        # THROTTLING_SCOPE_CONCURRENCY governs scopes that set no concurrency of
+        # their own (here a bare "custom" group name).
         scope = _scope_manager(
-            settings={"THROTTLING_SCOPE_CONCURRENCY": 0}, config={"id": "custom"}
+            settings={"THROTTLING_SCOPE_CONCURRENCY": 3}, config={"id": "custom"}
         )
-        assert scope._concurrency is None
-        for _ in range(100):
-            scope.record_sent(now=0.0)
-        assert scope.can_send(now=0.0) == 0
-        assert scope.concurrency_blocked() is False
+        assert scope._concurrency == 3
 
     def test_concurrency_limit(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 2})
@@ -1167,11 +1165,12 @@ class TestThrottlingScopeManager:
         scope.record_done(now=0.0)
         assert event.called
 
-    def test_set_concurrency_clamps_to_one(self):
+    def test_set_concurrency_rejects_non_positive(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 4})
-        # A concurrency below 1 is clamped up to 1.
-        scope.set_concurrency(0)
-        assert scope._concurrency == 1
+        # A scope always enforces a limit, so there is no value that lifts it.
+        with pytest.raises(ValueError, match="must be 1 or higher"):
+            scope.set_concurrency(0)
+        assert scope._concurrency == 4
         scope.set_concurrency(5)
         assert scope._concurrency == 5
 
@@ -1377,9 +1376,9 @@ class TestThrottlerReadiness:
         manager.reserve(request)
         assert manager.get_scope_load("example.com") == pytest.approx(0.25)
 
-    def test_get_scope_load_falls_back_to_global_concurrency(self):
-        manager = _manager({"CONCURRENT_REQUESTS": 8})
-        # A scope with no explicit concurrency limit uses CONCURRENT_REQUESTS.
+    def test_get_scope_load_uses_the_default_concurrency(self):
+        manager = _manager({"THROTTLING_SCOPE_CONCURRENCY": 8})
+        # A scope that sets no concurrency of its own is limited by the default.
         request = Request("http://example.com/1")
         manager.reserve(request)
         assert manager.get_scope_load("example.com") == pytest.approx(1 / 8)
@@ -1446,6 +1445,15 @@ class TestScopeHelpers:
     def test_add_scope_with_value_rejects_existing_entry(self):
         with pytest.raises(TypeError):
             add_scope({"a": 1.0}, "a", 2.0)
+
+    def test_add_scope_does_not_mutate_its_input(self):
+        # The dict of a request's scopes is the one persisted on request.meta
+        # (see scope_cache), so adding a scope must not touch it.
+        scopes = {"a": 1.0}
+        assert add_scope(scopes, "b", 2.0) == {"a": 1.0, "b": 2.0}
+        assert scopes == {"a": 1.0}
+        assert add_scope(scopes, "c") == {"a": 1.0, "c": None}
+        assert scopes == {"a": 1.0}
 
 
 class TestThrottlerEdges:
@@ -1680,20 +1688,15 @@ class TestThrottlingScopeManagerEdges:
         assert scope.is_idle(now=5.0, max_idle=1.0) is False
         assert scope.is_idle(now=11.0, max_idle=1.0) is True
 
-    def test_get_load_with_zero_limit(self):
-        # No scope concurrency limit and CONCURRENT_REQUESTS=0 leaves a zero
-        # denominator; the load is reported as 0 instead of dividing by zero.
-        scope = _scope_manager(
-            {
-                "CONCURRENT_REQUESTS": 0,
-                "CONCURRENT_REQUESTS_PER_DOMAIN": 0,
-                "THROTTLING_SCOPE_CONCURRENCY": 0,
-            },
-            {"id": "x"},
-        )
-        assert scope._concurrency is None
+    def test_get_load_is_relative_to_the_limit(self):
+        scope = _scope_manager(config={"id": "x", "concurrency": 4})
         scope.record_sent(now=0.0)
-        assert scope.get_load() == 0.0
+        assert scope.get_load() == pytest.approx(0.25)
+        # Borrowing (see Throttler._borrow_slots) can push a scope past its
+        # limit, and the load reflects that rather than being clipped at 1.
+        for _ in range(4):
+            scope.record_sent(now=0.0)
+        assert scope.get_load() == pytest.approx(1.25)
 
 
 class TestConcurrencyBridging:
@@ -1761,6 +1764,68 @@ class TestConcurrencyBridging:
         with caplog.at_level(logging.WARNING):
             _warn_on_unachievable_concurrency(settings)
         assert not caplog.text
+
+    def test_unachievable_concurrency_warning_ignores_the_overridden_setting(
+        self, caplog
+    ):
+        # THROTTLING_SCOPE_CONCURRENCY overrides the deprecated per-domain
+        # setting, so the latter's (default, unreachable) value is not in effect
+        # and must not be reported as an offender.
+        settings = self._settings(scope=2)
+        settings.set("CONCURRENT_REQUESTS", 4, priority="spider")
+        assert settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN") == 8
+        with caplog.at_level(logging.WARNING):
+            _warn_on_unachievable_concurrency(settings)
+        assert not caplog.text
+
+    def test_unachievable_concurrency_warning_names_the_effective_setting(self, caplog):
+        # The deprecated setting is the one in effect here, so it is the one
+        # reported.
+        settings = self._settings(per_domain=100)
+        settings.set("CONCURRENT_REQUESTS", 16, priority="spider")
+        with caplog.at_level(logging.WARNING):
+            _warn_on_unachievable_concurrency(settings)
+        assert "CONCURRENT_REQUESTS_PER_DOMAIN=100" in caplog.text
+        assert "THROTTLING_SCOPE_CONCURRENCY" not in caplog.text
+
+
+class TestScopeConcurrencyValidation:
+    """A throttling scope always enforces a concurrency limit: a non-positive
+    one would leave it with no slot to give and hold its requests back forever,
+    so it is rejected when the throttler is built."""
+
+    @pytest.mark.parametrize(
+        "setting",
+        ["THROTTLING_SCOPE_CONCURRENCY", "CONCURRENT_REQUESTS_PER_DOMAIN"],
+    )
+    def test_rejects_a_non_positive_default(self, setting):
+        # Whichever of the two settings is in effect (see
+        # _default_scope_concurrency_setting) is the one checked and named.
+        settings = Settings()
+        settings.set(setting, 0, priority="spider")
+        assert _default_scope_concurrency_setting(settings) == setting
+        with pytest.raises(ValueError, match=f"{setting} must be 1 or higher"):
+            _check_scope_concurrency(settings, {})
+
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            {"THROTTLING_SCOPES": {"example.com": {"concurrency": 0}}},
+            # A limit bridged in from the deprecated setting is checked too.
+            {"DOWNLOAD_SLOTS": {"example.com": {"concurrency": -1}}},
+        ],
+        ids=["throttling-scopes", "download-slots"],
+    )
+    def test_rejects_a_non_positive_scope_limit(self, settings):
+        with pytest.raises(
+            ValueError,
+            match=r"concurrency of throttling scope 'example\.com' must be 1 or higher",
+        ):
+            _manager(settings)
+
+    def test_accepts_one(self):
+        manager = _manager({"THROTTLING_SCOPE_CONCURRENCY": 1})
+        assert _scope(manager, "example.com")._concurrency == 1
 
 
 class _SharedPrerequisiteMiddleware:

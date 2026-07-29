@@ -395,7 +395,13 @@ class Downloader:
 
         That frees a transfer slot, and it parks *request* for as long as the
         downloader middlewares process its outcome.
+
+        Calling it more than once for the same request is a no-op, so the error
+        path of :meth:`_download` can end the transfer early without the
+        ``finally`` block firing every waiter a second time.
         """
+        if request not in self._transferring:
+            return
         self._transferring.discard(request)
         self._fire_transfer_waiters()
         self._fire_parked_waiters()
@@ -425,6 +431,9 @@ class Downloader:
             )
             return response
         except Exception:
+            # The handler is done with the request, so free its transfer slot
+            # before giving up control below rather than a reactor turn later.
+            self._end_transfer(request)
             await _defer_sleep_async()
             raise
         finally:
