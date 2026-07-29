@@ -21,46 +21,97 @@ if TYPE_CHECKING:
 
 
 class XMLFeedSpider(Spider):
-    """
-    This class intends to be the base class for spiders that scrape
-    from XML feeds.
+    """Spider for parsing XML feeds by iterating through them by a certain node
+    name.
 
-    You can choose whether to parse the file using the 'iternodes' iterator, an
-    'xml' selector, or an 'html' selector.  In most cases, it's convenient to
-    use iternodes, since it's a faster and cleaner.
+    The iterator can be chosen from: ``iternodes``, ``xml``, and ``html``. It's
+    recommended to use the ``iternodes`` iterator for performance reasons, since
+    the ``xml`` and ``html`` iterators generate the whole DOM at once in order to
+    parse it. However, using ``html`` as the iterator may be useful when parsing
+    XML with bad markup.
+
+    To set the iterator and the tag name, you must define the :attr:`iterator`
+    and :attr:`itertag` class attributes.
+
+    .. warning:: Unlike in other spiders, a request without a callback is not
+       handled by :meth:`Spider.parse <scrapy.Spider.parse>`. Its response is
+       parsed as an XML feed, calling :meth:`parse_node` for each matching node.
+
+       That is the way to have an additional feed parsed as such. If you want
+       your own parsing code to run for it instead, set its callback explicitly;
+       defining :meth:`~scrapy.Spider.parse` is not enough.
     """
 
+    #: The iterator to use. It can be either:
+    #:
+    #: -   ``'iternodes'`` - a fast iterator based on ``lxml``
+    #:
+    #: -   ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
+    #:     Keep in mind this uses DOM parsing and must load all DOM in memory
+    #:     which could be a problem for big feeds
+    #:
+    #: -   ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
+    #:     Keep in mind this uses DOM parsing and must load all DOM in memory
+    #:     which could be a problem for big feeds
     iterator: str = "iternodes"
+
+    #: Name of the node (or element) to iterate in. Example:
+    #:
+    #: .. code-block:: python
+    #:
+    #:     itertag = "product"
     itertag: str = "item"
+
+    #: ``(prefix, uri)`` tuples defining the namespaces available in that
+    #: document that will be processed with this spider. The ``prefix`` and
+    #: ``uri`` will be used to automatically register namespaces using the
+    #: :meth:`~scrapy.Selector.register_namespace` method.
+    #:
+    #: You can then specify nodes with namespaces in the :attr:`itertag`
+    #: attribute.
+    #:
+    #: Example:
+    #:
+    #: .. code-block:: python
+    #:
+    #:     from scrapy.spiders import XMLFeedSpider
+    #:
+    #:
+    #:     class YourSpider(XMLFeedSpider):
+    #:
+    #:         namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
+    #:         itertag = "n:url"
+    #:         # ...
     namespaces: Sequence[tuple[str, str]] = ()
 
     def process_results(
         self, response: Response, results: Iterable[Any]
     ) -> Iterable[Any]:
-        """This overridable method is called for each result (item or request)
-        returned by the spider, and it's intended to perform any last time
-        processing required before returning the results to the framework core,
-        for example setting the item GUIDs. It receives a list of results and
-        the response which originated that results. It must return a list of
-        results (items or requests).
+        """Handle *results*, the items and requests returned by the spider for
+        *response*, and return them, either unmodified or with changes.
+
+        Override it to perform any last-time processing required before
+        returning the results to the framework core, for example setting the
+        item IDs.
         """
         return results
 
     def adapt_response(self, response: Response) -> Response:
-        """You can override this function in order to make any changes you want
-        to into the feed before parsing it. This function must return a
-        response.
+        """Handle *response* as soon as it arrives from the spider middleware,
+        before the spider starts parsing it, and return a response, which can be
+        the same one or a different one.
+
+        Override it to make any changes you want to the feed before parsing it,
+        e.g. to its body.
         """
         return response
 
     def parse_node(self, response: Response, selector: Selector) -> Any:
-        """This method is called for the nodes matching the provided tag name
-        (itertag). Receives the response and an Selector for each node.
+        """Handle a node of *response* matching :attr:`itertag`, for which
+        *selector* is a :class:`~scrapy.Selector`.
 
-        This method must return either an item, a request, or a list
-        containing any of them.
-
-        This method must be overridden with your custom spider functionality.
+        This is a :meth:`spider callback <scrapy.Spider.parse>`. Overriding it
+        is mandatory. Otherwise, your spider won't work.
         """
         if hasattr(self, "parse_item"):  # backward compatibility
             return self.parse_item(response, selector)
@@ -109,39 +160,50 @@ class XMLFeedSpider(Spider):
 
 class CSVFeedSpider(Spider):
     """Spider for parsing CSV feeds.
-    It receives a CSV file in a response; iterates through each of its rows,
-    and calls parse_row with a dict containing each field's data.
 
-    This spider also gives the opportunity to override adapt_response and
-    process_results methods for pre and post-processing purposes.
+    This spider is very similar to :class:`XMLFeedSpider`, except that it
+    iterates over rows, instead of nodes. The method that gets called in each
+    iteration is :meth:`parse_row`.
 
-    You can set some options regarding the CSV file, such as the delimiter, quotechar
-    and the file's headers.
+    .. warning:: Unlike in other spiders, a request without a callback is not
+       handled by :meth:`Spider.parse <scrapy.Spider.parse>`. Its response is
+       parsed as a CSV feed, calling :meth:`parse_row` for each row.
+
+       That is the way to have an additional feed parsed as such. If you want
+       your own parsing code to run for it instead, set its callback explicitly;
+       defining :meth:`~scrapy.Spider.parse` is not enough.
     """
 
-    delimiter: str | None = (
-        None  # When this is None, python's csv module's default delimiter is used
-    )
-    quotechar: str | None = (
-        None  # When this is None, python's csv module's default quotechar is used
-    )
+    #: Separator character for each field in the CSV file.
+    #:
+    #: ``None`` means using the default delimiter of the :mod:`csv` module,
+    #: ``','`` (comma).
+    delimiter: str | None = None
+
+    #: Enclosure character for each field in the CSV file.
+    #:
+    #: ``None`` means using the default quote character of the :mod:`csv`
+    #: module, ``'"'`` (quotation mark).
+    quotechar: str | None = None
+
+    #: Column names in the CSV file.
     headers: list[str] | None = None
 
     def process_results(
         self, response: Response, results: Iterable[Any]
     ) -> Iterable[Any]:
-        """This method has the same purpose as the one in XMLFeedSpider"""
+        """Same as :meth:`XMLFeedSpider.process_results`."""
         return results
 
     def adapt_response(self, response: Response) -> Response:
-        """This method has the same purpose as the one in XMLFeedSpider"""
+        """Same as :meth:`XMLFeedSpider.adapt_response`."""
         return response
 
     def parse_row(self, response: Response, row: dict[str, str]) -> Any:
-        """Receives a response and a dict (representing each row) with a key for
-        each provided (or detected) header of the CSV file.
+        """Handle *row*, a row of *response* as a dict with a key for each
+        provided (or detected) header of the CSV file.
 
-        This method must be overridden with your custom spider functionality.
+        Overriding this method is mandatory. Otherwise, your spider won't work.
         """
         raise NotImplementedError
 
