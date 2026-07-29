@@ -11,6 +11,7 @@ from tests import tests_datadir
 from .http_base import BaseMockServer, main_factory
 from .http_resources import (
     ArbitraryLengthPayloadResource,
+    BadHeader,
     BrokenChunkedResource,
     BrokenDownloadResource,
     ChunkedResource,
@@ -47,6 +48,7 @@ class Root(resource.Resource):
         self.putChild(b"partial", Partial())
         self.putChild(b"drop", Drop())
         self.putChild(b"raw", Raw())
+        self.putChild(b"bad-header", BadHeader())
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
