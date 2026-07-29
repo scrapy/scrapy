@@ -262,9 +262,10 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
             assert self._protocol.transport
             self._protocol.transport.loseConnection()
-        elif self._connectDeferred is not None:
+        else:
             # Still connecting to the proxy; stop the connection attempt. This
             # errbacks _tunnelReadyDeferred through connectFailed().
+            assert self._connectDeferred is not None
             self._connectDeferred.cancel()
 
     def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
