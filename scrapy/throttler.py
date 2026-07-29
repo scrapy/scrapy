@@ -404,6 +404,11 @@ class ThrottlerProtocol(Protocol):
         Used by a :ref:`throttler-aware scheduler
         <throttler-aware-scheduler>` to balance dequeuing across scopes,
         preferring the least-loaded ones.
+
+        A scope with no throttling state yet has a load of ``0.0``.
+        Implementations should not create state just to answer this: it is
+        called for every queued scope on every dequeue, which on a broad crawl
+        means every pending domain.
         """
 
     def get_request_delay(self, request: Request, now: float | None = None) -> float:
@@ -646,18 +651,23 @@ class Throttler:
         if scopes is not None:
             return cast("RequestScopes", scopes)
         download_slot = request.meta.get("download_slot")
-        if download_slot is not None:
-            # The downloader sets this key itself on every request it handles,
-            # and requests derived from those (a redirect, a retry) inherit it
-            # along with the rest of their meta, so only a value that does not
-            # match what the downloader recorded can have come from a user.
-            if download_slot != request.meta.get(_STAMPED_SLOT_META_KEY):
-                warnings.warn(
-                    "The 'download_slot' request meta key is deprecated. Use "
-                    "'throttling_scopes' instead.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
+        # The downloader records the slot key it used on every request it
+        # handles, and requests derived from those (a redirect, a retry) inherit
+        # it along with the rest of their meta. Such a value is bookkeeping
+        # rather than intent, and reusing it as a scope would keep a request
+        # derived for another host in the scope of the original one, so it is
+        # ignored here. A value the downloader did not put there (see
+        # Downloader._enqueue_request) is a user's choice of scope, and is
+        # honored for this request and the ones derived from it.
+        if download_slot is not None and download_slot != request.meta.get(
+            _STAMPED_SLOT_META_KEY
+        ):
+            warnings.warn(
+                "The 'download_slot' request meta key is deprecated. Use "
+                "'throttling_scopes' instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             return cast("RequestScopes", download_slot)
         return urlparse_cached(request).hostname or ""
 
@@ -745,9 +755,12 @@ class Throttler:
         now = time.monotonic()
         self._maybe_evict(now)
         await self._delay_request(request)
+        # The scopes are resolved (and persisted, see scope_cache) even for a
+        # request excluded from throttling, because its outcome still backs off
+        # its scopes, and get_resolved_scopes() is how a middleware finds them.
+        scope_values = list(iter_scope_quota_amounts(await self.get_scopes(request)))
         if request.meta.get("dont_throttle"):
             return
-        scope_values = list(iter_scope_quota_amounts(await self.get_scopes(request)))
         if not scope_values:
             return
         scopes: list[ScopeSlot] = [
@@ -957,7 +970,11 @@ class Throttler:
         # gets to evict idle scopes; do it here so their managers do not pile
         # up on broad crawls.
         self._maybe_evict(time.monotonic())
-        if request.meta.get("dont_throttle"):
+        # Reserving twice would record two sends that only one release() undoes,
+        # leaving the scope permanently short of a concurrency slot. It takes an
+        # unsupported crawl (the same Request object scheduled twice) to get
+        # here, so this only keeps that from corrupting scope state for good.
+        if request in self._reserved or request.meta.get("dont_throttle"):
             return
         scopes: list[ScopeSlot] = [
             (scope_id, self.get_scope_manager(scope_id), quota_amount)
@@ -975,7 +992,14 @@ class Throttler:
         return wait if wait > 0 else None
 
     def get_scope_load(self, scope_id: ScopeID) -> float:
-        return self.get_scope_manager(scope_id).get_load()
+        # A scope with no manager has nothing in flight, so its load is 0: it was
+        # either never used, or evicted, which only happens to idle scopes. That
+        # is answered without creating a manager (or marking an existing one as
+        # recently used) because a priority queue asks for the load of every
+        # queued scope on every pop (see DownloaderAwarePriorityQueue), which on
+        # a broad crawl means every pending domain.
+        manager = self._scope_managers.get(scope_id)
+        return 0.0 if manager is None else manager.get_load()
 
     def get_request_delay(self, request: Request, now: float | None = None) -> float:
         now = time.monotonic() if now is None else now

@@ -527,6 +527,25 @@ class TestThrottlerAwareScheduler:
         scheduler.close("finished")
 
     @coroutine_test
+    async def test_resume_after_an_unserializable_request(self, tmp_path: Path) -> None:
+        # An unserializable request gets a priority queue created for it before
+        # its serialization fails, so the disk queue state records that priority
+        # even though nothing was stored under it. On resume there is no queue
+        # for it, which request selection must cope with rather than fail on.
+        settings = {"JOBDIR": str(tmp_path)}
+        scheduler = self._scheduler(self._crawler(settings))
+        request = Request(
+            "http://a.com/1", callback=cast("CallbackT", lambda response: None)
+        )
+        assert await scheduler.enqueue_request_async(request) is True
+        scheduler.close("shutdown")
+
+        resumed = self._scheduler(self._crawler(settings))
+        assert resumed.next_request() is None
+        assert resumed.get_next_request_delay() is None
+        resumed.close("finished")
+
+    @coroutine_test
     async def test_resume_from_disk(self, tmp_path: Path) -> None:
         settings = {"JOBDIR": str(tmp_path)}
         scheduler = self._scheduler(self._crawler(settings))

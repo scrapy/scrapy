@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 import pytest
+from twisted.internet.defer import Deferred
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine, _Slot
@@ -15,7 +16,11 @@ from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.defer import _schedule_coro, deferred_from_coro
+from scrapy.utils.defer import (
+    _schedule_coro,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.engine import TestEngineBase
@@ -321,7 +326,7 @@ class TestEngineThrottler:
         engine.downloader.active = []
         engine._throttler_waiting = set()
         engine._start = None
-        engine._scheduling = 1
+        engine._scheduling = {Deferred()}
         # An in-flight async enqueue keeps the spider from being considered idle.
         assert engine.spider_is_idle() is False
 
@@ -342,11 +347,9 @@ class TestEngineThrottler:
             dropped.append(request)
 
         engine.signals.connect(on_dropped, signals.request_dropped, weak=False)
-        engine._scheduling = 1
         request = Request("http://a.example")
         await engine._enqueue_request_async(request)
         assert dropped == [request]
-        assert engine._scheduling == 0
         engine._slot.nextcall.schedule.assert_called_once_with()
 
     @coroutine_test
@@ -360,22 +363,17 @@ class TestEngineThrottler:
         engine._slot = Mock()
         engine._slot.scheduler = scheduler
         engine.spider = Mock()
-        engine._scheduling = 1
         with caplog.at_level(logging.ERROR, logger="scrapy.core.engine"):
             await engine._enqueue_request_async(Request("http://a.example"))
         assert "Error while enqueuing request" in caplog.text
-        assert engine._scheduling == 0
         engine._slot.nextcall.schedule.assert_called_once_with()
 
     @coroutine_test
     async def test_enqueue_request_async_without_slot(self, engine):
         # The spider was closed before the enqueue coroutine got to run, so
-        # there is no scheduler left to enqueue into; the in-flight count must
-        # still be decremented.
+        # there is no scheduler left to enqueue into.
         engine._slot = None
-        engine._scheduling = 1
         await engine._enqueue_request_async(Request("http://a.example"))
-        assert engine._scheduling == 0
 
     @coroutine_test
     async def test_enqueue_request_async_slot_gone(self, engine):
@@ -391,8 +389,31 @@ class TestEngineThrottler:
         slot.scheduler = scheduler
         engine._slot = slot
         engine.spider = Mock()
-        engine._scheduling = 1
         await engine._enqueue_request_async(Request("http://a.example"))
-        assert engine._scheduling == 0
         # No reschedule is attempted once the slot is gone.
         slot.nextcall.schedule.assert_not_called()
+
+    @coroutine_test
+    async def test_schedule_request_tracks_the_enqueue(self, engine):
+        stored: Deferred[bool] = Deferred()
+
+        async def enqueue_request_async(request):
+            return await maybe_deferred_to_future(stored)
+
+        scheduler = Mock()
+        scheduler.enqueue_request_async = enqueue_request_async
+        engine._slot = Mock()
+        engine._slot.scheduler = scheduler
+        engine.spider = Mock()
+        # The request_scheduled receivers are irrelevant here, and they expect a
+        # crawl that actually started.
+        engine.signals.disconnect_all(signals.request_scheduled)
+        engine._scheduler_enqueues_async = True
+        engine._schedule_request(Request("http://a.example"))
+        # An enqueue is tracked for as long as it is in flight, so that neither
+        # spider_is_idle() nor close_spider() gets ahead of it.
+        assert len(engine._scheduling) == 1
+        tracked = next(iter(engine._scheduling))
+        stored.callback(True)
+        await maybe_deferred_to_future(tracked)
+        assert not engine._scheduling

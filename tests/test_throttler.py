@@ -308,6 +308,36 @@ class TestThrottler:
         manager.release(exempt)
         assert scope.concurrency_blocked() is True
 
+    @coroutine_test
+    async def test_dont_throttle_still_resolves_scopes(self):
+        # Skipping the gate must not skip scope resolution: the outcome of a
+        # dont_throttle request still backs off its scopes, and a middleware
+        # finds them through get_resolved_scopes().
+        class HostScopeThrottler(Throttler):
+            @scope_cache
+            async def get_scopes(self, request: Request) -> RequestScopes:
+                await async_sleep(0)  # only resolvable asynchronously
+                return f"host:{urlparse_cached(request).hostname}"
+
+        crawler = get_crawler()
+        manager = HostScopeThrottler.from_crawler(crawler)
+        request = Request("http://example.com/1", meta={"dont_throttle": True})
+        await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
+        assert manager.get_resolved_scopes(request) == "host:example.com"
+
+    def test_reserve_is_idempotent(self):
+        # Reserving twice would record two sends that a single release() cannot
+        # undo, leaving the scope permanently short of a concurrency slot.
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}})
+        request = Request("http://example.com/1")
+        manager.reserve(request)
+        manager.reserve(request)
+        scope = _scope(manager, "example.com")
+        assert scope.get_load() == pytest.approx(0.5)
+        manager.release(request)
+        assert scope.get_load() == 0.0
+        assert scope.concurrency_blocked() is False
+
     def test_reconcile_quota_without_backoff(self):
         manager = _manager({"THROTTLING_SCOPES": {"cost": {"quota": 100.0}}})
         scope = _scope(manager, "cost")
@@ -1427,11 +1457,13 @@ class TestThrottlerEdges:
         await manager.acquire(request)
         assert request not in manager._reserved
 
-    def test_get_scope_load_without_concurrency_limit(self):
+    def test_get_scope_load_does_not_create_a_scope(self):
+        # A priority queue asks for the load of every queued scope on every pop,
+        # so an unknown scope must report no load without getting a scope manager
+        # (which on a broad crawl would mean one per pending domain).
         manager = _manager({"CONCURRENT_REQUESTS": 0})
-        # CONCURRENT_REQUESTS is 0, so the load denominator is 0 and the load is
-        # reported as 0 instead of raising.
         assert manager.get_scope_load("example.com") == 0.0
+        assert "example.com" not in manager._scope_managers
 
     @coroutine_test
     async def test_acquire_logs_and_waits_for_delay(self):

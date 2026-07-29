@@ -134,10 +134,11 @@ class ExecutionEngine:
         # Requests currently held by the throttler, waiting for their
         # scopes to allow them through to the downloader.
         self._throttler_waiting: set[Request] = set()
-        # Number of in-flight asynchronous enqueue operations (see
-        # ``_enqueue_request_async``), so the spider is not considered idle
-        # while a request is still on its way into the scheduler.
-        self._scheduling: int = 0
+        # In-flight asynchronous enqueue operations (see
+        # ``_enqueue_request_async``), so the spider is not considered idle while
+        # a request is still on its way into the scheduler, and so closing waits
+        # for them instead of closing the scheduler underneath them.
+        self._scheduling: set[Deferred[None]] = set()
         # A coalesced wakeup timer, armed when the scheduler reports (through
         # ``get_next_request_delay``) that every pending request is time-blocked.
         self._delay_wakeup: CallLaterResult | None = None
@@ -554,8 +555,11 @@ class ExecutionEngine:
                 return
         scheduler = self._slot.scheduler
         if self._scheduler_enqueues_async:
-            self._scheduling += 1
-            _schedule_coro(self._enqueue_request_async(request))
+            # Tracked in _scheduling until it completes, so that neither
+            # spider_is_idle() nor close_spider() gets ahead of it.
+            enqueuing = deferred_from_coro(self._enqueue_request_async(request))
+            self._scheduling.add(enqueuing)
+            enqueuing.addBoth(lambda _: self._scheduling.discard(enqueuing))
             return
         if not scheduler.enqueue_request(request):
             self.signals.send_catch_log(
@@ -563,9 +567,6 @@ class ExecutionEngine:
             )
 
     async def _enqueue_request_async(self, request: Request) -> None:
-        # _scheduling is incremented in _schedule_request before this coroutine
-        # is scheduled, so it must be decremented on every path (hence finally),
-        # otherwise spider_is_idle() never reports idle.
         try:
             if self._slot is None:
                 return
@@ -580,8 +581,6 @@ class ExecutionEngine:
                 exc_info=True,
                 extra={"spider": self.spider},
             )
-        finally:
-            self._scheduling -= 1
         if self._slot is not None:
             self._slot.nextcall.schedule()
 
@@ -775,6 +774,12 @@ class ExecutionEngine:
         )
 
         self._cancel_delay_wakeup()
+
+        # Let the requests still on their way into the scheduler get there, so
+        # that they are handled (and, with a JOBDIR, persisted) instead of
+        # failing to be stored into an already-closed scheduler.
+        while self._scheduling:
+            await maybe_deferred_to_future(next(iter(self._scheduling)))
 
         try:
             await self._slot.close()

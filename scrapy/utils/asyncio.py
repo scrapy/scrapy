@@ -344,8 +344,11 @@ async def wait_for_first(
     :class:`~twisted.internet.defer.Deferred` objects — mirroring the API of
     :func:`asyncio.wait`.
 
-    Unfired deferreds in the ``pending`` set are neither cancelled nor
-    otherwise modified; the caller is responsible for any cleanup.
+    Deferreds in the ``pending`` set are not cancelled, and their results are
+    left untouched; the caller is responsible for any cleanup. They are however
+    subscribed to, so passing the same deferred to more than one call leaves it
+    carrying a callback per call: pass each deferred to a single call, and get a
+    fresh one for the next.
 
     A deferred that fails counts as done and its failure is **not** re-raised
     here (it stays on the deferred for the caller to inspect or handle), exactly

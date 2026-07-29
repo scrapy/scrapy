@@ -55,6 +55,23 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times[slot].append(response.meta.get("download_latency"))
 
 
+class SlotMetaSpider(MetaSpider):
+    """Crawls a single URL with a user-set ``download_slot`` meta key."""
+
+    name = "slot_meta"
+
+    def __init__(self, url: str = "", slot: str | None = None, **kwargs: Any):
+        super().__init__(**kwargs)
+        self._url = url
+        self._slot = slot
+
+    async def start(self):
+        yield Request(self._url, meta={"download_slot": self._slot})
+
+    def parse(self, response):
+        pass
+
+
 @coroutine_test
 async def test_concurrency_key_deprecated():
     settings = {"DOWNLOAD_SLOTS": {"example.com": {"concurrency": 3}}}
@@ -449,6 +466,45 @@ async def test_inherited_download_slot_meta_not_deprecated():
         for w in caught
         if "'download_slot' request meta key is deprecated" in str(w.message)
     ]
+
+
+@coroutine_test
+async def test_cross_host_redirect_gets_the_scope_of_its_own_host():
+    """The download_slot the downloader records is bookkeeping, not intent, so a
+    redirect that inherits it must still be throttled under its own host rather
+    than under the host of the request it came from."""
+    with MockServer() as mockserver:
+        crawler = get_crawler(SimpleSpider)
+        # Same server under a different host name, so the redirect crosses hosts.
+        target = mockserver.url("/status?n=200").replace("127.0.0.1", "localhost")
+        url = mockserver.url(f"/redirect-to?goto={target}")
+        await crawler.crawl_async(url, mockserver=mockserver)
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_count") == 2
+    throttler = crawler.throttler
+    assert isinstance(throttler, Throttler)
+    assert set(throttler._scope_managers) == {"127.0.0.1", "localhost"}
+
+
+@coroutine_test
+async def test_user_download_slot_survives_a_cross_host_redirect():
+    """Unlike the value the downloader records, a download_slot a user set is
+    intent, so it keeps applying to the requests derived from that one, even
+    across hosts."""
+    with MockServer() as mockserver:
+        crawler = get_crawler(SlotMetaSpider)
+        target = mockserver.url("/status?n=200").replace("127.0.0.1", "localhost")
+        url = mockserver.url(f"/redirect-to?goto={target}")
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="'download_slot' request meta key is deprecated",
+        ):
+            await crawler.crawl_async(url, slot="custom", mockserver=mockserver)
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_count") == 2
+    throttler = crawler.throttler
+    assert isinstance(throttler, Throttler)
+    assert set(throttler._scope_managers) == {"custom"}
 
 
 @coroutine_test

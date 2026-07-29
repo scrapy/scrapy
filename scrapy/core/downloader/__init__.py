@@ -313,11 +313,18 @@ class Downloader:
 
     async def _enqueue_request(self, request: Request) -> Response:
         key = self._get_slot_key(request)
-        request.meta[self.DOWNLOAD_SLOT] = key
         # Record that this value is ours, so that a request that inherits it
-        # (e.g. a redirect or a retry, which copy meta) is not mistaken for one
-        # whose download_slot a user set; see Throttler._resolve_scopes_sync.
-        request.meta[_STAMPED_SLOT_META_KEY] = key
+        # (e.g. a redirect or a retry, which copy meta) resolves its own
+        # throttling scopes instead of reusing it, and is not reported as using
+        # the deprecated download_slot meta key; see
+        # Throttler._resolve_scopes_sync. Only a value of ours is stamped: an
+        # inherited one is ours if it matches the stamp that came with it, and
+        # anything else is a user's choice of scope, which must survive into the
+        # requests derived from this one.
+        previous: str | None = request.meta.get(self.DOWNLOAD_SLOT)
+        if previous is None or previous == request.meta.get(_STAMPED_SLOT_META_KEY):
+            request.meta[_STAMPED_SLOT_META_KEY] = key
+        request.meta[self.DOWNLOAD_SLOT] = key
         self.signals.send_catch_log(
             signal=signals.request_reached_downloader,
             request=request,
@@ -335,10 +342,18 @@ class Downloader:
         requests sent outside the scheduling cycle
         never went through the scheduler, so this is what limits them.
 
-        Waiting here cannot deadlock a crawl: only requests that a download
-        handler is working on hold a transfer slot, and those complete on their
-        own. A request waiting on the downloader middlewares, e.g. for a
-        robots.txt request that a middleware is downloading, holds none.
+        A transfer slot is only held while a download handler is working on a
+        request, and such a request completes on its own. So a request that a
+        downloader middleware sends as a prerequisite of another one (as the
+        built-in robots.txt middleware does) cannot be held back by that other
+        one, which holds no transfer slot while its middlewares run.
+
+        That reasoning does not extend to a request sent from *within* a download
+        handler, which does hold a transfer slot while it waits: with every
+        transfer slot taken by such requests, none of them could ever get one.
+        Download handlers must not send requests through
+        :meth:`crawler.engine.download_async()
+        <scrapy.core.engine.ExecutionEngine.download_async>`.
         """
         while self._transfer_slots_full():
             # Register the waiter before giving up control, or a transfer ending

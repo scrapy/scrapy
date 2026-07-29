@@ -715,6 +715,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
+* :reqmeta:`delay`
 * :reqmeta:`dont_cache`
 * :reqmeta:`dont_merge_cookies`
 * :reqmeta:`dont_obey_robotstxt`
@@ -724,7 +725,6 @@ Those are:
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
-* :reqmeta:`download_slot`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
@@ -741,7 +741,6 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
-* :reqmeta:`delay`
 * :reqmeta:`throttling_scopes`
 * :reqmeta:`verbatim_url`
 

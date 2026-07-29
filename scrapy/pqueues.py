@@ -159,7 +159,11 @@ class ScrapyPriorityQueue:
                 else:
                     q.close()
 
-        self.curprio = min(startprios)
+        # Not min(startprios): a recorded priority may have no queue to restore
+        # (e.g. it only ever held a request that failed to serialize), and
+        # leaving curprio pointing at a priority that neither dict has would
+        # break peek().
+        self._update_curprio()
 
     def qfactory(self, key: int) -> QueueProtocol:
         return build_from_crawler(
