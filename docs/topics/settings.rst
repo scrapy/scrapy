@@ -472,9 +472,7 @@ Maximum number of connections that AWS clients, such as those of the
 :ref:`S3 media pipeline storage backend <media-pipelines-s3>`, keep in their
 connection pool.
 
-If ``None``, the value of :setting:`REACTOR_THREADPOOL_MAXSIZE` is used, because
-AWS calls are made from the reactor thread pool, whose size limits how many of
-those calls can happen in parallel.
+If ``None``, the value of :setting:`REACTOR_THREADPOOL_MAXSIZE` is used.
 
 Values lower than the number of parallel AWS calls do not limit those calls, but
 their connections are closed instead of reused, which hurts performance, and
