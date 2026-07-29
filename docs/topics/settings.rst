@@ -1835,7 +1835,8 @@ Default: ``False``
 
 Setting to ``True`` will log debug information about the requests scheduler.
 This currently logs (only once) if the requests cannot be serialized to disk.
-Stats counter (``scheduler/unserializable``) tracks the number of times this happens.
+The :stat:`scheduler/unserializable` stat tracks the number of times this
+happens.
 
 Example entry in logs::
 

@@ -136,18 +136,10 @@ Core Stats extension
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
 
-The following stats are collected:
-
-* ``start_time``: start date/time of the crawl (:class:`~datetime.datetime`).
-* ``finish_time``: end date/time of the crawl (:class:`~datetime.datetime`).
-* ``elapsed_time_seconds``: total crawl duration in seconds (:class:`float`).
-* ``finish_reason``: the closing reason string (e.g. ``"finished"``,
-  ``"closespider_timeout"``).
-* ``item_scraped_count``: total number of items that passed all pipelines.
-* ``item_dropped_count``: total number of items dropped by a pipeline.
-* ``item_dropped_reasons_count/<ExceptionName>``: per-exception drop count
-  (e.g. ``item_dropped_reasons_count/DropItem``).
-* ``response_received_count``: total number of HTTP responses received.
+The following stats are collected: :stat:`elapsed_time_seconds`,
+:stat:`finish_reason`, :stat:`finish_time`, :stat:`item_dropped_count`,
+:stat:`item_dropped_reasons_count/{exception}`, :stat:`item_scraped_count`,
+:stat:`response_received_count`, :stat:`start_time`.
 
 Log Count extension
 ~~~~~~~~~~~~~~~~~~~
@@ -190,7 +182,7 @@ Monitors the memory used by the Scrapy process that runs the spider and:
 
 1. sends a :signal:`memusage_warning_reached` signal when it exceeds
    :setting:`MEMUSAGE_WARNING_MB`
-2. closes the spider with the `"memusage_exceeded"` reason when it exceeds
+2. closes the spider with the ``"memusage_exceeded"`` reason when it exceeds
    :setting:`MEMUSAGE_LIMIT_MB`
 
 This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
@@ -214,7 +206,8 @@ An extension for debugging memory usage. It collects information about:
 * objects left alive that shouldn't. For more info, see :ref:`topics-leaks-trackrefs`
 
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
-info will be stored in the stats.
+info will be stored in the :stat:`memdebug/gc_garbage_count` and
+:stat:`memdebug/live_refs/{cls}` stats.
 
 .. _topics-extensions-ref-spiderstate:
 
