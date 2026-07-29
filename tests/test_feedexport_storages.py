@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import string
+import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -14,6 +15,7 @@ import pytest
 from w3lib.url import path_to_file_uri
 
 import scrapy
+from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import (
     BlockingFeedStorage,
     FileFeedStorage,
@@ -166,6 +168,12 @@ class TestFTPFeedStorage:
         st = FTPFeedStorage(f"ftp://foo:{pw_quoted}@example.com/some_path", {})
         assert st.password == string.punctuation
 
+    def test_uri_without_hostname(self):
+        with pytest.raises(
+            ValueError, match="Got a storage URI without a hostname: ftp:///some_path"
+        ):
+            FTPFeedStorage("ftp:///some_path")
+
 
 class MyBlockingFeedStorage(BlockingFeedStorage):
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -203,6 +211,13 @@ class TestBlockingFeedStorage:
 
         with pytest.raises(OSError, match="Not a Directory:"):
             b.open(spider=spider)
+
+
+def test_s3_without_boto3(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "boto3", None)
+    monkeypatch.setitem(sys.modules, "boto3.session", None)
+    with pytest.raises(NotConfigured, match="missing boto3 library"):
+        S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
 
 
 @pytest.mark.requires_boto3
