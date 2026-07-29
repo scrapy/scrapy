@@ -198,6 +198,13 @@ Improvements
 Bug fixes
 ~~~~~~~~~
 
+-   :class:`~scrapy.extensions.feedexport.FeedExporter` now finalizes and
+    uploads each feed export batch as soon as it fills up, instead of only
+    when the spider closes. This bug affected every batch, including
+    batches other than the last one, regardless of how long the crawl
+    continued to run afterward.
+    (:issue:`7730`)
+
 -   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` no
     longer ignores proxy credentials for redirected or retried requests.
     (:issue:`7601`, :issue:`7630`)

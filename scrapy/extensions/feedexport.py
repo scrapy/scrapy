@@ -475,7 +475,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
-        self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
+        self._pending_close_coros: list[Coroutine[Any, Any, None] | Deferred[None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -525,6 +525,19 @@ class FeedExporter:
             if not self._exporter_supported(feed_options["format"]):
                 raise NotConfigured
 
+    def _schedule_close_coro(
+        self, coro: Coroutine[Any, Any, None]
+    ) -> asyncio.Task[None] | Deferred[None]:
+        """Eagerly schedule (and start executing) a slot-closing
+        coroutine right away, returning an object that's already
+        running under whichever reactor is active, rather than a bare
+        coroutine object, which does nothing on its own until awaited
+        or wrapped as a task/Deferred. See GH #7730.
+        """
+        if is_asyncio_available():
+            return asyncio.ensure_future(coro)
+        return Deferred.fromCoroutine(coro)
+
     def open_spider(self, spider: Spider) -> None:
         for uri, feed_options in self.feeds.items():
             uri_params = self._get_uri_params(spider, feed_options["uri_params"])
@@ -540,17 +553,18 @@ class FeedExporter:
 
     async def close_spider(self, spider: Spider) -> None:
         self._pending_close_coros.extend(
-            self._close_slot(slot, spider) for slot in self.slots
+            self._schedule_close_coro(self._close_slot(slot, spider))
+            for slot in self.slots
         )
 
         if self._pending_close_coros:
             if is_asyncio_available():
                 await asyncio.wait(
-                    [asyncio.create_task(coro) for coro in self._pending_close_coros]
+                    cast("list[asyncio.Task[None]]", self._pending_close_coros)
                 )
             else:
                 await DeferredList(
-                    deferred_from_coro(coro) for coro in self._pending_close_coros
+                    cast("list[Deferred[None]]", self._pending_close_coros)
                 )
 
         # Send FEED_EXPORTER_CLOSED signal
@@ -652,7 +666,18 @@ class FeedExporter:
                 uri_params = self._get_uri_params(
                     spider, self.feeds[slot.uri_template]["uri_params"], slot
                 )
-                self._pending_close_coros.append(self._close_slot(slot, spider))
+                # Eagerly schedule (and start executing) the close/upload
+                # for this filled batch right away, rather than merely
+                # appending the coroutine object to a list: a bare
+                # coroutine object does nothing on its own until awaited
+                # or wrapped as a task/Deferred, so without this, every
+                # batch's storage upload and exporter finalization was
+                # effectively delayed until close_spider() ran at the very
+                # end of the crawl, regardless of how many batches filled
+                # up along the way. See GH #7730.
+                self._pending_close_coros.append(
+                    self._schedule_close_coro(self._close_slot(slot, spider))
+                )
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,

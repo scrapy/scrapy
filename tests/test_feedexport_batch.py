@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import csv
 import json
 import marshal
@@ -221,6 +223,59 @@ class TestBatchDeliveries(TestFeedExportBase):
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
             FeedExporter(crawler)
+
+    @coroutine_test
+    async def test_item_scraped_schedules_batch_close_immediately(self):
+        """
+        Regression test for
+        https://github.com/scrapy/scrapy/issues/7730
+
+        item_scraped() must actually schedule (start executing) a
+        filled batch's storage upload and exporter finalization right
+        away, not merely construct a coroutine object and leave it
+        dormant in _pending_close_coros until close_spider() finally
+        awaits it at the very end of the crawl. A bare coroutine
+        object does nothing on its own until it's awaited or wrapped
+        as a task/Deferred, so previously every batch's close was
+        effectively delayed until the crawl fully finished, regardless
+        of how many batches filled up along the way.
+        """
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename()
+                / "jl"
+                / self._file_mark: {
+                    "format": "jl",
+                    "batch_item_count": 1,
+                },
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        spider = crawler._create_spider("testspider")
+        crawler.spider = spider
+
+        exporter = FeedExporter(crawler)
+        exporter.open_spider(spider)
+        try:
+            assert exporter._pending_close_coros == []
+
+            # batch_item_count=1, so a single scraped item immediately
+            # fills and should close a batch.
+            exporter.item_scraped({"a": 1}, spider)
+
+            assert len(exporter._pending_close_coros) == 1
+            scheduled = exporter._pending_close_coros[0]
+            # The entry must already be an actively-scheduled task
+            # (pending or done), not a bare, never-started coroutine
+            # object.
+            assert not asyncio.iscoroutine(scheduled)
+            if isinstance(scheduled, asyncio.Task):
+                assert not scheduled.cancelled()
+                await scheduled
+        finally:
+            for slot in exporter.slots:
+                with contextlib.suppress(Exception):
+                    await exporter._close_slot(slot, spider)
 
     @coroutine_test
     async def test_export_no_items_not_store_empty(self):
