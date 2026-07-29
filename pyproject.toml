@@ -8,6 +8,7 @@ dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
+    "aiohttp>=3.13.3",
     "cryptography>=37.0.0",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -16,6 +17,7 @@ dependencies = [
     "lxml>=4.6.4",
     "packaging",
     "parsel>=1.5.0",
+    "platformdirs>=2.0.0",
     "protego>=0.1.15",
     "pyOpenSSL>=22.0.0",
     "queuelib>=1.4.2",
