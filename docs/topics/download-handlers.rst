@@ -39,6 +39,10 @@ for additional schemes and to replace or disable default ones:
         "sftp": "my.download_handlers.SftpHandler",
     }
 
+.. seealso:: :ref:`security-unencrypted-protocols` and
+    :ref:`security-local-resources`, for the security implications of the
+    default ``http``, ``ftp``, ``file`` and ``data`` handlers.
+
 Replacing HTTP(S) download handlers
 -----------------------------------
 
@@ -85,7 +89,7 @@ the following API:
         If ``True``, the handler will only be instantiated when the first
         request handled by it needs to be downloaded.
 
-    .. method:: download_request(request: Request) -> Response:
+    .. method:: download_request(request: Request) -> Response
         :async:
 
         Download the given request and return a response.
@@ -102,61 +106,100 @@ An optional base class for custom handlers is provided:
     :undoc-members:
     :member-order: bysource
 
+.. _download-handlers-exceptions:
+
+Exceptions raised by download handlers
+======================================
+
+.. versionadded:: 2.15.0
+
+The built-in download handlers raise Scrapy-specific exceptions instead of
+implementation-specific ones, so that code that handles these exceptions can be
+written in a generic way. We recommend custom download handlers to also use
+these exceptions.
+
+.. autoexception:: scrapy.exceptions.CannotResolveHostError
+
+.. autoexception:: scrapy.exceptions.DownloadCancelledError
+
+.. autoexception:: scrapy.exceptions.DownloadConnectionRefusedError
+
+.. autoexception:: scrapy.exceptions.DownloadFailedError
+
+.. autoexception:: scrapy.exceptions.DownloadTimeoutError
+
+.. autoexception:: scrapy.exceptions.ResponseDataLossError
+
+.. autoexception:: scrapy.exceptions.UnsupportedURLSchemeError
+
 .. _download-handlers-ref:
 
-Built-in download handlers reference
-====================================
+Built-in HTTP download handlers reference
+=========================================
 
-DataURIDownloadHandler
-----------------------
+Scrapy ships several handlers for HTTP and HTTPS requests. While all of them
+support basic features, they may differ in support of specific Scrapy features
+and settings and HTTP protocol features. See the documentation of specific
+handlers and specific settings for more information. Additionally, as the
+underlying HTTP client implementations differ between handlers, the behavior of
+specific websites may be different when doing the same Scrapy requests but
+using different handlers.
 
-.. autoclass:: scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler
+Here is a comparison of some features of the built-in HTTP handlers, see the
+individual handler docs for more differences:
 
-| Supported scheme: ``data``.
-| Lazy: no.
+================== ================= ===================== ===========================
+Feature            H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
+================== ================= ===================== ===========================
+Requires asyncio   No                No                    Yes
+Requires a reactor Yes               Yes                   No
+HTTP/1.1           No                Yes                   Yes
+HTTP/2             Yes               No                    Yes
+TLS implementation ``cryptography``  ``cryptography``      Stdlib ``ssl``
+HTTP proxies       No                Yes                   Yes
+SOCKS proxies      No                No                    Yes
+IPv6 addresses     Needs a setting   Needs a setting       Yes, except through a proxy
+================== ================= ===================== ===========================
 
-This handler supports RFC 2397 ``data:content/type;base64,`` data URIs.
+About the IPv6 row: the Twisted-based handlers reach every host, including hosts
+given as an IPv6 address literal such as ``https://[::1]/``, through the
+resolver configured with :setting:`TWISTED_DNS_RESOLVER`. Its default value only
+returns IPv4 addresses, so IPv6 requires setting it to
+``scrapy.resolver.CachingHostnameResolver``. That applies to proxy hosts as well
+as to target hosts.
 
-FileDownloadHandler
--------------------
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` does not
+use the Twisted resolver, so it needs no setting for IPv6. It has a different
+limitation instead: a request to a URL whose host is an IPv6 address literal
+fails if it goes through a proxy, because ``httpx`` sends the target address to
+the proxy without the required square brackets.
 
-.. autoclass:: scrapy.core.downloader.handlers.file.FileDownloadHandler
+You can find additional HTTP download handlers in the
+scrapy-download-handlers-incubator_ package. This package is made by the Scrapy
+developers and contains experimental handlers that may be included in some
+later Scrapy version but can already be used. Please refer to the documentation
+of this package for more information.
 
-| Supported scheme: ``file``.
-| Lazy: no.
-
-This handler supports ``file:///path`` local file URIs. It doesn't
-support remote files.
-
-FTPDownloadHandler
-------------------
-
-.. autoclass:: scrapy.core.downloader.handlers.ftp.FTPDownloadHandler
-
-| Supported scheme: ``ftp``.
-| Lazy: no.
-
-This handler supports ``ftp://host/path`` FTP URIs.
-
-It's implemented using :mod:`twisted.protocols.ftp`.
+.. _scrapy-download-handlers-incubator: https://github.com/scrapy-plugins/scrapy-download-handlers-incubator
 
 .. _twisted-http2-handler:
 
 H2DownloadHandler
 -----------------
 
+.. note:: Requires the :ref:`twisted-http2 <extras>` extra.
+
 .. autoclass:: scrapy.core.downloader.handlers.http2.H2DownloadHandler
 
 | Supported scheme: ``https``.
-| Lazy: yes.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: yes.
 
 This handler supports ``https://host/path`` URLs and uses the HTTP/2 protocol
 for them.
 
 It's implemented using :mod:`twisted.web.client` and the ``h2`` library.
-
-For this handler to work you need to install the ``Twisted[http2]`` extra
-dependency.
 
 If you want to use this handler you need to replace the default one for the
 ``https`` scheme:
@@ -167,27 +210,43 @@ If you want to use this handler you need to replace the default one for the
         "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
     }
 
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. warning::
 
     This handler is experimental, and not yet recommended for production
     environments. Future Scrapy versions may introduce related changes without
     a deprecation period or warning.
 
-.. note::
+=========================== ================================================
+HTTP proxies                No (not implemented)
+SOCKS proxies               No (not supported by the library)
+HTTP/2                      Yes
+``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
+Per-request ``bindaddress`` Yes
+TLS implementation          ``pyOpenSSL``/``cryptography``
+=========================== ================================================
 
-    Known limitations of the HTTP/2 implementation in this handler include:
+Other limitations:
 
-    -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
-        HTTP/2 unencrypted (refer `http2 faq`_).
+-   No support for HTTP/1.1.
 
-    -   No setting to specify a maximum `frame size`_ larger than the default
-        value, 16384. Connections to servers that send a larger frame will
-        fail.
+-   IPv6 support requires setting :setting:`TWISTED_DNS_RESOLVER`
+    to ``scrapy.resolver.CachingHostnameResolver``.
 
-    -   No support for `server pushes`_, which are ignored.
+-   No support for the :signal:`bytes_received` and :signal:`headers_received`
+    signals.
 
-    -   No support for the :signal:`bytes_received` and
-        :signal:`headers_received` signals.
+Known limitations of the HTTP/2 support:
+
+-   No support for HTTP/2 Cleartext (h2c), since no major browser supports
+    HTTP/2 unencrypted (refer `http2 faq`_).
+
+-   No setting to specify a maximum `frame size`_ larger than the default
+    value, 16384. Connections to servers that send a larger frame will fail.
+
+-   No support for `server pushes`_, which are ignored.
 
 .. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
@@ -199,21 +258,169 @@ HTTP11DownloadHandler
 .. autoclass:: scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler
 
 | Supported schemes: ``http``, ``https``.
-| Lazy: no.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: yes.
 
 This handler supports ``http://host/path`` and ``https://host/path`` URLs and
 uses the HTTP/1.1 protocol for them.
 
 It's implemented using :mod:`twisted.web.client`.
 
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+=========================== ================================================
+HTTP proxies                Yes
+SOCKS proxies               No (not supported by the library)
+HTTP/2                      No (implemented as a separate handler)
+``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
+Per-request ``bindaddress`` Yes
+TLS implementation          ``pyOpenSSL``/``cryptography``
+=========================== ================================================
+
+Other limitations:
+
+-   IPv6 support requires setting :setting:`TWISTED_DNS_RESOLVER`
+    to ``scrapy.resolver.CachingHostnameResolver``.
+
+-   HTTPS proxies to HTTPS destinations are not supported.
+
+.. _httpx-handler:
+
+HttpxDownloadHandler
+--------------------
+
+.. note:: Requires the :ref:`httpx <extras>` extra.
+
+.. versionadded:: 2.15.0
+
+.. autoclass:: scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler
+
+| Supported schemes: ``http``, ``https``.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: yes.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports ``http://host/path`` and ``https://host/path`` URLs and
+uses the HTTP/1.1 or HTTP/2 protocol for them.
+
+It's implemented using the httpx2_ library.
+
+.. _httpx2: https://httpx2.pydantic.dev/
+
+If you want to use this handler you need to replace the default ones for the
+``http`` and ``https`` schemes:
+
+.. code-block:: python
+
+    DOWNLOAD_HANDLERS = {
+        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+    }
+
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This handler is experimental, and not yet recommended for production
+    environments. Future Scrapy versions may introduce related changes without
+    a deprecation period or warning or even remove it altogether.
+
+=========================== =======================================
+HTTP proxies                Yes
+SOCKS proxies               Yes (SOCKS5)
+HTTP/2                      Yes
+``response.certificate``    DER bytes
+Per-request ``bindaddress`` No (not supported by the library)
+TLS implementation          Standard library ``ssl``
+=========================== =======================================
+
+Other limitations:
+
+-   The handler creates a separate connection pool for each proxy URL (due to
+    limitations of ``httpx``) which may lead to higher resource usage when
+    using proxy rotation.
+
+-   Requests to a URL with an IPv6 address literal, such as
+    ``https://[::1]/``, fail when they go through a proxy, because ``httpx``
+    sends the target address to the proxy without the required square brackets.
+
+Unlike the Twisted-based handlers, this handler does not use the resolver
+configured with :setting:`TWISTED_DNS_RESOLVER`, so it resolves IPv6 hosts
+without needing that setting changed, and it is not affected by
+:setting:`DNS_TIMEOUT` or by the :setting:`DNSCACHE_ENABLED` cache.
+
+.. setting:: HTTPX_HTTP2_ENABLED
+
+HTTPX_HTTP2_ENABLED
+^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.17.0
+
+Default: ``False``
+
+Whether to enable HTTP/2 support in this handler.
+
+Built-in non-HTTP download handlers reference
+=============================================
+
+DataURIDownloadHandler
+----------------------
+
+.. autoclass:: scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler
+
+| Supported scheme: ``data``.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports RFC 2397 ``data:content/type;base64,`` data URIs.
+
+FileDownloadHandler
+-------------------
+
+.. autoclass:: scrapy.core.downloader.handlers.file.FileDownloadHandler
+
+| Supported scheme: ``file``.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports ``file:///path`` local file URIs. It doesn't
+support remote files.
+
+FTPDownloadHandler
+------------------
+
+.. autoclass:: scrapy.core.downloader.handlers.ftp.FTPDownloadHandler
+
+| Supported scheme: ``ftp``.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: yes.
+
+This handler supports ``ftp://host/path`` FTP URIs.
+
+It's implemented using :mod:`twisted.protocols.ftp`.
+
+.. _s3-handler:
+
 S3DownloadHandler
 -----------------
+
+.. note:: Requires the :ref:`s3 <extras>` extra.
 
 .. autoclass:: scrapy.core.downloader.handlers.s3.S3DownloadHandler
 
 | Supported scheme: ``s3``.
-| Lazy: yes.
+| :ref:`Lazy <lazy-download-handlers>`: yes.
+| :ref:`Requires asyncio support <using-asyncio>`: no.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
 
 This handler supports ``s3://bucket/path`` S3 URIs.
 
-It's implemented using the ``botocore`` library and needs it to be installed.
+It's implemented using the botocore_ library.
+
+.. _botocore: https://github.com/boto/botocore

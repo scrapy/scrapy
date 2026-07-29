@@ -2,20 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from scrapy.exceptions import StopDownload
-from tests.test_engine import (
+from tests.utils.bases.engine import TestEngineBase
+from tests.utils.decorators import coroutine_test
+from tests.utils.engine import (
     AttrsItemsSpider,
     CrawlerRun,
     DataClassItemsSpider,
     DictItemsSpider,
     MySpider,
-    TestEngineBase,
 )
-from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    import pytest
+
     from tests.mockserver.http import MockServer
 
 
@@ -26,7 +26,6 @@ class HeadersReceivedCrawlerRun(CrawlerRun):
 
 
 class TestHeadersReceivedEngine(TestEngineBase):
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_crawler(
         self, mockserver: MockServer, caplog: pytest.LogCaptureFixture

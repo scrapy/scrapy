@@ -127,7 +127,6 @@ class ItemSpider(Spider):
         return {"field": 42}
 
 
-@pytest.mark.requires_http_handler
 class TestPipeline:
     def _on_item_scraped(self, item):
         assert isinstance(item, dict)
@@ -249,12 +248,10 @@ class TestPipeline:
 
 
 class TestCustomPipelineManager:
-    # needs a reactor or an event loop for is_asyncio_available()
-    # (for ItemPipelineManager.process_item())
-    @pytest.mark.requires_reactor
-    def test_deprecated_process_item_spider_arg(self) -> None:
+    @coroutine_test
+    async def test_deprecated_process_item_spider_arg(self) -> None:
         class CustomPipelineManager(ItemPipelineManager):
-            def process_item(self, item, spider):  # pylint: disable=useless-parent-delegation
+            def process_item(self, item: Any, spider: Spider) -> Deferred[Any]:  # pylint: disable=useless-parent-delegation
                 return super().process_item(item, spider)
 
         crawler = get_crawler(DefaultSpider)
@@ -266,7 +263,6 @@ class TestCustomPipelineManager:
         ):
             itemproc.process_item({}, crawler.spider)
 
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_integration_recommended(self, mockserver: MockServer) -> None:
         class CustomPipelineManager(ItemPipelineManager):
@@ -293,7 +289,6 @@ class TestCustomPipelineManager:
 
         assert len(items) == 1
 
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_integration_no_async_subclass(self, mockserver: MockServer) -> None:
         class CustomPipelineManager(ItemPipelineManager):
@@ -352,7 +347,6 @@ class TestCustomPipelineManager:
 
         assert len(items) == 1
 
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_integration_no_async_not_subclass(
         self, mockserver: MockServer

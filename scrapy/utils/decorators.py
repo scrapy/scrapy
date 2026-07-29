@@ -3,12 +3,13 @@ from __future__ import annotations
 import inspect
 import warnings
 from functools import wraps
-from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, cast, overload
 
 from twisted.internet.defer import Deferred, maybeDeferred
-from twisted.internet.threads import deferToThread
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncio import run_in_thread
+from scrapy.utils.defer import deferred_from_coro
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine
@@ -18,9 +19,19 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
+@overload
+def deprecated(use_instead: Callable[_P, _T]) -> Callable[_P, _T]: ...
+
+
+@overload
 def deprecated(
-    use_instead: Any = None,
-) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]:
+    use_instead: str | None = None,
+) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]: ...
+
+
+def deprecated(
+    use_instead: Callable[_P, _T] | str | None = None,
+) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
     when the function is used."""
@@ -37,8 +48,9 @@ def deprecated(
         return wrapped
 
     if callable(use_instead):
-        deco = deco(use_instead)
+        func = use_instead
         use_instead = None
+        return deco(func)
     return deco
 
 
@@ -59,12 +71,15 @@ def defers(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:  # pragma: no 
 
 def inthread(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
     """Decorator to call a function in a thread and return a deferred with the
-    result
+    result.
+
+    .. versionchanged:: 2.15.0
+        Now uses :func:`asyncio.to_thread` if the asyncio support is available.
     """
 
     @wraps(func)
     def wrapped(*a: _P.args, **kw: _P.kwargs) -> Deferred[_T]:
-        return deferToThread(func, *a, **kw)
+        return deferred_from_coro(run_in_thread(func, *a, **kw))
 
     return wrapped
 
@@ -111,7 +126,7 @@ def _warn_spider_arg(
         @wraps(func)
         async def async_inner(*args: _P.args, **kwargs: _P.kwargs) -> _T:
             check_args(*args, **kwargs)
-            return await func(*args, **kwargs)
+            return cast("_T", await func(*args, **kwargs))
 
         return async_inner
 

@@ -8,12 +8,14 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
+from warnings import warn
 
 from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import Request
 from scrapy.utils.python import is_listlike, to_bytes
 
@@ -30,14 +32,64 @@ if TYPE_CHECKING:
 
     from scrapy.http.response.text import TextResponse
 
-
 FormdataVType: TypeAlias = str | Iterable[str]
 FormdataKVType: TypeAlias = tuple[str, FormdataVType]
 FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
 
 
 class FormRequest(Request):
-    valid_form_methods = ["GET", "POST"]
+    """A :class:`~scrapy.Request` subclass with a ``formdata`` parameter that
+    url-encodes the given data and assigns it to the request, which makes it
+    convenient to send arbitrary form data via HTTP POST or GET without an HTML
+    ``<form>`` element to parse.
+
+    .. note:: To build a request from an HTML ``<form>`` element found in a
+       response, use :doc:`form2request <form2request:index>` instead. See
+       :ref:`form`.
+
+    The remaining arguments are the same as for the :class:`~scrapy.Request`
+    class and are not documented here.
+
+    :param formdata: a dictionary (or iterable of (key, value) tuples)
+       containing HTML form data which will be url-encoded. If
+       :attr:`~scrapy.Request.method` is not given and ``formdata`` is
+       provided, the method is set to ``"POST"`` and the data is assigned to
+       the request body; if the method is ``"GET"``, the data is added to the
+       URL query string instead.
+    :type formdata: dict or collections.abc.Iterable
+
+    To send data via HTTP POST, simulating an HTML form submission, return a
+    :class:`~scrapy.FormRequest` object from your spider:
+
+    .. skip: next
+    .. code-block:: python
+
+        return [
+            FormRequest(
+                url="http://www.example.com/post/action",
+                formdata={"name": "John Doe", "age": "27"},
+                callback=self.after_post,
+            )
+        ]
+
+    To send the data in the URL query string instead, use the ``GET`` method:
+
+    .. skip: next
+    .. code-block:: python
+
+        return [
+            FormRequest(
+                url="http://www.example.com/search",
+                method="GET",
+                formdata={"q": "keyword", "page": "1"},
+                callback=self.parse_results,
+            )
+        ]
+    """
+
+    __slots__ = ()
+
+    valid_form_methods: ClassVar[list[str]] = ["GET", "POST"]
 
     def __init__(
         self, *args: Any, formdata: FormdataType = None, **kwargs: Any
@@ -74,6 +126,13 @@ class FormRequest(Request):
         formcss: str | None = None,
         **kwargs: Any,
     ) -> Self:
+        warn(
+            "FormRequest.from_response() is deprecated. Use the form2request "
+            "library instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
         kwargs.setdefault("encoding", response.encoding)
 
         if formcss is not None:
@@ -106,7 +165,7 @@ def _urlencode(seq: Iterable[FormdataKVType], enc: str) -> str:
     values = [
         (to_bytes(k, enc), to_bytes(v, enc))
         for k, vs in seq
-        for v in (cast("Iterable[str]", vs) if is_listlike(vs) else [cast("str", vs)])
+        for v in (vs if is_listlike(vs) else [cast("str", vs)])
     ]
     return urlencode(values, doseq=True)
 
@@ -151,7 +210,7 @@ def _get_form(
     try:
         form = forms[formnumber]
     except IndexError:
-        raise IndexError(f"Form number {formnumber} not found in {response}")
+        raise IndexError(f"Form number {formnumber} not found in {response}") from None
     return cast("FormElement", form)
 
 
@@ -165,7 +224,7 @@ def _get_inputs(
     try:
         formdata_keys = dict(formdata or ()).keys()
     except (ValueError, TypeError):
-        raise ValueError("formdata should be a dict or iterable of tuples")
+        raise ValueError("formdata should be a dict or iterable of tuples") from None
 
     if not formdata:
         formdata = []

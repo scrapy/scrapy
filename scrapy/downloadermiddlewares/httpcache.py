@@ -107,7 +107,7 @@ class HttpCacheMiddleware:
             return response
 
         # Skip cached responses and uncacheable requests
-        if "cached" in response.flags or "_dont_cache" in request.meta:
+        if "_dont_cache" in request.meta or "cached" in response.flags:
             request.meta.pop("_dont_cache", None)
             return response
 

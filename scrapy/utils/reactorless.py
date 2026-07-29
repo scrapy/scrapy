@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import sys
 from importlib.abc import MetaPathFinder
 from typing import TYPE_CHECKING
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
 
 def is_reactorless() -> bool:
     """Check if we are running in the reactorless mode, i.e. with
-    :setting:`TWISTED_ENABLED` set to ``False``.
+    :setting:`TWISTED_REACTOR_ENABLED` set to ``False``.
 
     As this checks the runtime state and not the setting itself, it can be
     wrong when executed very early, before the reactor and/or the asyncio event
@@ -25,7 +26,7 @@ def is_reactorless() -> bool:
         :func:`scrapy.utils.asyncio.is_asyncio_available()`, it has the same
         limitations for detecting a running asyncio event loop as that one.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.15.0
     """
     return is_asyncio_available() and not is_reactor_installed()
 
@@ -47,7 +48,19 @@ class ReactorImportHook(MetaPathFinder):
         return None
 
 
-def install_reactor_import_hook() -> None:
-    """Prevent importing :mod:`twisted.internet.reactor`."""
+def install_reactor_import_hook() -> ReactorImportHook:
+    """Prevent importing :mod:`twisted.internet.reactor`.
 
-    sys.meta_path.insert(0, ReactorImportHook())
+    The hook is returned and can later be uninstalled with
+    :func:`uninstall_reactor_import_hook()`.
+    """
+
+    hook = ReactorImportHook()
+    sys.meta_path.insert(0, hook)
+    return hook
+
+
+def uninstall_reactor_import_hook(hook: ReactorImportHook) -> None:
+    """Uninstall the hook installed with :func:`install_reactor_import_hook()`."""
+    with contextlib.suppress(ValueError):
+        sys.meta_path.remove(hook)

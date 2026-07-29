@@ -1,5 +1,3 @@
-import pytest
-
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import (
@@ -12,7 +10,6 @@ from tests.spiders import (
 from tests.utils.decorators import inline_callbacks_test
 
 
-@pytest.mark.requires_http_handler
 class TestCloseSpider:
     @classmethod
     def setup_class(cls):

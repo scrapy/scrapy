@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
@@ -25,10 +26,13 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.http.request import CookiesT, VerboseCookie
+
+logger = logging.getLogger(__name__)
 
 
 _fingerprint_cache: WeakKeyDictionary[
-    Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]
+    Request, dict[tuple[tuple[bytes, ...] | None, bool, bool], bytes]
 ] = WeakKeyDictionary()
 
 
@@ -71,8 +75,10 @@ def fingerprint(
         processed_include_headers = tuple(
             to_bytes(h.lower()) for h in sorted(include_headers)
         )
+    verbatim_url = bool(request.meta.get("verbatim_url"))
+    effective_keep_fragments = keep_fragments and not verbatim_url
     cache = _fingerprint_cache.setdefault(request, {})
-    cache_key = (processed_include_headers, keep_fragments)
+    cache_key = (processed_include_headers, effective_keep_fragments, verbatim_url)
     if cache_key not in cache:
         # To decode bytes reliably (JSON does not support bytes), regardless of
         # character encoding, we use bytes.hex()
@@ -84,9 +90,13 @@ def fingerprint(
                         header_value.hex()
                         for header_value in request.headers.getlist(header)
                     ]
+        if verbatim_url:
+            url = request.url
+        else:
+            url = canonicalize_url(request.url, keep_fragments=keep_fragments)
         fingerprint_data = {
             "method": to_unicode(request.method),
-            "url": canonicalize_url(request.url, keep_fragments=keep_fragments),
+            "url": url,
             "body": (request.body or b"").hex(),
             "headers": headers,
         }
@@ -108,8 +118,9 @@ class RequestFingerprinter:
     (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url
     <scrapy.Request.url>` and the values of :attr:`request.method
     <scrapy.Request.method>` and :attr:`request.body
-    <scrapy.Request.body>`. It then generates an `SHA1
-    <https://en.wikipedia.org/wiki/SHA-1>`_ hash.
+    <scrapy.Request.body>`, unless :reqmeta:`verbatim_url` is true for that
+    request. It then generates an `SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_
+    hash.
     """
 
     @classmethod
@@ -169,14 +180,55 @@ def _get_method(obj: Any, name: Any) -> Any:
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError(f"Method {name!r} not found in: {obj}")
+        raise ValueError(f"Method {name!r} not found in: {obj}") from None
+
+
+def _to_verbose_cookies(cookies: CookiesT) -> list[VerboseCookie]:
+    """Return a list of verbose cookies from ``request.cookies``.
+
+    The list of dicts form is returned as is, the dict one is converted first.
+    """
+    if isinstance(cookies, dict):
+        return [{"name": k, "value": v} for k, v in cookies.items()]
+    return cookies
+
+
+def _decode_cookie(cookie: VerboseCookie, request: Request) -> dict[str, str] | None:
+    """Return a dict with non-flag verbose cookie values converted to strings.
+
+    ``name``, ``value``, ``path``, ``domain`` are included, ``secure`` isn't.
+    """
+
+    decoded = {}
+    for key in ("name", "value", "path", "domain"):
+        value = cookie.get(key)
+        if value is None:
+            if key in {"name", "value"}:
+                logger.warning(
+                    f"Invalid cookie found in request {request}:"
+                    f" {cookie} ('{key}' is missing)"
+                )
+                return None
+            continue
+        if isinstance(value, (bool, float, int, str)):
+            decoded[key] = str(value)
+        else:
+            assert isinstance(value, bytes)
+            try:
+                decoded[key] = value.decode("utf8")
+            except UnicodeDecodeError:
+                logger.warning(
+                    f"Non UTF-8 encoded cookie found in request {request}: {cookie}",
+                )
+                decoded[key] = value.decode("latin1", errors="replace")
+    return decoded
 
 
 def request_to_curl(request: Request) -> str:
     """
     Converts a :class:`~scrapy.Request` object to a curl command.
 
-    :param :class:`~scrapy.Request`: Request object to be converted
+    :param request: Request object to be converted
     :return: string containing the curl command
     """
     method = request.method
@@ -188,17 +240,14 @@ def request_to_curl(request: Request) -> str:
     )
 
     url = request.url
-    cookies = ""
-    if request.cookies:
-        if isinstance(request.cookies, dict):
-            cookie = "; ".join(f"{k}={v}" for k, v in request.cookies.items())
-            cookies = f"--cookie '{cookie}'"
-        elif isinstance(request.cookies, list):
-            cookie = "; ".join(
-                f"{next(iter(c.keys()))}={next(iter(c.values()))}"
-                for c in request.cookies
-            )
-            cookies = f"--cookie '{cookie}'"
+
+    cookie_list: list[VerboseCookie] = _to_verbose_cookies(request.cookies)
+    pairs = [
+        f"{decoded['name']}={decoded['value']}"
+        for c in cookie_list
+        if (decoded := _decode_cookie(c, request)) is not None
+    ]
+    cookies = f"--cookie '{'; '.join(pairs)}'" if pairs else ""
 
     curl_cmd = f"curl -X {method} {url} {data} {headers} {cookies}".strip()
     return " ".join(curl_cmd.split())

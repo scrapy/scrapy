@@ -1,19 +1,23 @@
 from __future__ import annotations
 
-from time import time
+from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
-from twisted.web.client import URI
-
-from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
-from scrapy.exceptions import DownloadTimeoutError
-from scrapy.utils._download_handlers import wrap_twisted_exceptions
+from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
+from scrapy.exceptions import (
+    DownloadTimeoutError,
+    NotConfigured,
+    UnsupportedURLSchemeError,
+)
+from scrapy.utils._download_handlers import (
+    normalize_bind_address,
+    wrap_twisted_exceptions,
+)
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
@@ -29,20 +33,26 @@ class H2DownloadHandler(BaseDownloadHandler):
     lazy = True
 
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self._crawler = crawler
 
         from twisted.internet import reactor
 
         self._pool = H2ConnectionPool(reactor, crawler.settings)
-        self._context_factory = load_context_factory_from_settings(
-            crawler.settings, crawler
-        )
+        self._context_factory = _load_context_factory_from_settings(crawler)
+        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:
-        agent = ScrapyH2Agent(
+        if urlparse_cached(request).scheme == "http":  # pragma: no cover
+            raise UnsupportedURLSchemeError(
+                f"{type(self).__name__} doesn't support plain HTTP."
+            )
+        agent = _ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
+            bind_address=self._bind_address,
             crawler=self._crawler,
         )
         assert self._crawler.spider
@@ -55,16 +65,13 @@ class H2DownloadHandler(BaseDownloadHandler):
         self._pool.close_connections()
 
 
-class ScrapyH2Agent:
-    _Agent = H2Agent
-    _ProxyAgent = ScrapyProxyH2Agent
-
+class _ScrapyH2Agent:
     def __init__(
         self,
         context_factory: IPolicyForHTTPS,
         pool: H2ConnectionPool,
         connect_timeout: int = 10,
-        bind_address: bytes | None = None,
+        bind_address: str | tuple[str, int] | None = None,
         crawler: Crawler | None = None,
     ) -> None:
         self._context_factory = context_factory
@@ -76,24 +83,11 @@ class ScrapyH2Agent:
     def _get_agent(self, request: Request, timeout: float | None) -> H2Agent:
         from twisted.internet import reactor
 
+        if request.meta.get("proxy"):  # pragma: no cover
+            raise NotImplementedError(f"{type(self).__name__} doesn't support proxies.")
         bind_address = request.meta.get("bindaddress") or self._bind_address
-        proxy = request.meta.get("proxy")
-        if proxy:
-            if urlparse_cached(request).scheme == "https":
-                # ToDo
-                raise NotImplementedError(
-                    "Tunneling via CONNECT method using HTTP/2.0 is not yet supported"
-                )
-            return self._ProxyAgent(
-                reactor=reactor,
-                context_factory=self._context_factory,
-                proxy_uri=URI.fromBytes(to_bytes(proxy, encoding="ascii")),
-                connect_timeout=timeout,
-                bind_address=bind_address,
-                pool=self._pool,
-            )
-
-        return self._Agent(
+        bind_address = normalize_bind_address(bind_address)
+        return H2Agent(
             reactor=reactor,
             context_factory=self._context_factory,
             connect_timeout=timeout,
@@ -107,7 +101,7 @@ class ScrapyH2Agent:
         timeout = request.meta.get("download_timeout") or self._connect_timeout
         agent = self._get_agent(request, timeout)
 
-        start_time = time()
+        start_time = monotonic()
         d = agent.request(request, spider)
         d.addCallback(self._cb_latency, request, start_time)
 
@@ -119,7 +113,7 @@ class ScrapyH2Agent:
     def _cb_latency(
         response: Response, request: Request, start_time: float
     ) -> Response:
-        request.meta["download_latency"] = time() - start_time
+        request.meta["download_latency"] = monotonic() - start_time
         return response
 
     @staticmethod

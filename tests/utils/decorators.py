@@ -35,7 +35,8 @@ def inline_callbacks_test(
         async def wrapper_coro(*args: _P.args, **kwargs: _P.kwargs) -> None:
             await deferred_to_future(inlineCallbacks(f)(*args, **kwargs))
 
-        return wrapper_coro
+        # Likely https://github.com/python/mypy/issues/17171
+        return wrapper_coro  # type: ignore[no-any-return]
 
     @wraps(f)
     @inlineCallbacks
@@ -55,6 +56,11 @@ def coroutine_test(
     * with ``pytest-twisted`` this converts a coroutine into a
       :class:`twisted.internet.defer.Deferred`
     * with ``pytest-asyncio`` this is a no-op
+
+    In addition to handling asynchronous test functions this can also be used
+    to mark "synchronous" test functions (they still need to be made
+    ``async def``) that call code that needs a reactor or a running event loop,
+    so that ``pytest-asyncio`` starts a loop for them too.
     """
 
     if not is_reactor_installed():

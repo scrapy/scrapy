@@ -101,14 +101,14 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         _signal.disconnect_all(signal, **kwargs)
 
-    async def wait_for(self, signal):
+    async def wait_for(self, signal: Any) -> None:
         """Await the next *signal*.
 
         See :ref:`start-requests-lazy` for an example.
         """
-        d = Deferred()
+        d: Deferred[None] = Deferred()
 
-        def handle():
+        def handle() -> None:
             self.disconnect(handle, signal)
             d.callback(None)
 

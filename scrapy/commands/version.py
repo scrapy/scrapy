@@ -1,4 +1,5 @@
 import argparse
+from typing import Any, ClassVar
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -7,7 +8,7 @@ from scrapy.utils.versions import get_versions
 
 class Command(ScrapyCommand):
     requires_crawler_process = False
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[-v]"

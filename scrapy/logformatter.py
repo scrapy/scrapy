@@ -58,18 +58,20 @@ class LogFormatter:
     logging an action the method must return ``None``.
 
     Here is an example on how to create a custom log formatter to lower the severity level of
-    the log message when an item is dropped from the pipeline::
+    the log message when an item is dropped from the pipeline:
 
-            class PoliteLogFormatter(logformatter.LogFormatter):
-                def dropped(self, item, exception, response, spider):
-                    return {
-                        'level': logging.INFO, # lowering the level from logging.WARNING
-                        'msg': "Dropped: %(exception)s" + os.linesep + "%(item)s",
-                        'args': {
-                            'exception': exception,
-                            'item': item,
-                        }
-                    }
+    .. code-block:: python
+
+        class PoliteLogFormatter(logformatter.LogFormatter):
+            def dropped(self, item, exception, response, spider):
+                return {
+                    "level": logging.INFO,  # lowering the level from logging.WARNING
+                    "msg": "Dropped: %(exception)s" + os.linesep + "%(item)s",
+                    "args": {
+                        "exception": exception,
+                        "item": item,
+                    },
+                }
     """
 
     def crawled(

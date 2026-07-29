@@ -76,7 +76,7 @@ data that will be assigned to the ``name`` field later.
 
 Afterwards, similar calls are used for ``price`` and ``stock`` fields
 (the latter using a CSS selector with the :meth:`~ItemLoader.add_css` method),
-and finally the ``last_update`` field is populated directly with a literal value
+and finally the ``last_updated`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
 Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
@@ -102,14 +102,13 @@ One approach to overcome this is to define items using the
 .. code-block:: python
 
     from dataclasses import dataclass, field
-    from typing import Optional
 
 
     @dataclass
     class InventoryItem:
-        name: Optional[str] = field(default=None)
-        price: Optional[float] = field(default=None)
-        stock: Optional[int] = field(default=None)
+        name: str | None = field(default=None)
+        price: float | None = field(default=None)
+        stock: int | None = field(default=None)
 
 
 .. _topics-loaders-processors:
@@ -228,7 +227,8 @@ metadata. Here is an example:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass, field
+
     from itemloaders.processors import Join, MapCompose, TakeFirst
     from w3lib.html import remove_tags
 
@@ -238,14 +238,21 @@ metadata. Here is an example:
             return value
 
 
-    class Product(scrapy.Item):
-        name = scrapy.Field(
-            input_processor=MapCompose(remove_tags),
-            output_processor=Join(),
+    @dataclass
+    class Product:
+        name: str | None = field(
+            default=None,
+            metadata={
+                "input_processor": MapCompose(remove_tags),
+                "output_processor": Join(),
+            },
         )
-        price = scrapy.Field(
-            input_processor=MapCompose(remove_tags, filter_price),
-            output_processor=TakeFirst(),
+        price: str | None = field(
+            default=None,
+            metadata={
+                "input_processor": MapCompose(remove_tags, filter_price),
+                "output_processor": TakeFirst(),
+            },
         )
 
 
@@ -257,7 +264,7 @@ metadata. Here is an example:
     >>> il.add_value("name", ["Welcome to my", "<strong>website</strong>"])
     >>> il.add_value("price", ["&euro;", "<span>1000</span>"])
     >>> il.load_item()
-    {'name': 'Welcome to my website', 'price': '1000'}
+    Product(name='Welcome to my website', price='1000')
 
 .. skip: end
 
@@ -266,8 +273,8 @@ The precedence order, for both input and output processors, is as follows:
 1. Item Loader field-specific attributes: ``field_in`` and ``field_out`` (most
    precedence)
 2. Field metadata (``input_processor`` and ``output_processor`` key)
-3. Item Loader defaults: :meth:`ItemLoader.default_input_processor` and
-   :meth:`ItemLoader.default_output_processor` (least precedence)
+3. Item Loader defaults: :attr:`ItemLoader.default_input_processor` and
+   :attr:`ItemLoader.default_output_processor` (least precedence)
 
 See also: :ref:`topics-loaders-extending`.
 
@@ -316,8 +323,8 @@ There are several ways to modify Item Loader context values:
       loader = ItemLoader(product, unit="cm")
 
 3. On Item Loader declaration, for those input/output processors that support
-   instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
-   them:
+   instantiating them with an Item Loader context.
+   :class:`~itemloaders.processors.MapCompose` is one of them:
 
    .. code-block:: python
 
@@ -343,7 +350,9 @@ When parsing related values from a subsection of a document, it can be
 useful to create nested loaders.  Imagine you're extracting details from
 a footer of a page that looks something like:
 
-Example::
+Example:
+
+.. code-block:: html
 
     <footer>
         <a class="social" href="https://facebook.com/whatever">Like Us</a>
@@ -452,4 +461,3 @@ organization of your Loaders collection - that's up to you and your project's
 needs.
 
 .. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
-.. _processors: https://itemloaders.readthedocs.io/en/latest/built-in-processors.html

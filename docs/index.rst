@@ -24,7 +24,7 @@ Having trouble? We'd like to help!
 * Ask or search questions in `StackOverflow using the scrapy tag`_.
 * Ask or search questions in the `Scrapy subreddit`_.
 * Search for questions on the archives of the `scrapy-users mailing list`_.
-* Ask a question in the `#scrapy IRC channel`_,
+* Ask a question in the `#scrapy IRC channel`_.
 * Report bugs with Scrapy in our `issue tracker`_.
 * Join the Discord community `Scrapy Discord`_.
 
@@ -91,14 +91,14 @@ Basic concepts
 :doc:`topics/selectors`
     Extract the data from web pages using XPath.
 
-:doc:`topics/shell`
-    Test your extraction code in an interactive environment.
-
 :doc:`topics/items`
     Define the data you want to scrape.
 
 :doc:`topics/loaders`
     Populate your items with the extracted data.
+
+:doc:`topics/shell`
+    Test your extraction code in an interactive environment.
 
 :doc:`topics/item-pipeline`
     Post-process and store your scraped data.
@@ -128,7 +128,6 @@ Built-in services
 
    topics/logging
    topics/stats
-   topics/email
    topics/telnetconsole
 
 :doc:`topics/logging`
@@ -136,9 +135,6 @@ Built-in services
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
-
-:doc:`topics/email`
-    Send email notifications when certain events occur.
 
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
@@ -155,6 +151,7 @@ Solving specific problems
    topics/debug
    topics/contracts
    topics/practices
+   topics/security
    topics/broad-crawls
    topics/developer-tools
    topics/dynamic-content
@@ -178,6 +175,10 @@ Solving specific problems
 
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
+
+:doc:`topics/security`
+    Understand the security implications of Scrapy defaults and how to harden
+    them.
 
 :doc:`topics/broad-crawls`
     Tune Scrapy for crawling a lot domains in parallel.

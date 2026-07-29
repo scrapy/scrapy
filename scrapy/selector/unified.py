@@ -1,10 +1,6 @@
-"""
-XPath selectors based on lxml
-"""
-
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from parsel import Selector as _ParselSelector
 
@@ -18,13 +14,10 @@ __all__ = ["Selector", "SelectorList"]
 _NOT_SET = object()
 
 
-def _st(response: TextResponse | None, st: str | None) -> str:
-    if st is None:
-        return "xml" if isinstance(response, XmlResponse) else "html"
-    return st
+SelectorType = Literal["html", "xml", "json", "text"]
 
 
-def _response_from_text(text: str | bytes, st: str | None) -> TextResponse:
+def _response_from_text(text: str | bytes, st: SelectorType | None) -> TextResponse:
     rt: type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
     return rt(url="about:blank", encoding="utf-8", body=to_bytes(text, "utf-8"))
 
@@ -49,23 +42,16 @@ class Selector(_ParselSelector, object_ref):
     ``response`` isn't available. Using ``text`` and ``response`` together is
     undefined behavior.
 
-    ``type`` defines the selector type, it can be ``"html"``, ``"xml"``, ``"json"``
-    or ``None`` (default).
+    ``type`` defines the selector type, it can be ``"html"``, ``"xml"``,
+    ``"json"``, ``"text"`` or ``None`` (default). It's passed to
+    :class:`parsel.Selector` and its meaning is defined there. However, when
+    ``type`` is ``None``, it is set to ``"xml"`` for an
+    :class:`~scrapy.http.XmlResponse` and to ``"html"`` otherwise before
+    passing it to :class:`parsel.Selector`.
 
-    If ``type`` is ``None``, the selector automatically chooses the best type
-    based on ``response`` type (see below), or defaults to ``"html"`` in case it
-    is used together with ``text``.
-
-    If ``type`` is ``None`` and a ``response`` is passed, the selector type is
-    inferred from the response type as follows:
-
-    * ``"html"`` for :class:`~scrapy.http.HtmlResponse` type
-    * ``"xml"`` for :class:`~scrapy.http.XmlResponse` type
-    * ``"json"`` for :class:`~scrapy.http.TextResponse` type
-    * ``"html"`` for anything else
-
-    Otherwise, if ``type`` is set, the selector type will be forced and no
-    detection will occur.
+    .. note:: JSON selector support requires ``parsel`` 1.8.0 or higher. With
+       older versions setting ``type`` to ``"json"`` or ``"text"`` is not
+       supported.
     """
 
     __slots__ = ["response"]
@@ -75,7 +61,7 @@ class Selector(_ParselSelector, object_ref):
         self,
         response: TextResponse | None = None,
         text: str | None = None,
-        type: str | None = None,  # noqa: A002
+        type: SelectorType | None = None,  # noqa: A002
         root: Any | None = _NOT_SET,
         **kwargs: Any,
     ):
@@ -84,10 +70,11 @@ class Selector(_ParselSelector, object_ref):
                 f"{self.__class__.__name__}.__init__() received both response and text"
             )
 
-        st = _st(response, type)
+        if type is None:
+            type = "xml" if isinstance(response, XmlResponse) else "html"  # noqa: A001
 
         if text is not None:
-            response = _response_from_text(text, st)
+            response = _response_from_text(text, type)
 
         if response is not None:
             text = response.text
@@ -98,4 +85,4 @@ class Selector(_ParselSelector, object_ref):
         if root is not _NOT_SET:
             kwargs["root"] = root
 
-        super().__init__(text=text, type=st, **kwargs)
+        super().__init__(text=text, type=type, **kwargs)

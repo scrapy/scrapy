@@ -5,16 +5,17 @@ from __future__ import annotations
 import ipaddress
 import logging
 import re
-import socket
 from contextlib import suppress
+from functools import partial
 from io import BytesIO
-from time import time
+from time import monotonic
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet.endpoints import TCP4ClientEndpoint, TCP6ClientEndpoint
+from twisted.internet.endpoints import HostnameEndpoint
+from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import (
@@ -31,32 +32,34 @@ from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IRe
 from zope.interface import implementer
 
 from scrapy import Request, signals
-from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.exceptions import (
     DownloadCancelledError,
     DownloadTimeoutError,
+    NotConfigured,
     ResponseDataLossError,
     StopDownload,
 )
 from scrapy.http import Headers, Response
 from scrapy.utils._download_handlers import (
-    BaseHttpDownloadHandler,
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
+    normalize_bind_address,
     wrap_twisted_exceptions,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.ssl import _log_ssl_conn_debug_info
 from scrapy.utils.url import add_http_if_no_scheme
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
+from ._base_http import BaseHttpDownloadHandler
 
+if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IConsumer
 
@@ -82,6 +85,8 @@ class _ResultT(TypedDict):
 
 class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self._crawler = crawler
 
@@ -93,13 +98,13 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         )
         self._pool._factory.noisy = False
 
-        self._contextFactory: IPolicyForHTTPS = load_context_factory_from_settings(
-            crawler.settings, crawler
+        self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
+            crawler
         )
+        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         self._disconnect_timeout: int = 1
 
     async def download_request(self, request: Request) -> Response:
-        """Return a deferred for the HTTP download"""
         if hasattr(self._crawler.spider, "download_maxsize"):  # pragma: no cover
             warn_on_deprecated_spider_attribute("download_maxsize", "DOWNLOAD_MAXSIZE")
         if hasattr(self._crawler.spider, "download_warnsize"):  # pragma: no cover
@@ -107,8 +112,9 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
                 "download_warnsize", "DOWNLOAD_WARNSIZE"
             )
 
-        agent = ScrapyAgent(
+        agent = _ScrapyAgent(
             contextFactory=self._contextFactory,
+            bindAddress=self._bind_address,
             pool=self._pool,
             maxsize=getattr(
                 self._crawler.spider, "download_maxsize", self._default_maxsize
@@ -118,6 +124,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
             ),
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
+            tls_verbose_logging=self._tls_verbose_logging,
         )
         try:
             with wrap_twisted_exceptions():
@@ -142,7 +149,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         # issue a callback after `_disconnect_timeout` seconds.
         #
         # See also https://github.com/scrapy/scrapy/issues/2653
-        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, [])
+        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, ())
 
         try:
             await maybe_deferred_to_future(d)
@@ -155,27 +162,15 @@ class TunnelError(Exception):
     """An HTTP CONNECT tunnel could not be established by the proxy."""
 
 
-class TunnelingMixin:
+@implementer(IStreamClientEndpoint)
+class _TunnelingEndpoint:
+    """An endpoint that tunnels through proxies to allow HTTPS downloads. To
+    accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
+    The HTTP CONNECT is always sent when using this endpoint, I think this could
+    be improved as the CONNECT will be redundant if the connection associated
+    with this endpoint comes from the pool and a CONNECT has already been issued
+    for it.
     """
-    A mixin class providing HTTP CONNECT tunneling logic for Twisted TCP client
-    endpoints.
-    It is intended to be inherited by concrete endpoint classes
-    (`TunnelingTCP4ClientEndpoint` or `TunnelingTCP6ClientEndpoint`) together with their
-    base class.
-    """
-
-    _tunnelReadyDeferred: Deferred[Protocol]
-    _tunneledHost: str
-    _tunneledPort: int
-    _contextFactory: IPolicyForHTTPS
-    _formattedTunneledHost: str
-    _proxyAuthHeader: bytes | None
-    _connectBuffer: bytearray
-    _protocol: Protocol
-    _protocolDataReceived: Callable[[bytes], None] | None = None
-    _protocolFactory: Factory
-    _proxyHost: str
-    _proxyPort: int
 
     _truncatedLength = 1000
     _responseAnswer = (
@@ -194,34 +189,37 @@ class TunnelingMixin:
         bindAddress: tuple[str, int] | None = None,
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
-        self._proxyHost = proxyHost
-        self._proxyPort = proxyPort
-        self._tunnelReadyDeferred = Deferred()
-        self._tunneledHost = host
-        self._tunneledPort = port
-        self._contextFactory = contextFactory
-        self._formattedTunneledHost = self._format_host(host)
-        self._connectBuffer = bytearray()
-
-        # Delegate to the concrete TCP endpoint initializer (TCP4 or TCP6)
-        cast("Any", super()).__init__(
-            reactor, proxyHost, proxyPort, timeout, bindAddress
+        self._proxyHost: str = proxyHost
+        self._proxyPort: int = proxyPort
+        # Connect to the proxy through a HostnameEndpoint, the same endpoint
+        # Twisted's Agent uses. It resolves the proxy host through
+        # reactor.nameResolver and picks the address family from the result, so
+        # proxies reachable only over IPv6 work. A TCP4ClientEndpoint would
+        # instead create an AF_INET socket before resolving the name.
+        self._proxyEndpoint: IStreamClientEndpoint = HostnameEndpoint(
+            reactor, proxyHost, proxyPort, timeout=timeout, bindAddress=bindAddress
         )
+        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
+        self._tunneledHost: str = host
+        self._tunneledPort: int = port
+        self._contextFactory: IPolicyForHTTPS = contextFactory
+        self._formattedTunneledHost: str = self._format_host(host)
+        self._connectBuffer: bytearray = bytearray()
 
     @staticmethod
-    def _format_host(host: str) -> str:
+    def _format_host(host: str | bytes) -> str:
         """
-        Format the host string for use in the CONNECT request authority.
+        Format the target host for use in the CONNECT request authority.
 
-        For literal IPv6 addresses, wraps the host in square brackets per
-        RFC 2732. Hostnames and IPv4 addresses are returned unchanged.
-
-        :param host: The target host (hostname or IP address).
-        :return: The formatted host string.
+        Literal IPv6 addresses are wrapped in square brackets, as required for
+        both the request target and the Host header. Hostnames and IPv4
+        addresses are returned unchanged.
         """
+        # Twisted passes URI.host through, which is bytes with the brackets of
+        # an IPv6 literal already stripped.
+        host = to_unicode(host, encoding="ascii")
         try:
-            ip = ipaddress.ip_address(host)
-            if isinstance(ip, ipaddress.IPv6Address):
+            if isinstance(ipaddress.ip_address(host), ipaddress.IPv6Address):
                 return f"[{host}]"
         except ValueError:
             pass  # hostname, leave as-is
@@ -230,13 +228,13 @@ class TunnelingMixin:
     def requestTunnel(self, protocol: Protocol) -> Protocol:
         """Asks the proxy to open a tunnel."""
         assert protocol.transport
-        tunnelReq = tunnel_request_data(
+        tunnelReq = _tunnel_request_data(
             self._formattedTunneledHost,
             self._tunneledPort,
             self._proxyAuthHeader,
         )
         protocol.transport.write(tunnelReq)
-        self._protocolDataReceived = protocol.dataReceived  # type: ignore[assignment]
+        self._protocolDataReceived = protocol.dataReceived
         protocol.dataReceived = self.processProxyResponse  # type: ignore[method-assign]
         self._protocol = protocol
         return protocol
@@ -255,14 +253,15 @@ class TunnelingMixin:
         # see https://github.com/scrapy/scrapy/issues/2491
         if b"\r\n\r\n" not in self._connectBuffer:
             return
-        self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign, assignment]
-        respm = type(self)._responseMatcher.match(self._connectBuffer)
+        self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
+        respm = _TunnelingEndpoint._responseMatcher.match(self._connectBuffer)
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-                self._tunneledHost, self._tunneledPort
+                self._tunneledHost,  # type: ignore[arg-type]
+                self._tunneledPort,
             )
-            self._protocol.transport.startTLS(sslOptions)
+            self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
         else:
             extra: Any
@@ -285,40 +284,25 @@ class TunnelingMixin:
         self._tunnelReadyDeferred.errback(reason)
 
     def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
-        """Establish a connection and set up the tunnel."""
         self._protocolFactory = protocolFactory
-        connectDeferred = super().connect(protocolFactory)  # type: ignore[misc]
+        connectDeferred = self._proxyEndpoint.connect(protocolFactory)
         connectDeferred.addCallback(self.requestTunnel)
         connectDeferred.addErrback(self.connectFailed)
         return self._tunnelReadyDeferred
 
 
-class TunnelingTCP4ClientEndpoint(TunnelingMixin, TCP4ClientEndpoint):
-    """An endpoint that tunnels through proxies to allow HTTPS downloads. To
-    accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
-    The HTTP CONNECT is always sent when using this endpoint, I think this could
-    be improved as the CONNECT will be redundant if the connection associated
-    with this endpoint comes from the pool and a CONNECT has already been issued
-    for it.
-    """
-
-
-class TunnelingTCP6ClientEndpoint(TunnelingMixin, TCP6ClientEndpoint):
-    """IPv6 variant of TunnelingTCP4ClientEndpoint."""
-
-
-def tunnel_request_data(
+def _tunnel_request_data(
     host: str, port: int, proxy_auth_header: bytes | None = None
 ) -> bytes:
     r"""
     Return binary content of a CONNECT request.
 
     >>> from scrapy.utils.python import to_unicode as s
-    >>> s(tunnel_request_data("example.com", 8080))
+    >>> s(_tunnel_request_data("example.com", 8080))
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
-    >>> s(tunnel_request_data("example.com", 8080, b"123"))
+    >>> s(_tunnel_request_data("example.com", 8080, b"123"))
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\nProxy-Authorization: 123\r\n\r\n'
-    >>> s(tunnel_request_data(b"example.com", "8090"))
+    >>> s(_tunnel_request_data(b"example.com", "8090"))
     'CONNECT example.com:8090 HTTP/1.1\r\nHost: example.com:8090\r\n\r\n'
     """
     host_value = to_bytes(host, encoding="ascii") + b":" + to_bytes(str(port))
@@ -330,39 +314,10 @@ def tunnel_request_data(
     return tunnel_req
 
 
-def is_ipv6(host: str) -> bool:
-    """
-    Determine if the host is an IPv6 address or resolves to an IPv6 address.
-
-    For literal IP addresses, checks if it is IPv6. For hostnames, performs DNS
-    resolution using getaddrinfo and checks if any returned address family is
-    AF_INET6. If resolution fails (e.g., DNS error), returns False to fallback
-    to IPv4.
-
-    :param host: The host string (IP literal or hostname).
-    :return: True if IPv6 is applicable, False otherwise.
-    """
-    try:
-        ip = ipaddress.ip_address(host)
-        if isinstance(ip, ipaddress.IPv6Address):
-            return True
-    except ValueError:
-        pass  # hostname or invalid IP literal
-
-    # For hostname, resolve
-    try:
-        addrs = socket.getaddrinfo(
-            host, None, family=socket.AF_UNSPEC, type=socket.SOCK_STREAM
-        )
-        return any(addr[0] == socket.AF_INET6 for addr in addrs)
-    except (socket.gaierror, OSError):
-        return False  # fallback to IPv4 on resolution failure
-
-
-class TunnelingAgent(Agent):
-    """An agent that uses a L{TunnelingTCP4ClientEndpoint} or L{TunnelingTCP6ClientEndpoint}
-    to make HTTPS downloads. It may look strange that we have chosen to subclass Agent
-    and not ProxyAgent but consider that after the tunnel is opened the proxy is
+class _TunnelingAgent(Agent):
+    """An agent that uses a ``_TunnelingEndpoint`` to make HTTPS
+    downloads. It may look strange that we have chosen to subclass Agent and not
+    ProxyAgent but consider that after the tunnel is opened the proxy is
     transparent to the client; thus the agent should behave like there is no
     proxy involved.
     """
@@ -374,29 +329,15 @@ class TunnelingAgent(Agent):
         proxyConf: tuple[str, int, bytes | None],
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
-        bindAddress: bytes | None = None,
+        bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
+        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
-    def _getEndpoint(
-        self, uri: URI
-    ) -> TunnelingTCP4ClientEndpoint | TunnelingTCP6ClientEndpoint:
-        proxyHost, _, _ = self._proxyConf
-        if is_ipv6(proxyHost):
-            return TunnelingTCP6ClientEndpoint(
-                reactor=self._reactor,
-                host=uri.host,
-                port=uri.port,
-                proxyConf=self._proxyConf,
-                contextFactory=self._contextFactory,
-                timeout=self._endpointFactory._connectTimeout,
-                bindAddress=self._endpointFactory._bindAddress,
-            )
-
-        return TunnelingTCP4ClientEndpoint(
+    def _getEndpoint(self, uri: URI) -> _TunnelingEndpoint:
+        return _TunnelingEndpoint(
             reactor=self._reactor,
             host=uri.host,
             port=uri.port,
@@ -409,7 +350,7 @@ class TunnelingAgent(Agent):
     def _requestWithEndpoint(
         self,
         key: Any,
-        endpoint: TCP4ClientEndpoint,
+        endpoint: IStreamClientEndpoint,
         method: bytes,
         parsedURI: URI,
         headers: TxHeaders | None,
@@ -431,50 +372,24 @@ class TunnelingAgent(Agent):
         )
 
 
-class ScrapyProxyAgent(Agent):
+class _ScrapyProxyAgent(Agent):
     def __init__(
         self,
         reactor: ReactorBase,
         proxyURI: bytes,
+        contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
-        bindAddress: bytes | None = None,
+        bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(
+        super().__init__(  # type: ignore[no-untyped-call]
             reactor=reactor,
+            contextFactory=contextFactory,
             connectTimeout=connectTimeout,
             bindAddress=bindAddress,
             pool=pool,
         )
         self._proxyURI: URI = URI.fromBytes(proxyURI)
-
-    def _getEndpoint(self, uri: URI) -> TCP4ClientEndpoint | TCP6ClientEndpoint:
-        """
-        Select TCP6ClientEndpoint when the proxy host is an IPv6 literal (or resolves
-        to IPv6), otherwise use TCP4ClientEndpoint. This avoids attempting an IPv4
-        resolution on an IPv6 literal like '::1'.
-        """
-        proxy_host = self._proxyURI.host
-        if isinstance(proxy_host, bytes):
-            proxy_host = proxy_host.decode()
-        proxy_port = self._proxyURI.port
-
-        if is_ipv6(proxy_host):
-            return TCP6ClientEndpoint(
-                reactor=self._reactor,
-                host=proxy_host,
-                port=proxy_port,
-                timeout=self._endpointFactory._connectTimeout,
-                bindAddress=self._endpointFactory._bindAddress,
-            )
-
-        return TCP4ClientEndpoint(
-            reactor=self._reactor,
-            host=proxy_host,
-            port=proxy_port,
-            timeout=self._endpointFactory._connectTimeout,
-            bindAddress=self._endpointFactory._bindAddress,
-        )
 
     def request(
         self,
@@ -490,7 +405,7 @@ class ScrapyProxyAgent(Agent):
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
             key=(b"http-proxy", self._proxyURI.host, self._proxyURI.port),
-            endpoint=self._getEndpoint(self._proxyURI),
+            endpoint=self._getEndpoint(self._proxyURI),  # type: ignore[no-untyped-call]
             method=method,
             parsedURI=URI.fromBytes(uri),
             headers=headers,
@@ -499,37 +414,36 @@ class ScrapyProxyAgent(Agent):
         )
 
 
-class ScrapyAgent:
-    _Agent = Agent
-    _ProxyAgent = ScrapyProxyAgent
-    _TunnelingAgent = TunnelingAgent
-
+class _ScrapyAgent:
     def __init__(
         self,
         *,
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float = 10,
-        bindAddress: bytes | None = None,
+        bindAddress: str | tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
         maxsize: int = 0,
         warnsize: int = 0,
         fail_on_dataloss: bool = True,
         crawler: Crawler,
+        tls_verbose_logging: bool = False,
     ):
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectTimeout: float = connectTimeout
-        self._bindAddress: bytes | None = bindAddress
+        self._bindAddress: str | tuple[str, int] | None = bindAddress
         self._pool: HTTPConnectionPool | None = pool
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
         self._fail_on_dataloss: bool = fail_on_dataloss
         self._txresponse: TxResponse | None = None
         self._crawler: Crawler = crawler
+        self._tls_verbose_logging: bool = tls_verbose_logging
 
     def _get_agent(self, request: Request, timeout: float) -> Agent:
         from twisted.internet import reactor
 
         bindaddress = request.meta.get("bindaddress") or self._bindAddress
+        bindaddress = normalize_bind_address(bindaddress)
         proxy = request.meta.get("proxy")
         if proxy:
             proxy = add_http_if_no_scheme(proxy)
@@ -539,10 +453,14 @@ class ScrapyAgent:
             if not proxy_port:
                 proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
+                if proxy_parsed.scheme == "https":  # pragma: no cover
+                    raise NotImplementedError(
+                        "HTTPS proxies for HTTPS destinations are not supported"
+                    )
                 assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
                 proxyConf = (proxy_host, proxy_port, proxyAuth)
-                return self._TunnelingAgent(
+                return _TunnelingAgent(
                     reactor=reactor,
                     proxyConf=proxyConf,
                     contextFactory=self._contextFactory,
@@ -550,15 +468,16 @@ class ScrapyAgent:
                     bindAddress=bindaddress,
                     pool=self._pool,
                 )
-            return self._ProxyAgent(
+            return _ScrapyProxyAgent(
                 reactor=reactor,
                 proxyURI=to_bytes(proxy, encoding="ascii"),
+                contextFactory=self._contextFactory,
                 connectTimeout=timeout,
                 bindAddress=bindaddress,
                 pool=self._pool,
             )
 
-        return self._Agent(
+        return Agent(
             reactor=reactor,
             contextFactory=self._contextFactory,
             connectTimeout=timeout,
@@ -576,10 +495,10 @@ class ScrapyAgent:
         url = urldefrag(request.url)[0]
         method = to_bytes(request.method)
         headers = TxHeaders(request.headers)
-        if isinstance(agent, self._TunnelingAgent):
+        if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
-        start_time = time()
+        start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
             to_bytes(url, encoding="ascii"),
@@ -608,7 +527,7 @@ class ScrapyAgent:
         raise DownloadTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
-        request.meta["download_latency"] = time() - start_time
+        request.meta["download_latency"] = monotonic() - start_time
         return result
 
     @staticmethod
@@ -637,7 +556,7 @@ class ScrapyAgent:
             }
 
         # deliverBody hangs for responses without body
-        if txresponse.length == 0:
+        if cast("int", txresponse.length) == 0:
             return {
                 "txresponse": txresponse,
             }
@@ -658,7 +577,8 @@ class ScrapyAgent:
                 expected_size, maxsize, request, expected=True
             )
             logger.warning(warning_msg)
-            txresponse._transport.loseConnection()
+            # Abort connection immediately.
+            txresponse._transport._producer.abortConnection()
             raise DownloadCancelledError(warning_msg)
 
         if warnsize and expected_size > warnsize:
@@ -666,11 +586,7 @@ class ScrapyAgent:
                 get_warnsize_msg(expected_size, warnsize, request, expected=True)
             )
 
-        def _cancel(_: Any) -> None:
-            # Abort connection immediately.
-            txresponse._transport._producer.abortConnection()
-
-        d: Deferred[_ResultT] = Deferred(_cancel)
+        d: Deferred[_ResultT] = Deferred(partial(self._cancel, txresponse=txresponse))
         txresponse.deliverBody(
             _ResponseReader(
                 finished=d,
@@ -680,6 +596,7 @@ class ScrapyAgent:
                 warnsize=warnsize,
                 fail_on_dataloss=fail_on_dataloss,
                 crawler=self._crawler,
+                tls_verbose_logging=self._tls_verbose_logging,
             )
         )
 
@@ -687,6 +604,11 @@ class ScrapyAgent:
         self._txresponse = txresponse
 
         return d
+
+    @staticmethod
+    def _cancel(_: Any, txresponse: TxResponse) -> None:
+        # Abort connection immediately.
+        txresponse._transport._producer.abortConnection()
 
     def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
@@ -735,6 +657,8 @@ class _ResponseReader(Protocol):
         warnsize: int,
         fail_on_dataloss: bool,
         crawler: Crawler,
+        *,
+        tls_verbose_logging: bool = False,
     ):
         self._finished: Deferred[_ResultT] = finished
         self._txresponse: TxResponse = txresponse
@@ -748,6 +672,7 @@ class _ResponseReader(Protocol):
         self._certificate: ssl.Certificate | None = None
         self._ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None = None
         self._crawler: Crawler = crawler
+        self._tls_verbose_logging: bool = tls_verbose_logging
 
     def _finish_response(
         self, flags: list[str] | None = None, stop_download: StopDownload | None = None
@@ -776,17 +701,23 @@ class _ResponseReader(Protocol):
                 self.transport._producer.getPeer().host
             )
 
-    def dataReceived(self, bodyBytes: bytes) -> None:
+        if self._tls_verbose_logging:
+            connection = self.transport._producer.getHandle()
+            hostname = urlparse_cached(self._request).hostname
+            assert hostname is not None
+            _log_ssl_conn_debug_info(hostname, connection)
+
+    def dataReceived(self, data: bytes) -> None:
         # This maybe called several times after cancel was called with buffered data.
         if self._finished.called:
             return
 
         assert self.transport
-        self._bodybuf.write(bodyBytes)
-        self._bytes_received += len(bodyBytes)
+        self._bodybuf.write(data)
+        self._bytes_received += len(data)
 
         if stop_download := check_stop_download(
-            signals.bytes_received, self._crawler, self._request, data=bodyBytes
+            signals.bytes_received, self._crawler, self._request, data=data
         ):
             self.transport.stopProducing()
             self.transport.loseConnection()
@@ -827,7 +758,8 @@ class _ResponseReader(Protocol):
             return
 
         if reason.check(ResponseFailed) and any(
-            r.check(_DataLoss) for r in reason.value.reasons
+            r.check(_DataLoss)
+            for r in reason.value.reasons  # type: ignore[union-attr]
         ):
             if not self._fail_on_dataloss:
                 self._finish_response(flags=["dataloss"])

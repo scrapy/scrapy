@@ -44,7 +44,7 @@ class TelnetConsole(protocol.ServerFactory):
         if not crawler.settings.getbool("TELNETCONSOLE_ENABLED"):
             raise NotConfigured
 
-        if not crawler.settings.getbool("TWISTED_ENABLED"):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise NotConfigured(
                 "The TelnetConsole extension requires a Twisted reactor."
                 " You can set the TELNETCONSOLE_ENABLED setting to False to remove this warning."
@@ -86,7 +86,7 @@ class TelnetConsole(protocol.ServerFactory):
         class Portal:
             """An implementation of IPortal"""
 
-            def login(self_, credentials, mind, *interfaces):  # pylint: disable=no-self-argument
+            def login(self_, credentials, mind, *interfaces):  # type: ignore[no-untyped-def]  # pylint: disable=no-self-argument
                 if not (
                     credentials.username == self.username.encode("utf8")
                     and credentials.checkPassword(self.password.encode("utf8"))

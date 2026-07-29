@@ -2,32 +2,55 @@ from __future__ import annotations
 
 from collections import deque
 from logging import ERROR
-from typing import TYPE_CHECKING
-
-import pytest
-from twisted.internet.defer import Deferred
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.core.scheduler import BaseScheduler
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
-from tests.test_scheduler import MemoryScheduler
+from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    import pytest
+
     from scrapy.http import Response
 
 
-async def sleep(seconds: float = 0.001) -> None:
-    from twisted.internet import reactor
+class MemoryScheduler(BaseScheduler):
+    paused = False
 
-    deferred: Deferred[None] = Deferred()
-    reactor.callLater(seconds, deferred.callback, None)
-    await maybe_deferred_to_future(deferred)
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.queue: deque[Request] = deque(
+            Request(value) if isinstance(value, str) else value
+            for value in getattr(self, "queue", [])
+        )
+
+    def enqueue_request(self, request: Request) -> bool:
+        self.queue.append(request)
+        return True
+
+    def has_pending_requests(self) -> bool:
+        return self.paused or bool(self.queue)
+
+    def next_request(self) -> Request | None:
+        if self.paused:
+            return None
+        try:
+            return self.queue.pop()
+        except IndexError:
+            return None
+
+    def pause(self) -> None:
+        self.paused = True
+
+    def unpause(self) -> None:
+        self.paused = False
 
 
 class TestMain:
-    @pytest.mark.requires_reactor  # TODO
     @coroutine_test
     async def test_sleep(self):
         """Neither asynchronous sleeps on Spider.start() nor the equivalent on
@@ -40,27 +63,25 @@ class TestMain:
             name = "test"
 
             async def start(self):
-                from twisted.internet import reactor
-
                 yield Request("data:,a")
 
-                await sleep(seconds)
+                await async_sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.pause()
                 self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
 
                 # During this time, the scheduler reports having requests but
                 # returns None.
-                await sleep(seconds)
+                await async_sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.unpause()
 
                 # The scheduler request is processed.
-                await sleep(seconds)
+                await async_sleep(seconds)
 
                 yield Request("data:,c")
 
-                await sleep(seconds)
+                await async_sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.pause()
                 self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,d"))
@@ -69,7 +90,7 @@ class TestMain:
                 # delayed call below, proving that the start iteration can
                 # finish before a scheduler “sleep” without causing the
                 # scheduler to finish.
-                reactor.callLater(seconds, self.crawler.engine._slot.scheduler.unpause)
+                call_later(seconds, self.crawler.engine._slot.scheduler.unpause)
 
             def parse(self, response):
                 pass
@@ -131,7 +152,7 @@ class TestRequestSendOrder:
 
     @classmethod
     def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)  # increase if flaky
+        cls.mockserver.__exit__(None, None, None)
 
     def request(self, num, response_seconds, download_slots, priority=0):
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
@@ -274,7 +295,7 @@ class TestRequestSendOrder:
     @coroutine_test
     async def test_shared_queues(self):
         """If SCHEDULER_START_*_QUEUE is falsy, start requests and other
-        requests share the same queue, i.e. start requests are not priorized
+        requests share the same queue, i.e. start requests are not prioritized
         over other requests if their priority matches."""
         nums = list(range(1, 14))
         response_seconds = 0
@@ -332,7 +353,6 @@ class TestRequestSendOrder:
     # Examples from the “Start requests” section of the documentation about
     # spiders.
 
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_lazy(self):
         start_nums = [1, 2, 4]

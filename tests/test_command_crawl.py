@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tests.test_commands import TestProjectBase
+from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import proc
 
 if TYPE_CHECKING:
@@ -123,4 +123,23 @@ class MySpider(scrapy.Spider):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             not in log
         )
+        assert "Spider closed (finished)" in log
+
+    def test_no_reactor(self, proj_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    async def start(self):
+        self.logger.debug('It works!')
+        return
+        yield
+"""
+        log = self.get_log(
+            spider_code, proj_path, args=("-s", "TWISTED_REACTOR_ENABLED=False")
+        )
+        assert "[myspider] DEBUG: It works!" in log
+        assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log

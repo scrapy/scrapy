@@ -1,13 +1,11 @@
-import warnings
-from importlib import import_module
+from __future__ import annotations
 
 import pytest
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
-from scrapy.utils.url import (  # type: ignore[attr-defined]
+from scrapy.utils.url import (
     _is_filesystem_path,
-    _public_w3lib_objects,
     add_http_if_no_scheme,
     guess_scheme,
     strip_url,
@@ -43,16 +41,6 @@ def test_url_is_from_any_domain():
 
 
 def test_url_is_from_spider():
-    class MySpider(Spider):
-        name = "example.com"
-
-    assert url_is_from_spider("http://www.example.com/some/page.html", MySpider)
-    assert url_is_from_spider("http://sub.example.com/some/page.html", MySpider)
-    assert not url_is_from_spider("http://www.example.org/some/page.html", MySpider)
-    assert not url_is_from_spider("http://www.example.net/some/page.html", MySpider)
-
-
-def test_url_is_from_spider_class_attributes():
     class MySpider(Spider):
         name = "example.com"
 
@@ -205,7 +193,7 @@ def test_guess_scheme(url: str, expected: str):
         ),
     ],
 )
-def test_guess_scheme_skipped(url: str, expected: str, reason: str):
+def test_guess_scheme_skipped(url: str, expected: str, reason: str) -> None:
     pytest.skip(reason)
 
 
@@ -350,6 +338,18 @@ class TestStripUrl:
                 "ftp://username:password@www.example.com:221/file.txt",
                 "ftp://username:password@www.example.com:221/file.txt",
             ),
+            (
+                "http://user:80@www.example.com:80/index.html",
+                "http://user:80@www.example.com/index.html",
+            ),
+            (
+                "https://user:443@www.example.com:443/index.html",
+                "https://user:443@www.example.com/index.html",
+            ),
+            (
+                "ftp://user:21@www.example.com:21/file.txt",
+                "ftp://user:21@www.example.com/file.txt",
+            ),
         ],
     )
     def test_default_ports(self, url: str, expected: str) -> None:
@@ -446,23 +446,3 @@ class TestStripUrl:
 )
 def test__is_filesystem_path(path: str, expected: bool) -> None:
     assert _is_filesystem_path(path) == expected
-
-
-@pytest.mark.parametrize(
-    "obj_name",
-    [
-        "_unquotepath",
-        "_safe_chars",
-        "parse_url",
-        *_public_w3lib_objects,
-    ],
-)
-def test_deprecated_imports_from_w3lib(obj_name: str) -> None:
-    with warnings.catch_warnings(record=True) as warns:
-        obj_type = "attribute" if obj_name == "_safe_chars" else "function"
-        message = f"The scrapy.utils.url.{obj_name} {obj_type} is deprecated, use w3lib.url.{obj_name} instead."
-
-        getattr(import_module("scrapy.utils.url"), obj_name)
-
-        assert isinstance(warns[0].message, Warning)
-        assert message in warns[0].message.args

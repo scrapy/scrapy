@@ -1,7 +1,14 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from scrapy.utils.template import render_templatefile
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def test_simple_render(tmp_path):
+
+def test_simple_render(tmp_path: Path) -> None:
     context = {"project_name": "proj", "name": "spi", "classname": "TheSpider"}
     template = "from ${project_name}.spiders.${name} import ${classname}"
     rendered = "from proj.spiders.spi import TheSpider"

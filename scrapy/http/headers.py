@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, AnyStr, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from w3lib.http import headers_dict_to_raw
 
@@ -25,14 +25,20 @@ class Headers(CaselessDict):
 
     def __init__(
         self,
-        seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        seq: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         encoding: str = "utf-8",
     ):
         self.encoding: str = encoding
         super().__init__(seq)
 
     def update(  # type: ignore[override]
-        self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]
+        self,
+        seq: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]],
     ) -> None:
         seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq: dict[bytes, list[bytes]] = {}
@@ -40,7 +46,7 @@ class Headers(CaselessDict):
             iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
         super().update(iseq)
 
-    def normkey(self, key: AnyStr) -> bytes:  # type: ignore[override]
+    def normkey(self, key: str | bytes) -> bytes:
         """Normalize key to bytes"""
         return self._tobytes(key.title())
 
@@ -67,19 +73,19 @@ class Headers(CaselessDict):
             return str(x).encode(self.encoding)
         raise TypeError(f"Unsupported value type: {type(x)}")
 
-    def __getitem__(self, key: AnyStr) -> bytes | None:
+    def __getitem__(self, key: str | bytes) -> bytes | None:
         try:
             return cast("list[bytes]", super().__getitem__(key))[-1]
         except IndexError:
             return None
 
-    def get(self, key: AnyStr, def_val: Any = None) -> bytes | None:
+    def get(self, key: str | bytes, def_val: Any = None) -> bytes | None:
         try:
             return cast("list[bytes]", super().get(key, def_val))[-1]
         except IndexError:
             return None
 
-    def getlist(self, key: AnyStr, def_val: Any = None) -> list[bytes]:
+    def getlist(self, key: str | bytes, def_val: Any = None) -> list[bytes]:
         try:
             return cast("list[bytes]", super().__getitem__(key))
         except KeyError:
@@ -87,15 +93,15 @@ class Headers(CaselessDict):
                 return self.normvalue(def_val)
             return []
 
-    def setlist(self, key: AnyStr, list_: Iterable[_RawValue]) -> None:
+    def setlist(self, key: str | bytes, list_: Iterable[_RawValue]) -> None:
         self[key] = list_
 
     def setlistdefault(
-        self, key: AnyStr, default_list: Iterable[_RawValue] = ()
+        self, key: str | bytes, default_list: Iterable[_RawValue] = ()
     ) -> Any:
         return self.setdefault(key, default_list)
 
-    def appendlist(self, key: AnyStr, value: Iterable[_RawValue]) -> None:
+    def appendlist(self, key: str | bytes, value: Iterable[_RawValue]) -> None:
         lst = self.getlist(key)
         lst.extend(self.normvalue(value))
         self[key] = lst
@@ -123,6 +129,17 @@ class Headers(CaselessDict):
             )
             for key, value in self.items()
         )
+
+    def to_tuple_list(self) -> list[tuple[str, str]]:
+        """Return headers as a list of ``(key, value)`` tuples.
+
+        Multiple values are represented as multiple tuples with the same key.
+        """
+        return [
+            (key.decode(self.encoding), value.decode(self.encoding))
+            for key, values in self.items()
+            for value in values
+        ]
 
     def __copy__(self) -> Self:
         return self.__class__(self)

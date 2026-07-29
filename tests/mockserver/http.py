@@ -14,6 +14,7 @@ from .http_resources import (
     BrokenChunkedResource,
     BrokenDownloadResource,
     ChunkedResource,
+    ClientIPResource,
     Compress,
     ContentLengthHeaderResource,
     Delay,
@@ -33,6 +34,7 @@ from .http_resources import (
     ResponseHeadersResource,
     SetCookie,
     Status,
+    UriResource,
 )
 
 
@@ -72,6 +74,7 @@ class Root(resource.Resource):
         self.putChild(b"wait", ForeverTakingResource())
         self.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
         self.putChild(b"host", HostHeaderResource())
+        self.putChild(b"client-ip", ClientIPResource())
         self.putChild(b"broken", BrokenDownloadResource())
         self.putChild(b"chunked", ChunkedResource())
         self.putChild(b"broken-chunked", BrokenChunkedResource())
@@ -82,8 +85,9 @@ class Root(resource.Resource):
         self.putChild(b"duplicate-header", DuplicateHeaderResource())
         self.putChild(b"response-headers", ResponseHeadersResource())
         self.putChild(b"set-cookie", SetCookie())
+        self.putChild(b"uri", UriResource())
 
-    def getChild(self, name, request):
+    def getChild(self, path, request):
         return self
 
     def render(self, request):

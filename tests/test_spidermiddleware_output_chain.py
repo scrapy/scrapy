@@ -1,10 +1,15 @@
-import pytest
-from testfixtures import LogCapture
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    import pytest
 
 
 class _BaseSpiderMiddleware:
@@ -170,8 +175,8 @@ class NotGeneratorCallbackSpiderMiddlewareRightAfterSpider(NotGeneratorCallbackS
 # ================================================================================
 # (4) exceptions from a middleware process_spider_output method (generator)
 class _GeneratorDoNothingMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        for r in result:
+    async def process_spider_output(self, response, result):
+        async for r in result:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
 
@@ -183,8 +188,8 @@ class _GeneratorDoNothingMiddleware(_BaseSpiderMiddleware):
 
 
 class GeneratorFailMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        for r in result:
+    async def process_spider_output(self, response, result):
+        async for r in result:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
             raise LookupError
@@ -202,8 +207,8 @@ class GeneratorDoNothingAfterFailureMiddleware(_GeneratorDoNothingMiddleware):
 
 
 class GeneratorRecoverMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        for r in result:
+    async def process_spider_output(self, response, result):
+        async for r in result:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
 
@@ -239,87 +244,6 @@ class GeneratorOutputChainSpider(Spider):
 
 
 # ================================================================================
-# (5) exceptions from a middleware process_spider_output method (not generator)
-
-
-class _NotGeneratorDoNothingMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        out = []
-        for r in result:
-            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
-            out.append(r)
-        return out
-
-    def process_spider_exception(self, response, exception):
-        method = f"{self.__class__.__name__}.process_spider_exception"
-        self.crawler.spider.logger.info(
-            "%s: %s caught", method, exception.__class__.__name__
-        )
-
-
-class NotGeneratorFailMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        out = []
-        for r in result:
-            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
-            out.append(r)
-        raise ReferenceError
-
-    def process_spider_exception(self, response, exception):
-        method = f"{self.__class__.__name__}.process_spider_exception"
-        self.crawler.spider.logger.info(
-            "%s: %s caught", method, exception.__class__.__name__
-        )
-        return [{"processed": [method]}]
-
-
-class NotGeneratorDoNothingAfterFailureMiddleware(_NotGeneratorDoNothingMiddleware):
-    pass
-
-
-class NotGeneratorRecoverMiddleware(_BaseSpiderMiddleware):
-    def process_spider_output(self, response, result):
-        out = []
-        for r in result:
-            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
-            out.append(r)
-        return out
-
-    def process_spider_exception(self, response, exception):
-        method = f"{self.__class__.__name__}.process_spider_exception"
-        self.crawler.spider.logger.info(
-            "%s: %s caught", method, exception.__class__.__name__
-        )
-        return [{"processed": [method]}]
-
-
-class NotGeneratorDoNothingAfterRecoveryMiddleware(_NotGeneratorDoNothingMiddleware):
-    pass
-
-
-class NotGeneratorOutputChainSpider(Spider):
-    name = "NotGeneratorOutputChainSpider"
-    custom_settings = {
-        "SPIDER_MIDDLEWARES": {
-            NotGeneratorFailMiddleware: 10,
-            NotGeneratorDoNothingAfterFailureMiddleware: 8,
-            NotGeneratorRecoverMiddleware: 5,
-            NotGeneratorDoNothingAfterRecoveryMiddleware: 3,
-        },
-    }
-
-    async def start(self):
-        yield Request(self.mockserver.url("/status?n=200"))
-
-    def parse(self, response):
-        return [
-            {"processed": ["parse-first-item"]},
-            {"processed": ["parse-second-item"]},
-        ]
-
-
-# ================================================================================
-@pytest.mark.requires_http_handler
 class TestSpiderMiddleware:
     mockserver: MockServer
 
@@ -332,113 +256,132 @@ class TestSpiderMiddleware:
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    async def crawl_log(self, spider: type[Spider]) -> LogCapture:
+    async def crawl_log(
+        self, spider: type[Spider], caplog: pytest.LogCaptureFixture
+    ) -> str:
         crawler = get_crawler(spider)
-        with LogCapture() as log:
+        caplog.clear()
+        with caplog.at_level(logging.DEBUG):
             await crawler.crawl_async(mockserver=self.mockserver)
-        return log
+        return caplog.text
 
     @coroutine_test
-    async def test_recovery(self):
+    async def test_recovery(self, caplog: pytest.LogCaptureFixture) -> None:
         """
         (0) Recover from an exception in a spider callback. The final item count should be 3
         (one yielded from the callback method before the exception is raised, one directly
         from the recovery middleware and one from the spider when processing the request that
         was enqueued from the recovery middleware)
         """
-        log = await self.crawl_log(RecoverySpider)
-        assert "Middleware: TabError exception caught" in str(log)
-        assert str(log).count("Middleware: TabError exception caught") == 1
-        assert "'item_scraped_count': 3" in str(log)
+        log = await self.crawl_log(RecoverySpider, caplog)
+        assert "Middleware: TabError exception caught" in log
+        assert log.count("Middleware: TabError exception caught") == 1
+        assert "'item_scraped_count': 3" in log
 
     @coroutine_test
-    async def test_recovery_asyncgen(self):
+    async def test_recovery_asyncgen(self, caplog: pytest.LogCaptureFixture) -> None:
         """
         Same as test_recovery but with an async callback.
         """
-        log = await self.crawl_log(RecoveryAsyncGenSpider)
-        assert "Middleware: TabError exception caught" in str(log)
-        assert str(log).count("Middleware: TabError exception caught") == 1
-        assert "'item_scraped_count': 3" in str(log)
+        log = await self.crawl_log(RecoveryAsyncGenSpider, caplog)
+        assert "Middleware: TabError exception caught" in log
+        assert log.count("Middleware: TabError exception caught") == 1
+        assert "'item_scraped_count': 3" in log
 
     @coroutine_test
-    async def test_process_spider_input_without_errback(self):
+    async def test_process_spider_input_without_errback(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         (1.1) An exception from the process_spider_input chain should be caught by the
         process_spider_exception chain from the start if the Request has no errback
         """
-        log1 = await self.crawl_log(ProcessSpiderInputSpiderWithoutErrback)
-        assert "Middleware: will raise IndexError" in str(log1)
-        assert "Middleware: IndexError exception caught" in str(log1)
+        log1 = await self.crawl_log(ProcessSpiderInputSpiderWithoutErrback, caplog)
+        assert "Middleware: will raise IndexError" in log1
+        assert "Middleware: IndexError exception caught" in log1
 
     @coroutine_test
-    async def test_process_spider_input_with_errback(self):
+    async def test_process_spider_input_with_errback(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         (1.2) An exception from the process_spider_input chain should not be caught by the
         process_spider_exception chain if the Request has an errback
         """
-        log1 = await self.crawl_log(ProcessSpiderInputSpiderWithErrback)
-        assert "Middleware: IndexError exception caught" not in str(log1)
-        assert "Middleware: will raise IndexError" in str(log1)
-        assert "Got a Failure on the Request errback" in str(log1)
-        assert "{'from': 'errback'}" in str(log1)
-        assert "{'from': 'callback'}" not in str(log1)
-        assert "'item_scraped_count': 1" in str(log1)
+        log1 = await self.crawl_log(ProcessSpiderInputSpiderWithErrback, caplog)
+        assert "Middleware: IndexError exception caught" not in log1
+        assert "Middleware: will raise IndexError" in log1
+        assert "Got a Failure on the Request errback" in log1
+        assert "{'from': 'errback'}" in log1
+        assert "{'from': 'callback'}" not in log1
+        assert "'item_scraped_count': 1" in log1
 
     @coroutine_test
-    async def test_generator_callback(self):
+    async def test_generator_callback(self, caplog: pytest.LogCaptureFixture) -> None:
         """
         (2) An exception from a spider callback (returning a generator) should
         be caught by the process_spider_exception chain. Items yielded before the
         exception is raised should be processed normally.
         """
-        log2 = await self.crawl_log(GeneratorCallbackSpider)
-        assert "Middleware: ImportError exception caught" in str(log2)
-        assert "'item_scraped_count': 2" in str(log2)
+        log2 = await self.crawl_log(GeneratorCallbackSpider, caplog)
+        assert "Middleware: ImportError exception caught" in log2
+        assert "'item_scraped_count': 2" in log2
 
     @coroutine_test
-    async def test_async_generator_callback(self):
+    async def test_async_generator_callback(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         Same as test_generator_callback but with an async callback.
         """
-        log2 = await self.crawl_log(AsyncGeneratorCallbackSpider)
-        assert "Middleware: ImportError exception caught" in str(log2)
-        assert "'item_scraped_count': 2" in str(log2)
+        log2 = await self.crawl_log(AsyncGeneratorCallbackSpider, caplog)
+        assert "Middleware: ImportError exception caught" in log2
+        assert "'item_scraped_count': 2" in log2
 
     @coroutine_test
-    async def test_generator_callback_right_after_callback(self):
+    async def test_generator_callback_right_after_callback(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         (2.1) Special case of (2): Exceptions should be caught
         even if the middleware is placed right after the spider
         """
-        log21 = await self.crawl_log(GeneratorCallbackSpiderMiddlewareRightAfterSpider)
-        assert "Middleware: ImportError exception caught" in str(log21)
-        assert "'item_scraped_count': 2" in str(log21)
+        log21 = await self.crawl_log(
+            GeneratorCallbackSpiderMiddlewareRightAfterSpider, caplog
+        )
+        assert "Middleware: ImportError exception caught" in log21
+        assert "'item_scraped_count': 2" in log21
 
     @coroutine_test
-    async def test_not_a_generator_callback(self):
+    async def test_not_a_generator_callback(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         (3) An exception from a spider callback (returning a list) should
         be caught by the process_spider_exception chain. No items should be processed.
         """
-        log3 = await self.crawl_log(NotGeneratorCallbackSpider)
-        assert "Middleware: ZeroDivisionError exception caught" in str(log3)
-        assert "item_scraped_count" not in str(log3)
+        log3 = await self.crawl_log(NotGeneratorCallbackSpider, caplog)
+        assert "Middleware: ZeroDivisionError exception caught" in log3
+        assert "item_scraped_count" not in log3
 
     @coroutine_test
-    async def test_not_a_generator_callback_right_after_callback(self):
+    async def test_not_a_generator_callback_right_after_callback(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         (3.1) Special case of (3): Exceptions should be caught
         even if the middleware is placed right after the spider
         """
         log31 = await self.crawl_log(
-            NotGeneratorCallbackSpiderMiddlewareRightAfterSpider
+            NotGeneratorCallbackSpiderMiddlewareRightAfterSpider, caplog
         )
-        assert "Middleware: ZeroDivisionError exception caught" in str(log31)
-        assert "item_scraped_count" not in str(log31)
+        assert "Middleware: ZeroDivisionError exception caught" in log31
+        assert "item_scraped_count" not in log31
 
     @coroutine_test
-    async def test_generator_output_chain(self):
+    async def test_generator_output_chain(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         (4) An exception from a middleware's process_spider_output method should be sent
         to the process_spider_exception method from the next middleware in the chain.
@@ -447,23 +390,23 @@ class TestSpiderMiddleware:
         The final item count should be 2 (one from the spider callback and one from the
         process_spider_exception chain)
         """
-        log4 = await self.crawl_log(GeneratorOutputChainSpider)
-        assert "'item_scraped_count': 2" in str(log4)
+        log4 = await self.crawl_log(GeneratorOutputChainSpider, caplog)
+        assert "'item_scraped_count': 2" in log4
         assert (
             "GeneratorRecoverMiddleware.process_spider_exception: LookupError caught"
-            in str(log4)
+            in log4
         )
         assert (
             "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught"
-            in str(log4)
+            in log4
         )
         assert (
             "GeneratorFailMiddleware.process_spider_exception: LookupError caught"
-            not in str(log4)
+            not in log4
         )
         assert (
             "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught"
-            not in str(log4)
+            not in log4
         )
         item_from_callback = {
             "processed": [
@@ -480,44 +423,6 @@ class TestSpiderMiddleware:
                 "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output",
             ]
         }
-        assert str(item_from_callback) in str(log4)
-        assert str(item_recovered) in str(log4)
-        assert "parse-second-item" not in str(log4)
-
-    @coroutine_test
-    async def test_not_a_generator_output_chain(self):
-        """
-        (5) An exception from a middleware's process_spider_output method should be sent
-        to the process_spider_exception method from the next middleware in the chain.
-        The result of the recovery by the process_spider_exception method should be handled
-        by the process_spider_output method from the next middleware.
-        The final item count should be 1 (from the process_spider_exception chain, the items
-        from the spider callback are lost)
-        """
-        log5 = await self.crawl_log(NotGeneratorOutputChainSpider)
-        assert "'item_scraped_count': 1" in str(log5)
-        assert (
-            "GeneratorRecoverMiddleware.process_spider_exception: ReferenceError caught"
-            in str(log5)
-        )
-        assert (
-            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught"
-            in str(log5)
-        )
-        assert (
-            "GeneratorFailMiddleware.process_spider_exception: ReferenceError caught"
-            not in str(log5)
-        )
-        assert (
-            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught"
-            not in str(log5)
-        )
-        item_recovered = {
-            "processed": [
-                "NotGeneratorRecoverMiddleware.process_spider_exception",
-                "NotGeneratorDoNothingAfterRecoveryMiddleware.process_spider_output",
-            ]
-        }
-        assert str(item_recovered) in str(log5)
-        assert "parse-first-item" not in str(log5)
-        assert "parse-second-item" not in str(log5)
+        assert str(item_from_callback) in log4
+        assert str(item_recovered) in log4
+        assert "parse-second-item" not in log4

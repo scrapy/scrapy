@@ -8,13 +8,12 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
 
-from twisted import version as twisted_version
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
-from twisted.python.versions import Version
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK, Request
+from scrapy.utils._deps_compat import TWISTED_FAILURE_HAS_STACK
 from scrapy.utils.asyncio import call_later, is_asyncio_available
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.decorators import _warn_spider_arg
@@ -30,6 +29,8 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -52,6 +53,25 @@ FileInfoOrError: TypeAlias = (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class FileException(Exception):
+    """General media error exception"""
+
+
+class _MediaRequestFiltered(FileException):
+    """Raised internally by media pipelines when a media request is filtered
+    out (e.g. as an offsite request) instead of being downloaded.
+
+    It is a subclass of :exc:`FileException` for backward compatibility, but
+    unlike an actual download error it is logged at the ``DEBUG`` level and
+    without a traceback, since filtering a request is expected behavior rather
+    than an error.
+    """
+
+
+def _media_request_filtered(failure: Failure) -> bool:
+    return isinstance(failure.value, _MediaRequestFiltered)
 
 
 class MediaPipeline(ABC):
@@ -152,7 +172,7 @@ class MediaPipeline(ABC):
     ) -> FileInfo:
         fp = self._fingerprinter.fingerprint(request)
 
-        eb = request.errback
+        eb: Callable[[Failure], FileInfo] | None = request.errback
         request.callback = NO_CALLBACK
         request.errback = None
 
@@ -192,7 +212,8 @@ class MediaPipeline(ABC):
                 result = await self._check_media_to_download(request, info, item=item)
         except Exception:
             result = Failure()
-            logger.exception(result)
+            if not _media_request_filtered(result):
+                logger.exception(result)
         self._cache_result_and_execute_waiters(result, fp, info)
         return await maybe_deferred_to_future(wad)  # it must return wad at last
 
@@ -209,7 +230,9 @@ class MediaPipeline(ABC):
             self._modify_media_request(request)
             assert self.crawler.engine
             response = await self.crawler.engine.download_async(request)
-            return self.media_downloaded(response, request, info, item=item)
+            return await ensure_awaitable(
+                self.media_downloaded(response, request, info, item=item)
+            )
         except Exception:
             failure = self.media_failed(Failure(), request, info)
             if isinstance(failure, Failure):
@@ -227,9 +250,9 @@ class MediaPipeline(ABC):
         if isinstance(result, Failure):
             # minimize cached information for failure
             result.cleanFailure()
-            result.frames = []
-            if twisted_version < Version("twisted", 24, 10, 0):
-                result.stack = []  # type: ignore[method-assign]
+            result.frames.clear()
+            if TWISTED_FAILURE_HAS_STACK:
+                result.stack.clear()
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
             #
@@ -250,6 +273,7 @@ class MediaPipeline(ABC):
             # the encapsulated exception when it is a StopIteration instance
             context = getattr(result.value, "__context__", None)
             if isinstance(context, StopIteration):
+                assert result.value is not None
                 result.value.__context__ = None
 
         info.downloading.remove(fp)
@@ -281,7 +305,7 @@ class MediaPipeline(ABC):
         info: SpiderInfo,
         *,
         item: Any = None,
-    ) -> FileInfo:
+    ) -> FileInfo | Awaitable[FileInfo]:
         """Handler for success downloads"""
         raise NotImplementedError
 
@@ -300,6 +324,8 @@ class MediaPipeline(ABC):
             for ok, value in results:
                 if not ok:
                     assert isinstance(value, Failure)
+                    if _media_request_filtered(value):
+                        continue
                     logger.error(
                         "%(class)s found errors processing %(item)s",
                         {"class": self.__class__.__name__, "item": item},

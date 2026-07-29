@@ -11,11 +11,9 @@ That includes the classes that you may assign to the following settings:
 
 -   :setting:`ADDONS`
 
--   :setting:`DNS_RESOLVER`
+-   :setting:`TWISTED_DNS_RESOLVER`
 
 -   :setting:`DOWNLOAD_HANDLERS`
-
--   :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`
 
 -   :setting:`DOWNLOADER_MIDDLEWARES`
 

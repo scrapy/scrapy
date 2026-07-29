@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import importlib
+import os
+from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,7 @@ from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
+from tests.mockserver.mitm_proxy import MitmProxy, mitmdump_cmd
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -23,16 +25,13 @@ def _py_files(folder):
 collect_ignore = [
     # may need extra deps
     "docs/_ext",
-    # not a test, but looks like a test
-    "scrapy/utils/testproc.py",
-    "scrapy/utils/testsite.py",
-    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerProcessSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::AsyncCrawlerProcessSubprocess
     *_py_files("tests/AsyncCrawlerProcess"),
-    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerRunnerSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::AsyncCrawlerRunnerSubprocess
     *_py_files("tests/AsyncCrawlerRunner"),
-    # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::CrawlerProcessSubprocess
     *_py_files("tests/CrawlerProcess"),
-    # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::CrawlerRunnerSubprocess
     *_py_files("tests/CrawlerRunner"),
 ]
 
@@ -51,6 +50,9 @@ if not H2_ENABLED:
             *_py_files("scrapy/core/http2"),
         )
     )
+
+if find_spec("httpx2") is None and find_spec("httpx") is None:
+    collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
 
 
 def pytest_addoption(parser, pluginmanager):
@@ -71,6 +73,36 @@ def mockserver() -> Generator[MockServer]:
 
 
 @pytest.fixture(scope="session")
+def mockserver_ipv6() -> Generator[MockServer]:
+    """A mockserver reachable only over the IPv6 loopback.
+
+    Tests using this must skip when :func:`ipv6_loopback_available` is False.
+    """
+    with MockServer("::1") as mockserver:
+        yield mockserver
+
+
+@pytest.fixture  # function scope because it modifies os.environ
+def proxy_server(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Generator[str]:
+    kind = request.param
+    # test classes can make the proxy listen on a different address, e.g. "::1"
+    host = getattr(request.cls, "proxy_host", "127.0.0.1")
+    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None, host=host)
+    url = proxy.start()
+    if kind == "https":
+        url = url.replace("http://", "https://")
+    monkeypatch.setenv("http_proxy", url)
+    monkeypatch.setenv("https_proxy", url)
+
+    try:
+        yield kind
+    finally:
+        proxy.stop()
+
+
+@pytest.fixture(scope="session")
 def reactor_pytest(request) -> str:
     return request.config.getoption("--reactor")
 
@@ -88,10 +120,7 @@ def pytest_runtest_setup(item):
     # Skip tests based on reactor markers
     reactor = item.config.getoption("--reactor")
 
-    if (
-        item.get_closest_marker("requires_reactor")
-        or item.get_closest_marker("requires_http_handler")
-    ) and reactor == "none":
+    if item.get_closest_marker("requires_reactor") and reactor == "none":
         pytest.skip('This test is only run when the --reactor value is not "none"')
 
     if item.get_closest_marker("only_asyncio") and reactor not in {"asyncio", "none"}:
@@ -109,16 +138,16 @@ def pytest_runtest_setup(item):
         "uvloop",
         "botocore",
         "boto3",
-        "mitmproxy",
     ]
 
     for module in optional_deps:
-        if item.get_closest_marker(f"requires_{module}"):
-            try:
-                importlib.import_module(module)
-            except ImportError:
-                pytest.skip(f"{module} is not installed")
+        if item.get_closest_marker(f"requires_{module}") and find_spec(module) is None:
+            pytest.skip(f"{module} is not installed")
+
+    if item.get_closest_marker("requires_mitmproxy") and mitmdump_cmd() is None:
+        pytest.skip("mitmdump is not available")
 
 
-# Generate localhost certificate files, needed by some tests
-generate_keys()
+# Generate localhost certificate files, needed by some tests (but only once if xdist is used)
+if "PYTEST_XDIST_WORKER" not in os.environ:
+    generate_keys()

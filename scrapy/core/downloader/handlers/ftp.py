@@ -2,9 +2,9 @@
 An asynchronous FTP file download handler for scrapy which somehow emulates an http response.
 
 FTP connection parameters are passed using the request meta field:
-- ftp_user (required)
-- ftp_password (required)
-- ftp_passive (by default, enabled) sets FTP connection passive mode
+- ftp_user (optional, falls back to FTP_USER)
+- ftp_password (optional, falls back to FTP_PASSWORD)
+- ftp_passive (optional, falls back to FTP_PASSIVE_MODE) sets FTP connection passive mode
 - ftp_local_filename
         - If not given, file data will come in the response.body, as a normal scrapy Response,
         which will imply that the entire file will be on memory.
@@ -33,12 +33,13 @@ from __future__ import annotations
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, ClassVar
 from urllib.parse import unquote
 
 from twisted.internet.protocol import ClientCreator, Protocol
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -78,12 +79,14 @@ _CODE_RE = re.compile(r"\d+")
 
 
 class FTPDownloadHandler(BaseDownloadHandler):
-    CODE_MAPPING: dict[str, int] = {
+    CODE_MAPPING: ClassVar[dict[str, int]] = {
         "550": 404,
         "default": 503,
     }
 
     def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         super().__init__(crawler)
         self.default_user = crawler.settings["FTP_USER"]
         self.default_password = crawler.settings["FTP_PASSWORD"]
@@ -116,9 +119,11 @@ class FTPDownloadHandler(BaseDownloadHandler):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message.encode())
             raise
-        protocol.close()
+        finally:
+            protocol.close()
+            assert client.transport
+            client.transport.loseConnection()
         headers = {"local filename": protocol.filename or b"", "size": protocol.size}
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
-        # hints for Headers-related types may need to be fixed to not use AnyStr
-        return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]
+        return respcls(url=request.url, status=200, body=body, headers=headers)
