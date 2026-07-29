@@ -19,9 +19,19 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
+@overload
+def deprecated(use_instead: Callable[_P, _T]) -> Callable[_P, _T]: ...
+
+
+@overload
 def deprecated(
-    use_instead: Any = None,
-) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]:
+    use_instead: str | None = None,
+) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]: ...
+
+
+def deprecated(
+    use_instead: Callable[_P, _T] | str | None = None,
+) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
     when the function is used."""
@@ -38,8 +48,9 @@ def deprecated(
         return wrapped
 
     if callable(use_instead):
-        deco = deco(use_instead)
+        func = use_instead
         use_instead = None
+        return deco(func)
     return deco
 
 
