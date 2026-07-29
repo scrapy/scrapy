@@ -6,6 +6,7 @@ import pytest
 
 from scrapy.http import Headers, Request
 from scrapy.http.request import NO_CALLBACK
+from scrapy.utils.request import request_to_curl
 
 
 class TestRequestBase(ABC):
@@ -488,3 +489,11 @@ class TestRequestBase(ABC):
                 'curl -X PATCH "http://example.org" --foo -z',
                 ignore_unknown_options=False,
             )
+
+    def test_to_curl(self):
+        # Note: more curated tests regarding curl conversion are in
+        # `test_utils_request.py`
+        r = self.request_class(
+            "http://www.example.com/", method="POST", body=b"foo=bar"
+        )
+        assert r.to_curl() == request_to_curl(r)
