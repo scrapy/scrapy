@@ -14,6 +14,7 @@ from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -76,7 +77,7 @@ class TestBase:
     def _middleware(self, **new_settings: Any) -> Generator[HttpCacheMiddleware]:
         with self._get_crawler(**new_settings) as crawler:
             assert crawler.spider
-            mw = HttpCacheMiddleware.from_crawler(crawler)
+            mw = build_from_crawler(HttpCacheMiddleware, crawler)
             mw.spider_opened(crawler.spider)
             try:
                 yield mw

@@ -29,6 +29,7 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -113,8 +114,8 @@ class Downloader:
         )
         self.ip_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS_PER_IP")
         self.randomize_delay: bool = self.settings.getbool("RANDOMIZE_DOWNLOAD_DELAY")
-        self.middleware: DownloaderMiddlewareManager = (
-            DownloaderMiddlewareManager.from_crawler(crawler)
+        self.middleware: DownloaderMiddlewareManager = build_from_crawler(
+            DownloaderMiddlewareManager, crawler
         )
         self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(

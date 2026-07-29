@@ -12,6 +12,7 @@ import pytest
 
 from scrapy.extensions.debug import Debugger, StackTraceDump
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -48,7 +49,7 @@ class SignalSpider(Spider):
 )
 def test_stacktracedump_installs_signal_handlers() -> None:
     crawler = get_crawler()
-    ext = StackTraceDump.from_crawler(crawler)
+    ext = build_from_crawler(StackTraceDump, crawler)
     assert signal.getsignal(signal.SIGUSR2) == ext.dump_stacktrace  # pylint: disable=comparison-with-callable
     assert signal.getsignal(signal.SIGQUIT) == ext.dump_stacktrace  # pylint: disable=comparison-with-callable
 
@@ -58,15 +59,15 @@ def test_stacktracedump_works_without_signal_support(
 ) -> None:
     # simulate win32 platforms, which don't support SIGUSR signals
     monkeypatch.delattr(signal, "SIGUSR2", raising=False)
-    ext = StackTraceDump.from_crawler(get_crawler())
+    ext = build_from_crawler(StackTraceDump, get_crawler())
     assert isinstance(ext, StackTraceDump)
 
 
 def test_stacktracedump_dump_stacktrace(caplog: pytest.LogCaptureFixture) -> None:
     crawler = get_crawler()
     crawler.engine = mock.Mock()
-    ext = StackTraceDump.from_crawler(crawler)
-    spider = DefaultSpider()
+    ext = build_from_crawler(StackTraceDump, crawler)
+    spider = build_from_crawler(DefaultSpider, crawler)
     with caplog.at_level(logging.INFO, logger="scrapy.extensions.debug"):
         ext.dump_stacktrace(0, None)
     for r in caplog.records:
@@ -82,7 +83,7 @@ def test_stacktracedump_dump_stacktrace(caplog: pytest.LogCaptureFixture) -> Non
 
 
 def test_stacktracedump_thread_stacks() -> None:
-    ext = StackTraceDump.from_crawler(get_crawler())
+    ext = build_from_crawler(StackTraceDump, get_crawler())
     stop = threading.Event()
     thread = threading.Thread(target=stop.wait, name="dump-test-thread")
     thread.start()

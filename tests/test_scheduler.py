@@ -15,7 +15,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
@@ -46,8 +46,8 @@ async def create_scheduler(
     priority_queue_cls: str, jobdir: Path | None
 ) -> AsyncGenerator[Scheduler]:
     mock_crawler = MockCrawler(priority_queue_cls, jobdir)
-    scheduler = Scheduler.from_crawler(mock_crawler)
-    spider = Spider(name="spider")
+    scheduler = build_from_crawler(Scheduler, mock_crawler)
+    spider = build_from_crawler(Spider, mock_crawler, name="spider")
     await ensure_awaitable(scheduler.open(spider))
     try:
         yield scheduler
@@ -333,8 +333,8 @@ class TestIncompatibility:
             "CONCURRENT_REQUESTS_PER_IP": 1,
         }
         crawler = get_crawler(Spider, settings)
-        scheduler = Scheduler.from_crawler(crawler)
-        spider = Spider(name="spider")
+        scheduler = build_from_crawler(Scheduler, crawler)
+        spider = build_from_crawler(Spider, crawler, name="spider")
         scheduler.open(spider)
 
     def test_incompatibility(self):

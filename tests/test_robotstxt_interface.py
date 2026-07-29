@@ -7,6 +7,7 @@ from scrapy.robotstxt import (
     decode_robotstxt,
 )
 from scrapy.utils._deps_compat import STDLIB_IMPROVED_ROBOTFILEPARSER
+from scrapy.utils.misc import build_from_crawler
 from tests.utils.robotstxt import rerp_available
 
 
@@ -18,8 +19,8 @@ class BaseRobotParserTest:
         robotstxt_robotstxt_body = (
             b"User-agent: * \nDisallow: /disallowed \nAllow: /allowed \nCrawl-delay: 10"
         )
-        rp = self.parser_cls.from_crawler(
-            crawler=None, robotstxt_body=robotstxt_robotstxt_body
+        rp = build_from_crawler(
+            self.parser_cls, None, robotstxt_body=robotstxt_robotstxt_body
         )
         assert rp.allowed("https://www.site.local/allowed", "*")
         assert not rp.allowed("https://www.site.local/disallowed", "*")
@@ -32,8 +33,8 @@ class BaseRobotParserTest:
                                 Allow: /*allowed
                                 Disallow: /
                                 """
-        rp = self.parser_cls.from_crawler(
-            crawler=None, robotstxt_body=robotstxt_robotstxt_body
+        rp = build_from_crawler(
+            self.parser_cls, None, robotstxt_body=robotstxt_robotstxt_body
         )
 
         assert rp.allowed("https://www.site.local/disallowed", "first")
@@ -47,21 +48,21 @@ class BaseRobotParserTest:
 
     def test_length_based_precedence(self):
         robotstxt_robotstxt_body = b"User-agent: * \nDisallow: / \nAllow: /page"
-        rp = self.parser_cls.from_crawler(
-            crawler=None, robotstxt_body=robotstxt_robotstxt_body
+        rp = build_from_crawler(
+            self.parser_cls, None, robotstxt_body=robotstxt_robotstxt_body
         )
         assert rp.allowed("https://www.site.local/page", "*")
 
     def test_order_based_precedence(self):
         robotstxt_robotstxt_body = b"User-agent: * \nDisallow: / \nAllow: /page"
-        rp = self.parser_cls.from_crawler(
-            crawler=None, robotstxt_body=robotstxt_robotstxt_body
+        rp = build_from_crawler(
+            self.parser_cls, None, robotstxt_body=robotstxt_robotstxt_body
         )
         assert not rp.allowed("https://www.site.local/page", "*")
 
     def test_empty_response(self):
         """empty response should equal 'allow all'"""
-        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=b"")
+        rp = build_from_crawler(self.parser_cls, None, robotstxt_body=b"")
         assert rp.allowed("https://site.local/", "*")
         assert rp.allowed("https://site.local/", "chrome")
         assert rp.allowed("https://site.local/index.html", "*")
@@ -70,8 +71,8 @@ class BaseRobotParserTest:
     def test_garbage_response(self):
         """garbage response should be discarded, equal 'allow all'"""
         robotstxt_robotstxt_body = b"GIF89a\xd3\x00\xfe\x00\xa2"
-        rp = self.parser_cls.from_crawler(
-            crawler=None, robotstxt_body=robotstxt_robotstxt_body
+        rp = build_from_crawler(
+            self.parser_cls, None, robotstxt_body=robotstxt_robotstxt_body
         )
         assert rp.allowed("https://site.local/", "*")
         assert rp.allowed("https://site.local/", "chrome")
@@ -89,8 +90,8 @@ class BaseRobotParserTest:
 
         User-Agent: UnicödeBöt
         Disallow: /some/randome/page.html""".encode()
-        rp = self.parser_cls.from_crawler(
-            crawler=None, robotstxt_body=robotstxt_robotstxt_body
+        rp = build_from_crawler(
+            self.parser_cls, None, robotstxt_body=robotstxt_robotstxt_body
         )
         assert rp.allowed("https://site.local/", "*")
         assert not rp.allowed("https://site.local/admin/", "*")

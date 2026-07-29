@@ -15,6 +15,7 @@ from pexpect.popen_spawn import PopenSpawn
 from scrapy import Spider
 from scrapy.http import Request, Response
 from scrapy.shell import Shell, inspect_response
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.reactor import _asyncio_reactor_path
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
@@ -337,7 +338,7 @@ class TestShell:
         crawler.engine = MagicMock()
         crawler.engine.open_spider_async = AsyncMock()
         shell = Shell(crawler)
-        spider = Spider("test")
+        spider = build_from_crawler(Spider, crawler, "test")
         await shell._open_spider(spider)
         assert shell.spider is spider
         assert crawler.spider is spider

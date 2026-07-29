@@ -8,6 +8,7 @@ import pytest
 import scrapy
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.feedexport import FeedExporter
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
@@ -36,8 +37,7 @@ class TestURIParams(ABC):
             uri="file:///tmp/%(name)s",
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = build_from_crawler(scrapy.Spider, crawler, self.spider_name)
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
@@ -54,8 +54,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = build_from_crawler(scrapy.Spider, crawler, self.spider_name)
 
         feed_exporter.open_spider(spider)
 
@@ -70,8 +69,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = build_from_crawler(scrapy.Spider, crawler, self.spider_name)
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
@@ -87,8 +85,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = build_from_crawler(scrapy.Spider, crawler, self.spider_name)
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
@@ -104,8 +101,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = build_from_crawler(scrapy.Spider, crawler, self.spider_name)
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)

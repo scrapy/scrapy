@@ -21,8 +21,8 @@ class TestPriorityQueue:
 
     def test_queue_push_pop_one(self):
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
-            self.crawler, FifoMemoryQueue, temp_dir
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
         )
         assert queue.pop() is None
         assert len(queue) == 0
@@ -39,8 +39,8 @@ class TestPriorityQueue:
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             pytest.skip("queuelib.queue.FifoMemoryQueue.peek is defined")
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
-            self.crawler, FifoMemoryQueue, temp_dir
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
         )
         queue.push(Request("https://example.org"))
         with pytest.raises(
@@ -54,8 +54,8 @@ class TestPriorityQueue:
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
-            self.crawler, FifoMemoryQueue, temp_dir
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
         )
         assert len(queue) == 0
         assert queue.peek() is None
@@ -78,7 +78,8 @@ class TestPriorityQueue:
 
     def test_init_prios_with_start_queue(self):
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
+        queue = build_from_crawler(
+            ScrapyPriorityQueue,
             self.crawler,
             PickleFifoDiskQueue,
             temp_dir,
@@ -88,7 +89,8 @@ class TestPriorityQueue:
         queue.push(req)
         startprios = queue.close()
 
-        queue2 = ScrapyPriorityQueue.from_crawler(
+        queue2 = build_from_crawler(
+            ScrapyPriorityQueue,
             self.crawler,
             PickleFifoDiskQueue,
             temp_dir,
@@ -101,8 +103,8 @@ class TestPriorityQueue:
 
     def test_queue_push_pop_priorities(self):
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
-            self.crawler, FifoMemoryQueue, temp_dir, [-1, -2, -3]
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir, [-1, -2, -3]
         )
         assert queue.pop() is None
         assert len(queue) == 0
@@ -124,8 +126,9 @@ class TestDownloaderAwarePriorityQueue:
     def setup_method(self):
         crawler = get_crawler(Spider)
         crawler.engine = Mock(downloader=MockDownloader())
-        self.queue = DownloaderAwarePriorityQueue.from_crawler(
-            crawler=crawler,
+        self.queue = build_from_crawler(
+            DownloaderAwarePriorityQueue,
+            crawler,
             downstream_queue_cls=FifoMemoryQueue,
             key="foo/bar",
         )

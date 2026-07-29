@@ -27,7 +27,7 @@ class TestRedirectMiddleware(TestRedirectBase):
     def setup_method(self):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        self.mw = self.mwcls.from_crawler(crawler)
+        self.mw = build_from_crawler(self.mwcls, crawler)
 
     def get_response(self, request, location, status=302):
         headers = {"Location": location}
@@ -208,7 +208,7 @@ class TestRedirectMiddleware(TestRedirectBase):
         response = Response(source_url, headers=resp_headers, status=302)
         crawler = get_crawler()
         referer_mw = build_from_crawler(RefererMiddleware, crawler)
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         redirect_mw._referer_spider_middleware = referer_mw
         redirect_request = redirect_mw.process_response(source_request, response)
         if expected_referer:
@@ -223,7 +223,7 @@ class TestRedirectMiddleware(TestRedirectBase):
             source_url, headers={"Referer": "http://example.com/old"}
         )
         response = Response(source_url, headers={"Location": redirect_url}, status=302)
-        redirect_mw = self.mwcls.from_crawler(get_crawler())
+        redirect_mw = build_from_crawler(self.mwcls, get_crawler())
         redirect_mw._referer_spider_middleware = None
         redirect_request = redirect_mw.process_response(source_request, response)
         assert "Referer" not in redirect_request.headers
@@ -352,7 +352,7 @@ class TestRedirectMiddleware(TestRedirectBase):
 @pytest.mark.parametrize(SCHEME_PARAMS, REDIRECT_SCHEME_CASES)
 def test_redirect_schemes(url, location, target):
     crawler = get_crawler(Spider)
-    mw = RedirectMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(RedirectMiddleware, crawler)
     request = Request(url)
     response = Response(url, headers={"Location": location}, status=301)
     redirect = mw.process_response(request, response)
@@ -471,4 +471,4 @@ def test_warning_subclass(caplog):
 def test_not_configured():
     crawler = get_crawler(DefaultSpider, {"REDIRECT_ENABLED": False})
     with pytest.raises(NotConfigured):
-        RedirectMiddleware.from_crawler(crawler)
+        build_from_crawler(RedirectMiddleware, crawler)

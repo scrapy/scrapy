@@ -11,6 +11,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.extensions import memusage as memusage_mod
 from scrapy.extensions.memusage import MemoryUsage
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils import OneShotLoop
 from tests.utils.decorators import coroutine_test
@@ -47,7 +48,7 @@ def test_memusage_disabled() -> None:
         "MEMUSAGE_ENABLED": False,
     }
     with pytest.raises(NotConfigured):
-        MemoryUsage.from_crawler(get_crawler(settings_dict=settings))
+        build_from_crawler(MemoryUsage, get_crawler(settings_dict=settings))
 
 
 @coroutine_test

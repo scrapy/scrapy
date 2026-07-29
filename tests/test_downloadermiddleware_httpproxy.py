@@ -6,6 +6,7 @@ from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
@@ -19,7 +20,7 @@ class TestHttpProxyMiddleware:
     def test_not_enabled(self):
         crawler = get_crawler(Spider, {"HTTPPROXY_ENABLED": False})
         with pytest.raises(NotConfigured):
-            HttpProxyMiddleware.from_crawler(crawler)
+            build_from_crawler(HttpProxyMiddleware, crawler)
 
     def test_no_environment_proxies(self):
         os.environ = {"dummy_proxy": "reset_env_and_do_not_raise"}
