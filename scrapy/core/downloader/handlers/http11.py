@@ -14,7 +14,7 @@ from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet.endpoints import HostnameEndpoint
+from twisted.internet.endpoints import HostnameEndpoint, TCP6ClientEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
@@ -162,6 +162,13 @@ class TunnelError(Exception):
     """An HTTP CONNECT tunnel could not be established by the proxy."""
 
 
+def _is_ipv6_literal(host: str) -> bool:
+    try:
+        return isinstance(ipaddress.ip_address(host), ipaddress.IPv6Address)
+    except ValueError:  # a hostname
+        return False
+
+
 @implementer(IStreamClientEndpoint)
 class _TunnelingEndpoint:
     """An endpoint that tunnels through proxies to allow HTTPS downloads. To
@@ -191,13 +198,18 @@ class _TunnelingEndpoint:
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         self._proxyHost: str = proxyHost
         self._proxyPort: int = proxyPort
-        # Connect to the proxy through a HostnameEndpoint, the same endpoint
-        # Twisted's Agent uses. It resolves the proxy host through
+        # Reach a proxy given as a name through a HostnameEndpoint, the same
+        # endpoint Twisted's Agent uses: it resolves the name with
         # reactor.nameResolver and picks the address family from the result, so
-        # proxies reachable only over IPv6 work. A TCP4ClientEndpoint would
-        # instead create an AF_INET socket before resolving the name.
-        self._proxyEndpoint: IStreamClientEndpoint = HostnameEndpoint(
-            reactor, proxyHost, proxyPort, timeout=timeout, bindAddress=bindAddress
+        # proxies that only have AAAA records work, given an IPv6-capable
+        # TWISTED_DNS_RESOLVER. A literal IPv6 address skips name resolution
+        # instead, as the default resolver would fail to resolve it.
+        self._proxyEndpoint: IStreamClientEndpoint = (
+            TCP6ClientEndpoint(reactor, proxyHost, proxyPort, timeout, bindAddress)
+            if _is_ipv6_literal(proxyHost)
+            else HostnameEndpoint(
+                reactor, proxyHost, proxyPort, timeout=timeout, bindAddress=bindAddress
+            )
         )
         self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
         self._tunneledHost: str = host
@@ -218,12 +230,7 @@ class _TunnelingEndpoint:
         # Twisted passes URI.host through, which is bytes with the brackets of
         # an IPv6 literal already stripped.
         host = to_unicode(host, encoding="ascii")
-        try:
-            if isinstance(ipaddress.ip_address(host), ipaddress.IPv6Address):
-                return f"[{host}]"
-        except ValueError:
-            pass  # hostname, leave as-is
-        return host
+        return f"[{host}]" if _is_ipv6_literal(host) else host
 
     def requestTunnel(self, protocol: Protocol) -> Protocol:
         """Asks the proxy to open a tunnel."""

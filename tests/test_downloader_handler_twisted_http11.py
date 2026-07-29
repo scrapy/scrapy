@@ -211,6 +211,32 @@ class _SentinelIPv6Resolver:
         return resolutionReceiver
 
 
+@implementer(IHostnameResolver)
+class _UnresolvingResolver:
+    """Resolves nothing, and records what it was asked to resolve.
+
+    Stands in for Scrapy's default resolver, which cannot resolve an IPv6
+    literal: it only ever reports IPv4 addresses.
+    """
+
+    def __init__(self) -> None:
+        self.names: list[str] = []
+
+    def resolveHostName(
+        self,
+        resolutionReceiver: IResolutionReceiver,
+        hostName: str,
+        portNumber: int = 0,
+        addressTypes: Sequence[type[IAddress]] | None = None,
+        transportSemantics: str = "TCP",
+    ) -> IHostResolution:
+        self.names.append(hostName)
+        resolution = HostResolution(hostName)
+        resolutionReceiver.resolutionBegan(resolution)
+        resolutionReceiver.resolutionComplete()
+        return resolution
+
+
 @implementer(IReactorPluggableNameResolver)
 class _ReactorWithNameResolver:
     """The given reactor, but resolving names with the given resolver.
@@ -242,24 +268,32 @@ class _FakeProxyProtocol(Protocol):
 
 
 @pytest.fixture
-def ipv6_only_proxy() -> Generator[tuple[ReactorBase, str, int]]:
-    """A CONNECT-answering server on ::1, reachable only by an IPv6-only name."""
+def fake_proxy_port() -> Generator[int]:
+    """The port of a CONNECT-answering server listening on ::1."""
     from twisted.internet import reactor
 
     listening_port = reactor.listenTCP(
         0, Factory.forProtocol(_FakeProxyProtocol), interface="::1"
     )
+    try:
+        yield listening_port.getHost().port
+    finally:
+        listening_port.stopListening()
+
+
+@pytest.fixture
+def ipv6_only_proxy(fake_proxy_port: int) -> tuple[ReactorBase, str, int]:
+    """That server, reachable only by a name that resolves to ::1."""
+    from twisted.internet import reactor
+
     resolving_reactor = _ReactorWithNameResolver(
         reactor, _SentinelIPv6Resolver(reactor.nameResolver)
     )
-    try:
-        yield (
-            cast("ReactorBase", resolving_reactor),
-            _SentinelIPv6Resolver.hostname,
-            listening_port.getHost().port,
-        )
-    finally:
-        listening_port.stopListening()
+    return (
+        cast("ReactorBase", resolving_reactor),
+        _SentinelIPv6Resolver.hostname,
+        fake_proxy_port,
+    )
 
 
 @pytest.mark.skipif(
@@ -286,6 +320,30 @@ async def test_tunnel_to_proxy_reachable_only_over_ipv6(
     )
     with pytest.raises(TunnelError, match="Could not open CONNECT tunnel"):
         await maybe_deferred_to_future(endpoint.connect(Factory.forProtocol(Protocol)))
+
+
+@pytest.mark.skipif(
+    not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+)
+@coroutine_test
+async def test_tunnel_to_ipv6_literal_proxy(fake_proxy_port: int) -> None:
+    """The CONNECT tunnel must reach a proxy given as an IPv6 address literal
+    without resolving it, as the default resolver cannot resolve one.
+    """
+    from twisted.internet import reactor
+
+    resolver = _UnresolvingResolver()
+    endpoint = _TunnelingEndpoint(
+        reactor=cast("ReactorBase", _ReactorWithNameResolver(reactor, resolver)),
+        host="example.com",
+        port=443,
+        proxyConf=("::1", fake_proxy_port, None),
+        contextFactory=cast("IPolicyForHTTPS", BrowserLikePolicyForHTTPS()),
+        timeout=10,
+    )
+    with pytest.raises(TunnelError, match="Could not open CONNECT tunnel"):
+        await maybe_deferred_to_future(endpoint.connect(Factory.forProtocol(Protocol)))
+    assert not resolver.names
 
 
 @pytest.mark.requires_internet
