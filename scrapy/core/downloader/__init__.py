@@ -4,6 +4,7 @@ import random
 import warnings
 from collections import deque
 from collections.abc import Iterator, Mapping
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -202,8 +203,12 @@ class Downloader:
         self.settings: BaseSettings = crawler.settings
         self.signals: SignalManager = crawler.signals
         self.active: set[Request] = set()
+        # Requests a download handler is working on; the rest of self.active is
+        # parked instead (see _is_parked()).
         self._transferring: set[Request] = set()
         self._transfer_waiters: list[Deferred[None]] = []
+        self._parked_waiters: list[Deferred[None]] = []
+        self._closed: bool = False
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
         self.middleware: DownloaderMiddlewareManager = (
@@ -226,6 +231,7 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
+        self._fire_parked_waiters()
         try:
             result: Response | Request = yield (
                 deferred_from_coro(
@@ -239,19 +245,10 @@ class Downloader:
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
-    @property
-    def transferring(self) -> set[Request]:
-        """Requests that are being transferred, i.e. that a :ref:`download
-        handler <topics-download-handlers>` is working on.
-
-        The rest of :attr:`active` is being processed by the downloader
-        middlewares instead (see :meth:`is_parked`).
-        """
-        return self._transferring
-
-    def is_parked(self, request: Request) -> bool:
-        """Return whether *request* is being processed by the downloader
-        middlewares rather than transferred.
+    def _is_parked(self, request: Request) -> bool:
+        """Return whether *request* is in the downloader but not being
+        transferred, i.e. a downloader middleware is processing it or it is
+        queued for a free transfer slot.
 
         A parked request is not using the network, even though it may be
         holding a :ref:`throttling <throttling>` concurrency slot, and it may be
@@ -336,16 +333,59 @@ class Downloader:
         own. A request waiting on the downloader middlewares, e.g. for a
         robots.txt request that a middleware is downloading, holds none.
         """
-        while 0 < self.total_concurrency <= len(self._transferring):
-            # A finished transfer is the only way for a slot to free up, and
-            # the waiter is registered before this coroutine gives up control,
-            # so no wake-up can be missed.
+        while self._transfer_slots_full():
+            # Register the waiter before giving up control, or a transfer ending
+            # in between would go unnoticed.
             waiter: Deferred[None] = Deferred()
             self._transfer_waiters.append(waiter)
             await maybe_deferred_to_future(waiter)
 
+    def _transfer_slots_full(self) -> bool:
+        """Return whether every transfer slot is taken. A closed downloader
+        never holds anything back, since no transfer will ever end again."""
+        if self._closed:
+            return False
+        return 0 < self.total_concurrency <= len(self._transferring)
+
+    def _parked_event(self) -> Deferred[None]:
+        """Return a :class:`~twisted.internet.defer.Deferred` that fires the next
+        time a request becomes parked (see :meth:`_is_parked`), i.e. when one
+        enters the downloader or stops being transferred, as well as on
+        :meth:`close`.
+
+        A parked request holds a :ref:`throttling <throttling>` concurrency slot
+        that it is not using, which the throttler may then lend to a request sent
+        from a downloader middleware; see
+        :meth:`~scrapy.throttler.ThrottlerProtocol.acquire`.
+        """
+        event: Deferred[None] = Deferred()
+        self._parked_waiters.append(event)
+        return event
+
+    def _discard_parked_event(self, event: Deferred[None]) -> None:
+        """Drop a pending *event* returned by :meth:`_parked_event`, for a wait
+        that ended for a different reason."""
+        with suppress(ValueError):
+            self._parked_waiters.remove(event)
+
+    def _end_transfer(self, request: Request) -> None:
+        """Record that no download handler is working on *request* anymore.
+
+        That frees a transfer slot, and it parks *request* for as long as the
+        downloader middlewares process its outcome.
+        """
+        self._transferring.discard(request)
+        self._fire_transfer_waiters()
+        self._fire_parked_waiters()
+
     def _fire_transfer_waiters(self) -> None:
         waiters, self._transfer_waiters = self._transfer_waiters, []
+        for waiter in waiters:
+            if not waiter.called:
+                waiter.callback(None)
+
+    def _fire_parked_waiters(self) -> None:
+        waiters, self._parked_waiters = self._parked_waiters, []
         for waiter in waiters:
             if not waiter.called:
                 waiter.callback(None)
@@ -366,8 +406,7 @@ class Downloader:
             await _defer_sleep_async()
             raise
         finally:
-            self._transferring.discard(request)
-            self._fire_transfer_waiters()
+            self._end_transfer(request)
             self.signals.send_catch_log(
                 signal=signals.request_left_downloader,
                 request=request,
@@ -375,4 +414,8 @@ class Downloader:
             )
 
     def close(self) -> None:
-        pass
+        # Release anything waiting for a transfer to end or for a request to be
+        # parked, since neither will happen again.
+        self._closed = True
+        self._fire_transfer_waiters()
+        self._fire_parked_waiters()

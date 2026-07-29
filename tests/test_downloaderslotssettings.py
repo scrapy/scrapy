@@ -104,13 +104,13 @@ async def test_is_parked():
     downloader = Downloader(crawler)
     request = Request("https://example.com")
     # Not being downloaded at all.
-    assert downloader.is_parked(request) is False
+    assert downloader._is_parked(request) is False
     # In the downloader middlewares, holding a concurrency slot it is not using.
     downloader.active.add(request)
-    assert downloader.is_parked(request) is True
+    assert downloader._is_parked(request) is True
     # On the wire.
     downloader._transferring.add(request)
-    assert downloader.is_parked(request) is False
+    assert downloader._is_parked(request) is False
     downloader._transferring.discard(request)
     downloader.active.discard(request)
     downloader.close()
@@ -143,7 +143,7 @@ class OffCycleFloodSpider(MetaSpider):
         async def watch() -> None:
             for _ in range(100):
                 type(self).peak_transferring = max(
-                    type(self).peak_transferring, len(downloader.transferring)
+                    type(self).peak_transferring, len(downloader._transferring)
                 )
                 await async_sleep(0.02)
 
@@ -213,6 +213,67 @@ async def test_fire_transfer_waiters_skips_already_fired():
     downloader._fire_transfer_waiters()
     assert downloader._transfer_waiters == []
     downloader.close()
+
+
+@coroutine_test
+async def test_parked_event():
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    downloader._transferring.add(request)
+    event = downloader._parked_event()
+    assert not event.called
+    # Leaving the wire parks the request for as long as the downloader
+    # middlewares process its outcome.
+    downloader._end_transfer(request)
+    assert event.called
+    assert request not in downloader._transferring
+    downloader.close()
+
+
+@coroutine_test
+async def test_discard_parked_event():
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    event = downloader._parked_event()
+    downloader._discard_parked_event(event)
+    assert downloader._parked_waiters == []
+    # Discarding an event that is no longer tracked is a no-op.
+    downloader._discard_parked_event(event)
+    # The dropped event is not fired by a later request being parked.
+    downloader._end_transfer(Request("https://example.com"))
+    assert not event.called
+    downloader.close()
+
+
+@coroutine_test
+async def test_close_releases_transfer_slot_waiters():
+    crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 1})
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    downloader._transferring.add(Request("https://example.com/1"))
+    waiting = deferred_from_coro(downloader._acquire_transfer_slot())
+    await async_sleep(0)
+    assert not waiting.called, "the only transfer slot is taken"
+    # Nothing will ever leave the transferring set now, so the wait ends
+    # instead of being left hanging.
+    downloader.close()
+    done, _ = await wait_for_first([waiting], timeout=30)
+    assert done, "closing the downloader left a transfer slot wait hanging"
+    await maybe_deferred_to_future(waiting)
+
+
+@coroutine_test
+async def test_acquire_transfer_slot_after_close():
+    crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 1})
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    downloader._transferring.add(Request("https://example.com/1"))
+    downloader.close()
+    # A closed downloader does not hold anything back at the transfer gate.
+    await downloader._acquire_transfer_slot()
 
 
 @coroutine_test

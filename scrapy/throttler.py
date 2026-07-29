@@ -23,6 +23,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
     from scrapy.http import Request
     from scrapy.settings import BaseSettings
@@ -68,7 +69,7 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     means ±50%)."""
 
     quota: float
-    """Maximum :ref:`throttler quota <throttling-quotas>` the scope may consume
+    """Maximum :ref:`throttler quota <throttler-quotas>` the scope may consume
     per ``window``. Unlimited when unset."""
 
     window: float
@@ -117,7 +118,7 @@ def iter_scope_quota_amounts(
     """Iterate over *scopes* as ``(scope_id, quota_amount)`` pairs.
 
     For dict scopes the quota amount is the expected :ref:`throttler quota
-    <throttling-quotas>` consumption; for every other form it is ``None``.
+    <throttler-quotas>` consumption; for every other form it is ``None``.
     """
     if scopes is None:
         return
@@ -273,7 +274,7 @@ def add_scope(
     :class:`Throttler` subclasses.
 
     Adding a scope with a *quota_amount* fails if it is already present, so an
-    existing :ref:`quota <throttling-quotas>` is never silently overwritten;
+    existing :ref:`quota <throttler-quotas>` is never silently overwritten;
     adding it without a quota amount leaves any existing entry untouched.
     """
     result = _to_scope_dict(scopes)
@@ -296,7 +297,7 @@ class ThrottlerProtocol(Protocol):
 
         Return ``None`` if no scopes apply, a string for a single scope, an
         iterable of strings for multiple scopes, or a dict with scope IDs as
-        keys and :ref:`throttler quotas <throttling-quotas>` as values.
+        keys and :ref:`throttler quotas <throttler-quotas>` as values.
         """
 
     def get_resolved_scopes(self, request: Request) -> RequestScopes:
@@ -324,7 +325,9 @@ class ThrottlerProtocol(Protocol):
         from the scheduler. Such a request may be a prerequisite of a request
         that is holding a concurrency slot of the same scope while it waits for
         it — a downloader middleware downloading something from
-        :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`,
+        :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
+        or
+        :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`,
         as the built-in robots.txt middleware does — so an implementation must
         make sure it can never be blocked by such a request forever.
 
@@ -448,7 +451,7 @@ class ThrottlerProtocol(Protocol):
         consumed: float | None = None,
         remaining: float | None = None,
     ) -> None:
-        """Reconcile the :ref:`throttler quota <throttling-quotas>` of each of
+        """Reconcile the :ref:`throttler quota <throttler-quotas>` of each of
         *scopes* with an actually *consumed* amount (a delta to add) or a
         *remaining* amount (an absolute value), correcting the estimate used
         when requests were sent.
@@ -555,6 +558,7 @@ class Throttler:
         )
         self._default_useragent: str = crawler.settings["USER_AGENT"]
         self._robotstxt_useragent: str | None = crawler.settings["ROBOTSTXT_USER_AGENT"]
+        self._robotstxt_scope_warned: bool = False
         if self._robotstxt_obey:
             crawler.signals.connect(
                 self._on_robots_parsed, signal=signals.robots_parsed
@@ -798,7 +802,9 @@ class Throttler:
                     f"Throttling {request} until a concurrency slot frees up "
                     f"(scopes: {scope_ids})"
                 )
-            await self._wait_for_slot([manager for _, manager in blocked])
+            await self._wait_for_slot(
+                [manager for _, manager in blocked], off_cycle=off_cycle
+            )
 
     def _record_reservation(self, request: Request, scopes: list[ScopeSlot]) -> None:
         """Record a send on each of *request*'s *scopes* and mark *request* as
@@ -823,12 +829,16 @@ class Throttler:
 
     # -- Off-cycle requests ---------------------------------------------------
 
+    def _downloader(self) -> Downloader | None:
+        engine = self.crawler.engine
+        return None if engine is None else engine.downloader
+
     def _is_parked(self, request: Request) -> bool:
         """Return whether *request* holds a concurrency slot that it is not
-        using, i.e. it is being processed by the downloader middlewares instead
-        of being transferred."""
-        engine = self.crawler.engine
-        return engine is not None and engine.downloader.is_parked(request)
+        using, i.e. it is in the downloader but no download handler is working on
+        it."""
+        downloader = self._downloader()
+        return downloader is not None and downloader._is_parked(request)
 
     def _can_lend_slot(self, scope_id: ScopeID) -> bool:
         """Return whether *scope_id* can lend a concurrency slot to an
@@ -839,6 +849,14 @@ class Throttler:
         it is waiting for the off-cycle request, in which case nothing in the
         scope can ever complete unless the off-cycle request is let through, and
         lending is free because the borrowed slot was not being used anyway.
+
+        A holder that is not in the downloader at all is not on the wire either,
+        but it does not count as parked: a slot is reserved before its request
+        reaches the downloader and released after it leaves, so such a holder is
+        either on its way to the wire or already done with it, and needs no lend
+        either way. Counting it as parked would let a burst of off-cycle requests
+        that no parked request is waiting for borrow slots without limit, well
+        past the scope's concurrency limit on the wire.
         """
         holders = self._scope_holders.get(scope_id)
         if not holders:
@@ -848,15 +866,15 @@ class Throttler:
     def _borrow_slots(
         self, request: Request, scopes: list[ScopeSlot], borrowed: list[ScopeID]
     ) -> None:
-        """Reserve the *scopes* of *request*, borrowing a parked slot from each
+        """Reserve the *scopes* of *request*, borrowing an unused slot from each
         scope in *borrowed*, which has none free."""
         if self.crawler.stats:
             self.crawler.stats.inc_value("throttler/borrowed_slots")
         if self._debug:
             logger.debug(
                 f"Letting {request} borrow a concurrency slot of every scope in "
-                f"{borrowed}, whose slots are all held by requests parked on the "
-                f"downloader middlewares"
+                f"{borrowed}, whose slots are all held by requests that no "
+                f"download handler is working on"
             )
         self._record_reservation(request, scopes)
 
@@ -938,21 +956,39 @@ class Throttler:
         now = time.monotonic() if now is None else now
         return max(0.0, self._request_delay_deadline(request, now) - now)
 
-    async def _wait_for_slot(self, managers: list[Any]) -> None:
-        """Block until any of *managers* frees a concurrency slot.
+    async def _wait_for_slot(self, managers: list[Any], *, off_cycle: bool) -> None:
+        """Block until any of *managers* frees a concurrency slot or, for an
+        off-cycle request, until one of them may have a slot to lend.
 
         Each manager hands out an event Deferred that fires when a slot is freed
         (via :meth:`ThrottlingScopeManager.record_done`) or the limit is raised
         (via :meth:`ThrottlingScopeManager.set_concurrency`). Those are the only
-        two ways for a slot to become available, and the events are registered
-        before this coroutine gives up control, so no wake-up can be missed.
+        two ways for a slot to become available.
+
+        An off-cycle request may also proceed by borrowing the slot of a parked
+        holder (see :meth:`_can_lend_slot`), and a holder becomes parked without
+        freeing any slot, and thus without firing either event above: either on
+        reaching the downloader, or on leaving the wire to have its outcome
+        processed by the downloader middlewares. So such a wait also ends on
+        ``Downloader._parked_event()``.
+
+        Every event is registered before this coroutine gives up control, or one
+        firing in between would go unnoticed.
         """
         pairs = [(manager, manager.slot_available_event()) for manager in managers]
         events = [event for _, event in pairs]
+        downloader = self._downloader() if off_cycle else None
+        parked_event: Deferred[None] | None = None
+        if downloader is not None:
+            parked_event = downloader._parked_event()
+            events.append(parked_event)
         _, pending = await wait_for_first(events)
         for manager, event in pairs:
             if event in pending:
                 manager.discard_slot_available_event(event)
+        if parked_event is not None and parked_event in pending:
+            assert downloader is not None
+            downloader._discard_parked_event(parked_event)
 
     async def _delay_request(self, request: Request) -> None:
         """Honor the :reqmeta:`delay` meta key by holding *request* for the
@@ -1029,10 +1065,32 @@ class Throttler:
             delay = robotparser.crawl_delay(useragent)
         except Exception:  # pragma: no cover - backend-specific failures
             return
-        if delay:
-            self._apply_robots_crawl_delay(
-                urlparse_cached(request).hostname or "", delay
-            )
+        if not delay:
+            return
+        hostname = urlparse_cached(request).hostname or ""
+        # A Crawl-delay belongs to a host, so it is applied to the scope that
+        # stands for that host, i.e. the one whose id is the host name, and only
+        # if *request* is actually being sent under it. Under custom scoping
+        # there may be no such scope, and the delay cannot be attributed to any
+        # of the others: a scope shared with other hosts (e.g. one grouping
+        # requests by API cost) would slow those hosts down too.
+        if hostname not in set(iter_scopes(self.get_resolved_scopes(request))):
+            self._warn_unscoped_robots_crawl_delay(hostname)
+            return
+        self._apply_robots_crawl_delay(hostname, delay)
+
+    def _warn_unscoped_robots_crawl_delay(self, hostname: ScopeID) -> None:
+        if self._robotstxt_scope_warned:
+            return
+        self._robotstxt_scope_warned = True
+        logger.warning(
+            f"Ignoring the robots.txt Crawl-delay of {hostname!r} because "
+            f"requests for that host are not sent under a throttling scope "
+            f"named after it, so there is no scope to apply the delay to. "
+            f"Include {hostname!r} in the scopes of those requests to honor it, "
+            f"or set THROTTLER_ROBOTSTXT_OBEY to False to silence this warning. "
+            f"Further occurrences are not reported."
+        )
 
     def _apply_robots_crawl_delay(self, scope_id: ScopeID, delay: float) -> None:
         if not self._robotstxt_obey:
@@ -1113,14 +1171,14 @@ class ThrottlingScopeManagerProtocol(Protocol):
         may be sent, or ``0`` if it may be sent right away.
 
         *quota_amount* is the expected :ref:`throttler quota
-        <throttling-quotas>` consumption of the request, if any.
+        <throttler-quotas>` consumption of the request, if any.
         """
 
     def record_sent(
         self, now: float | None = None, quota_amount: QuotaAmount | None = None
     ) -> None:
         """Record that a request for this scope has just been sent, consuming
-        *quota_amount* of its :ref:`throttler quota <throttling-quotas>` if
+        *quota_amount* of its :ref:`throttler quota <throttler-quotas>` if
         given."""
 
     def record_done(self, now: float | None = None) -> None:
@@ -1151,7 +1209,7 @@ class ThrottlingScopeManagerProtocol(Protocol):
         remaining: float | None = None,
         now: float | None = None,
     ) -> None:
-        """Reconcile the :ref:`throttler quota <throttling-quotas>` of this
+        """Reconcile the :ref:`throttler quota <throttler-quotas>` of this
         scope with the actual *consumed* amount (or the *remaining* amount)
         reported for a request, correcting the estimate used by
         :meth:`record_sent`."""
@@ -1208,8 +1266,9 @@ class ThrottlingScopeManagerProtocol(Protocol):
     def is_idle(self, now: float, max_idle: float) -> bool:
         """Return whether this scope can be evicted from memory.
 
-        A scope is idle when it has not been used for *max_idle* seconds and is
-        not currently in an active (future) backoff.
+        A scope is idle when it has not been used for *max_idle* seconds and
+        holds no pending throttling state that eviction would drop, i.e. it is
+        not in an active (future) backoff and its delay has elapsed.
         """
 
 
@@ -1227,7 +1286,7 @@ class ThrottlingScopeManager:
 
     It implements a per-scope state machine covering delay, exponential
     :ref:`backoff <backoff>`, concurrency and :ref:`quotas
-    <throttling-quotas>`:
+    <throttler-quotas>`:
 
     -   A base delay (the scope ``"delay"`` config, defaulting to
         :setting:`DOWNLOAD_DELAY`) is enforced between consecutive requests for
@@ -1554,6 +1613,11 @@ class ThrottlingScopeManager:
 
     def is_idle(self, now: float, max_idle: float) -> bool:
         if self._in_backoff_until is not None and self._in_backoff_until > now:
+            return False
+        # A delay that has not elapsed yet is state that eviction would drop,
+        # letting the next request for the scope go out earlier than its delay
+        # allows.
+        if self._next_allowed_time is not None and self._next_allowed_time > now:
             return False
         if self._active > 0:
             return False

@@ -215,6 +215,16 @@ If :setting:`THROTTLING_SCOPES` defines a smaller (more aggressive) delay, it
 will be respected, but a warning will be logged about the discrepancy with
 ``Crawl-Delay``. Set ``ignore_robots_txt`` to ``True`` to silence this warning.
 
+A ``Crawl-Delay`` belongs to a host, so it is applied to the :ref:`throttling
+scope <throttling-scopes>` that stands for that host, i.e. the one whose id is
+the host name. If you use :ref:`custom throttling scopes
+<custom-throttling-scopes>` and requests for a host are not sent under a scope
+named after it, the directive cannot be honored: applying it to a scope shared
+with other hosts, e.g. one that groups requests by cost, would slow those hosts
+down too. Scrapy logs a warning when that happens; keep the host name among the
+scopes of those requests to honor the directive, or set
+:setting:`THROTTLER_ROBOTSTXT_OBEY` to ``False`` to silence the warning.
+
 .. _delay-scope:
 
 Delaying a scope programmatically
@@ -540,6 +550,9 @@ it:
 
     SCHEDULER = "scrapy.core.scheduler.ThrottlerAwareScheduler"
     SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ThrottlerAwarePriorityQueue"
+
+Both settings must be changed together: each of those two classes requires the
+other, and Scrapy raises an exception at the start of the crawl otherwise.
 
 .. _throttling-examples:
 

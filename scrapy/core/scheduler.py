@@ -376,6 +376,19 @@ class Scheduler(BaseScheduler):
         self.spider: Spider = spider
         self.mqs: ScrapyPriorityQueue = self._mq()
         self.dqs: ScrapyPriorityQueue | None = self._dq() if self.dqdir else None
+        # A throttler-aware priority queue needs the throttling scopes of every
+        # request it stores, which only the asynchronous enqueue path resolves,
+        # so it cannot be driven by a scheduler that does not implement it.
+        if hasattr(self.mqs, "get_next_request_delay") and not hasattr(
+            self, "enqueue_request_async"
+        ):
+            raise ValueError(
+                f"{type(self).__name__} cannot use the throttler-aware "
+                f"SCHEDULER_PRIORITY_QUEUE {type(self.mqs).__name__}. Set "
+                f"SCHEDULER to scrapy.core.scheduler.ThrottlerAwareScheduler, or "
+                f"SCHEDULER_PRIORITY_QUEUE to a priority queue that is not "
+                f"throttler-aware, such as scrapy.pqueues.ScrapyPriorityQueue."
+            )
         return self.df.open()
 
     def close(self, reason: str) -> Deferred[None] | None:

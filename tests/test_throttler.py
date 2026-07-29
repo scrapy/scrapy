@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import warnings
 from typing import TYPE_CHECKING, Any, cast
 from weakref import WeakSet
 
 import pytest
+from twisted.internet.defer import Deferred
 
-from scrapy import signals
+from scrapy import Spider, signals
+from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
+from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings, default_settings
 from scrapy.throttler import (
     RequestScopes,
@@ -24,7 +28,7 @@ from scrapy.throttler import (
     scope_cache,
 )
 from scrapy.utils._headers import _parse_ratelimit_reset, _parse_retry_after
-from scrapy.utils.asyncio import wait_for_first
+from scrapy.utils.asyncio import call_later, wait_for_first
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
@@ -33,12 +37,28 @@ from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from twisted.internet.defer import Deferred
+    from collections.abc import AsyncIterator
+
+    from typing_extensions import Self
+
+    from scrapy.core.downloader import Downloader
 
 
 def _manager(settings: dict[str, Any] | None = None) -> Throttler:
     crawler = get_crawler(settings_dict=settings)
     return Throttler.from_crawler(crawler)
+
+
+def _manager_with_downloader(
+    settings: dict[str, Any] | None = None,
+) -> tuple[Throttler, Downloader]:
+    """Return a throttler and the real :class:`~scrapy.core.downloader.Downloader`
+    it sees through the crawler engine, for tests that need actual transfer state
+    and the events it fires."""
+    crawler = get_crawler(SimpleSpider, settings_dict=settings)
+    crawler.throttler = throttler = Throttler.from_crawler(crawler)
+    crawler.engine = ExecutionEngine(crawler, lambda _: None)
+    return throttler, crawler.engine.downloader
 
 
 def _scope_manager(
@@ -247,8 +267,6 @@ class TestThrottler:
 
     @coroutine_test
     async def test_acquire_waits_for_freed_slot(self):
-        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
-
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         r1 = Request("http://example.com/1")
         r2 = Request("http://example.com/2")
@@ -326,6 +344,45 @@ class TestThrottler:
         scope = _scope(manager, "example.com")
         assert scope._base_delay == expected_base_delay
 
+    def test_robots_parsed_signal_picks_the_host_scope(self):
+        # A Crawl-delay belongs to a host, so among the scopes of the request it
+        # only applies to the one named after the host.
+        manager = _manager({"ROBOTSTXT_OBEY": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
+        manager.crawler.signals.send_catch_log(
+            signal=signals.robots_parsed,
+            robotparser=_FakeRobotParser(3.0),
+            request=Request(
+                "http://example.com/page",
+                meta={"throttling_scopes": ["example.com", "cost"]},
+            ),
+        )
+        assert _scope(manager, "example.com")._base_delay == 3.0
+        assert _scope(manager, "cost")._base_delay == 0.0
+
+    def test_robots_parsed_signal_without_a_host_scope(self, caplog):
+        # Requests for the host are sent under a scope shared with other hosts,
+        # so applying the Crawl-delay to it would slow those hosts down too.
+        manager = _manager({"ROBOTSTXT_OBEY": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
+        request = Request("http://example.com/page", meta={"throttling_scopes": "cost"})
+        with caplog.at_level(logging.WARNING, logger="scrapy.throttler"):
+            manager.crawler.signals.send_catch_log(
+                signal=signals.robots_parsed,
+                robotparser=_FakeRobotParser(3.0),
+                request=request,
+            )
+        assert "example.com" not in manager._scope_managers
+        assert _scope(manager, "cost")._base_delay == 0.0
+        assert "Crawl-delay" in caplog.text
+        # The warning is only reported once per crawl.
+        caplog.clear()
+        with caplog.at_level(logging.WARNING, logger="scrapy.throttler"):
+            manager.crawler.signals.send_catch_log(
+                signal=signals.robots_parsed,
+                robotparser=_FakeRobotParser(3.0),
+                request=request,
+            )
+        assert "Crawl-delay" not in caplog.text
+
     def test_apply_robots_crawl_delay(self):
         manager = _manager({"ROBOTSTXT_OBEY": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
         manager._apply_robots_crawl_delay("example.com", 3.0)
@@ -388,6 +445,43 @@ class TestThrottler:
         # even though it has been idle for longer than THROTTLING_SCOPE_MAX_IDLE.
         assert "example.com" in manager._scope_managers
 
+    def test_scope_eviction_skips_a_pending_delay(self):
+        manager = _manager(
+            {
+                "THROTTLING_SCOPE_MAX_IDLE": 1.0,
+                "DOWNLOAD_DELAY": 30.0,
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            }
+        )
+        scope = _scope(manager, "example.com")
+        scope.record_sent(now=0.0)
+        scope.record_done(now=0.0)
+        manager._last_eviction = None
+        manager._maybe_evict(now=10.0)
+        # Idle for longer than THROTTLING_SCOPE_MAX_IDLE, but its delay has not
+        # elapsed, and evicting would let the next request go out too early.
+        assert "example.com" in manager._scope_managers
+        manager._last_eviction = None
+        manager._maybe_evict(now=31.0)
+        assert "example.com" not in manager._scope_managers
+
+    def test_scope_limit_keeps_a_pending_delay(self):
+        manager = _manager(
+            {
+                "THROTTLING_SCOPE_LIMIT": 1,
+                "DOWNLOAD_DELAY": 30.0,
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            }
+        )
+        delayed = _scope(manager, "a.example")
+        delayed.record_sent()
+        delayed.record_done()
+        # Creating a second scope exceeds the limit, but the first one still
+        # tracks a delay that has not elapsed, so the limit is exceeded rather
+        # than dropping it.
+        _scope(manager, "b.example")
+        assert set(manager._scope_managers) == {"a.example", "b.example"}
+
     def test_reserve_evicts_idle_scopes(self):
         # A throttler-aware scheduler reserves every request before the engine
         # reaches acquire() (which fast-paths reserved requests), so reserve()
@@ -448,10 +542,13 @@ class TestOffCycleRequests:
     @staticmethod
     async def _acquire(manager: Throttler, request: Request, **kwargs: Any) -> None:
         # Drive acquire() the way the engine does, so it runs as a real task
-        # that can await slot events under the asyncio reactor.
-        await maybe_deferred_to_future(
-            deferred_from_coro(manager.acquire(request, **kwargs))
-        )
+        # that can await slot events under the asyncio reactor. The wait is
+        # bounded so that a request that is never let through fails the test
+        # instead of hanging it.
+        acquired = deferred_from_coro(manager.acquire(request, **kwargs))
+        done, _ = await wait_for_first([acquired], timeout=30)
+        assert done, f"{request} was never let through the throttling gate"
+        await maybe_deferred_to_future(acquired)
 
     @staticmethod
     async def _start_waiting(manager: Throttler, request: Request) -> Deferred[None]:
@@ -460,6 +557,23 @@ class TestOffCycleRequests:
         blocked = deferred_from_coro(manager.acquire(request, off_cycle=True))
         await async_sleep(0)
         return blocked
+
+    @staticmethod
+    async def _finish_waiting(blocked: Deferred[None]) -> None:
+        """Wait for an off-cycle acquire() started by :meth:`_start_waiting` to
+        get through, bounded so that a request that never does fails the test
+        instead of hanging it."""
+        done, _ = await wait_for_first([blocked], timeout=30)
+        assert done, "the off-cycle request was never let through"
+        await maybe_deferred_to_future(blocked)
+
+    @staticmethod
+    async def _stop_waiting(blocked: Deferred[None]) -> None:
+        """Cancel an off-cycle acquire() that is meant to stay blocked, so that
+        it does not outlive the test as a pending task."""
+        blocked.addBoth(lambda _: None)  # swallow the cancellation
+        blocked.cancel()
+        await async_sleep(0)
 
     @coroutine_test
     async def test_borrows_the_slot_of_a_parked_holder(
@@ -482,8 +596,6 @@ class TestOffCycleRequests:
     async def test_does_not_borrow_while_a_holder_transfers(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
-
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}})
         parked = Request("http://example.com/1")
         transferring = Request("http://example.com/2")
@@ -497,6 +609,109 @@ class TestOffCycleRequests:
         await self._acquire(manager, off_cycle, off_cycle=True)
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
+
+    @coroutine_test
+    async def test_does_not_borrow_from_a_holder_outside_the_downloader(self) -> None:
+        """A concurrency slot is reserved before its request reaches the
+        downloader, and released after it leaves, so a holder outside the
+        downloader is not on the wire either. It is not parked though: it needs no
+        help to get to the wire, or is already done with it. Treating it as parked
+        would let off-cycle requests that nothing is waiting for borrow slots
+        without limit."""
+        manager, downloader = _manager_with_downloader(
+            {"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}}
+        )
+        holder = Request("http://example.com/1")
+        await self._acquire(manager, holder)
+        assert holder not in downloader.active
+        assert manager._is_parked(holder) is False
+
+        off_cycle = Request("http://example.com/2")
+        blocked = await self._start_waiting(manager, off_cycle)
+        assert off_cycle not in manager._reserved
+        assert manager.crawler.stats
+        assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
+        await self._stop_waiting(blocked)
+        downloader.close()
+
+    @coroutine_test
+    async def test_borrows_once_a_holder_reaches_the_downloader(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A concurrency slot is reserved before its request reaches the
+        downloader, so a holder still on its way there is not parked yet; it
+        becomes parked on arrival, without freeing any slot."""
+        manager, downloader = _manager_with_downloader(
+            {"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}}
+        )
+        holder = Request("http://example.com/1")
+        await self._acquire(manager, holder)
+        assert holder not in downloader.active
+        assert _scope(manager, "example.com").concurrency_blocked() is True
+
+        prerequisite = Request("http://example.com/2")
+        blocked = await self._start_waiting(manager, prerequisite)
+        assert prerequisite not in manager._reserved, (
+            "the holder is still on its way to the downloader"
+        )
+
+        # Let the holder into the downloader, where the middlewares park it
+        # instead of starting a transfer.
+        held: Deferred[None] = Deferred()
+
+        async def park(download_func: Any, request: Request) -> None:
+            await maybe_deferred_to_future(held)
+
+        monkeypatch.setattr(downloader.middleware, "download_async", park)
+        fetching = downloader.fetch(holder)
+        fetching.addBoth(lambda _: None)
+
+        await self._finish_waiting(blocked)
+        assert prerequisite in manager._reserved
+        assert manager.crawler.stats
+        assert manager.crawler.stats.get_value("throttler/borrowed_slots") == 1
+        held.callback(None)  # let the holder leave the downloader
+        downloader.close()
+
+    @coroutine_test
+    async def test_does_not_borrow_without_a_downloader(self) -> None:
+        # Without an engine there is no transfer state to tell a holder that is
+        # using its slot from one that is not, so nothing is lent.
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        await self._acquire(manager, Request("http://example.com/1"))
+        off_cycle = Request("http://example.com/2")
+        blocked = await self._start_waiting(manager, off_cycle)
+        assert not blocked.called
+        assert off_cycle not in manager._reserved
+        assert manager.crawler.stats
+        assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
+        await self._stop_waiting(blocked)
+
+    @coroutine_test
+    async def test_borrows_once_a_holder_stops_transferring(self) -> None:
+        """A holder that gets its response and moves on to the downloader
+        middlewares stops using its slot without freeing it, e.g. because those
+        middlewares are now waiting for this very off-cycle request."""
+        manager, downloader = _manager_with_downloader(
+            {"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}}
+        )
+        parked = Request("http://example.com/1")
+        transferring = Request("http://example.com/2")
+        await self._acquire(manager, parked)
+        await self._acquire(manager, transferring)
+        downloader.active.update({parked, transferring})
+        downloader._transferring.add(transferring)
+
+        off_cycle = Request("http://example.com/3")
+        blocked = await self._start_waiting(manager, off_cycle)
+        assert not blocked.called, "a holder is on the wire, so nothing to lend"
+
+        downloader._end_transfer(transferring)
+        await self._finish_waiting(blocked)
+        assert off_cycle in manager._reserved
+        assert manager.crawler.stats
+        assert manager.crawler.stats.get_value("throttler/borrowed_slots") == 1
+        downloader.close()
 
     @coroutine_test
     async def test_borrows_at_nesting_depth_two(
@@ -615,8 +830,6 @@ class TestOffCycleRequests:
 
     @coroutine_test
     async def test_does_not_borrow_from_a_scope_without_holders(self) -> None:
-        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
-
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         scope = _scope(manager, "example.com")
         # The scope is full but the throttler is not tracking any holder for it,
@@ -1237,8 +1450,6 @@ class TestThrottlerEdges:
 
     @coroutine_test
     async def test_acquire_logs_while_waiting_for_slot(self):
-        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
-
         manager = _manager(
             {
                 "THROTTLING_SCOPES": {"example.com": {"concurrency": 1}},
@@ -1273,8 +1484,6 @@ class TestThrottlerEdges:
 
     @coroutine_test
     async def test_wait_for_slot_discards_unfired_events(self):
-        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
-
         manager = _manager()
         m1 = _scope_manager(config={"id": "a", "concurrency": 1})
         m2 = _scope_manager(config={"id": "b", "concurrency": 1})
@@ -1283,9 +1492,46 @@ class TestThrottlerEdges:
         # Free m1's slot on the next tick so the wait wakes up with m1's event
         # fired while m2's event is still pending.
         call_later(0, m1.record_done)
-        await manager._wait_for_slot([m1, m2])
+        await manager._wait_for_slot([m1, m2], off_cycle=False)
         # The still-pending m2 event is discarded from its waiter list.
         assert m2._slot_waiters == []
+
+    @coroutine_test
+    async def test_wait_for_slot_discards_the_unfired_parked_event(self):
+        manager, downloader = _manager_with_downloader()
+        scope = _scope_manager(config={"id": "a", "concurrency": 1})
+        scope.record_sent(now=0.0)
+        # The scope frees its slot first, so the parked event of the off-cycle
+        # wait stays pending and must not be left behind on the downloader.
+        call_later(0, scope.record_done)
+        await manager._wait_for_slot([scope], off_cycle=True)
+        assert downloader._parked_waiters == []
+        downloader.close()
+
+    @coroutine_test
+    async def test_wait_for_slot_discards_the_unfired_slot_event(self):
+        manager, downloader = _manager_with_downloader()
+        scope = _scope_manager(config={"id": "a", "concurrency": 1})
+        scope.record_sent(now=0.0)
+        request = Request("http://example.com/1")
+        downloader._transferring.add(request)
+        # This time the request is parked first, so the scope's slot event stays
+        # pending instead.
+        call_later(0, downloader._end_transfer, request)
+        await manager._wait_for_slot([scope], off_cycle=True)
+        assert scope._slot_waiters == []
+        downloader.close()
+
+    @coroutine_test
+    async def test_wait_for_slot_without_an_engine(self):
+        # There is no downloader to watch before the crawl starts, so the wait
+        # relies on the scope events alone.
+        manager = _manager()
+        scope = _scope_manager(config={"id": "a", "concurrency": 1})
+        scope.record_sent(now=0.0)
+        call_later(0, scope.record_done)
+        await manager._wait_for_slot([scope], off_cycle=True)
+        assert scope._slot_waiters == []
 
     def test_back_off_debug_logging(self, caplog):
         manager = _manager({"THROTTLER_DEBUG": True})
@@ -1392,6 +1638,15 @@ class TestThrottlingScopeManagerEdges:
         # A scope that was never used (no last_seen) is idle.
         assert scope.is_idle(now=0.0, max_idle=1.0) is True
 
+    def test_is_idle_with_a_pending_delay(self):
+        scope = _scope_manager(config={"id": "x", "delay": 10.0, "jitter": 0})
+        scope.record_sent(now=0.0)
+        scope.record_done(now=0.0)
+        # The delay is state that eviction would drop, so the scope is not idle
+        # until it has elapsed.
+        assert scope.is_idle(now=5.0, max_idle=1.0) is False
+        assert scope.is_idle(now=11.0, max_idle=1.0) is True
+
     def test_get_load_with_zero_limit(self):
         # No scope concurrency limit and CONCURRENT_REQUESTS=0 leaves a zero
         # denominator; the load is reported as 0 instead of dividing by zero.
@@ -1459,6 +1714,111 @@ class TestConcurrencyBridging:
             _warn_on_deprecated_concurrency(settings)
 
 
+class _SharedPrerequisiteMiddleware:
+    """Downloader middleware that needs a shared resource from the same host
+    before it can hand over a response, e.g. a refreshed session token: the
+    first response fetches it, later ones wait for that same fetch."""
+
+    def __init__(self, crawler: Any) -> None:
+        self.crawler = crawler
+        self._prerequisite: Any = None
+
+    @classmethod
+    def from_crawler(cls, crawler: Any) -> Self:
+        return cls(crawler)
+
+    async def process_response(self, request: Request, response: Response) -> Response:
+        if request.meta.get("is_prerequisite"):
+            return response
+        if self._prerequisite is None:
+            self._prerequisite = Deferred()
+            prerequisite_request = Request(
+                self.crawler.spider.prerequisite_url,
+                meta={"is_prerequisite": True, "dont_obey_robotstxt": True},
+                callback=NO_CALLBACK,
+                dont_filter=True,
+            )
+            fetched = await self.crawler.engine.download_async(prerequisite_request)
+            waiting, self._prerequisite = self._prerequisite, fetched
+            waiting.callback(fetched)
+        elif isinstance(self._prerequisite, Deferred):
+            await maybe_deferred_to_future(self._prerequisite)
+        return response
+
+
+class _TransferPeakExtension:
+    """Records, for the whole crawl, the highest number of requests of a single
+    :ref:`throttling scope <throttling-scopes>` that a download handler is
+    working on at once."""
+
+    def __init__(self, crawler: Any) -> None:
+        self.crawler = crawler
+        self.peak: dict[str, int] = {}
+        self._sampler: asyncio.Future[None] | None = None
+        crawler.signals.connect(self._opened, signal=signals.spider_opened)
+        crawler.signals.connect(self._closed, signal=signals.spider_closed)
+
+    @classmethod
+    def from_crawler(cls, crawler: Any) -> Self:
+        return cls(crawler)
+
+    def _opened(self) -> None:
+        self._sampler = asyncio.ensure_future(self._sample())
+
+    def _closed(self) -> None:
+        if self._sampler is not None:
+            self._sampler.cancel()
+
+    async def _sample(self) -> None:
+        downloader = self.crawler.engine.downloader
+        while True:
+            counts: dict[str, int] = {}
+            for request in list(downloader._transferring):
+                key = request.meta.get(downloader.DOWNLOAD_SLOT, "")
+                counts[key] = counts.get(key, 0) + 1
+            for key, count in counts.items():
+                self.peak[key] = max(self.peak.get(key, 0), count)
+            await async_sleep(0.005)
+
+
+class _OffCycleFloodSpider(Spider):
+    """Sends many requests to one host outside the scheduling cycle at once,
+    like a media pipeline does for the files of an item. None of them is a
+    prerequisite of a request parked on the downloader middlewares, so none of
+    them has any claim on a concurrency slot of the scope they share."""
+
+    name = "off_cycle_flood"
+    request_count = 8
+
+    async def start(self) -> AsyncIterator[Request]:
+        yield Request(self.seed_url, dont_filter=True)  # type: ignore[attr-defined]
+
+    async def parse(self, response: Response) -> None:
+        await asyncio.gather(
+            *(
+                self.crawler.engine.download_async(  # type: ignore[union-attr]
+                    Request(
+                        self.url_template.format(i=i),  # type: ignore[attr-defined]
+                        callback=NO_CALLBACK,
+                        dont_filter=True,
+                    )
+                )
+                for i in range(self.request_count)
+            )
+        )
+
+
+class _TwoRequestSpider(Spider):
+    name = "two_requests"
+
+    async def start(self) -> AsyncIterator[Request]:
+        yield Request(self.fast_url, dont_filter=True)  # type: ignore[attr-defined]
+        yield Request(self.slow_url, dont_filter=True)  # type: ignore[attr-defined]
+
+    def parse(self, response: Response) -> None:
+        return
+
+
 class TestThrottlerIntegration:
     @coroutine_test
     async def test_backoff_recorded_on_429(self, mockserver):
@@ -1511,3 +1871,77 @@ class TestThrottlerIntegration:
         assert crawler.stats.get_value("robotstxt/request_count") == 1
         assert crawler.stats.get_value("response_received_count") == 2
         assert crawler.stats.get_value("throttler/borrowed_slots") == 1
+
+    @coroutine_test
+    async def test_response_prerequisite_does_not_wait_for_a_concurrency_slot(
+        self, mockserver
+    ):
+        """Every concurrency slot of a scope is held by a request whose
+        ``process_response`` chain is waiting for the same request sent from a
+        downloader middleware, and the last of them only started waiting after
+        that request had already found the scope full."""
+        crawler = get_crawler(
+            _TwoRequestSpider,
+            {
+                "THROTTLING_SCOPE_CONCURRENCY": 2,
+                "DOWNLOADER_MIDDLEWARES": {_SharedPrerequisiteMiddleware: 1000},
+            },
+        )
+        crawl = deferred_from_coro(
+            crawler.crawl_async(
+                # A staggered pair, so that one response is being processed by
+                # the downloader middlewares while the other is still on the
+                # wire.
+                fast_url=mockserver.url("/delay?n=0&b=0"),
+                slow_url=mockserver.url("/delay?n=1&b=0"),
+                prerequisite_url=mockserver.url("/status?n=200"),
+                mockserver=mockserver,
+            )
+        )
+        # A bounded wait, so that a regression fails instead of hanging.
+        done, _ = await wait_for_first([crawl], timeout=30)
+        assert done, "the crawl deadlocked at the throttling gate"
+        await maybe_deferred_to_future(crawl)
+        assert crawler.stats
+        assert crawler.stats.get_value("response_received_count") == 3
+        assert crawler.stats.get_value("throttler/borrowed_slots") == 1
+
+    @pytest.mark.only_asyncio  # the sampling extension needs an asyncio loop
+    @coroutine_test
+    async def test_borrowing_keeps_the_concurrency_limit_on_the_wire(self, mockserver):
+        """A concurrency slot is only lent while none of the requests holding one
+        is being transferred, so an off-cycle request that no parked request is
+        waiting for cannot borrow past the limit: the target host never sees more
+        than the configured concurrency, however many off-cycle requests pile up.
+        """
+        concurrency = 2
+        crawler = get_crawler(
+            _OffCycleFloodSpider,
+            {
+                # High enough that the scope limit, not this one, is what bounds
+                # the flood.
+                "CONCURRENT_REQUESTS": 16,
+                "THROTTLING_SCOPE_CONCURRENCY": concurrency,
+                "DOWNLOAD_DELAY": 0,
+                "EXTENSIONS": {_TransferPeakExtension: 0},
+            },
+        )
+        await crawler.crawl_async(
+            seed_url=mockserver.url("/status?n=200"),
+            # Slow enough that any overlap spans many sampling intervals.
+            url_template=mockserver.url("/delay?n=0.3&b=0&i={i}"),
+            mockserver=mockserver,
+        )
+        assert crawler.stats
+        assert (
+            crawler.stats.get_value("downloader/request_count")
+            == _OffCycleFloodSpider.request_count + 1
+        ), "not every off-cycle request went out"
+        assert crawler.extensions is not None
+        extension = next(
+            e
+            for e in crawler.extensions.middlewares
+            if isinstance(e, _TransferPeakExtension)
+        )
+        assert extension.peak, "no transfer was sampled"
+        assert max(extension.peak.values()) <= concurrency, extension.peak

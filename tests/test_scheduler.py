@@ -404,6 +404,19 @@ class TestThrottlerAwareScheduler:
         with pytest.raises(ValueError, match="throttler-aware priority queue"):
             scheduler.open(spider)
 
+    def test_throttler_aware_priority_queue_requires_this_scheduler(self) -> None:
+        # A throttler-aware priority queue needs the throttling scopes of every
+        # request it stores, which only this scheduler resolves, so pairing it
+        # with the plain one is reported instead of failing on the first push.
+        crawler = self._crawler()
+        spider = Spider(name="spider")
+        crawler.spider = spider
+        scheduler = Scheduler.from_crawler(crawler)
+        with pytest.raises(
+            ValueError, match="throttler-aware SCHEDULER_PRIORITY_QUEUE"
+        ):
+            scheduler.open(spider)
+
     @coroutine_test
     async def test_delay_blocks_and_reports_delay(self) -> None:
         crawler = self._crawler(
