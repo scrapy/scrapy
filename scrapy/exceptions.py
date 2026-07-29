@@ -130,6 +130,13 @@ class ResponseDataLossError(Exception):
     """Indicates that Scrapy couldn't get a complete response."""
 
 
+class ResponseHeadersTooLargeError(DownloadFailedError):
+    """Indicates that the response headers exceeded
+    :setting:`DOWNLOAD_HEADERS_MAXSIZE`, or the equivalent limit of the
+    underlying HTTP client for :ref:`download handlers
+    <download-handlers-ref>` that do not support that setting."""
+
+
 class UnsupportedURLSchemeError(Exception):
     """Indicates that the URL scheme is not supported."""
 

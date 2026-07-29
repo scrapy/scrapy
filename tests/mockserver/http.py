@@ -26,6 +26,7 @@ from .http_resources import (
     ForeverTakingResource,
     HostHeaderResource,
     LargeChunkedFileResource,
+    LargeHeadersResource,
     NoMetaRefreshRedirect,
     Partial,
     PayloadResource,
@@ -83,6 +84,7 @@ class Root(resource.Resource):
         self.putChild(b"largechunkedfile", LargeChunkedFileResource())
         self.putChild(b"compress", Compress())
         self.putChild(b"duplicate-header", DuplicateHeaderResource())
+        self.putChild(b"large-headers", LargeHeadersResource())
         self.putChild(b"response-headers", ResponseHeadersResource())
         self.putChild(b"set-cookie", SetCookie())
         self.putChild(b"uri", UriResource())

@@ -26,6 +26,7 @@ from scrapy.exceptions import (
     DownloadFailedError,
     DownloadTimeoutError,
     ResponseDataLossError,
+    ResponseHeadersTooLargeError,
     ScrapyDeprecationWarning,
     StopDownload,
     UnsupportedURLSchemeError,
@@ -60,6 +61,11 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
 
+# Value that the tests set DOWNLOAD_HEADERS_MAXSIZE to for handlers that honor
+# it, so that they do not depend on its default value and stay reasonably fast.
+CONFIGURED_HEADERS_MAXSIZE = 64 * 1024
+
+
 class TestHttpBase(ABC):
     is_secure: bool = False
     http2: bool = False
@@ -75,6 +81,15 @@ class TestHttpBase(ABC):
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
     default_handler_settings: ClassVar[dict[str, Any]] = {}
+    # Limit that the underlying HTTP client applies to the size of a single
+    # response header line, on top of headers_maxsize. 0 means that only
+    # headers_maxsize applies, which is what web browsers do.
+    header_line_maxsize: int = 0
+    # Limit that applies to the size of the response head as a whole: None if
+    # the handler honors DOWNLOAD_HEADERS_MAXSIZE and DOWNLOAD_HEADERS_WARNSIZE,
+    # 0 if its HTTP client applies no limit at all, or else the hard-coded limit
+    # of that client.
+    headers_maxsize: int | None = None
 
     @property
     @abstractmethod
@@ -460,6 +475,101 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.headers.getlist(b"Set-Cookie") == [b"a=b", b"c=d"]
+
+    @property
+    def _effective_headers_maxsize(self) -> int:
+        """Limit that the tests should expect the handler to apply, 0 for
+        none."""
+        if self.headers_maxsize is None:
+            return CONFIGURED_HEADERS_MAXSIZE
+        return self.headers_maxsize
+
+    @property
+    def _headers_maxsize_settings(self) -> dict[str, Any]:
+        if self.headers_maxsize is None:
+            return {"DOWNLOAD_HEADERS_MAXSIZE": CONFIGURED_HEADERS_MAXSIZE}
+        return {}
+
+    @coroutine_test
+    async def test_get_long_header(self, mockserver: MockServer) -> None:
+        """A single header larger than the 16 KiB line length limit that
+        Twisted applies by default is still read. See
+        https://github.com/scrapy/scrapy/issues/355."""
+        size = 32 * 1024
+        if self.header_line_maxsize:
+            size = min(size, self.header_line_maxsize)
+        request = Request(
+            mockserver.url(f"/large-headers?size={size}", is_secure=self.is_secure)
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.headers[b"X-Large-0"] == b"a" * size
+
+    @coroutine_test
+    async def test_get_headers_over_maxsize_single_header(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self._effective_headers_maxsize:
+            pytest.skip(f"{type(self).__name__} does not limit response head size")
+        # Twice the limit, because some HTTP clients only enforce it once the
+        # unparsed head exceeds it by a whole read buffer.
+        size = self._effective_headers_maxsize * 2
+        request = Request(
+            mockserver.url(f"/large-headers?size={size}", is_secure=self.is_secure)
+        )
+        async with self.get_dh(self._headers_maxsize_settings) as download_handler:
+            with pytest.raises(ResponseHeadersTooLargeError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_get_headers_over_maxsize_many_headers(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self._effective_headers_maxsize:
+            pytest.skip(f"{type(self).__name__} does not limit response head size")
+        size = 8 * 1024
+        count = self._effective_headers_maxsize * 2 // size
+        request = Request(
+            mockserver.url(
+                f"/large-headers?size={size}&count={count}", is_secure=self.is_secure
+            )
+        )
+        async with self.get_dh(self._headers_maxsize_settings) as download_handler:
+            with pytest.raises(ResponseHeadersTooLargeError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_get_headers_maxsize_disabled(self, mockserver: MockServer) -> None:
+        if self.headers_maxsize is not None:
+            pytest.skip(
+                f"{type(self).__name__} does not support DOWNLOAD_HEADERS_MAXSIZE"
+            )
+        size = self._effective_headers_maxsize * 2
+        request = Request(
+            mockserver.url(f"/large-headers?size={size}", is_secure=self.is_secure)
+        )
+        async with self.get_dh({"DOWNLOAD_HEADERS_MAXSIZE": 0}) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.headers[b"X-Large-0"] == b"a" * size
+
+    @coroutine_test
+    async def test_get_headers_over_warnsize(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        if self.headers_maxsize is not None:
+            pytest.skip(
+                f"{type(self).__name__} does not support DOWNLOAD_HEADERS_WARNSIZE"
+            )
+        size = 32 * 1024
+        request = Request(
+            mockserver.url(f"/large-headers?size={size}", is_secure=self.is_secure)
+        )
+        settings = {"DOWNLOAD_HEADERS_WARNSIZE": size // 2}
+        with caplog.at_level(logging.WARNING):
+            async with self.get_dh(settings) as download_handler:
+                response = await download_handler.download_request(request)
+        assert response.headers[b"X-Large-0"] == b"a" * size
+        assert "download headers warn size" in caplog.text
 
     @coroutine_test
     async def test_download_is_not_automatically_gzip_decoded(

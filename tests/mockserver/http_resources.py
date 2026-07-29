@@ -326,6 +326,20 @@ class DuplicateHeaderResource(resource.Resource):
         return b""
 
 
+class LargeHeadersResource(resource.Resource):
+    """Return a response with ``count`` headers whose values are ``size`` bytes
+    long each."""
+
+    def render(self, request):
+        size = getarg(request, b"size", 100, type_=int)
+        count = getarg(request, b"count", 1, type_=int)
+        for index in range(count):
+            request.responseHeaders.setRawHeaders(
+                f"X-Large-{index}".encode(), [b"a" * size]
+            )
+        return b""
+
+
 class UriResource(resource.Resource):
     """Return the full uri that was requested"""
 

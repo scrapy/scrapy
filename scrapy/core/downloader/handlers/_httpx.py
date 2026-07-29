@@ -14,6 +14,7 @@ from scrapy.exceptions import (
     DownloadFailedError,
     DownloadTimeoutError,
     NotConfigured,
+    ResponseHeadersTooLargeError,
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers
@@ -68,6 +69,22 @@ else:
         DOWNLOAD_FAILED_EXCEPTIONS += (socksio.exceptions.ProtocolError,)
     except ImportError:  # pragma: no cover
         pass
+
+
+def _is_headers_too_large_exception(exc: BaseException) -> bool:
+    """Return whether *exc* was caused by response headers exceeding the limit
+    of the underlying HTTP client, which httpx does not let us configure and
+    reports as a generic protocol error."""
+    for cause in _iter_exc_causes(exc):
+        # h11 reports it as a protocol error hinting at the 431 status, which
+        # it uses for nothing else.
+        if getattr(cause, "error_status_hint", None) == 431:
+            return True
+        # h2 reports it as a symptom of an HPACK bomb, which is what exceeding
+        # SETTINGS_MAX_HEADER_LIST_SIZE looks like from its point of view.
+        if HAS_HTTP2 and isinstance(cause, h2.exceptions.DenialOfServiceError):
+            return True
+    return False
 
 
 if TYPE_CHECKING:
@@ -179,6 +196,11 @@ class HttpxDownloadHandler(_Base):
         except httpx.ProxyError as e:
             raise DownloadConnectionRefusedError(str(e)) from e
         except DOWNLOAD_FAILED_EXCEPTIONS as e:  # pylint: disable=catching-non-exception
+            if _is_headers_too_large_exception(e):
+                raise ResponseHeadersTooLargeError(
+                    f"Received response headers larger than the limit of the "
+                    f"HTTP client while requesting {request.url}: {e}"
+                ) from e
             raise DownloadFailedError(str(e)) from e
 
     @staticmethod
