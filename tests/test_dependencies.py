@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 from configparser import ConfigParser
@@ -23,6 +25,7 @@ class TestScrapyUtils:
         config_parser.read(tox_config_file_path)
         pattern = r"Twisted==([\d.]+)"
         match = re.search(pattern, config_parser["min"]["deps"])
+        assert match
         pinned_twisted_version_string = match[1]
 
         assert twisted_version.short() == pinned_twisted_version_string

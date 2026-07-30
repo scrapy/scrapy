@@ -12,18 +12,18 @@ from urllib.parse import urljoin
 import lxml.etree
 import pytest
 from packaging.version import Version
-from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy import Spider
 from scrapy.exceptions import NotConfigured
-from scrapy.extensions.feedexport import FeedExporter, IFeedStorage, S3FeedStorage
+from scrapy.extensions.feedexport import FeedExporter, S3FeedStorage
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
-from tests.test_feedexport import TestFeedExportBase
+from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.feedexport import MyItem
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -197,9 +197,9 @@ class TestBatchDeliveries(TestFeedExportBase):
     async def test_export_items(self):
         """Test partial deliveries in all supported formats"""
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
         rows = [
             {"egg": "spam1", "foo": "bar1", "baz": ""},
@@ -207,8 +207,49 @@ class TestBatchDeliveries(TestFeedExportBase):
             {"foo": "bar3", "baz": "quux3", "egg": ""},
         ]
         settings = {"FEED_EXPORT_BATCH_ITEM_COUNT": 2}
-        header = self.MyItem.fields.keys()
+        header = MyItem.fields.keys()
         await self.assertExported(items, header, rows, settings=settings)
+
+    @coroutine_test
+    async def test_batch_delivered_when_full(self):
+        """Full batches must be finalized and delivered as soon as they are
+        full, instead of when the spider closes."""
+        dir_path = self._random_temp_filename()
+        batch1_path = Path(dir_path, "1.json")
+        mockserver_url = self.mockserver.url("/")
+        batch1_contents: list[bytes | None] = []
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+            start_urls = [mockserver_url]
+
+            def parse(self, response):
+                yield {"foo": "bar1"}
+                yield {"foo": "bar2"}
+                yield scrapy.Request(
+                    mockserver_url, callback=self.parse2, dont_filter=True
+                )
+
+            def parse2(self, response):
+                # the first batch was full after the second item, so it must
+                # have been delivered by now
+                batch1_contents.append(
+                    batch1_path.read_bytes() if batch1_path.exists() else None
+                )
+                yield {"foo": "bar3"}
+
+        settings = {
+            "FEEDS": {
+                build_url(dir_path / "%(batch_id)d.json"): {"format": "json"},
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        assert batch1_contents, "the second request was not processed"
+        assert batch1_contents[0] is not None, "batch 1 was not stored during the crawl"
+        assert json.loads(batch1_contents[0]) == [{"foo": "bar1"}, {"foo": "bar2"}]
 
     def test_wrong_path(self):
         """If path is without %(batch_time)s and %(batch_id) an exception must be raised"""
@@ -349,9 +390,9 @@ class TestBatchDeliveries(TestFeedExportBase):
         So %(batch_id)d replaced with the current id.
         """
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
         settings = {
             "FEEDS": {
@@ -378,6 +419,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(total=2, mockserver=self.mockserver)
+        assert crawler.stats
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
@@ -386,13 +428,15 @@ class TestBatchDeliveries(TestFeedExportBase):
     def test_s3_export(self):
         bucket = "mybucket"
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
-            self.MyItem({"foo": "bar3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar3", "baz": "quux3"}),
         ]
 
         class CustomS3FeedStorage(S3FeedStorage):
-            stubs = []
+            from botocore.stub import Stubber  # noqa: PLC0415
+
+            stubs: list[Stubber] = []
 
             def open(self, *args, **kwargs):
                 from botocore import __version__ as botocore_version  # noqa: PLC0415
@@ -432,9 +476,6 @@ class TestBatchDeliveries(TestFeedExportBase):
                 },
             },
         }
-        crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(crawler, uri)
-        verifyObject(IFeedStorage, storage)
 
         class TestSpider(scrapy.Spider):
             name = "testspider"
@@ -449,6 +490,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs:
             stub.assert_no_pending_responses()
+        assert crawler.stats
         assert (
             "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
         )

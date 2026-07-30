@@ -87,6 +87,9 @@ def get_retry_request(
     message logged when a request exceeds its retries. See
     :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
 
+    .. versionadded:: 2.17.0
+       The *give_up_log_level* parameter.
+
     *stats_base_key* is a string to be used as the base key for the
     retry-related job stats
     """

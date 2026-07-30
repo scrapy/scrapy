@@ -13,7 +13,6 @@ from twisted.internet.ssl import (
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface.declarations import implementer
-from zope.interface.verify import verifyObject
 
 from scrapy.core.downloader.tls import (
     _TWISTED_VERSION_MAP,
@@ -232,7 +231,6 @@ class _AcceptableProtocolsContextFactory:
     # all of this with _ScrapyClientContextFactory.acceptableProtocols.
 
     def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
-        verifyObject(IPolicyForHTTPS, context_factory)
         self._wrapped_context_factory: Any = context_factory
         self._acceptable_protocols: list[bytes] = acceptable_protocols
 

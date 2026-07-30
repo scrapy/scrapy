@@ -39,8 +39,8 @@ API stability
 
 API stability was one of the major goals for the *1.0* release.
 
-Methods or functions that start with a single dash (``_``) are private and
-should never be relied as stable.
+Methods or functions that start with a single underscore (``_``) are private
+and should never be relied upon as stable.
 
 Also, keep in mind that stable doesn't mean complete: stable APIs could grow
 new methods or functionality but the existing methods should keep working the

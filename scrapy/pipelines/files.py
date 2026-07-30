@@ -27,9 +27,17 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
+from scrapy.pipelines.media import (
+    FileException as FileException,  # noqa: PLC0414  # re-exported for backward compatibility
+)
+from scrapy.pipelines.media import (
+    FileInfo,
+    FileInfoOrError,
+    MediaPipeline,
+    _MediaRequestFiltered,
+)
 from scrapy.utils.asyncio import run_in_thread
-from scrapy.utils.boto import is_botocore_available
+from scrapy.utils.boto import _get_max_pool_connections, is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
@@ -73,10 +81,6 @@ def _md5sum(file: IO[bytes]) -> str:
             break
         m.update(d)
     return m.hexdigest()
-
-
-class FileException(Exception):
-    """General media error exception"""
 
 
 class StatInfo(TypedDict, total=False):
@@ -160,6 +164,9 @@ class S3FilesStore:
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
     AWS_VERIFY = None
+    # Overridden from settings.AWS_MAX_POOL_CONNECTIONS in
+    # FilesPipeline.from_crawler(); None means the botocore default
+    AWS_MAX_POOL_CONNECTIONS: int | None = None
 
     POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
     HEADERS: ClassVar[dict[str, str]] = {
@@ -170,7 +177,13 @@ class S3FilesStore:
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
         import botocore.session  # noqa: PLC0415
+        from botocore.config import Config  # noqa: PLC0415
 
+        config = (
+            Config(max_pool_connections=self.AWS_MAX_POOL_CONNECTIONS)
+            if self.AWS_MAX_POOL_CONNECTIONS is not None
+            else None
+        )
         session = botocore.session.get_session()
         self.s3_client = session.create_client(
             "s3",
@@ -181,6 +194,7 @@ class S3FilesStore:
             region_name=self.AWS_REGION_NAME,
             use_ssl=self.AWS_USE_SSL,
             verify=self.AWS_VERIFY,
+            config=config,
         )
         if not uri.startswith("s3://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
@@ -300,13 +314,13 @@ class GCSFilesStore:
         )
         if "storage.objects.get" not in permissions:
             logger.warning(
-                "No 'storage.objects.get' permission for GSC bucket %(bucket)s. "
+                "No 'storage.objects.get' permission for GCS bucket %(bucket)s. "
                 "Checking if files are up to date will be impossible. Files will be downloaded every time.",
                 {"bucket": bucket},
             )
         if "storage.objects.create" not in permissions:
             logger.error(
-                "No 'storage.objects.create' permission for GSC bucket %(bucket)s. Saving files will be impossible!",
+                "No 'storage.objects.create' permission for GCS bucket %(bucket)s. Saving files will be impossible!",
                 {"bucket": bucket},
             )
 
@@ -518,6 +532,7 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_REGION_NAME = settings["AWS_REGION_NAME"]
         s3store.AWS_USE_SSL = settings["AWS_USE_SSL"]
         s3store.AWS_VERIFY = settings["AWS_VERIFY"]
+        s3store.AWS_MAX_POOL_CONNECTIONS = _get_max_pool_connections(settings)
         s3store.POLICY = settings["FILES_STORE_S3_ACL"]
 
         gcs_store: type[GCSFilesStore] = cast(
@@ -597,20 +612,20 @@ class FilesPipeline(MediaPipeline):
     def media_failed(
         self, failure: Failure, request: Request, info: MediaPipeline.SpiderInfo
     ) -> NoReturn:
-        if not isinstance(failure.value, IgnoreRequest):
-            referer = referer_str(request)
-            logger.warning(
-                "File (unknown-error): Error downloading %(medianame)s from "
-                "%(request)s referred in <%(referer)s>: %(exception)s",
-                {
-                    "medianame": self.MEDIA_NAME,
-                    "request": request,
-                    "referer": referer,
-                    "exception": failure.value,
-                },
+        referer = referer_str(request)
+        if isinstance(failure.value, IgnoreRequest):
+            logger.debug(
+                f"File (filtered): Not downloading {self.MEDIA_NAME} from "
+                f"{request} referred in <{referer}>: {failure.value}",
                 extra={"spider": info.spider},
             )
+            raise _MediaRequestFiltered(str(failure.value)) from failure.value
 
+        logger.warning(
+            f"File (unknown-error): Error downloading {self.MEDIA_NAME} from "
+            f"{request} referred in <{referer}>: {failure.value}",
+            extra={"spider": info.spider},
+        )
         raise FileException
 
     async def media_downloaded(

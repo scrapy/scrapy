@@ -118,6 +118,18 @@ class TestBaseItemExporter(ABC):
         ie = self._get_exporter(fields_to_export={"name": "名稱"})
         assert list(ie._get_serialized_fields(self.i)) == [("名稱", "John\xa3")]
 
+    def test_field_order(self):
+        item = self.item_class(age="22", name="John\xa3")
+        ie = self._get_exporter()
+        assert [name for name, _ in ie._get_serialized_fields(item)] == ["name", "age"]
+
+    def test_field_order_dict_item(self):
+        ie = self._get_exporter()
+        assert [name for name, _ in ie._get_serialized_fields({"age": "22"})] == ["age"]
+        assert [
+            name for name, _ in ie._get_serialized_fields({"age": "22", "name": "John"})
+        ] == ["age", "name"]
+
     def test_field_custom_serializer(self):
         i = self.custom_field_item_class(name="John\xa3", age="22")
         a = ItemAdapter(i)
@@ -383,6 +395,20 @@ class TestCsvItemExporter(TestBaseItemExporter):
             encoding="windows-1251",
             errors="xmlcharrefreplace",
         )
+
+    def test_csv_dropped_fields_warning(self, caplog):
+        out = BytesIO()
+        exporter = CsvItemExporter(out)
+        exporter.start_exporting()
+
+        exporter.export_item({"name": "Apple"})
+
+        with caplog.at_level("WARNING", logger="scrapy.exporters"):
+            exporter.export_item({"name": "Banana", "price": 2.00})
+
+        assert len(caplog.records) == 1
+        assert "CSVExporter dropped fields" in caplog.text
+        assert "price" in caplog.text
 
 
 class TestCsvItemExporterDataclass(TestCsvItemExporter):

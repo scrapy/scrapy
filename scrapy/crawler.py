@@ -39,7 +39,11 @@ from scrapy.utils.reactor import (
     verify_installed_asyncio_event_loop,
     verify_installed_reactor,
 )
-from scrapy.utils.reactorless import install_reactor_import_hook
+from scrapy.utils.reactorless import (
+    ReactorImportHook,
+    install_reactor_import_hook,
+    uninstall_reactor_import_hook,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Generator, Iterable
@@ -837,6 +841,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
         self._reactorless_loop: asyncio.AbstractEventLoop | None = None
+        self._reactor_import_hook: ReactorImportHook | None = None
         # We want the asyncio event loop to be installed early, so that it's
         # always the correct one. And as we do that, we can also install the
         # reactor here.
@@ -849,7 +854,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
                     "TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed."
                 )
             self._reactorless_loop = set_asyncio_event_loop(loop_path)
-            install_reactor_import_hook()
+            self._reactor_import_hook = install_reactor_import_hook()
         elif is_reactor_installed():
             # The user could install a reactor before this class is instantiated.
             # We need to make sure the reactor is the correct one and the loop
@@ -979,6 +984,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.run_until_complete(loop.shutdown_default_executor())
         finally:
+            # loop.close() can raise, so we uninstall the hook first
+            if self._reactor_import_hook:  # pragma: no branch
+                uninstall_reactor_import_hook(self._reactor_import_hook)
+                self._reactor_import_hook = None
             self._reactorless_main_task = None
             asyncio.set_event_loop(None)
             loop.close()
