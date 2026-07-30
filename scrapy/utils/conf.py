@@ -3,18 +3,30 @@ from __future__ import annotations
 import numbers
 import os
 import sys
+import warnings
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
+
+_GLOBAL_CONFIG_PATH = Path("~/.scrapy/config.toml")
+
+# Project-independent options that the global configuration file supports, as
+# (section, option) pairs.
+_GLOBAL_OPTIONS = frozenset({("settings", "shell")})
 
 
 def build_component_list(
@@ -70,20 +82,105 @@ def arglist_to_dict(arglist: list[str]) -> dict[str, str]:
     return dict(x.split("=", 1) for x in arglist)
 
 
+def _load_toml(path: Path) -> dict[str, Any] | None:
+    """Return the content of the specified TOML file, or ``None`` if it cannot
+    be parsed.
+    """
+    try:
+        with path.open("rb") as f:
+            return tomllib.load(f)
+    except tomllib.TOMLDecodeError as exc:
+        warnings.warn(f"Ignoring invalid TOML file {path}: {exc}", stacklevel=3)
+        return None
+
+
+def _scrapy_table(path: Path) -> dict[str, Any] | None:
+    """Return the ``tool.scrapy`` table of the specified TOML file, or ``None``
+    if the file has no such table or cannot be parsed.
+    """
+    data = _load_toml(path)
+    tool = data.get("tool") if data else None
+    table = tool.get("scrapy") if isinstance(tool, dict) else None
+    return table if isinstance(table, dict) else None
+
+
+def _read_global_config(cfg: ConfigParser) -> None:
+    """Read the supported options of the global configuration file into the
+    specified :class:`~configparser.ConfigParser` object.
+    """
+    path = _GLOBAL_CONFIG_PATH.expanduser()
+    if not path.is_file():
+        return
+    ignored: list[str] = []
+    for section, options in (_load_toml(path) or {}).items():
+        if not isinstance(options, dict):
+            ignored.append(section)
+            continue
+        for option, value in options.items():
+            if (section, option) not in _GLOBAL_OPTIONS:
+                ignored.append(f"{section}.{option}")
+                continue
+            if not cfg.has_section(section):
+                cfg.add_section(section)
+            cfg.set(section, option, str(value))
+    if ignored:
+        supported = ", ".join(f"{s}.{o}" for s, o in sorted(_GLOBAL_OPTIONS))
+        warnings.warn(
+            f"Ignoring the following options of {path}: {', '.join(ignored)}. "
+            f"Only project-independent options are supported there: {supported}.",
+            stacklevel=3,
+        )
+
+
+def closest_config(path: str | os.PathLike[str] = ".") -> str:
+    """Return the path to the closest configuration file, found by traversing
+    the specified folder and its parents.
+
+    A folder holds a configuration file if it contains a
+    :file:`pyproject.toml` file with a ``tool.scrapy`` table or a (deprecated)
+    :file:`scrapy.cfg` file. If it contains both, :file:`pyproject.toml` wins.
+    """
+    start = Path(path).resolve()
+    for folder in (start, *start.parents):
+        toml_path = folder / "pyproject.toml"
+        if toml_path.is_file() and _scrapy_table(toml_path) is not None:
+            return str(toml_path)
+        cfg_path = folder / "scrapy.cfg"
+        if cfg_path.is_file():
+            return str(cfg_path)
+    return ""
+
+
 def closest_scrapy_cfg(
     path: str | os.PathLike[str] = ".",
     prevpath: str | os.PathLike[str] | None = None,
 ) -> str:
     """Return the path to the closest scrapy.cfg file by traversing the current
     directory and its parents
+
+    .. deprecated:: VERSION
+        Use :func:`closest_config` instead.
     """
+    warnings.warn(
+        "scrapy.utils.conf.closest_scrapy_cfg() is deprecated, use "
+        "scrapy.utils.conf.closest_config() instead.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _closest_scrapy_cfg(path, prevpath)
+
+
+def _closest_scrapy_cfg(
+    path: str | os.PathLike[str] = ".",
+    prevpath: str | os.PathLike[str] | None = None,
+) -> str:
     if prevpath is not None and str(path) == str(prevpath):
         return ""
     path = Path(path).resolve()
     cfgfile = path / "scrapy.cfg"
     if cfgfile.exists():
         return str(cfgfile)
-    return closest_scrapy_cfg(path.parent, path)
+    return _closest_scrapy_cfg(path.parent, path)
 
 
 def init_env(project: str = "default", set_syspath: bool = True) -> None:
@@ -94,7 +191,7 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
     cfg = get_config()
     if cfg.has_option("settings", project):
         os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
-    closest = closest_scrapy_cfg()
+    closest = closest_config()
     if closest:
         projdir = str(Path(closest).parent)
         if set_syspath and projdir not in sys.path:
@@ -103,9 +200,32 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
 
 def get_config(use_closest: bool = True) -> ConfigParser:
     """Get Scrapy config file as a ConfigParser"""
-    sources = get_sources(use_closest)
     cfg = ConfigParser()
-    cfg.read(sources)
+    global_files = cfg.read(get_sources(use_closest=False))
+    if global_files:
+        warnings.warn(
+            f"Configuration read from {', '.join(global_files)}. Global "
+            "scrapy.cfg files are deprecated, use "
+            f"{_GLOBAL_CONFIG_PATH.expanduser()} for "
+            "project-independent options and the [tool.scrapy] table of the "
+            "pyproject.toml file of your project for the rest. See "
+            "https://docs.scrapy.org/en/latest/topics/commands.html#global-config",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+    _read_global_config(cfg)
+    closest = closest_config() if use_closest else ""
+    if Path(closest).name == "pyproject.toml":
+        cfg.read_dict(_scrapy_table(Path(closest)) or {})
+    elif closest:
+        warnings.warn(
+            f"{closest} is deprecated, define your project configuration in "
+            "the [tool.scrapy] table of a pyproject.toml file instead. See "
+            "https://docs.scrapy.org/en/latest/topics/commands.html#config",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        cfg.read(closest)
     return cfg
 
 
@@ -120,7 +240,7 @@ def get_sources(use_closest: bool = True) -> list[str]:
         str(Path("~/.scrapy.cfg").expanduser()),
     ]
     if use_closest:
-        sources.append(closest_scrapy_cfg())
+        sources.append(_closest_scrapy_cfg())
     return sources
 
 

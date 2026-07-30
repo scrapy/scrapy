@@ -20,7 +20,7 @@ def proj_path(tmp_path: Path) -> Generator[Path]:
 
     try:
         os.chdir(project_dir)
-        Path("scrapy.cfg").touch()
+        Path("pyproject.toml").write_text("[tool.scrapy]\n", encoding="utf-8")
 
         yield project_dir
     finally:

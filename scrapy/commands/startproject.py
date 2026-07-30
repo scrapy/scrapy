@@ -11,13 +11,14 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
+from scrapy.utils.conf import _scrapy_table
 from scrapy.utils.template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
     import argparse
 
 TEMPLATES_TO_RENDER: tuple[tuple[str, ...], ...] = (
-    ("scrapy.cfg",),
+    ("pyproject.toml",),
     ("${project_name}", "settings.py.tmpl"),
     ("${project_name}", "items.py.tmpl"),
     ("${project_name}", "pipelines.py.tmpl"),
@@ -102,6 +103,21 @@ class Command(ScrapyCommand):
             print(f"Error: scrapy.cfg already exists in {project_dir.resolve()}")
             return
 
+        pyproject_path = project_dir / "pyproject.toml"
+        # Read before the template overwrites it, to restore it below.
+        pyproject_content = (
+            pyproject_path.read_text(encoding="utf-8")
+            if pyproject_path.is_file()
+            else None
+        )
+        if pyproject_content is not None and _scrapy_table(pyproject_path) is not None:
+            self.exitcode = 1
+            print(
+                "Error: pyproject.toml already has a [tool.scrapy] table in "
+                f"{project_dir.resolve()}"
+            )
+            return
+
         if not self._is_valid_name(project_name):
             self.exitcode = 1
             return
@@ -120,6 +136,15 @@ class Command(ScrapyCommand):
                 tplfile,
                 project_name=project_name,
                 ProjectName=string_camelcase(project_name),
+            )
+        if pyproject_content:
+            # Append the generated tables to the pre-existing pyproject.toml
+            # instead of replacing it.
+            pyproject_path.write_text(
+                pyproject_content.rstrip("\n")
+                + "\n\n"
+                + pyproject_path.read_text(encoding="utf-8"),
+                encoding="utf-8",
             )
         print(
             f"New Scrapy project '{project_name}', using template directory "

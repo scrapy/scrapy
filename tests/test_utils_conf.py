@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+import warnings
+from pathlib import Path
 from typing import Any
 
 import pytest
 
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
     arglist_to_dict,
     build_component_list,
+    closest_config,
+    closest_scrapy_cfg,
     feed_complete_default_values_from_settings,
     feed_process_params_from_cli,
+    get_config,
 )
 
 
@@ -56,6 +61,166 @@ def test_arglist_to_dict():
         "arg1": "val1",
         "arg2": "val2",
     }
+
+
+SETTINGS_TOML = (
+    "[tool.scrapy.settings]\n"
+    'default = "myproject1.settings"\n'
+    'project1 = "myproject1.settings"\n'
+    'project2 = "myproject2.settings"\n'
+)
+SETTINGS_CFG = (
+    "[settings]\ndefault = myproject.settings\n[deploy]\nproject = myproject\n"
+)
+
+
+class TestConfig:
+    @pytest.fixture(autouse=True)
+    def home(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+        """Point the global config locations (see
+        :func:`scrapy.utils.conf.get_sources`) at an initially empty folder."""
+        home = tmp_path / "home"
+        home.mkdir()
+        monkeypatch.setenv("HOME", str(home))
+        monkeypatch.setenv("USERPROFILE", str(home))
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(home))
+        return home
+
+    def test_no_config(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        assert closest_config() == ""
+
+    def test_pyproject_toml(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / "pyproject.toml").write_text(SETTINGS_TOML, encoding="utf-8")
+        subdir = tmp_path / "a" / "b"
+        subdir.mkdir(parents=True)
+        monkeypatch.chdir(subdir)
+
+        assert Path(closest_config()) == (tmp_path / "pyproject.toml").resolve()
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            cfg = get_config()
+        assert cfg.get("settings", "default") == "myproject1.settings"
+        assert cfg.get("settings", "project1") == "myproject1.settings"
+        assert cfg.get("settings", "project2") == "myproject2.settings"
+
+    def test_pyproject_toml_preferred(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / "pyproject.toml").write_text(SETTINGS_TOML, encoding="utf-8")
+        (tmp_path / "scrapy.cfg").write_text(SETTINGS_CFG, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        assert Path(closest_config()) == (tmp_path / "pyproject.toml").resolve()
+        cfg = get_config()
+        assert cfg.get("settings", "default") == "myproject1.settings"
+        assert not cfg.has_section("deploy")
+
+    def test_closest_wins(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / "pyproject.toml").write_text(SETTINGS_TOML, encoding="utf-8")
+        subdir = tmp_path / "a"
+        subdir.mkdir()
+        (subdir / "scrapy.cfg").write_text(SETTINGS_CFG, encoding="utf-8")
+        monkeypatch.chdir(subdir)
+
+        assert Path(closest_config()) == (subdir / "scrapy.cfg").resolve()
+        with pytest.warns(ScrapyDeprecationWarning, match="scrapy.cfg is deprecated"):
+            cfg = get_config()
+        assert cfg.get("settings", "default") == "myproject.settings"
+
+    def test_pyproject_toml_without_scrapy_table(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / "pyproject.toml").write_text(SETTINGS_TOML, encoding="utf-8")
+        subdir = tmp_path / "a"
+        subdir.mkdir()
+        (subdir / "pyproject.toml").write_text(
+            '[project]\nname = "unrelated"\n', encoding="utf-8"
+        )
+        monkeypatch.chdir(subdir)
+
+        assert Path(closest_config()) == (tmp_path / "pyproject.toml").resolve()
+
+    def test_invalid_pyproject_toml(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.scrapy\nnot valid toml", encoding="utf-8"
+        )
+        (tmp_path / "scrapy.cfg").write_text(SETTINGS_CFG, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.warns(UserWarning, match="Ignoring invalid TOML file"):
+            closest = closest_config()
+        assert Path(closest) == (tmp_path / "scrapy.cfg").resolve()
+
+    @staticmethod
+    def _write_global_config(home: Path, content: str) -> None:
+        path = home / ".scrapy" / "config.toml"
+        path.parent.mkdir()
+        path.write_text(content, encoding="utf-8")
+
+    def test_global_config(
+        self, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._write_global_config(home, '[settings]\nshell = "bpython"\n')
+        monkeypatch.chdir(tmp_path)
+
+        assert get_config().get("settings", "shell") == "bpython"
+
+    def test_global_config_overridden_by_project(
+        self, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._write_global_config(home, '[settings]\nshell = "bpython"\n')
+        (tmp_path / "pyproject.toml").write_text(
+            '[tool.scrapy.settings]\nshell = "python"\n', encoding="utf-8"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        assert get_config().get("settings", "shell") == "python"
+
+    def test_global_config_unsupported_options(
+        self, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._write_global_config(
+            home,
+            '[settings]\nshell = "bpython"\ndefault = "myproject.settings"\n'
+            '[deploy]\nproject = "myproject"\nunsupported = 1\n',
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.warns(UserWarning, match="settings.default, deploy.project"):
+            cfg = get_config()
+        assert cfg.get("settings", "shell") == "bpython"
+        assert not cfg.has_option("settings", "default")
+        assert not cfg.has_section("deploy")
+
+    def test_global_scrapy_cfg_deprecated(
+        self, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (home / "scrapy.cfg").write_text(
+            "[settings]\nshell = python\n", encoding="utf-8"
+        )
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="Global scrapy.cfg files are deprecated"
+        ):
+            cfg = get_config()
+        assert cfg.get("settings", "shell") == "python"
+
+    def test_closest_scrapy_cfg_deprecated(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (tmp_path / "scrapy.cfg").write_text(SETTINGS_CFG, encoding="utf-8")
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.warns(ScrapyDeprecationWarning, match="closest_scrapy_cfg"):
+            assert Path(closest_scrapy_cfg()) == (tmp_path / "scrapy.cfg").resolve()
 
 
 class TestFeedExportConfig:

@@ -37,12 +37,21 @@ Through Scrapy's settings you can configure it to use any one of
 ``ptpython``, ``ipython``, ``bpython`` or the standard ``python`` shell,
 regardless of which are installed. This is done by setting the
 ``SCRAPY_PYTHON_SHELL`` environment variable; or by defining it in your
-:ref:`scrapy.cfg <topics-config-settings>`:
+:file:`pyproject.toml` file (see :ref:`config`):
 
-.. code-block:: ini
+.. code-block:: toml
+
+    [tool.scrapy.settings]
+    shell = "bpython"
+
+You can also define it for all your projects in the
+:file:`.scrapy/config.toml` file of your home folder (see
+:ref:`global-config`):
+
+.. code-block:: toml
 
     [settings]
-    shell = bpython
+    shell = "bpython"
 
 .. _ptpython: https://github.com/prompt-toolkit/ptpython
 .. _IPython: https://ipython.org/
