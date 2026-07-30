@@ -119,7 +119,7 @@ class CloseSpider:
             self.task = None
 
         if self.task_no_item:
-            if self.task_no_item.running:
+            if self.task_no_item.running:  # pragma: no branch
                 self.task_no_item.stop()
             self.task_no_item = None
 

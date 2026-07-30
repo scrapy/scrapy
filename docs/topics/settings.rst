@@ -458,6 +458,26 @@ Default: ``None``
 
 Endpoint URL used for S3-like storage, for example Minio or s3.scality.
 
+.. setting:: AWS_MAX_POOL_CONNECTIONS
+
+AWS_MAX_POOL_CONNECTIONS
+------------------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Maximum number of connections that AWS clients, such as those of the
+:ref:`S3 feed storage backend <topics-feed-storage-s3>` and of the
+:ref:`S3 media pipeline storage backend <media-pipelines-s3>`, keep in their
+connection pool.
+
+If ``None``, the value of :setting:`REACTOR_THREADPOOL_MAXSIZE` is used.
+
+Values lower than the number of parallel AWS calls do not limit those calls, but
+their connections are closed instead of reused, which hurts performance, and
+``Connection pool is full, discarding connection`` warnings are logged.
+
 .. setting:: AWS_REGION_NAME
 
 AWS_REGION_NAME
