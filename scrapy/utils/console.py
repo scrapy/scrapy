@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import code
 from collections.abc import Callable
-from functools import wraps
+from functools import partial, wraps
+from inspect import signature
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -38,6 +40,21 @@ def _embed_ipython_shell(
         shell = InteractiveShellEmbed.instance(
             banner1=banner, user_ns=namespace, config=config
         )
+        # If an asyncio event loop is already running in this thread, e.g. when
+        # inspect_response() is called from a spider callback while using the
+        # asyncio reactor, prompt_toolkit cannot run its own event loop here, so
+        # ask it to run the prompt in a separate thread instead.
+        # See https://github.com/scrapy/scrapy/issues/5447
+        # pt_app is None when IPython falls back to its simple prompt, which
+        # does not use an event loop; in_thread needs prompt_toolkit 3.0+.
+        pt_app = getattr(shell, "pt_app", None)
+        if pt_app is not None and "in_thread" in signature(pt_app.prompt).parameters:
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                pass
+            else:
+                pt_app.prompt = partial(pt_app.prompt, in_thread=True)
         shell()
 
     return wrapper
