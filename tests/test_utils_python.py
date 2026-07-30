@@ -4,7 +4,7 @@ import functools
 import operator
 import platform
 import sys
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pytest
 
@@ -188,6 +188,25 @@ def test_get_func_args():
             [],
             ["args", "kwargs"],
         ]
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 14),
+    reason="annotations are only lazily evaluated since Python 3.14 (PEP 649)",
+)
+def test_get_func_args_unresolvable_annotations():
+    # dont_inherit=True, or the module's future import stringizes the annotations
+    namespace: dict[str, Any] = {}
+    exec(  # pylint: disable=exec-used
+        compile(
+            "def f(a: OnlyAtTypeCheckingTime, b: int = 1) -> OnlyAtTypeCheckingTime: pass",
+            "<test>",
+            "exec",
+            dont_inherit=True,
+        ),
+        namespace,
+    )
+    assert get_func_args(namespace["f"]) == ["a", "b"]
 
 
 @pytest.mark.parametrize(
