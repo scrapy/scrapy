@@ -97,7 +97,7 @@ handler documentation.
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
 
-See :ref:`topics-request-response-ref-request-callback-arguments`.
+See :ref:`callback-data`.
 
 How can I simulate a user login in my spider?
 ---------------------------------------------
