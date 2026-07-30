@@ -21,7 +21,9 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: 2.13
 
--   :class:`~scrapy.Request` callbacks.
+-   :class:`~scrapy.Request` :ref:`callbacks <callbacks>`, which may
+    also be defined as :term:`asynchronous generators <asynchronous
+    generator>`.
 
 -   The :meth:`process_item` method of
     :ref:`item pipelines <topics-item-pipeline>`.
