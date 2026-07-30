@@ -675,14 +675,14 @@ class TestFeedExport(TestFeedExportBase):
 
         formats = {
             "csv": b"foo,egg,baz\r\nbar1,spam1,\r\n",
-            "json": b'[\n{"hello": "world2", "foo": "bar2"}\n]',
+            "json": b'[\n{"foo": "bar2", "hello": "world2"}\n]',
             "jsonlines": (
-                b'{"foo": "bar1", "egg": "spam1"}\n{"hello": "world2", "foo": "bar2"}\n'
+                b'{"foo": "bar1", "egg": "spam1"}\n{"foo": "bar2", "hello": "world2"}\n'
             ),
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
-                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>"
-                b"world2</hello><foo>bar2</foo></item>\n<item><hello>world3"
+                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><foo>"
+                b"bar2</foo><hello>world2</hello></item>\n<item><hello>world3"
                 b"</hello><egg>spam3</egg></item>\n</items>"
             ),
         }
@@ -740,8 +740,8 @@ class TestFeedExport(TestFeedExportBase):
             "json": b'[\n{"foo": "bar1", "egg": "spam1"}\n]',
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
-                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>"
-                b"world2</hello><foo>bar2</foo></item>\n</items>"
+                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><foo>"
+                b"bar2</foo><hello>world2</hello></item>\n</items>"
             ),
             "jsonlines": b'{"foo": "bar1", "egg": "spam1"}\n',
         }
