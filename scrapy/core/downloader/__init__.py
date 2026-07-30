@@ -7,7 +7,7 @@ from collections.abc import Iterator, Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 
@@ -87,17 +87,34 @@ Slot = create_deprecated_class(
 class _DeprecatedSlotView:
     """Deprecated per-domain slot view backed by the downloader and throttler."""
 
-    __slots__ = ("_downloader", "_key", "_scope")
+    __slots__ = ("_downloader", "_key", "_throttler")
 
     def __init__(
         self,
         downloader: Downloader,
         key: str,
-        scope: ThrottlingScopeManagerProtocol,
+        throttler: ThrottlerProtocol,
     ) -> None:
         self._downloader = downloader
         self._key = key
-        self._scope = scope
+        self._throttler = throttler
+
+    @property
+    def _scope(self) -> ThrottlingScopeManagerProtocol:
+        """The throttling scope manager backing this slot.
+
+        An existing manager is looked up without marking it as recently used
+        where the throttler offers such a lookup, so that merely reading this
+        deprecated view does not disturb the eviction order of
+        :setting:`THROTTLING_SCOPE_LIMIT`. Only a scope that has none is created,
+        which is what makes this view report the configured values of a scope
+        that has not been used yet, as the slot it replaces did.
+        """
+        live = getattr(self._throttler, "_live_scope_manager", None)
+        manager = None if live is None else live(self._key)
+        if manager is None:
+            return self._throttler.get_scope_manager(self._key)
+        return cast("ThrottlingScopeManagerProtocol", manager)
 
     @property
     def active(self) -> set[Request]:
@@ -183,8 +200,7 @@ class _DeprecatedSlotsView(Mapping[str, _DeprecatedSlotView]):
     def __getitem__(self, key: str) -> _DeprecatedSlotView:
         if key not in self._active_keys():
             raise KeyError(key)
-        scope = self._throttler.get_scope_manager(key)
-        return _DeprecatedSlotView(self._downloader, key, scope)
+        return _DeprecatedSlotView(self._downloader, key, self._throttler)
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._active_keys())

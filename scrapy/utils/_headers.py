@@ -25,18 +25,21 @@ def _parse_retry_after(response: Response) -> float | None:
     if value is None:
         return None
     if value.isdigit():
-        return float(value)  # seconds
-    try:
-        date = parsedate_to_datetime(value)
-    except (TypeError, ValueError, OverflowError):
-        return None
-    if date.tzinfo is None:
-        date = date.replace(tzinfo=dt.timezone.utc)
-    now = dt.datetime.now(dt.timezone.utc)
-    seconds_to_wait = (date - now).total_seconds()
-    # Keep sub-second precision (a date less than a second away must not be
-    # truncated to 0 and dropped); a past or present date yields no delay.
-    return max(0.0, seconds_to_wait) or None
+        seconds_to_wait = float(value)
+    else:
+        try:
+            date = parsedate_to_datetime(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=dt.timezone.utc)
+        now = dt.datetime.now(dt.timezone.utc)
+        # Sub-second precision is kept: a date less than a second away must not
+        # be truncated to 0 and dropped.
+        seconds_to_wait = (date - now).total_seconds()
+    # Both forms can ask for no wait at all (a 0 value, a past or present date),
+    # which is reported as no delay rather than as a delay of 0 seconds.
+    return seconds_to_wait if seconds_to_wait > 0 else None
 
 
 def _parse_ratelimit_reset(response: Response) -> float | None:

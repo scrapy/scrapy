@@ -9,8 +9,10 @@ from twisted.internet.defer import Deferred
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader
+from scrapy.core.downloader.handlers._base_http import BaseHttpDownloadHandler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK
+from scrapy.settings import Settings
 from scrapy.throttler import Throttler
 from scrapy.utils.asyncio import wait_for_first
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
@@ -552,6 +554,64 @@ async def test_deprecated_slot_view_without_randomization():
 
     downloader.active.discard(request)
     downloader.close()
+
+
+@coroutine_test
+async def test_deprecated_slot_view_does_not_disturb_the_scope_lru():
+    """Reading the deprecated view of a scope that already exists must not mark
+    it as recently used, which would change which scopes
+    THROTTLING_SCOPE_LIMIT evicts first."""
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    throttler = crawler.throttler
+    assert isinstance(throttler, Throttler)
+    # "example.com" is the coldest scope of the two.
+    throttler.get_scope_manager("example.com")
+    throttler.get_scope_manager("toscrape.com")
+    assert list(throttler._scope_managers) == ["example.com", "toscrape.com"]
+
+    request = Request("https://example.com")
+    request.meta[Downloader.DOWNLOAD_SLOT] = "example.com"
+    downloader.active.add(request)
+    with pytest.warns(ScrapyDeprecationWarning, match="Downloader.slots is deprecated"):
+        slots = downloader.slots
+    assert slots["example.com"].delay == 0.0
+    assert list(throttler._scope_managers) == ["example.com", "toscrape.com"]
+
+    downloader.active.discard(request)
+    downloader.close()
+
+
+@pytest.mark.parametrize(
+    ("settings_dict", "expected"),
+    [
+        # The default is the deprecated setting's, which is the per-scope
+        # concurrency the throttler honors while it is still around.
+        ({}, 8),
+        ({"THROTTLING_SCOPE_CONCURRENCY": 10}, 10),
+        ({"CONCURRENT_REQUESTS_PER_DOMAIN": 11}, 11),
+        # Per-scope limits count too, from the new setting and the deprecated
+        # one alike, since the throttler honors a limit coming from either.
+        ({"THROTTLING_SCOPES": {"example.com": {"concurrency": 12}}}, 12),
+        ({"DOWNLOAD_SLOTS": {"example.com": {"concurrency": 14}}}, 14),
+        # CONCURRENT_REQUESTS caps everything, unless it is 0 (no limit).
+        ({"CONCURRENT_REQUESTS": 3}, 3),
+        ({"CONCURRENT_REQUESTS": 0, "THROTTLING_SCOPE_CONCURRENCY": 32}, 32),
+    ],
+    ids=[
+        "default",
+        "scope-concurrency",
+        "per-domain",
+        "throttling-scopes",
+        "download-slots",
+        "capped",
+        "uncapped",
+    ],
+)
+def test_max_per_host_concurrency(settings_dict: dict[str, Any], expected: int) -> None:
+    settings = Settings(settings_dict)
+    assert BaseHttpDownloadHandler._max_per_host_concurrency(settings) == expected
 
 
 @coroutine_test

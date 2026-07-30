@@ -775,12 +775,6 @@ class ExecutionEngine:
 
         self._cancel_delay_wakeup()
 
-        # Let the requests still on their way into the scheduler get there, so
-        # that they are handled (and, with a JOBDIR, persisted) instead of
-        # failing to be stored into an already-closed scheduler.
-        while self._scheduling:
-            await maybe_deferred_to_future(next(iter(self._scheduling)))
-
         try:
             await self._slot.close()
         except Exception:
@@ -799,6 +793,18 @@ class ExecutionEngine:
             logger.error(
                 "Scraper close failure", exc_info=True, extra={"spider": spider}
             )
+
+        # Let the requests still on their way into the scheduler get there, so
+        # that they are handled (and, with a JOBDIR, persisted) instead of
+        # failing to be stored into an already-closed scheduler.
+        #
+        # Done here, rather than earlier: the last in-flight requests and the
+        # last spider callbacks can schedule requests of their own, so this is
+        # only exhaustive once both the slot and the scraper are closed. By then
+        # the slot is also marked as closing, so awaiting these enqueues cannot
+        # let _start_scheduled_requests() send new requests in the meantime.
+        while self._scheduling:
+            await maybe_deferred_to_future(next(iter(self._scheduling)))
 
         if hasattr(self._slot.scheduler, "close"):
             try:

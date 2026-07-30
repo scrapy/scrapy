@@ -1428,11 +1428,20 @@ class TestParseRateHeaders:
         [
             (b"\xff\xfe", None),  # undecodable bytes
             ("garbage-not-a-date", None),  # neither a number nor a valid date
+            ("5", 5.0),  # delta-seconds
+            # Both forms report a request for no wait at all as no delay.
+            ("0", None),
             # A naive HTTP date (no timezone) in the past is treated as UTC and
             # yields no positive delay.
             ("Wed, 21 Oct 2015 07:28:00", None),
         ],
-        ids=["undecodable", "garbage", "naive-past-date"],
+        ids=[
+            "undecodable",
+            "garbage",
+            "seconds",
+            "zero-seconds",
+            "naive-past-date",
+        ],
     )
     def test_parse_retry_after(self, value, expected):
         assert _parse_retry_after(_response(headers={"Retry-After": value})) == expected

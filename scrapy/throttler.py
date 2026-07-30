@@ -1025,9 +1025,16 @@ class Throttler:
         middlewares: a slot is reserved before its request reaches the downloader
         and released after it leaves, so such a holder is either on its way to a
         download handler or already done with one, and needs no lend either way.
-        Counting it in would let a burst of off-cycle requests that no request in
-        the downloader middlewares is waiting for borrow slots without limit,
-        well past the scope's concurrency limit in download handlers.
+        Counting it in would let off-cycle requests that no request in the
+        downloader middlewares is waiting for keep borrowing slots.
+
+        A borrower is itself a holder in the downloader middlewares while its own
+        middlewares run, so a prerequisite of a prerequisite can borrow in turn,
+        and off-cycle requests sent in one go can borrow one after another. That
+        never lets the scope use more of the network than it may
+        (:meth:`download_handler_blocked` keeps its concurrency limit in download
+        handlers whatever its slots are lent out to), but it does inflate its
+        outstanding reservations, and hence its load, until the borrowers drain.
         """
         holders = self._scope_holders.get(scope_id)
         if not holders:

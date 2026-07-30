@@ -6,9 +6,11 @@ from unittest.mock import Mock
 import pytest
 from twisted.internet import defer
 
-from scrapy import signals
+from scrapy import Request, signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.statscollectors import MemoryStatsCollector
+from scrapy.utils.asyncio import sleep
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -154,3 +156,57 @@ async def test_exception_async_callback(
     await engine.open_spider_async()
     await engine.close_spider_async()
     assert "Error running spider_closed_callback" in caplog.text
+
+
+@coroutine_test
+async def test_waits_for_in_flight_enqueues(crawler: Crawler) -> None:
+    """An enqueue that is still in flight when the spider closes is awaited
+    before the scheduler is closed, and the closing engine starts no request
+    while it waits."""
+    engine = ExecutionEngine(crawler, lambda _: None)
+    crawler.engine = engine
+    await engine.open_spider_async()
+    assert engine._slot is not None
+    # As when close_spider_async() is reached without stopping the engine
+    # first, e.g. from the closespider extension or a CloseSpider exception.
+    engine.running = True
+    scheduler = engine._slot.scheduler
+
+    started: defer.Deferred[None] = defer.Deferred()
+    stored: defer.Deferred[None] = defer.Deferred()
+    events: list[str] = []
+
+    async def enqueue_request_async(request: Request) -> bool:
+        # Stored right away, so that a scheduling round running while this
+        # enqueue is still in flight would find something to send.
+        scheduler.enqueue_request(request)
+        started.callback(None)
+        await maybe_deferred_to_future(stored)
+        events.append("enqueued")
+        return True
+
+    scheduler_close = scheduler.close
+
+    def close(reason: str) -> defer.Deferred[None] | None:
+        events.append("scheduler closed")
+        return scheduler_close(reason)
+
+    scheduler.enqueue_request_async = enqueue_request_async  # type: ignore[attr-defined]
+    scheduler.close = close  # type: ignore[method-assign]
+    engine._scheduler_enqueues_async = True
+    engine._schedule_request(Request("data:,"))
+    assert engine._scheduling
+
+    closing = deferred_from_coro(engine.close_spider_async())
+    # Let the enqueue store its request and the closing engine reach the point
+    # where it waits for that enqueue.
+    await maybe_deferred_to_future(started)
+    await sleep(0)
+    assert engine._slot.closing is not None, "the slot is not marked as closing"
+    engine._start_scheduled_requests()
+    assert not engine._slot.inprogress, "a closing engine started a request"
+    assert not closing.called
+
+    stored.callback(None)
+    await maybe_deferred_to_future(closing)
+    assert events == ["enqueued", "scheduler closed"]
