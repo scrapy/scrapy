@@ -381,6 +381,41 @@ class TestS3FeedStorage:
         assert storage.region_name == region_name
         assert storage.s3_client._client_config.region_name == region_name
 
+    def test_init_without_max_pool_connections(self) -> None:
+        storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
+        assert storage.max_pool_connections is None
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == 10
+
+    def test_init_with_max_pool_connections(self) -> None:
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            max_pool_connections=30,
+        )
+        assert storage.max_pool_connections == 30
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == 30
+
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
+            ({}, 10),
+            ({"REACTOR_THREADPOOL_MAXSIZE": 20}, 20),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30}, 30),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30, "REACTOR_THREADPOOL_MAXSIZE": 20}, 30),
+        ],
+    )
+    def test_from_crawler_max_pool_connections(
+        self, settings: dict[str, Any], expected: int
+    ) -> None:
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        assert storage.max_pool_connections == expected
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == expected
+
     @coroutine_test
     async def test_store_without_acl(self):
         storage = S3FeedStorage(
