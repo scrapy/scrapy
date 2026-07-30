@@ -238,6 +238,12 @@ Bug fixes
     :func:`scrapy.utils.request.request_to_curl`.
     (:issue:`7603`, :issue:`7675`, :issue:`7684`)
 
+-   :func:`scrapy.utils.request.request_to_curl` now quotes the arguments of
+    the command it builds, so a URL containing ``&``, or a body or header
+    value containing whitespace or a quote, no longer breaks the command or
+    changes the value.
+    (:issue:`7825`)
+
 -   Fixed :class:`scrapy.resolver.CachingThreadedResolver` not disabling the
     cache when :setting:`DNSCACHE_ENABLED` is set to ``False``.
     (:issue:`7663`)
