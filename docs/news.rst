@@ -25,6 +25,21 @@ Backward-incompatible changes
 
     (:issue:`6585`, :issue:`7731`)
 
+Bug fixes
+~~~~~~~~~
+
+-   On Python 3.14 and later, loading a component whose methods are annotated
+    with objects that are only imported under :data:`typing.TYPE_CHECKING` no
+    longer raises :exc:`NameError`.
+
+    :func:`scrapy.utils.python.get_func_args_dict` now asks
+    :func:`inspect.signature` not to evaluate annotations eagerly, so
+    unresolvable ones are returned as :class:`typing.ForwardRef` objects
+    instead. This affects
+    :func:`~scrapy.utils.python.get_func_args` and middleware loading as well.
+
+    (:issue:`7796`)
+
 .. _release-2.17.0:
 
 Scrapy 2.17.0 (2026-07-07)

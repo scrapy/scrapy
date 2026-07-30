@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -53,6 +54,10 @@ if not H2_ENABLED:
 
 if find_spec("httpx2") is None and find_spec("httpx") is None:
     collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
+
+if sys.version_info < (3, 14):
+    # needs lazily evaluated annotations (PEP 649) to be importable
+    collect_ignore.append("tests/utils/lazy_annotations.py")
 
 
 def pytest_addoption(parser, pluginmanager):

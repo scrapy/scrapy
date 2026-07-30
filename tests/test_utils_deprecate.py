@@ -7,7 +7,12 @@ from unittest import mock
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.deprecate import create_deprecated_class, update_classpath
+from scrapy.utils.deprecate import (
+    argument_is_required,
+    create_deprecated_class,
+    update_classpath,
+)
+from tests.utils.decorators import requires_lazy_annotations
 
 
 class MyWarning(UserWarning):
@@ -284,3 +289,16 @@ class TestUpdateClassPath:
     def test_returns_nonstring(self):
         for notastring in [None, True, [1, 2, 3], object()]:
             assert update_classpath(notastring) == notastring
+
+
+@requires_lazy_annotations
+def test_argument_is_required_lazy_annotations():
+    """Annotations that cannot be resolved at run time must not be an error."""
+    from tests.utils.lazy_annotations import (  # noqa: PLC0415
+        MiddlewareWithLazyAnnotations,
+    )
+
+    method = MiddlewareWithLazyAnnotations().process_exception
+    assert argument_is_required(method, "request") is True
+    assert argument_is_required(method, "spider") is False
+    assert argument_is_required(method, "missing") is False

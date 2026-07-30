@@ -16,7 +16,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.utils.decorators import coroutine_test
+from tests.utils.decorators import coroutine_test, requires_lazy_annotations
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -346,3 +346,25 @@ class TestDeprecatedSpiderArg(TestManagerBase):
             result = await mwman.download_async(download_func, req)
         assert result is resp
         assert not download_func.called
+
+
+@requires_lazy_annotations
+def test_middleware_with_lazy_annotations():
+    """Loading a middleware must not resolve its method annotations."""
+    from tests.utils.lazy_annotations import (  # noqa: PLC0415
+        MiddlewareWithLazyAnnotations,
+    )
+
+    crawler = get_crawler(
+        Spider,
+        {
+            "DOWNLOADER_MIDDLEWARES": {
+                "tests.utils.lazy_annotations.MiddlewareWithLazyAnnotations": 100,
+            },
+        },
+    )
+    crawler._apply_settings()
+    mwman = DownloaderMiddlewareManager.from_crawler(crawler)
+    assert any(
+        isinstance(mw, MiddlewareWithLazyAnnotations) for mw in mwman.middlewares
+    )

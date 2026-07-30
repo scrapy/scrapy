@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from functools import wraps
 from typing import TYPE_CHECKING, Any, ParamSpec
 
@@ -14,6 +15,13 @@ if TYPE_CHECKING:
 
 
 _P = ParamSpec("_P")
+
+#: Mark a test that needs :mod:`tests.utils.lazy_annotations`, which is only
+#: importable on Python versions that evaluate annotations lazily (PEP 649).
+requires_lazy_annotations = pytest.mark.skipif(
+    sys.version_info < (3, 14),
+    reason="Lazily evaluated annotations (PEP 649) require Python 3.14+",
+)
 
 
 def inline_callbacks_test(

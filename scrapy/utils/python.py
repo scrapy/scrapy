@@ -178,10 +178,35 @@ def binary_is_text(data: bytes) -> bool:
     return all(c not in _BINARYCHARS for c in data)
 
 
+if sys.version_info >= (3, 14):
+
+    def _signature(func: Callable[..., Any]) -> inspect.Signature:
+        # Since Python 3.14 annotations are evaluated lazily (PEP 649, PEP 749)
+        # and the default inspect.Format.VALUE makes inspect.signature()
+        # evaluate them, which raises NameError for annotations that are only
+        # valid under typing.TYPE_CHECKING. We only need parameter names and
+        # defaults, so we ask for unresolvable annotations to be returned as
+        # typing.ForwardRef objects instead.
+        return inspect.signature(  # pylint: disable=unexpected-keyword-arg
+            func, annotation_format=inspect.Format.FORWARDREF
+        )
+
+else:
+
+    def _signature(func: Callable[..., Any]) -> inspect.Signature:
+        return inspect.signature(func)
+
+
 def get_func_args_dict(
     func: Callable[..., Any], stripself: bool = False
 ) -> Mapping[str, inspect.Parameter]:
     """Return the argument dict of a callable object.
+
+    On Python 3.14 and later, the
+    :attr:`~inspect.Parameter.annotation` of the returned
+    :class:`~inspect.Parameter` objects may be a :class:`typing.ForwardRef`
+    instead of the annotated object, e.g. for annotations that are only
+    imported under :data:`typing.TYPE_CHECKING`.
 
     .. versionadded:: 2.14
     """
@@ -190,7 +215,7 @@ def get_func_args_dict(
 
     args: Mapping[str, inspect.Parameter]
     try:
-        sig = inspect.signature(func)
+        sig = _signature(func)
     except ValueError:
         return {}
 

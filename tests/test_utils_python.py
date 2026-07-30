@@ -4,7 +4,7 @@ import functools
 import operator
 import platform
 import sys
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, ForwardRef, TypeVar
 
 import pytest
 
@@ -14,12 +14,13 @@ from scrapy.utils.python import (
     MutableAsyncChain,
     binary_is_text,
     get_func_args,
+    get_func_args_dict,
     memoizemethod_noargs,
     to_bytes,
     to_unicode,
     without_none_values,
 )
-from tests.utils.decorators import coroutine_test
+from tests.utils.decorators import coroutine_test, requires_lazy_annotations
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable, Mapping
@@ -188,6 +189,31 @@ def test_get_func_args():
             [],
             ["args", "kwargs"],
         ]
+
+
+@requires_lazy_annotations
+def test_get_func_args_lazy_annotations():
+    """Annotations that cannot be resolved at run time must not be an error."""
+    from tests.utils.lazy_annotations import (  # noqa: PLC0415
+        MiddlewareWithLazyAnnotations,
+        func_with_lazy_annotations,
+    )
+
+    assert get_func_args(func_with_lazy_annotations) == ["request", "spider"]
+    assert get_func_args(MiddlewareWithLazyAnnotations().process_exception) == [
+        "request",
+        "exception",
+        "spider",
+    ]
+
+
+@requires_lazy_annotations
+def test_get_func_args_dict_lazy_annotations():
+    """Unresolvable annotations are reported as forward references."""
+    from tests.utils.lazy_annotations import func_with_lazy_annotations  # noqa: PLC0415
+
+    params = get_func_args_dict(func_with_lazy_annotations)
+    assert isinstance(params["request"].annotation, ForwardRef)
 
 
 @pytest.mark.parametrize(
