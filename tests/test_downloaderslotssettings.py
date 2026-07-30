@@ -117,39 +117,41 @@ async def test_slots_deprecated():
 
 
 @coroutine_test
-async def test_is_parked():
+async def test_in_downloader_middlewares():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
     request = Request("https://example.com")
     # Not being downloaded at all.
-    assert downloader._is_parked(request) is False
+    assert downloader._in_downloader_middlewares(request) is False
     # In the downloader middlewares, holding a concurrency slot it is not using.
     downloader.active.add(request)
-    assert downloader._is_parked(request) is True
-    # On the wire.
-    downloader._transferring.add(request)
-    assert downloader._is_parked(request) is False
-    downloader._transferring.discard(request)
+    assert downloader._in_downloader_middlewares(request) is True
+    # In a download handler.
+    downloader._in_download_handler.add(request)
+    assert downloader._in_downloader_middlewares(request) is False
+    downloader._in_download_handler.discard(request)
     downloader.active.discard(request)
-    # Queued for a transfer slot: not on the wire, but past its middlewares and
-    # waiting on nothing but the network, so not parked either.
+    # Queued for a download handler slot: not in a handler, but past its
+    # middlewares and waiting on nothing but the network, so not in the
+    # middlewares either.
     downloader.active.add(request)
-    downloader._awaiting_transfer.add(request)
-    assert downloader._is_parked(request) is False
-    downloader._awaiting_transfer.discard(request)
+    downloader._awaiting_download_handler.add(request)
+    assert downloader._in_downloader_middlewares(request) is False
+    downloader._awaiting_download_handler.discard(request)
     downloader.active.discard(request)
     downloader.close()
 
 
 @coroutine_test
-async def test_a_request_queued_for_a_transfer_slot_lends_nothing():
-    """A request waiting for a transfer slot holds a throttling concurrency slot
-    without using the network, but unlike a parked one it is not waiting for any
-    prerequisite: it gets to the wire on its own. Lending its slot would break no
-    deadlock, and would let the borrower still be transferring once the lender
-    got there, putting more requests of the scope on the wire at once than its
-    concurrency allows."""
+async def test_a_request_queued_for_a_download_handler_lends_nothing():
+    """A request waiting for a download handler slot holds a throttling
+    concurrency slot without using the network, but unlike one sitting in the
+    downloader middlewares it is not waiting for any prerequisite: it reaches a
+    handler on its own. Lending its slot would break no deadlock, and would let
+    the borrower still be in a handler once the lender got there, putting more
+    requests of the scope in a download handler at once than its concurrency
+    allows."""
     crawler = get_crawler(
         DefaultSpider,
         {
@@ -163,21 +165,21 @@ async def test_a_request_queued_for_a_transfer_slot_lends_nothing():
     downloader = Downloader(crawler)
     crawler.engine = SimpleNamespace(downloader=downloader)
 
-    # Unrelated traffic takes every transfer slot.
+    # Unrelated traffic takes every download handler slot.
     fillers = [Request(f"https://b.example/{i}") for i in range(4)]
     downloader.active.update(fillers)
-    downloader._transferring.update(fillers)
+    downloader._in_download_handler.update(fillers)
 
     # A request of the throttled scope takes its only concurrency slot, reaches
-    # the downloader and queues for a transfer slot.
+    # the downloader and queues for a download handler slot.
     holder = Request("https://a.example/1")
     await throttler.acquire(holder)
     downloader.active.add(holder)
-    queueing = deferred_from_coro(downloader._acquire_wire(holder))
+    queueing = deferred_from_coro(downloader._await_download_handler(holder))
     for _ in range(10):
         await async_sleep(0)
     assert not queueing.called
-    assert downloader._is_parked(holder) is False
+    assert downloader._in_downloader_middlewares(holder) is False
 
     # A prerequisite of the same scope finds nothing to borrow.
     prerequisite = Request("https://a.example/robots.txt")
@@ -197,11 +199,12 @@ async def test_a_request_queued_for_a_transfer_slot_lends_nothing():
 
 
 @coroutine_test
-async def test_a_lender_waits_for_its_loan_before_going_on_the_wire():
+async def test_a_lender_waits_for_its_loan_before_reaching_a_download_handler():
     """A slot lent to a prerequisite is lent by a request that is not using the
-    network, but nothing stops that request from reaching the network again while
-    the borrower is still on it. The wire gate does: a scope never has more
-    requests transferring at once than its concurrency allows."""
+    network, but nothing stops that request from reaching a download handler
+    again while the borrower is still in one. The download handler gate does: a
+    scope never has more requests in a handler at once than its concurrency
+    allows."""
     crawler = get_crawler(
         DefaultSpider,
         {
@@ -215,11 +218,11 @@ async def test_a_lender_waits_for_its_loan_before_going_on_the_wire():
     downloader = Downloader(crawler)
     crawler.engine = SimpleNamespace(downloader=downloader)
 
-    # A request of the scope takes its only slot and parks on the middlewares.
+    # A request of the scope takes its only slot and waits on the middlewares.
     lender = Request("https://a.example/1")
     await throttler.acquire(lender)
     downloader.active.add(lender)
-    assert downloader._is_parked(lender) is True
+    assert downloader._in_downloader_middlewares(lender) is True
 
     # Its unused slot goes to a prerequisite, which reaches the network.
     borrower = Request("https://a.example/robots.txt")
@@ -227,31 +230,32 @@ async def test_a_lender_waits_for_its_loan_before_going_on_the_wire():
     assert crawler.stats
     assert crawler.stats.get_value("throttler/borrowed_slots") == 1
     downloader.active.add(borrower)
-    await downloader._acquire_wire(borrower)
-    downloader._transferring.add(borrower)
+    await downloader._await_download_handler(borrower)
+    downloader._in_download_handler.add(borrower)
 
     # The lender's middlewares are done with it, for a reason of their own rather
     # than the borrower finishing, so it now wants the network too.
-    going_on_the_wire = deferred_from_coro(downloader._acquire_wire(lender))
+    reaching_a_handler = deferred_from_coro(downloader._await_download_handler(lender))
     for _ in range(10):
         await async_sleep(0)
-    assert not going_on_the_wire.called, (
-        "the lender joined the borrower on the wire, above the scope concurrency"
+    assert not reaching_a_handler.called, (
+        "the lender joined the borrower in a download handler, above the scope "
+        "concurrency"
     )
-    assert throttler.wire_blocked(lender) is True
+    assert throttler.download_handler_blocked(lender) is True
 
     # Once the loan comes back, it goes.
-    downloader._end_transfer(borrower)
+    downloader._leave_download_handler(borrower)
     throttler.release(borrower)
-    done, _ = await wait_for_first([going_on_the_wire], timeout=30)
+    done, _ = await wait_for_first([reaching_a_handler], timeout=30)
     assert done, "the lender was left waiting after the borrower was done"
-    await maybe_deferred_to_future(going_on_the_wire)
-    assert throttler.wire_blocked(lender) is False
+    await maybe_deferred_to_future(reaching_a_handler)
+    assert throttler.download_handler_blocked(lender) is False
     downloader.close()
 
 
 @coroutine_test
-async def test_wire_gate_ignores_unthrottled_requests():
+async def test_download_handler_gate_ignores_unthrottled_requests():
     crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 4})
     crawler.spider = crawler._create_spider()
     throttler = crawler.throttler
@@ -262,7 +266,7 @@ async def test_wire_gate_ignores_unthrottled_requests():
     # scope to exceed.
     excluded = Request("https://a.example/1", meta={"dont_throttle": True})
     await throttler.acquire(excluded)
-    assert throttler.wire_blocked(excluded) is False
+    assert throttler.download_handler_blocked(excluded) is False
     downloader.close()
 
 
@@ -279,7 +283,7 @@ class OffCycleFloodSpider(MetaSpider):
         "THROTTLING_SCOPE_CONCURRENCY": 100,
     }
 
-    peak_transferring = 0
+    peak_in_download_handler = 0
 
     async def start(self):
         assert self.mockserver
@@ -292,8 +296,9 @@ class OffCycleFloodSpider(MetaSpider):
 
         async def watch() -> None:
             for _ in range(100):
-                type(self).peak_transferring = max(
-                    type(self).peak_transferring, len(downloader._transferring)
+                type(self).peak_in_download_handler = max(
+                    type(self).peak_in_download_handler,
+                    len(downloader._in_download_handler),
                 )
                 await async_sleep(0.02)
 
@@ -325,7 +330,7 @@ async def test_off_cycle_requests_are_bound_by_concurrent_requests():
         crawler.stats.get_value("downloader/request_count")
         == OffCycleFloodSpider.request_count + 1
     )
-    assert OffCycleFloodSpider.peak_transferring == 2
+    assert OffCycleFloodSpider.peak_in_download_handler == 2
 
 
 @coroutine_test
@@ -338,7 +343,7 @@ async def test_unlimited_concurrent_requests():
     assert downloader.needs_backout() is False
     downloader.active.update(Request(f"https://example.com/{i}") for i in range(100))
     assert downloader.needs_backout() is False
-    assert downloader._transfer_slots_full() is False
+    assert downloader._download_handler_slots_full() is False
     downloader.active.clear()
     downloader.close()
 
@@ -356,10 +361,11 @@ async def test_unlimited_concurrent_requests():
 
 
 @coroutine_test
-async def test_transfer_slots_do_not_deadlock_on_robotstxt():
-    """With room for a single transfer, a request parked on the downloader
-    middlewares while they download its robots.txt holds no transfer slot, so
-    the robots.txt request can be transferred and the crawl goes on."""
+async def test_download_handler_slots_do_not_deadlock_on_robotstxt():
+    """With room for a single request in a download handler, a request sitting in
+    the downloader middlewares while they download its robots.txt holds no
+    download handler slot, so the robots.txt request can be handled and the crawl
+    goes on."""
     with MockServer() as mockserver:
         crawler = get_crawler(
             SimpleSpider,
@@ -370,7 +376,7 @@ async def test_transfer_slots_do_not_deadlock_on_robotstxt():
         )
         # A bounded wait, so that a regression fails instead of hanging.
         done, _ = await wait_for_first([crawl], timeout=30)
-        assert done, "the crawl deadlocked waiting for a transfer slot"
+        assert done, "the crawl deadlocked waiting for a download handler slot"
         await maybe_deferred_to_future(crawl)
     assert crawler.stats
     assert crawler.stats.get_value("robotstxt/request_count") == 1
@@ -378,81 +384,83 @@ async def test_transfer_slots_do_not_deadlock_on_robotstxt():
 
 
 @coroutine_test
-async def test_fire_transfer_waiters_skips_already_fired():
+async def test_fire_download_handler_waiters_skips_already_fired():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
     waiter: Deferred[None] = Deferred()
-    downloader._transfer_waiters.append(waiter)
+    downloader._download_handler_waiters.append(waiter)
     waiter.callback(None)  # fired out-of-band before a slot freed up
     # The already-fired waiter is skipped rather than called a second time
     # (which would raise).
-    downloader._fire_transfer_waiters()
-    assert downloader._transfer_waiters == []
+    downloader._fire_download_handler_waiters()
+    assert downloader._download_handler_waiters == []
     downloader.close()
 
 
 @coroutine_test
-async def test_parked_event():
+async def test_downloader_middlewares_event():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
     request = Request("https://example.com")
-    downloader._transferring.add(request)
-    event = downloader._parked_event()
+    downloader._in_download_handler.add(request)
+    event = downloader._downloader_middlewares_event()
     assert not event.called
-    # Leaving the wire parks the request for as long as the downloader
-    # middlewares process its outcome.
-    downloader._end_transfer(request)
+    # Leaving the download handler puts the request back in the downloader
+    # middlewares for as long as they process its outcome.
+    downloader._leave_download_handler(request)
     assert event.called
-    assert request not in downloader._transferring
+    assert request not in downloader._in_download_handler
     downloader.close()
 
 
 @coroutine_test
-async def test_discard_parked_event():
+async def test_discard_downloader_middlewares_event():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
-    event = downloader._parked_event()
-    downloader._discard_parked_event(event)
-    assert downloader._parked_waiters == []
+    event = downloader._downloader_middlewares_event()
+    downloader._discard_downloader_middlewares_event(event)
+    assert downloader._downloader_middlewares_waiters == []
     # Discarding an event that is no longer tracked is a no-op.
-    downloader._discard_parked_event(event)
-    # The dropped event is not fired by a later request being parked.
+    downloader._discard_downloader_middlewares_event(event)
+    # The dropped event is not fired by a later request reaching the
+    # middlewares.
     request = Request("https://example.com")
-    downloader._transferring.add(request)
-    downloader._end_transfer(request)
+    downloader._in_download_handler.add(request)
+    downloader._leave_download_handler(request)
     assert not event.called
     downloader.close()
 
 
 @coroutine_test
-async def test_close_releases_transfer_slot_waiters():
+async def test_close_releases_download_handler_waiters():
     crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 1})
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
-    downloader._transferring.add(Request("https://example.com/1"))
-    waiting = deferred_from_coro(downloader._acquire_transfer_slot())
+    downloader._in_download_handler.add(Request("https://example.com/1"))
+    waiting = deferred_from_coro(downloader._acquire_download_handler_slot())
     await async_sleep(0)
-    assert not waiting.called, "the only transfer slot is taken"
-    # Nothing will ever leave the transferring set now, so the wait ends
+    assert not waiting.called, "the only download handler slot is taken"
+    # No request will ever leave a download handler now, so the wait ends
     # instead of being left hanging.
     downloader.close()
     done, _ = await wait_for_first([waiting], timeout=30)
-    assert done, "closing the downloader left a transfer slot wait hanging"
+    assert done, "closing the downloader left a download handler slot wait hanging"
     await maybe_deferred_to_future(waiting)
 
 
 @coroutine_test
-async def test_acquire_transfer_slot_after_close():
+async def test_acquire_download_handler_slot_after_close():
     crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 1})
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
-    downloader._transferring.add(Request("https://example.com/1"))
+    downloader._in_download_handler.add(Request("https://example.com/1"))
     downloader.close()
-    # A closed downloader does not hold anything back at the transfer gate.
-    await downloader._acquire_transfer_slot()
+    # A closed downloader does not hold anything back at the download handler
+    # gate.
+    await downloader._acquire_download_handler_slot()
 
 
 @coroutine_test

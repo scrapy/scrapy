@@ -111,7 +111,7 @@ class _DeprecatedSlotView:
     def transferring(self) -> set[Request]:
         return {
             r
-            for r in self._downloader._transferring
+            for r in self._downloader._in_download_handler
             if r.meta.get(Downloader.DOWNLOAD_SLOT) == self._key
         }
 
@@ -205,14 +205,17 @@ class Downloader:
         self.signals: SignalManager = crawler.signals
         self.active: set[Request] = set()
         # Requests a download handler is working on; the rest of self.active is
-        # parked instead (see _is_parked()).
-        self._transferring: set[Request] = set()
-        self._transfer_waiters: list[Deferred[None]] = []
-        # Requests waiting to go on the network (see _acquire_wire). They are not
-        # transferring, but they are not parked either (see _is_parked()): they
-        # are past their middlewares and waiting on nothing but the network.
-        self._awaiting_transfer: set[Request] = set()
-        self._parked_waiters: list[Deferred[None]] = []
+        # in the downloader middlewares instead (see
+        # _in_downloader_middlewares()).
+        self._in_download_handler: set[Request] = set()
+        self._download_handler_waiters: list[Deferred[None]] = []
+        # Requests waiting for a download handler (see
+        # _await_download_handler()). They are not in one yet, but they are not
+        # in the downloader middlewares either (see
+        # _in_downloader_middlewares()): they are past their middlewares and
+        # waiting on nothing but the network.
+        self._awaiting_download_handler: set[Request] = set()
+        self._downloader_middlewares_waiters: list[Deferred[None]] = []
         self._closed: bool = False
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
@@ -236,7 +239,7 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
-        self._fire_parked_waiters()
+        self._fire_downloader_middlewares_waiters()
         try:
             result: Response | Request = yield (
                 deferred_from_coro(
@@ -252,26 +255,27 @@ class Downloader:
         A limit of ``0`` means no limit, so nothing is ever held back."""
         return 0 < self.total_concurrency <= len(self.active)
 
-    def _is_parked(self, request: Request) -> bool:
+    def _in_downloader_middlewares(self, request: Request) -> bool:
         """Return whether the downloader middlewares are processing *request*,
-        i.e. it is in the downloader but neither being transferred nor waiting to
-        be (see :meth:`_acquire_wire`).
+        i.e. it is in the downloader but neither in a download handler nor
+        waiting for one (see :meth:`_await_download_handler`).
 
-        A parked request is not using the network, even though it may be holding
-        a :ref:`throttling <throttling>` concurrency slot, and it may be parked
-        waiting for another request that a downloader middleware is downloading.
-        That is what makes its slot safe to lend (see
+        Such a request is not using the network, even though it may be holding a
+        :ref:`throttling <throttling>` concurrency slot, and it may be waiting
+        for another request that a downloader middleware is downloading. That is
+        what makes its slot safe to lend (see
         :meth:`~scrapy.throttler.Throttler._can_lend_slot`).
 
-        A request waiting to go on the network is not on it either, but it is
-        past its middlewares, so it waits on nothing but the network and will get
-        there on its own. Lending its slot would break no deadlock, and it is the
-        one request whose progress the loan would then be holding back.
+        A request waiting for a download handler is not using the network
+        either, but it is past its middlewares, so it waits on nothing but the
+        network and will reach a handler on its own. Lending its slot would
+        break no deadlock, and it is the one request whose progress the loan
+        would then be holding back.
         """
         return (
             request in self.active
-            and request not in self._transferring
-            and request not in self._awaiting_transfer
+            and request not in self._in_download_handler
+            and request not in self._awaiting_download_handler
         )
 
     @property
@@ -346,9 +350,9 @@ class Downloader:
         )
         return await self._download(request)
 
-    async def _acquire_transfer_slot(self) -> None:
-        """Wait until fewer than :setting:`CONCURRENT_REQUESTS` requests are
-        being transferred.
+    async def _acquire_download_handler_slot(self) -> None:
+        """Wait until fewer than :setting:`CONCURRENT_REQUESTS` requests are in a
+        download handler.
 
         Requests coming from the scheduler are kept under that limit by the
         engine, which stops dequeuing them (see
@@ -356,124 +360,129 @@ class Downloader:
         requests sent outside the scheduling cycle
         never went through the scheduler, so this is what limits them.
 
-        A transfer slot is only held while a download handler is working on a
-        request, and such a request completes on its own. So a request that a
-        downloader middleware sends as a prerequisite of another one (as the
+        A download handler slot is only held while a download handler is working
+        on a request, and such a request completes on its own. So a request that
+        a downloader middleware sends as a prerequisite of another one (as the
         built-in robots.txt middleware does) cannot be held back by that other
-        one, which holds no transfer slot while its middlewares run.
+        one, which holds no such slot while its middlewares run.
 
         That reasoning does not extend to a request sent from *within* a download
-        handler, which does hold a transfer slot while it waits: with every
-        transfer slot taken by such requests, none of them could ever get one.
-        Download handlers must not send requests through
-        :meth:`crawler.engine.download_async()
+        handler, which does hold a slot while it waits: with every slot taken by
+        such requests, none of them could ever get one. Download handlers must
+        not send requests through :meth:`crawler.engine.download_async()
         <scrapy.core.engine.ExecutionEngine.download_async>`.
         """
-        while self._transfer_slots_full():
-            # Register the waiter before giving up control, or a transfer ending
-            # in between would go unnoticed.
+        while self._download_handler_slots_full():
+            # Register the waiter before giving up control, or a request leaving
+            # a download handler in between would go unnoticed.
             waiter: Deferred[None] = Deferred()
-            self._transfer_waiters.append(waiter)
+            self._download_handler_waiters.append(waiter)
             await maybe_deferred_to_future(waiter)
 
-    def _transfer_slots_full(self) -> bool:
-        """Return whether every transfer slot is taken. A closed downloader
-        never holds anything back, since no transfer will ever end again."""
+    def _download_handler_slots_full(self) -> bool:
+        """Return whether every download handler slot is taken. A closed
+        downloader never holds anything back, since no request will ever leave a
+        download handler again."""
         if self._closed:
             return False
-        return 0 < self.total_concurrency <= len(self._transferring)
+        return 0 < self.total_concurrency <= len(self._in_download_handler)
 
-    async def _acquire_wire(self, request: Request) -> None:
-        """Wait until *request* may go on the network: until a transfer slot is
-        free (see :meth:`_acquire_transfer_slot`) and until the throttling scopes
+    async def _await_download_handler(self, request: Request) -> None:
+        """Wait until *request* may be handed to a download handler: until a
+        download handler slot is free (see
+        :meth:`_acquire_download_handler_slot`) and until the throttling scopes
         of *request* have room for it there (see
-        :meth:`~scrapy.throttler.ThrottlerProtocol.wire_blocked`).
+        :meth:`~scrapy.throttler.ThrottlerProtocol.download_handler_blocked`).
 
         Both are rechecked after every wait, since waiting on one can close the
         other, and this returns without giving up control once they are both
-        open, so that the caller can start the transfer against exactly the state
-        that was checked.
+        open, so that the caller can hand the request over against exactly the
+        state that was checked.
         """
         # Tracked for the whole wait, so that a request waiting at either gate
-        # does not read as parked and get its concurrency slot lent away; see
-        # _is_parked().
-        self._awaiting_transfer.add(request)
+        # does not read as being in the downloader middlewares and get its
+        # concurrency slot lent away; see _in_downloader_middlewares().
+        self._awaiting_download_handler.add(request)
         try:
             while True:
-                await self._acquire_transfer_slot()
-                if self._closed or not self._wire_blocked(request):
+                await self._acquire_download_handler_slot()
+                if self._closed or not self._download_handler_blocked(request):
                     return
-                await self._wait_for_wire()
+                await self._wait_for_download_handler_exit()
         finally:
-            self._awaiting_transfer.discard(request)
+            self._awaiting_download_handler.discard(request)
 
-    def _wire_blocked(self, request: Request) -> bool:
+    def _download_handler_blocked(self, request: Request) -> bool:
         throttler = self.crawler.throttler
-        return throttler is not None and throttler.wire_blocked(request)
+        return throttler is not None and throttler.download_handler_blocked(request)
 
-    async def _wait_for_wire(self) -> None:
-        """Wait for a transfer to end, which is what frees room on the network
-        for a scope (as does :meth:`close`, after which nothing is held back).
+    async def _wait_for_download_handler_exit(self) -> None:
+        """Wait for a request to leave a download handler, which is what frees
+        room on the network for a scope (as does :meth:`close`, after which
+        nothing is held back).
 
-        A request is only ever held off the network by requests that are on it,
-        and those end on their own, so this cannot wait forever.
+        A request is only ever held out of a download handler by requests that
+        are in one, and those end on their own, so this cannot wait forever.
         """
         waiter: Deferred[None] = Deferred()
-        self._transfer_waiters.append(waiter)
+        self._download_handler_waiters.append(waiter)
         await maybe_deferred_to_future(waiter)
 
-    def _parked_event(self) -> Deferred[None]:
+    def _downloader_middlewares_event(self) -> Deferred[None]:
         """Return a :class:`~twisted.internet.defer.Deferred` that fires the next
-        time a request becomes parked (see :meth:`_is_parked`), i.e. when one
-        enters the downloader or stops being transferred, as well as on
-        :meth:`close`.
+        time a request reaches the downloader middlewares (see
+        :meth:`_in_downloader_middlewares`), i.e. when one enters the downloader
+        or leaves a download handler, as well as on :meth:`close`.
 
-        A parked request holds a :ref:`throttling <throttling>` concurrency slot
+        Such a request holds a :ref:`throttling <throttling>` concurrency slot
         that it is not using, which the throttler may then lend to a request sent
         from a downloader middleware; see
         :meth:`~scrapy.throttler.ThrottlerProtocol.acquire`.
         """
         event: Deferred[None] = Deferred()
-        self._parked_waiters.append(event)
+        self._downloader_middlewares_waiters.append(event)
         return event
 
-    def _discard_parked_event(self, event: Deferred[None]) -> None:
-        """Drop a pending *event* returned by :meth:`_parked_event`, for a wait
-        that ended for a different reason."""
+    def _discard_downloader_middlewares_event(self, event: Deferred[None]) -> None:
+        """Drop a pending *event* returned by
+        :meth:`_downloader_middlewares_event`, for a wait that ended for a
+        different reason."""
         with suppress(ValueError):
-            self._parked_waiters.remove(event)
+            self._downloader_middlewares_waiters.remove(event)
 
-    def _end_transfer(self, request: Request) -> None:
+    def _leave_download_handler(self, request: Request) -> None:
         """Record that no download handler is working on *request* anymore.
 
-        That frees a transfer slot, and it parks *request* for as long as the
-        downloader middlewares process its outcome.
+        That frees a download handler slot, and it puts *request* back in the
+        downloader middlewares for as long as they process its outcome.
 
         Calling it more than once for the same request is a no-op, so the error
-        path of :meth:`_download` can end the transfer early without the
+        path of :meth:`_download` can release the handler early without the
         ``finally`` block firing every waiter a second time.
         """
-        if request not in self._transferring:
+        if request not in self._in_download_handler:
             return
-        self._transferring.discard(request)
-        self._fire_transfer_waiters()
-        self._fire_parked_waiters()
+        self._in_download_handler.discard(request)
+        self._fire_download_handler_waiters()
+        self._fire_downloader_middlewares_waiters()
 
-    def _fire_transfer_waiters(self) -> None:
-        waiters, self._transfer_waiters = self._transfer_waiters, []
+    def _fire_download_handler_waiters(self) -> None:
+        waiters = self._download_handler_waiters
+        self._download_handler_waiters = []
         for waiter in waiters:
             if not waiter.called:
                 waiter.callback(None)
 
-    def _fire_parked_waiters(self) -> None:
-        waiters, self._parked_waiters = self._parked_waiters, []
+    def _fire_downloader_middlewares_waiters(self) -> None:
+        waiters = self._downloader_middlewares_waiters
+        self._downloader_middlewares_waiters = []
         for waiter in waiters:
             if not waiter.called:
                 waiter.callback(None)
 
     async def _download(self, request: Request) -> Response:
-        await self._acquire_wire(request)
-        self._transferring.add(request)
+        await self._await_download_handler(request)
+        self._in_download_handler.add(request)
         try:
             response: Response = await self.handlers.download_request_async(request)
             self.signals.send_catch_log(
@@ -484,13 +493,13 @@ class Downloader:
             )
             return response
         except Exception:
-            # The handler is done with the request, so free its transfer slot
-            # before giving up control below rather than a reactor turn later.
-            self._end_transfer(request)
+            # The handler is done with the request, so free its slot before
+            # giving up control below rather than a reactor turn later.
+            self._leave_download_handler(request)
             await _defer_sleep_async()
             raise
         finally:
-            self._end_transfer(request)
+            self._leave_download_handler(request)
             self.signals.send_catch_log(
                 signal=signals.request_left_downloader,
                 request=request,
@@ -498,8 +507,8 @@ class Downloader:
             )
 
     def close(self) -> None:
-        # Release anything waiting for a transfer to end or for a request to be
-        # parked, since neither will happen again.
+        # Release anything waiting for a request to leave a download handler or
+        # to reach the downloader middlewares, since neither will happen again.
         self._closed = True
-        self._fire_transfer_waiters()
-        self._fire_parked_waiters()
+        self._fire_download_handler_waiters()
+        self._fire_downloader_middlewares_waiters()

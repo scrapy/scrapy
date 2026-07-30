@@ -423,10 +423,10 @@ class ThrottlerProtocol(Protocol):
         enforce a concurrency limit can let other requests through.
         """
 
-    def wire_blocked(self, request: Request) -> bool:
+    def download_handler_blocked(self, request: Request) -> bool:
         """Return whether sending *request* right now would put more requests of
-        one of its scopes on the network at once than that scope's concurrency
-        allows.
+        one of its scopes in a download handler at once than that scope's
+        concurrency allows.
 
         :meth:`acquire` reserves a concurrency slot before *request* reaches the
         downloader, and it keeps that slot for as long as the downloader
@@ -437,8 +437,9 @@ class ThrottlerProtocol(Protocol):
         counts. An implementation that hands out no such leeway can always return
         ``False``.
 
-        A blocked request is retried as transfers end, so an implementation must
-        only block on requests that are on the network, which end on their own.
+        A blocked request is retried as requests leave their download handler,
+        so an implementation must only block on requests that are in one, which
+        end on their own.
         """
 
     def is_ready(self, request: Request) -> bool:
@@ -1001,44 +1002,47 @@ class Throttler:
         engine = self.crawler.engine
         return None if engine is None else engine.downloader
 
-    def _is_parked(self, request: Request) -> bool:
-        """Return whether *request* holds a concurrency slot that it is not
-        using, i.e. it is in the downloader but no download handler is working on
-        it."""
+    def _in_downloader_middlewares(self, request: Request) -> bool:
+        """Return whether the downloader middlewares are processing *request*,
+        i.e. it holds a concurrency slot that it is not using, because it is in
+        the downloader but no download handler is working on it."""
         downloader = self._downloader()
-        return downloader is not None and downloader._is_parked(request)
+        return downloader is not None and downloader._in_downloader_middlewares(request)
 
     def _can_lend_slot(self, scope_id: ScopeID) -> bool:
         """Return whether *scope_id* can lend a concurrency slot to an
         off-cycle request.
 
-        It can when every request holding one of its slots is parked, i.e. none
-        of them is on the wire: a parked request may be parked precisely because
-        it is waiting for the off-cycle request, in which case nothing in the
-        scope can ever complete unless the off-cycle request is let through, and
-        lending is free because the borrowed slot was not being used anyway.
+        It can when every request holding one of its slots is in the downloader
+        middlewares, i.e. none of them is in a download handler: such a request
+        may be waiting there precisely for the off-cycle request, in which case
+        nothing in the scope can ever complete unless the off-cycle request is
+        let through, and lending is free because the borrowed slot was not being
+        used anyway.
 
-        A holder that is not in the downloader at all is not on the wire either,
-        but it does not count as parked: a slot is reserved before its request
-        reaches the downloader and released after it leaves, so such a holder is
-        either on its way to the wire or already done with it, and needs no lend
-        either way. Counting it as parked would let a burst of off-cycle requests
-        that no parked request is waiting for borrow slots without limit, well
-        past the scope's concurrency limit on the wire.
+        A holder that is not in the downloader at all is not in a download
+        handler either, but it does not count as being in the downloader
+        middlewares: a slot is reserved before its request reaches the downloader
+        and released after it leaves, so such a holder is either on its way to a
+        download handler or already done with one, and needs no lend either way.
+        Counting it in would let a burst of off-cycle requests that no request in
+        the downloader middlewares is waiting for borrow slots without limit,
+        well past the scope's concurrency limit in download handlers.
         """
         holders = self._scope_holders.get(scope_id)
         if not holders:
             return False
-        return all(self._is_parked(holder) for holder in holders)
+        return all(self._in_downloader_middlewares(holder) for holder in holders)
 
-    def wire_blocked(self, request: Request) -> bool:
+    def download_handler_blocked(self, request: Request) -> bool:
         # A concurrency slot is reserved before its request reaches the
         # downloader, so a scope's slots can be held by requests that are not
         # using the network, and one of those slots can be lent to an off-cycle
-        # request (see _can_lend_slot). Nothing keeps a lender from reaching the
-        # network again while the borrower is still on it, though, which is what
-        # this stops: a scope never has more requests transferring at once than
-        # its concurrency allows, whatever its slots are lent out to.
+        # request (see _can_lend_slot). Nothing keeps a lender from reaching a
+        # download handler again while the borrower is still in one, though,
+        # which is what this stops: a scope never has more requests in a download
+        # handler at once than its concurrency allows, whatever its slots are
+        # lent out to.
         scopes = self._reserved.get(request)
         if not scopes:
             # No reservation to speak of: an unscoped or dont_throttle request.
@@ -1046,20 +1050,21 @@ class Throttler:
         downloader = self._downloader()
         if downloader is None:
             return False
-        transferring = downloader._transferring
-        if not transferring:
+        in_download_handler = downloader._in_download_handler
+        if not in_download_handler:
             return False
         for scope_id, manager, _ in scopes:
             holders = self._scope_holders.get(scope_id)
             if not holders:
                 continue
-            # *request* is not transferring yet, so it does not count itself.
-            on_wire = sum(1 for holder in holders if holder in transferring)
-            if on_wire >= manager.get_concurrency():
+            # *request* has not reached a handler yet, so it does not count
+            # itself.
+            in_handlers = sum(1 for holder in holders if holder in in_download_handler)
+            if in_handlers >= manager.get_concurrency():
                 if self._debug:
                     logger.debug(
                         f"Holding {request} off the network: scope {scope_id} "
-                        f"already has {on_wire} request(s) there"
+                        f"already has {in_handlers} request(s) in a download handler"
                     )
                 return True
         return False
@@ -1189,12 +1194,13 @@ class Throttler:
         (via :meth:`ThrottlingScopeManager.set_concurrency`). Those are the only
         two ways for a slot to become available.
 
-        An off-cycle request may also proceed by borrowing the slot of a parked
-        holder (see :meth:`_can_lend_slot`), and a holder becomes parked without
-        freeing any slot, and thus without firing either event above: either on
-        reaching the downloader, or on leaving the wire to have its outcome
-        processed by the downloader middlewares. So such a wait also ends on
-        ``Downloader._parked_event()``.
+        An off-cycle request may also proceed by borrowing the slot of a holder
+        that sits in the downloader middlewares (see :meth:`_can_lend_slot`), and
+        a holder gets there without freeing any slot, and thus without firing
+        either event above: either on reaching the downloader, or on leaving a
+        download handler to have its outcome processed by the downloader
+        middlewares. So such a wait also ends on
+        ``Downloader._downloader_middlewares_event()``.
 
         Every event is registered before this coroutine gives up control, or one
         firing in between would go unnoticed.
@@ -1202,17 +1208,17 @@ class Throttler:
         pairs = [(manager, manager.slot_available_event()) for manager in managers]
         events = [event for _, event in pairs]
         downloader = self._downloader() if off_cycle else None
-        parked_event: Deferred[None] | None = None
+        middlewares_event: Deferred[None] | None = None
         if downloader is not None:
-            parked_event = downloader._parked_event()
-            events.append(parked_event)
+            middlewares_event = downloader._downloader_middlewares_event()
+            events.append(middlewares_event)
         _, pending = await wait_for_first(events)
         for manager, event in pairs:
             if event in pending:
                 manager.discard_slot_available_event(event)
-        if parked_event is not None and parked_event in pending:
+        if middlewares_event is not None and middlewares_event in pending:
             assert downloader is not None
-            downloader._discard_parked_event(parked_event)
+            downloader._discard_downloader_middlewares_event(middlewares_event)
 
     async def _delay_request(self, request: Request) -> None:
         """Honor the :reqmeta:`delay` meta key by holding *request* for the
@@ -1463,10 +1469,10 @@ class ThrottlingScopeManagerProtocol(Protocol):
         scope.
 
         :class:`Throttler` compares this against the number of the scope's
-        requests that are on the network, to keep a request that holds a
+        requests that are in a download handler, to keep a request that holds a
         concurrency slot without using it from letting more of them there at
         once than this allows; see
-        :meth:`ThrottlerProtocol.wire_blocked`."""
+        :meth:`ThrottlerProtocol.download_handler_blocked`."""
 
     def set_concurrency(self, concurrency: int) -> None:
         """Set the maximum number of concurrent requests allowed for this

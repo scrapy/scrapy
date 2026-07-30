@@ -57,8 +57,8 @@ def _manager_with_downloader(
     settings: dict[str, Any] | None = None,
 ) -> tuple[Throttler, Downloader]:
     """Return a throttler and the real :class:`~scrapy.core.downloader.Downloader`
-    it sees through the crawler engine, for tests that need actual transfer state
-    and the events it fires."""
+    it sees through the crawler engine, for tests that need actual download
+    handler state and the events it fires."""
     crawler = get_crawler(SimpleSpider, settings_dict=settings)
     crawler.throttler = throttler = Throttler.from_crawler(crawler)
     crawler.engine = ExecutionEngine(crawler, lambda _: None)
@@ -560,18 +560,21 @@ class TestThrottler:
 
 class TestOffCycleRequests:
     """Requests sent outside the scheduling cycle, i.e. through
-    engine.download_async(), can be prerequisites of a request that is parked
-    on the downloader middlewares holding a slot of the same scope, so they can
-    borrow a parked slot and they get freed slots before the scheduler does."""
+    engine.download_async(), can be prerequisites of a request that is sitting in
+    the downloader middlewares holding a slot of the same scope, so they can
+    borrow such an unused slot and they get freed slots before the scheduler
+    does."""
 
     @staticmethod
-    def _park(
+    def _hold_in_middlewares(
         monkeypatch: pytest.MonkeyPatch, manager: Throttler, *requests: Request
     ) -> None:
-        """Make *requests* look parked on the downloader middlewares, which is
-        otherwise the downloader's business."""
-        parked = set(requests)
-        monkeypatch.setattr(manager, "_is_parked", lambda request: request in parked)
+        """Make *requests* look like the downloader middlewares are processing
+        them, which is otherwise the downloader's business."""
+        held = set(requests)
+        monkeypatch.setattr(
+            manager, "_in_downloader_middlewares", lambda request: request in held
+        )
 
     @staticmethod
     async def _acquire(manager: Throttler, request: Request, **kwargs: Any) -> None:
@@ -610,7 +613,7 @@ class TestOffCycleRequests:
         await async_sleep(0)
 
     @coroutine_test
-    async def test_borrows_the_slot_of_a_parked_holder(
+    async def test_borrows_the_slot_of_a_holder_in_the_middlewares(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
@@ -618,28 +621,28 @@ class TestOffCycleRequests:
         await self._acquire(manager, holder)
         scope = _scope(manager, "example.com")
         assert scope.concurrency_blocked() is True
-        self._park(monkeypatch, manager, holder)
-        # The holder is not using the slot it took, and it may well be parked
-        # waiting for this very request, so this one borrows it instead of
+        self._hold_in_middlewares(monkeypatch, manager, holder)
+        # The holder is not using the slot it took, and its middlewares may well
+        # be waiting for this very request, so this one borrows it instead of
         # waiting for a slot that would never free up.
         prerequisite = Request("http://example.com/robots.txt")
         await self._acquire(manager, prerequisite, off_cycle=True)
         assert prerequisite in manager._reserved
 
     @coroutine_test
-    async def test_does_not_borrow_while_a_holder_transfers(
+    async def test_does_not_borrow_while_a_holder_is_in_a_download_handler(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}})
-        parked = Request("http://example.com/1")
-        transferring = Request("http://example.com/2")
-        await self._acquire(manager, parked)
-        await self._acquire(manager, transferring)
-        self._park(monkeypatch, manager, parked)
-        # One of the holders is on the wire, so it will free its slot on its
-        # own and there is nothing to break: this request waits for it.
+        in_middlewares = Request("http://example.com/1")
+        in_handler = Request("http://example.com/2")
+        await self._acquire(manager, in_middlewares)
+        await self._acquire(manager, in_handler)
+        self._hold_in_middlewares(monkeypatch, manager, in_middlewares)
+        # One of the holders is in a download handler, so it will free its slot
+        # on its own and there is nothing to break: this request waits for it.
         off_cycle = Request("http://example.com/3")
-        call_later(0, manager.release, transferring)
+        call_later(0, manager.release, in_handler)
         await self._acquire(manager, off_cycle, off_cycle=True)
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
@@ -648,17 +651,18 @@ class TestOffCycleRequests:
     async def test_does_not_borrow_from_a_holder_outside_the_downloader(self) -> None:
         """A concurrency slot is reserved before its request reaches the
         downloader, and released after it leaves, so a holder outside the
-        downloader is not on the wire either. It is not parked though: it needs no
-        help to get to the wire, or is already done with it. Treating it as parked
-        would let off-cycle requests that nothing is waiting for borrow slots
-        without limit."""
+        downloader is not in a download handler either. It is not in the
+        downloader middlewares though: it needs no help to reach a handler, or is
+        already done with one. Treating it as being in the middlewares would let
+        off-cycle requests that nothing is waiting for borrow slots without
+        limit."""
         manager, downloader = _manager_with_downloader(
             {"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}}
         )
         holder = Request("http://example.com/1")
         await self._acquire(manager, holder)
         assert holder not in downloader.active
-        assert manager._is_parked(holder) is False
+        assert manager._in_downloader_middlewares(holder) is False
 
         off_cycle = Request("http://example.com/2")
         blocked = await self._start_waiting(manager, off_cycle)
@@ -673,8 +677,8 @@ class TestOffCycleRequests:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A concurrency slot is reserved before its request reaches the
-        downloader, so a holder still on its way there is not parked yet; it
-        becomes parked on arrival, without freeing any slot."""
+        downloader, so a holder still on its way there is not in the downloader
+        middlewares yet; it gets there on arrival, without freeing any slot."""
         manager, downloader = _manager_with_downloader(
             {"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}}
         )
@@ -689,14 +693,14 @@ class TestOffCycleRequests:
             "the holder is still on its way to the downloader"
         )
 
-        # Let the holder into the downloader, where the middlewares park it
-        # instead of starting a transfer.
+        # Let the holder into the downloader, where the middlewares keep it
+        # instead of handing it to a download handler.
         held: Deferred[None] = Deferred()
 
-        async def park(download_func: Any, request: Request) -> None:
+        async def hold(download_func: Any, request: Request) -> None:
             await maybe_deferred_to_future(held)
 
-        monkeypatch.setattr(downloader.middleware, "download_async", park)
+        monkeypatch.setattr(downloader.middleware, "download_async", hold)
         fetching = downloader.fetch(holder)
         fetching.addBoth(lambda _: None)
 
@@ -709,8 +713,8 @@ class TestOffCycleRequests:
 
     @coroutine_test
     async def test_does_not_borrow_without_a_downloader(self) -> None:
-        # Without an engine there is no transfer state to tell a holder that is
-        # using its slot from one that is not, so nothing is lent.
+        # Without an engine there is no download handler state to tell a holder
+        # that is using its slot from one that is not, so nothing is lent.
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         await self._acquire(manager, Request("http://example.com/1"))
         off_cycle = Request("http://example.com/2")
@@ -722,25 +726,27 @@ class TestOffCycleRequests:
         await self._stop_waiting(blocked)
 
     @coroutine_test
-    async def test_borrows_once_a_holder_stops_transferring(self) -> None:
+    async def test_borrows_once_a_holder_leaves_the_download_handler(self) -> None:
         """A holder that gets its response and moves on to the downloader
         middlewares stops using its slot without freeing it, e.g. because those
         middlewares are now waiting for this very off-cycle request."""
         manager, downloader = _manager_with_downloader(
             {"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}}
         )
-        parked = Request("http://example.com/1")
-        transferring = Request("http://example.com/2")
-        await self._acquire(manager, parked)
-        await self._acquire(manager, transferring)
-        downloader.active.update({parked, transferring})
-        downloader._transferring.add(transferring)
+        in_middlewares = Request("http://example.com/1")
+        in_handler = Request("http://example.com/2")
+        await self._acquire(manager, in_middlewares)
+        await self._acquire(manager, in_handler)
+        downloader.active.update({in_middlewares, in_handler})
+        downloader._in_download_handler.add(in_handler)
 
         off_cycle = Request("http://example.com/3")
         blocked = await self._start_waiting(manager, off_cycle)
-        assert not blocked.called, "a holder is on the wire, so nothing to lend"
+        assert not blocked.called, (
+            "a holder is in a download handler, so nothing to lend"
+        )
 
-        downloader._end_transfer(transferring)
+        downloader._leave_download_handler(in_handler)
         await self._finish_waiting(blocked)
         assert off_cycle in manager._reserved
         assert manager.crawler.stats
@@ -754,13 +760,13 @@ class TestOffCycleRequests:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         holder = Request("http://example.com/1")
         await self._acquire(manager, holder)
-        self._park(monkeypatch, manager, holder)
+        self._hold_in_middlewares(monkeypatch, manager, holder)
         first = Request("http://example.com/2")
         await self._acquire(manager, first, off_cycle=True)
-        # The borrower is now parked on the downloader middlewares too, and its
-        # own middlewares download a request of their own: it can borrow in
-        # turn, so that nesting of any depth cannot deadlock.
-        self._park(monkeypatch, manager, holder, first)
+        # The borrower is now in the downloader middlewares too, and its own
+        # middlewares download a request of their own: it can borrow in turn, so
+        # that nesting of any depth cannot deadlock.
+        self._hold_in_middlewares(monkeypatch, manager, holder, first)
         second = Request("http://example.com/3")
         await self._acquire(manager, second, off_cycle=True)
         assert second in manager._reserved
@@ -867,8 +873,9 @@ class TestOffCycleRequests:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         scope = _scope(manager, "example.com")
         # The scope is full but the throttler is not tracking any holder for it,
-        # so there is no parked slot to borrow: instead of assuming that an
-        # untracked holder is parked, the off-cycle request waits for a slot.
+        # so there is no unused slot to borrow: instead of assuming that an
+        # untracked holder is in the downloader middlewares, the off-cycle
+        # request waits for a slot.
         scope.record_sent()
         assert scope.concurrency_blocked() is True
         off_cycle = Request("http://example.com/1")
@@ -892,7 +899,7 @@ class TestOffCycleRequests:
         monkeypatch.setattr(manager.crawler, "stats", None)
         holder = Request("http://example.com/1")
         await self._acquire(manager, holder)
-        self._park(monkeypatch, manager, holder)
+        self._hold_in_middlewares(monkeypatch, manager, holder)
         prerequisite = Request("http://example.com/robots.txt")
         with caplog.at_level(logging.DEBUG, logger="scrapy.throttler"):
             await self._acquire(manager, prerequisite, off_cycle=True)
@@ -1569,15 +1576,16 @@ class TestThrottlerEdges:
         assert m2._slot_waiters == []
 
     @coroutine_test
-    async def test_wait_for_slot_discards_the_unfired_parked_event(self):
+    async def test_wait_for_slot_discards_the_unfired_middlewares_event(self):
         manager, downloader = _manager_with_downloader()
         scope = _scope_manager(config={"id": "a", "concurrency": 1})
         scope.record_sent(now=0.0)
-        # The scope frees its slot first, so the parked event of the off-cycle
-        # wait stays pending and must not be left behind on the downloader.
+        # The scope frees its slot first, so the middlewares event of the
+        # off-cycle wait stays pending and must not be left behind on the
+        # downloader.
         call_later(0, scope.record_done)
         await manager._wait_for_slot([scope], off_cycle=True)
-        assert downloader._parked_waiters == []
+        assert downloader._downloader_middlewares_waiters == []
         downloader.close()
 
     @coroutine_test
@@ -1586,10 +1594,10 @@ class TestThrottlerEdges:
         scope = _scope_manager(config={"id": "a", "concurrency": 1})
         scope.record_sent(now=0.0)
         request = Request("http://example.com/1")
-        downloader._transferring.add(request)
-        # This time the request is parked first, so the scope's slot event stays
-        # pending instead.
-        call_later(0, downloader._end_transfer, request)
+        downloader._in_download_handler.add(request)
+        # This time the request reaches the middlewares first, so the scope's
+        # slot event stays pending instead.
+        call_later(0, downloader._leave_download_handler, request)
         await manager._wait_for_slot([scope], off_cycle=True)
         assert scope._slot_waiters == []
         downloader.close()
@@ -1942,7 +1950,7 @@ class _SharedPrerequisiteMiddleware:
         return response
 
 
-class _TransferPeakExtension:
+class _DownloadHandlerPeakExtension:
     """Records, for the whole crawl, the highest number of requests of a single
     :ref:`throttling scope <throttling-scopes>` that a download handler is
     working on at once."""
@@ -1969,7 +1977,7 @@ class _TransferPeakExtension:
         downloader = self.crawler.engine.downloader
         while True:
             counts: dict[str, int] = {}
-            for request in list(downloader._transferring):
+            for request in list(downloader._in_download_handler):
                 key = request.meta.get(downloader.DOWNLOAD_SLOT, "")
                 counts[key] = counts.get(key, 0) + 1
             for key, count in counts.items():
@@ -1980,7 +1988,7 @@ class _TransferPeakExtension:
 class _OffCycleFloodSpider(Spider):
     """Sends many requests to one host outside the scheduling cycle at once,
     like a media pipeline does for the files of an item. None of them is a
-    prerequisite of a request parked on the downloader middlewares, so none of
+    prerequisite of a request sitting in the downloader middlewares, so none of
     them has any claim on a concurrency slot of the scope they share."""
 
     name = "off_cycle_flood"
@@ -2051,7 +2059,7 @@ class TestThrottlerIntegration:
         """A robots.txt request is downloaded from a downloader middleware,
         while the request that triggered it is holding the only concurrency
         slot of the very same scope and waiting for it, so it has to borrow
-        that parked slot."""
+        that unused slot."""
         crawler = get_crawler(
             SimpleSpider,
             {"ROBOTSTXT_OBEY": True, "THROTTLING_SCOPE_CONCURRENCY": 1},
@@ -2086,8 +2094,8 @@ class TestThrottlerIntegration:
         crawl = deferred_from_coro(
             crawler.crawl_async(
                 # A staggered pair, so that one response is being processed by
-                # the downloader middlewares while the other is still on the
-                # wire.
+                # the downloader middlewares while the other is still in a
+                # download handler.
                 fast_url=mockserver.url("/delay?n=0&b=0"),
                 slow_url=mockserver.url("/delay?n=1&b=0"),
                 prerequisite_url=mockserver.url("/status?n=200"),
@@ -2104,11 +2112,12 @@ class TestThrottlerIntegration:
 
     @pytest.mark.only_asyncio  # the sampling extension needs an asyncio loop
     @coroutine_test
-    async def test_borrowing_keeps_the_concurrency_limit_on_the_wire(self, mockserver):
+    async def test_borrowing_keeps_the_concurrency_limit_in_handlers(self, mockserver):
         """A concurrency slot is only lent while none of the requests holding one
-        is being transferred, so an off-cycle request that no parked request is
-        waiting for cannot borrow past the limit: the target host never sees more
-        than the configured concurrency, however many off-cycle requests pile up.
+        is in a download handler, so an off-cycle request that no request in the
+        downloader middlewares is waiting for cannot borrow past the limit: the
+        target host never sees more than the configured concurrency, however many
+        off-cycle requests pile up.
         """
         concurrency = 2
         crawler = get_crawler(
@@ -2119,7 +2128,7 @@ class TestThrottlerIntegration:
                 "CONCURRENT_REQUESTS": 16,
                 "THROTTLING_SCOPE_CONCURRENCY": concurrency,
                 "DOWNLOAD_DELAY": 0,
-                "EXTENSIONS": {_TransferPeakExtension: 0},
+                "EXTENSIONS": {_DownloadHandlerPeakExtension: 0},
             },
         )
         await crawler.crawl_async(
@@ -2137,7 +2146,7 @@ class TestThrottlerIntegration:
         extension = next(
             e
             for e in crawler.extensions.middlewares
-            if isinstance(e, _TransferPeakExtension)
+            if isinstance(e, _DownloadHandlerPeakExtension)
         )
-        assert extension.peak, "no transfer was sampled"
+        assert extension.peak, "no download handler activity was sampled"
         assert max(extension.peak.values()) <= concurrency, extension.peak
