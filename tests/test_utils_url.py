@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
@@ -191,7 +193,7 @@ def test_guess_scheme(url: str, expected: str):
         ),
     ],
 )
-def test_guess_scheme_skipped(url: str, expected: str, reason: str):
+def test_guess_scheme_skipped(url: str, expected: str, reason: str) -> None:
     pytest.skip(reason)
 
 

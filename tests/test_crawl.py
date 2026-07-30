@@ -41,6 +41,7 @@ from tests.spiders import (
     CrawlSpiderWithAsyncCallback,
     CrawlSpiderWithAsyncGeneratorCallback,
     CrawlSpiderWithErrback,
+    CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
     CrawlSpiderWithProcessRequestCallbackKeywordArguments,
     DelaySpider,
@@ -504,6 +505,21 @@ class TestCrawlSpider:
         assert "[errback] status 404" in caplog.text
         assert "[errback] status 500" in caplog.text
         assert "[errback] status 501" in caplog.text
+
+    @coroutine_test
+    async def test_crawlspider_without_errback(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithoutErrback)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        # The failing request (404) is followed by a rule without an errback,
+        # so the failure is dropped silently and the crawl finishes normally.
+        assert "[parse] status 200 (foo: None)" in caplog.text
+        assert "[errback]" not in caplog.text
+        assert crawler.stats
+        assert crawler.stats.get_value("downloader/response_status_count/404") == 1
 
     @coroutine_test
     async def test_crawlspider_process_request_cb_kwargs(
