@@ -225,6 +225,12 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         )
         assert "DEBUG: It Works!" in stderr
 
+    def test_invalid_url(self, proj_path: Path) -> None:
+        code, _, _ = proc(
+            "parse", "--spider", self.spider_name, "not-a-url", cwd=proj_path
+        )
+        assert code != 0
+
     def test_curl(self, proj_path: Path, mockserver: MockServer) -> None:
         _, _, stderr = proc(
             "parse",

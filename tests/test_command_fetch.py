@@ -38,6 +38,10 @@ class TestFetchCommand:
         )
         assert out.strip() == "Works"
 
+    def test_invalid_url(self) -> None:
+        code, _, _ = proc("fetch", "not-a-url")
+        assert code != 0
+
     def test_curl(self, mockserver: MockServer) -> None:
         url = mockserver.url("/echo")
         _, out, _ = proc("fetch", "--curl", f"curl -d a=1 -H 'X-Test: foo' {url}")

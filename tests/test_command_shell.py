@@ -52,6 +52,18 @@ class TestShellCommand:
         )
         assert "('POST', b'a=1')" in out
 
+    def test_curl_no_redirect(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/redirect-no-meta-refresh")
+        _, out, _ = proc(
+            "shell",
+            "--no-redirect",
+            "--curl",
+            f"curl {url}",
+            "-c",
+            "response.status",
+        )
+        assert out.strip().endswith("302")
+
     def test_curl_with_url(self, mockserver: MockServer) -> None:
         url = mockserver.url("/echo")
         code, _, _ = proc("shell", "--curl", f"curl {url}", url, "-c", "url")
