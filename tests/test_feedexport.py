@@ -10,7 +10,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any
 from unittest import mock
-from urllib.parse import urljoin
 
 import lxml.etree
 import pytest
@@ -89,7 +88,7 @@ class DelayedFileStorage(BlockingFeedStorage):
     supported_modes = FEED_MODES
 
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
-        self.path = Path(uri.replace("delayed://", "/"))
+        self.path = Path(uri.split("://", 1)[1])
         self.mode = (feed_options or {}).get("mode")
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -1368,11 +1367,13 @@ class TestFeedMode:
         if mode is not None:
             feed_options["mode"] = mode
         if scheme is not None:
-            uri = f"{scheme}:/{path}"
+            # as_posix() keeps the URI valid on Windows, where paths have a
+            # drive and backslashes.
+            uri = f"{scheme}://{path.as_posix()}"
         elif "%(batch_id)d" in str(path):
             # A batch URI template must keep its %(batch_id)d placeholder, so it
-            # is neither quoted nor printf-escaped.
-            uri = urljoin("file:", str(path))
+            # is used as a path, which is neither quoted nor printf-escaped.
+            uri = str(path)
         else:
             uri = printf_escape(path_to_url(path))
         crawler = get_crawler(
