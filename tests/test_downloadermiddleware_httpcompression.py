@@ -1,10 +1,10 @@
 from gzip import GzipFile
+from importlib.util import find_spec
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
 
 import pytest
-from testfixtures import LogCapture
 from w3lib.encoding import resolve_encoding
 
 from scrapy.downloadermiddlewares.httpcompression import (
@@ -65,10 +65,7 @@ def _skip_if_no_br() -> None:
 
 
 def _skip_if_no_zstd() -> None:
-    try:
-        import zstandard  # noqa: F401,PLC0415
-    except ImportError:
-        pytest.skip("no zstd support (zstandard)")
+    pytest.importorskip("zstandard")
 
 
 class TestHttpCompression:
@@ -77,7 +74,7 @@ class TestHttpCompression:
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
         self.crawler.stats.open_spider()
 
-    def _getresponse(self, coding):
+    def _getresponse(self, coding: str) -> Response:
         if coding not in FORMAT:
             raise ValueError
 
@@ -171,38 +168,28 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
-    def test_process_response_br_unsupported(self):
-        try:
-            try:
-                import brotli  # noqa: F401,PLC0415
-
-                pytest.skip("Requires not having brotli support")
-            except ImportError:
-                import brotlicffi  # noqa: F401,PLC0415
-
-                pytest.skip("Requires not having brotli support")
-        except ImportError:
-            pass
+    def test_process_response_br_unsupported(self, caplog: pytest.LogCaptureFixture):
+        if find_spec("brotli") is not None or find_spec("brotlicffi") is not None:
+            pytest.skip("Requires not having brotli support")
         response = self._getresponse("br")
         request = response.request
         assert response.headers["Content-Encoding"] == b"br"
-        with LogCapture(
-            "scrapy.downloadermiddlewares.httpcompression",
-            propagate=False,
-            level=WARNING,
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(
+            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+        ):
             newresponse = self.mw.process_response(request, response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.downloadermiddlewares.httpcompression",
-                "WARNING",
+                WARNING,
                 (
                     "HttpCompressionMiddleware cannot decode the response for "
                     "http://scrapytest.org/ from unsupported encoding(s) 'br'. "
                     "You need to install brotli or brotlicffi >= 1.2.0 to decode 'br'."
                 ),
             ),
-        )
+        ]
         assert newresponse is not response
         assert newresponse.headers.getlist("Content-Encoding") == [b"br"]
 
@@ -225,33 +212,28 @@ class TestHttpCompression:
             assert newresponse.body.startswith(b"<!DOCTYPE")
             assert "Content-Encoding" not in newresponse.headers
 
-    def test_process_response_zstd_unsupported(self):
-        try:
-            import zstandard  # noqa: F401,PLC0415
-
+    def test_process_response_zstd_unsupported(self, caplog: pytest.LogCaptureFixture):
+        if find_spec("zstandard") is not None:
             pytest.skip("Requires not having zstandard support")
-        except ImportError:
-            pass
         response = self._getresponse("zstd-static-content-size")
         request = response.request
         assert response.headers["Content-Encoding"] == b"zstd"
-        with LogCapture(
-            "scrapy.downloadermiddlewares.httpcompression",
-            propagate=False,
-            level=WARNING,
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(
+            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+        ):
             newresponse = self.mw.process_response(request, response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.downloadermiddlewares.httpcompression",
-                "WARNING",
+                WARNING,
                 (
                     "HttpCompressionMiddleware cannot decode the response for"
                     " http://scrapytest.org/ from unsupported encoding(s) 'zstd'."
                     " You need to install zstandard to decode 'zstd'."
                 ),
             ),
-        )
+        ]
         assert newresponse is not response
         assert newresponse.headers.getlist("Content-Encoding") == [b"zstd"]
 
@@ -306,26 +288,27 @@ class TestHttpCompression:
         assert "Content-Encoding" not in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
 
-    def test_multi_compression_single_header_invalid_compression(self):
+    def test_multi_compression_single_header_invalid_compression(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = [b"gzip, foo, deflate"]
         request = response.request
-        with LogCapture(
-            "scrapy.downloadermiddlewares.httpcompression",
-            propagate=False,
-            level=WARNING,
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(
+            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+        ):
             newresponse = self.mw.process_response(request, response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.downloadermiddlewares.httpcompression",
-                "WARNING",
+                WARNING,
                 (
                     "HttpCompressionMiddleware cannot decode the response for"
                     " http://scrapytest.org/ from unsupported encoding(s) 'gzip,foo'."
                 ),
             ),
-        )
+        ]
         assert newresponse is not response
         assert newresponse.headers.getlist("Content-Encoding") == [b"gzip", b"foo"]
 
@@ -558,6 +541,30 @@ class TestHttpCompression:
 
         self._test_compression_bomb_setting("zstd")
 
+    def test_compression_bomb_setting_logs_warning(self, caplog):
+        settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
+        crawler = get_crawler(Spider, settings_dict=settings)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+
+        response = self._getresponse("bomb-gzip")  # 11_511_612 B
+        caplog.clear()
+        with (
+            caplog.at_level(
+                WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+            ),
+            pytest.raises(IgnoreRequest) as exc_info,
+        ):
+            mw.process_response(response.request, response)
+        assert caplog.record_tuples == [
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                WARNING,
+                str(exc_info.value),
+            )
+        ]
+
     def _test_compression_bomb_spider_attr(self, compression_id):
         class DownloadMaxSizeSpider(Spider):
             download_maxsize = 1_000_000
@@ -620,7 +627,9 @@ class TestHttpCompression:
 
         self._test_compression_bomb_request_meta("zstd")
 
-    def _test_download_warnsize_setting(self, compression_id):
+    def _test_download_warnsize_setting(
+        self, caplog: pytest.LogCaptureFixture, compression_id: str
+    ) -> None:
         settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
         crawler = get_crawler(Spider, settings_dict=settings)
         spider = crawler._create_spider("scrapytest.org")
@@ -628,41 +637,51 @@ class TestHttpCompression:
         mw.open_spider(spider)
         response = self._getresponse(f"bomb-{compression_id}")
 
-        with LogCapture(
-            "scrapy.downloadermiddlewares.httpcompression",
-            propagate=False,
-            level=WARNING,
-        ) as log:
+        assert response.request
+        caplog.clear()
+        with caplog.at_level(
+            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+        ):
             mw.process_response(response.request, response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.downloadermiddlewares.httpcompression",
-                "WARNING",
+                WARNING,
                 (
                     "<200 http://scrapytest.org/> body size after "
                     "decompression (11511612 B) is larger than the download "
                     "warning size (10000000 B)."
                 ),
             ),
-        )
+        ]
 
-    def test_download_warnsize_setting_br(self):
+    def test_download_warnsize_setting_br(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         _skip_if_no_br()
 
-        self._test_download_warnsize_setting("br")
+        self._test_download_warnsize_setting(caplog, "br")
 
-    def test_download_warnsize_setting_deflate(self):
-        self._test_download_warnsize_setting("deflate")
+    def test_download_warnsize_setting_deflate(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        self._test_download_warnsize_setting(caplog, "deflate")
 
-    def test_download_warnsize_setting_gzip(self):
-        self._test_download_warnsize_setting("gzip")
+    def test_download_warnsize_setting_gzip(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        self._test_download_warnsize_setting(caplog, "gzip")
 
-    def test_download_warnsize_setting_zstd(self):
+    def test_download_warnsize_setting_zstd(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         _skip_if_no_zstd()
 
-        self._test_download_warnsize_setting("zstd")
+        self._test_download_warnsize_setting(caplog, "zstd")
 
-    def _test_download_warnsize_spider_attr(self, compression_id):
+    def _test_download_warnsize_spider_attr(
+        self, caplog: pytest.LogCaptureFixture, compression_id: str
+    ) -> None:
         class DownloadWarnSizeSpider(Spider):
             download_warnsize = 10_000_000
 
@@ -672,45 +691,55 @@ class TestHttpCompression:
         mw.open_spider(spider)
         response = self._getresponse(f"bomb-{compression_id}")
 
-        with LogCapture(
-            "scrapy.downloadermiddlewares.httpcompression",
-            propagate=False,
-            level=WARNING,
-        ) as log:
+        assert response.request
+        caplog.clear()
+        with caplog.at_level(
+            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+        ):
             mw.process_response(response.request, response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.downloadermiddlewares.httpcompression",
-                "WARNING",
+                WARNING,
                 (
                     "<200 http://scrapytest.org/> body size after "
                     "decompression (11511612 B) is larger than the download "
                     "warning size (10000000 B)."
                 ),
             ),
-        )
+        ]
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-    def test_download_warnsize_spider_attr_br(self):
+    def test_download_warnsize_spider_attr_br(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         _skip_if_no_br()
 
-        self._test_download_warnsize_spider_attr("br")
+        self._test_download_warnsize_spider_attr(caplog, "br")
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-    def test_download_warnsize_spider_attr_deflate(self):
-        self._test_download_warnsize_spider_attr("deflate")
+    def test_download_warnsize_spider_attr_deflate(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        self._test_download_warnsize_spider_attr(caplog, "deflate")
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-    def test_download_warnsize_spider_attr_gzip(self):
-        self._test_download_warnsize_spider_attr("gzip")
+    def test_download_warnsize_spider_attr_gzip(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        self._test_download_warnsize_spider_attr(caplog, "gzip")
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-    def test_download_warnsize_spider_attr_zstd(self):
+    def test_download_warnsize_spider_attr_zstd(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         _skip_if_no_zstd()
 
-        self._test_download_warnsize_spider_attr("zstd")
+        self._test_download_warnsize_spider_attr(caplog, "zstd")
 
-    def _test_download_warnsize_request_meta(self, compression_id):
+    def _test_download_warnsize_request_meta(
+        self, caplog: pytest.LogCaptureFixture, compression_id: str
+    ) -> None:
         crawler = get_crawler(Spider)
         spider = crawler._create_spider("scrapytest.org")
         mw = HttpCompressionMiddleware.from_crawler(crawler)
@@ -718,39 +747,47 @@ class TestHttpCompression:
         response = self._getresponse(f"bomb-{compression_id}")
         response.meta["download_warnsize"] = 10_000_000
 
-        with LogCapture(
-            "scrapy.downloadermiddlewares.httpcompression",
-            propagate=False,
-            level=WARNING,
-        ) as log:
+        assert response.request
+        caplog.clear()
+        with caplog.at_level(
+            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+        ):
             mw.process_response(response.request, response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.downloadermiddlewares.httpcompression",
-                "WARNING",
+                WARNING,
                 (
                     "<200 http://scrapytest.org/> body size after "
                     "decompression (11511612 B) is larger than the download "
                     "warning size (10000000 B)."
                 ),
             ),
-        )
+        ]
 
-    def test_download_warnsize_request_meta_br(self):
+    def test_download_warnsize_request_meta_br(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         _skip_if_no_br()
 
-        self._test_download_warnsize_request_meta("br")
+        self._test_download_warnsize_request_meta(caplog, "br")
 
-    def test_download_warnsize_request_meta_deflate(self):
-        self._test_download_warnsize_request_meta("deflate")
+    def test_download_warnsize_request_meta_deflate(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        self._test_download_warnsize_request_meta(caplog, "deflate")
 
-    def test_download_warnsize_request_meta_gzip(self):
-        self._test_download_warnsize_request_meta("gzip")
+    def test_download_warnsize_request_meta_gzip(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        self._test_download_warnsize_request_meta(caplog, "gzip")
 
-    def test_download_warnsize_request_meta_zstd(self):
+    def test_download_warnsize_request_meta_zstd(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         _skip_if_no_zstd()
 
-        self._test_download_warnsize_request_meta("zstd")
+        self._test_download_warnsize_request_meta(caplog, "zstd")
 
     def _get_truncated_response(self, compression_id):
         crawler = get_crawler(Spider)

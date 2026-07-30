@@ -186,7 +186,7 @@ class ProcessSpiderExceptionSimpleIterableMiddleware:
 class ProcessSpiderExceptionAsyncIteratorMiddleware:
     async def process_spider_exception(self, response, exception):
         yield {"foo": 1}
-        d = defer.Deferred()
+        d: defer.Deferred[None] = defer.Deferred()
         call_later(0, d.callback, None)
         await maybe_deferred_to_future(d)
         yield {"foo": 2}

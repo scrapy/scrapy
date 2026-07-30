@@ -14,14 +14,13 @@ from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
-from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerRunner
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.engine import format_engine_status, get_engine_status
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import get_crawler, get_reactor_settings
+from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.spiders import (
     AsyncDefAsyncioGenComplexSpider,
@@ -42,6 +41,7 @@ from tests.spiders import (
     CrawlSpiderWithAsyncCallback,
     CrawlSpiderWithAsyncGeneratorCallback,
     CrawlSpiderWithErrback,
+    CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
     CrawlSpiderWithProcessRequestCallbackKeywordArguments,
     DelaySpider,
@@ -356,9 +356,10 @@ with multiples lines
 
     @coroutine_test
     async def test_engine_status(self, mockserver: MockServer) -> None:
-        est = []
+        est: list[list[tuple[str, Any]]] = []
 
         def cb(response):
+            assert crawler.engine
             est.append(get_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -373,9 +374,10 @@ with multiples lines
 
     @coroutine_test
     async def test_format_engine_status(self, mockserver: MockServer) -> None:
-        est = []
+        est: list[str] = []
 
         def cb(response):
+            assert crawler.engine
             est.append(format_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -386,8 +388,8 @@ with multiples lines
         assert len(est) == 1, est
         est = est[0].split("\n")[2:-2]  # remove header & footer
         # convert to dict
-        est = [x.split(":") for x in est]
-        est = [x for sublist in est for x in sublist]  # flatten
+        est_split = [x.split(":") for x in est]
+        est = [x for sublist in est_split for x in sublist]  # flatten
         est = [x.lstrip().rstrip() for x in est]
         it = iter(est)
         s = dict(zip(it, it, strict=True))
@@ -427,50 +429,6 @@ with multiples lines
                 crawler.crawl(mockserver.url("/status?n=200"), mockserver=mockserver)
             )
         assert not crawler.crawling
-
-    @coroutine_test
-    async def test_crawlerrunner_accepts_crawler(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        crawler = Crawler(SimpleSpider, get_reactor_settings())
-        runner = CrawlerRunner()
-        with caplog.at_level(logging.DEBUG):
-            await maybe_deferred_to_future(
-                runner.crawl(
-                    crawler,
-                    mockserver.url("/status?n=200"),
-                    mockserver=mockserver,
-                )
-            )
-        assert "Got response 200" in caplog.text
-
-    @coroutine_test
-    async def test_crawl_multiple(
-        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
-    ) -> None:
-        settings_dict = get_reactor_settings()
-        runner_cls = (
-            CrawlerRunner
-            if settings_dict.get("TWISTED_REACTOR_ENABLED", True)
-            else AsyncCrawlerRunner
-        )
-        runner = runner_cls(settings_dict)
-        runner.crawl(
-            SimpleSpider,
-            mockserver.url("/status?n=200"),
-            mockserver=mockserver,
-        )
-        runner.crawl(
-            SimpleSpider,
-            mockserver.url("/status?n=503"),
-            mockserver=mockserver,
-        )
-
-        with caplog.at_level(logging.DEBUG):
-            await ensure_awaitable(runner.join())
-
-        self._assert_retried(caplog.text)
-        assert "Got response 200" in caplog.text
 
     @coroutine_test
     async def test_unknown_url_scheme(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -547,6 +505,21 @@ class TestCrawlSpider:
         assert "[errback] status 404" in caplog.text
         assert "[errback] status 500" in caplog.text
         assert "[errback] status 501" in caplog.text
+
+    @coroutine_test
+    async def test_crawlspider_without_errback(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithoutErrback)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        # The failing request (404) is followed by a rule without an errback,
+        # so the failure is dropped silently and the crawl finishes normally.
+        assert "[parse] status 200 (foo: None)" in caplog.text
+        assert "[errback]" not in caplog.text
+        assert crawler.stats
+        assert crawler.stats.get_value("downloader/response_status_count/404") == 1
 
     @coroutine_test
     async def test_crawlspider_process_request_cb_kwargs(

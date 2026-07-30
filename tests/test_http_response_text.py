@@ -8,10 +8,10 @@ import pytest
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import to_unicode
-from tests.test_http_response import TestResponse
+from tests.utils.bases.http_response import TestResponseBase
 
 
-class TestTextResponse(TestResponse):
+class TestTextResponse(TestResponseBase):
     response_class = TextResponse
 
     def test_follow_None_encoding(self):
@@ -163,12 +163,13 @@ class TestTextResponse(TestResponse):
 
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""
+        body = b"\xff\xfeh\x00i\x00"
         r = self.response_class(
             "http://www.example.com",
-            body=b"\xff\xfeh\x00i\x00",
+            body=body,
             encoding="utf-16",
         )
-        self._assert_response_values(r, "utf-16", "hi")
+        self._assert_response_values(r, "utf-16", body)
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
         r6 = self.response_class(
@@ -403,22 +404,6 @@ class TestTextResponse(TestResponse):
             response=resp2,
             encoding="cp1251",
         )
-
-    def test_follow_flags(self):
-        res = self.response_class("http://example.com/")
-        fol = res.follow("http://example.com/", flags=["cached", "allowed"])
-        assert fol.flags == ["cached", "allowed"]
-
-    def test_follow_all_flags(self):
-        re = self.response_class("http://www.example.com/")
-        urls = [
-            "http://www.example.com/",
-            "http://www.example.com/2",
-            "http://www.example.com/foo",
-        ]
-        fol = re.follow_all(urls, flags=["cached", "allowed"])
-        for req in fol:
-            assert req.flags == ["cached", "allowed"]
 
     def test_follow_all_css(self):
         expected = [

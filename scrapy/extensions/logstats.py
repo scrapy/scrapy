@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class LogStats:
     """Log basic scraping stats periodically like:
-    * RPM - Requests per Minute
+    * RPM - Responses per Minute
     * IPM - Items per Minute
     """
 

@@ -24,7 +24,7 @@ Having trouble? We'd like to help!
 * Ask or search questions in `StackOverflow using the scrapy tag`_.
 * Ask or search questions in the `Scrapy subreddit`_.
 * Search for questions on the archives of the `scrapy-users mailing list`_.
-* Ask a question in the `#scrapy IRC channel`_,
+* Ask a question in the `#scrapy IRC channel`_.
 * Report bugs with Scrapy in our `issue tracker`_.
 * Join the Discord community `Scrapy Discord`_.
 
@@ -91,14 +91,14 @@ Basic concepts
 :doc:`topics/selectors`
     Extract the data from web pages using XPath.
 
-:doc:`topics/shell`
-    Test your extraction code in an interactive environment.
-
 :doc:`topics/items`
     Define the data you want to scrape.
 
 :doc:`topics/loaders`
     Populate your items with the extracted data.
+
+:doc:`topics/shell`
+    Test your extraction code in an interactive environment.
 
 :doc:`topics/item-pipeline`
     Post-process and store your scraped data.

@@ -199,6 +199,7 @@ Global commands:
 * :command:`fetch`
 * :command:`view`
 * :command:`version`
+* :command:`bench`
 
 Project-only commands:
 
@@ -207,7 +208,6 @@ Project-only commands:
 * :command:`list`
 * :command:`edit`
 * :command:`parse`
-* :command:`bench`
 
 .. command:: startproject
 
@@ -309,11 +309,25 @@ Usage examples::
       * parse_item
 
     $ scrapy check
-    [FAILED] first_spider:parse_item
-    >>> 'RetailPricex' field is missing
+    F.F.
+    ======================================================================
+    FAIL: [first_spider] parse (@returns post-hook)
+    ----------------------------------------------------------------------
+    Traceback (most recent call last):
+      ...
+    scrapy.exceptions.ContractFail: Returned 92 requests, expected 0..4
 
-    [FAILED] first_spider:parse
-    >>> Returned 92 requests, expected 0..4
+    ======================================================================
+    FAIL: [first_spider] parse_item (@scrapes post-hook)
+    ----------------------------------------------------------------------
+    Traceback (most recent call last):
+      ...
+    scrapy.exceptions.ContractFail: Missing fields: RetailPricex
+
+    ----------------------------------------------------------------------
+    Ran 4 contracts in 0.174s
+
+    FAILED (failures=2)
 
 .. skip: end
 
@@ -377,7 +391,7 @@ Supported options:
 
 * ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
 
-* ``--headers``: print the response's HTTP headers instead of the response's body
+* ``--headers``: print the request's and response's HTTP headers instead of the response's body
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
@@ -387,15 +401,19 @@ Usage examples::
     [ ... html content here ... ]
 
     $ scrapy fetch --nolog --headers http://www.example.com/
-    {'Accept-Ranges': ['bytes'],
-     'Age': ['1263   '],
-     'Connection': ['close     '],
-     'Content-Length': ['596'],
-     'Content-Type': ['text/html; charset=UTF-8'],
-     'Date': ['Wed, 18 Aug 2010 23:59:46 GMT'],
-     'Etag': ['"573c1-254-48c9c87349680"'],
-     'Last-Modified': ['Fri, 30 Jul 2010 15:30:18 GMT'],
-     'Server': ['Apache/2.2.3 (CentOS)']}
+    > Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+    > Accept-Language: en
+    > User-Agent: Scrapy/2.16.0 (+https://scrapy.org)
+    > Accept-Encoding: gzip, deflate, br
+    >
+    < Date: Wed, 08 Jul 2026 06:15:01 GMT
+    < Content-Type: text/html
+    < Server: cloudflare
+    < Last-Modified: Wed, 01 Jul 2026 17:50:18 GMT
+    < Allow: GET, HEAD
+    < Cf-Cache-Status: HIT
+    < Age: 8184
+    < Cf-Ray: a17cf3b80eddf141-DME
 
 .. command:: view
 
@@ -476,7 +494,7 @@ Supported options:
 
 * ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
 
-* ``--a NAME=VALUE``: set spider argument (may be repeated)
+* ``-a NAME=VALUE``: set spider argument (may be repeated)
 
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
@@ -605,7 +623,10 @@ shouldn't matter to the user running the command, but when the user :ref:`needs
 a non-default Twisted reactor <disable-asyncio>`, it may be important.
 
 Scrapy decides which of these two classes to use based on the value of the
-:setting:`TWISTED_REACTOR` setting. If the setting value is the default one
+:setting:`TWISTED_REACTOR` and :setting:`TWISTED_REACTOR_ENABLED` settings.
+With :setting:`TWISTED_REACTOR_ENABLED` set to ``False`` it will use
+:class:`~scrapy.crawler.AsyncCrawlerProcess`. Otherwise, if the
+:setting:`TWISTED_REACTOR` value is the default one
 (``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``),
 :class:`~scrapy.crawler.AsyncCrawlerProcess` will be used, otherwise
 :class:`~scrapy.crawler.CrawlerProcess` will be used. The :ref:`spider settings

@@ -5,6 +5,7 @@ Item Exporters are used to export/serialize items into different formats.
 from __future__ import annotations
 
 import csv
+import logging
 import marshal
 import pickle
 import pprint
@@ -23,6 +24,8 @@ from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
     from json import JSONEncoder
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "BaseItemExporter",
@@ -71,6 +74,17 @@ class BaseItemExporter(ABC):
     def finish_exporting(self) -> None:  # noqa: B027
         pass
 
+    @staticmethod
+    def _get_populated_field_names(adapter: ItemAdapter) -> Iterable[str]:
+        """Return the populated field names of *adapter*, in declaration order.
+
+        Populated fields that are not declared, which some item types allow,
+        come last, in item order.
+        """
+        populated = set(adapter.keys())
+        declared = (name for name in adapter.field_names() if name in populated)
+        return dict.fromkeys([*declared, *adapter.keys()])
+
     def _get_serialized_fields(
         self, item: Any, default_value: Any = None, include_empty: bool | None = None
     ) -> Iterable[tuple[str, Any]]:
@@ -83,7 +97,11 @@ class BaseItemExporter(ABC):
             include_empty = self.export_empty_fields
 
         if self.fields_to_export is None:
-            field_iter = item.field_names() if include_empty else item.keys()
+            field_iter = (
+                item.field_names()
+                if include_empty
+                else self._get_populated_field_names(item)
+            )
         elif isinstance(self.fields_to_export, Mapping):
             if include_empty:
                 field_iter = self.fields_to_export.items()
@@ -254,6 +272,8 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
+        self._autodetected_fields = False
+        self._data_loss_warned = False
 
     def serialize_field(
         self, field: Mapping[str, Any] | Field, name: str, value: Any
@@ -274,6 +294,22 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
+        if (
+            self._autodetected_fields
+            and self.fields_to_export is not None
+            and not self._data_loss_warned
+        ):
+            item_fields = ItemAdapter(item).field_names()
+            dropped_fields = set(item_fields) - set(self.fields_to_export)
+
+            if dropped_fields:
+                dropped_fields_display = sorted(dropped_fields)
+                logger.warning(
+                    f"CSVExporter dropped fields {dropped_fields_display}. "
+                    f"To avoid this, fully configure your FEED_EXPORT_FIELDS setting. "
+                    f"See: https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-fields",
+                )
+                self._data_loss_warned = True
         fields = self._get_serialized_fields(item, default_value="", include_empty=True)
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
@@ -293,6 +329,7 @@ class CsvItemExporter(BaseItemExporter):
             if not self.fields_to_export:
                 # use declared field names, or keys if the item is a dict
                 self.fields_to_export = ItemAdapter(item).field_names()
+                self._autodetected_fields = True
             fields: Iterable[str]
             if isinstance(self.fields_to_export, Mapping):
                 fields = self.fields_to_export.values()

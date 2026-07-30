@@ -103,7 +103,7 @@ async def _defer_sleep_async() -> None:
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover
     warnings.warn(
         "scrapy.utils.defer.defer_result() is deprecated, use"
-        " twisted.internet.defer.success() and twisted.internet.defer.fail(),"
+        " twisted.internet.defer.succeed() and twisted.internet.defer.fail(),"
         " plus an explicit sleep if needed, or explicit reactor.callLater().",
         category=ScrapyDeprecationWarning,
         stacklevel=2,
@@ -469,22 +469,22 @@ def _maybeDeferred_coro(
 def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
     """Return an :class:`asyncio.Future` object that wraps *d*.
 
-    This function requires
-    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
-    installed.
+    This function requires an installed asyncio reactor or a running asyncio
+    event loop, see :ref:`using-asyncio`.
 
-    When :ref:`using the asyncio reactor <install-asyncio>`, you cannot await
-    on :class:`~twisted.internet.defer.Deferred` objects from :ref:`Scrapy
-    callables defined as coroutines <coroutine-support>`, you can only await on
-    ``Future`` objects. Wrapping ``Deferred`` objects into ``Future`` objects
-    allows you to wait on them::
+    In this state you cannot await on :class:`~twisted.internet.defer.Deferred`
+    objects from :ref:`Scrapy callables defined as coroutines
+    <coroutine-support>`, you can only await on ``Future`` objects. Wrapping
+    ``Deferred`` objects into ``Future`` objects allows you to wait on them:
+
+    .. code-block:: python
 
         class MySpider(Spider):
             ...
+
             async def parse(self, response):
-                additional_request = scrapy.Request('https://example.org/price')
-                deferred = self.crawler.engine.download(additional_request)
-                additional_response = await deferred_to_future(deferred)
+                deferred = some_dfd_helper()
+                result = await deferred_to_future(deferred)
 
     .. versionchanged:: 2.14
         This function no longer installs an asyncio loop if called before the
@@ -492,7 +492,10 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
         in this case.
     """
     if not is_asyncio_available():
-        raise RuntimeError("deferred_to_future() requires AsyncioSelectorReactor.")
+        raise RuntimeError(
+            "deferred_to_future() requires an installed asyncio reactor"
+            " or a running asyncio event loop."
+        )
     return d.asFuture(asyncio.get_event_loop())
 
 
@@ -501,23 +504,26 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
     defined as a coroutine <coroutine-support>`.
 
     What you can await in Scrapy callables defined as coroutines depends on the
-    value of :setting:`TWISTED_REACTOR`:
+    value of :setting:`TWISTED_REACTOR` and :setting:`TWISTED_REACTOR_ENABLED`:
 
-    -   When :ref:`using the asyncio reactor <install-asyncio>`, you can only
-        await on :class:`asyncio.Future` objects.
+    -   When :ref:`using the asyncio reactor <install-asyncio>`, or :ref:`not
+        using a reactor at all <asyncio-without-reactor>`, you can only await
+        on :class:`asyncio.Future` objects.
 
-    -   When not using the asyncio reactor, you can only await on
-        :class:`~twisted.internet.defer.Deferred` objects.
+    -   When :ref:`using a non-asyncio reactor <disable-asyncio>`, you can only
+        await on :class:`~twisted.internet.defer.Deferred` objects.
 
-    If you want to write code that uses ``Deferred`` objects but works with any
-    reactor, use this function on all ``Deferred`` objects::
+    If you want to write code that uses ``Deferred`` objects but works in both
+    of these states, use this function on all ``Deferred`` objects:
+
+    .. code-block:: python
 
         class MySpider(Spider):
             ...
+
             async def parse(self, response):
-                additional_request = scrapy.Request('https://example.org/price')
-                deferred = self.crawler.engine.download(additional_request)
-                additional_response = await maybe_deferred_to_future(deferred)
+                deferred = some_dfd_helper()
+                result = await maybe_deferred_to_future(deferred)
     """
     if not is_asyncio_available():
         return d
