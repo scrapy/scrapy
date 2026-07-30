@@ -563,6 +563,17 @@ Example usage::
     $ scrapy settings --get DOWNLOAD_DELAY
     0
 
+The settings of enabled :ref:`add-ons <topics-addons>` are taken into account.
+:ref:`Spider settings <spider-settings>` are only taken into account if you name
+a spider with ``--spider``::
+
+    $ scrapy settings --get DOWNLOAD_DELAY --spider myspider
+    2.0
+
+.. versionchanged:: VERSION
+   Add-on settings are now taken into account, and the ``--spider`` option was
+   added.
+
 .. command:: runspider
 
 runspider
