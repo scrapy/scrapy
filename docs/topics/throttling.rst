@@ -388,7 +388,8 @@ Throttling scopes
 represent aspects of requests that can be throttled independently.
 
 When a request has multiple throttling scopes, it is not sent until all of its
-throttling scopes allow it.
+throttling scopes allow it. The more scopes it has, the rarer that is, so it may
+wait considerably longer than requests that need only one of them.
 
 .. _custom-throttling-scopes:
 

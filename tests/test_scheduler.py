@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from scrapy.http.request import CallbackT
+    from scrapy.pqueues import ThrottlerAwarePriorityQueue
 
 
 class MockCrawler(Crawler):
@@ -476,6 +477,89 @@ class TestThrottlerAwareScheduler:
         assert resumed_request is not None
         assert resumed_request.url == "http://a.com/slow"
         resumed.close("finished")
+
+    @coroutine_test
+    async def test_delayed_unserializable_falls_back_to_memory(
+        self, tmp_path: Path, caplog
+    ) -> None:
+        # A held-back request is not serialized until its delay elapses, so the
+        # disk queue only finds out then that it cannot store it. It must get the
+        # same memory-queue fallback that a request failing to serialize at
+        # enqueue time gets, rather than being dropped.
+        crawler = self._crawler(
+            {"JOBDIR": str(tmp_path), "RANDOMIZE_DOWNLOAD_DELAY": False}
+        )
+        scheduler = self._scheduler(crawler)
+        request = Request(
+            "http://a.com/slow",
+            meta={"delay": 1000.0},
+            callback=cast("CallbackT", lambda response: None),
+        )
+        assert await scheduler.enqueue_request_async(request) is True
+        assert len(scheduler) == 1
+        assert scheduler.next_request() is None  # still held back by the delay
+
+        # Let the delay elapse: promoting the request into the disk queue fails.
+        dqs = cast("ThrottlerAwarePriorityQueue", scheduler.dqs)
+        with caplog.at_level(logging.WARNING):
+            dqs._promote_ready(dqs._delayed[0][0])
+        assert "Unable to serialize request" in caplog.text
+        assert crawler.stats is not None
+        assert crawler.stats.get_value("scheduler/unserializable") == 1
+
+        # It is in the memory queue now, and sendable.
+        assert len(scheduler) == 1
+        promoted = scheduler.next_request()
+        assert promoted is not None
+        assert promoted.url == "http://a.com/slow"
+        scheduler.close("finished")
+
+    @coroutine_test
+    async def test_dequeues_past_an_empty_queue_left_by_a_failed_push(
+        self, tmp_path: Path
+    ) -> None:
+        # The disk queue for a priority is created before the request is pushed
+        # into it, so an unserializable request leaves an empty queue behind
+        # there. A start request landing at the same priority must not end up
+        # hidden behind it, pending forever with nothing able to dequeue it.
+        crawler = self._crawler({"JOBDIR": str(tmp_path)})
+        scheduler = self._scheduler(crawler)
+        assert (
+            await scheduler.enqueue_request_async(
+                Request("http://a.com/1", callback=cast("CallbackT", lambda r: None))
+            )
+            is True
+        )
+        assert (
+            await scheduler.enqueue_request_async(
+                Request("http://a.com/2", meta={"is_start_request": True})
+            )
+            is True
+        )
+        urls = set()
+        while (request := scheduler.next_request()) is not None:
+            urls.add(request.url)
+        assert urls == {"http://a.com/1", "http://a.com/2"}
+        assert not scheduler.has_pending_requests()
+        scheduler.close("finished")
+
+    def test_rejects_a_non_throttler_aware_priority_queue(self) -> None:
+        crawler = get_crawler(
+            Spider,
+            {
+                "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ScrapyPriorityQueue",
+                "DUPEFILTER_CLASS": "scrapy.dupefilters.RFPDupeFilter",
+            },
+        )
+        spider = Spider(name="spider")
+        crawler.spider = spider
+        scheduler = ThrottlerAwareScheduler.from_crawler(crawler)
+        scheduler.df.open = Mock(wraps=scheduler.df.open)  # type: ignore[method-assign]
+        with pytest.raises(ValueError, match="requires SCHEDULER_PRIORITY_QUEUE"):
+            scheduler.open(spider)
+        # The rejection happens before the dupefilter is opened, so the aborted
+        # crawl does not leave it open behind it.
+        scheduler.df.open.assert_not_called()
 
     @coroutine_test
     async def test_enqueue_async_filters_duplicates(self) -> None:

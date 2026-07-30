@@ -208,6 +208,10 @@ class Downloader:
         # parked instead (see _is_parked()).
         self._transferring: set[Request] = set()
         self._transfer_waiters: list[Deferred[None]] = []
+        # Requests waiting to go on the network (see _acquire_wire). They are not
+        # transferring, but they are not parked either (see _is_parked()): they
+        # are past their middlewares and waiting on nothing but the network.
+        self._awaiting_transfer: set[Request] = set()
         self._parked_waiters: list[Deferred[None]] = []
         self._closed: bool = False
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
@@ -249,16 +253,26 @@ class Downloader:
         return 0 < self.total_concurrency <= len(self.active)
 
     def _is_parked(self, request: Request) -> bool:
-        """Return whether *request* is in the downloader but not being
-        transferred, i.e. a downloader middleware is processing it or it is
-        queued for a free transfer slot.
+        """Return whether the downloader middlewares are processing *request*,
+        i.e. it is in the downloader but neither being transferred nor waiting to
+        be (see :meth:`_acquire_wire`).
 
-        A parked request is not using the network, even though it may be
-        holding a :ref:`throttling <throttling>` concurrency slot, and it may be
-        parked waiting for another request that a downloader middleware is
-        downloading.
+        A parked request is not using the network, even though it may be holding
+        a :ref:`throttling <throttling>` concurrency slot, and it may be parked
+        waiting for another request that a downloader middleware is downloading.
+        That is what makes its slot safe to lend (see
+        :meth:`~scrapy.throttler.Throttler._can_lend_slot`).
+
+        A request waiting to go on the network is not on it either, but it is
+        past its middlewares, so it waits on nothing but the network and will get
+        there on its own. Lending its slot would break no deadlock, and it is the
+        one request whose progress the loan would then be holding back.
         """
-        return request in self.active and request not in self._transferring
+        return (
+            request in self.active
+            and request not in self._transferring
+            and request not in self._awaiting_transfer
+        )
 
     @property
     def domain_concurrency(self) -> int:
@@ -369,6 +383,45 @@ class Downloader:
             return False
         return 0 < self.total_concurrency <= len(self._transferring)
 
+    async def _acquire_wire(self, request: Request) -> None:
+        """Wait until *request* may go on the network: until a transfer slot is
+        free (see :meth:`_acquire_transfer_slot`) and until the throttling scopes
+        of *request* have room for it there (see
+        :meth:`~scrapy.throttler.ThrottlerProtocol.wire_blocked`).
+
+        Both are rechecked after every wait, since waiting on one can close the
+        other, and this returns without giving up control once they are both
+        open, so that the caller can start the transfer against exactly the state
+        that was checked.
+        """
+        # Tracked for the whole wait, so that a request waiting at either gate
+        # does not read as parked and get its concurrency slot lent away; see
+        # _is_parked().
+        self._awaiting_transfer.add(request)
+        try:
+            while True:
+                await self._acquire_transfer_slot()
+                if self._closed or not self._wire_blocked(request):
+                    return
+                await self._wait_for_wire()
+        finally:
+            self._awaiting_transfer.discard(request)
+
+    def _wire_blocked(self, request: Request) -> bool:
+        throttler = self.crawler.throttler
+        return throttler is not None and throttler.wire_blocked(request)
+
+    async def _wait_for_wire(self) -> None:
+        """Wait for a transfer to end, which is what frees room on the network
+        for a scope (as does :meth:`close`, after which nothing is held back).
+
+        A request is only ever held off the network by requests that are on it,
+        and those end on their own, so this cannot wait forever.
+        """
+        waiter: Deferred[None] = Deferred()
+        self._transfer_waiters.append(waiter)
+        await maybe_deferred_to_future(waiter)
+
     def _parked_event(self) -> Deferred[None]:
         """Return a :class:`~twisted.internet.defer.Deferred` that fires the next
         time a request becomes parked (see :meth:`_is_parked`), i.e. when one
@@ -419,7 +472,7 @@ class Downloader:
                 waiter.callback(None)
 
     async def _download(self, request: Request) -> Response:
-        await self._acquire_transfer_slot()
+        await self._acquire_wire(request)
         self._transferring.add(request)
         try:
             response: Response = await self.handlers.download_request_async(request)

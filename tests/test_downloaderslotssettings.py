@@ -1,5 +1,6 @@
 import asyncio
 import warnings
+from types import SimpleNamespace
 from typing import Any
 from urllib.parse import urlparse
 
@@ -131,6 +132,137 @@ async def test_is_parked():
     assert downloader._is_parked(request) is False
     downloader._transferring.discard(request)
     downloader.active.discard(request)
+    # Queued for a transfer slot: not on the wire, but past its middlewares and
+    # waiting on nothing but the network, so not parked either.
+    downloader.active.add(request)
+    downloader._awaiting_transfer.add(request)
+    assert downloader._is_parked(request) is False
+    downloader._awaiting_transfer.discard(request)
+    downloader.active.discard(request)
+    downloader.close()
+
+
+@coroutine_test
+async def test_a_request_queued_for_a_transfer_slot_lends_nothing():
+    """A request waiting for a transfer slot holds a throttling concurrency slot
+    without using the network, but unlike a parked one it is not waiting for any
+    prerequisite: it gets to the wire on its own. Lending its slot would break no
+    deadlock, and would let the borrower still be transferring once the lender
+    got there, putting more requests of the scope on the wire at once than its
+    concurrency allows."""
+    crawler = get_crawler(
+        DefaultSpider,
+        {
+            "CONCURRENT_REQUESTS": 4,
+            "THROTTLING_SCOPES": {"a.example": {"concurrency": 1}},
+        },
+    )
+    crawler.spider = crawler._create_spider()
+    throttler = crawler.throttler
+    assert throttler is not None
+    downloader = Downloader(crawler)
+    crawler.engine = SimpleNamespace(downloader=downloader)
+
+    # Unrelated traffic takes every transfer slot.
+    fillers = [Request(f"https://b.example/{i}") for i in range(4)]
+    downloader.active.update(fillers)
+    downloader._transferring.update(fillers)
+
+    # A request of the throttled scope takes its only concurrency slot, reaches
+    # the downloader and queues for a transfer slot.
+    holder = Request("https://a.example/1")
+    await throttler.acquire(holder)
+    downloader.active.add(holder)
+    queueing = deferred_from_coro(downloader._acquire_wire(holder))
+    for _ in range(10):
+        await async_sleep(0)
+    assert not queueing.called
+    assert downloader._is_parked(holder) is False
+
+    # A prerequisite of the same scope finds nothing to borrow.
+    prerequisite = Request("https://a.example/robots.txt")
+    blocked = deferred_from_coro(throttler.acquire(prerequisite, off_cycle=True))
+    for _ in range(10):
+        await async_sleep(0)
+    assert not blocked.called
+    assert prerequisite not in throttler._reserved
+    assert crawler.stats
+    assert crawler.stats.get_value("throttler/borrowed_slots") is None
+
+    blocked.addBoth(lambda _: None)
+    blocked.cancel()
+    queueing.addBoth(lambda _: None)
+    queueing.cancel()
+    downloader.close()
+
+
+@coroutine_test
+async def test_a_lender_waits_for_its_loan_before_going_on_the_wire():
+    """A slot lent to a prerequisite is lent by a request that is not using the
+    network, but nothing stops that request from reaching the network again while
+    the borrower is still on it. The wire gate does: a scope never has more
+    requests transferring at once than its concurrency allows."""
+    crawler = get_crawler(
+        DefaultSpider,
+        {
+            "CONCURRENT_REQUESTS": 4,
+            "THROTTLING_SCOPES": {"a.example": {"concurrency": 1}},
+        },
+    )
+    crawler.spider = crawler._create_spider()
+    throttler = crawler.throttler
+    assert throttler is not None
+    downloader = Downloader(crawler)
+    crawler.engine = SimpleNamespace(downloader=downloader)
+
+    # A request of the scope takes its only slot and parks on the middlewares.
+    lender = Request("https://a.example/1")
+    await throttler.acquire(lender)
+    downloader.active.add(lender)
+    assert downloader._is_parked(lender) is True
+
+    # Its unused slot goes to a prerequisite, which reaches the network.
+    borrower = Request("https://a.example/robots.txt")
+    await throttler.acquire(borrower, off_cycle=True)
+    assert crawler.stats
+    assert crawler.stats.get_value("throttler/borrowed_slots") == 1
+    downloader.active.add(borrower)
+    await downloader._acquire_wire(borrower)
+    downloader._transferring.add(borrower)
+
+    # The lender's middlewares are done with it, for a reason of their own rather
+    # than the borrower finishing, so it now wants the network too.
+    going_on_the_wire = deferred_from_coro(downloader._acquire_wire(lender))
+    for _ in range(10):
+        await async_sleep(0)
+    assert not going_on_the_wire.called, (
+        "the lender joined the borrower on the wire, above the scope concurrency"
+    )
+    assert throttler.wire_blocked(lender) is True
+
+    # Once the loan comes back, it goes.
+    downloader._end_transfer(borrower)
+    throttler.release(borrower)
+    done, _ = await wait_for_first([going_on_the_wire], timeout=30)
+    assert done, "the lender was left waiting after the borrower was done"
+    await maybe_deferred_to_future(going_on_the_wire)
+    assert throttler.wire_blocked(lender) is False
+    downloader.close()
+
+
+@coroutine_test
+async def test_wire_gate_ignores_unthrottled_requests():
+    crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 4})
+    crawler.spider = crawler._create_spider()
+    throttler = crawler.throttler
+    assert throttler is not None
+    downloader = Downloader(crawler)
+    crawler.engine = SimpleNamespace(downloader=downloader)
+    # A request that reserved nothing (dont_throttle, or no scopes at all) has no
+    # scope to exceed.
+    excluded = Request("https://a.example/1", meta={"dont_throttle": True})
+    await throttler.acquire(excluded)
+    assert throttler.wire_blocked(excluded) is False
     downloader.close()
 
 

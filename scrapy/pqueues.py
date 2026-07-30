@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Protocol, cast
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -162,7 +162,7 @@ class ScrapyPriorityQueue:
         # Not min(startprios): a recorded priority may have no queue to restore
         # (e.g. it only ever held a request that failed to serialize), and
         # leaving curprio pointing at a priority that neither dict has would
-        # break peek().
+        # make peek() come up empty.
         self._update_curprio()
 
     def qfactory(self, key: int) -> QueueProtocol:
@@ -200,44 +200,40 @@ class ScrapyPriorityQueue:
 
     def pop(self) -> Request | None:
         while self.curprio is not None:
-            try:
-                q = self.queues[self.curprio]
-            except KeyError:
-                pass
-            else:
+            for queues in (self.queues, self._start_queues):
+                q = queues.get(self.curprio)
+                # An empty queue can linger at a priority when a push failed
+                # after creating it (e.g. a serialization error), so it is
+                # skipped rather than popped from: popping would return None
+                # and hide the request that the other dict may hold at the same
+                # priority.
+                if not q:
+                    continue
                 m = q.pop()
                 if not q:
-                    del self.queues[self.curprio]
-                    q.close()
-                    # Always refresh, even if _start_queues is not empty: it may
-                    # have no queue at this priority, and leaving curprio
-                    # pointing at a priority that neither dict has would break
-                    # peek() (which, unlike this method, cannot recover from it).
+                    # Always refresh, even if the other dict is not empty: it
+                    # may have no queue at this priority, and leaving curprio
+                    # pointing at a priority that neither dict has would make
+                    # peek() come up empty.
                     self._update_curprio()
                 return m
-            if self._start_queues:
-                try:
-                    q = self._start_queues[self.curprio]
-                except KeyError:
-                    self._update_curprio()
-                else:
-                    m = q.pop()
-                    if not q:
-                        del self._start_queues[self.curprio]
-                        q.close()
-                        self._update_curprio()
-                    return m
-            else:
-                self._update_curprio()
+            # Nothing to pop at this priority: refreshing drops the empty
+            # leftovers and moves on to the next priority.
+            self._update_curprio()
         return None
 
     def _update_curprio(self) -> None:
-        prios = {
-            p
-            for queues in (self.queues, self._start_queues)
-            for p, q in queues.items()
-            if q
-        }
+        # Empty queues are dropped rather than merely skipped: keeping one would
+        # hold its storage open for nothing, and record on close a priority with
+        # nothing to restore from it.
+        prios: set[int] = set()
+        for queues in (self.queues, self._start_queues):
+            for p, q in list(queues.items()):
+                if q:
+                    prios.add(p)
+                else:
+                    del queues[p]
+                    q.close()
         self.curprio = min(prios) if prios else None
 
     def peek(self) -> Request | None:
@@ -249,12 +245,15 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
-        try:
-            queue = self.queues[self.curprio]
-        except KeyError:
-            queue = self._start_queues[self.curprio]
-        # Protocols can't declare optional members
-        return cast("Request", queue.peek())  # type: ignore[attr-defined]
+        for queues in (self.queues, self._start_queues):
+            queue = queues.get(self.curprio)
+            # Empty queues can linger at a priority (see pop()), and skipping
+            # them is what keeps them from hiding the request that the other
+            # dict may hold at the same priority.
+            if queue:
+                # Protocols can't declare optional members
+                return cast("Request", queue.peek())  # type: ignore[attr-defined]
+        return None
 
     def close(self) -> list[int]:
         active: set[int] = set()
@@ -541,10 +540,22 @@ class ThrottlerAwarePriorityQueue:
         self.crawler: Crawler = crawler
 
         self.pqueues: dict[frozenset[ScopeID], ScrapyPriorityQueue] = {}
+
+        # Scope sets grouped by the priority of the request at the head of their
+        # queue (their "band"), so that _select() can go straight to the
+        # best-priority candidates instead of walking every pending scope set,
+        # which on a broad crawl means every pending domain. A band is a dict
+        # rather than a set so that iteration stays insertion-ordered, and hence
+        # deterministic. _band_of records where each scope set is filed so that
+        # _reindex() can move it; both are maintained there, and nowhere else.
+        self._bands: dict[int, dict[frozenset[ScopeID], None]] = {}
+        self._band_of: dict[frozenset[ScopeID], int] = {}
+
         if slot_startprios:
             for set_key, startprios in slot_startprios.items():
                 scope_set = _scope_set_from_key(set_key)
                 self.pqueues[scope_set] = self._pqfactory(scope_set, startprios)
+                self._reindex(scope_set)
 
         # Requests held back by their own per-request delay wait
         # here instead of in their scope-set queue, so a not-yet-due request
@@ -562,6 +573,14 @@ class ThrottlerAwarePriorityQueue:
         # deadlines is irrelevant beyond being deterministic.
         self._delayed: list[tuple[float, int, frozenset[ScopeID], Request]] = []
         self._delayed_seq: int = 0
+
+        # Where a request that this queue cannot store goes instead; see
+        # _release_delayed. A disk-backed queue serializes on push, and a
+        # held-back request defers that serialization until it is promoted, so
+        # the fallback is what gives it the same second chance that a request
+        # which fails to serialize at enqueue time gets. Scheduler points it at
+        # the memory queue; left unset, an unstorable request is dropped.
+        self.on_unstorable: Callable[[Request, frozenset[ScopeID]], None] | None = None
 
     def _pqfactory(
         self, scope_set: frozenset[ScopeID], startprios: Iterable[int] = ()
@@ -589,7 +608,30 @@ class ThrottlerAwarePriorityQueue:
     def _push_to_queue(self, request: Request, scope_set: frozenset[ScopeID]) -> None:
         if scope_set not in self.pqueues:
             self.pqueues[scope_set] = self._pqfactory(scope_set)
+        # A push that raises (a serialization error) leaves the head where it
+        # was, so there is nothing to reindex on that path.
         self.pqueues[scope_set].push(request)
+        self._reindex(scope_set)
+
+    def _reindex(self, scope_set: frozenset[ScopeID]) -> None:
+        """File *scope_set* under the priority of its queue head, moving it out
+        of whichever band it was in. Call after anything that can change that
+        head, i.e. after a push into its queue and after a pop out of it."""
+        previous = self._band_of.pop(scope_set, None)
+        if previous is not None:
+            band = self._bands[previous]
+            del band[scope_set]
+            if not band:
+                del self._bands[previous]
+        queue = self.pqueues.get(scope_set)
+        # curprio is the priority the head is stored under, i.e.
+        # queue.priority(queue.peek()), without the cost of peeking. A queue with
+        # no head (gone, or left empty by a failed push) belongs to no band,
+        # which is what keeps _select() from considering it.
+        if queue is None or queue.curprio is None:
+            return
+        self._band_of[scope_set] = queue.curprio
+        self._bands.setdefault(queue.curprio, {})[scope_set] = None
 
     def _promote_ready(self, now: float) -> None:
         """Move every held-back request whose per-request delay has elapsed into
@@ -612,8 +654,7 @@ class ThrottlerAwarePriorityQueue:
             # A disk queue serializes on push; held-back requests defer that
             # serialization until here, so a non-serializable one would
             # otherwise raise while flushing on close and take the rest of the
-            # disk queue down with it. Drop it with a warning instead, matching
-            # how the scheduler handles unserializable requests at enqueue time.
+            # disk queue down with it.
             logger.warning(
                 "Unable to serialize request: %(request)s - reason: %(reason)s",
                 {"request": request, "reason": e},
@@ -622,6 +663,11 @@ class ThrottlerAwarePriorityQueue:
             )
             if self.crawler.stats is not None:
                 self.crawler.stats.inc_value("scheduler/unserializable")
+            # Hand it over to the fallback, which is how it gets the same
+            # memory-queue second chance that a request failing to serialize at
+            # enqueue time gets. Without one there is nowhere left to put it.
+            if self.on_unstorable is not None:
+                self.on_unstorable(request, scope_set)
 
     def _select(
         self,
@@ -634,23 +680,38 @@ class ThrottlerAwarePriorityQueue:
         broken by ascending load (the maximum
         :meth:`~scrapy.throttler.ThrottlerProtocol.get_scope_load` over the
         scopes of the queue), i.e. by preferring the least-busy scopes.
+
+        Candidates are visited band by band (see :attr:`_bands`), best priority
+        first, so that a sendable one is normally found without looking at every
+        pending scope set: a band is left as soon as it yields a candidate, since
+        no later band can beat it on priority, and a candidate of zero load ends
+        the search outright, since nothing can beat it on either key.
         """
         self._promote_ready(time.monotonic())
-        best_sort_key: tuple[int, float] | None = None
+        best_load: float | None = None
         best: tuple[frozenset[ScopeID], ScrapyPriorityQueue] | None = None
-        for scope_set, queue in self.pqueues.items():
-            head = queue.peek()
-            if head is None or not self._throttler.is_ready(head):
-                continue
-            load = max(
-                (self._throttler.get_scope_load(scope_id) for scope_id in scope_set),
-                default=0.0,
-            )
-            sort_key = (queue.priority(head), load)
-            if best_sort_key is None or sort_key < best_sort_key:
-                best_sort_key = sort_key
-                best = (scope_set, queue)
-        return best
+        # There are few distinct priorities in a crawl, so this outer loop is
+        # short; the inner one is what the bands keep from covering everything.
+        for band in sorted(self._bands):
+            for scope_set in self._bands[band]:
+                queue = self.pqueues[scope_set]
+                head = queue.peek()
+                if head is None or not self._throttler.is_ready(head):
+                    continue
+                # Spelled out rather than max() over a generator: this runs for
+                # every candidate, and most scope sets hold a single scope.
+                load = 0.0
+                for scope_id in scope_set:
+                    scope_load = self._throttler.get_scope_load(scope_id)
+                    load = max(load, scope_load)
+                if not load:
+                    return scope_set, queue
+                if best_load is None or load < best_load:
+                    best_load = load
+                    best = (scope_set, queue)
+            if best is not None:
+                return best
+        return None
 
     def pop(self) -> Request | None:
         selected = self._select()
@@ -662,18 +723,21 @@ class ThrottlerAwarePriorityQueue:
             self._throttler.reserve(request)
         if len(queue) == 0:
             del self.pqueues[scope_set]
+        self._reindex(scope_set)
         return request
 
     def get_next_request_delay(self) -> float | None:
         now = time.monotonic()
         self._promote_ready(now)
+        # Anything sendable means no wakeup is needed, and _select() answers
+        # that without walking every pending scope set.
+        if self._select() is not None:
+            return 0.0
         delay: float | None = None
         for queue in self.pqueues.values():
             head = queue.peek()
             if head is None:
                 continue
-            if self._throttler.is_ready(head):
-                return 0.0
             head_delay = self._throttler.get_time_until_ready(head)
             if head_delay is None:
                 continue
@@ -697,6 +761,8 @@ class ThrottlerAwarePriorityQueue:
             for scope_set, queue in self.pqueues.items()
         }
         self.pqueues.clear()
+        self._bands.clear()
+        self._band_of.clear()
         return active
 
     def __len__(self) -> int:

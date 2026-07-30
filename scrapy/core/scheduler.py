@@ -88,10 +88,14 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
 
         Return the number of seconds until some pending request that
         :meth:`next_request` is currently withholding for a time-based reason
-        becomes available, or ``None`` if no pending request is time-blocked.
+        becomes available, or ``None`` if no pending request is time-blocked
+        (which includes having nothing pending at all).
+
         When a scheduler defines it, the engine uses it to schedule a single
-        wakeup after :meth:`next_request` returns ``None`` while requests remain
-        pending, so a crawl held back only by time does not stall.
+        wakeup once :meth:`next_request` stops handing out requests, so a crawl
+        held back only by time does not stall. It is the engine's only reason to
+        ask, so this is also what tells it that nothing is waiting on a timer:
+        the engine does not check :meth:`has_pending_requests` first.
     """
 
     @classmethod
@@ -376,6 +380,14 @@ class Scheduler(BaseScheduler):
         self.spider: Spider = spider
         self.mqs: ScrapyPriorityQueue = self._mq()
         self.dqs: ScrapyPriorityQueue | None = self._dq() if self.dqdir else None
+        # Before the dupefilter is opened, so that a rejected combination does
+        # not leave it open behind an aborted crawl.
+        self._check_priority_queue()
+        return self.df.open()
+
+    def _check_priority_queue(self) -> None:
+        """Reject a :setting:`SCHEDULER_PRIORITY_QUEUE` that this scheduler
+        cannot drive. Called by :meth:`open` once the queues are built."""
         # A throttler-aware priority queue needs the throttling scopes of every
         # request it stores, which only the asynchronous enqueue path resolves,
         # so it cannot be driven by a scheduler that does not implement it.
@@ -389,7 +401,6 @@ class Scheduler(BaseScheduler):
                 f"SCHEDULER_PRIORITY_QUEUE to a priority queue that is not "
                 f"throttler-aware, such as scrapy.pqueues.ScrapyPriorityQueue."
             )
-        return self.df.open()
 
     def close(self, reason: str) -> Deferred[None] | None:
         """
@@ -569,8 +580,8 @@ class ThrottlerAwareScheduler(Scheduler):
     subclass).
     """
 
-    def open(self, spider: Spider) -> Deferred[None] | None:
-        result = super().open(spider)
+    def _check_priority_queue(self) -> None:
+        super()._check_priority_queue()
         if not hasattr(self.mqs, "get_next_request_delay"):
             raise ValueError(
                 f"{type(self).__name__} requires SCHEDULER_PRIORITY_QUEUE to be "
@@ -578,9 +589,18 @@ class ThrottlerAwareScheduler(Scheduler):
                 f"scrapy.pqueues.ThrottlerAwarePriorityQueue, but the "
                 f"configured one ({type(self.mqs).__name__}) is not."
             )
+
+    def open(self, spider: Spider) -> Deferred[None] | None:
+        result = super().open(spider)
         assert self.crawler is not None
         assert self.crawler.throttler is not None
         self._throttler: ThrottlerProtocol = self.crawler.throttler
+        if self.dqs is not None:
+            # A request held back by its own delay is not serialized until the
+            # delay elapses, so the disk queue may only then find out that it
+            # cannot store it. Give it the same memory-queue fallback that a
+            # request failing to serialize at enqueue time gets.
+            self.dqs.on_unstorable = self._mqpush  # type: ignore[attr-defined]
         return result
 
     def enqueue_request(self, request: Request) -> bool:

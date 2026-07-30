@@ -386,15 +386,15 @@ class ExecutionEngine:
         would re-run the loop while they are closed.
         """
         assert self._slot is not None
-        if (
-            self._get_next_request_delay is None
-            or not self._slot.scheduler.has_pending_requests()
-        ):
+        if self._get_next_request_delay is None:
             return
         # A positive delay means a time-based gate nothing else would wake us
-        # for. ``None`` (nothing time-blocked) and ``0`` (something is ready but
-        # could not be sent, e.g. the downloader is full) are handled elsewhere:
-        # a freed slot re-runs the loop, and a ``0``-second timer would busy-loop.
+        # for. ``None`` (nothing time-blocked, which includes nothing pending)
+        # and ``0`` (something is ready but could not be sent, e.g. the
+        # downloader is full) are handled elsewhere: a freed slot re-runs the
+        # loop, and a ``0``-second timer would busy-loop. Both are read off this
+        # single call rather than pre-filtered with has_pending_requests(),
+        # which walks the pending requests all over again.
         delay = self._get_next_request_delay()
         if delay is None or delay <= 0:
             return

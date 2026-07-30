@@ -7,7 +7,7 @@ import random
 import time
 import warnings
 from collections import OrderedDict
-from collections.abc import Awaitable, Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable, Mapping
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, TypeVar, cast
 from weakref import WeakKeyDictionary, WeakSet
@@ -225,7 +225,26 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
         )
 
 
-def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
+def _check_scope_config(setting: str, scope_id: str, config: Any) -> Mapping[str, Any]:
+    """Return *config* if it is a per-scope mapping, or raise a
+    :exc:`TypeError` naming the offending entry.
+
+    Both :setting:`THROTTLING_SCOPES` and the deprecated
+    :setting:`DOWNLOAD_SLOTS` map each scope to a configuration mapping, and
+    everything reading them assumes as much, so a malformed entry is worth
+    reporting here rather than as an :exc:`AttributeError` deeper in.
+    """
+    if not isinstance(config, Mapping):
+        raise TypeError(
+            f"{setting}[{scope_id!r}] must be a mapping of configuration keys "
+            f"to values, got {config!r}."
+        )
+    return config
+
+
+def _warn_on_unachievable_concurrency(
+    settings: BaseSettings, scopes_config: dict[str, dict[str, Any]]
+) -> None:
     """Warn about configured concurrency limits that exceed
     :setting:`CONCURRENT_REQUESTS`. Call once per crawl (see
     :meth:`Throttler.__init__`).
@@ -238,6 +257,10 @@ def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
     Only the setting that actually defines the default per-scope concurrency is
     reported, so that a deprecated setting the user never set is not named as an
     offender when the new one overrides it.
+
+    *scopes_config* is the merged per-scope configuration (see
+    :meth:`Throttler._merge_download_slots`), so a limit coming from the
+    deprecated :setting:`DOWNLOAD_SLOTS` setting is reported too.
     """
     global_concurrency = settings.getint("CONCURRENT_REQUESTS")
     if not global_concurrency:
@@ -248,8 +271,8 @@ def _warn_on_unachievable_concurrency(settings: BaseSettings) -> None:
     if default_concurrency > global_concurrency:
         offenders.append(f"{default_name}={default_concurrency}")
     offenders += [
-        f"THROTTLING_SCOPES[{scope_id!r}]['concurrency']={config['concurrency']}"
-        for scope_id, config in settings.getdict("THROTTLING_SCOPES").items()
+        f"the concurrency of throttling scope {scope_id!r}={config['concurrency']}"
+        for scope_id, config in scopes_config.items()
         if config.get("concurrency") is not None
         and int(config["concurrency"]) > global_concurrency
     ]
@@ -398,6 +421,24 @@ class ThrottlerProtocol(Protocol):
         The engine calls this once *request* has finished downloading (whether
         it succeeded, failed or returned a new request), so that scopes that
         enforce a concurrency limit can let other requests through.
+        """
+
+    def wire_blocked(self, request: Request) -> bool:
+        """Return whether sending *request* right now would put more requests of
+        one of its scopes on the network at once than that scope's concurrency
+        allows.
+
+        :meth:`acquire` reserves a concurrency slot before *request* reaches the
+        downloader, and it keeps that slot for as long as the downloader
+        middlewares process it, network or no network. This is what the
+        downloader asks, just before handing *request* to a download handler, to
+        keep the leeway that buys (see the *off_cycle* argument of
+        :meth:`acquire`) from letting a scope exceed its concurrency where it
+        counts. An implementation that hands out no such leeway can always return
+        ``False``.
+
+        A blocked request is retried as transfers end, so an implementation must
+        only block on requests that are on the network, which end on their own.
         """
 
     def is_ready(self, request: Request) -> bool:
@@ -610,8 +651,14 @@ class Throttler:
 
     def __init__(self, crawler: Crawler) -> None:
         self.crawler = crawler
+        # Merged (and shape-checked) first, so that a malformed per-scope entry
+        # is reported as such instead of blowing up inside a warning helper.
+        self._scopes_config: dict[str, dict[str, Any]] = self._merge_download_slots(
+            crawler.settings
+        )
+        _check_scope_concurrency(crawler.settings, self._scopes_config)
         _warn_on_deprecated_concurrency(crawler.settings)
-        _warn_on_unachievable_concurrency(crawler.settings)
+        _warn_on_unachievable_concurrency(crawler.settings, self._scopes_config)
         self._debug = crawler.settings.getbool("THROTTLER_DEBUG")
         self._max_idle = crawler.settings.getfloat("THROTTLING_SCOPE_MAX_IDLE")
         self._robotstxt_obey = crawler.settings.getbool(
@@ -630,10 +677,6 @@ class Throttler:
         self._default_scope_manager_cls = load_object(
             crawler.settings["THROTTLING_SCOPE_MANAGER"]
         )
-        self._scopes_config: dict[str, dict[str, Any]] = self._merge_download_slots(
-            crawler.settings
-        )
-        _check_scope_concurrency(crawler.settings, self._scopes_config)
         # Ordered by least-recently-used first (see get_scope_manager), so the
         # scope limit can evict the coldest idle scopes (see THROTTLING_SCOPE_LIMIT).
         self._scope_managers: OrderedDict[ScopeID, ThrottlingScopeManagerProtocol] = (
@@ -667,12 +710,17 @@ class Throttler:
         ``jitter`` magnitude (the historical ±50%, or none). An explicit
         ``THROTTLING_SCOPES`` entry for the same scope takes precedence over the
         translated one. The deprecation warning is emitted by the downloader.
+
+        Entry shapes are checked here, so that everything downstream can assume
+        a mapping per scope rather than failing on a malformed one somewhere
+        further in.
         """
         scopes: dict[str, dict[str, Any]] = {
-            scope_id: dict(config)
+            scope_id: dict(_check_scope_config("THROTTLING_SCOPES", scope_id, config))
             for scope_id, config in settings.getdict("THROTTLING_SCOPES").items()
         }
         for slot_id, slot_config in settings.getdict("DOWNLOAD_SLOTS").items():
+            _check_scope_config("DOWNLOAD_SLOTS", slot_id, slot_config)
             translated: dict[str, Any] = {}
             if "concurrency" in slot_config:
                 translated["concurrency"] = slot_config["concurrency"]
@@ -741,7 +789,13 @@ class Throttler:
     ) -> list[tuple[ScopeID, QuotaAmount | None]]:
         """Return the ``(scope_id, quota_amount)`` pairs of *request*, from the
         scopes returned by :meth:`get_resolved_scopes`."""
-        return list(iter_scope_quota_amounts(self.get_resolved_scopes(request)))
+        scopes = self.get_resolved_scopes(request)
+        # The single, quota-less scope of the default scoping, spelled out
+        # rather than run through the general iteration: the readiness API asks
+        # for this on every queued scope set on every dequeue.
+        if isinstance(scopes, str):
+            return [(scopes, None)]
+        return list(iter_scope_quota_amounts(scopes))
 
     # -- Scope-state coordination (called from the request lifecycle) --------
 
@@ -765,6 +819,24 @@ class Throttler:
         self._scope_managers[scope_id] = manager
         self._enforce_scope_limit(scope_id)
         return manager
+
+    def _live_scope_manager(
+        self, scope_id: ScopeID
+    ) -> ThrottlingScopeManagerProtocol | None:
+        """Return the manager of *scope_id* if there already is one, without
+        creating it and without marking it as recently used.
+
+        A scope with no manager has no throttling state, so it imposes neither a
+        wait nor a concurrency limit; that is what lets the read-only readiness
+        API read ``None`` as "this scope allows the request through". Answering
+        without creating a manager is what keeps that API cheap enough for a
+        :ref:`throttler-aware scheduler <throttler-aware-scheduler>` to call it
+        for every queued scope set on every dequeue, which on a broad crawl means
+        every pending domain; it also keeps merely considering a scope from
+        counting as using it in the LRU eviction order (see
+        :setting:`THROTTLING_SCOPE_LIMIT`).
+        """
+        return self._scope_managers.get(scope_id)
 
     def _enforce_scope_limit(self, keep: ScopeID) -> None:
         """Evict least-recently-used idle scopes while the number of live scope
@@ -821,6 +893,13 @@ class Throttler:
         if not off_cycle:
             await self._wait_at_gate(request, scopes, off_cycle=False)
             return
+        # A registration here holds back is_ready() for the whole scope (see
+        # _off_cycle_claims), so one that outlived its wait would stall a
+        # throttler-aware scheduler for good. The finally below is what rules
+        # that out, and it covers every way this coroutine can end: returning,
+        # raising, being cancelled (which throws into the await), and being
+        # abandoned (garbage-collecting a started coroutine closes it, which
+        # throws GeneratorExit into the await).
         for scope_id, _, _ in scopes:
             self._off_cycle_waiters.setdefault(scope_id, WeakSet()).add(request)
         try:
@@ -952,6 +1031,39 @@ class Throttler:
             return False
         return all(self._is_parked(holder) for holder in holders)
 
+    def wire_blocked(self, request: Request) -> bool:
+        # A concurrency slot is reserved before its request reaches the
+        # downloader, so a scope's slots can be held by requests that are not
+        # using the network, and one of those slots can be lent to an off-cycle
+        # request (see _can_lend_slot). Nothing keeps a lender from reaching the
+        # network again while the borrower is still on it, though, which is what
+        # this stops: a scope never has more requests transferring at once than
+        # its concurrency allows, whatever its slots are lent out to.
+        scopes = self._reserved.get(request)
+        if not scopes:
+            # No reservation to speak of: an unscoped or dont_throttle request.
+            return False
+        downloader = self._downloader()
+        if downloader is None:
+            return False
+        transferring = downloader._transferring
+        if not transferring:
+            return False
+        for scope_id, manager, _ in scopes:
+            holders = self._scope_holders.get(scope_id)
+            if not holders:
+                continue
+            # *request* is not transferring yet, so it does not count itself.
+            on_wire = sum(1 for holder in holders if holder in transferring)
+            if on_wire >= manager.get_concurrency():
+                if self._debug:
+                    logger.debug(
+                        f"Holding {request} off the network: scope {scope_id} "
+                        f"already has {on_wire} request(s) there"
+                    )
+                return True
+        return False
+
     def _borrow_slots(
         self, request: Request, scopes: list[ScopeSlot], borrowed: list[ScopeID]
     ) -> None:
@@ -971,6 +1083,10 @@ class Throttler:
         """Return whether an off-cycle request waiting at the gate could use a
         free slot of any of *scope_ids* right now, in which case it gets it
         before a request from the scheduler does."""
+        # Nothing is waiting at the gate most of the time, and this is on the
+        # readiness API's hot path (see _cached_scope_quota_amounts).
+        if not self._off_cycle_waiters:
+            return False
         return any(
             self._can_use_slot_now(waiter, scope_id)
             for scope_id in scope_ids
@@ -988,7 +1104,9 @@ class Throttler:
         for other_id, quota_amount in self._cached_scope_quota_amounts(request):
             if other_id == scope_id:
                 continue
-            manager = self.get_scope_manager(other_id)
+            manager = self._live_scope_manager(other_id)
+            if manager is None:
+                continue
             if (
                 manager.can_send(now=now, quota_amount=quota_amount) > 0
                 or manager.concurrency_blocked()
@@ -1006,13 +1124,19 @@ class Throttler:
             return True
         scope_values = self._cached_scope_quota_amounts(request)
         for scope_id, quota_amount in scope_values:
-            manager = self.get_scope_manager(scope_id)
+            manager = self._live_scope_manager(scope_id)
+            if manager is None:
+                continue
             if manager.can_send(now=now, quota_amount=quota_amount) > 0:
                 return False
             if manager.concurrency_blocked():
                 return False
         # Every scope has a free slot, but an off-cycle request waiting for one
-        # of them gets it first.
+        # of them gets it first. Checked before building the scope id list, which
+        # is otherwise built on every queued scope set on every dequeue for a
+        # gate that is empty most of the time.
+        if not self._off_cycle_waiters:
+            return True
         return not self._off_cycle_claims([scope_id for scope_id, _ in scope_values])
 
     def reserve(self, request: Request) -> None:
@@ -1038,18 +1162,18 @@ class Throttler:
         wait = max(0.0, self._request_delay_deadline(request, now) - now)
         if not request.meta.get("dont_throttle"):
             for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
-                manager = self.get_scope_manager(scope_id)
+                manager = self._live_scope_manager(scope_id)
+                if manager is None:
+                    continue
                 wait = max(wait, manager.can_send(now=now, quota_amount=quota_amount))
         return wait if wait > 0 else None
 
     def get_scope_load(self, scope_id: ScopeID) -> float:
         # A scope with no manager has nothing in flight, so its load is 0: it was
-        # either never used, or evicted, which only happens to idle scopes. That
-        # is answered without creating a manager (or marking an existing one as
-        # recently used) because a priority queue asks for the load of every
-        # queued scope on every pop (see DownloaderAwarePriorityQueue), which on
-        # a broad crawl means every pending domain.
-        manager = self._scope_managers.get(scope_id)
+        # either never used, or evicted, which only happens to idle scopes. A
+        # priority queue asks for the load of every queued scope on every pop
+        # (see DownloaderAwarePriorityQueue), so this must not create one.
+        manager = self._live_scope_manager(scope_id)
         return 0.0 if manager is None else manager.get_load()
 
     def get_request_delay(self, request: Request, now: float | None = None) -> float:
@@ -1242,6 +1366,15 @@ class ThrottlingScopeManagerProtocol(Protocol):
     delay and concurrency limits, its quota, and any gradual :ref:`backoff
     <backoff>`.
 
+    An instance is created the first time its scope is actually used (a request
+    is sent under it, it backs off, its delay is read or written), not when a
+    scope is merely considered: until then the scope is taken to impose no wait
+    and no concurrency limit, so the very first request of a scope is never held
+    back by it. An instance may also be dropped once its scope is idle (see
+    :setting:`THROTTLING_SCOPE_MAX_IDLE` and :setting:`THROTTLING_SCOPE_LIMIT`)
+    and recreated from its configuration later, so it must not be relied upon to
+    accumulate state across idle periods.
+
     Instances are built with :func:`~scrapy.utils.misc.build_from_crawler`,
     which passes the :class:`~scrapy.crawler.Crawler` and a ``config`` dict with
     the base configuration of the managed throttling scope. For example:
@@ -1324,6 +1457,16 @@ class ThrottlingScopeManagerProtocol(Protocol):
         robots.txt ``Crawl-delay`` directive. Pass ``only_increase=False`` to
         also allow lowering it.
         """
+
+    def get_concurrency(self) -> int:
+        """Return the maximum number of concurrent requests allowed for this
+        scope.
+
+        :class:`Throttler` compares this against the number of the scope's
+        requests that are on the network, to keep a request that holds a
+        concurrency slot without using it from letting more of them there at
+        once than this allows; see
+        :meth:`ThrottlerProtocol.wire_blocked`."""
 
     def set_concurrency(self, concurrency: int) -> None:
         """Set the maximum number of concurrent requests allowed for this
@@ -1692,9 +1835,15 @@ class ThrottlingScopeManager:
         backing_off = self._delay > self._base_delay
         self._base_delay = delay
         # Reflect the change in the effective delay unless a backoff is raising
-        # it above the base right now.
-        if not backing_off:
+        # it above the new base right now. A backoff that no longer clears the
+        # base is not a backoff any more: leaving the delay below the base would
+        # apply neither value, since _recover() also gives up once the delay is
+        # within the base.
+        if not backing_off or self._delay < delay:
             self._delay = delay
+
+    def get_concurrency(self) -> int:
+        return self._concurrency
 
     def set_concurrency(self, concurrency: int) -> None:
         concurrency = int(concurrency)

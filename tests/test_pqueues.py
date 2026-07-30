@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import tempfile
+from random import Random
 from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
@@ -91,7 +92,8 @@ class TestPriorityQueue:
     def test_peek_after_draining_a_higher_priority_queue(self):
         """Draining the queue of the current priority while start requests
         remain at a different one must not leave ``curprio`` pointing at a
-        priority that no queue has, which ``peek()`` cannot recover from."""
+        priority that no queue has, which would make ``peek()`` come up empty
+        with requests still queued."""
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
             self.crawler,
@@ -113,6 +115,64 @@ class TestPriorityQueue:
         assert queue.pop().url == start_request.url
         assert queue.peek() is None
         queue.close()
+
+    def test_peek_and_pop_skip_an_empty_queue_left_by_a_failed_push(self):
+        """A queue is created before the request is pushed into it, so a push
+        that fails (e.g. a serialization error) leaves an empty queue behind at
+        that priority. Neither ``peek()`` nor ``pop()`` may let it hide the
+        request that the other dict holds at the same priority."""
+        temp_dir = tempfile.mkdtemp()
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler,
+            PickleFifoDiskQueue,
+            temp_dir,
+            start_queue_cls=PickleFifoDiskQueue,
+        )
+        unserializable = Request(
+            "https://example.org/lambda",
+            callback=cast("CallbackT", lambda response: None),
+        )
+        with pytest.raises(ValueError, match="is not an instance method"):
+            queue.push(unserializable)
+        assert queue.queues[0] is not None  # the empty leftover
+        assert len(queue) == 0
+
+        start_request = Request(
+            "https://example.org/start", meta={"is_start_request": True}
+        )
+        queue.push(start_request)
+        assert len(queue) == 1
+        assert queue.peek().url == start_request.url
+        assert queue.pop().url == start_request.url
+        assert len(queue) == 0
+        assert queue.peek() is None
+        assert queue.pop() is None
+        queue.close()
+
+    def test_empty_queues_are_dropped_on_refresh(self):
+        """The empty leftover of a failed push is forgotten (and closed) the
+        next time the current priority is refreshed, rather than kept around
+        holding its storage open."""
+        temp_dir = tempfile.mkdtemp()
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler, PickleFifoDiskQueue, temp_dir
+        )
+        with pytest.raises(ValueError, match="is not an instance method"):
+            queue.push(
+                Request(
+                    "https://example.org/lambda",
+                    callback=cast("CallbackT", lambda response: None),
+                )
+            )
+        assert set(queue.queues) == {0}  # the empty leftover
+        # A request at a different priority, whose queue emptying is what
+        # triggers the refresh.
+        queue.push(Request("https://example.org/1", priority=1))
+        assert queue.pop().url == "https://example.org/1"
+        assert queue.queues == {}
+        assert queue.curprio is None
+        assert queue.pop() is None
+        assert not queue.close()
 
     def test_init_prios_with_start_queue(self):
         temp_dir = tempfile.mkdtemp()
@@ -351,11 +411,11 @@ def test_pop_order(input_, output):
 
 
 class TestThrottlerAwarePriorityQueue:
-    def _queue(self, crawler, key="", start_queue_cls=None):
+    def _queue(self, crawler, key="", start_queue_cls=None, downstream_queue_cls=None):
         return build_from_crawler(
             ThrottlerAwarePriorityQueue,
             crawler,
-            downstream_queue_cls=FifoMemoryQueue,
+            downstream_queue_cls=downstream_queue_cls or FifoMemoryQueue,
             key=key,
             start_queue_cls=start_queue_cls,
         )
@@ -363,6 +423,122 @@ class TestThrottlerAwarePriorityQueue:
     async def _push(self, queue, crawler, request):
         scope_set = frozenset(iter_scopes(await crawler.throttler.get_scopes(request)))
         queue.push(request, scope_set)
+
+    @staticmethod
+    def _assert_bands(queue):
+        """The band index must always match what a fresh scan would build: a
+        scope set filed in the wrong band, or in none, is one whose requests
+        _select() would never hand out."""
+        expected = {}
+        for scope_set, pqueue in queue.pqueues.items():
+            head = pqueue.peek()
+            if head is None:
+                continue
+            expected.setdefault(pqueue.priority(head), {})[scope_set] = None
+        assert queue._bands == expected
+        assert queue._band_of == {
+            scope_set: band
+            for band, members in expected.items()
+            for scope_set in members
+        }
+
+    @staticmethod
+    def _assert_optimal_selection(queue, throttler):
+        """Visiting candidates band by band, and stopping early, must still land
+        on a best ``(priority, load)`` candidate: the same one an exhaustive scan
+        of every pending scope set would settle for."""
+        best = None
+        for scope_set, pqueue in queue.pqueues.items():
+            head = pqueue.peek()
+            if head is None or not throttler.is_ready(head):
+                continue
+            load = max(
+                (throttler.get_scope_load(scope_id) for scope_id in scope_set),
+                default=0.0,
+            )
+            key = (pqueue.priority(head), load)
+            if best is None or key < best:
+                best = key
+        selected = queue._select()
+        if best is None:
+            assert selected is None
+            return
+        assert selected is not None
+        scope_set, pqueue = selected
+        head = pqueue.peek()
+        load = max(
+            (throttler.get_scope_load(scope_id) for scope_id in scope_set),
+            default=0.0,
+        )
+        assert (pqueue.priority(head), load) == best
+
+    @coroutine_test
+    async def test_band_index_tracks_every_push_and_pop(self):
+        # A randomized mix of priorities, scope sets and start requests, with
+        # pops interleaved and some requests left in flight so that scope loads
+        # vary, checking after every operation that the index is intact, that
+        # selection stays optimal, and that everything comes back out in the end.
+        random = Random(0)
+        crawler = get_crawler(Spider, {"THROTTLING_SCOPE_CONCURRENCY": 4})
+        throttler = crawler.throttler
+        queue = self._queue(crawler, start_queue_cls=FifoMemoryQueue)
+        pushed, popped, in_flight = [], [], []
+        for i in range(400):
+            roll = random.random()
+            if pushed and roll < 0.4:
+                request = queue.pop()
+                if request is not None:
+                    popped.append(request.url)
+                    # Hold some of them, so scopes sit at assorted loads and the
+                    # load tie-break gets exercised rather than always seeing 0.
+                    in_flight.append(request)
+            elif in_flight and roll < 0.5:
+                throttler.release(in_flight.pop(random.randrange(len(in_flight))))
+            else:
+                url = f"http://d{random.randrange(6)}.example.com/{i}"
+                pushed.append(url)
+                await self._push(
+                    queue,
+                    crawler,
+                    Request(
+                        url,
+                        priority=random.choice([-1, 0, 0, 0, 2]),
+                        meta={"is_start_request": random.random() < 0.3},
+                    ),
+                )
+            self._assert_bands(queue)
+            self._assert_optimal_selection(queue, throttler)
+        for request in in_flight:
+            throttler.release(request)
+        while (request := queue.pop()) is not None:
+            popped.append(request.url)
+            throttler.release(request)
+            self._assert_bands(queue)
+        assert sorted(popped) == sorted(pushed)
+        assert queue._bands == {}
+        assert queue._band_of == {}
+        queue.close()
+
+    @coroutine_test
+    async def test_band_index_ignores_a_queue_left_empty_by_a_failed_push(self):
+        # A push that fails to serialize leaves an empty queue behind; it has no
+        # head, so it belongs to no band and _select() passes over it.
+        crawler = get_crawler(Spider)
+        temp_dir = tempfile.mkdtemp()
+        queue = self._queue(
+            crawler, key=temp_dir, downstream_queue_cls=PickleFifoDiskQueue
+        )
+        with pytest.raises(ValueError, match="is not an instance method"):
+            await self._push(
+                queue,
+                crawler,
+                Request("http://a.com/1", callback=cast("CallbackT", lambda r: None)),
+            )
+        assert queue.pqueues  # the empty leftover
+        assert queue._bands == {}
+        assert queue.pop() is None
+        self._assert_bands(queue)
+        queue.close()
 
     @coroutine_test
     async def test_partitions_by_scope_set(self):
@@ -517,7 +693,9 @@ class TestThrottlerAwarePriorityQueue:
     async def test_delayed_unserializable_request_dropped(self, caplog):
         # A held-back request defers disk serialization until it is promoted; a
         # non-serializable one is dropped with a warning and a stat bump instead
-        # of taking the disk queue down.
+        # of taking the disk queue down. Dropping is the standalone behavior:
+        # under a scheduler it goes to on_unstorable instead (see
+        # test_delayed_unserializable_falls_back_to_memory).
         crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
         temp_dir = tempfile.mkdtemp()
         queue = build_from_crawler(
@@ -547,7 +725,8 @@ class TestThrottlerAwarePriorityQueue:
     async def test_delayed_unserializable_request_dropped_without_stats(
         self, caplog, monkeypatch
     ):
-        # Same as above, but without a stats collector to count the drop.
+        # Same as above (no fallback set), but without a stats collector to
+        # count the drop.
         crawler = get_crawler(Spider, settings_dict={"RANDOMIZE_DOWNLOAD_DELAY": False})
         temp_dir = tempfile.mkdtemp()
         queue = build_from_crawler(

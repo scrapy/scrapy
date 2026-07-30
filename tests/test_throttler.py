@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import warnings
+from collections import ChainMap
 from typing import TYPE_CHECKING, Any, cast
 from weakref import WeakSet
 
@@ -1224,6 +1225,36 @@ class TestThrottlerReadiness:
         assert manager.is_ready(request) is True
 
     @coroutine_test
+    async def test_readiness_creates_no_scope_managers(self):
+        """A throttler-aware scheduler asks about every queued scope set on
+        every dequeue, which on a broad crawl means every pending domain, so
+        merely considering a scope must not build (or LRU-touch) its manager: a
+        scope with no manager has no state to hold anything back with."""
+        manager = _manager(
+            {
+                "THROTTLING_SCOPES": {
+                    "example.com": {"concurrency": 1, "delay": 100.0, "quota": 1.0}
+                },
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+            }
+        )
+        request = Request("http://example.com/1")
+        await manager.get_scopes(request)
+        assert manager.is_ready(request) is True
+        assert manager.get_time_until_ready(request) is None
+        assert manager.get_scope_load("example.com") == 0.0
+        assert not manager._scope_managers
+
+        # Actually using the scope is what creates it, and from then on its state
+        # is what the same calls read.
+        manager.reserve(request)
+        assert set(manager._scope_managers) == {"example.com"}
+        other = Request("http://example.com/2")
+        await manager.get_scopes(other)
+        assert manager.is_ready(other) is False
+        assert manager.get_time_until_ready(other) == pytest.approx(100.0, abs=1.0)
+
+    @coroutine_test
     async def test_reserve_blocks_scope_by_base_delay(self):
         manager = _manager(
             {
@@ -1654,6 +1685,26 @@ class TestThrottlingScopeManagerEdges:
         assert scope._base_delay == 0.5
         assert scope._delay == backoff_delay
 
+    def test_set_base_delay_above_the_backoff_delay(self):
+        # A base delay raised past the current backoff delay takes over: leaving
+        # the delay below the base would apply neither value, since recovery also
+        # gives up once the delay is within the base.
+        scope = _scope_manager(
+            {"DOWNLOAD_DELAY": 1.0, "RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x"}
+        )
+        scope.record_backoff(now=0.0)
+        assert scope._delay == pytest.approx(2.0)
+        scope.set_base_delay(20.0, only_increase=False)
+        assert scope._base_delay == pytest.approx(20.0)
+        assert scope._delay == pytest.approx(20.0)
+        # It is the delay the next send is spaced by...
+        scope.record_sent(now=100.0)
+        assert scope.can_send(now=100.0) == pytest.approx(20.0)
+        # ...and it stays there: there is no backoff left above the base to
+        # recover from.
+        scope.can_send(now=10_000.0)
+        assert scope._delay == pytest.approx(20.0)
+
     def test_record_sent_clears_expired_backoff(self):
         scope = _scope_manager(config={"id": "x"})
         scope.record_backoff(delay=5.0, now=0.0)
@@ -1753,7 +1804,7 @@ class TestConcurrencyBridging:
         settings = self._settings(scope=100)
         settings.set("CONCURRENT_REQUESTS", 16, priority="spider")
         with caplog.at_level(logging.WARNING):
-            _warn_on_unachievable_concurrency(settings)
+            _warn_on_unachievable_concurrency(settings, {})
         assert "THROTTLING_SCOPE_CONCURRENCY=100" in caplog.text
 
     def test_no_unachievable_concurrency_warning_without_a_global_limit(self, caplog):
@@ -1762,7 +1813,7 @@ class TestConcurrencyBridging:
         settings = self._settings(scope=100)
         settings.set("CONCURRENT_REQUESTS", 0, priority="spider")
         with caplog.at_level(logging.WARNING):
-            _warn_on_unachievable_concurrency(settings)
+            _warn_on_unachievable_concurrency(settings, {"a": {"concurrency": 100}})
         assert not caplog.text
 
     def test_unachievable_concurrency_warning_ignores_the_overridden_setting(
@@ -1775,7 +1826,7 @@ class TestConcurrencyBridging:
         settings.set("CONCURRENT_REQUESTS", 4, priority="spider")
         assert settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN") == 8
         with caplog.at_level(logging.WARNING):
-            _warn_on_unachievable_concurrency(settings)
+            _warn_on_unachievable_concurrency(settings, {})
         assert not caplog.text
 
     def test_unachievable_concurrency_warning_names_the_effective_setting(self, caplog):
@@ -1784,9 +1835,21 @@ class TestConcurrencyBridging:
         settings = self._settings(per_domain=100)
         settings.set("CONCURRENT_REQUESTS", 16, priority="spider")
         with caplog.at_level(logging.WARNING):
-            _warn_on_unachievable_concurrency(settings)
+            _warn_on_unachievable_concurrency(settings, {})
         assert "CONCURRENT_REQUESTS_PER_DOMAIN=100" in caplog.text
         assert "THROTTLING_SCOPE_CONCURRENCY" not in caplog.text
+
+    def test_unachievable_scope_concurrency_warning(self, caplog):
+        # The merged per-scope configuration is what is reported, so a limit
+        # coming from the deprecated DOWNLOAD_SLOTS setting is covered too.
+        settings = Settings()
+        settings.set("CONCURRENT_REQUESTS", 4, priority="spider")
+        settings.set("DOWNLOAD_SLOTS", {"a": {"concurrency": 50}}, priority="spider")
+        with caplog.at_level(logging.WARNING):
+            _warn_on_unachievable_concurrency(
+                settings, Throttler._merge_download_slots(settings)
+            )
+        assert "the concurrency of throttling scope 'a'=50" in caplog.text
 
 
 class TestScopeConcurrencyValidation:
@@ -1826,6 +1889,25 @@ class TestScopeConcurrencyValidation:
     def test_accepts_one(self):
         manager = _manager({"THROTTLING_SCOPE_CONCURRENCY": 1})
         assert _scope(manager, "example.com")._concurrency == 1
+
+
+class TestScopeConfigValidation:
+    @pytest.mark.parametrize("setting", ["THROTTLING_SCOPES", "DOWNLOAD_SLOTS"])
+    @pytest.mark.parametrize("config", [1, "concurrency=1", ["concurrency", 1], None])
+    def test_rejects_a_non_mapping_entry(self, setting, config):
+        # Every reader of these settings expects a mapping per scope, so a
+        # malformed entry is named here instead of failing deeper in.
+        with pytest.raises(
+            TypeError,
+            match=rf"{setting}\['example\.com'\] must be a mapping",
+        ):
+            _manager({setting: {"example.com": config}})
+
+    def test_accepts_any_mapping(self):
+        manager = _manager(
+            {"THROTTLING_SCOPES": {"example.com": ChainMap({"delay": 2.0})}}
+        )
+        assert _scope(manager, "example.com").get_base_delay() == 2.0
 
 
 class _SharedPrerequisiteMiddleware:
