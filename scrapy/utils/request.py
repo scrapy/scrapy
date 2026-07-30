@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import shlex
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
@@ -231,15 +232,16 @@ def request_to_curl(request: Request) -> str:
     :param request: Request object to be converted
     :return: string containing the curl command
     """
-    method = request.method
+    args: list[str] = ["curl", "-X", request.method, request.url]
 
-    data = f"--data-raw '{request.body.decode('utf-8')}'" if request.body else ""
+    if request.body:
+        args += ["--data-raw", request.body.decode("utf-8")]
 
-    headers = " ".join(
-        f"-H '{k.decode()}: {v[0].decode()}'" for k, v in request.headers.items()
-    )
-
-    url = request.url
+    args += [
+        arg
+        for k, v in request.headers.items()
+        for arg in ("-H", f"{k.decode()}: {v[0].decode()}")
+    ]
 
     cookie_list: list[VerboseCookie] = _to_verbose_cookies(request.cookies)
     pairs = [
@@ -247,7 +249,10 @@ def request_to_curl(request: Request) -> str:
         for c in cookie_list
         if (decoded := _decode_cookie(c, request)) is not None
     ]
-    cookies = f"--cookie '{'; '.join(pairs)}'" if pairs else ""
+    if pairs:
+        args += ["--cookie", "; ".join(pairs)]
 
-    curl_cmd = f"curl -X {method} {url} {data} {headers} {cookies}".strip()
-    return " ".join(curl_cmd.split())
+    # shlex.join is the inverse of the shlex.split that curl_to_request_kwargs
+    # uses, so values keep any quotes, whitespace and shell metacharacters they
+    # contain instead of splitting the command or silently changing the value.
+    return shlex.join(args)

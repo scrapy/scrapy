@@ -417,7 +417,7 @@ class TestRequestToCurl:
         )
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
-            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+            ' --data-raw \'{"foo": "bar"}\' --cookie foo=bar'
         )
         self._test_request(request_object, expected_curl_command)
 
@@ -430,7 +430,7 @@ class TestRequestToCurl:
         )
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
-            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+            ' --data-raw \'{"foo": "bar"}\' --cookie foo=bar'
         )
         self._test_request(request_object, expected_curl_command)
 
@@ -451,7 +451,7 @@ class TestRequestToCurl:
         )
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
-            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+            ' --data-raw \'{"foo": "bar"}\' --cookie foo=bar'
         )
         self._test_request(request_object, expected_curl_command)
 
@@ -472,9 +472,65 @@ class TestRequestToCurl:
         )
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
-            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=1'"
+            ' --data-raw \'{"foo": "bar"}\' --cookie foo=1'
         )
         self._test_request(request_object, expected_curl_command)
+
+    def test_url_with_two_query_parameters(self) -> None:
+        # An unquoted & ends the command in a shell: everything after it is
+        # parsed as a separate command.
+        request_object = Request("https://www.example.com/?a=1&b=2")
+        expected_curl_command = "curl -X GET 'https://www.example.com/?a=1&b=2'"
+        self._test_request(request_object, expected_curl_command)
+
+    def test_body_keeps_whitespace(self) -> None:
+        request_object = Request(
+            "https://www.example.com",
+            method="POST",
+            body='{"a":  "b  c"}',
+        )
+        expected_curl_command = (
+            'curl -X POST https://www.example.com --data-raw \'{"a":  "b  c"}\''
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_body_keeps_newlines(self) -> None:
+        request_object = Request(
+            "https://www.example.com", method="POST", body="line1\nline2"
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.example.com --data-raw 'line1\nline2'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_body_with_single_quote(self) -> None:
+        request_object = Request("https://www.example.com", method="POST", body="it's")
+        expected_curl_command = (
+            "curl -X POST https://www.example.com --data-raw 'it'\"'\"'s'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_header_keeps_whitespace(self) -> None:
+        request_object = Request("https://www.example.com", headers={"X-Note": "a  b"})
+        expected_curl_command = "curl -X GET https://www.example.com -H 'X-Note: a  b'"
+        self._test_request(request_object, expected_curl_command)
+
+    @pytest.mark.parametrize(
+        "request_object",
+        [
+            Request("https://www.example.com/?a=1&b=2"),
+            Request("https://www.example.com", method="POST", body='{"a":  "b  c"}'),
+            Request("https://www.example.com", method="POST", body="line1\nline2"),
+            Request("https://www.example.com", method="POST", body="it's"),
+            Request("https://www.example.com", headers={"X-Note": "a  b"}),
+        ],
+    )
+    def test_round_trip(self, request_object: Request) -> None:
+        # to_curl documents itself as the inverse of from_curl.
+        parsed = Request.from_curl(request_object.to_curl())
+        assert parsed.url == request_object.url
+        assert parsed.method == request_object.method
+        assert parsed.body == request_object.body
 
     def test_request_to_curl_method(self) -> None:
         request_object = Request(
