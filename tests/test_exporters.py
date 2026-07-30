@@ -36,6 +36,10 @@ class MyItem(Item):
     age = Field()
 
 
+class ItemWithSerializer(Item):
+    a = Field(serializer=str.upper)
+
+
 class CustomFieldItem(Item):
     name = Field()
     age = Field(serializer=custom_serializer)
@@ -105,6 +109,11 @@ class TestBaseItemExporter(ABC):
 
         res = self.ie.serialize_field(a.get_field_meta("age"), "age", a["age"])
         assert res == "22"
+
+    def test_serialize_nested_items(self):
+        i = MyItem(name=ItemWithSerializer(a="asdf"), age=42)
+        res = self.ie._serialize_nested_items(i, None, None)["name"]["a"]
+        assert res == "ASDF"
 
     def test_fields_to_export(self):
         ie = self._get_exporter(fields_to_export=["name"])
