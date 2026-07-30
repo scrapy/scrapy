@@ -1396,9 +1396,10 @@ class TestFeedMode:
     async def test_create_existing(self, caplog: pytest.LogCaptureFixture) -> None:
         path = self._path(b"old content")
         with caplog.at_level(logging.ERROR):
-            crawler = await self._crawl(path, "create")
+            crawler = await self._crawl(path, "create", item_count=3)
         assert path.read_bytes() == b"old content"
-        assert "because it already exists" in caplog.text
+        # Reported once, not once per item.
+        assert caplog.text.count("because it already exists") == 1
         assert crawler.stats
         stats = crawler.stats.get_stats()
         assert stats.get("feedexport/conflicts/FileFeedStorage") == 1

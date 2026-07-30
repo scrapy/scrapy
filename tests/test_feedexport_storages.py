@@ -523,6 +523,25 @@ class TestS3FeedStorage:
         with pytest.raises(FileExistsError):
             await maybe_deferred_to_future(stored)
 
+    @coroutine_test
+    async def test_store_create_error(self) -> None:
+        from botocore.exceptions import ClientError  # noqa: PLC0415
+
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            feed_options={"mode": "create"},
+        )
+        storage.s3_client = mock.MagicMock()
+        storage.s3_client.put_object.side_effect = ClientError(
+            {"Error": {"Code": "AccessDenied"}}, "PutObject"
+        )
+        stored = storage.store(BytesIO(b"test file"))
+        assert stored is not None
+        with pytest.raises(ClientError):
+            await maybe_deferred_to_future(stored)
+
 
 class TestGCSFeedStorage:
     def test_parse_settings(self):
