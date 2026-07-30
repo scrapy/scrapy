@@ -24,6 +24,7 @@ from scrapy.extensions.feedexport import (
     FeedExporter,
     FeedSlot,
     FileFeedStorage,
+    ItemFilter,
     apply_uri_params,
 )
 from scrapy.utils.python import to_unicode
@@ -1289,6 +1290,13 @@ class TestFeedExporterSignals:
         assert self.feed_exporter_closed_received
 
 
+class TestItemFilter:
+    def test_no_feed_options(self):
+        item_filter = ItemFilter(None)
+        assert item_filter.item_classes == ()
+        assert item_filter.accepts(MyItem({"foo": "bar"}))
+
+
 class TestFeedExportInit:
     def test_unsupported_storage(self):
         settings = {
@@ -1299,6 +1307,24 @@ class TestFeedExportInit:
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
             FeedExporter.from_crawler(crawler)
+
+    def test_disabled_storage(self, caplog: pytest.LogCaptureFixture):
+        class DisabledFeedStorage:
+            def __init__(self, uri, *, feed_options=None):
+                raise NotConfigured("not today")
+
+        settings = {
+            "FEED_STORAGES": {"disabled": DisabledFeedStorage},
+            "FEEDS": {
+                "disabled://uri": {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        with caplog.at_level(logging.ERROR), pytest.raises(NotConfigured):
+            FeedExporter.from_crawler(crawler)
+        assert (
+            "Disabled feed storage scheme: disabled. Reason: not today" in caplog.text
+        )
 
     def test_unsupported_format(self):
         settings = {

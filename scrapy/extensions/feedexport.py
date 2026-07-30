@@ -465,7 +465,7 @@ class FeedSlot:
         )
 
     def finish_exporting(self) -> None:
-        if self._exporting:
+        if self._exporting:  # pragma: no branch
             assert self.exporter
             self.exporter.finish_exporting()
             self._exporting = False
@@ -553,7 +553,7 @@ class FeedExporter:
         for slot in self.slots:
             self._schedule_slot_close(slot, spider)
 
-        if self._pending_close_tasks:
+        if self._pending_close_tasks:  # pragma: no branch
             if is_asyncio_available():
                 await asyncio.wait(
                     cast("list[asyncio.Task[None]]", list(self._pending_close_tasks))
