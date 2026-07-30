@@ -533,8 +533,7 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * if possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
   directly
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
-  super proxy that you can attach your own proxies to.
+  services like `ProxyMesh`_.
 * for HTTPS websites, if blocking appears related to TLS behavior, consider
   adjusting the :setting:`DOWNLOAD_TLS_MIN_VERSION` and
   :setting:`DOWNLOAD_TLS_MAX_VERSION` settings, since some websites may respond
@@ -559,5 +558,4 @@ projects that detects common mistakes and anti-patterns.
 .. _ProxyMesh: https://proxymesh.com/
 .. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _scrapoxy: https://scrapoxy.io/
 .. _Zyte API: https://docs.zyte.com/zyte-api/get-started.html
