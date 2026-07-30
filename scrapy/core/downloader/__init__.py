@@ -372,9 +372,10 @@ class Downloader:
 
         Requests coming from the scheduler are kept under that limit by the
         engine, which stops dequeuing them (see
-        :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`), but
-        requests sent outside the scheduling cycle
-        never went through the scheduler, so this is what limits them.
+        :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`), but requests
+        sent through :meth:`crawler.engine.download_async()
+        <scrapy.core.engine.ExecutionEngine.download_async>` never went through
+        the scheduler, so this is what limits them.
 
         A download handler slot is only held while a download handler is working
         on a request, and such a request completes on its own. So a request that
@@ -415,9 +416,10 @@ class Downloader:
         open, so that the caller can hand the request over against exactly the
         state that was checked.
         """
-        # Tracked for the whole wait, so that a request waiting at either gate
-        # does not read as being in the downloader middlewares and get its
-        # concurrency slot lent away; see _in_downloader_middlewares().
+        # Tracked for the whole wait, whichever of the two it ends up waiting on,
+        # so that the request does not read as being in the downloader
+        # middlewares and get its concurrency slot lent away; see
+        # _in_downloader_middlewares().
         self._awaiting_download_handler.add(request)
         try:
             while True:

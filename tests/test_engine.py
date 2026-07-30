@@ -259,7 +259,7 @@ class TestEngineThrottler:
         engine._slot = Mock()
         engine.pause()
         # Pausing stops the loop from re-running itself, so unpausing must kick
-        # it, or a crawl held only by a time-based gate would stall.
+        # it, or a crawl held only by a time-based limit would stall.
         engine.unpause()
         engine._slot.nextcall.schedule.assert_called_once_with()
 
@@ -320,17 +320,17 @@ class TestEngineThrottler:
         assert engine._throttler_backout_warned is False
         assert "ThrottlerAwareScheduler" not in caplog.text
 
-    def test_maybe_warn_throttler_backout_off_cycle_only(self, engine, caplog):
-        # Requests sent outside the scheduling cycle never went through the
-        # scheduler, so no scheduler can hold them back and recommending a
-        # different one would be misleading.
+    def test_maybe_warn_throttler_backout_unscheduled_only(self, engine, caplog):
+        # Unscheduled requests never went through the scheduler, so no
+        # scheduler can hold them back and recommending a different one would be
+        # misleading.
         engine._get_next_request_delay = None
         engine._throttler_waiting = {Request("http://a.example"): True}
         with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
             engine._maybe_warn_throttler_backout()
         assert engine._throttler_backout_warned is False
         assert "ThrottlerAwareScheduler" not in caplog.text
-        # One request from the scheduling cycle among them is enough to warn.
+        # One request from the scheduler among them is enough to warn.
         engine._throttler_waiting[Request("http://b.example")] = False
         with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
             engine._maybe_warn_throttler_backout()

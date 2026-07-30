@@ -185,7 +185,7 @@ async def test_a_request_queued_for_a_download_handler_lends_nothing():
 
     # A prerequisite of the same scope finds nothing to borrow.
     prerequisite = Request("https://a.example/robots.txt")
-    blocked = deferred_from_coro(throttler.acquire(prerequisite, off_cycle=True))
+    blocked = deferred_from_coro(throttler.acquire(prerequisite, unscheduled=True))
     for _ in range(10):
         await async_sleep(0)
     assert not blocked.called
@@ -204,7 +204,7 @@ async def test_a_request_queued_for_a_download_handler_lends_nothing():
 async def test_a_lender_waits_for_its_loan_before_reaching_a_download_handler():
     """A slot lent to a prerequisite is lent by a request that is not using the
     network, but nothing stops that request from reaching a download handler
-    again while the borrower is still in one. The download handler gate does: a
+    again while the borrower is still in one. The download handler check does: a
     scope never has more requests in a handler at once than its concurrency
     allows."""
     crawler = get_crawler(
@@ -228,7 +228,7 @@ async def test_a_lender_waits_for_its_loan_before_reaching_a_download_handler():
 
     # Its unused slot goes to a prerequisite, which reaches the network.
     borrower = Request("https://a.example/robots.txt")
-    await throttler.acquire(borrower, off_cycle=True)
+    await throttler.acquire(borrower, unscheduled=True)
     assert crawler.stats
     assert crawler.stats.get_value("throttler/borrowed_slots") == 1
     downloader.active.add(borrower)
@@ -272,11 +272,11 @@ async def test_download_handler_gate_ignores_unthrottled_requests():
     downloader.close()
 
 
-class OffCycleFloodSpider(MetaSpider):
-    """Send many requests outside the scheduling cycle at once, like a media
-    pipeline does for the files of an item."""
+class UnscheduledFloodSpider(MetaSpider):
+    """Send many requests without going through the scheduler at once, like a
+    media pipeline does for the files of an item."""
 
-    name = "off_cycle_flood"
+    name = "unscheduled_flood"
     request_count = 8
 
     custom_settings = {
@@ -322,17 +322,17 @@ class OffCycleFloodSpider(MetaSpider):
 
 @pytest.mark.only_asyncio
 @coroutine_test
-async def test_off_cycle_requests_are_bound_by_concurrent_requests():
+async def test_unscheduled_requests_are_bound_by_concurrent_requests():
     with MockServer() as mockserver:
-        crawler = get_crawler(OffCycleFloodSpider)
+        crawler = get_crawler(UnscheduledFloodSpider)
         await crawler.crawl_async(mockserver=mockserver)
     assert crawler.stats
     # Every request went out, but never more than CONCURRENT_REQUESTS at a time.
     assert (
         crawler.stats.get_value("downloader/request_count")
-        == OffCycleFloodSpider.request_count + 1
+        == UnscheduledFloodSpider.request_count + 1
     )
-    assert OffCycleFloodSpider.peak_in_download_handler == 2
+    assert UnscheduledFloodSpider.peak_in_download_handler == 2
 
 
 @coroutine_test
@@ -368,7 +368,7 @@ async def test_unlimited_concurrent_requests():
         pytest.param({}, id="default_scheduler"),
         # A throttler-aware scheduler holds a request back through
         # Throttler.is_ready() instead of inside Throttler.acquire(), which is a
-        # separate gate that must let the robots.txt request through just the
+        # separate path that must let the robots.txt request through just the
         # same.
         pytest.param(
             {
@@ -481,8 +481,8 @@ async def test_acquire_download_handler_slot_after_close():
     downloader = Downloader(crawler)
     downloader._in_download_handler.add(Request("https://example.com/1"))
     downloader.close()
-    # A closed downloader does not hold anything back at the download handler
-    # gate.
+    # A closed downloader does not hold anything back before a download
+    # handler.
     await downloader._acquire_download_handler_slot()
 
 

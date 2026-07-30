@@ -133,7 +133,8 @@ class ExecutionEngine:
         ) = None
         # Requests currently held by the throttler, waiting for their
         # scopes to allow them through to the downloader, mapped to whether they
-        # were sent outside the scheduling cycle (see _maybe_warn_throttler_backout).
+        # were sent without going through the scheduler (see
+        # _maybe_warn_throttler_backout).
         self._throttler_waiting: dict[Request, bool] = {}
         # In-flight asynchronous enqueue operations (see
         # ``_enqueue_request_async``), so the spider is not considered idle while
@@ -291,7 +292,7 @@ class ExecutionEngine:
         self.paused = False
         # pause() cancels the coalesced delay wakeup and the loop stops
         # re-running itself while paused, so re-run it here: this re-arms the
-        # wakeup and keeps a crawl held only by a time-based gate (nothing in
+        # wakeup and keeps a crawl held only by a time-based limit (nothing in
         # flight to re-run the loop from _download) from stalling.
         if self._slot is not None:
             self._slot.nextcall.schedule()
@@ -383,13 +384,13 @@ class ExecutionEngine:
 
         Concurrency-blocked states do not need this: a freed slot already
         re-runs the loop from :meth:`_download`'s ``finally``. Only time-based
-        gates (delay, backoff, quota windows) need a timer, since nothing else
-        would re-run the loop while they are closed.
+        limits (delay, backoff, quota windows) need a timer, since nothing else
+        would re-run the loop while they hold requests back.
         """
         assert self._slot is not None
         if self._get_next_request_delay is None:
             return
-        # A positive delay means a time-based gate nothing else would wake us
+        # A positive delay means a time-based limit nothing else would wake us
         # for. ``None`` (nothing time-blocked, which includes nothing pending)
         # and ``0`` (something is ready but could not be sent, e.g. the
         # downloader is full) are handled elsewhere: a freed slot re-runs the
@@ -446,9 +447,9 @@ class ExecutionEngine:
         # engine here, so the warning does not apply when one is in use.
         if self._get_next_request_delay is not None:
             return
-        # Nor does it apply while only requests sent outside the scheduling cycle
-        # are waiting: those never went through the scheduler, so no scheduler
-        # can hold them back instead.
+        # Nor does it apply while only unscheduled requests are waiting: those
+        # never went through the scheduler, so no scheduler can hold them back
+        # instead.
         if all(self._throttler_waiting.values()):
             return
         self._throttler_backout_warned = True
@@ -611,9 +612,9 @@ class ExecutionEngine:
         while True:
             try:
                 response_or_request = await maybe_deferred_to_future(
-                    # This is the only way to download a request outside the
-                    # scheduling cycle, so anything that gets here is off-cycle.
-                    self._download(request, off_cycle=True)
+                    # This is the only way to download a request without going
+                    # through the scheduler.
+                    self._download(request, unscheduled=True)
                 )
             finally:
                 assert self._slot is not None
@@ -624,21 +625,23 @@ class ExecutionEngine:
 
     @inlineCallbacks
     def _acquire_throttler(
-        self, request: Request, off_cycle: bool
+        self, request: Request, unscheduled: bool
     ) -> Generator[Deferred[Any], Any, None]:
-        """Wait at the throttling gate before *request* is sent, tracking it as
+        """Wait for the throttler to allow *request* to be sent, tracking it as
         held meanwhile."""
-        self._throttler_waiting[request] = off_cycle
+        self._throttler_waiting[request] = unscheduled
         throttler = self.crawler.throttler
         assert throttler is not None
         try:
-            yield deferred_from_coro(throttler.acquire(request, off_cycle=off_cycle))
+            yield deferred_from_coro(
+                throttler.acquire(request, unscheduled=unscheduled)
+            )
         finally:
             self._throttler_waiting.pop(request, None)
 
     @inlineCallbacks
     def _download(
-        self, request: Request, off_cycle: bool = False
+        self, request: Request, unscheduled: bool = False
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         assert self._slot is not None  # typing
         assert self.spider is not None
@@ -650,7 +653,7 @@ class ExecutionEngine:
         # try/finally that releases it, even if add_request() were to raise.
         try:
             self._slot.add_request(request)
-            yield self._acquire_throttler(request, off_cycle)
+            yield self._acquire_throttler(request, unscheduled)
             result: Response | Request
             if self._downloader_fetch_needs_spider:
                 result = yield self.downloader.fetch(request, self.spider)

@@ -125,7 +125,7 @@ class TestProcessResponse:
         assert calls == []
 
     def test_dont_throttle_still_backs_off(self):
-        # dont_throttle exempts a request from the throttling gate, not from
+        # dont_throttle exempts a request from throttling, not from
         # reporting what the server answered.
         mw = _middleware()
         calls = _spy_back_off(mw)

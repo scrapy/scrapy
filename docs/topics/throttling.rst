@@ -339,8 +339,7 @@ regardless of its scopes, set the ``delay`` request metadata key:
 
     Request("https://example.com/slow", meta={"delay": 5.0})
 
-The delay is applied once, the first time the request reaches the throttling
-gate.
+The delay is applied once, the first time the request is throttled.
 
 ``delay`` defines only the *earliest* time the request may be sent,
 not the exact time: once the delay elapses, the request still competes with
@@ -356,7 +355,7 @@ could keep it waiting well past the configured delay; a higher priority puts it
 at the front of the queue, so it goes out right after its delay.
 
 .. note:: Under the default scheduler a delayed request occupies a concurrency
-    slot for the whole delay while it waits at the throttling gate. The
+    slot for the whole delay while the throttler holds it back. The
     :ref:`throttling-aware scheduler <throttler-aware-scheduler>` instead holds
     it back in the queue, so its delay costs no concurrency slot.
 

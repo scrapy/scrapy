@@ -96,8 +96,8 @@ ScopeQuotas = dict[ScopeID, QuotaAmount | None]
 JitterRange = tuple[float, float]  # (low, high) multiplier range
 RequestScopes = None | ScopeID | Iterable[ScopeID] | ScopeQuotas
 if TYPE_CHECKING:
-    # A scope of a request at the throttling gate: its ID, its manager, and the
-    # quota amount the request consumes from it.
+    # A scope of a request being throttled: its ID, its manager, and the quota
+    # amount the request consumes from it.
     ScopeSlot = tuple[ScopeID, "ThrottlingScopeManagerProtocol", QuotaAmount | None]
 
 
@@ -390,18 +390,17 @@ class ThrottlerProtocol(Protocol):
         a spider callback that wants to :meth:`back_off` based on the response.
         """
 
-    async def acquire(self, request: Request, *, off_cycle: bool = False) -> None:
+    async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
         """Block until *request* is allowed to be sent by all of its scopes.
 
-        This is the throttling gate that the engine awaits before releasing a
-        request to the downloader.
+        The engine awaits this before handing a request to the downloader.
 
-        *off_cycle* tells whether *request* was sent outside the scheduling
-        cycle, i.e. through :meth:`crawler.engine.download_async()
-        <scrapy.core.engine.ExecutionEngine.download_async>` instead of coming
-        from the scheduler. Such a request may be a prerequisite of a request
-        that is holding a concurrency slot of the same scope while it waits for
-        it — a downloader middleware downloading something from
+        *unscheduled* tells whether *request* was sent without going through the
+        scheduler, i.e. through :meth:`crawler.engine.download_async()
+        <scrapy.core.engine.ExecutionEngine.download_async>`. Such a request may
+        be a prerequisite of a request that is holding a concurrency slot of the
+        same scope while it waits for it — a downloader middleware downloading
+        something from
         :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
         or
         :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`,
@@ -432,7 +431,7 @@ class ThrottlerProtocol(Protocol):
         downloader, and it keeps that slot for as long as the downloader
         middlewares process it, network or no network. This is what the
         downloader asks, just before handing *request* to a download handler, to
-        keep the leeway that buys (see the *off_cycle* argument of
+        keep the leeway that buys (see the *unscheduled* argument of
         :meth:`acquire`) from letting a scope exceed its concurrency where it
         counts. An implementation that hands out no such leeway can always return
         ``False``.
@@ -444,8 +443,8 @@ class ThrottlerProtocol(Protocol):
 
     def is_ready(self, request: Request) -> bool:
         """Return whether every scope of *request* allows it to be sent right
-        now, i.e. all time-based gates (delay, backoff, quota window) are open
-        *and* a concurrency slot is free in every scope.
+        now, i.e. every time-based limit (delay, backoff, quota window) has
+        elapsed *and* a concurrency slot is free in every scope.
 
         This is the synchronous, non-blocking counterpart of :meth:`acquire`,
         used by a :ref:`throttler-aware scheduler
@@ -454,8 +453,8 @@ class ThrottlerProtocol(Protocol):
         resolved (e.g. by an earlier :meth:`get_scopes` call at enqueue time).
 
         It also returns ``False`` when a free slot of one of the scopes of
-        *request* is claimed by an off-cycle request waiting at the gate, which
-        gets it first.
+        *request* is claimed by an unscheduled request waiting in
+        :meth:`acquire`, which gets it first.
         """
 
     def reserve(self, request: Request) -> None:
@@ -469,9 +468,9 @@ class ThrottlerProtocol(Protocol):
         """
 
     def get_time_until_ready(self, request: Request) -> float | None:
-        """Return the number of seconds until every time-based gate of
-        *request* would be open, or ``None`` if no time-based gate is currently
-        blocking it (only a concurrency slot could be).
+        """Return the number of seconds until every time-based limit of
+        *request* would have elapsed, or ``None`` if no time-based limit is
+        currently blocking it (only a concurrency slot could be).
 
         Used by a :ref:`throttler-aware scheduler
         <throttler-aware-scheduler>` to schedule a wakeup when all pending
@@ -494,7 +493,7 @@ class ThrottlerProtocol(Protocol):
         active sends divided by its concurrency limit.
 
         It can exceed ``1.0``: a scope may lend an unused slot to a request sent
-        outside the scheduling cycle (see the *off_cycle* argument of
+        without going through the scheduler (see the *unscheduled* argument of
         :meth:`acquire`), which makes its outstanding sends outnumber its
         concurrency until the borrowers drain.
 
@@ -543,7 +542,7 @@ class ThrottlerProtocol(Protocol):
 
         A backoff step is always applied to the scope's delay.
         When *delay* is given, the scope is *additionally* held back for at
-        least *delay* seconds before its next request: a one-time gate (e.g.
+        least *delay* seconds before its next request: a one-time hold (e.g.
         from a :ref:`Retry-After <retry-after>` header), not a change to the
         steady-state delay. *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`;
         set it to ``False`` for trusted, programmatic delays.
@@ -704,12 +703,12 @@ class Throttler:
         )
         # Requests holding a reserved slot of each scope, i.e. the reverse of
         # _reserved, used to tell whether a scope can lend a slot to an
-        # off-cycle request (see _can_lend_slot).
+        # unscheduled request (see _can_lend_slot).
         self._scope_holders: dict[ScopeID, WeakSet[Request]] = {}
-        # Off-cycle requests currently waiting at the gate, by scope, so that a
-        # slot freed in one of those scopes goes to them before it goes to the
-        # scheduler (see _off_cycle_claims).
-        self._off_cycle_waiters: dict[ScopeID, WeakSet[Request]] = {}
+        # Unscheduled requests currently waiting in acquire(), by scope, so that
+        # a slot freed in one of those scopes goes to them before it goes to a
+        # request from the scheduler (see _unscheduled_claims).
+        self._unscheduled_waiters: dict[ScopeID, WeakSet[Request]] = {}
 
     @staticmethod
     def _merge_download_slots(settings: BaseSettings) -> dict[str, dict[str, Any]]:
@@ -933,7 +932,7 @@ class Throttler:
         for scope_id in evictable:
             del self._scope_managers[scope_id]
 
-    async def acquire(self, request: Request, *, off_cycle: bool = False) -> None:
+    async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
         # A throttler-aware scheduler reserves the request before handing it
         # to the engine, so there is nothing left to wait for or record here.
         if request in self._reserved:
@@ -949,34 +948,34 @@ class Throttler:
             return
         if not scope_values:
             return
-        if not off_cycle:
-            await self._wait_at_gate(request, scope_values, off_cycle=False)
+        if not unscheduled:
+            await self._acquire_scope_slots(request, scope_values, unscheduled=False)
             return
         # A registration here holds back is_ready() for the whole scope (see
-        # _off_cycle_claims), so one that outlived its wait would stall a
+        # _unscheduled_claims), so one that outlived its wait would stall a
         # throttler-aware scheduler for good. The finally below is what rules
         # that out, and it covers every way this coroutine can end: returning,
         # raising, being cancelled (which throws into the await), and being
         # abandoned (garbage-collecting a started coroutine closes it, which
         # throws GeneratorExit into the await).
         for scope_id, _ in scope_values:
-            self._off_cycle_waiters.setdefault(scope_id, WeakSet()).add(request)
+            self._unscheduled_waiters.setdefault(scope_id, WeakSet()).add(request)
         try:
-            await self._wait_at_gate(request, scope_values, off_cycle=True)
+            await self._acquire_scope_slots(request, scope_values, unscheduled=True)
         finally:
             for scope_id, _ in scope_values:
-                waiters = self._off_cycle_waiters.get(scope_id)
+                waiters = self._unscheduled_waiters.get(scope_id)
                 if waiters is not None:
                     waiters.discard(request)
                     if not waiters:
-                        del self._off_cycle_waiters[scope_id]
+                        del self._unscheduled_waiters[scope_id]
 
-    async def _wait_at_gate(
+    async def _acquire_scope_slots(
         self,
         request: Request,
         scope_values: list[tuple[ScopeID, QuotaAmount | None]],
         *,
-        off_cycle: bool,
+        unscheduled: bool,
     ) -> None:
         """Block until every scope in *scope_values* allows *request* through,
         then reserve a slot on each of them.
@@ -989,7 +988,7 @@ class Throttler:
         scope with two sets of counters, letting it exceed its limits.
         """
         scope_ids = [scope_id for scope_id, _ in scope_values]
-        yielded_to_off_cycle = False
+        yielded_to_unscheduled = False
         while True:
             scopes = self._resolve_scope_slots(scope_values)
             wait = max(
@@ -1008,8 +1007,8 @@ class Throttler:
                     )
                 await sleep(wait)
                 continue
-            # All time-based gates (delay, backoff, quota) are open; the only
-            # remaining reason to wait is a full concurrency slot.
+            # Every time-based limit (delay, backoff, quota) has elapsed; the
+            # only remaining reason to wait is a full concurrency slot.
             blocked = [
                 (scope_id, manager)
                 for scope_id, manager, _ in scopes
@@ -1017,20 +1016,20 @@ class Throttler:
             ]
             if not blocked:
                 if (
-                    not off_cycle
-                    and not yielded_to_off_cycle
-                    and self._off_cycle_claims(scope_ids)
+                    not unscheduled
+                    and not yielded_to_unscheduled
+                    and self._unscheduled_claims(scope_ids)
                 ):
-                    # An off-cycle request waiting for one of these scopes can
+                    # An unscheduled request waiting for one of these scopes can
                     # use the free slot right now, and something in flight may
                     # be waiting for it, so let it go first. Only once, so that
                     # a claim that no one takes cannot spin here.
-                    yielded_to_off_cycle = True
+                    yielded_to_unscheduled = True
                     await sleep(0)
                     continue
                 self._record_reservation(request, scopes)
                 return
-            if off_cycle and all(
+            if unscheduled and all(
                 self._can_lend_slot(scope_id) for scope_id, _ in blocked
             ):
                 self._borrow_slots(
@@ -1043,7 +1042,7 @@ class Throttler:
                     f"(scopes: {scope_ids})"
                 )
             await self._wait_for_slot(
-                [manager for _, manager in blocked], off_cycle=off_cycle
+                [manager for _, manager in blocked], unscheduled=unscheduled
             )
 
     def _record_reservation(self, request: Request, scopes: list[ScopeSlot]) -> None:
@@ -1067,7 +1066,7 @@ class Throttler:
                     del self._scope_holders[scope_id]
             manager.record_done()
 
-    # -- Off-cycle requests ---------------------------------------------------
+    # -- Unscheduled requests ---------------------------------------------------
 
     def _downloader(self) -> Downloader | None:
         engine = self.crawler.engine
@@ -1082,12 +1081,12 @@ class Throttler:
 
     def _can_lend_slot(self, scope_id: ScopeID) -> bool:
         """Return whether *scope_id* can lend a concurrency slot to an
-        off-cycle request.
+        unscheduled request.
 
         It can when every request holding one of its slots is in the downloader
         middlewares, i.e. none of them is in a download handler: such a request
-        may be waiting there precisely for the off-cycle request, in which case
-        nothing in the scope can ever complete unless the off-cycle request is
+        may be waiting there precisely for the unscheduled request, in which case
+        nothing in the scope can ever complete unless the unscheduled request is
         let through, and lending is free because the borrowed slot was not being
         used anyway.
 
@@ -1096,12 +1095,12 @@ class Throttler:
         middlewares: a slot is reserved before its request reaches the downloader
         and released after it leaves, so such a holder is either on its way to a
         download handler or already done with one, and needs no lend either way.
-        Counting it in would let off-cycle requests that no request in the
+        Counting it in would let unscheduled requests that no request in the
         downloader middlewares is waiting for keep borrowing slots.
 
         A borrower is itself a holder in the downloader middlewares while its own
         middlewares run, so a prerequisite of a prerequisite can borrow in turn,
-        and off-cycle requests sent in one go can borrow one after another. That
+        and unscheduled requests sent in one go can borrow one after another. That
         never lets the scope use more of the network than it may
         (:meth:`download_handler_blocked` keeps its concurrency limit in download
         handlers whatever its slots are lent out to), but it does inflate its
@@ -1115,7 +1114,7 @@ class Throttler:
     def download_handler_blocked(self, request: Request) -> bool:
         # A concurrency slot is reserved before its request reaches the
         # downloader, so a scope's slots can be held by requests that are not
-        # using the network, and one of those slots can be lent to an off-cycle
+        # using the network, and one of those slots can be lent to an unscheduled
         # request (see _can_lend_slot). Nothing keeps a lender from reaching a
         # download handler again while the borrower is still in one, though,
         # which is what this stops: a scope never has more requests in a download
@@ -1162,18 +1161,18 @@ class Throttler:
             )
         self._record_reservation(request, scopes)
 
-    def _off_cycle_claims(self, scope_ids: list[ScopeID]) -> bool:
-        """Return whether an off-cycle request waiting at the gate could use a
-        free slot of any of *scope_ids* right now, in which case it gets it
-        before a request from the scheduler does."""
-        # Nothing is waiting at the gate most of the time, and this is on the
-        # readiness API's hot path (see _cached_scope_quota_amounts).
-        if not self._off_cycle_waiters:
+    def _unscheduled_claims(self, scope_ids: list[ScopeID]) -> bool:
+        """Return whether an unscheduled request waiting in :meth:`acquire`
+        could use a free slot of any of *scope_ids* right now, in which case it
+        gets it before a request from the scheduler does."""
+        # Nothing is waiting most of the time, and this is on the readiness
+        # API's hot path (see _cached_scope_quota_amounts).
+        if not self._unscheduled_waiters:
             return False
         return any(
             self._can_use_slot_now(waiter, scope_id)
             for scope_id in scope_ids
-            for waiter in self._off_cycle_waiters.get(scope_id, ())
+            for waiter in self._unscheduled_waiters.get(scope_id, ())
         )
 
     def _can_use_slot_now(self, request: Request, scope_id: ScopeID) -> bool:
@@ -1214,13 +1213,13 @@ class Throttler:
                 return False
             if manager.concurrency_blocked():
                 return False
-        # Every scope has a free slot, but an off-cycle request waiting for one
+        # Every scope has a free slot, but an unscheduled request waiting for one
         # of them gets it first. Checked before building the scope id list, which
         # is otherwise built on every queued scope set on every dequeue for a
-        # gate that is empty most of the time.
-        if not self._off_cycle_waiters:
+        # waiter set that is empty most of the time.
+        if not self._unscheduled_waiters:
             return True
-        return not self._off_cycle_claims([scope_id for scope_id, _ in scope_values])
+        return not self._unscheduled_claims([scope_id for scope_id, _ in scope_values])
 
     def reserve(self, request: Request) -> None:
         # A throttler-aware scheduler reserves every request before handing it
@@ -1262,16 +1261,16 @@ class Throttler:
         now = time.monotonic() if now is None else now
         return max(0.0, self._request_delay_deadline(request, now) - now)
 
-    async def _wait_for_slot(self, managers: list[Any], *, off_cycle: bool) -> None:
+    async def _wait_for_slot(self, managers: list[Any], *, unscheduled: bool) -> None:
         """Block until any of *managers* frees a concurrency slot or, for an
-        off-cycle request, until one of them may have a slot to lend.
+        unscheduled request, until one of them may have a slot to lend.
 
         Each manager hands out an event Deferred that fires when a slot is freed
         (via :meth:`ThrottlingScopeManager.record_done`) or the limit is raised
         (via :meth:`ThrottlingScopeManager.set_concurrency`). Those are the only
         two ways for a slot to become available.
 
-        An off-cycle request may also proceed by borrowing the slot of a holder
+        An unscheduled request may also proceed by borrowing the slot of a holder
         that sits in the downloader middlewares (see :meth:`_can_lend_slot`), and
         a holder gets there without freeing any slot, and thus without firing
         either event above: either on reaching the downloader, or on leaving a
@@ -1284,7 +1283,7 @@ class Throttler:
         """
         pairs = [(manager, manager.slot_available_event()) for manager in managers]
         events = [event for _, event in pairs]
-        downloader = self._downloader() if off_cycle else None
+        downloader = self._downloader() if unscheduled else None
         middlewares_event: Deferred[None] | None = None
         if downloader is not None:
             middlewares_event = downloader._downloader_middlewares_event()
@@ -1318,8 +1317,8 @@ class Throttler:
         This is the readiness-API counterpart of :meth:`_delay_request`: a
         throttler-aware scheduler holds the request back until this deadline
         instead of awaiting :meth:`acquire`. The deadline is computed once, the
-        first time the request reaches the gate, and stored so later polls reuse
-        it. A request whose delay was already honored (the ``_throttler_delayed``
+        first time the request is throttled, and stored so later polls reuse it.
+        A request whose delay was already honored (the ``_throttler_delayed``
         flag) is never delayed again, so a resumed crawl does not re-block on a
         stale deadline."""
         delay = request.meta.get("delay")
@@ -1561,8 +1560,8 @@ class ThrottlingScopeManagerProtocol(Protocol):
     def concurrency_blocked(self) -> bool:
         """Return whether this scope is at its concurrency limit.
 
-        :class:`Throttler` calls this (after all time-based gates in
-        :meth:`can_send` are open) to decide whether to wait for a freed slot.
+        :class:`Throttler` calls this (once every time-based limit in
+        :meth:`can_send` has elapsed) to decide whether to wait for a freed slot.
         Return ``False`` when no concurrency limit is enforced.
         """
 
@@ -1874,7 +1873,7 @@ class ThrottlingScopeManager:
         self._last_seen = now
         self._last_backoff_time = now
         if delay is not None:
-            # A hard delay (e.g. Retry-After) is a one-time gate, not the
+            # A hard delay (e.g. Retry-After) is a one-time hold, not the
             # steady-state delay; the exponential step below still applies.
             hard = min(float(delay), self._max_delay) if cap else float(delay)
             self._in_backoff_until = now + hard

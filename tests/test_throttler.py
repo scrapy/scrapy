@@ -346,7 +346,7 @@ class TestThrottler:
 
     @coroutine_test
     async def test_dont_throttle_still_resolves_scopes(self):
-        # Skipping the gate must not skip scope resolution: the outcome of a
+        # Skipping throttling must not skip scope resolution: the outcome of a
         # dont_throttle request still backs off its scopes, and a middleware
         # finds them through get_resolved_scopes().
         class HostScopeThrottler(Throttler):
@@ -632,7 +632,7 @@ class TestThrottler:
                 },
             }
         )
-        # Close the gate of the "slow" scope.
+        # Make the "slow" scope hold requests back.
         warmup = Request("http://a.example/0", meta={"throttling_scopes": ["slow"]})
         await manager.acquire(warmup)
         manager.release(warmup)
@@ -651,7 +651,7 @@ class TestThrottler:
         assert "shared" not in manager._scope_managers
 
         done, _ = await wait_for_first([blocked], timeout=30)
-        assert done, "the request was never let through the throttling gate"
+        assert done, "the throttler never let the request through"
         await maybe_deferred_to_future(blocked)
 
         # The send landed on the manager that the scope has now, so the scope is
@@ -669,8 +669,8 @@ class TestThrottler:
         assert len(manager._scope_managers) == 5
 
 
-class TestOffCycleRequests:
-    """Requests sent outside the scheduling cycle, i.e. through
+class TestUnscheduledRequests:
+    """Requests sent without going through the scheduler, i.e. through
     engine.download_async(), can be prerequisites of a request that is sitting in
     the downloader middlewares holding a slot of the same scope, so they can
     borrow such an unused slot and they get freed slots before the scheduler
@@ -695,29 +695,29 @@ class TestOffCycleRequests:
         # instead of hanging it.
         acquired = deferred_from_coro(manager.acquire(request, **kwargs))
         done, _ = await wait_for_first([acquired], timeout=30)
-        assert done, f"{request} was never let through the throttling gate"
+        assert done, f"the throttler never let {request} through"
         await maybe_deferred_to_future(acquired)
 
     @staticmethod
     async def _start_waiting(manager: Throttler, request: Request) -> Deferred[None]:
-        """Start an off-cycle acquire() and let it run up to the point where it
+        """Start an unscheduled acquire() and let it run up to the point where it
         blocks waiting for a concurrency slot."""
-        blocked = deferred_from_coro(manager.acquire(request, off_cycle=True))
+        blocked = deferred_from_coro(manager.acquire(request, unscheduled=True))
         await async_sleep(0)
         return blocked
 
     @staticmethod
     async def _finish_waiting(blocked: Deferred[None]) -> None:
-        """Wait for an off-cycle acquire() started by :meth:`_start_waiting` to
+        """Wait for an unscheduled acquire() started by :meth:`_start_waiting` to
         get through, bounded so that a request that never does fails the test
         instead of hanging it."""
         done, _ = await wait_for_first([blocked], timeout=30)
-        assert done, "the off-cycle request was never let through"
+        assert done, "the unscheduled request was never let through"
         await maybe_deferred_to_future(blocked)
 
     @staticmethod
     async def _stop_waiting(blocked: Deferred[None]) -> None:
-        """Cancel an off-cycle acquire() that is meant to stay blocked, so that
+        """Cancel an unscheduled acquire() that is meant to stay blocked, so that
         it does not outlive the test as a pending task."""
         blocked.addBoth(lambda _: None)  # swallow the cancellation
         blocked.cancel()
@@ -737,7 +737,7 @@ class TestOffCycleRequests:
         # be waiting for this very request, so this one borrows it instead of
         # waiting for a slot that would never free up.
         prerequisite = Request("http://example.com/robots.txt")
-        await self._acquire(manager, prerequisite, off_cycle=True)
+        await self._acquire(manager, prerequisite, unscheduled=True)
         assert prerequisite in manager._reserved
 
     @coroutine_test
@@ -752,9 +752,9 @@ class TestOffCycleRequests:
         self._hold_in_middlewares(monkeypatch, manager, in_middlewares)
         # One of the holders is in a download handler, so it will free its slot
         # on its own and there is nothing to break: this request waits for it.
-        off_cycle = Request("http://example.com/3")
+        prerequisite = Request("http://example.com/3")
         call_later(0, manager.release, in_handler)
-        await self._acquire(manager, off_cycle, off_cycle=True)
+        await self._acquire(manager, prerequisite, unscheduled=True)
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
 
@@ -765,7 +765,7 @@ class TestOffCycleRequests:
         downloader is not in a download handler either. It is not in the
         downloader middlewares though: it needs no help to reach a handler, or is
         already done with one. Treating it as being in the middlewares would let
-        off-cycle requests that nothing is waiting for borrow slots without
+        unscheduled requests that nothing is waiting for borrow slots without
         limit."""
         manager, downloader = _manager_with_downloader(
             {"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}}
@@ -775,9 +775,9 @@ class TestOffCycleRequests:
         assert holder not in downloader.active
         assert manager._in_downloader_middlewares(holder) is False
 
-        off_cycle = Request("http://example.com/2")
-        blocked = await self._start_waiting(manager, off_cycle)
-        assert off_cycle not in manager._reserved
+        prerequisite = Request("http://example.com/2")
+        blocked = await self._start_waiting(manager, prerequisite)
+        assert prerequisite not in manager._reserved
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
         await self._stop_waiting(blocked)
@@ -828,10 +828,10 @@ class TestOffCycleRequests:
         # that is using its slot from one that is not, so nothing is lent.
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         await self._acquire(manager, Request("http://example.com/1"))
-        off_cycle = Request("http://example.com/2")
-        blocked = await self._start_waiting(manager, off_cycle)
+        prerequisite = Request("http://example.com/2")
+        blocked = await self._start_waiting(manager, prerequisite)
         assert not blocked.called
-        assert off_cycle not in manager._reserved
+        assert prerequisite not in manager._reserved
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
         await self._stop_waiting(blocked)
@@ -840,7 +840,7 @@ class TestOffCycleRequests:
     async def test_borrows_once_a_holder_leaves_the_download_handler(self) -> None:
         """A holder that gets its response and moves on to the downloader
         middlewares stops using its slot without freeing it, e.g. because those
-        middlewares are now waiting for this very off-cycle request."""
+        middlewares are now waiting for this very unscheduled request."""
         manager, downloader = _manager_with_downloader(
             {"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}}
         )
@@ -851,15 +851,15 @@ class TestOffCycleRequests:
         downloader.active.update({in_middlewares, in_handler})
         downloader._in_download_handler.add(in_handler)
 
-        off_cycle = Request("http://example.com/3")
-        blocked = await self._start_waiting(manager, off_cycle)
+        prerequisite = Request("http://example.com/3")
+        blocked = await self._start_waiting(manager, prerequisite)
         assert not blocked.called, (
             "a holder is in a download handler, so nothing to lend"
         )
 
         downloader._leave_download_handler(in_handler)
         await self._finish_waiting(blocked)
-        assert off_cycle in manager._reserved
+        assert prerequisite in manager._reserved
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") == 1
         downloader.close()
@@ -873,19 +873,19 @@ class TestOffCycleRequests:
         await self._acquire(manager, holder)
         self._hold_in_middlewares(monkeypatch, manager, holder)
         first = Request("http://example.com/2")
-        await self._acquire(manager, first, off_cycle=True)
+        await self._acquire(manager, first, unscheduled=True)
         # The borrower is now in the downloader middlewares too, and its own
         # middlewares download a request of their own: it can borrow in turn, so
         # that nesting of any depth cannot deadlock.
         self._hold_in_middlewares(monkeypatch, manager, holder, first)
         second = Request("http://example.com/3")
-        await self._acquire(manager, second, off_cycle=True)
+        await self._acquire(manager, second, unscheduled=True)
         assert second in manager._reserved
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") == 2
 
     @coroutine_test
-    async def test_scheduler_yields_a_free_slot_to_an_off_cycle_waiter(self) -> None:
+    async def test_scheduler_yields_a_free_slot_to_an_unscheduled_waiter(self) -> None:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         holder = Request("http://example.com/1")
         await self._acquire(manager, holder)
@@ -896,7 +896,7 @@ class TestOffCycleRequests:
         # The scope is full, so nothing is ready yet.
         assert manager.is_ready(scheduled) is False
         manager.release(holder)
-        # Now there is a free slot, but the waiting off-cycle request has a
+        # Now there is a free slot, but the waiting unscheduled request has a
         # claim on it: a request from the scheduler must not take it.
         assert manager.is_ready(scheduled) is False
         await maybe_deferred_to_future(blocked)
@@ -906,7 +906,7 @@ class TestOffCycleRequests:
         assert manager.is_ready(scheduled) is True
 
     @coroutine_test
-    async def test_scheduler_keeps_a_slot_the_off_cycle_waiter_cannot_use(
+    async def test_scheduler_keeps_a_slot_the_unscheduled_waiter_cannot_use(
         self,
     ) -> None:
         manager = _manager(
@@ -918,7 +918,7 @@ class TestOffCycleRequests:
             "http://example.com/2", meta={"throttling_scopes": ["a", "b"]}
         )
         blocked = await self._start_waiting(manager, waiting)
-        # The off-cycle request is waiting for scope b, so it cannot use a free
+        # The unscheduled request is waiting for scope b, so it cannot use a free
         # slot of scope a: the scheduler gets it.
         scheduled = Request("http://example.com/3", meta={"throttling_scopes": "a"})
         await manager.get_scopes(scheduled)
@@ -932,8 +932,8 @@ class TestOffCycleRequests:
     async def test_waiters_are_forgotten_once_served(self) -> None:
         manager = _manager()
         request = Request("http://example.com/1")
-        await self._acquire(manager, request, off_cycle=True)
-        assert not manager._off_cycle_waiters
+        await self._acquire(manager, request, unscheduled=True)
+        assert not manager._unscheduled_waiters
 
     @coroutine_test
     async def test_a_served_waiter_does_not_forget_the_others(self) -> None:
@@ -944,7 +944,7 @@ class TestOffCycleRequests:
         second = Request("http://example.com/3")
         first_blocked = await self._start_waiting(manager, first)
         second_blocked = await self._start_waiting(manager, second)
-        assert len(manager._off_cycle_waiters["example.com"]) == 2
+        assert len(manager._unscheduled_waiters["example.com"]) == 2
         manager.release(holder)
         await wait_for_first([first_blocked, second_blocked])
         # Whichever of the two took the freed slot, forgetting it must not
@@ -954,11 +954,11 @@ class TestOffCycleRequests:
         ]
         assert len(served) == 1
         pending = second if served[0] is first else first
-        assert pending in manager._off_cycle_waiters["example.com"]
+        assert pending in manager._unscheduled_waiters["example.com"]
         manager.release(served[0])
         await maybe_deferred_to_future(first_blocked)
         await maybe_deferred_to_future(second_blocked)
-        assert not manager._off_cycle_waiters
+        assert not manager._unscheduled_waiters
 
     @coroutine_test
     async def test_a_shared_waiter_entry_is_only_forgotten_once(self) -> None:
@@ -966,18 +966,18 @@ class TestOffCycleRequests:
         holders = [Request("http://example.com/1"), Request("http://example.com/2")]
         for holder in holders:
             await self._acquire(manager, holder)
-        # The same request object can be sent off-cycle twice concurrently, e.g.
+        # The same request object can be sent unscheduled twice concurrently, e.g.
         # by two middlewares awaiting the same prerequisite. Both waits share a
         # single waiter entry, so the second one to be served finds it gone.
         request = Request("http://example.com/3")
         first_blocked = await self._start_waiting(manager, request)
         second_blocked = await self._start_waiting(manager, request)
-        assert len(manager._off_cycle_waiters["example.com"]) == 1
+        assert len(manager._unscheduled_waiters["example.com"]) == 1
         for holder in holders:
             manager.release(holder)
         await maybe_deferred_to_future(first_blocked)
         await maybe_deferred_to_future(second_blocked)
-        assert not manager._off_cycle_waiters
+        assert not manager._unscheduled_waiters
 
     @coroutine_test
     async def test_does_not_borrow_from_a_scope_without_holders(self) -> None:
@@ -985,13 +985,13 @@ class TestOffCycleRequests:
         scope = _scope(manager, "example.com")
         # The scope is full but the throttler is not tracking any holder for it,
         # so there is no unused slot to borrow: instead of assuming that an
-        # untracked holder is in the downloader middlewares, the off-cycle
+        # untracked holder is in the downloader middlewares, the unscheduled
         # request waits for a slot.
         scope.record_sent()
         assert scope.concurrency_blocked() is True
-        off_cycle = Request("http://example.com/1")
+        prerequisite = Request("http://example.com/1")
         call_later(0, scope.record_done)
-        await self._acquire(manager, off_cycle, off_cycle=True)
+        await self._acquire(manager, prerequisite, unscheduled=True)
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
 
@@ -1013,19 +1013,19 @@ class TestOffCycleRequests:
         self._hold_in_middlewares(monkeypatch, manager, holder)
         prerequisite = Request("http://example.com/robots.txt")
         with caplog.at_level(logging.DEBUG, logger="scrapy.throttler"):
-            await self._acquire(manager, prerequisite, off_cycle=True)
+            await self._acquire(manager, prerequisite, unscheduled=True)
         assert "borrow a concurrency slot" in caplog.text
         assert prerequisite in manager._reserved
 
     @coroutine_test
     async def test_a_free_slot_is_yielded_to_a_waiter_only_once(self) -> None:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
-        # Recreate the transient state in which an off-cycle request is waiting
-        # at the gate for a slot that has just freed up but has not resumed yet
-        # to take it.
+        # Recreate the transient state in which an unscheduled request is waiting
+        # in acquire() for a slot that has just freed up but has not resumed
+        # yet to take it.
         waiting = Request("http://example.com/1")
         await manager.get_scopes(waiting)
-        manager._off_cycle_waiters["example.com"] = WeakSet([waiting])
+        manager._unscheduled_waiters["example.com"] = WeakSet([waiting])
         # A request from the scheduler yields control so that the waiter gets
         # the slot first, but only once, so that a claim that no one takes
         # cannot make it spin.
@@ -1038,7 +1038,7 @@ class TestOffCycleRequests:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         waiting = Request("http://example.com/1", meta={"delay": 1000.0})
         await manager.get_scopes(waiting)
-        manager._off_cycle_waiters["example.com"] = WeakSet([waiting])
+        manager._unscheduled_waiters["example.com"] = WeakSet([waiting])
         # The waiter cannot use a free slot until its own delay elapses, so it
         # has no claim on it and the scheduler may take it.
         scheduled = Request("http://example.com/2")
@@ -1174,7 +1174,7 @@ class TestThrottlingScopeManager:
 
     def test_backoff_disabled(self):
         # With backoff disabled for the scope, triggers (including hard delays)
-        # are ignored: the delay stays at the base and no gate is applied.
+        # are ignored: the delay stays at the base and nothing is held back.
         scope = _scope_manager(
             {"DOWNLOAD_DELAY": 0.0},
             {"id": "x", "backoff": {"enabled": False}},
@@ -1494,7 +1494,7 @@ class TestThrottlerReadiness:
         await manager.get_scopes(second)
         manager.reserve(first)
         assert manager.is_ready(second) is False
-        # Pure concurrency blocking is not time-gated.
+        # Pure concurrency blocking has no time component.
         assert manager.get_time_until_ready(second) is None
         manager.release(first)
         assert manager.is_ready(second) is True
@@ -1691,7 +1691,7 @@ class TestThrottlerEdges:
         # Free m1's slot on the next tick so the wait wakes up with m1's event
         # fired while m2's event is still pending.
         call_later(0, m1.record_done)
-        await manager._wait_for_slot([m1, m2], off_cycle=False)
+        await manager._wait_for_slot([m1, m2], unscheduled=False)
         # The still-pending m2 event is discarded from its waiter list.
         assert m2._slot_waiters == []
 
@@ -1701,10 +1701,10 @@ class TestThrottlerEdges:
         scope = _scope_manager(config={"id": "a", "concurrency": 1})
         scope.record_sent(now=0.0)
         # The scope frees its slot first, so the middlewares event of the
-        # off-cycle wait stays pending and must not be left behind on the
+        # unscheduled wait stays pending and must not be left behind on the
         # downloader.
         call_later(0, scope.record_done)
-        await manager._wait_for_slot([scope], off_cycle=True)
+        await manager._wait_for_slot([scope], unscheduled=True)
         assert downloader._downloader_middlewares_waiters == []
         downloader.close()
 
@@ -1718,7 +1718,7 @@ class TestThrottlerEdges:
         # This time the request reaches the middlewares first, so the scope's
         # slot event stays pending instead.
         call_later(0, downloader._leave_download_handler, request)
-        await manager._wait_for_slot([scope], off_cycle=True)
+        await manager._wait_for_slot([scope], unscheduled=True)
         assert scope._slot_waiters == []
         downloader.close()
 
@@ -1730,7 +1730,7 @@ class TestThrottlerEdges:
         scope = _scope_manager(config={"id": "a", "concurrency": 1})
         scope.record_sent(now=0.0)
         call_later(0, scope.record_done)
-        await manager._wait_for_slot([scope], off_cycle=True)
+        await manager._wait_for_slot([scope], unscheduled=True)
         assert scope._slot_waiters == []
 
     def test_back_off_debug_logging(self, caplog):
@@ -2115,13 +2115,13 @@ class _DownloadHandlerPeakExtension:
             await async_sleep(0.005)
 
 
-class _OffCycleFloodSpider(Spider):
-    """Sends many requests to one host outside the scheduling cycle at once,
-    like a media pipeline does for the files of an item. None of them is a
+class _UnscheduledFloodSpider(Spider):
+    """Sends many requests to one host without going through the scheduler at
+    once, like a media pipeline does for the files of an item. None of them is a
     prerequisite of a request sitting in the downloader middlewares, so none of
     them has any claim on a concurrency slot of the scope they share."""
 
-    name = "off_cycle_flood"
+    name = "unscheduled_flood"
     request_count = 8
 
     async def start(self) -> AsyncIterator[Request]:
@@ -2153,11 +2153,11 @@ class _TwoRequestSpider(Spider):
         return
 
 
-# Which throttling gate holds a request back depends on the scheduler: the
-# default one lets it wait inside Throttler.acquire(), while a throttler-aware
-# one keeps it in its queue and polls Throttler.is_ready() instead. Those are
-# two independent gates, and letting a request sent from a downloader middleware
-# through is the job of both, so the deadlock tests below run under each.
+# How throttling holds a request back depends on the scheduler: the default one
+# lets it wait inside Throttler.acquire(), while a throttler-aware one keeps it
+# in its queue and polls Throttler.is_ready() instead. Those are two independent
+# code paths, and letting a request sent from a downloader middleware through is
+# the job of both, so the deadlock tests below run under each.
 _SCHEDULER_SETTINGS: dict[str, dict[str, str]] = {
     "default_scheduler": {},
     "throttler_aware_scheduler": {
@@ -2224,7 +2224,7 @@ class TestThrottlerIntegration:
         )
         # A bounded wait, so that a regression fails instead of hanging.
         done, _ = await wait_for_first([crawl], timeout=30)
-        assert done, "the crawl deadlocked at the throttling gate"
+        assert done, "the crawl deadlocked in the throttler"
         await maybe_deferred_to_future(crawl)
         assert crawler.stats
         assert crawler.stats.get_value("robotstxt/request_count") == 1
@@ -2260,7 +2260,7 @@ class TestThrottlerIntegration:
         )
         # A bounded wait, so that a regression fails instead of hanging.
         done, _ = await wait_for_first([crawl], timeout=30)
-        assert done, "the crawl deadlocked at the throttling gate"
+        assert done, "the crawl deadlocked in the throttler"
         await maybe_deferred_to_future(crawl)
         assert crawler.stats
         assert crawler.stats.get_value("response_received_count") == 3
@@ -2270,14 +2270,14 @@ class TestThrottlerIntegration:
     @coroutine_test
     async def test_borrowing_keeps_the_concurrency_limit_in_handlers(self, mockserver):
         """A concurrency slot is only lent while none of the requests holding one
-        is in a download handler, so an off-cycle request that no request in the
+        is in a download handler, so an unscheduled request that no request in the
         downloader middlewares is waiting for cannot borrow past the limit: the
         target host never sees more than the configured concurrency, however many
-        off-cycle requests pile up.
+        unscheduled requests pile up.
         """
         concurrency = 2
         crawler = get_crawler(
-            _OffCycleFloodSpider,
+            _UnscheduledFloodSpider,
             {
                 # High enough that the scope limit, not this one, is what bounds
                 # the flood.
@@ -2296,8 +2296,8 @@ class TestThrottlerIntegration:
         assert crawler.stats
         assert (
             crawler.stats.get_value("downloader/request_count")
-            == _OffCycleFloodSpider.request_count + 1
-        ), "not every off-cycle request went out"
+            == _UnscheduledFloodSpider.request_count + 1
+        ), "not every unscheduled request went out"
         assert crawler.extensions is not None
         extension = next(
             e

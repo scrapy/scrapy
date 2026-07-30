@@ -567,9 +567,9 @@ class ThrottlerAwareScheduler(Scheduler):
     blocking described under :ref:`throttler-aware-scheduler`.
 
     The same applies to the per-request :reqmeta:`delay`: the delayed request
-    waits in the scheduler queue, whereas under the default scheduler it waits at
-    the throttling gate (:meth:`~scrapy.throttler.ThrottlerProtocol.acquire`)
-    while occupying a concurrency slot for the whole delay.
+    waits in the scheduler queue, whereas under the default scheduler it waits in
+    the throttler (:meth:`~scrapy.throttler.ThrottlerProtocol.acquire`) while
+    occupying a concurrency slot for the whole delay.
 
     When several requests could be sent at the same time, the one with the
     highest request :attr:`~scrapy.Request.priority` is sent first; ties are
