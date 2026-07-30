@@ -74,6 +74,17 @@ class BaseItemExporter(ABC):
     def finish_exporting(self) -> None:  # noqa: B027
         pass
 
+    @staticmethod
+    def _get_populated_field_names(adapter: ItemAdapter) -> Iterable[str]:
+        """Return the populated field names of *adapter*, in declaration order.
+
+        Populated fields that are not declared, which some item types allow,
+        come last, in item order.
+        """
+        populated = set(adapter.keys())
+        declared = (name for name in adapter.field_names() if name in populated)
+        return dict.fromkeys([*declared, *adapter.keys()])
+
     def _get_serialized_fields(
         self, item: Any, default_value: Any = None, include_empty: bool | None = None
     ) -> Iterable[tuple[str, Any]]:
@@ -86,7 +97,11 @@ class BaseItemExporter(ABC):
             include_empty = self.export_empty_fields
 
         if self.fields_to_export is None:
-            field_iter = item.field_names() if include_empty else item.keys()
+            field_iter = (
+                item.field_names()
+                if include_empty
+                else self._get_populated_field_names(item)
+            )
         elif isinstance(self.fields_to_export, Mapping):
             if include_empty:
                 field_iter = self.fields_to_export.items()
