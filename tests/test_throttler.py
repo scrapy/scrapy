@@ -499,6 +499,27 @@ class TestThrottler:
         manager._maybe_evict(now=31.0)
         assert "example.com" not in manager._scope_managers
 
+    def test_scope_eviction_skips_a_spent_quota_window(self):
+        manager = _manager(
+            {
+                "THROTTLING_SCOPE_MAX_IDLE": 1.0,
+                "THROTTLER_WINDOW": 30.0,
+                "THROTTLING_SCOPES": {"example.com": {"quota": 10}},
+            }
+        )
+        scope = _scope(manager, "example.com")
+        scope.record_sent(now=0.0, quota_amount=10)
+        scope.record_done(now=0.0)
+        manager._last_eviction = None
+        manager._maybe_evict(now=10.0)
+        # Idle for longer than THROTTLING_SCOPE_MAX_IDLE, but its quota window
+        # has something spent in it, and evicting would give the scope a full
+        # quota again before the window is over.
+        assert "example.com" in manager._scope_managers
+        manager._last_eviction = None
+        manager._maybe_evict(now=31.0)
+        assert "example.com" not in manager._scope_managers
+
     def test_scope_limit_keeps_a_pending_delay(self):
         manager = _manager(
             {
@@ -548,6 +569,63 @@ class TestThrottler:
         for scope_id in ("a.example", "b.example"):
             _scope(manager, scope_id).record_sent(now=0.0)
         assert set(manager._scope_managers) == {"a.example", "b.example"}
+
+    def test_scope_limit_keeps_the_scopes_being_resolved(self):
+        manager = _manager({"THROTTLING_SCOPE_LIMIT": 1})
+        # Resolving the scopes of one request must not let the creation of one of
+        # them evict another, or the request would record its send on a manager
+        # that is no longer the one of its scope.
+        slots = manager._resolve_scope_slots([("a.example", None), ("b.example", None)])
+        assert [scope_id for scope_id, _, _ in slots] == ["a.example", "b.example"]
+        for scope_id, scope, _ in slots:
+            assert manager._live_scope_manager(scope_id) is scope
+        assert not manager._resolving
+
+    @coroutine_test
+    async def test_scope_eviction_does_not_orphan_a_waiting_request(self) -> None:
+        """A scope that holds a waiting request back on nothing can be idle, and
+        hence evicted, while the request waits on another of its scopes. The
+        request must record its send on the manager its scope has by then, or the
+        scope would end up with two sets of counters and exceed its concurrency.
+        """
+        manager = _manager(
+            {
+                "THROTTLING_SCOPE_LIMIT": 2,
+                "THROTTLING_SCOPE_MAX_IDLE": 0,
+                "RANDOMIZE_DOWNLOAD_DELAY": False,
+                "THROTTLING_SCOPES": {
+                    "slow": {"delay": 0.5},
+                    "shared": {"concurrency": 1},
+                },
+            }
+        )
+        # Close the gate of the "slow" scope.
+        warmup = Request("http://a.example/0", meta={"throttling_scopes": ["slow"]})
+        await manager.acquire(warmup)
+        manager.release(warmup)
+
+        waiting = Request(
+            "http://a.example/1", meta={"throttling_scopes": ["slow", "shared"]}
+        )
+        blocked = deferred_from_coro(manager.acquire(waiting))
+        await async_sleep(0)
+        assert not blocked.called, "the 'slow' scope let the request through"
+
+        # Unrelated scopes are used meanwhile, pushing past the scope limit; the
+        # "shared" scope holds nothing back, so it is idle and gets evicted.
+        for i in range(5):
+            manager.get_scope_manager(f"other-{i}")
+        assert "shared" not in manager._scope_managers
+
+        done, _ = await wait_for_first([blocked], timeout=30)
+        assert done, "the request was never let through the throttling gate"
+        await maybe_deferred_to_future(blocked)
+
+        # The send landed on the manager that the scope has now, so the scope is
+        # at its concurrency of 1 and holds the next request of it back.
+        assert _scope(manager, "shared").concurrency_blocked() is True
+        second = Request("http://a.example/2", meta={"throttling_scopes": ["shared"]})
+        assert manager.is_ready(second) is False
 
     def test_scope_limit_disabled(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})

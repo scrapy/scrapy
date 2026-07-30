@@ -132,8 +132,9 @@ class ExecutionEngine:
             asyncio.Future[None] | Deferred[None] | None
         ) = None
         # Requests currently held by the throttler, waiting for their
-        # scopes to allow them through to the downloader.
-        self._throttler_waiting: set[Request] = set()
+        # scopes to allow them through to the downloader, mapped to whether they
+        # were sent outside the scheduling cycle (see _maybe_warn_throttler_backout).
+        self._throttler_waiting: dict[Request, bool] = {}
         # In-flight asynchronous enqueue operations (see
         # ``_enqueue_request_async``), so the spider is not considered idle while
         # a request is still on its way into the scheduler, and so closing waits
@@ -445,6 +446,11 @@ class ExecutionEngine:
         # engine here, so the warning does not apply when one is in use.
         if self._get_next_request_delay is not None:
             return
+        # Nor does it apply while only requests sent outside the scheduling cycle
+        # are waiting: those never went through the scheduler, so no scheduler
+        # can hold them back instead.
+        if all(self._throttler_waiting.values()):
+            return
         self._throttler_backout_warned = True
         logger.warning(
             "Throttling is holding requests back and they are now consuming the "
@@ -622,13 +628,13 @@ class ExecutionEngine:
     ) -> Generator[Deferred[Any], Any, None]:
         """Wait at the throttling gate before *request* is sent, tracking it as
         held meanwhile."""
-        self._throttler_waiting.add(request)
+        self._throttler_waiting[request] = off_cycle
         throttler = self.crawler.throttler
         assert throttler is not None
         try:
             yield deferred_from_coro(throttler.acquire(request, off_cycle=off_cycle))
         finally:
-            self._throttler_waiting.discard(request)
+            self._throttler_waiting.pop(request, None)
 
     @inlineCallbacks
     def _download(

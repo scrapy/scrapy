@@ -302,6 +302,7 @@ class TestEngineThrottler:
         # A scheduler without get_next_request_delay is not throttler-aware, so
         # the warning recommends switching to one.
         engine._get_next_request_delay = None
+        engine._throttler_waiting = {Request("http://a.example"): False}
         with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
             engine._maybe_warn_throttler_backout()
             # A second call is a no-op (the warning is emitted only once).
@@ -313,10 +314,28 @@ class TestEngineThrottler:
         # A throttler-aware scheduler (one with get_next_request_delay) holds
         # throttled requests itself, so no warning is emitted.
         engine._get_next_request_delay = lambda: None
+        engine._throttler_waiting = {Request("http://a.example"): False}
         with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
             engine._maybe_warn_throttler_backout()
         assert engine._throttler_backout_warned is False
         assert "ThrottlerAwareScheduler" not in caplog.text
+
+    def test_maybe_warn_throttler_backout_off_cycle_only(self, engine, caplog):
+        # Requests sent outside the scheduling cycle never went through the
+        # scheduler, so no scheduler can hold them back and recommending a
+        # different one would be misleading.
+        engine._get_next_request_delay = None
+        engine._throttler_waiting = {Request("http://a.example"): True}
+        with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
+            engine._maybe_warn_throttler_backout()
+        assert engine._throttler_backout_warned is False
+        assert "ThrottlerAwareScheduler" not in caplog.text
+        # One request from the scheduling cycle among them is enough to warn.
+        engine._throttler_waiting[Request("http://b.example")] = False
+        with caplog.at_level(logging.WARNING, logger="scrapy.core.engine"):
+            engine._maybe_warn_throttler_backout()
+        assert engine._throttler_backout_warned is True
+        assert caplog.text.count("ThrottlerAwareScheduler") == 1
 
     def test_spider_is_idle_false_while_scheduling(self, engine):
         engine._slot = Mock()
@@ -324,7 +343,7 @@ class TestEngineThrottler:
         engine.scraper.slot.is_idle.return_value = True
         engine.downloader = Mock()
         engine.downloader.active = []
-        engine._throttler_waiting = set()
+        engine._throttler_waiting = {}
         engine._start = None
         engine._scheduling = {Deferred()}
         # An in-flight async enqueue keeps the spider from being considered idle.

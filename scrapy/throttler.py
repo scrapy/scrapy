@@ -493,6 +493,11 @@ class ThrottlerProtocol(Protocol):
         """Return the current load of the scope identified by *scope_id*: its
         active sends divided by its concurrency limit.
 
+        It can exceed ``1.0``: a scope may lend an unused slot to a request sent
+        outside the scheduling cycle (see the *off_cycle* argument of
+        :meth:`acquire`), which makes its outstanding sends outnumber its
+        concurrency until the borrowers drain.
+
         Used by a :ref:`throttler-aware scheduler
         <throttler-aware-scheduler>` to balance dequeuing across scopes,
         preferring the least-loaded ones.
@@ -685,6 +690,10 @@ class Throttler:
         )
         self._scope_limit: int = crawler.settings.getint("THROTTLING_SCOPE_LIMIT")
         self._last_eviction: float | None = None
+        # Scopes whose managers are being resolved together for one request, and
+        # which the scope limit must therefore not evict; see
+        # _resolve_scope_slots().
+        self._resolving: set[ScopeID] = set()
         # Concurrency slots reserved by acquire(), to be released once the
         # request finishes downloading.
         self._reserved: WeakKeyDictionary[Request, list[ScopeSlot]] = (
@@ -821,6 +830,27 @@ class Throttler:
         self._enforce_scope_limit(scope_id)
         return manager
 
+    def _resolve_scope_slots(
+        self, scope_values: list[tuple[ScopeID, QuotaAmount | None]]
+    ) -> list[ScopeSlot]:
+        """Return the ``ScopeSlot`` of every entry of *scope_values*.
+
+        :meth:`get_scope_manager` enforces :setting:`THROTTLING_SCOPE_LIMIT` as
+        soon as it creates a manager, and it only spares the scope it created,
+        so resolving one scope after another could evict a manager resolved for
+        the same request a moment earlier. Resolving them together keeps every
+        scope of a request on the manager that its scope actually has, which is
+        what makes their counters the ones everything else reads.
+        """
+        self._resolving.update(scope_id for scope_id, _ in scope_values)
+        try:
+            return [
+                (scope_id, self.get_scope_manager(scope_id), quota_amount)
+                for scope_id, quota_amount in scope_values
+            ]
+        finally:
+            self._resolving.clear()
+
     def _live_scope_manager(
         self, scope_id: ScopeID
     ) -> ThrottlingScopeManagerProtocol | None:
@@ -847,9 +877,10 @@ class Throttler:
         LRU order is kept by :meth:`get_scope_manager` moving each accessed
         scope to the end, so the coldest scopes are at the front. Only scopes
         that are idle (no in-flight requests and no active backoff) are evicted;
-        the just-created *keep* scope is never evicted. A scope evicted while
-        still throttling is simply recreated from its configuration the next
-        time it is needed.
+        neither the just-created *keep* scope nor the scopes being resolved for a
+        request (see :meth:`_resolve_scope_slots`) ever are. A scope evicted
+        while still throttling is simply recreated from its configuration the
+        next time it is needed.
 
         This runs on every scope creation once the limit is reached, so it walks
         the coldest end of the LRU order and stops as soon as it has enough
@@ -866,7 +897,11 @@ class Throttler:
         for scope_id, manager in self._scope_managers.items():
             if len(evictable) >= excess:
                 break
-            if scope_id != keep and manager.is_idle(now, 0):
+            if (
+                scope_id != keep
+                and scope_id not in self._resolving
+                and manager.is_idle(now, 0)
+            ):
                 evictable.append(scope_id)
         for scope_id in evictable:
             del self._scope_managers[scope_id]
@@ -887,12 +922,8 @@ class Throttler:
             return
         if not scope_values:
             return
-        scopes: list[ScopeSlot] = [
-            (scope_id, self.get_scope_manager(scope_id), quota_amount)
-            for scope_id, quota_amount in scope_values
-        ]
         if not off_cycle:
-            await self._wait_at_gate(request, scopes, off_cycle=False)
+            await self._wait_at_gate(request, scope_values, off_cycle=False)
             return
         # A registration here holds back is_ready() for the whole scope (see
         # _off_cycle_claims), so one that outlived its wait would stall a
@@ -901,12 +932,12 @@ class Throttler:
         # raising, being cancelled (which throws into the await), and being
         # abandoned (garbage-collecting a started coroutine closes it, which
         # throws GeneratorExit into the await).
-        for scope_id, _, _ in scopes:
+        for scope_id, _ in scope_values:
             self._off_cycle_waiters.setdefault(scope_id, WeakSet()).add(request)
         try:
-            await self._wait_at_gate(request, scopes, off_cycle=True)
+            await self._wait_at_gate(request, scope_values, off_cycle=True)
         finally:
-            for scope_id, _, _ in scopes:
+            for scope_id, _ in scope_values:
                 waiters = self._off_cycle_waiters.get(scope_id)
                 if waiters is not None:
                     waiters.discard(request)
@@ -914,13 +945,26 @@ class Throttler:
                         del self._off_cycle_waiters[scope_id]
 
     async def _wait_at_gate(
-        self, request: Request, scopes: list[ScopeSlot], *, off_cycle: bool
+        self,
+        request: Request,
+        scope_values: list[tuple[ScopeID, QuotaAmount | None]],
+        *,
+        off_cycle: bool,
     ) -> None:
-        """Block until every scope in *scopes* allows *request* through, then
-        reserve a slot on each of them."""
-        scope_ids = [scope_id for scope_id, _, _ in scopes]
+        """Block until every scope in *scope_values* allows *request* through,
+        then reserve a slot on each of them.
+
+        The scope managers are resolved anew on every pass rather than once
+        before the first wait: a scope that this request does not wait on, or
+        that only holds it back with its quota window, can be idle meanwhile and
+        hence evicted (see :setting:`THROTTLING_SCOPE_LIMIT`), and recording the
+        send on a manager that is no longer the one of its scope would leave the
+        scope with two sets of counters, letting it exceed its limits.
+        """
+        scope_ids = [scope_id for scope_id, _ in scope_values]
         yielded_to_off_cycle = False
         while True:
+            scopes = self._resolve_scope_slots(scope_values)
             wait = max(
                 [
                     0.0,
@@ -1163,11 +1207,10 @@ class Throttler:
         # here, so this only keeps that from corrupting scope state for good.
         if request in self._reserved or request.meta.get("dont_throttle"):
             return
-        scopes: list[ScopeSlot] = [
-            (scope_id, self.get_scope_manager(scope_id), quota_amount)
-            for scope_id, quota_amount in self._cached_scope_quota_amounts(request)
-        ]
-        self._record_reservation(request, scopes)
+        self._record_reservation(
+            request,
+            self._resolve_scope_slots(self._cached_scope_quota_amounts(request)),
+        )
 
     def get_time_until_ready(self, request: Request) -> float | None:
         now = time.monotonic()
@@ -1874,6 +1917,15 @@ class ThrottlingScopeManager:
         # letting the next request for the scope go out earlier than its delay
         # allows.
         if self._next_allowed_time is not None and self._next_allowed_time > now:
+            return False
+        # Same for a quota window that has something spent in it: dropping it
+        # would give the scope a full quota again before its window is over.
+        window_start = self._quota_window_start
+        if (
+            self._consumed > 0
+            and window_start is not None
+            and now - window_start < self._quota_window
+        ):
             return False
         if self._active > 0:
             return False

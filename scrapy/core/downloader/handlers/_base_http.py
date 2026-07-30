@@ -27,6 +27,14 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
         Since :setting:`CONCURRENT_REQUESTS` caps the total number of requests
         in flight, no host can ever exceed it, so it is also the upper bound of
         the result.
+
+        This reads the configured values, so a component that raises a scope
+        concurrency at run time (through
+        :meth:`~scrapy.throttler.ThrottlingScopeManagerProtocol.set_concurrency`),
+        or a custom :setting:`THROTTLING_SCOPE_MANAGER` that takes its limit from
+        elsewhere, can leave the result below what the throttler admits. That
+        only makes the extra requests queue inside the download handler, waiting
+        for a connection instead of for the network.
         """
         global_concurrency = settings.getint("CONCURRENT_REQUESTS")
         candidates = [

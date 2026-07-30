@@ -578,6 +578,14 @@ class ThrottlerAwareScheduler(Scheduler):
     It requires :setting:`SCHEDULER_PRIORITY_QUEUE` to be set to
     :class:`~scrapy.pqueues.ThrottlerAwarePriorityQueue` (or a compatible
     subclass).
+
+    It only supports the asynchronous enqueue path: resolving the
+    :ref:`throttling scopes <throttling-scopes>` that its priority queue stores
+    requests under may need to ``await``, so :meth:`enqueue_request` raises
+    :exc:`RuntimeError` and ``enqueue_request_async()`` is used instead. Code
+    that enqueues requests directly into the scheduler, rather than through
+    :attr:`crawler.engine <scrapy.crawler.Crawler.engine>`, must await the
+    latter.
     """
 
     def _check_priority_queue(self) -> None:

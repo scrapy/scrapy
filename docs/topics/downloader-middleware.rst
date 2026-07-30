@@ -156,6 +156,64 @@ defines one or more of these methods:
       :param exception: the raised exception
       :type exception: an ``Exception`` object
 
+.. _mw-prerequisites:
+
+Downloading a request from a downloader middleware
+==================================================
+
+A downloader middleware can download a request of its own while it processes
+another one, e.g. to fetch something that the request it is processing needs.
+The built-in :ref:`robots.txt middleware <topics-dlmw-robots>` does that: it
+holds each request while it downloads the ``robots.txt`` file of its website.
+
+Use :meth:`crawler.engine.download_async()
+<scrapy.core.engine.ExecutionEngine.download_async>` for that:
+
+.. code-block:: python
+
+    from scrapy import Request
+    from scrapy.http.request import NO_CALLBACK
+
+
+    class TokenMiddleware:
+        def __init__(self, crawler):
+            self.crawler = crawler
+            self.token = None
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            return cls(crawler)
+
+        async def process_request(self, request):
+            if self.token is None:
+                response = await self.crawler.engine.download_async(
+                    Request("https://example.com/token", callback=NO_CALLBACK)
+                )
+                self.token = response.text
+            request.headers["Authorization"] = self.token
+
+Be careful not to introduce deadlocks: a request that you download this way must
+not end up waiting for the request that is waiting for it.
+
+That is easy to get wrong when a middleware downloads a request for *every*
+request it processes, because it then does so for the ``robots.txt`` request of
+the :ref:`robots.txt middleware <topics-dlmw-robots>` as well. That new request
+is for the same website, so the robots.txt middleware holds it back until that
+website's ``robots.txt`` file arrives. But the request downloading that file is
+the one waiting for the new request, so neither ever finishes.
+
+So only download requests for the requests that need them.
+
+If you need to send a request for any request, try to at least leave
+``robots.txt`` requests alone by looking for :reqmeta:`dont_obey_robotstxt`:
+
+.. code-block:: python
+
+    async def process_request(self, request):
+        if request.meta.get("dont_obey_robotstxt"):
+            return
+        ...
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
@@ -964,7 +1022,6 @@ Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
 If maximum redirections are exceeded, the request is aborted and ignored.
-
 
 MetaRefreshMiddleware
 ---------------------
