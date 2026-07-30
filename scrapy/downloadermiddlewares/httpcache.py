@@ -1,22 +1,19 @@
 from __future__ import annotations
 
+import logging
 from email.utils import formatdate
 from typing import TYPE_CHECKING
 
-from twisted.internet import defer
-from twisted.internet.error import (
-    ConnectError,
-    ConnectionDone,
-    ConnectionLost,
-    DNSLookupError,
-    TCPTimedOutError,
-)
-from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
-from twisted.internet.error import TimeoutError as TxTimeoutError
-from twisted.web.client import ResponseFailed
+from twisted.internet.error import ConnectError, ConnectionDone, ConnectionLost
 
 from scrapy import signals
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import (
+    DownloadConnectionRefusedError,
+    DownloadFailedError,
+    DownloadTimeoutError,
+    IgnoreRequest,
+    NotConfigured,
+)
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.misc import load_object
 
@@ -32,18 +29,18 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
 
 
+logger = logging.getLogger(__name__)
+
+
 class HttpCacheMiddleware:
     DOWNLOAD_EXCEPTIONS = (
-        defer.TimeoutError,
-        TxTimeoutError,
-        DNSLookupError,
-        TxConnectionRefusedError,
         ConnectionDone,
         ConnectError,
         ConnectionLost,
-        TCPTimedOutError,
-        ResponseFailed,
         OSError,
+        DownloadTimeoutError,
+        DownloadConnectionRefusedError,
+        DownloadFailedError,
     )
 
     crawler: Crawler
@@ -84,9 +81,20 @@ class HttpCacheMiddleware:
             return None
 
         # Look for cached response and check if expired
-        cachedresponse: Response | None = self.storage.retrieve_response(
-            self.crawler.spider, request
-        )
+        cachedresponse: Response | None
+        try:
+            cachedresponse = self.storage.retrieve_response(
+                self.crawler.spider, request
+            )
+        except Exception:
+            self.stats.inc_value("httpcache/retrieve_error")
+            logger.warning(
+                f"Could not read the cache entry for {request}, treating it as a "
+                f"cache miss.",
+                exc_info=True,
+                extra={"spider": self.crawler.spider},
+            )
+            cachedresponse = None
         if cachedresponse is None:
             self.stats.inc_value("httpcache/miss")
             if self.ignore_missing:
@@ -114,7 +122,7 @@ class HttpCacheMiddleware:
             return response
 
         # Skip cached responses and uncacheable requests
-        if "cached" in response.flags or "_dont_cache" in request.meta:
+        if "_dont_cache" in request.meta or "cached" in response.flags:
             request.meta.pop("_dont_cache", None)
             return response
 

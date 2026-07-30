@@ -8,7 +8,7 @@ from __future__ import annotations
 from io import StringIO
 from mimetypes import MimeTypes
 from pkgutil import get_data
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class ResponseTypes:
-    CLASSES = {
+    CLASSES: ClassVar[dict[str, str]] = {
         "text/html": "scrapy.http.HtmlResponse",
         "application/atom+xml": "scrapy.http.XmlResponse",
         "application/rdf+xml": "scrapy.http.XmlResponse",
@@ -40,21 +40,16 @@ class ResponseTypes:
         self.classes: dict[str, type[Response]] = {}
         self.mimetypes: MimeTypes = MimeTypes()
         mimedata = get_data("scrapy", "mime.types")
-        if not mimedata:
-            raise ValueError(
-                "The mime.types file is not found in the Scrapy installation"
-            )
+        assert mimedata is not None
         self.mimetypes.readfp(StringIO(mimedata.decode("utf8")))
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
     def from_mimetype(self, mimetype: str) -> type[Response]:
         """Return the most appropriate Response class for the given mimetype"""
-        if mimetype is None:
-            return Response
         if mimetype in self.classes:
             return self.classes[mimetype]
-        basetype = f"{mimetype.split('/')[0]}/*"
+        basetype = f"{mimetype.split('/', maxsplit=1)[0]}/*"
         return self.classes.get(basetype, Response)
 
     def from_content_type(

@@ -1,14 +1,27 @@
+import warnings
 from unittest.mock import MagicMock
 
 import pytest
 
 from scrapy import signals
-from scrapy.exceptions import NotConfigured
-from scrapy.extensions import statsmailer
-from scrapy.mail import MailSender
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.signalmanager import SignalManager
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.spider import DefaultSpider
+
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        r"The scrapy\.extensions\.statsmailer module is deprecated",
+        ScrapyDeprecationWarning,
+    )
+    warnings.filterwarnings(
+        "ignore",
+        r"The scrapy\.mail module is deprecated",
+        ScrapyDeprecationWarning,
+    )
+    from scrapy.extensions import statsmailer
+    from scrapy.mail import MailSender
 
 
 @pytest.fixture
@@ -74,7 +87,7 @@ def test_spider_closed_sends_email(dummy_stats):
     spider = DefaultSpider(name="dummy")
     ext.spider_closed(spider)
 
-    args, kwargs = mail.send.call_args
+    args, _ = mail.send.call_args
     to, subject, body = args
     assert to == recipients
     assert "Scrapy stats for: dummy" in subject

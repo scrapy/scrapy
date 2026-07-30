@@ -92,7 +92,6 @@ Marshal
 -   Value for the ``format`` key in the :setting:`FEEDS` setting: ``marshal``
 -   Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
 
-
 .. _topics-feed-storage:
 
 Storages
@@ -106,14 +105,13 @@ The storages backends supported out of the box are:
 
 -   :ref:`topics-feed-storage-fs`
 -   :ref:`topics-feed-storage-ftp`
--   :ref:`topics-feed-storage-s3` (requires boto3_)
--   :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
+-   :ref:`topics-feed-storage-s3` (requires the :ref:`s3 <extras>` extra)
+-   :ref:`topics-feed-storage-gcs` (requires the :ref:`gcs <extras>` extra)
 -   :ref:`topics-feed-storage-stdout`
 
-Some storage backends may be unavailable if the required external libraries are
-not available. For example, the S3 backend is only available if the boto3_
-library is installed.
-
+Some storage backends may be unavailable if the required :ref:`extras <extras>`
+are not installed. For example, the S3 backend requires the :ref:`s3 <extras>`
+extra.
 
 .. _topics-feed-uri-params:
 
@@ -143,6 +141,11 @@ Here are some examples to illustrate:
 .. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
           they can also be used as storage URI parameters.
 
+.. note:: Only ``%(...)s`` parameters are replaced. Any other percent
+          character is kept as-is, so percent-encoded URIs (e.g. ``%20`` for a
+          space or percent-encoded FTP credentials) and :class:`pathlib.Path`
+          keys containing ``%(...)s`` parameters both work as expected.
+
 
 .. _topics-feed-storage-backends:
 
@@ -161,8 +164,8 @@ The feeds are stored in the local filesystem.
 -   Required external libraries: none
 
 Note that for the local filesystem storage you can omit the scheme if you
-specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
-Alternatively, you can use a :class:`pathlib.Path` object.
+specify a path (e.g. ``/tmp/export.csv``). Alternatively, you can use a
+:class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
 
@@ -204,7 +207,7 @@ The feeds are stored on `Amazon S3`_.
 
     -   ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
--   Required external libraries: `boto3`_ >= 1.20.0
+-   Required extras: :ref:`s3 <extras>`
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -236,8 +239,6 @@ This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 Google Cloud Storage (GCS)
 --------------------------
 
-.. versionadded:: 2.3
-
 The feeds are stored on `Google Cloud Storage`_.
 
 -   URI scheme: ``gs``
@@ -246,9 +247,9 @@ The feeds are stored on `Google Cloud Storage`_.
 
     -   ``gs://mybucket/path/to/export.csv``
 
--   Required external libraries: `google-cloud-storage`_.
+-   Required extras: :ref:`gcs <extras>`
 
-For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication>`_.
+For more information about authentication, please refer to `Google Cloud documentation <https://docs.cloud.google.com/docs/authentication>`_.
 
 You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
 
@@ -263,7 +264,6 @@ storage backend is: ``True``.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
-.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
 
 .. _topics-feed-storage-stdout:
@@ -303,8 +303,6 @@ feed URI, allowing item delivery to start way before the end of the crawl.
 Item filtering
 ==============
 
-.. versionadded:: 2.6.0
-
 You can filter items that you want to allow for a particular feed by using the
 ``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
 the specified types will be added to the feed.
@@ -343,8 +341,6 @@ ItemFilter
 
 Post-Processing
 ===============
-
-.. versionadded:: 2.6.0
 
 Scrapy provides an option to activate plugins to post-process feeds before they are exported
 to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
@@ -425,8 +421,6 @@ These are the settings used for configuring the feed exports:
 FEEDS
 -----
 
-.. versionadded:: 2.1
-
 Default: ``{}``
 
 A dictionary in which every key is a feed URI (or a :class:`pathlib.Path`
@@ -437,33 +431,37 @@ This setting is required for enabling the feed export feature.
 
 See :ref:`topics-feed-storage-backends` for supported URI schemes.
 
-For instance::
+For instance:
+
+.. skip: next
+
+.. code-block:: python
 
     {
-        'items.json': {
-            'format': 'json',
-            'encoding': 'utf8',
-            'store_empty': False,
-            'item_classes': [MyItemClass1, 'myproject.items.MyItemClass2'],
-            'fields': None,
-            'indent': 4,
-            'item_export_kwargs': {
-               'export_empty_fields': True,
+        "items.json": {
+            "format": "json",
+            "encoding": "utf8",
+            "store_empty": False,
+            "item_classes": [MyItemClass1, "myproject.items.MyItemClass2"],
+            "fields": None,
+            "indent": 4,
+            "item_export_kwargs": {
+                "export_empty_fields": True,
             },
         },
-        '/home/user/documents/items.xml': {
-            'format': 'xml',
-            'fields': ['name', 'price'],
-            'item_filter': MyCustomFilter1,
-            'encoding': 'latin1',
-            'indent': 8,
+        "/home/user/documents/items.xml": {
+            "format": "xml",
+            "fields": ["name", "price"],
+            "item_filter": MyCustomFilter1,
+            "encoding": "latin1",
+            "indent": 8,
         },
-        pathlib.Path('items.csv.gz'): {
-            'format': 'csv',
-            'fields': ['price', 'name'],
-            'item_filter': 'myproject.filters.MyCustomFilter2',
-            'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
-            'gzip_compresslevel': 5,
+        pathlib.Path("items.csv.gz"): {
+            "format": "csv",
+            "fields": ["price", "name"],
+            "item_filter": "myproject.filters.MyCustomFilter2",
+            "postprocessing": [MyPlugin1, "scrapy.extensions.postprocessing.GzipPlugin"],
+            "gzip_compresslevel": 5,
         },
     }
 
@@ -479,8 +477,6 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``batch_item_count``: falls back to
     :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
 
-    .. versionadded:: 2.3.0
-
 -   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
 
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
@@ -489,19 +485,13 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     If undefined or empty, all items are exported.
 
-    .. versionadded:: 2.6.0
-
 -   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
 
     :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
 
-    .. versionadded:: 2.6.0
-
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
 -   ``item_export_kwargs``: :class:`dict` with keyword arguments for the corresponding :ref:`item exporter class <topics-exporters>`.
-
-    .. versionadded:: 2.4.0
 
 -   ``overwrite``: whether to overwrite the file if it already exists
     (``True``) or append to its content (``False``).
@@ -522,8 +512,6 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
 
-    .. versionadded:: 2.4.0
-
 -   ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`.
 
 -   ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`.
@@ -531,8 +519,6 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``postprocessing``: list of :ref:`plugins <post-processing>` to use for post-processing.
 
     The plugins will be used in the order of the list passed.
-
-    .. versionadded:: 2.6.0
 
 .. setting:: FEED_EXPORT_ENCODING
 
@@ -547,10 +533,6 @@ If set to ``None``, it uses UTF-8 for everything except JSON output, which uses
 safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
 
 Use ``"utf-8"`` if you want UTF-8 for JSON too.
-
-.. versionchanged:: 2.8
-   The :command:`startproject` command now sets this setting to
-   ``"utf-8"`` in the generated ``settings.py`` file.
 
 .. setting:: FEED_EXPORT_FIELDS
 
@@ -639,6 +621,7 @@ Default:
         "file": "scrapy.extensions.feedexport.FileFeedStorage",
         "stdout": "scrapy.extensions.feedexport.StdoutFeedStorage",
         "s3": "scrapy.extensions.feedexport.S3FeedStorage",
+        "gs": "scrapy.extensions.feedexport.GCSFeedStorage",
         "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 
@@ -699,8 +682,6 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 
 FEED_EXPORT_BATCH_ITEM_COUNT
 ----------------------------
-
-.. versionadded:: 2.3.0
 
 Default: ``0``
 
@@ -771,14 +752,10 @@ The function signature should be as follows:
             If :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` is ``0``, ``batch_id``
             is always ``1``.
 
-            .. versionadded:: 2.3.0
-
         -   ``batch_time``: UTC date and time, in ISO format with ``:``
             replaced with ``-``.
 
             See :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
-
-            .. versionadded:: 2.3.0
 
         -   ``time``: ``batch_time``, with microseconds set to ``0``.
    :type params: dict
@@ -786,8 +763,8 @@ The function signature should be as follows:
    :param spider: source spider of the feed items
    :type spider: scrapy.Spider
 
-   .. caution:: The function should return a new dictionary, modifying
-                the received ``params`` in-place is deprecated.
+   .. caution:: The function must return a new dictionary instead of modifying
+                the received ``params`` in-place.
 
 For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:
@@ -814,6 +791,5 @@ source spider in the feed URI:
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _boto3: https://github.com/boto/boto3
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/

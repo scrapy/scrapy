@@ -23,7 +23,7 @@ Development releases do not follow 3-numbers version and are generally
 released as ``dev`` suffixed versions, e.g. ``1.3dev``.
 
 .. note::
-    With Scrapy 0.* series, Scrapy used `odd-numbered versions for development releases`_.
+    With Scrapy 0.* series, Scrapy used odd-numbered versions for development releases.
     This is not the case anymore from Scrapy 1.0 onwards.
 
     Starting with Scrapy 1.0, all releases should be considered production-ready.
@@ -63,7 +63,3 @@ feature.
 
 All deprecated features removed in a Scrapy release are explicitly mentioned in
 the :ref:`release notes <news>`.
-
-
-.. _odd-numbered versions for development releases: https://en.wikipedia.org/wiki/Software_versioning#Odd-numbered_versions_for_development_releases
-

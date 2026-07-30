@@ -3,19 +3,26 @@ from __future__ import annotations
 import dataclasses
 import io
 import random
+import sys
 from abc import ABC, abstractmethod
+from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
+from types import SimpleNamespace
 from typing import Any
 
 import attr
 import pytest
 from itemadapter import ItemAdapter
 
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
+from scrapy.pipelines.files import GCSFilesStore, S3FilesStore, _md5sum
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
+from tests.utils.media_pipelines import DUMMY_SPIDER_INFO
 
 try:
     from PIL import Image
@@ -38,6 +45,11 @@ class TestImagesPipeline:
 
     def teardown_method(self):
         rmtree(self.tempdir)
+
+    def test_missing_pillow(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setitem(sys.modules, "PIL", None)
+        with pytest.raises(NotConfigured, match="requires installing Pillow"):
+            ImagesPipeline(self.tempdir, crawler=get_crawler())
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
@@ -159,7 +171,7 @@ class TestImagesPipeline:
         self.pipeline.thumbs = {"small": (20, 20)}
 
         orig_im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
-        orig_thumb, orig_thumb_buf = _create_image("JPEG", "RGB", (20, 20), (0, 0, 0))
+        _, orig_thumb_buf = _create_image("JPEG", "RGB", (20, 20), (0, 0, 0))
         resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
@@ -169,12 +181,51 @@ class TestImagesPipeline:
 
         path, new_im, new_buf = next(get_images_gen)
         assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
-        assert orig_im == new_im
+        assert orig_im.copy() == new_im
         assert buf.getvalue() == new_buf.getvalue()
 
-        thumb_path, thumb_img, thumb_buf = next(get_images_gen)
+        thumb_path, _, thumb_buf = next(get_images_gen)
         assert thumb_path == "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert orig_thumb_buf.getvalue() == thumb_buf.getvalue()
+
+    def test_get_transposed_images(self):
+        orig_im = Image.new("RGB", (2, 2), (0, 0, 0))
+        orig_im.putpixel((1, 1), (255, 0, 0))
+        exif = orig_im.getexif()
+        exif[274] = 3
+        buf = io.BytesIO()
+        orig_im.save(buf, "PNG", exif=exif)
+        buf.seek(0)
+
+        resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
+        req = Request(url="https://dev.mydeco.com/mydeco.gif")
+
+        get_images_gen = self.pipeline.get_images(
+            response=resp, request=req, info=object()
+        )
+
+        path, new_im, _ = next(get_images_gen)
+        assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        assert new_im.getpixel((0, 0)) == (255, 0, 0)
+
+    @coroutine_test
+    async def test_image_downloaded(self) -> None:
+        """The image and its thumbnails are stored, and the checksum of the
+        full-size image is returned."""
+        self.pipeline.thumbs = {"small": (20, 20)}
+        _, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
+        url = "https://dev.mydeco.com/mydeco.gif"
+        response = Response(url=url, body=buf.getvalue())
+
+        checksum = await self.pipeline.image_downloaded(
+            response, Request(url=url), DUMMY_SPIDER_INFO
+        )
+
+        buf.seek(0)
+        assert checksum == _md5sum(buf)
+        name = "3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        assert Path(self.tempdir, "full", name).read_bytes() == buf.getvalue()
+        assert Path(self.tempdir, "thumbs", "small", name).exists()
 
     def test_convert_image(self):
         SIZE = (100, 100)
@@ -208,6 +259,24 @@ class TestImagesPipeline:
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (205, 230, 255))]
+
+    def test_convert_image_legacy_resampling_filter(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Pillow older than 9.1.0 has Image.ANTIALIAS instead of
+        Image.Resampling.LANCZOS."""
+        # Image.LANCZOS is the only spelling that exists in every supported
+        # Pillow version, but Pillow defines it dynamically, hence the ignore.
+        monkeypatch.setattr(
+            self.pipeline,
+            "_Image",
+            SimpleNamespace(ANTIALIAS=Image.LANCZOS),  # type: ignore[attr-defined]
+        )
+        im, buf = _create_image("JPEG", "RGB", (100, 100), (0, 127, 255))
+
+        thumbnail, _ = self.pipeline.convert_image(im, size=(10, 25), response_body=buf)
+
+        assert thumbnail.size == (10, 10)
 
     @pytest.mark.parametrize(
         "bad_type",
@@ -294,11 +363,11 @@ class TestImagesPipelineFieldsItem(TestImagesPipelineFieldsMixin):
 class ImagesPipelineTestDataClass:
     name: str
     # default fields
-    image_urls: list = dataclasses.field(default_factory=list)
-    images: list = dataclasses.field(default_factory=list)
+    image_urls: list[str] = dataclasses.field(default_factory=list)
+    images: list[dict[str, str]] = dataclasses.field(default_factory=list)
     # overridden fields
-    custom_image_urls: list = dataclasses.field(default_factory=list)
-    custom_images: list = dataclasses.field(default_factory=list)
+    custom_image_urls: list[str] = dataclasses.field(default_factory=list)
+    custom_images: list[dict[str, str]] = dataclasses.field(default_factory=list)
 
 
 class TestImagesPipelineFieldsDataClass(TestImagesPipelineFieldsMixin):
@@ -415,7 +484,7 @@ class TestImagesPipelineCustomSettings:
         pipeline = pipeline_cls.from_crawler(
             get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+        for pipe_attr, _ in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
             attr_value = getattr(pipeline, pipe_attr.lower())
             assert attr_value != self.default_pipeline_settings[pipe_attr]
@@ -449,7 +518,7 @@ class TestImagesPipelineCustomSettings:
         user_pipeline = UserDefinedImagePipeline.from_crawler(
             get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+        for pipe_attr, _ in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_pipeline_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_attr.lower()) == custom_value
@@ -521,8 +590,46 @@ class TestImagesPipelineCustomSettings:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
 
+    def test_images_store_s3_acl_setting_used(self, tmp_path):
+        old_policy = S3FilesStore.POLICY
 
-def _create_image(format_, *a, **kw):
+        try:
+            crawler = get_crawler(
+                None,
+                {
+                    "IMAGES_STORE": tmp_path,
+                    "IMAGES_STORE_S3_ACL": "public-read",
+                    "FILES_STORE_S3_ACL": "private",
+                },
+            )
+
+            ImagesPipeline.from_crawler(crawler)
+
+            assert S3FilesStore.POLICY == "public-read"
+        finally:
+            S3FilesStore.POLICY = old_policy
+
+    def test_images_store_gcs_acl_setting_used(self, tmp_path):
+        old_policy = GCSFilesStore.POLICY
+
+        try:
+            crawler = get_crawler(
+                None,
+                {
+                    "IMAGES_STORE": tmp_path,
+                    "IMAGES_STORE_GCS_ACL": "authenticatedRead",
+                    "FILES_STORE_GCS_ACL": "",
+                },
+            )
+
+            ImagesPipeline.from_crawler(crawler)
+
+            assert GCSFilesStore.POLICY == "authenticatedRead"
+        finally:
+            GCSFilesStore.POLICY = old_policy
+
+
+def _create_image(format_: str, *a: Any, **kw: Any) -> tuple[Image.Image, io.BytesIO]:
     buf = io.BytesIO()
     Image.new(*a, **kw).save(buf, format_)
     buf.seek(0)

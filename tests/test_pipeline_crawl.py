@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import logging
 import shutil
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from w3lib.url import add_or_replace_parameter
 
 from scrapy import Spider, signals
@@ -15,6 +14,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -58,6 +58,8 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
 
 
 class TestFileDownloadCrawl:
+    mockserver: MockServer
+
     pipeline_class = "scrapy.pipelines.files.FilesPipeline"
     store_setting_key = "FILES_STORE"
     media_key = "files"
@@ -102,7 +104,7 @@ class TestFileDownloadCrawl:
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
         return crawler
 
-    def _assert_files_downloaded(self, items, logs):
+    def _assert_files_downloaded(self, items: list[Any], logs: str) -> None:
         assert len(items) == 1
         assert self.media_key in items[0]
 
@@ -125,13 +127,16 @@ class TestFileDownloadCrawl:
             for i in item[self.media_key]:
                 assert (self.tmpmediastore / i["path"]).exists()
 
-    def _assert_files_download_failure(self, crawler, items, code, logs):
+    def _assert_files_download_failure(
+        self, crawler: Crawler, items: list[Any], code: int, logs: str
+    ) -> None:
         # check that the item does NOT have the "images/files" field populated
         assert len(items) == 1
         assert self.media_key in items[0]
         assert not items[0][self.media_key]
 
         # check that there was 1 successful fetch and 3 other responses with non-200 code
+        assert crawler.stats
         assert crawler.stats.get_value("downloader/request_method_count/GET") == 4
         assert crawler.stats.get_value("downloader/response_count") == 4
         assert crawler.stats.get_value("downloader/response_status_count/200") == 1
@@ -144,62 +149,71 @@ class TestFileDownloadCrawl:
         # check that no files were written to the media store
         assert not list(self.tmpmediastore.iterdir())
 
-    @inlineCallbacks
-    def test_download_media(self):
+    @coroutine_test
+    async def test_download_media(self, caplog: pytest.LogCaptureFixture) -> None:
         crawler = self._create_crawler(MediaDownloadSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
                 self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
             )
-        self._assert_files_downloaded(self.items, str(log))
+        self._assert_files_downloaded(self.items, caplog.text)
 
-    @inlineCallbacks
-    def test_download_media_wrong_urls(self):
+    @coroutine_test
+    async def test_download_media_wrong_urls(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
                 self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
             )
-        self._assert_files_download_failure(crawler, self.items, 404, str(log))
+        self._assert_files_download_failure(crawler, self.items, 404, caplog.text)
 
-    @inlineCallbacks
-    def test_download_media_redirected_default_failure(self):
+    @coroutine_test
+    async def test_download_media_redirected_default_failure(
+        self, caplog: pytest.LogCaptureFixture
+    ):
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
                 self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,
             )
-        self._assert_files_download_failure(crawler, self.items, 302, str(log))
+        self._assert_files_download_failure(crawler, self.items, 302, caplog.text)
 
-    @inlineCallbacks
-    def test_download_media_redirected_allowed(self):
+    @coroutine_test
+    async def test_download_media_redirected_allowed(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         settings = {
             **self.settings,
             "MEDIA_ALLOW_REDIRECTS": True,
         }
         crawler = self._create_crawler(RedirectedMediaDownloadSpider, settings)
-        with LogCapture() as log:
-            yield crawler.crawl(
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
                 self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,
             )
-        self._assert_files_downloaded(self.items, str(log))
+        self._assert_files_downloaded(self.items, caplog.text)
+        assert crawler.stats
         assert crawler.stats.get_value("downloader/response_status_count/302") == 3
 
-    @inlineCallbacks
-    def test_download_media_file_path_error(self):
+    @coroutine_test
+    async def test_download_media_file_path_error(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         cls = load_object(self.pipeline_class)
 
-        class ExceptionRaisingMediaPipeline(cls):
+        class ExceptionRaisingMediaPipeline(cls):  # type: ignore[misc,valid-type]
             def file_path(self, request, response=None, info=None, *, item=None):
                 return 1 / 0
 
@@ -208,14 +222,14 @@ class TestFileDownloadCrawl:
             "ITEM_PIPELINES": {ExceptionRaisingMediaPipeline: 1},
         }
         crawler = self._create_crawler(MediaDownloadSpider, settings)
-        with LogCapture() as log:
-            yield crawler.crawl(
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
                 self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,
             )
-        assert "ZeroDivisionError" in str(log)
+        assert "ZeroDivisionError" in caplog.text
 
 
 pillow_available: bool

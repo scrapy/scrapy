@@ -5,16 +5,13 @@ import logging
 from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
-from warnings import warn
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     # requires queuelib >= 1.6.2
@@ -128,16 +125,16 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
 
 
 class Scheduler(BaseScheduler):
-    """Default scheduler.
+    r"""Default scheduler.
 
     Requests are stored into priority queues
     (:setting:`SCHEDULER_PRIORITY_QUEUE`) that sort requests by
     :attr:`~scrapy.http.Request.priority`.
 
-    By default, a single, memory-based priority queue is used for all requests.
-    When using :setting:`JOBDIR`, a disk-based priority queue is also created,
+    By default, memory-based priority queues are used for all requests.
+    When using :setting:`JOBDIR`, disk-based priority queues are also created,
     and only unserializable requests are stored in the memory-based priority
-    queue. For a given priority value, requests in memory take precedence over
+    queues. For a given priority value, requests in memory take precedence over
     requests in disk.
 
     Each priority queue stores requests in separate internal queues, one per
@@ -190,7 +187,8 @@ class Scheduler(BaseScheduler):
     following :ref:`settings <topics-settings>`:
 
     | :setting:`DEPTH_PRIORITY` = ``1``
-    | :setting:`SCHEDULER_DISK_QUEUE` = ``"scrapy.squeues.PickleFifoDiskQueue"``
+    | :setting:`SCHEDULER_DISK_QUEUE` =
+      ``"scrapy.squeues.PickleFifoDiskQueue"``
     | :setting:`SCHEDULER_MEMORY_QUEUE` = ``"scrapy.squeues.FifoMemoryQueue"``
 
     .. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search
@@ -211,14 +209,45 @@ class Scheduler(BaseScheduler):
     -------------------------
 
     While pending requests are below the configured values of
-    :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
-    or :setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
+    :setting:`CONCURRENT_REQUESTS` or
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, those requests are sent
     concurrently.
 
     As a result, the first few requests of a crawl may not follow the desired
     order. Lowering those settings to ``1`` enforces the desired order except
     for the very first request, but it significantly slows down the crawl as a
     whole.
+
+    Job directory contents
+    ======================
+
+    .. warning:: The files that this class generates in the :ref:`job directory
+        <job-dir>` are an implementation detail, and may change without a
+        warning in a future version of Scrapy. Do not rely on the following
+        information for anything other than debugging purposes.
+
+    When using :setting:`JOBDIR`, this scheduler class:
+
+    -   Creates a directory named ``requests.queue`` inside the :ref:`job
+        directory <job-dir>`, meant to keep track of all requests stored in
+        the scheduler (i.e. not downloaded yet).
+
+    -   Generates inside that directory an ``active.json`` file with a JSON
+        representation of the state (``startprios``) of
+        :setting:`SCHEDULER_PRIORITY_QUEUE`.
+
+        The file is generated whenever the job stops (cleanly) and is loaded
+        when resuming the job.
+
+    -   Instantiates the configured :setting:`SCHEDULER_PRIORITY_QUEUE` with
+        ``requests.queue/`` as persistence directory (*key*) and
+        :setting:`SCHEDULER_DISK_QUEUE` as *downstream_queue_cls*. The priority
+        queue may create additional files and directories inside that
+        directory, directly or though instances of
+        :setting:`SCHEDULER_DISK_QUEUE`.
+
+    This scheduler class also uses the configured :setting:`DUPEFILTER_CLASS`,
+    which may also write data inside the job directory.
     """
 
     @classmethod
@@ -260,11 +289,11 @@ class Scheduler(BaseScheduler):
 
         :param dqclass: A class to be used as persistent request queue.
                         The value for the :setting:`SCHEDULER_DISK_QUEUE` setting is used by default.
-        :type dqclass: class
+        :type dqclass: type
 
         :param mqclass: A class to be used as non-persistent request queue.
                         The value for the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used by default.
-        :type mqclass: class
+        :type mqclass: type
 
         :param logunser: A boolean that indicates whether or not unserializable requests should be logged.
                         The value for the :setting:`SCHEDULER_DEBUG` setting is used by default.
@@ -277,7 +306,7 @@ class Scheduler(BaseScheduler):
 
         :param pqclass: A class to be used as priority queue for requests.
                         The value for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is used by default.
-        :type pqclass: class
+        :type pqclass: type
 
         :param crawler: The crawler object corresponding to the current crawl.
         :type crawler: :class:`scrapy.crawler.Crawler`
@@ -305,7 +334,7 @@ class Scheduler(BaseScheduler):
         cls = crawler.settings[f"SCHEDULER_START_{queue}_QUEUE"]
         if not cls:
             return None
-        return load_object(cls)
+        return cast("type[BaseQueue]", load_object(cls))
 
     def has_pending_requests(self) -> bool:
         return len(self) > 0
@@ -313,7 +342,7 @@ class Scheduler(BaseScheduler):
     def open(self, spider: Spider) -> Deferred[None] | None:
         """
         (1) initialize the memory queue
-        (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
+        (2) initialize the disk queue if the ``jobdir`` argument wasn't empty
         (3) return the result of the dupefilter's ``open`` method
         """
         self.spider: Spider = spider
@@ -418,27 +447,13 @@ class Scheduler(BaseScheduler):
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
-        try:
-            return build_from_crawler(
-                self.pqclass,
-                self.crawler,
-                downstream_queue_cls=self.mqclass,
-                key="",
-                start_queue_cls=self._smqclass,
-            )
-        except TypeError:
-            warn(
-                f"The __init__ method of {global_object_name(self.pqclass)} "
-                f"does not support a `start_queue_cls` keyword-only "
-                f"parameter.",
-                ScrapyDeprecationWarning,
-            )
-            return build_from_crawler(
-                self.pqclass,
-                self.crawler,
-                downstream_queue_cls=self.mqclass,
-                key="",
-            )
+        return build_from_crawler(
+            self.pqclass,
+            self.crawler,
+            downstream_queue_cls=self.mqclass,
+            key="",
+            start_queue_cls=self._smqclass,
+        )
 
     def _dq(self) -> ScrapyPriorityQueue:
         """Create a new priority queue instance, with disk storage"""
@@ -446,29 +461,14 @@ class Scheduler(BaseScheduler):
         assert self.dqdir
         assert self.pqclass
         state = self._read_dqs_state(self.dqdir)
-        try:
-            q = build_from_crawler(
-                self.pqclass,
-                self.crawler,
-                downstream_queue_cls=self.dqclass,
-                key=self.dqdir,
-                startprios=state,
-                start_queue_cls=self._sdqclass,
-            )
-        except TypeError:
-            warn(
-                f"The __init__ method of {global_object_name(self.pqclass)} "
-                f"does not support a `start_queue_cls` keyword-only "
-                f"parameter.",
-                ScrapyDeprecationWarning,
-            )
-            q = build_from_crawler(
-                self.pqclass,
-                self.crawler,
-                downstream_queue_cls=self.dqclass,
-                key=self.dqdir,
-                startprios=state,
-            )
+        q = build_from_crawler(
+            self.pqclass,
+            self.crawler,
+            downstream_queue_cls=self.dqclass,
+            key=self.dqdir,
+            startprios=state,
+            start_queue_cls=self._sdqclass,
+        )
         if q:
             logger.info(
                 "Resuming crawl (%(queuesize)d requests scheduled)",
@@ -486,13 +486,13 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> list[int]:
+    def _read_dqs_state(self, dqdir: str) -> Any:
         path = Path(dqdir, "active.json")
         if not path.exists():
-            return []
+            return ()
         with path.open(encoding="utf-8") as f:
-            return cast("list[int]", json.load(f))
+            return json.load(f)
 
-    def _write_dqs_state(self, dqdir: str, state: list[int]) -> None:
+    def _write_dqs_state(self, dqdir: str, state: Any) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)

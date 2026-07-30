@@ -9,7 +9,7 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.9+, either the CPython implementation (default) or
+Scrapy requires Python 3.10+, either the CPython implementation (default) or
 the PyPy implementation (see :ref:`python:implementations`).
 
 .. _intro-install-scrapy:
@@ -88,6 +88,56 @@ Once you have created a virtual environment, you can install Scrapy inside it wi
 just like any other Python package.
 (See :ref:`platform-specific guides <intro-install-platform-notes>`
 below for non-Python dependencies that you may need to install beforehand).
+
+.. _extras:
+
+Optional extras
+===============
+
+Scrapy provides optional :ref:`extras <pypug:dependency-specifiers-extras>`
+that install additional dependencies to enable specific features. To install
+Scrapy with one or more extras, list them in square brackets:
+
+.. code-block:: console
+
+    pip install scrapy[s3,images]
+
+The following extras are available:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Extra
+     - Provides
+   * - ``bpython``
+     - :ref:`bpython shell <shell-config>`
+   * - ``brotli``
+     - :ref:`Brotli response decompression <http-compression>`
+   * - ``gcs``
+     - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
+       :ref:`feed exports <topics-feed-exports>` and
+       :ref:`media pipelines <media-pipeline-gcs>`
+   * - ``httpx``
+     - :ref:`httpx-handler`, including its HTTP/2 and SOCKS proxy support
+   * - ``images``
+     - :ref:`Images pipeline <images-pipeline>`
+   * - ``ipython``
+     - :ref:`IPython shell <shell-config>`
+   * - ``ptpython``
+     - :ref:`ptpython shell <shell-config>`
+   * - ``robotparser``
+     - :ref:`Robotexclusionrulesparser robots.txt parsing <rerp-parser>`
+   * - ``s3``
+     - :ref:`Amazon S3 <topics-feed-storage-s3>` storage for
+       :ref:`feed exports <topics-feed-exports>`,
+       :ref:`media pipelines <media-pipelines-s3>`, and
+       :ref:`S3 downloads <s3-handler>`
+   * - ``twisted-http2``
+     - :ref:`twisted-http2-handler`
+   * - ``uvloop``
+     - `uvloop <https://github.com/MagicStack/uvloop>`_ event loop
+   * - ``zstd``
+     - :ref:`Zstandard response decompression <http-compression>`
 
 
 .. _intro-install-platform-notes:
@@ -231,8 +281,8 @@ with PyPy on Windows has not been tested.
 You can check that Scrapy is installed correctly by running ``scrapy bench``.
 If this command gives errors such as
 ``TypeError: ... got 2 unexpected keyword arguments``, this means
-that setuptools was unable to pick up one PyPy-specific dependency.
-To fix this issue, run ``pip install 'PyPyDispatcher>=2.1.0'``.
+that the ``PyPyDispatcher`` dependency wasn't installed. To fix this issue, run
+``pip install 'PyPyDispatcher>=2.1.0'``.
 
 
 .. _intro-install-troubleshooting:
@@ -264,7 +314,6 @@ reinstall Twisted with the :code:`tls` extra option::
 For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 
 .. _Python: https://www.python.org/
-.. _pip: https://pip.pypa.io/en/latest/installing/
 .. _lxml: https://lxml.de/index.html
 .. _parsel: https://pypi.org/project/parsel/
 .. _w3lib: https://pypi.org/project/w3lib/
@@ -274,8 +323,7 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _setuptools: https://pypi.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
-.. _Anaconda: https://docs.anaconda.com/anaconda/
+.. _Anaconda: https://www.anaconda.com/docs/main
 .. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
-.. _Visual Studio: https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio
 .. _Microsoft C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 .. _conda-forge: https://conda-forge.org/

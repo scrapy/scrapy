@@ -3,7 +3,7 @@
 *.pyc
 _trial_temp*
 dropin.cache
-docs/build
+docs/_build
 *egg-info
 .tox/
 venv/

@@ -10,8 +10,6 @@ from scrapy.utils.test import get_crawler
 
 
 class TestHttpProxyMiddleware:
-    failureException = AssertionError  # type: ignore[assignment]
-
     def setup_method(self):
         self._oldenv = os.environ.copy()
 
@@ -374,6 +372,12 @@ class TestHttpProxyMiddleware:
         assert middleware.process_request(request) is None
         assert "proxy" not in request.meta
         assert b"Proxy-Authorization" not in request.headers
+
+    def test_proxy_unparseable_url_clears_meta(self):
+        middleware = HttpProxyMiddleware()
+        request = Request("http://example.com", meta={"proxy": "//"})
+        assert middleware.process_request(request) is None
+        assert request.meta["proxy"] is None
 
     def test_proxy_authentication_header_disabled_proxy(self):
         middleware = HttpProxyMiddleware()

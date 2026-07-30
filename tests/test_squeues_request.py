@@ -70,7 +70,6 @@ class TestRequestQueueBase(ABC):
         if test_peek:
             assert q.peek() is None
         assert q.pop() is None
-        q.close()
 
     @pytest.mark.parametrize("test_peek", [True, False])
     def test_order(self, q: queuelib.queue.BaseQueue, test_peek: bool):
@@ -108,7 +107,6 @@ class TestRequestQueueBase(ABC):
         if test_peek:
             assert q.peek() is None
         assert q.pop() is None
-        q.close()
 
 
 class TestPickleFifoDiskQueueRequest(TestRequestQueueBase):
@@ -116,9 +114,13 @@ class TestPickleFifoDiskQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        return PickleFifoDiskQueue.from_crawler(
+        queue = PickleFifoDiskQueue.from_crawler(
             crawler=crawler, key=str(tmp_path / "pickle" / "fifo")
         )
+        try:
+            yield queue
+        finally:
+            queue.close()
 
 
 class TestPickleLifoDiskQueueRequest(TestRequestQueueBase):
@@ -126,9 +128,13 @@ class TestPickleLifoDiskQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        return PickleLifoDiskQueue.from_crawler(
+        queue = PickleLifoDiskQueue.from_crawler(
             crawler=crawler, key=str(tmp_path / "pickle" / "lifo")
         )
+        try:
+            yield queue
+        finally:
+            queue.close()
 
 
 class TestMarshalFifoDiskQueueRequest(TestRequestQueueBase):
@@ -136,9 +142,13 @@ class TestMarshalFifoDiskQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        return MarshalFifoDiskQueue.from_crawler(
+        queue = MarshalFifoDiskQueue.from_crawler(
             crawler=crawler, key=str(tmp_path / "marshal" / "fifo")
         )
+        try:
+            yield queue
+        finally:
+            queue.close()
 
 
 class TestMarshalLifoDiskQueueRequest(TestRequestQueueBase):
@@ -146,9 +156,13 @@ class TestMarshalLifoDiskQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        return MarshalLifoDiskQueue.from_crawler(
+        queue = MarshalLifoDiskQueue.from_crawler(
             crawler=crawler, key=str(tmp_path / "marshal" / "lifo")
         )
+        try:
+            yield queue
+        finally:
+            queue.close()
 
 
 class TestFifoMemoryQueueRequest(TestRequestQueueBase):

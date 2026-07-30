@@ -198,7 +198,7 @@ scrapy.Spider
 
        The ``parse`` method is in charge of processing the response and returning
        scraped data and/or more URLs to follow. Other Requests callbacks have
-       the same requirements as the :class:`Spider` class.
+       the same requirements as the :class:`~scrapy.Spider` class.
 
        This method, as well as any other Request callback, must return a
        :class:`~scrapy.Request` object, an :ref:`item object <topics-items>`, an
@@ -207,12 +207,6 @@ scrapy.Spider
 
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
-
-   .. method:: log(message, [level, component])
-
-       Wrapper that sends a log message through the Spider's :attr:`logger`,
-       kept for backward compatibility. For more information see
-       :ref:`topics-logging-from-spiders`.
 
    .. method:: closed(reason)
 
@@ -314,7 +308,7 @@ Spiders can access arguments in their `__init__` methods:
         name = "myspider"
 
         def __init__(self, category=None, *args, **kwargs):
-            super(MySpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
             self.start_urls = [f"http://www.example.com/categories/{category}"]
             # ...
 
@@ -334,8 +328,8 @@ the spider as attributes. The above example can also be written as follows:
 
 If you are :ref:`running Scrapy from a script <run-from-script>`, you can
 specify spider arguments when calling
-:class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
-:class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
+:meth:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
+:meth:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
 
 .. skip: next
 .. code-block:: python
@@ -351,15 +345,56 @@ as an attribute. Otherwise, you would cause iteration over a ``start_urls``
 string (a very common Python pitfall) resulting in each character being seen as
 a separate url.
 
-A valid use case is to set the http auth credentials
-used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
-or the user agent
-used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
-
-    scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
-
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
+
+.. _spiderargs-scrapy-spider-metadata:
+
+scrapy-spider-metadata parameters
+---------------------------------
+
+Another alternative to pass spider arguments is the library `scrapy-spider-metadata`_.
+
+This allows for Scrapy spiders to define, validate, document and pre-process
+their arguments as Pydantic models.
+
+The example shows how to define typed parameters where a string argument
+is automatically converted to an integer:
+
+.. code-block:: python
+
+    import scrapy
+    from pydantic import BaseModel
+    from scrapy_spider_metadata import Args
+
+
+    class MyParams(BaseModel):
+        pages: int
+
+
+    class BookSpider(Args[MyParams], scrapy.Spider):
+        name = "bookspider"
+        start_urls = ["http://books.toscrape.com/catalogue"]
+
+        async def start(self):
+            for start_url in self.start_urls:
+                for index in range(1, self.args.pages + 1):
+                    yield scrapy.Request(f"{start_url}/page-{index}.html")
+
+        def parse(self, response):
+            book_links = response.css("article.product_pod h3 a::attr(href)").getall()
+            for book_link in book_links:
+                yield response.follow(book_link, self.parse_book)
+
+        def parse_book(self, response):
+            yield {
+                "title": response.css("h1::text").get(),
+                "price": response.css("p.price_color::text").get(),
+            }
+
+This spider can be called from the command line::
+
+    scrapy crawl bookspider -a pages=2
 
 .. _start-requests:
 
@@ -408,13 +443,14 @@ with a ``TestItem`` declared in a ``myproject.items`` module:
 
 .. code-block:: python
 
-    import scrapy
+    from dataclasses import dataclass
 
 
-    class TestItem(scrapy.Item):
-        id = scrapy.Field()
-        name = scrapy.Field()
-        description = scrapy.Field()
+    @dataclass
+    class TestItem:
+        id: str | None = None
+        name: str | None = None
+        description: str | None = None
 
 
 .. currentmodule:: scrapy.spiders
@@ -500,9 +536,6 @@ Crawling rules
       callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
       unexpected behaviour can occur otherwise.
 
-   .. versionadded:: 2.0
-      The *errback* parameter.
-
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
 
@@ -510,7 +543,6 @@ Let's now take a look at an example CrawlSpider with rules:
 
 .. code-block:: python
 
-    import scrapy
     from scrapy.spiders import CrawlSpider, Rule
     from scrapy.linkextractors import LinkExtractor
 
@@ -530,7 +562,7 @@ Let's now take a look at an example CrawlSpider with rules:
 
         def parse_item(self, response):
             self.logger.info("Hi, this is an item page! %s", response.url)
-            item = scrapy.Item()
+            item = {}
             item["id"] = response.xpath('//td[@id="item_id"]/text()').re(r"ID: (\d+)")
             item["name"] = response.xpath('//td[@id="item_name"]/text()').get()
             item["description"] = response.xpath(
@@ -552,7 +584,7 @@ Let's now take a look at an example CrawlSpider with rules:
 This spider would start crawling example.com's home page, collecting category
 links, and item links, parsing the latter with the ``parse_item`` method. For
 each item response, some data will be extracted from the HTML using XPath, and
-an :class:`~scrapy.Item` will be filled with it.
+a dictionary will be filled with it.
 
 XMLFeedSpider
 -------------
@@ -573,7 +605,7 @@ XMLFeedSpider
 
         A string which defines the iterator to use. It can be either:
 
-           - ``'iternodes'`` - a fast iterator based on regular expressions
+           - ``'iternodes'`` - a fast iterator based on ``lxml``
 
            - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory
@@ -587,9 +619,11 @@ XMLFeedSpider
 
     .. attribute:: itertag
 
-        A string with the name of the node (or element) to iterate in. Example::
+        A string with the name of the node (or element) to iterate in. Example:
 
-            itertag = 'product'
+        .. code-block:: python
+
+            itertag = "product"
 
     .. attribute:: namespaces
 
@@ -602,12 +636,17 @@ XMLFeedSpider
         You can then specify nodes with namespaces in the :attr:`itertag`
         attribute.
 
-        Example::
+        Example:
+
+        .. code-block:: python
+
+            from scrapy.spiders import XMLFeedSpider
+
 
             class YourSpider(XMLFeedSpider):
 
-                namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]
-                itertag = 'n:url'
+                namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
+                itertag = "n:url"
                 # ...
 
     Apart from these new attributes, this spider has the following overridable
@@ -668,9 +707,9 @@ These spiders are pretty easy to use, let's have a look at one example:
             )
 
             item = TestItem()
-            item["id"] = node.xpath("@id").get()
-            item["name"] = node.xpath("name").get()
-            item["description"] = node.xpath("description").get()
+            item.id = node.xpath("@id").get()
+            item.name = node.xpath("name").get()
+            item.description = node.xpath("description").get()
             return item
 
 Basically what we did up there was to create a spider that downloads a feed from
@@ -732,9 +771,9 @@ Let's see an example similar to the previous one, but using a
             self.logger.info("Hi, this is a row!: %r", row)
 
             item = TestItem()
-            item["id"] = row["id"]
-            item["name"] = row["name"]
-            item["description"] = row["description"]
+            item.id = row["id"]
+            item.name = row["name"]
+            item.description = row["description"]
             return item
 
 
@@ -767,9 +806,11 @@ SitemapSpider
           the regular expression. ``callback`` can be a string (indicating the
           name of a spider method) or a callable.
 
-        For example::
+        For example:
 
-            sitemap_rules = [('/product/', 'parse_product')]
+        .. code-block:: python
+
+            sitemap_rules = [("/product/", "parse_product")]
 
         Rules are applied in order, and only the first one that matches will be
         used.
@@ -791,7 +832,9 @@ SitemapSpider
         are links for the same website in another language passed within
         the same ``url`` block.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>
@@ -809,7 +852,9 @@ SitemapSpider
         This is a filter function that could be overridden to select sitemap entries
         based on their attributes.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>
@@ -912,6 +957,7 @@ Combine SitemapSpider with other sources of urls:
 
 .. code-block:: python
 
+    from scrapy import Request
     from scrapy.spiders import SitemapSpider
 
 
@@ -935,6 +981,7 @@ Combine SitemapSpider with other sources of urls:
         def parse_other(self, response):
             pass  # ... scrape other here ...
 
+.. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/params.html
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
 .. _robots.txt: https://www.robotstxt.org/

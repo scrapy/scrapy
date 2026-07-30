@@ -5,9 +5,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -44,6 +46,12 @@ def process_spider_output(mw: UrlLengthMiddleware) -> list[Request]:
 
 def test_middleware_works(mw: UrlLengthMiddleware) -> None:
     assert process_spider_output(mw) == [short_url_req]
+
+
+def test_not_configured_without_limit() -> None:
+    crawler = get_crawler(Spider, {"URLLENGTH_LIMIT": 0})
+    with pytest.raises(NotConfigured):
+        build_from_crawler(UrlLengthMiddleware, crawler)
 
 
 def test_logging(
