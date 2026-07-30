@@ -167,6 +167,9 @@ Note that for the local filesystem storage (only) you can omit the scheme if
 you specify a path (e.g. ``/tmp/export.csv``).
 Alternatively you can also use a :class:`pathlib.Path` object.
 
+Supported :ref:`modes <feed-mode>`: ``"append"``, ``"create"`` and
+``"overwrite"``. If :setting:`FEED_MODE` is ``None``, ``"append"`` is used.
+
 .. _topics-feed-storage-ftp:
 
 FTP
@@ -183,11 +186,16 @@ FTP supports two different connection modes: `active or passive
 mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
-storage backend is: ``True``.
+Supported :ref:`modes <feed-mode>`: ``"append"``, ``"create"`` and
+``"overwrite"``. If :setting:`FEED_MODE` is ``None``, ``"overwrite"`` is used.
 
-.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
-     previous version of your data.
+.. note:: Some FTP servers may not support appending to files (the ``APPE`` FTP
+          command).
+
+.. note:: FTP has no atomic create-if-absent command, so ``"create"`` is
+          best-effort: the target is checked for existence right before it is
+          written. Servers that do not support the ``SIZE`` command are
+          reported as not having the target.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -225,11 +233,11 @@ feeds using these settings:
 -   :setting:`AWS_ENDPOINT_URL`
 -   :setting:`AWS_REGION_NAME`
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
-storage backend is: ``True``.
+Supported :ref:`modes <feed-mode>`: ``"create"`` and ``"overwrite"``. If
+:setting:`FEED_MODE` is ``None``, ``"overwrite"`` is used.
 
-.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
-     previous version of your data.
+``"create"`` mode `does not support files larger than 5 GB
+<https://docs.aws.amazon.com/AmazonS3/latest/userguide/upload-objects.html>`__.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -256,11 +264,8 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
 -   :setting:`FEED_STORAGE_GCS_ACL`
 -   :setting:`GCS_PROJECT_ID`
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
-storage backend is: ``True``.
-
-.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
-     previous version of your data.
+Supported :ref:`modes <feed-mode>`: ``"create"`` and ``"overwrite"``. If
+:setting:`FEED_MODE` is ``None``, ``"overwrite"`` is used.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -276,6 +281,8 @@ The feeds are written to the standard output of the Scrapy process.
 -   URI scheme: ``stdout``
 -   Example URI: ``stdout:``
 -   Required external libraries: none
+
+The :ref:`mode <feed-mode>` is ignored by this storage backend.
 
 
 .. _delayed-file-delivery:
@@ -405,6 +412,7 @@ These are the settings used for configuring the feed exports:
 
 -   :setting:`FEEDS` (mandatory)
 -   :setting:`FEED_EXPORT_ENCODING`
+-   :setting:`FEED_MODE`
 -   :setting:`FEED_STORE_EMPTY`
 -   :setting:`FEED_EXPORT_FIELDS`
 -   :setting:`FEED_EXPORT_INDENT`
@@ -493,24 +501,9 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``item_export_kwargs``: :class:`dict` with keyword arguments for the corresponding :ref:`item exporter class <topics-exporters>`.
 
--   ``overwrite``: whether to overwrite the file if it already exists
-    (``True``) or append to its content (``False``).
+-   ``mode``: falls back to :setting:`FEED_MODE`.
 
-    The default value depends on the :ref:`storage backend
-    <topics-feed-storage-backends>`:
-
-    -   :ref:`topics-feed-storage-fs`: ``False``
-
-    -   :ref:`topics-feed-storage-ftp`: ``True``
-
-        .. note:: Some FTP servers may not support appending to files (the
-                  ``APPE`` FTP command).
-
-    -   :ref:`topics-feed-storage-s3`: ``True`` (appending is not supported)
-
-    -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
-
-    -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
+    .. versionadded:: VERSION
 
 -   ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`.
 
@@ -561,6 +554,44 @@ Currently implemented only by :class:`~scrapy.exporters.JsonItemExporter`
 and :class:`~scrapy.exporters.XmlItemExporter`, i.e. when you are exporting
 to ``.json`` or ``.xml``.
 
+.. _feed-mode:
+.. setting:: FEED_MODE
+
+FEED_MODE
+---------
+
+.. versionadded:: VERSION
+
+Default: ``"create"`` (:ref:`fallback <default-settings>`: ``None``)
+
+What to do when the target of a feed already exists.
+
+Supported values, which match the corresponding :func:`open` modes:
+
+-   ``"append"`` (``a``): append to the existing target.
+
+-   ``"create"`` (``x``): do not write, keeping the existing target untouched.
+
+-   ``"overwrite"`` (``w``): replace the existing target.
+
+Can be overridden with the ``mode`` :ref:`feed option <feed-options>`.
+
+Not every :ref:`storage backend <topics-feed-storage-backends>` supports every
+mode; see the documentation of your storage backend.
+
+If ``None``, the mode depends on the backend being used, e.g. appending for the
+:ref:`local filesystem <topics-feed-storage-fs>` and overwriting for :ref:`S3
+<topics-feed-storage-s3>`.
+
+When the mode of a feed is ``"create"`` and its target already exists, Scrapy
+logs an error, increases the ``feedexport/conflicts/<storage class name>``
+:ref:`stat <topics-stats>`, and does not write that file, i.e. the items that it
+would have contained are lost.
+
+.. note:: When resuming a crawl (see :setting:`JOBDIR`), the feed of the
+    previous run already exists, so a feed that must survive a resumed crawl
+    needs the ``"append"`` mode.
+
 .. setting:: FEED_STORE_EMPTY
 
 FEED_STORE_EMPTY
@@ -570,8 +601,8 @@ Default: ``True``
 
 Whether to export empty feeds (i.e. feeds with no items).
 If ``False``, and there are no items to export, no new files are created and
-existing files are not modified, even if the :ref:`overwrite feed option
-<feed-options>` is enabled.
+existing files are not modified, even if the ``mode`` :ref:`feed option
+<feed-options>` is ``"overwrite"``.
 
 .. setting:: FEED_STORAGES
 
@@ -581,7 +612,30 @@ FEED_STORAGES
 Default: ``{}``
 
 A dict containing additional feed storage backends supported by your project.
-The keys are URI schemes and the values are paths to storage classes.
+The keys are URI schemes and the values are paths to storage classes, which must
+follow this protocol:
+
+.. autoclass:: FeedStorageProtocol
+    :members:
+
+    .. attribute:: supported_modes
+        :type: frozenset[str]
+
+        Optional set of supported values of the ``mode`` :ref:`feed option
+        <feed-options>`, e.g. ``frozenset({"create", "overwrite"})``.
+
+        Setting ``mode`` to an unsupported value raises an exception, which
+        prevents the crawl from running. A storage class that does not define
+        this attribute is assumed to predate the ``mode`` feed option, and
+        setting that option on a feed that uses it logs a warning about the
+        option being possibly ignored.
+
+        A storage class that declares support for ``"create"`` must enforce it
+        when writing the feed, ideally atomically, raising
+        :exc:`FileExistsError` if the target exists. Scrapy then handles that
+        file as described in :setting:`FEED_MODE`.
+
+        .. versionadded:: VERSION
 
 .. setting:: FEED_STORAGE_FTP_ACTIVE
 

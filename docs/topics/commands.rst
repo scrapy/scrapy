@@ -271,7 +271,7 @@ Supported options:
 
 * ``-a NAME=VALUE``: set a spider argument (may be repeated)
 
-* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout). To define the output format, set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
+* ``--output FILE`` or ``-o FILE``: dump scraped items into FILE (use - for stdout), handling an existing FILE as the :setting:`FEED_MODE` setting indicates. To define the output format, set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
 
 * ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file. To define the output format, set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
 

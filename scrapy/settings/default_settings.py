@@ -370,6 +370,7 @@ FEED_EXPORTERS_BASE = {
     "pickle": "scrapy.exporters.PickleItemExporter",
 }
 FEED_FORMAT = "jsonlines"
+FEED_MODE = None
 FEED_STORE_EMPTY = True
 FEED_STORAGES = {}
 FEED_STORAGES_BASE = {

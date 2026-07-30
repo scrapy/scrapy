@@ -83,6 +83,15 @@ stopping it cleanly. Forced, sudden or otherwise unclean shutdown can lead to
 data corruption in the job directory, which may prevent the spider from
 resuming correctly.
 
+Feed exports
+------------
+
+When a job is resumed, the :ref:`feeds <topics-feed-exports>` of the previous
+run already exist, so their :ref:`mode <feed-mode>` determines what happens to
+the items of the resumed run: ``"append"`` adds them to those feeds,
+``"overwrite"`` replaces the items of the previous run with them, and
+``"create"`` does not write them anywhere.
+
 Cookies expiration
 ------------------
 
