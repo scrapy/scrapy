@@ -11,7 +11,6 @@ import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
-    AnyStr,
     Concatenate,
     NoReturn,
     TypeAlias,
@@ -125,7 +124,10 @@ class Request(object_ref):
         url: str,
         callback: CallbackT | None = None,
         method: str = "GET",
-        headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        headers: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         body: bytes | str | None = None,
         cookies: CookiesT | None = None,
         meta: dict[str, Any] | None = None,
@@ -310,7 +312,11 @@ class Request(object_ref):
 
     @headers.setter
     def headers(
-        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None
+        self,
+        value: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None,
     ) -> None:
         if isinstance(value, Headers):
             self._headers = value
@@ -380,6 +386,20 @@ class Request(object_ref):
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
+
+    def to_curl(self) -> str:
+        """Return a string with a `cURL <https://curl.se/>`_ command equivalent
+        to this request.
+
+        Inverse of :meth:`from_curl`. See also
+        :func:`scrapy.utils.request.request_to_curl`.
+
+        .. versionadded:: VERSION
+        """
+        # Imported here to avoid a circular import.
+        from scrapy.utils.request import request_to_curl  # noqa: PLC0415
+
+        return request_to_curl(self)
 
     def to_dict(self, *, spider: scrapy.Spider | None = None) -> dict[str, Any]:
         """Return a dictionary containing the Request's data.

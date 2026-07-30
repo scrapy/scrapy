@@ -11,12 +11,12 @@ import warnings
 import weakref
 from collections import OrderedDict
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, AnyStr, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Container, Iterable
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -44,22 +44,25 @@ class CaselessDict(dict):  # type: ignore[type-arg]
 
     def __init__(
         self,
-        seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        seq: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
     ):
         super().__init__()
         if seq:
             self.update(seq)
 
-    def __getitem__(self, key: AnyStr) -> Any:
+    def __getitem__(self, key: str | bytes) -> Any:
         return dict.__getitem__(self, self.normkey(key))
 
-    def __setitem__(self, key: AnyStr, value: Any) -> None:
+    def __setitem__(self, key: str | bytes, value: Any) -> None:
         dict.__setitem__(self, self.normkey(key), self.normvalue(value))
 
-    def __delitem__(self, key: AnyStr) -> None:
+    def __delitem__(self, key: str | bytes) -> None:
         dict.__delitem__(self, self.normkey(key))
 
-    def __contains__(self, key: AnyStr) -> bool:  # type: ignore[override]
+    def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
         return dict.__contains__(self, self.normkey(key))
 
     has_key = __contains__
@@ -69,7 +72,7 @@ class CaselessDict(dict):  # type: ignore[type-arg]
 
     copy = __copy__
 
-    def normkey(self, key: AnyStr) -> AnyStr:
+    def normkey(self, key: str | bytes) -> str | bytes:
         """Method to normalize dictionary key access"""
         return key.lower()
 
@@ -77,23 +80,28 @@ class CaselessDict(dict):  # type: ignore[type-arg]
         """Method to normalize values prior to be set"""
         return value
 
-    def get(self, key: AnyStr, def_val: Any = None) -> Any:
+    def get(self, key: str | bytes, def_val: Any = None) -> Any:
         return dict.get(self, self.normkey(key), self.normvalue(def_val))
 
-    def setdefault(self, key: AnyStr, def_val: Any = None) -> Any:
+    def setdefault(self, key: str | bytes, def_val: Any = None) -> Any:
         return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
 
     # doesn't fully implement MutableMapping.update()
-    def update(self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]) -> None:  # type: ignore[override]
+    def update(  # type: ignore[override]
+        self,
+        seq: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]],
+    ) -> None:
         seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
         super().update(iseq)
 
     @classmethod
-    def fromkeys(cls, keys: Iterable[AnyStr], value: Any = None) -> Self:  # type: ignore[override]
-        return cls((k, value) for k in keys)  # type: ignore[misc]
+    def fromkeys(cls, keys: Iterable[str | bytes], value: Any = None) -> Self:  # type: ignore[override]
+        return cls((k, value) for k in keys)
 
-    def pop(self, key: AnyStr, *args: Any) -> Any:
+    def pop(self, key: str | bytes, *args: Any) -> Any:
         return dict.pop(self, self.normkey(key), *args)
 
 
@@ -205,8 +213,8 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary[_KT, _VT | None]):
 class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
-    def __init__(self, seq: Sequence[Any]):
-        self.seq: Sequence[Any] = seq
+    def __init__(self, seq: Container[Any]):
+        self.seq: Container[Any] = seq
 
     def __contains__(self, item: Any) -> bool:
         return item not in self.seq

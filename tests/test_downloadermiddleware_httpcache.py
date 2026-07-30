@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import email.utils
+import logging
 import shutil
 import tempfile
 import time
 from contextlib import contextmanager
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -93,6 +95,12 @@ class TestBase:
 class StorageTestMixin:
     """Mixin containing storage-specific test methods."""
 
+    def _corrupt_cache_entry(
+        self, storage: Any, spider: Spider, request: Request
+    ) -> None:
+        """Make the cache entry of *request* unreadable for *storage*."""
+        raise NotImplementedError
+
     def test_storage(self):
         with self._storage(HTTPCACHE_EXPIRATION_SECS=1) as (storage, crawler):
             request2 = self.request.copy()
@@ -114,6 +122,38 @@ class StorageTestMixin:
             future = time.time() + 10**6
             with mock.patch("scrapy.extensions.httpcache.time", return_value=future):
                 assert storage.retrieve_response(crawler.spider, self.request)
+
+    def test_corrupted_cache_entry_is_a_miss(self, caplog):
+        with self._middleware() as mw:
+            spider = mw.crawler.spider
+            mw.storage.store_response(spider, self.request, self.response)
+            self._corrupt_cache_entry(mw.storage, spider, self.request)
+
+            caplog.clear()
+            with caplog.at_level(logging.WARNING):
+                assert mw.process_request(self.request) is None
+
+            assert "treating it as a cache miss" in caplog.text
+            assert mw.crawler.stats.get_value("httpcache/retrieve_error") == 1
+            assert mw.crawler.stats.get_value("httpcache/miss") == 1
+
+            # Storing the response again replaces the corrupted cache entry.
+            mw.storage.store_response(spider, self.request, self.response)
+            self.assertEqualResponse(
+                self.response, mw.storage.retrieve_response(spider, self.request)
+            )
+
+    def test_corrupted_cache_entry_ignore_missing(self):
+        with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
+            spider = mw.crawler.spider
+            mw.storage.store_response(spider, self.request, self.response)
+            self._corrupt_cache_entry(mw.storage, spider, self.request)
+
+            with pytest.raises(IgnoreRequest):
+                mw.process_request(self.request)
+
+            assert mw.crawler.stats.get_value("httpcache/retrieve_error") == 1
+            assert mw.crawler.stats.get_value("httpcache/ignore") == 1
 
     def test_storage_no_content_type_header(self):
         """Test that the response body is used to get the right response class
@@ -556,29 +596,43 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
 # Concrete test classes that combine storage and policy mixins
 
 
-class TestFilesystemStorageWithDummyPolicy(
-    TestBase, StorageTestMixin, DummyPolicyTestMixin
-):
+class FilesystemStorageTestMixin(StorageTestMixin):
     storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        rpath = Path(storage._get_request_path(spider, request))
+        (rpath / "response_body").unlink()
+
+
+class DbmStorageTestMixin(StorageTestMixin):
+    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        key = storage._fingerprinter.fingerprint(request).hex()
+        storage.db[f"{key}_data"] = b"not a pickle"
+
+
+class TestFilesystemStorageWithDummyPolicy(
+    TestBase, FilesystemStorageTestMixin, DummyPolicyTestMixin
+):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
 
 class TestFilesystemStorageWithRFC2616Policy(
-    TestBase, StorageTestMixin, RFC2616PolicyTestMixin
+    TestBase, FilesystemStorageTestMixin, RFC2616PolicyTestMixin
 ):
-    storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
 
-class TestDbmStorageWithDummyPolicy(TestBase, StorageTestMixin, DummyPolicyTestMixin):
-    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+class TestDbmStorageWithDummyPolicy(
+    TestBase, DbmStorageTestMixin, DummyPolicyTestMixin
+):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
 
 class TestDbmStorageWithRFC2616Policy(
-    TestBase, StorageTestMixin, RFC2616PolicyTestMixin
+    TestBase, DbmStorageTestMixin, RFC2616PolicyTestMixin
 ):
-    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
 
@@ -599,3 +653,8 @@ class TestFilesystemStorageGzipWithDummyPolicy(TestFilesystemStorageWithDummyPol
     def _get_settings(self, **new_settings) -> dict[str, Any]:
         new_settings.setdefault("HTTPCACHE_GZIP", True)
         return super()._get_settings(**new_settings)
+
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        # A spider killed while writing a gzip file leaves it truncated.
+        body_path = Path(storage._get_request_path(spider, request), "response_body")
+        body_path.write_bytes(body_path.read_bytes()[:-5])

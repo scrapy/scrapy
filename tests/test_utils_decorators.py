@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from typing import TYPE_CHECKING
 
 import pytest
 from twisted.internet.defer import Deferred
@@ -10,11 +11,14 @@ from scrapy.utils.decorators import _warn_spider_arg, deprecated, inthread
 from scrapy.utils.defer import maybe_deferred_to_future
 from tests.utils.decorators import coroutine_test
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
 
 class TestDeprecated:
     def test_warns_and_still_calls(self):
         @deprecated()
-        def add(a, b):
+        def add(a: int, b: int) -> int:
             return a + b
 
         with pytest.warns(
@@ -26,7 +30,7 @@ class TestDeprecated:
 
     def test_use_instead_in_message(self):
         @deprecated(use_instead="other_function")
-        def old():
+        def old() -> None:
             return None
 
         with pytest.warns(
@@ -37,7 +41,7 @@ class TestDeprecated:
 
     def test_applied_without_parentheses(self):
         @deprecated
-        def square(x):
+        def square(x: int) -> int:
             return x * x
 
         with pytest.warns(
@@ -65,7 +69,7 @@ class TestInthread:
 class TestWarnSpiderArg:
     def test_sync_warns_with_spider_arg(self):
         @_warn_spider_arg
-        def parse(response, spider=None):
+        def parse(response: str, spider: str | None = None) -> str:
             return response
 
         with pytest.warns(
@@ -75,7 +79,7 @@ class TestWarnSpiderArg:
 
     def test_sync_no_warning_without_spider_arg(self):
         @_warn_spider_arg
-        def parse(response, spider=None):
+        def parse(response: str, spider: str | None = None) -> str:
             return response
 
         with warnings.catch_warnings():
@@ -85,7 +89,7 @@ class TestWarnSpiderArg:
     @coroutine_test
     async def test_async_warns_with_spider_arg(self):
         @_warn_spider_arg
-        async def parse(response, spider=None):
+        async def parse(response: str, spider: str | None = None) -> str:
             return response
 
         with pytest.warns(
@@ -96,7 +100,9 @@ class TestWarnSpiderArg:
     @coroutine_test
     async def test_asyncgen_warns_with_spider_arg(self):
         @_warn_spider_arg
-        async def parse(response, spider=None):
+        async def parse(
+            response: str, spider: str | None = None
+        ) -> AsyncGenerator[str]:
             yield response
 
         with pytest.warns(
