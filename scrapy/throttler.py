@@ -649,6 +649,9 @@ class Throttler:
 
     It assigns to each request its domain or subdomain as scope and handles
     backoff according to :ref:`backoff settings <basic-throttling>`.
+
+    Subclass it and override :meth:`get_default_scopes` to assign scopes
+    differently.
     """
 
     @classmethod
@@ -745,14 +748,38 @@ class Throttler:
     async def get_scopes(self, request: Request) -> RequestScopes:
         return self._resolve_scopes_sync(request)
 
-    def _resolve_scopes_sync(self, request: Request) -> RequestScopes:
-        """Best-effort synchronous scope resolution.
+    def get_default_scopes(self, request: Request) -> RequestScopes:
+        """Return the :ref:`throttling scopes <throttling-scopes>` of *request*
+        when it does not choose its own through the :reqmeta:`throttling_scopes`
+        metadata key: its host name.
 
-        It backs :meth:`get_scopes` and is also the fallback for the synchronous
-        readiness methods (:meth:`is_ready`, :meth:`reserve`,
-        :meth:`get_time_until_ready`) when no scopes were persisted on
-        ``request.meta`` by an earlier :meth:`get_scopes` call (which normally
-        happens at enqueue time and survives disk restores; see
+        This is the extension point for **synchronous** custom scoping, and the
+        one to prefer over
+        :meth:`~ThrottlerProtocol.get_scopes`: everything that needs the scopes
+        of a request goes through it, including the synchronous
+        :meth:`~ThrottlerProtocol.get_scopes_key`, which is what the
+        :ref:`scheduler <topics-scheduler>` groups queued requests by.
+        Overriding :meth:`~ThrottlerProtocol.get_scopes` instead leaves
+        :meth:`~ThrottlerProtocol.get_scopes_key` on this default, so queued
+        requests are grouped by host name rather than by the scopes they are
+        sent under.
+
+        Override :meth:`~ThrottlerProtocol.get_scopes` only for scoping that
+        needs ``await``, which no synchronous method can reproduce; see
+        :ref:`custom-throttling-scopes`.
+        """
+        return urlparse_cached(request).hostname or ""
+
+    def _resolve_scopes_sync(self, request: Request) -> RequestScopes:
+        """Best-effort synchronous scope resolution: the
+        :reqmeta:`throttling_scopes` metadata key if the request sets one, and
+        otherwise :meth:`get_default_scopes`.
+
+        It backs :meth:`get_scopes` and :meth:`get_scopes_key`, and is also the
+        fallback for the synchronous readiness methods (:meth:`is_ready`,
+        :meth:`reserve`, :meth:`get_time_until_ready`) when no scopes were
+        persisted on ``request.meta`` by an earlier :meth:`get_scopes` call
+        (which normally happens at enqueue time and survives disk restores; see
         :func:`scope_cache`). Subclasses whose :meth:`get_scopes` cannot be
         resolved synchronously rely on that persisted value instead.
         """
@@ -778,7 +805,7 @@ class Throttler:
                 stacklevel=2,
             )
             return cast("RequestScopes", download_slot)
-        return urlparse_cached(request).hostname or ""
+        return self.get_default_scopes(request)
 
     def get_scopes_key(self, request: Request) -> str:
         scopes = self._resolve_scopes_sync(request)
@@ -1569,6 +1596,14 @@ class ThrottlingScopeManagerProtocol(Protocol):
         A scope is idle when it has not been used for *max_idle* seconds and
         holds no pending throttling state that eviction would drop, i.e. it is
         not in an active (future) backoff and its delay has elapsed.
+
+        It must also return ``False`` while any :meth:`record_sent` request of
+        the scope is still in flight, i.e. has not been passed to
+        :meth:`record_done` yet. Eviction replaces the instance, and the
+        replacement starts with no request in flight, so a scope evicted while
+        holding one lets through as many concurrent requests as its limit allows
+        *on top of* those already out; the :meth:`record_done` of each of those
+        then goes to the discarded instance.
         """
 
 

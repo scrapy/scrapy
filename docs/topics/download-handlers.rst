@@ -106,6 +106,23 @@ An optional base class for custom handlers is provided:
     :undoc-members:
     :member-order: bysource
 
+.. warning:: A download handler must not download a request of its own through
+    :meth:`crawler.engine.download_async()
+    <scrapy.core.engine.ExecutionEngine.download_async>`, or it can deadlock the
+    crawl.
+
+    :setting:`CONCURRENT_REQUESTS` and :ref:`throttling <throttling>`
+    concurrency limits both count the requests that download handlers are
+    working on. A request being downloaded holds a slot of each until it
+    finishes, so if every slot is held by handlers waiting for requests of their
+    own, none of those requests can get one, and nothing ever finishes.
+
+    A :ref:`downloader middleware <topics-downloader-middleware>` *can* download
+    a request while it processes another one, precisely because a request in the
+    middlewares holds no download handler slot; see :ref:`mw-prerequisites`. So
+    if you need a prerequisite request, send it from a downloader middleware
+    rather than from a download handler.
+
 .. _download-handlers-exceptions:
 
 Exceptions raised by download handlers

@@ -72,7 +72,14 @@ def get_crawler(
         **get_reactor_settings(),
         **(settings_dict or {}),
     }
-    if prevent_warnings:
+    # Pinning THROTTLING_SCOPE_CONCURRENCY silences the warning about its
+    # default being about to replace the deprecated
+    # CONCURRENT_REQUESTS_PER_DOMAIN one. It is left alone for a caller that
+    # sets the deprecated setting, though: both would then be at project
+    # priority, and the new one wins such a tie (see
+    # scrapy.throttler._default_scope_concurrency_setting), so pinning it would
+    # silently give that caller this value instead of the one it asked for.
+    if prevent_warnings and "CONCURRENT_REQUESTS_PER_DOMAIN" not in settings:
         settings.setdefault(
             "THROTTLING_SCOPE_CONCURRENCY",
             default_settings.CONCURRENT_REQUESTS_PER_DOMAIN,

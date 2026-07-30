@@ -275,10 +275,54 @@ class ScrapyPriorityQueue:
         )
 
 
+def _slot_scopes(slot: str) -> tuple[ScopeID, ...]:
+    """Return the :ref:`throttling scopes <throttling-scopes>` that *slot*
+    stands for.
+
+    Slot keys come from
+    :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes_key`, which encodes no
+    scope as an empty string, a single scope as its ID, and several ones as a
+    JSON array of their sorted IDs. This reverses all three, so that the load of
+    a slot can be read off the scopes it actually stands for.
+
+    A single scope whose ID happens to look like such a JSON array is read as
+    the array it looks like. Both encode to the same key, so they cannot be told
+    apart, and the only cost is a load reading for a scope with a very unusual
+    name.
+    """
+    if not slot:
+        return ()
+    if slot.startswith("["):
+        try:
+            decoded = json.loads(slot)
+        except ValueError:
+            pass
+        else:
+            if isinstance(decoded, list) and all(isinstance(s, str) for s in decoded):
+                return tuple(decoded)
+    return (slot,)
+
+
 class DownloaderAwarePriorityQueue:
     """PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
     first.
+
+    A slot stands for the :ref:`throttling scopes <throttling-scopes>` of the
+    requests it holds, and its load is the highest load among those scopes,
+    since a slot cannot be dequeued faster than its busiest scope allows. So
+    requests with :ref:`several scopes <custom-throttling-scopes>` are balanced
+    by whichever of their scopes is the most constrained.
+
+    .. note:: Slots are keyed by
+        :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes_key`, which
+        resolves the scopes of a request synchronously, because
+        :meth:`~scrapy.core.scheduler.BaseScheduler.enqueue_request` is
+        synchronous. Custom scoping is therefore best expressed by overriding
+        :meth:`~scrapy.throttler.Throttler.get_default_scopes`, which that key
+        goes through. Scoping that needs ``await`` cannot be reproduced by any
+        synchronous method, and grouping is approximate for it; see
+        :ref:`async-throttling-scopes`.
 
     Disk persistence
     ================
@@ -353,10 +397,16 @@ class DownloaderAwarePriorityQueue:
         self.crawler: Crawler = crawler
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
+        # The throttling scopes each slot stands for, decoded from its key once
+        # (see _slot_scopes) rather than on every read: _slot_stats() reads the
+        # load of every pending slot on every pop, which on a broad crawl means
+        # every pending domain. Kept in step with pqueues by _add_slot() and
+        # _remove_slot(), and nowhere else.
+        self._slot_scopes: dict[str, tuple[ScopeID, ...]] = {}
         self._last_selected_slot: str | None = None
         if slot_startprios:
             for slot, startprios in slot_startprios.items():
-                self.pqueues[slot] = self.pqfactory(slot, startprios)
+                self._add_slot(slot, startprios)
 
     def _next_slot(self, stats: list[tuple[float, str]], *, update_state: bool) -> str:
         last = self._last_selected_slot
@@ -396,8 +446,33 @@ class DownloaderAwarePriorityQueue:
             start_queue_cls=self._start_queue_cls,
         )
 
+    def _add_slot(
+        self, slot: str, startprios: Iterable[int] = ()
+    ) -> ScrapyPriorityQueue:
+        queue = self.pqfactory(slot, startprios)
+        self.pqueues[slot] = queue
+        self._slot_scopes[slot] = _slot_scopes(slot)
+        return queue
+
+    def _remove_slot(self, slot: str) -> None:
+        del self.pqueues[slot]
+        del self._slot_scopes[slot]
+
     def _slot_stats(self) -> list[tuple[float, str]]:
-        return [(self._throttler.get_scope_load(slot), slot) for slot in self.pqueues]
+        get_load = self._throttler.get_scope_load
+        stats: list[tuple[float, str]] = []
+        for slot, scopes in self._slot_scopes.items():
+            # Spelled out rather than max() over a generator: this runs for every
+            # pending slot on every pop, and a slot stands for a single scope
+            # under the default scoping.
+            if len(scopes) == 1:
+                load = get_load(scopes[0])
+            elif not scopes:
+                load = 0.0
+            else:
+                load = max(get_load(scope) for scope in scopes)
+            stats.append((load, slot))
+        return stats
 
     def pop(self) -> Request | None:
         stats = self._slot_stats()
@@ -409,14 +484,14 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         request = queue.pop()
         if len(queue) == 0:
-            del self.pqueues[slot]
+            self._remove_slot(slot)
         return request
 
     def push(self, request: Request) -> None:
         slot = self._throttler.get_scopes_key(request)
-        if slot not in self.pqueues:
-            self.pqueues[slot] = self.pqfactory(slot)
-        queue = self.pqueues[slot]
+        queue = self.pqueues.get(slot)
+        if queue is None:
+            queue = self._add_slot(slot)
         queue.push(request)
 
     def peek(self) -> Request | None:
@@ -436,6 +511,7 @@ class DownloaderAwarePriorityQueue:
     def close(self) -> dict[str, list[int]]:
         active = {slot: queue.close() for slot, queue in self.pqueues.items()}
         self.pqueues.clear()
+        self._slot_scopes.clear()
         return active
 
     def __len__(self) -> int:

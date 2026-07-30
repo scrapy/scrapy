@@ -362,8 +362,25 @@ async def test_unlimited_concurrent_requests():
     assert crawler.stats.get_value("response_received_count") == 1
 
 
+@pytest.mark.parametrize(
+    "scheduler_settings",
+    [
+        pytest.param({}, id="default_scheduler"),
+        # A throttler-aware scheduler holds a request back through
+        # Throttler.is_ready() instead of inside Throttler.acquire(), which is a
+        # separate gate that must let the robots.txt request through just the
+        # same.
+        pytest.param(
+            {
+                "SCHEDULER": "scrapy.core.scheduler.ThrottlerAwareScheduler",
+                "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlerAwarePriorityQueue",
+            },
+            id="throttler_aware_scheduler",
+        ),
+    ],
+)
 @coroutine_test
-async def test_download_handler_slots_do_not_deadlock_on_robotstxt():
+async def test_download_handler_slots_do_not_deadlock_on_robotstxt(scheduler_settings):
     """With room for a single request in a download handler, a request sitting in
     the downloader middlewares while they download its robots.txt holds no
     download handler slot, so the robots.txt request can be handled and the crawl
@@ -371,7 +388,11 @@ async def test_download_handler_slots_do_not_deadlock_on_robotstxt():
     with MockServer() as mockserver:
         crawler = get_crawler(
             SimpleSpider,
-            settings_dict={"CONCURRENT_REQUESTS": 1, "ROBOTSTXT_OBEY": True},
+            settings_dict={
+                "CONCURRENT_REQUESTS": 1,
+                "ROBOTSTXT_OBEY": True,
+                **scheduler_settings,
+            },
         )
         crawl = deferred_from_coro(
             crawler.crawl_async(mockserver.url("/status?n=200"), mockserver=mockserver)

@@ -256,6 +256,39 @@ class TestThrottler:
         # Multiple scopes yield a deterministic (sorted) JSON key.
         assert manager.get_scopes_key(request) == '["a", "b"]'
 
+    @coroutine_test
+    async def test_get_default_scopes_override_reaches_every_reader(self):
+        """Overriding the synchronous scoping hook is enough: everything that
+        needs the scopes of a request agrees on them, including the synchronous
+        key that the scheduler groups queued requests by."""
+
+        class NetlocThrottler(Throttler):
+            def get_default_scopes(self, request: Request) -> RequestScopes:
+                return urlparse_cached(request).netloc
+
+        crawler = get_crawler(SimpleSpider, {"THROTTLER": NetlocThrottler})
+        throttler = crawler.throttler
+        assert isinstance(throttler, NetlocThrottler)
+        # A port, so that the result differs from the default host-name scoping.
+        request = Request("https://example.com:8080/a")
+
+        assert throttler.get_scopes_key(request) == "example.com:8080"
+        assert await throttler.get_scopes(request) == "example.com:8080"
+        assert throttler.get_resolved_scopes(request) == "example.com:8080"
+
+    def test_get_default_scopes_yields_to_the_meta_key(self):
+        class NetlocThrottler(Throttler):
+            def get_default_scopes(self, request: Request) -> RequestScopes:
+                return "unused"
+
+        crawler = get_crawler(SimpleSpider, {"THROTTLER": NetlocThrottler})
+        throttler = crawler.throttler
+        assert throttler is not None
+        # A request that chooses its own scopes still gets them, so a custom
+        # hook does not cost throttling_scopes support.
+        request = Request("https://example.com/a", meta={"throttling_scopes": "chosen"})
+        assert throttler.get_scopes_key(request) == "chosen"
+
     def test_release_frees_concurrency(self):
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         scope = _scope(manager, "example.com")
@@ -1877,6 +1910,16 @@ class TestConcurrencyBridging:
         settings = self._settings(per_domain=5, scope=3)
         assert _default_scope_concurrency(settings) == 3
 
+    def test_per_domain_reaches_the_scope_manager(self):
+        # The bridge checked above in isolation, but through a crawler: the
+        # deprecated setting must still be what a scope of the resulting
+        # throttler is limited by.
+        with pytest.warns(ScrapyDeprecationWarning, match="is deprecated"):
+            crawler = get_crawler(SimpleSpider, {"CONCURRENT_REQUESTS_PER_DOMAIN": 3})
+        assert crawler.throttler is not None
+        manager = crawler.throttler.get_scope_manager("example.com")
+        assert manager.get_concurrency() == 3
+
     def test_warns_when_per_domain_set(self):
         settings = self._settings(per_domain=5)
         with pytest.warns(
@@ -2110,6 +2153,25 @@ class _TwoRequestSpider(Spider):
         return
 
 
+# Which throttling gate holds a request back depends on the scheduler: the
+# default one lets it wait inside Throttler.acquire(), while a throttler-aware
+# one keeps it in its queue and polls Throttler.is_ready() instead. Those are
+# two independent gates, and letting a request sent from a downloader middleware
+# through is the job of both, so the deadlock tests below run under each.
+_SCHEDULER_SETTINGS: dict[str, dict[str, str]] = {
+    "default_scheduler": {},
+    "throttler_aware_scheduler": {
+        "SCHEDULER": "scrapy.core.scheduler.ThrottlerAwareScheduler",
+        "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlerAwarePriorityQueue",
+    },
+}
+
+
+@pytest.fixture(params=_SCHEDULER_SETTINGS.values(), ids=list(_SCHEDULER_SETTINGS))
+def scheduler_settings(request: pytest.FixtureRequest) -> dict[str, str]:
+    return cast("dict[str, str]", request.param)
+
+
 class TestThrottlerIntegration:
     @coroutine_test
     async def test_backoff_recorded_on_429(self, mockserver):
@@ -2142,14 +2204,20 @@ class TestThrottlerIntegration:
         assert all(m._delay == m._base_delay for m in _scope_managers(crawler))
 
     @coroutine_test
-    async def test_robotstxt_does_not_wait_for_a_concurrency_slot(self, mockserver):
+    async def test_robotstxt_does_not_wait_for_a_concurrency_slot(
+        self, mockserver, scheduler_settings
+    ):
         """A robots.txt request is downloaded from a downloader middleware,
         while the request that triggered it is holding the only concurrency
         slot of the very same scope and waiting for it, so it has to borrow
         that unused slot."""
         crawler = get_crawler(
             SimpleSpider,
-            {"ROBOTSTXT_OBEY": True, "THROTTLING_SCOPE_CONCURRENCY": 1},
+            {
+                "ROBOTSTXT_OBEY": True,
+                "THROTTLING_SCOPE_CONCURRENCY": 1,
+                **scheduler_settings,
+            },
         )
         crawl = deferred_from_coro(
             crawler.crawl_async(mockserver.url("/status?n=200"), mockserver=mockserver)
@@ -2165,7 +2233,7 @@ class TestThrottlerIntegration:
 
     @coroutine_test
     async def test_response_prerequisite_does_not_wait_for_a_concurrency_slot(
-        self, mockserver
+        self, mockserver, scheduler_settings
     ):
         """Every concurrency slot of a scope is held by a request whose
         ``process_response`` chain is waiting for the same request sent from a
@@ -2176,6 +2244,7 @@ class TestThrottlerIntegration:
             {
                 "THROTTLING_SCOPE_CONCURRENCY": 2,
                 "DOWNLOADER_MIDDLEWARES": {_SharedPrerequisiteMiddleware: 1000},
+                **scheduler_settings,
             },
         )
         crawl = deferred_from_coro(

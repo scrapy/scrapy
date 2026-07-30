@@ -14,6 +14,7 @@ from scrapy.pqueues import (
     DownloaderAwarePriorityQueue,
     ScrapyPriorityQueue,
     ThrottlerAwarePriorityQueue,
+    _slot_scopes,
 )
 from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
@@ -348,6 +349,50 @@ class TestDownloaderAwarePriorityQueue:
         popped = self.queue.pop()
         assert popped.url == req_b.url
 
+    def test_pop_prefers_the_slot_whose_busiest_scope_is_least_loaded(self):
+        # A slot holding requests with several throttling scopes cannot be
+        # dequeued faster than its busiest scope allows, so that is its load,
+        # even when its other scopes are idle.
+        throttler = self.queue._throttler
+        assert throttler is not None
+
+        req_multi = Request("https://example.org/multi")
+        req_multi.meta["throttling_scopes"] = ["quiet", "busy"]
+        req_single = Request("https://example.org/single")
+        req_single.meta["throttling_scopes"] = "middling"
+
+        for req in (req_multi, req_single):
+            self.queue.push(req)
+
+        throttler.get_scope_manager("busy")._active = 4
+        throttler.get_scope_manager("middling")._active = 1
+
+        # 'quiet' is idle, but 'busy' is what holds the multi-scope slot back.
+        assert self.queue.pop().url == req_single.url
+        assert self.queue.pop().url == req_multi.url
+
+    def test_restored_slot_reads_the_load_of_its_scopes(self):
+        # A slot restored from a previous run is never pushed to, so the scopes
+        # it stands for can only come from its key; without them it would read as
+        # unloaded for as long as it lasts.
+        crawler = get_crawler(Spider)
+        crawler.engine = Mock(downloader=MockDownloader())
+        assert crawler.throttler is not None
+        crawler.throttler.get_scope_manager("busy")._active = 4
+        queue = DownloaderAwarePriorityQueue.from_crawler(
+            crawler=crawler,
+            downstream_queue_cls=FifoMemoryQueue,
+            key="foo/bar",
+            startprios={'["busy", "quiet"]': [0], "quiet": [0]},
+        )
+        try:
+            assert {slot: load for load, slot in queue._slot_stats()} == {
+                '["busy", "quiet"]': 0.5,
+                "quiet": 0.0,
+            }
+        finally:
+            queue.close()
+
     def test_contains(self):
         req = Request("https://example.org/")
         req.meta["throttling_scopes"] = "example-slot"
@@ -355,6 +400,32 @@ class TestDownloaderAwarePriorityQueue:
         self.queue.push(req)
         assert "example-slot" in self.queue
         assert "other-slot" not in self.queue
+
+    def test_slot_scopes_are_dropped_with_their_slot(self):
+        req = Request("https://example.org/")
+        req.meta["throttling_scopes"] = "example-slot"
+        self.queue.push(req)
+        assert self.queue._slot_scopes == {"example-slot": ("example-slot",)}
+        self.queue.pop()
+        assert self.queue._slot_scopes == {}
+
+
+@pytest.mark.parametrize(
+    ("slot", "expected"),
+    [
+        # No scope, a single scope, and several scopes, as get_scopes_key()
+        # encodes them.
+        ("", ()),
+        ("example.com", ("example.com",)),
+        ('["a", "b"]', ("a", "b")),
+        # Keys that only look like an encoded scope list are single scopes.
+        ("[not json", ("[not json",)),
+        ("[1, 2]", ("[1, 2]",)),
+        ('["a", "b"] and more', ('["a", "b"] and more',)),
+    ],
+)
+def test_slot_scopes(slot: str, expected: tuple[str, ...]) -> None:
+    assert _slot_scopes(slot) == expected
 
 
 @pytest.mark.parametrize(

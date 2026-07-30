@@ -1784,6 +1784,13 @@ Another available type is :class:`~scrapy.pqueues.ScrapyPriorityQueue`.
 :class:`~scrapy.pqueues.ScrapyPriorityQueue` when you crawl many different
 domains in parallel.
 
+:class:`~scrapy.pqueues.ThrottlerAwarePriorityQueue` goes further: it only hands
+out requests that their :ref:`throttling scopes <throttling-scopes>` allow to be
+sent right now, so a throttled request holds no concurrency slot while it waits.
+It requires :setting:`SCHEDULER` to be set to
+:class:`~scrapy.core.scheduler.ThrottlerAwareScheduler`; see :ref:`throttling-aware
+scheduling <throttler-aware-scheduler>`.
+
 
 .. setting:: SCHEDULER_START_DISK_QUEUE
 
