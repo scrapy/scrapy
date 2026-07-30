@@ -45,7 +45,7 @@ regardless of which are installed. This is done by setting the
     shell = "bpython"
 
 You can also define it for all your projects in the
-:file:`.scrapy/config.toml` file of your home folder (see
+:file:`scrapy/config.toml` file of your user configuration folder (see
 :ref:`global-config`):
 
 .. code-block:: toml

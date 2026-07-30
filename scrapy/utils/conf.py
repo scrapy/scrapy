@@ -9,6 +9,8 @@ from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
+from platformdirs import user_config_dir
+
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
@@ -22,11 +24,16 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-_GLOBAL_CONFIG_PATH = Path("~/.scrapy/config.toml")
-
 # Project-independent options that the global configuration file supports, as
 # (section, option) pairs.
 _GLOBAL_OPTIONS = frozenset({("settings", "shell")})
+
+
+def _global_config_path() -> Path:
+    """Return the path to the global configuration file, which lives in the
+    user configuration folder of the running platform.
+    """
+    return Path(user_config_dir("scrapy", appauthor=False), "config.toml")
 
 
 def build_component_list(
@@ -108,7 +115,7 @@ def _read_global_config(cfg: ConfigParser) -> None:
     """Read the supported options of the global configuration file into the
     specified :class:`~configparser.ConfigParser` object.
     """
-    path = _GLOBAL_CONFIG_PATH.expanduser()
+    path = _global_config_path()
     if not path.is_file():
         return
     ignored: list[str] = []
@@ -206,7 +213,7 @@ def get_config(use_closest: bool = True) -> ConfigParser:
         warnings.warn(
             f"Configuration read from {', '.join(global_files)}. Global "
             "scrapy.cfg files are deprecated, use "
-            f"{_GLOBAL_CONFIG_PATH.expanduser()} for "
+            f"{_global_config_path()} for "
             "project-independent options and the [tool.scrapy] table of the "
             "pyproject.toml file of your project for the rest. See "
             "https://docs.scrapy.org/en/latest/topics/commands.html#global-config",

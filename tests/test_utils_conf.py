@@ -16,6 +16,7 @@ from scrapy.utils.conf import (
     feed_complete_default_values_from_settings,
     feed_process_params_from_cli,
     get_config,
+    get_sources,
 )
 
 
@@ -77,7 +78,7 @@ SETTINGS_CFG = (
 class TestConfig:
     @pytest.fixture(autouse=True)
     def home(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-        """Point the global config locations (see
+        """Point the deprecated global scrapy.cfg locations (see
         :func:`scrapy.utils.conf.get_sources`) at an initially empty folder."""
         home = tmp_path / "home"
         home.mkdir()
@@ -85,6 +86,20 @@ class TestConfig:
         monkeypatch.setenv("USERPROFILE", str(home))
         monkeypatch.setenv("XDG_CONFIG_HOME", str(home))
         return home
+
+    @pytest.fixture(autouse=True)
+    def config_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+        """Point the global configuration file at an initially empty folder.
+
+        platformdirs does not determine the user configuration folder from
+        environment variables on every platform, hence the patching.
+        """
+        config_dir = tmp_path / "config"
+        config_dir.mkdir()
+        monkeypatch.setattr(
+            "scrapy.utils.conf.user_config_dir", lambda *args, **kwargs: str(config_dir)
+        )
+        return config_dir
 
     def test_no_config(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
@@ -159,23 +174,21 @@ class TestConfig:
         assert Path(closest) == (tmp_path / "scrapy.cfg").resolve()
 
     @staticmethod
-    def _write_global_config(home: Path, content: str) -> None:
-        path = home / ".scrapy" / "config.toml"
-        path.parent.mkdir()
-        path.write_text(content, encoding="utf-8")
+    def _write_global_config(config_dir: Path, content: str) -> None:
+        (config_dir / "config.toml").write_text(content, encoding="utf-8")
 
     def test_global_config(
-        self, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, config_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        self._write_global_config(home, '[settings]\nshell = "bpython"\n')
+        self._write_global_config(config_dir, '[settings]\nshell = "bpython"\n')
         monkeypatch.chdir(tmp_path)
 
         assert get_config().get("settings", "shell") == "bpython"
 
     def test_global_config_overridden_by_project(
-        self, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, config_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        self._write_global_config(home, '[settings]\nshell = "bpython"\n')
+        self._write_global_config(config_dir, '[settings]\nshell = "bpython"\n')
         (tmp_path / "pyproject.toml").write_text(
             '[tool.scrapy.settings]\nshell = "python"\n', encoding="utf-8"
         )
@@ -184,10 +197,10 @@ class TestConfig:
         assert get_config().get("settings", "shell") == "python"
 
     def test_global_config_unsupported_options(
-        self, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, config_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         self._write_global_config(
-            home,
+            config_dir,
             '[settings]\nshell = "bpython"\ndefault = "myproject.settings"\n'
             '[deploy]\nproject = "myproject"\nunsupported = 1\n',
         )
@@ -198,6 +211,50 @@ class TestConfig:
         assert cfg.get("settings", "shell") == "bpython"
         assert not cfg.has_option("settings", "default")
         assert not cfg.has_section("deploy")
+
+    def test_global_config_non_table(
+        self, config_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._write_global_config(config_dir, 'shell = "bpython"\n')
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.warns(UserWarning, match="Ignoring the following options"):
+            cfg = get_config()
+        assert not cfg.has_section("settings")
+
+    def test_global_config_preferred_over_global_scrapy_cfg(
+        self,
+        config_dir: Path,
+        home: Path,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        (home / "scrapy.cfg").write_text(
+            "[settings]\nshell = python\n", encoding="utf-8"
+        )
+        self._write_global_config(config_dir, '[settings]\nshell = "bpython"\n')
+        monkeypatch.chdir(tmp_path)
+
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="Global scrapy.cfg files are deprecated"
+        ):
+            cfg = get_config()
+        assert cfg.get("settings", "shell") == "bpython"
+
+    def test_get_sources(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        (tmp_path / "scrapy.cfg").write_text(SETTINGS_CFG, encoding="utf-8")
+        subdir = tmp_path / "a"
+        subdir.mkdir()
+        monkeypatch.chdir(subdir)
+
+        assert Path(get_sources()[-1]) == (tmp_path / "scrapy.cfg").resolve()
+
+    def test_get_sources_without_scrapy_cfg(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+
+        assert get_sources()[-1] == ""
 
     def test_global_scrapy_cfg_deprecated(
         self, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
