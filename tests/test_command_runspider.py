@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.test_crawler import ExceptionSpider, NoRequestsSpider
+from tests.spiders import ExceptionSpider, NoRequestsSpider
 from tests.utils.cmdline import proc
 
 if TYPE_CHECKING:
@@ -65,13 +65,14 @@ class BadSpider(scrapy.Spider):
 
     def test_run_fail_spider(self, tmp_path: Path) -> None:
         ret, _, _ = self.runspider(
-            tmp_path, "import scrapy\n" + inspect.getsource(ExceptionSpider)
+            tmp_path, "from scrapy import Spider\n" + inspect.getsource(ExceptionSpider)
         )
         assert ret != 0
 
     def test_run_good_spider(self, tmp_path: Path) -> None:
         ret, _, _ = self.runspider(
-            tmp_path, "import scrapy\n" + inspect.getsource(NoRequestsSpider)
+            tmp_path,
+            "from scrapy import Spider\n" + inspect.getsource(NoRequestsSpider),
         )
         assert ret == 0
 
@@ -134,6 +135,12 @@ class MySpider(scrapy.Spider):
     def test_runspider_no_spider_found(self, tmp_path: Path) -> None:
         log = self.get_log(tmp_path, "from scrapy.spiders import Spider\n")
         assert "No spider found in file" in log
+
+    @pytest.mark.parametrize("args", [(), ("a.py", "b.py")])
+    def test_runspider_bad_arguments(self, args: tuple[str, ...]) -> None:
+        returncode, out, _ = proc("runspider", *args)
+        assert returncode == 2
+        assert "Usage" in out
 
     def test_runspider_file_not_found(self) -> None:
         _, _, log = proc("runspider", "some_non_existent_file")
@@ -212,6 +219,7 @@ class MySpider(scrapy.Spider):
             f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}"
             in log
         )
+        loop.close()
 
     def test_no_reactor(self, tmp_path: Path) -> None:
         log = self.get_log(

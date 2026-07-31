@@ -2,9 +2,9 @@
 An asynchronous FTP file download handler for scrapy which somehow emulates an http response.
 
 FTP connection parameters are passed using the request meta field:
-- ftp_user (required)
-- ftp_password (required)
-- ftp_passive (by default, enabled) sets FTP connection passive mode
+- ftp_user (optional, falls back to FTP_USER)
+- ftp_password (optional, falls back to FTP_PASSWORD)
+- ftp_passive (optional, falls back to FTP_PASSIVE_MODE) sets FTP connection passive mode
 - ftp_local_filename
         - If not given, file data will come in the response.body, as a normal scrapy Response,
         which will imply that the entire file will be on memory.
@@ -119,9 +119,11 @@ class FTPDownloadHandler(BaseDownloadHandler):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message.encode())
             raise
-        protocol.close()
+        finally:
+            protocol.close()
+            assert client.transport
+            client.transport.loseConnection()
         headers = {"local filename": protocol.filename or b"", "size": protocol.size}
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
-        # hints for Headers-related types may need to be fixed to not use AnyStr
-        return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]
+        return respcls(url=request.url, status=200, body=body, headers=headers)

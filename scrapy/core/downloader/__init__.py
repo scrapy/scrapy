@@ -210,7 +210,8 @@ class Downloader:
         self._last_backout = (reason, current_time)
 
     def needs_backout(self) -> bool:
-        if len(self.active) >= self.total_concurrency:
+        # A total concurrency of 0 means no limit.
+        if 0 < self.total_concurrency <= len(self.active):
             self._record_backout("concurrency")
             return True
         if (

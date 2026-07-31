@@ -4,20 +4,11 @@ from scrapy.robotstxt import (
     ProtegoRobotParser,
     PythonRobotParser,
     RerpRobotParser,
+    RobotParser,
     decode_robotstxt,
 )
 from scrapy.utils._deps_compat import STDLIB_IMPROVED_ROBOTFILEPARSER
-
-
-def rerp_available() -> bool:
-    # check if robotexclusionrulesparser is installed
-    try:
-        from robotexclusionrulesparser import (  # noqa: PLC0415
-            RobotExclusionRulesParser,  # noqa: F401
-        )
-    except ImportError:
-        return False
-    return True
+from tests.utils.robotstxt import rerp_available
 
 
 class BaseRobotParserTest:
@@ -88,6 +79,16 @@ class BaseRobotParserTest:
         assert rp.allowed("https://site.local/index.html", "*")
         assert rp.allowed("https://site.local/disallowed", "*")
 
+    def test_crawl_delay(self):
+        robotstxt_body = b"User-agent: *\nDisallow: /private\nCrawl-delay: 10\n"
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_body)
+        assert rp.crawl_delay("*") == 10.0
+
+    def test_crawl_delay_unset(self):
+        robotstxt_body = b"User-agent: *\nDisallow: /private\n"
+        rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=robotstxt_body)
+        assert rp.crawl_delay("*") is None
+
     def test_unicode_url_and_useragent(self):
         robotstxt_robotstxt_body = """
         User-Agent: *
@@ -110,6 +111,22 @@ class BaseRobotParserTest:
         assert not rp.allowed("https://site.local/wiki/Käyttäjä:", "*")
         assert rp.allowed("https://site.local/some/randome/page.html", "*")
         assert not rp.allowed("https://site.local/some/randome/page.html", "UnicödeBöt")
+
+
+class TestRobotParser:
+    def test_crawl_delay_unsupported(self):
+        class AllowAllRobotParser(RobotParser):
+            @classmethod
+            def from_crawler(cls, crawler, robotstxt_body):
+                return cls()
+
+            def allowed(self, url, user_agent):
+                return True
+
+        rp = AllowAllRobotParser.from_crawler(
+            crawler=None, robotstxt_body=b"User-agent: *\nCrawl-delay: 10\n"
+        )
+        assert rp.crawl_delay("*") is None
 
 
 class TestDecodeRobotsTxt:

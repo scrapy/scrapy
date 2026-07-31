@@ -92,9 +92,10 @@ class ScrapyPriorityQueue:
     -   The :data:`~scrapy.Request.priority` of the request.
 
     For each combination of the above seen, this class creates an instance of
-    *downstream_queue_cls* with *key* set to a subdirectory of the persistence
-    directory, named as the request priority (e.g. ``1``), with an ``s`` suffix
-    in case of a start request (e.g. ``1s``).
+    *downstream_queue_cls* (or *start_queue_cls* for start requests if it was
+    passed) with *key* set to a subdirectory of the persistence directory,
+    named as the negated request priority (e.g. ``-1``), with an ``s`` suffix
+    in case of a start request (e.g. ``-1s``).
     """
 
     @classmethod
@@ -141,10 +142,14 @@ class ScrapyPriorityQueue:
             q = self.qfactory(priority)
             if q:
                 self.queues[priority] = q
+            else:
+                q.close()
             if self._start_queue_cls:
                 q = self._sqfactory(priority)
                 if q:
                     self._start_queues[priority] = q
+                else:
+                    q.close()
 
         self.curprio = min(startprios)
 

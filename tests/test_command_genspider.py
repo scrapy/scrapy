@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
 
-from tests.test_commands import TestProjectBase
-from tests.utils.cmdline import call, proc
+from tests.utils.bases.commands import TestProjectBase
+from tests.utils.cmdline import call, proc, write_recording_editor
 
 
 def find_in_file(filename: Path, regex: str) -> re.Match[str] | None:
@@ -63,8 +64,49 @@ class TestGenspiderCommand(TestProjectBase):
         assert call("genspider", "--dump=basic", cwd=proj_path) == 0
         assert call("genspider", "-d", "basic", cwd=proj_path) == 0
 
+    @pytest.mark.parametrize(
+        "args",
+        [("--dump=nonexistent",), ("-t", "nonexistent", "test_name", "test.com")],
+    )
+    def test_unknown_template(self, args: tuple[str, ...], proj_path: Path) -> None:
+        returncode, out, err = proc("genspider", *args, cwd=proj_path)
+        assert returncode == 0, err
+        assert "Unable to find template: nonexistent" in out
+        assert not (proj_path / self.project_name / "spiders" / "test_name.py").exists()
+
+    def test_name_not_starting_with_a_letter(self, proj_path: Path) -> None:
+        """The module name, unlike the spider name, is prefixed with a letter."""
+        _, out, err = proc("genspider", "1st_spider", "test.com", cwd=proj_path)
+        assert "Created spider '1st_spider'" in out, err
+        spider = proj_path / self.project_name / "spiders" / "a1st_spider.py"
+        assert spider.exists()
+        assert find_in_file(spider, r'name\s*=\s*"1st_spider"') is not None
+
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell editor script"
+    )
+    def test_edit(self, proj_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider = proj_path / self.project_name / "spiders" / "example2.py"
+        edited = proj_path / "edited.txt"
+        editor = proj_path / "fake-editor.sh"
+        write_recording_editor(editor)
+        # The extra argument exercises shlex-splitting of the EDITOR value.
+        monkeypatch.setenv("EDITOR", f"{editor} {edited}")
+
+        returncode, _, err = proc(
+            "genspider", "--edit", "example2", "example2.com", cwd=proj_path
+        )
+
+        assert returncode == 0, err
+        assert "ModuleNotFoundError" not in err
+        assert spider.exists()
+        assert (proj_path / edited.read_text(encoding="utf-8")).resolve() == (
+            spider.resolve()
+        )
+
     def test_same_name_as_project(self, proj_path: Path) -> None:
-        assert call("genspider", self.project_name, cwd=proj_path) == 2
+        _, out, err = proc("genspider", self.project_name, "test.com", cwd=proj_path)
+        assert "Cannot create a spider with the same name as your project" in out, err
         assert not (
             proj_path / self.project_name / "spiders" / f"{self.project_name}.py"
         ).exists()
@@ -167,6 +209,26 @@ class TestGenspiderStandaloneCommand:
     def test_generate_standalone_spider(self, tmp_path: Path) -> None:
         call("genspider", "example", "example.com", cwd=tmp_path)
         assert Path(tmp_path, "example.py").exists()
+
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell editor script"
+    )
+    def test_edit(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider = tmp_path / "example.py"
+        edited = tmp_path / "edited.txt"
+        editor = tmp_path / "fake-editor.sh"
+        write_recording_editor(editor)
+        monkeypatch.setenv("EDITOR", f"{editor} {edited}")
+
+        returncode, _, err = proc(
+            "genspider", "--edit", "example", "example.com", cwd=tmp_path
+        )
+
+        assert returncode == 0, err
+        assert spider.exists()
+        assert (tmp_path / edited.read_text(encoding="utf-8")).resolve() == (
+            spider.resolve()
+        )
 
     @pytest.mark.parametrize("force", [True, False])
     def test_same_name_as_existing_file(self, force: bool, tmp_path: Path) -> None:

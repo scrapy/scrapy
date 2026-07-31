@@ -13,7 +13,7 @@ import re
 import sys
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
@@ -22,12 +22,13 @@ from urllib.parse import unquote, urlparse
 
 from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
-from zope.interface import Interface, implementer
+from zope.interface import Interface
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
+from scrapy.utils.boto import _get_max_pool_connections
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
@@ -46,6 +47,33 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+# Printf-style placeholders (e.g. %(time)s) used to build feed URIs. Any other
+# percent character in a URI (e.g. percent-encoding such as %20 or %23) must be
+# treated as a literal rather than as the start of a placeholder.
+_FEED_URI_PLACEHOLDER_RE = re.compile(
+    r"%\([^)]+\)[-+ #0]*(?:\d+|\*)?(?:\.(?:\d+|\*))?[diouxXeEfFgGcrsa]"
+)
+
+
+def apply_uri_params(uri_template: str, uri_params: dict[str, Any]) -> str:
+    """Return *uri_template* with its ``%(...)s`` placeholders replaced using
+    *uri_params*, leaving any other percent character untouched.
+
+    This allows feed URIs to contain percent-encoded characters (e.g. ``%20``
+    in a path with spaces or ``%23`` in FTP credentials) without them being
+    misinterpreted as printf-style formatting directives.
+    """
+    parts: list[str] = []
+    last = 0
+    for match in _FEED_URI_PLACEHOLDER_RE.finditer(uri_template):
+        parts.append(uri_template[last : match.start()].replace("%", "%%"))
+        parts.append(match.group(0))
+        last = match.end()
+    parts.append(uri_template[last:].replace("%", "%%"))
+    return "".join(parts) % uri_params
+
 
 UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
@@ -88,25 +116,18 @@ class ItemFilter:
         return True  # accept all items by default
 
 
-class IFeedStorage(Interface):  # type: ignore[misc]
-    """Interface that all Feed Storages must implement"""
-
+class _IFeedStorage(Interface):  # type: ignore[misc]  # pragma: no cover
     # pylint: disable=no-self-argument
 
-    def __init__(uri, *, feed_options=None):  # type: ignore[no-untyped-def]  # pylint: disable=super-init-not-called
-        """Initialize the storage with the parameters given in the URI and the
-        feed-specific options (see :setting:`FEEDS`)"""
+    def __init__(uri, *, feed_options=None): ...  # type: ignore[no-untyped-def]  # pylint: disable=super-init-not-called
 
-    def open(spider):  # type: ignore[no-untyped-def]
-        """Open the storage for the given spider. It must return a file-like
-        object that will be used for the exporters"""
+    def open(spider): ...  # type: ignore[no-untyped-def]
 
-    def store(file):  # type: ignore[no-untyped-def]
-        """Store the given file stream"""
+    def store(file): ...  # type: ignore[no-untyped-def]
 
 
 class FeedStorageProtocol(Protocol):
-    """Reimplementation of ``IFeedStorage`` that can be used in type hints."""
+    """Protocol that all Feed Storages must follow."""
 
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         """Initialize the storage with the parameters given in the URI and the
@@ -120,7 +141,6 @@ class FeedStorageProtocol(Protocol):
         """Store the given file stream"""
 
 
-@implementer(IFeedStorage)
 class BlockingFeedStorage(ABC):
     def open(self, spider: Spider) -> IO[bytes]:
         path = spider.crawler.settings["FEED_TEMPDIR"]
@@ -137,7 +157,6 @@ class BlockingFeedStorage(ABC):
         raise NotImplementedError
 
 
-@implementer(IFeedStorage)
 class StdoutFeedStorage:
     def __init__(
         self,
@@ -164,7 +183,6 @@ class StdoutFeedStorage:
         pass
 
 
-@implementer(IFeedStorage)
 class FileFeedStorage:
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         self.path: str = file_uri_to_path(uri) if uri.startswith("file:") else uri
@@ -196,11 +214,14 @@ class S3FeedStorage(BlockingFeedStorage):
         feed_options: dict[str, Any] | None = None,
         session_token: str | None = None,
         region_name: str | None = None,
+        max_pool_connections: int | None = None,
     ):
         try:
             import boto3.session  # noqa: PLC0415
         except ImportError:
             raise NotConfigured("missing boto3 library") from None
+        from botocore.config import Config  # noqa: PLC0415
+
         u = urlparse(uri)
         assert u.hostname
         self.bucketname: str = u.hostname
@@ -211,6 +232,7 @@ class S3FeedStorage(BlockingFeedStorage):
         self.acl: str | None = acl
         self.endpoint_url: str | None = endpoint_url
         self.region_name: str | None = region_name
+        self.max_pool_connections: int | None = max_pool_connections
 
         boto3_session = boto3.session.Session()
         self.s3_client = boto3_session.client(
@@ -220,6 +242,11 @@ class S3FeedStorage(BlockingFeedStorage):
             aws_session_token=self.session_token,
             endpoint_url=self.endpoint_url,
             region_name=self.region_name,
+            config=(
+                Config(max_pool_connections=self.max_pool_connections)
+                if self.max_pool_connections is not None
+                else None
+            ),
         )
 
         if feed_options and feed_options.get("overwrite", True) is False:
@@ -245,25 +272,28 @@ class S3FeedStorage(BlockingFeedStorage):
             acl=crawler.settings["FEED_STORAGE_S3_ACL"] or None,
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
             region_name=crawler.settings["AWS_REGION_NAME"] or None,
+            max_pool_connections=_get_max_pool_connections(crawler.settings),
             feed_options=feed_options,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        if self.acl:
-            self.s3_client.upload_fileobj(
-                Bucket=self.bucketname,
-                Key=self.keyname,
-                Fileobj=file,
-                ExtraArgs={"ACL": self.acl},
-            )
-        else:
-            self.s3_client.upload_fileobj(
-                Bucket=self.bucketname,
-                Key=self.keyname,
-                Fileobj=file,
-            )
-        file.close()
+        try:
+            if self.acl:
+                self.s3_client.upload_fileobj(
+                    Bucket=self.bucketname,
+                    Key=self.keyname,
+                    Fileobj=file,
+                    ExtraArgs={"ACL": self.acl},
+                )
+            else:
+                self.s3_client.upload_fileobj(
+                    Bucket=self.bucketname,
+                    Key=self.keyname,
+                    Fileobj=file,
+                )
+        finally:
+            file.close()
 
 
 class GCSFeedStorage(BlockingFeedStorage):
@@ -435,7 +465,7 @@ class FeedSlot:
         )
 
     def finish_exporting(self) -> None:
-        if self._exporting:
+        if self._exporting:  # pragma: no branch
             assert self.exporter
             self.exporter.finish_exporting()
             self._exporting = False
@@ -456,7 +486,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
-        self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
+        self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -471,7 +501,7 @@ class FeedExporter:
             )
             uri = self.settings["FEED_URI"]
             # handle pathlib.Path objects
-            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
+            uri = str(uri.absolute()) if isinstance(uri, Path) else str(uri)
             feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -483,9 +513,9 @@ class FeedExporter:
         for settings_uri, feed_options in self.settings.getdict("FEEDS").items():
             # handle pathlib.Path objects
             uri = (
-                str(settings_uri)
-                if not isinstance(settings_uri, Path)
-                else settings_uri.absolute().as_uri()
+                str(settings_uri.absolute())
+                if isinstance(settings_uri, Path)
+                else str(settings_uri)
             )
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -512,7 +542,7 @@ class FeedExporter:
             self.slots.append(
                 self._start_new_batch(
                     batch_id=1,
-                    uri=uri % uri_params,
+                    uri=apply_uri_params(uri, uri_params),
                     feed_options=feed_options,
                     spider=spider,
                     uri_template=uri,
@@ -520,22 +550,43 @@ class FeedExporter:
             )
 
     async def close_spider(self, spider: Spider) -> None:
-        self._pending_close_coros.extend(
-            self._close_slot(slot, spider) for slot in self.slots
-        )
+        for slot in self.slots:
+            self._schedule_slot_close(slot, spider)
 
-        if self._pending_close_coros:
+        if self._pending_close_tasks:  # pragma: no branch
             if is_asyncio_available():
                 await asyncio.wait(
-                    [asyncio.create_task(coro) for coro in self._pending_close_coros]
+                    cast("list[asyncio.Task[None]]", list(self._pending_close_tasks))
                 )
             else:
                 await DeferredList(
-                    deferred_from_coro(coro) for coro in self._pending_close_coros
+                    cast("list[Deferred[None]]", list(self._pending_close_tasks))
                 )
 
         # Send FEED_EXPORTER_CLOSED signal
         await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
+
+    def _schedule_slot_close(
+        self, slot: FeedSlot, spider: Spider
+    ) -> asyncio.Task[None] | Deferred[None]:
+        """Start closing the slot without waiting for it to finish, keeping
+        track of the pending work so that it can be awaited in
+        :meth:`close_spider` if it hasn't finished by then."""
+        aw: asyncio.Task[None] | Deferred[None]
+        coro = self._close_slot(slot, spider)
+        if is_asyncio_available():
+            aw = asyncio.create_task(coro)
+            self._pending_close_tasks.append(aw)
+            aw.add_done_callback(self._pending_close_tasks.remove)
+        else:
+            aw = deferred_from_coro(coro)
+            self._pending_close_tasks.append(aw)
+            aw.addBoth(self._untrack_pending_close_task, aw)
+        return aw
+
+    def _untrack_pending_close_task(self, result: Any, aw: Deferred[None]) -> Any:
+        self._pending_close_tasks.remove(aw)
+        return result
 
     @staticmethod
     def _get_file(slot_: FeedSlot) -> IO[bytes]:
@@ -633,11 +684,11 @@ class FeedExporter:
                 uri_params = self._get_uri_params(
                     spider, self.feeds[slot.uri_template]["uri_params"], slot
                 )
-                self._pending_close_coros.append(self._close_slot(slot, spider))
+                self._schedule_slot_close(slot, spider)
                 slots.append(
                     self._start_new_batch(
                         batch_id=slot.batch_id + 1,
-                        uri=slot.uri_template % uri_params,
+                        uri=apply_uri_params(slot.uri_template, uri_params),
                         feed_options=self.feeds[slot.uri_template],
                         spider=spider,
                         uri_template=slot.uri_template,
@@ -729,3 +780,14 @@ class FeedExporter:
             feed_options.get("item_filter", ItemFilter)
         )
         return item_filter_class(feed_options)
+
+
+def __getattr__(name: str) -> Any:  # pragma: no cover
+    if name == "IFeedStorage":
+        warnings.warn(
+            "scrapy.extensions.feedexport.IFeedStorage is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return _IFeedStorage
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

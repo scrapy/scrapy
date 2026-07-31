@@ -14,7 +14,7 @@ jobs:
   tests:
     runs-on: windows-latest
     env:
-      PYTEST_ADDOPTS: -n auto
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
     strategy:
       fail-fast: false
       matrix:
@@ -34,6 +34,7 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: py
+          coverage: true
         - python-version: "3.14"
           env:
             TOXENV: default-reactor
@@ -68,6 +69,7 @@ jobs:
         tox
 
     - name: Upload coverage report
+      if: ${{ matrix.coverage }}
       uses: codecov/codecov-action@v5
 
     - name: Upload test results

@@ -42,6 +42,7 @@ def nonserializable_object_test(self):
         ValueError, match=r"unmarshallable object|can't pickle Selector objects"
     ):
         q.push(sel)
+    q.close()
 
 
 class FifoDiskQueueTestMixin:
@@ -53,6 +54,7 @@ class FifoDiskQueueTestMixin:
         assert q.pop() == "a"
         assert q.pop() == 123
         assert q.pop() == {"a": "dict"}
+        q.close()
 
     test_nonserializable_object = nonserializable_object_test
 
@@ -93,6 +95,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         i2 = q.pop()
         assert isinstance(i2, MyItem)
         assert i == i2
+        q.close()
 
     def test_serialize_loader(self):
         q = self.queue()
@@ -102,6 +105,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         assert isinstance(loader2, MyLoader)
         assert loader2.default_item_class is MyItem
         assert loader2.name_out("x") == "xx"
+        q.close()
 
     def test_serialize_request_recursive(self):
         q = self.queue()
@@ -112,6 +116,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         assert isinstance(r2, Request)
         assert r.url == r2.url
         assert r2.meta["request"] is r2
+        q.close()
 
     def test_non_pickable_object(self):
         q = self.queue()
@@ -158,6 +163,7 @@ class LifoDiskQueueTestMixin:
         assert q.pop() == {"a": "dict"}
         assert q.pop() == 123
         assert q.pop() == "a"
+        q.close()
 
     test_nonserializable_object = nonserializable_object_test
 
@@ -178,6 +184,7 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         i2 = q.pop()
         assert isinstance(i2, MyItem)
         assert i == i2
+        q.close()
 
     def test_serialize_loader(self):
         q = self.queue()
@@ -187,6 +194,7 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         assert isinstance(loader2, MyLoader)
         assert loader2.default_item_class is MyItem
         assert loader2.name_out("x") == "xx"
+        q.close()
 
     def test_serialize_request_recursive(self):
         q = self.queue()
@@ -197,3 +205,4 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         assert isinstance(r2, Request)
         assert r.url == r2.url
         assert r2.meta["request"] is r2
+        q.close()

@@ -8,7 +8,6 @@ from io import StringIO
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
 from scrapy.utils.log import (
@@ -38,7 +37,7 @@ class TestFailureToExcInfo:
         assert exc_info == failure_to_exc_info(failure)
 
     def test_non_failure(self):
-        assert failure_to_exc_info("test") is None
+        assert failure_to_exc_info("test") is None  # type: ignore[arg-type]
 
 
 class TestTopLevelFormatter:
@@ -107,15 +106,15 @@ class TestLogCounterHandler:
 
 
 class TestStreamLogger:
-    def test_redirect(self):
+    def test_redirect(self, caplog: pytest.LogCaptureFixture) -> None:
         logger = logging.getLogger("test")
         logger.setLevel(logging.WARNING)
         old_stdout = sys.stdout
         sys.stdout = StreamLogger(logger, logging.ERROR)
 
-        with LogCapture() as log:
-            print("test log msg")
-        log.check(("test", "ERROR", "test log msg"))
+        caplog.clear()
+        print("test log msg")
+        assert caplog.record_tuples == [("test", logging.ERROR, "test log msg")]
 
         sys.stdout = old_stdout
 

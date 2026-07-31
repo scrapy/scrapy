@@ -113,7 +113,7 @@ def _chunk_iter(text: str, chunk_size: int) -> Iterable[tuple[str, int]]:
 
 def re_rsearch(
     pattern: str | Pattern[str], text: str, chunk_size: int = 1024
-) -> tuple[int, int] | None:
+) -> tuple[int, int] | None:  # pragma: no cover
     """
     This function does a reverse search in a text using a regular expression
     given in the attribute 'pattern'.
@@ -126,6 +126,12 @@ def re_rsearch(
     In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
     the start position of the match, and the ending (regarding the entire text).
     """
+
+    warnings.warn(
+        "re_rsearch() is deprecated and will be removed in a future Scrapy version.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     if isinstance(pattern, str):
         pattern = re.compile(pattern)
@@ -172,10 +178,29 @@ def binary_is_text(data: bytes) -> bool:
     return all(c not in _BINARYCHARS for c in data)
 
 
+# PEP 649 (Python 3.14+) made annotation evaluation lazy, so inspect.signature()
+# can raise NameError for names imported only under TYPE_CHECKING. We only need
+# parameter names, kinds and defaults, so leave such annotations as ForwardRefs.
+if sys.version_info >= (3, 14):
+    from annotationlib import Format
+
+    def _signature(func: Callable[..., Any]) -> inspect.Signature:
+        return inspect.signature(func, annotation_format=Format.FORWARDREF)
+
+else:
+
+    def _signature(func: Callable[..., Any]) -> inspect.Signature:
+        return inspect.signature(func)
+
+
 def get_func_args_dict(
     func: Callable[..., Any], stripself: bool = False
 ) -> Mapping[str, inspect.Parameter]:
     """Return the argument dict of a callable object.
+
+    Annotations are not evaluated, so on Python 3.14 and later the ``annotation``
+    attribute of the returned parameters may be a ``ForwardRef`` instead of the
+    resolved type.
 
     .. versionadded:: 2.14
     """
@@ -184,7 +209,7 @@ def get_func_args_dict(
 
     args: Mapping[str, inspect.Parameter]
     try:
-        sig = inspect.signature(func)
+        sig = _signature(func)
     except ValueError:
         return {}
 

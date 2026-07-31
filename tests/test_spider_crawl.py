@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import re
 import warnings
-from logging import ERROR
 
 import pytest
-from testfixtures import LogCapture
 from w3lib.url import safe_url_string
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -13,11 +11,11 @@ from scrapy.http import HtmlResponse, Request, TextResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.utils.test import get_crawler
-from tests.test_spider import TestSpider
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.bases.spider import TestSpiderBase
+from tests.utils.decorators import coroutine_test
 
 
-class TestCrawlSpider(TestSpider):
+class TestCrawlSpider(TestSpiderBase):
     test_body = b"""<html><head><title>Page title</title></head>
     <body>
     <p><a href="item/12.html">Item 12</a></p>
@@ -247,18 +245,6 @@ class TestCrawlSpider(TestSpider):
         assert hasattr(spider, "_follow_links")
         assert not spider._follow_links
 
-    @inline_callbacks_test
-    def test_start_url(self):
-        class TestSpider(self.spider_class):
-            name = "test"
-            start_url = "https://www.example.com"
-
-        crawler = get_crawler(TestSpider)
-        with LogCapture("scrapy.core.engine", propagate=False, level=ERROR) as log:
-            yield crawler.crawl()
-        assert "Error while reading start items and requests" in str(log)
-        assert "did you miss an 's'?" in str(log)
-
     def test_parse_response_use(self):
         class _CrawlSpider(CrawlSpider):
             name = "test"
@@ -307,6 +293,48 @@ class TestCrawlSpider(TestSpider):
             spider.parse_with_rules(
                 TextResponse(spider.start_urls, body=b""), None, None
             )
+
+    @coroutine_test
+    async def test_parse_with_rules_without_callback(self):
+        response = HtmlResponse(
+            "http://example.org/somepage/index.html", body=self.test_body
+        )
+
+        class _CrawlSpider(CrawlSpider):
+            name = "test"
+            allowed_domains = ["example.org"]
+            rules = (Rule(),)
+
+        spider = _CrawlSpider.from_crawler(get_crawler(_CrawlSpider))
+        results = [
+            r async for r in spider.parse_with_rules(response, None, {}, follow=True)
+        ]
+        assert [r.url for r in results] == [
+            "http://example.org/somepage/item/12.html",
+            "http://example.org/about.html",
+            "http://example.org/nofollow.html",
+        ]
+
+    @coroutine_test
+    async def test_parse_with_rules_without_following(self):
+        response = HtmlResponse(
+            "http://example.org/somepage/index.html", body=self.test_body
+        )
+        item = {"name": "item"}
+
+        class _CrawlSpider(CrawlSpider):
+            name = "test"
+            allowed_domains = ["example.org"]
+            rules = (Rule(),)
+
+        spider = _CrawlSpider.from_crawler(get_crawler(_CrawlSpider))
+        results = [
+            r
+            async for r in spider.parse_with_rules(
+                response, lambda response: [item], {}, follow=False
+            )
+        ]
+        assert results == [item]
 
 
 class TestDeprecation:

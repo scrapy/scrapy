@@ -535,7 +535,7 @@ class Scraper:
         self, output: Any, response: Response | Failure
     ) -> Deferred[None]:
         """Process each Request/Item (given in the output parameter) returned
-        from the given spider.
+        from the spider.
 
         Items are sent to the item pipelines, requests are scheduled.
         """
@@ -545,7 +545,7 @@ class Scraper:
         self, output: Any, response: Response | Failure
     ) -> None:
         """Process each Request/Item (given in the output parameter) returned
-        from the given spider.
+        from the spider.
 
         Items are sent to the item pipelines, requests are scheduled.
         """

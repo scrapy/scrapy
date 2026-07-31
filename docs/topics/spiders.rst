@@ -4,43 +4,31 @@
 Spiders
 =======
 
-Spiders are classes which define how a certain site (or a group of sites) will be
-scraped, including how to perform the crawl (i.e. follow links) and how to
-extract structured data from their pages (i.e. scraping items). In other words,
-Spiders are the place where you define the custom behaviour for crawling and
-parsing pages for a particular site (or, in some cases, a group of sites).
+Spiders are classes that define how a site, or a group of sites, is scraped:
+which requests to send, and how to parse their responses to extract data and to
+send additional requests.
 
-For spiders, the scraping cycle goes through something like this:
+A crawl goes as follows:
 
-1. You start by generating the initial requests to crawl the first URLs, and
-   specify a callback function to be called with the response downloaded from
-   those requests.
+1.  Scrapy iterates the :meth:`~scrapy.Spider.start` method of the spider to
+    get the initial requests. By default, that method yields a
+    :class:`~scrapy.Request` object for each URL in
+    :attr:`~scrapy.Spider.start_urls`, with :meth:`~scrapy.Spider.parse` as
+    :ref:`callback <callbacks>`.
 
-   The first requests to perform are obtained by iterating the
-   :meth:`~scrapy.Spider.start` method, which by default yields a
-   :class:`~scrapy.Request` object for each URL in the
-   :attr:`~scrapy.Spider.start_urls` spider attribute, with the
-   :attr:`~scrapy.Spider.parse` method set as :attr:`~scrapy.Request.callback`
-   function to handle each :class:`~scrapy.http.Response`.
+2.  Scrapy downloads each request and calls its callback with the resulting
+    :class:`~scrapy.http.Response`.
 
-2. In the callback function, you parse the response (web page) and return
-   :ref:`item objects <topics-items>`,
-   :class:`~scrapy.Request` objects, or an iterable of these objects.
-   Those Requests will also contain a callback (maybe
-   the same) and will then be downloaded by Scrapy and then their
-   response handled by the specified callback.
+3.  Callbacks parse the response, typically using :ref:`topics-selectors`, and
+    return or yield :ref:`item objects <topics-items>` with the extracted data
+    and :class:`~scrapy.Request` objects to continue the crawl, which go back
+    to step 2. See :ref:`callback-output`.
 
-3. In callback functions, you parse the page contents, typically using
-   :ref:`topics-selectors` (but you can also use BeautifulSoup, lxml or whatever
-   mechanism you prefer) and generate items with the parsed data.
+4.  Items go through :ref:`item pipelines <topics-item-pipeline>`, and are
+    usually stored through :ref:`topics-feed-exports`.
 
-4. Finally, the items returned from the spider will be typically persisted to a
-   database (in some :ref:`Item Pipeline <topics-item-pipeline>`) or written to
-   a file using :ref:`topics-feed-exports`.
-
-Even though this cycle applies (more or less) to any kind of spider, there are
-different kinds of default spiders bundled into Scrapy for different purposes.
-We will talk about those types here.
+Scrapy includes different spider classes for different purposes, described
+below.
 
 .. _topics-spiders-ref:
 
@@ -191,28 +179,7 @@ scrapy.Spider
 
    .. automethod:: start
 
-   .. method:: parse(response)
-
-       This is the default callback used by Scrapy to process downloaded
-       responses, when their requests don't specify a callback.
-
-       The ``parse`` method is in charge of processing the response and returning
-       scraped data and/or more URLs to follow. Other Requests callbacks have
-       the same requirements as the :class:`~scrapy.Spider` class.
-
-       This method, as well as any other Request callback, must return a
-       :class:`~scrapy.Request` object, an :ref:`item object <topics-items>`, an
-       iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects
-       <topics-items>`, or ``None``.
-
-       :param response: the response to parse
-       :type response: :class:`~scrapy.http.Response`
-
-   .. method:: log(message, [level, component])
-
-       Wrapper that sends a log message through the Spider's :attr:`logger`,
-       kept for backward compatibility. For more information see
-       :ref:`topics-logging-from-spiders`.
+   .. automethod:: parse
 
    .. method:: closed(reason)
 
@@ -314,7 +281,7 @@ Spiders can access arguments in their `__init__` methods:
         name = "myspider"
 
         def __init__(self, category=None, *args, **kwargs):
-            super(MySpider, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
             self.start_urls = [f"http://www.example.com/categories/{category}"]
             # ...
 
@@ -335,8 +302,8 @@ The above example can also be written as follows:
 
 If you are :ref:`running Scrapy from a script <run-from-script>`, you can
 specify spider arguments when calling
-:class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
-:class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
+:meth:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
+:meth:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
 
 .. skip: next
 .. code-block:: python
@@ -593,7 +560,7 @@ Let's now take a look at an example CrawlSpider with rules:
 This spider would start crawling example.com's home page, collecting category
 links, and item links, parsing the latter with the ``parse_item`` method. For
 each item response, some data will be extracted from the HTML using XPath, and
-an :class:`~scrapy.Item` will be filled with it.
+a dictionary will be filled with it.
 
 XMLFeedSpider
 -------------
@@ -614,7 +581,7 @@ XMLFeedSpider
 
         A string which defines the iterator to use. It can be either:
 
-           - ``'iternodes'`` - a fast iterator based on regular expressions
+           - ``'iternodes'`` - a fast iterator based on ``lxml``
 
            - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory
@@ -628,9 +595,11 @@ XMLFeedSpider
 
     .. attribute:: itertag
 
-        A string with the name of the node (or element) to iterate in. Example::
+        A string with the name of the node (or element) to iterate in. Example:
 
-            itertag = 'product'
+        .. code-block:: python
+
+            itertag = "product"
 
     .. attribute:: namespaces
 
@@ -643,12 +612,17 @@ XMLFeedSpider
         You can then specify nodes with namespaces in the :attr:`itertag`
         attribute.
 
-        Example::
+        Example:
+
+        .. code-block:: python
+
+            from scrapy.spiders import XMLFeedSpider
+
 
             class YourSpider(XMLFeedSpider):
 
-                namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]
-                itertag = 'n:url'
+                namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
+                itertag = "n:url"
                 # ...
 
     Apart from these new attributes, this spider has the following overridable
@@ -808,9 +782,11 @@ SitemapSpider
           the regular expression. ``callback`` can be a string (indicating the
           name of a spider method) or a callable.
 
-        For example::
+        For example:
 
-            sitemap_rules = [('/product/', 'parse_product')]
+        .. code-block:: python
+
+            sitemap_rules = [("/product/", "parse_product")]
 
         Rules are applied in order, and only the first one that matches will be
         used.
@@ -832,7 +808,9 @@ SitemapSpider
         are links for the same website in another language passed within
         the same ``url`` block.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>
@@ -850,7 +828,9 @@ SitemapSpider
         This is a filter function that could be overridden to select sitemap entries
         based on their attributes.
 
-        For example::
+        For example:
+
+        .. code-block:: xml
 
             <url>
                 <loc>http://example.com/</loc>
@@ -953,6 +933,7 @@ Combine SitemapSpider with other sources of urls:
 
 .. code-block:: python
 
+    from scrapy import Request
     from scrapy.spiders import SitemapSpider
 
 
