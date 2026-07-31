@@ -23,7 +23,6 @@ from scrapy.throttler import (
     _check_scope_concurrency,
     _default_scope_concurrency,
     _default_scope_concurrency_setting,
-    _iter_scope_quota_amounts,
     _warn_on_deprecated_concurrency,
     _warn_on_unachievable_concurrency,
     add_scope,
@@ -135,12 +134,12 @@ class TestThrottler:
         assert await manager.get_scopes(request) == "api"
 
     @coroutine_test
-    async def test_get_scopes_meta_dict(self):
+    async def test_get_scopes_meta_iterable(self):
         manager = _manager()
         request = Request(
-            "http://example.com/a", meta={"throttling_scopes": {"api": 2.0}}
+            "http://example.com/a", meta={"throttling_scopes": ["api", "users"]}
         )
-        assert await manager.get_scopes(request) == {"api": 2.0}
+        assert await manager.get_scopes(request) == ["api", "users"]
 
     @coroutine_test
     async def test_get_scopes_persisted_in_meta(self):
@@ -193,14 +192,14 @@ class TestThrottler:
 
         manager = _manager()
         request = Request(
-            "http://example.com/a", meta={"throttling_scopes": {"bucket": 3.0}}
+            "http://example.com/a", meta={"throttling_scopes": ["bucket"]}
         )
         await manager.get_scopes(request)
         # A request restored from a disk queue is a fresh object; the synchronous
-        # readiness path must still recover its scopes (with quota values) from
-        # the persisted meta, without re-running get_scopes.
+        # readiness path must still recover its scopes from the persisted meta,
+        # without re-running get_scopes.
         restored = request_from_dict(request.to_dict())
-        assert manager._cached_scope_quota_amounts(restored) == [("bucket", 3.0)]
+        assert manager.get_resolved_scopes(restored) == ["bucket"]
 
     @coroutine_test
     async def test_get_scopes_reresolved_after_cross_host_replace(self):
@@ -233,7 +232,7 @@ class TestThrottler:
     def test_get_scopes_key_multiple(self):
         manager = _manager()
         request = Request(
-            "http://example.com/a", meta={"throttling_scopes": {"b": 1.0, "a": 2.0}}
+            "http://example.com/a", meta={"throttling_scopes": ["b", "a"]}
         )
         # Multiple scopes yield a deterministic (sorted) JSON key.
         assert manager.get_scopes_key(request) == '["a", "b"]'
@@ -276,7 +275,7 @@ class TestThrottler:
         scope = _scope(manager, "example.com")
         request = Request("http://example.com")
         scope.record_sent(now=0.0)
-        manager._reserved[request] = [("example.com", scope, None)]
+        manager._reserved[request] = [("example.com", scope)]
         assert scope.concurrency_blocked() is True
         manager.release(request)
         assert scope.concurrency_blocked() is False
@@ -343,23 +342,6 @@ class TestThrottler:
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
         assert manager.get_resolved_scopes(request) == "host:example.com"
 
-    def test_reconcile_quota_without_backoff(self):
-        manager = _manager({"THROTTLING_SCOPES": {"cost": {"quota": 100.0}}})
-        scope = _scope(manager, "cost")
-        manager.reconcile_quota("cost", consumed=5.0)
-        # Quota was reconciled but no backoff step was applied.
-        assert scope._consumed == pytest.approx(5.0)
-        assert scope._delay == scope._base_delay
-        assert scope._max_unsafe is None
-
-    def test_back_off_and_reconcile_quota(self):
-        manager = _manager({"THROTTLING_SCOPES": {"cost": {"quota": 100.0}}})
-        scope = _scope(manager, "cost")
-        manager.back_off("cost", delay=5.0)
-        manager.reconcile_quota("cost", consumed=2.0)
-        assert scope._consumed == pytest.approx(2.0)
-        assert scope._delay > scope._base_delay
-
     def test_scope_limit_keeps_active_backoff(self):
         manager = _manager(
             {"THROTTLING_SCOPE_LIMIT": 1, "BACKOFF_MAX_DELAY": 100_000.0}
@@ -367,22 +349,6 @@ class TestThrottler:
         _scope(manager, "a.example").record_backoff(delay=10_000.0)
         # Creating a second scope exceeds the limit, but the first one is still
         # in backoff, so the limit is exceeded rather than dropping it.
-        _scope(manager, "b.example")
-        assert set(manager._scope_managers) == {"a.example", "b.example"}
-
-    def test_scope_limit_keeps_a_spent_quota_window(self):
-        manager = _manager(
-            {
-                "THROTTLING_SCOPE_LIMIT": 1,
-                "THROTTLER_WINDOW": 10_000.0,
-                "THROTTLING_SCOPES": {"a.example": {"quota": 10}},
-            }
-        )
-        spent = _scope(manager, "a.example")
-        spent.record_sent(quota_amount=10)
-        spent.record_done()
-        # Creating a second scope exceeds the limit, but dropping the first one
-        # would give it a full quota again before its window is over.
         _scope(manager, "b.example")
         assert set(manager._scope_managers) == {"a.example", "b.example"}
 
@@ -435,9 +401,9 @@ class TestThrottler:
         # Resolving the scopes of one request must not let the creation of one of
         # them evict another, or the request would record its send on a manager
         # that is no longer the one of its scope.
-        slots = manager._resolve_scope_slots([("a.example", None), ("b.example", None)])
-        assert [scope_id for scope_id, _, _ in slots] == ["a.example", "b.example"]
-        for scope_id, scope, _ in slots:
+        slots = manager._resolve_scope_slots(["a.example", "b.example"])
+        assert [scope_id for scope_id, _ in slots] == ["a.example", "b.example"]
+        for scope_id, scope in slots:
             assert manager._live_scope_manager(scope_id) is scope
         assert not manager._resolving
 
@@ -1091,14 +1057,6 @@ class TestThrottlingScopeManager:
         scope.record_done(now=0.0)
         assert event.called
 
-    def test_zero_quota_window_keeps_quota_reset(self):
-        # A non-positive quota window must not make _maybe_reset_quota spin
-        # forever; the quota stays continuously reset instead.
-        scope = _scope_manager(config={"id": "x", "quota": 10.0, "window": 0})
-        scope.record_sent(now=0.0, quota_amount=10.0)
-        assert scope.can_send(now=1.0, quota_amount=5.0) == 0.0
-        assert scope._consumed == 0.0
-
     def test_set_concurrency_fires_slot_available_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
         scope.record_sent(now=0.0)
@@ -1124,35 +1082,6 @@ class TestThrottlingScopeManager:
         assert scope._concurrency == 4
         scope.set_concurrency(5)
         assert scope._concurrency == 5
-
-    def test_quota_blocks_when_exhausted(self):
-        scope = _scope_manager(config={"id": "x", "quota": 10.0, "window": 60.0})
-        scope.record_sent(now=0.0, quota_amount=6.0)
-        assert scope.can_send(now=0.0, quota_amount=3.0) == 0  # 9 <= 10
-        scope.record_sent(now=0.0, quota_amount=3.0)
-        # 9 spent; a 3.0 request would exceed the quota -> wait for the window.
-        assert scope.can_send(now=0.0, quota_amount=3.0) == pytest.approx(60.0)
-        # The window resets and quota is available again.
-        assert scope.can_send(now=60.0, quota_amount=3.0) == 0
-
-    def test_quota_allows_oversized_request(self):
-        scope = _scope_manager(config={"id": "x", "quota": 10.0})
-        # A single request larger than the whole quota is still allowed.
-        assert scope.can_send(now=0.0, quota_amount=999.0) == 0
-
-    def test_quota_reconcile_consumed_delta(self):
-        scope = _scope_manager(config={"id": "x", "quota": 10.0})
-        scope.record_sent(now=0.0, quota_amount=2.0)
-        assert scope._consumed == pytest.approx(2.0)
-        # The response reports it actually consumed 0.5 more than estimated.
-        scope.reconcile_quota(consumed=0.5, now=0.0)
-        assert scope._consumed == pytest.approx(2.5)
-
-    def test_quota_reconcile_remaining(self):
-        scope = _scope_manager(config={"id": "x", "quota": 10.0})
-        scope.record_sent(now=0.0, quota_amount=2.0)
-        scope.reconcile_quota(remaining=3.0, now=0.0)
-        assert scope._consumed == pytest.approx(7.0)
 
 
 class TestThrottlerBackOff:
@@ -1247,45 +1176,24 @@ class TestScopeHelpers:
     def test_iter_scopes(self):
         assert list(iter_scopes(None)) == []
         assert list(iter_scopes("a")) == ["a"]
-        assert list(iter_scopes({"a": 1.0, "b": 2.0})) == ["a", "b"]
         assert list(iter_scopes(["a", "b"])) == ["a", "b"]
 
-    def test_iter_scope_quota_amounts(self):
-        assert list(_iter_scope_quota_amounts(None)) == []
-        assert list(_iter_scope_quota_amounts("a")) == [("a", None)]
-        assert list(_iter_scope_quota_amounts({"a": 1.0})) == [("a", 1.0)]
-        assert list(_iter_scope_quota_amounts(["a", "b"])) == [("a", None), ("b", None)]
-
     def test_add_scope_normalizes_every_input_shape(self):
-        assert add_scope({"a": 1}, "b") == {"a": 1, "b": None}
-        assert add_scope(None, "b") == {"b": None}
-        assert add_scope("a", "b") == {"a": None, "b": None}
-        assert add_scope(["a"], "b") == {"a": None, "b": None}
+        assert add_scope(None, "b") == ["b"]
+        assert add_scope("a", "b") == ["a", "b"]
+        assert add_scope(["a"], "b") == ["a", "b"]
         with pytest.raises(TypeError):
             add_scope(123, "a")  # type: ignore[arg-type]
 
-    def test_add_scope_without_value(self):
-        # add_scope always returns a {scope_id: quota} dict, using None as the
-        # quota of scopes added without one.
-        assert add_scope(None, "a") == {"a": None}
-        assert add_scope("a", "b") == {"a": None, "b": None}
-
-    def test_add_scope_with_value(self):
-        assert add_scope(None, "a", 2.0) == {"a": 2.0}
-        assert add_scope({"a": None}, "b", 3.0) == {"a": None, "b": 3.0}
-
-    def test_add_scope_with_value_rejects_existing_entry(self):
-        with pytest.raises(TypeError):
-            add_scope({"a": 1.0}, "a", 2.0)
+    def test_add_scope_of_an_existing_scope(self):
+        assert add_scope(["a", "b"], "a") == ["a", "b"]
 
     def test_add_scope_does_not_mutate_its_input(self):
-        # The dict of a request's scopes is the one persisted on request.meta
-        # (see scope_cache), so adding a scope must not touch it.
-        scopes = {"a": 1.0}
-        assert add_scope(scopes, "b", 2.0) == {"a": 1.0, "b": 2.0}
-        assert scopes == {"a": 1.0}
-        assert add_scope(scopes, "c") == {"a": 1.0, "c": None}
-        assert scopes == {"a": 1.0}
+        # The scopes of a request are the ones persisted on request.meta (see
+        # scope_cache), so adding a scope must not touch them.
+        scopes = ["a"]
+        assert add_scope(scopes, "b") == ["a", "b"]
+        assert scopes == ["a"]
 
 
 class TestThrottlerEdges:
@@ -1444,13 +1352,6 @@ class TestThrottlingScopeManagerEdges:
         scope.record_done(now=0.0)
         assert scope._active == 0
 
-    def test_reconcile_quota_no_change(self):
-        scope = _scope_manager(config={"id": "x", "quota": 10.0})
-        scope.record_sent(now=0.0, quota_amount=4.0)
-        # Neither consumed nor remaining given: the estimate is left untouched.
-        scope.reconcile_quota(now=0.0)
-        assert scope._consumed == pytest.approx(4.0)
-
     def test_set_base_delay_during_backoff(self):
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0}, {"id": "x"})
         scope.record_backoff(now=0.0)
@@ -1488,12 +1389,6 @@ class TestThrottlingScopeManagerEdges:
         scope.record_sent(now=10.0)
         # The hard backoff window has passed, so it is cleared.
         assert scope._in_backoff_until is None
-
-    def test_reconcile_quota_without_quota(self):
-        scope = _scope_manager(config={"id": "x"})
-        # No quota configured, so reconciliation is a no-op.
-        scope.reconcile_quota(consumed=5.0, now=0.0)
-        assert scope._consumed == 0.0
 
     def test_is_idle_with_active_requests(self):
         scope = _scope_manager(config={"id": "x"})

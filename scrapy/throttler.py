@@ -42,7 +42,7 @@ class BackoffConfig(TypedDict, total=False):
     enabled: bool
     """Whether :ref:`backoff <backoff>` applies to this scope. Defaults to
     ``True``; set it to ``False`` to disable backoff for the scope, so it relies
-    solely on its configured delay and quota."""
+    solely on its configured delay."""
 
     max_delay: float
     """Per-scope override of :setting:`BACKOFF_MAX_DELAY`."""
@@ -63,14 +63,6 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     override of :setting:`RANDOMIZE_DOWNLOAD_DELAY` (``0`` disables it, ``0.5``
     means ±50%)."""
 
-    quota: float
-    """Maximum :ref:`throttler quota <throttler-quotas>` the scope may consume
-    per ``window``. Unlimited when unset."""
-
-    window: float
-    """Length in seconds of the ``quota`` window; per-scope override of
-    :setting:`THROTTLER_WINDOW`."""
-
     manager: str | type
     """Import path or class of a custom :setting:`THROTTLING_SCOPE_MANAGER` for
     this scope."""
@@ -81,43 +73,27 @@ class ThrottlingScopeConfig(TypedDict, total=False):
 
 
 ScopeID = str
-QuotaAmount = float
-ScopeQuotas = dict[ScopeID, QuotaAmount | None]
-RequestScopes = None | ScopeID | Iterable[ScopeID] | ScopeQuotas
+RequestScopes = None | ScopeID | Iterable[ScopeID]
 if TYPE_CHECKING:
-    # A scope of a request being throttled: its ID, its manager, and the quota
-    # amount the request consumes from it.
-    ScopeSlot = tuple[ScopeID, "ThrottlingScopeManagerProtocol", QuotaAmount | None]
+    # A scope of a request being throttled: its ID and its manager.
+    ScopeSlot = tuple[ScopeID, "ThrottlingScopeManagerProtocol"]
 
 
 def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
     """Iterate over the scope IDs of *scopes*, whatever its form.
 
     :class:`~ThrottlerProtocol.get_scopes` (and
-    :meth:`~ThrottlerProtocol.get_resolved_scopes`) may return a single
-    scope ID, an iterable of them, a ``{scope_id: quota}`` mapping, or ``None``;
-    this helper normalizes any of those into an iterable of scope IDs, e.g. to
-    react to a request's scopes in a custom middleware.
+    :meth:`~ThrottlerProtocol.get_resolved_scopes`) may return a single scope ID,
+    an iterable of them, or ``None``; this helper normalizes any of those into an
+    iterable of scope IDs, e.g. to react to a request's scopes in a custom
+    middleware.
     """
-    for scope, _ in _iter_scope_quota_amounts(scopes):
-        yield scope
-
-
-def _iter_scope_quota_amounts(
-    scopes: RequestScopes,
-) -> Iterable[tuple[ScopeID, QuotaAmount | None]]:
-    """Iterate over *scopes* as ``(scope_id, quota_amount)`` pairs, using
-    ``None`` as the quota amount of scopes that have none."""
     if scopes is None:
         return
     if isinstance(scopes, str):
-        yield scopes, None
+        yield scopes
         return
-    if isinstance(scopes, dict):
-        yield from scopes.items()
-        return
-    for scope in scopes:
-        yield scope, None
+    yield from scopes
 
 
 def _effective_priority(settings: BaseSettings, name: str) -> int:
@@ -260,38 +236,24 @@ def _check_scope_concurrency(
             )
 
 
-def add_scope(
-    scopes: RequestScopes,
-    scope: ScopeID,
-    quota_amount: QuotaAmount | None = None,
-    /,
-) -> ScopeQuotas:
-    """Add *scope* to *scopes* with *quota_amount*, returning a new
-    ``{scope_id: quota}`` dict and leaving *scopes* untouched.
+def add_scope(scopes: RequestScopes, scope: ScopeID, /) -> list[ScopeID]:
+    """Add *scope* to *scopes*, returning a new list of scope IDs and leaving
+    *scopes* untouched.
 
     This is a utility function to help extending the output of
     :meth:`~ThrottlerProtocol.get_scopes`, e.g. in
     :class:`Throttler` subclasses.
-
-    Adding a scope with a *quota_amount* fails if it is already present, so an
-    existing :ref:`quota <throttler-quotas>` is never silently overwritten;
-    adding it without a quota amount leaves any existing entry untouched.
     """
     if scopes is not None and not isinstance(scopes, Iterable):
         raise TypeError(
             f"Invalid type ({type(scopes)}) of scopes value "
-            f"{scopes!r}. Expected None, str, Iterable or dict."
+            f"{scopes!r}. Expected None, str or Iterable."
         )
-    # A new dict, so that the caller's (for the scopes of a request, the one
-    # persisted on request.meta; see scope_cache) is never modified.
-    result = dict(_iter_scope_quota_amounts(scopes))
-    if quota_amount is None:
-        result.setdefault(scope, None)
-        return result
-    if scope in result:
-        raise TypeError(f"Scope {scope!r} already has a quota amount in {scopes!r}")
-    result[scope] = quota_amount
-    return result
+    # A new list, so that the caller's scopes (for a request, the ones persisted
+    # on request.meta; see scope_cache) are never modified.
+    result = dict.fromkeys(iter_scopes(scopes))
+    result[scope] = None
+    return list(result)
 
 
 class ThrottlerProtocol(Protocol):
@@ -302,9 +264,8 @@ class ThrottlerProtocol(Protocol):
         """Return the :ref:`throttling scopes <throttling-scopes>` that apply
         to *request*.
 
-        Return ``None`` if no scopes apply, a string for a single scope, an
-        iterable of strings for multiple scopes, or a dict with scope IDs as
-        keys and :ref:`throttler quotas <throttler-quotas>` as values.
+        Return ``None`` if no scopes apply, a string for a single scope, or an
+        iterable of strings for multiple scopes.
         """
 
     def get_resolved_scopes(self, request: Request) -> RequestScopes:
@@ -414,23 +375,6 @@ class ThrottlerProtocol(Protocol):
         from a :ref:`Retry-After <retry-after>` header), not a change to the
         steady-state delay. *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`;
         set it to ``False`` for trusted, programmatic delays.
-        """
-
-    def reconcile_quota(
-        self,
-        scopes: RequestScopes,
-        *,
-        consumed: float | None = None,
-        remaining: float | None = None,
-    ) -> None:
-        """Reconcile the :ref:`throttler quota <throttler-quotas>` of each of
-        *scopes* with an actually *consumed* amount (a delta to add) or a
-        *remaining* amount (an absolute value), correcting the estimate used
-        when requests were sent.
-
-        Like :meth:`back_off`, this is meant to be called from a downloader
-        middleware or spider callback that learns the real quota cost of a
-        request from its response.
         """
 
     def get_scope_manager(self, scope_id: str) -> ThrottlingScopeManagerProtocol:
@@ -658,19 +602,6 @@ class Throttler:
             return cast("RequestScopes", request.meta[_RESOLVED_SCOPES_META_KEY])
         return self._resolve_scopes_sync(request)
 
-    def _cached_scope_quota_amounts(
-        self, request: Request
-    ) -> list[tuple[ScopeID, QuotaAmount | None]]:
-        """Return the ``(scope_id, quota_amount)`` pairs of *request*, from the
-        scopes returned by :meth:`get_resolved_scopes`."""
-        scopes = self.get_resolved_scopes(request)
-        # The readiness API asks for this on every queued scope set on every
-        # dequeue, and default scoping yields a single, quota-less scope;
-        # skipping the general iteration there measures 2.3x faster.
-        if isinstance(scopes, str):
-            return [(scopes, None)]
-        return list(_iter_scope_quota_amounts(scopes))
-
     # -- Scope-state coordination (called from the request lifecycle) --------
 
     def get_scope_manager(self, scope_id: ScopeID) -> ThrottlingScopeManagerProtocol:
@@ -694,21 +625,18 @@ class Throttler:
         self._enforce_scope_limit(scope_id)
         return manager
 
-    def _resolve_scope_slots(
-        self, scope_values: list[tuple[ScopeID, QuotaAmount | None]]
-    ) -> list[ScopeSlot]:
-        """Return the ``ScopeSlot`` of every entry of *scope_values*.
+    def _resolve_scope_slots(self, scope_ids: list[ScopeID]) -> list[ScopeSlot]:
+        """Return the ``ScopeSlot`` of every scope in *scope_ids*.
 
         Resolved together, and marked as such in :attr:`_resolving`, because
         :meth:`get_scope_manager` enforces :setting:`THROTTLING_SCOPE_LIMIT` as
         soon as it creates a manager and only spares the scope it created:
         one at a time, a scope of this request could evict another one.
         """
-        self._resolving.update(scope_id for scope_id, _ in scope_values)
+        self._resolving.update(scope_ids)
         try:
             return [
-                (scope_id, self.get_scope_manager(scope_id), quota_amount)
-                for scope_id, quota_amount in scope_values
+                (scope_id, self.get_scope_manager(scope_id)) for scope_id in scope_ids
             ]
         finally:
             self._resolving.clear()
@@ -763,25 +691,25 @@ class Throttler:
         # The scopes are resolved (and persisted, see scope_cache) even for a
         # request excluded from throttling, because its outcome still backs off
         # its scopes, and get_resolved_scopes() is how a middleware finds them.
-        scope_values = list(_iter_scope_quota_amounts(await self.get_scopes(request)))
+        scope_ids = list(iter_scopes(await self.get_scopes(request)))
         if request.meta.get("dont_throttle"):
             return
-        if not scope_values:
+        if not scope_ids:
             return
         if not unscheduled:
-            await self._acquire_scope_slots(request, scope_values, unscheduled=False)
+            await self._acquire_scope_slots(request, scope_ids, unscheduled=False)
             return
         # A registration here makes the whole scope yield its free slots to
         # this request (see _unscheduled_claims), so one that outlived its wait
         # would hold the scope back for good. The finally below covers every way
         # this coroutine can end, including being cancelled or abandoned (both
         # of which throw into the await).
-        for scope_id, _ in scope_values:
+        for scope_id in scope_ids:
             self._unscheduled_waiters.setdefault(scope_id, WeakSet()).add(request)
         try:
-            await self._acquire_scope_slots(request, scope_values, unscheduled=True)
+            await self._acquire_scope_slots(request, scope_ids, unscheduled=True)
         finally:
-            for scope_id, _ in scope_values:
+            for scope_id in scope_ids:
                 waiters = self._unscheduled_waiters.get(scope_id)
                 if waiters is not None:
                     waiters.discard(request)
@@ -791,11 +719,11 @@ class Throttler:
     async def _acquire_scope_slots(
         self,
         request: Request,
-        scope_values: list[tuple[ScopeID, QuotaAmount | None]],
+        scope_ids: list[ScopeID],
         *,
         unscheduled: bool,
     ) -> None:
-        """Block until every scope in *scope_values* allows *request* through,
+        """Block until every scope in *scope_ids* allows *request* through,
         then reserve a slot on each of them.
 
         The scope managers are resolved anew on every pass: a scope can be
@@ -803,7 +731,6 @@ class Throttler:
         recording the send on a replaced manager would leave the scope with two
         sets of counters, letting it exceed its limits.
         """
-        scope_ids = [scope_id for scope_id, _ in scope_values]
         yielded_to_unscheduled = False
         while True:
             # Rechecked on every pass: a second send that only one release()
@@ -812,12 +739,9 @@ class Throttler:
             # once) to get here.
             if request in self._reserved:
                 return
-            scopes = self._resolve_scope_slots(scope_values)
+            scopes = self._resolve_scope_slots(scope_ids)
             wait = max(
-                (
-                    manager.can_send(quota_amount=quota_amount)
-                    for _, manager, quota_amount in scopes
-                ),
+                (manager.can_send() for _, manager in scopes),
                 default=0.0,
             )
             if wait > 0:
@@ -827,11 +751,11 @@ class Throttler:
                     )
                 await sleep(wait)
                 continue
-            # Every time-based limit (delay, backoff, quota) has elapsed; the
-            # only remaining reason to wait is a full concurrency slot.
+            # Every time-based limit (delay, backoff) has elapsed; the only
+            # remaining reason to wait is a full concurrency slot.
             blocked = [
                 (scope_id, manager)
-                for scope_id, manager, _ in scopes
+                for scope_id, manager in scopes
                 if manager.concurrency_blocked()
             ]
             if not blocked:
@@ -868,8 +792,8 @@ class Throttler:
     def _record_reservation(self, request: Request, scopes: list[ScopeSlot]) -> None:
         """Record a send on each of *request*'s *scopes* and mark *request* as
         reserved, so :meth:`release` can later free the slots."""
-        for scope_id, manager, quota_amount in scopes:
-            manager.record_sent(quota_amount=quota_amount)
+        for scope_id, manager in scopes:
+            manager.record_sent()
             self._scope_holders.setdefault(scope_id, WeakSet()).add(request)
         self._reserved[request] = scopes
 
@@ -877,7 +801,7 @@ class Throttler:
         scopes = self._reserved.pop(request, None)
         if not scopes:
             return
-        for scope_id, manager, _ in scopes:
+        for scope_id, manager in scopes:
             holders = self._scope_holders.get(scope_id)
             if holders is not None:
                 holders.discard(request)
@@ -928,7 +852,7 @@ class Throttler:
         in_download_handler = downloader._in_download_handler
         if not in_download_handler:
             return False
-        for scope_id, manager, _ in scopes:
+        for scope_id, manager in scopes:
             # *request* itself holds a slot of every scope it reserved, so the
             # scope has holders.
             holders = self._scope_holders[scope_id]
@@ -980,16 +904,13 @@ class Throttler:
         now = time.monotonic()
         if self._request_delay_deadline(request, now) > now:
             return False
-        for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
+        for scope_id in iter_scopes(self.get_resolved_scopes(request)):
             if scope_id == skip:
                 continue
             manager = self._live_scope_manager(scope_id)
             if manager is None:
                 continue
-            if (
-                manager.can_send(now=now, quota_amount=quota_amount) > 0
-                or manager.concurrency_blocked()
-            ):
+            if manager.can_send(now=now) > 0 or manager.concurrency_blocked():
                 return False
         return True
 
@@ -1072,26 +993,13 @@ class Throttler:
                 logger.debug(f"Backoff for scope {scope_id} (delay: {delay})")
             self.get_scope_manager(scope_id).record_backoff(delay=delay, cap=cap)
 
-    def reconcile_quota(
-        self,
-        scopes: RequestScopes,
-        *,
-        consumed: float | None = None,
-        remaining: float | None = None,
-    ) -> None:
-        for scope_id in iter_scopes(scopes):
-            self.get_scope_manager(scope_id).reconcile_quota(
-                consumed=consumed, remaining=remaining
-            )
-
 
 class ThrottlingScopeManagerProtocol(Protocol):
     """A protocol for :setting:`THROTTLING_SCOPE_MANAGER` :ref:`components
     <topics-components>`.
 
     An instance manages one throttling scope's run-time throttling state: its
-    delay and concurrency limits, its quota, and any gradual :ref:`backoff
-    <backoff>`.
+    delay and concurrency limits, and any gradual :ref:`backoff <backoff>`.
 
     An instance is created the first time its scope is actually used (a request
     is sent under it, it backs off, its delay is read or written), not when a
@@ -1113,8 +1021,6 @@ class ThrottlingScopeManagerProtocol(Protocol):
             "concurrency": 1,
             "delay": 1.0,
             "jitter": 0.5,
-            "quota": 1000.0,
-            "window": 60.0,
             "backoff": {
                 "max_delay": 180.0,
             },
@@ -1122,22 +1028,12 @@ class ThrottlingScopeManagerProtocol(Protocol):
 
     """
 
-    def can_send(
-        self, now: float | None = None, quota_amount: QuotaAmount | None = None
-    ) -> float:
+    def can_send(self, now: float | None = None) -> float:
         """Return the number of seconds to wait before a request for this scope
-        may be sent, or ``0`` if it may be sent right away.
+        may be sent, or ``0`` if it may be sent right away."""
 
-        *quota_amount* is the expected :ref:`throttler quota
-        <throttler-quotas>` consumption of the request, if any.
-        """
-
-    def record_sent(
-        self, now: float | None = None, quota_amount: QuotaAmount | None = None
-    ) -> None:
-        """Record that a request for this scope has just been sent, consuming
-        *quota_amount* of its :ref:`throttler quota <throttler-quotas>` if
-        given."""
+    def record_sent(self, now: float | None = None) -> None:
+        """Record that a request for this scope has just been sent."""
 
     def record_done(self, now: float | None = None) -> None:
         """Record that a previously :meth:`record_sent` request has finished
@@ -1160,17 +1056,6 @@ class ThrottlingScopeManagerProtocol(Protocol):
         for trusted, programmatic delays (see
         :meth:`ThrottlerProtocol.back_off`).
         """
-
-    def reconcile_quota(
-        self,
-        consumed: float | None = None,
-        remaining: float | None = None,
-        now: float | None = None,
-    ) -> None:
-        """Reconcile the :ref:`throttler quota <throttler-quotas>` of this
-        scope with the actual *consumed* amount (or the *remaining* amount)
-        reported for a request, correcting the estimate used by
-        :meth:`record_sent`."""
 
     def get_base_delay(self) -> float:
         """Return the base (non-backoff) delay of this scope, in seconds."""
@@ -1234,8 +1119,8 @@ class ThrottlingScopeManagerProtocol(Protocol):
 
     def is_idle(self, now: float) -> bool:
         """Return whether this scope can be evicted from memory, i.e. whether it
-        holds no state that eviction would drop: no active (future) backoff, no
-        pending delay and no spent quota in the current window.
+        holds no state that eviction would drop: no active (future) backoff and
+        no pending delay.
 
         It must also return ``False`` while any :meth:`record_sent` request of
         the scope is still in flight, i.e. has not been passed to
@@ -1259,8 +1144,7 @@ class ThrottlingScopeManager:
     r"""The default :setting:`THROTTLING_SCOPE_MANAGER` class.
 
     It implements a per-scope state machine covering delay, exponential
-    :ref:`backoff <backoff>`, concurrency and :ref:`quotas
-    <throttler-quotas>`:
+    :ref:`backoff <backoff>` and concurrency:
 
     -   A base delay (the scope ``"delay"`` config, defaulting to
         :setting:`DOWNLOAD_DELAY`) is enforced between consecutive requests for
@@ -1270,14 +1154,11 @@ class ThrottlingScopeManager:
         quiet recovery windows it recovers (see :meth:`_recover`). The
         :ref:`backoff docs <backoff>` describe the algorithm. Backoff can be
         turned off for a scope with the ``"backoff"`` config's ``"enabled"``
-        key, leaving it to rely solely on its delay and quota.
+        key, leaving it to rely solely on its delay.
 
     -   No more than ``"concurrency"`` requests (defaulting to
         :setting:`THROTTLING_SCOPE_CONCURRENCY`) are allowed in flight at once.
         There is no way to lift this limit.
-
-    -   When the scope is configured with a ``"quota"``, no more than that much
-        quota is consumed per ``"window"`` (default: :setting:`THROTTLER_WINDOW`).
     """
 
     @classmethod
@@ -1314,13 +1195,6 @@ class ThrottlingScopeManager:
             config.get("concurrency", _default_scope_concurrency(settings))
         )
 
-        # Quota.
-        quota = config.get("quota")
-        self._quota: QuotaAmount | None = None if quota is None else float(quota)
-        self._quota_window: float = float(
-            config.get("window", settings.getfloat("THROTTLER_WINDOW"))
-        )
-
         # State.
         self._delay: float = self._base_delay
         # Bracket for the recovery search (see _recover): highest delay known to
@@ -1333,8 +1207,6 @@ class ThrottlingScopeManager:
         self._last_seen: float | None = None
         self._active: int = 0
         self._slot_available = _Event()
-        self._consumed: float = 0.0
-        self._quota_window_start: float | None = None
 
     @staticmethod
     def _now(now: float | None) -> float:
@@ -1394,58 +1266,28 @@ class ThrottlingScopeManager:
         self._in_backoff_until = None
         self._last_backoff_time = None
 
-    def _maybe_reset_quota(self, now: float) -> None:
-        if self._quota is None:
-            return
-        if self._quota_window <= 0:
-            # No window: no reset cadence to step (would spin); keep it reset.
-            self._consumed = 0.0
-            self._quota_window_start = now
-            return
-        if self._quota_window_start is None:
-            self._quota_window_start = now
-            return
-        while now - self._quota_window_start >= self._quota_window:
-            self._quota_window_start += self._quota_window
-            self._consumed = 0.0
-
-    def can_send(
-        self, now: float | None = None, quota_amount: QuotaAmount | None = None
-    ) -> float:
-        # can_send() only refreshes passive, time-based state (backoff recovery
-        # and the quota window) to reflect the current time.
+    def can_send(self, now: float | None = None) -> float:
+        # can_send() only refreshes passive, time-based state (backoff recovery)
+        # to reflect the current time.
         now = self._now(now)
         self._recover(now)
-        self._maybe_reset_quota(now)
         waits = [0.0]
         if self._in_backoff_until is not None:
             waits.append(self._in_backoff_until - now)
         if self._next_allowed_time is not None:
             waits.append(self._next_allowed_time - now)
-        if self._quota is not None:
-            need = 0.0 if quota_amount is None else float(quota_amount)
-            # Block until the window resets only if some quota is already spent;
-            # a single oversized request is always allowed through.
-            if self._consumed > 0 and self._consumed + need > self._quota:
-                start = self._quota_window_start or now
-                waits.append(start + self._quota_window - now)
         # Concurrency is enforced separately, via concurrency_blocked() and
         # slot_available_event(), so acquire() can wait for a freed slot without
         # polling.
         return max(waits)
 
-    def record_sent(
-        self, now: float | None = None, quota_amount: QuotaAmount | None = None
-    ) -> None:
+    def record_sent(self, now: float | None = None) -> None:
         now = self._now(now)
         self._last_seen = now
         if self._in_backoff_until is not None and now >= self._in_backoff_until:
             self._in_backoff_until = None
         self._next_allowed_time = now + self._effective_delay()
         self._active += 1
-        if self._quota is not None and quota_amount is not None:
-            self._maybe_reset_quota(now)
-            self._consumed += float(quota_amount)
 
     def record_done(self, now: float | None = None) -> None:
         if self._active > 0:
@@ -1505,20 +1347,6 @@ class ThrottlingScopeManager:
         self._delay = min(max(_BACKOFF_MIN_DELAY, grown), self._max_delay)
         self._next_allowed_time = now + self._effective_delay()
 
-    def reconcile_quota(
-        self,
-        consumed: float | None = None,
-        remaining: float | None = None,
-        now: float | None = None,
-    ) -> None:
-        if self._quota is None:
-            return
-        self._maybe_reset_quota(self._now(now))
-        if remaining is not None:
-            self._consumed = max(0.0, self._quota - float(remaining))
-        elif consumed is not None:
-            self._consumed = max(0.0, self._consumed + float(consumed))
-
     def get_base_delay(self) -> float:
         return self._base_delay
 
@@ -1553,14 +1381,5 @@ class ThrottlingScopeManager:
         # A delay that has not elapsed yet would let the next request for the
         # scope go out earlier than its delay allows.
         if self._next_allowed_time is not None and self._next_allowed_time > now:
-            return False
-        # A quota window with something spent in it would give the scope a full
-        # quota again before its window is over.
-        window_start = self._quota_window_start
-        if (
-            self._consumed > 0
-            and window_start is not None
-            and now - window_start < self._quota_window
-        ):
             return False
         return self._active == 0

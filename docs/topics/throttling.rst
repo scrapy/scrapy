@@ -367,12 +367,6 @@ following keys:
     ``0.5`` means ±50% (the default when :setting:`RANDOMIZE_DOWNLOAD_DELAY` is
     on).
 
-``quota`` (:class:`float`)
-    Maximum :ref:`quota <throttler-quotas>` consumed per ``window``.
-
-``window`` (:class:`float`)
-    Quota window in seconds. Defaults to :setting:`THROTTLER_WINDOW`.
-
 ``backoff`` (:class:`~scrapy.throttler.BackoffConfig`)
     Per-scope :ref:`backoff overrides <per-scope-backoff>`.
 
@@ -435,38 +429,6 @@ ones they end up being sent under. Throttling itself is unaffected: the scopes
 that hold a request back are always the ones
 :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes` returns.
 
-.. _throttler-quotas:
-
-Throttler quotas
-----------------
-
-When different requests can consume different amounts of a throttling scope,
-you can express this using **throttler quotas** to optimize request scheduling.
-
-.. setting:: THROTTLER_WINDOW
-
-Use the :setting:`THROTTLER_WINDOW` setting (default: ``60.0``) or the ``"window"``
-key in the :setting:`THROTTLING_SCOPES` setting to define the time window after
-which throttler quotas are reset.
-
-Then use the :setting:`THROTTLING_SCOPES` setting to define the throttling
-quotas for each throttling scope:
-
-.. code-block:: python
-    :caption: :file:`settings.py`
-
-    THROTTLING_SCOPES = {
-        "api.example": {
-            "quota": 500.0,
-        },
-    }
-
-Then, in the :reqmeta:`throttling_scopes` request metadata key or in the return
-value of the :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes`
-method, define a :class:`dict` where keys are scope IDs and values are
-:class:`float` values that indicate the expected quota consumption (it does not
-need to be exact).
-
 .. _custom-throttling-scope-managers:
 
 Customizing throttling scope managers
@@ -486,8 +448,8 @@ as a string):
     THROTTLING_SCOPE_MANAGER = "myproject.throttling.MyThrottlingScopeManager"
 
 For each throttling scope, an instance of this class manages that scope's
-run-time throttling state: its delay and concurrency limits, its quota, and any
-gradual :ref:`backoff <backoff>`.
+run-time throttling state: its delay and concurrency limits, and any gradual
+:ref:`backoff <backoff>`.
 
 You can implement your own throttling scope manager if you wish to change the
 throttling behavior beyond what settings allow.
@@ -734,70 +696,6 @@ to:
                 return response
 
 
-.. _cost-smoothing-throttling:
-
-Cost-capped throttling
-----------------------
-
-Imagine you are using an API that charges different requests differently, e.g.
-based on the features used, and you want to limit how much you spend per time
-window (:setting:`THROTTLER_WINDOW`). You can use :ref:`throttler quotas
-<throttler-quotas>` for that:
-
--   Implement a :ref:`throttler <custom-throttling-scopes>` that:
-
-    -   Sets a ``cost`` throttling scope on each request to some estimation
-        based e.g. on request URL parameters:
-
-        .. code-block:: python
-
-            from scrapy.utils.httpobj import urlparse_cached
-            from scrapy.throttler import Throttler
-
-
-            class MyThrottler(Throttler):
-                def get_default_scopes(self, request):
-                    scopes = super().get_default_scopes(request)
-                    parsed_url = urlparse_cached(request)
-                    if parsed_url.netloc != "api.example":
-                        return scopes
-                    return add_scope(scopes, "cost", estimate_request_cost(request))
-
--   Add a :ref:`downloader middleware <topics-downloader-middleware>` that
-    reconciles the estimated cost with the actual cost reported by the
-    response, so that the quota tracks real spending:
-
-    .. code-block:: python
-
-        class CostReconcileMiddleware:
-            def __init__(self, crawler):
-                self.throttler = crawler.throttler
-
-            @classmethod
-            def from_crawler(cls, crawler):
-                return cls(crawler)
-
-            def process_response(self, request, response, spider):
-                if response.headers.get("X-Actual-Cost") is not None:
-                    estimated = estimate_request_cost(request)
-                    actual = float(response.headers[b"X-Actual-Cost"])
-                    # Report the difference between actual and estimated cost.
-                    self.throttler.reconcile_quota("cost", consumed=actual - estimated)
-                return response
-
--   Use the :setting:`THROTTLING_SCOPES` setting to set a maximum cost per time
-    window:
-
-    .. code-block:: python
-        :caption: :file:`settings.py`
-
-        THROTTLING_SCOPES = {
-            "cost": {"quota": 100.0},
-        }
-
-    This will allow you to spend up to 100.0 units of cost per time window
-    (default: 60 seconds) before throttling kicks in.
-
 .. _throttling-per-ip:
 
 Per-IP concurrency limiting
@@ -896,9 +794,8 @@ Additional settings
     When the limit is exceeded, the least-recently-used idle scopes are evicted
     (an evicted scope is recreated from its configuration the next time it is
     needed). Scopes with in-flight requests, in active backoff, or with a
-    pending delay or spent quota are never evicted, so the limit may be
-    temporarily exceeded if that many scopes are busy at once. Set to ``0`` to
-    disable the limit.
+    pending delay are never evicted, so the limit may be temporarily exceeded if
+    that many scopes are busy at once. Set to ``0`` to disable the limit.
 
 .. _throttling-api:
 

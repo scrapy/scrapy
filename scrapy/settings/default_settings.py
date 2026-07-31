@@ -215,7 +215,6 @@ __all__ = [
     "TEMPLATES_DIR",
     "THROTTLER",
     "THROTTLER_DEBUG",
-    "THROTTLER_WINDOW",
     "THROTTLING_SCOPES",
     "THROTTLING_SCOPE_CONCURRENCY",
     "THROTTLING_SCOPE_LIMIT",
@@ -599,7 +598,6 @@ TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 THROTTLER = "scrapy.throttler.Throttler"
 THROTTLING_SCOPE_MANAGER = "scrapy.throttler.ThrottlingScopeManager"
 THROTTLING_SCOPES = {}
-THROTTLER_WINDOW = 60.0
 THROTTLING_SCOPE_CONCURRENCY = 1
 THROTTLING_SCOPE_LIMIT = 100000
 THROTTLER_DEBUG = False
