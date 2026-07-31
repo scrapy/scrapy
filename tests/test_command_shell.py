@@ -276,6 +276,29 @@ class TestInteractiveShell:
         self._isolate_config(env, config_home)
         assert "Traceback" not in self._run_interactive_shell(env)
 
+    @pytest.mark.skipif(
+        importlib.util.find_spec("IPython") is None, reason="IPython is not installed"
+    )
+    def test_shell_ipython(self, tmp_path: Path) -> None:
+        # Reaching the embedded IPython shell requires selecting it explicitly,
+        # since ptpython takes precedence when both are installed.
+        config_home = tmp_path / "config"
+        config_home.mkdir()
+        env = os.environ.copy()
+        self._isolate_config(env, config_home)
+        env["SCRAPY_PYTHON_SHELL"] = "ipython"
+        args = (sys.executable, "-m", "scrapy.cmdline", "shell")
+        logfile = BytesIO()
+        p = PopenSpawn(args, env=env, timeout=30)
+        p.logfile_read = logfile
+        p.expect_exact("Available Scrapy objects")
+        p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
+        p.expect_exact("IPYMODULE True")
+        p.sendeof()
+        p.wait()  # type: ignore[no-untyped-call]
+        logfile.seek(0)
+        assert "Traceback" not in logfile.read().decode()
+
 
 @pytest.fixture
 def restore_sigint():

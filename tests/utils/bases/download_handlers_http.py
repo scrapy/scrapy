@@ -31,10 +31,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
-from scrapy.utils._deps_compat import (
-    PYOPENSSL_X509_DEPRECATED,
-    TWISTED_TLS_LIMITS_OFFBY1,
-)
+from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
@@ -832,15 +829,8 @@ class TestHttpsBase(TestHttpBase):
     is_secure = True
 
     tls_log_message = (
-        (
-            'SSL connection certificate: issuer "CN=localhost,O=Scrapy,C=IE", '
-            'subject "CN=localhost,O=Scrapy,C=IE"'
-        )
-        if PYOPENSSL_X509_DEPRECATED
-        else (
-            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
-            'subject "/C=IE/O=Scrapy/CN=localhost"'
-        )
+        'SSL connection certificate: issuer "CN=localhost,O=Scrapy,C=IE", '
+        'subject "CN=localhost,O=Scrapy,C=IE"'
     )
 
     def test_download_conn_lost(self) -> None:  # type: ignore[override]
@@ -902,6 +892,9 @@ class TestSimpleHttpsBase(ABC):
     certfile = "keys/localhost.crt"
     host = "localhost"
     cipher_string: str | None = None
+    # Crawler settings for the download handler. When unset, the client is asked
+    # for the same ciphers the server is restricted to.
+    client_settings: dict[str, Any] | None = None
 
     @pytest.fixture(scope="class")
     @classmethod
@@ -923,10 +916,9 @@ class TestSimpleHttpsBase(ABC):
 
     @asynccontextmanager
     async def get_dh(self) -> AsyncGenerator[DownloadHandlerProtocol]:
-        if self.cipher_string is not None:
+        settings_dict = self.client_settings
+        if settings_dict is None and self.cipher_string is not None:
             settings_dict = {"DOWNLOADER_CLIENT_TLS_CIPHERS": self.cipher_string}
-        else:
-            settings_dict = None
         crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
         crawler.spider = crawler._create_spider()
         dh = build_from_crawler(self.download_handler_cls, crawler)
@@ -968,6 +960,12 @@ class TestHttpsInvalidDNSPatternBase(TestSimpleHttpsBase):
 
 class TestHttpsCustomCiphersBase(TestSimpleHttpsBase):
     cipher_string = "CAMELLIA256-SHA"
+
+
+class TestHttpsDefaultCiphersBase(TestSimpleHttpsBase):
+    """A ``None`` cipher list leaves the TLS library defaults in place."""
+
+    client_settings: dict[str, Any] | None = {"DOWNLOADER_CLIENT_TLS_CIPHERS": None}
 
 
 class TestHttpsTLSVersionBase(ABC):

@@ -357,6 +357,15 @@ class TestDeferredToFuture:
         assert future_result == 42
 
 
+@pytest.mark.only_not_asyncio
+class TestDeferredToFutureNotAsyncio:
+    def test_deferred(self):
+        with pytest.raises(
+            RuntimeError, match=r"deferred_to_future\(\) requires an installed asyncio"
+        ):
+            deferred_to_future(Deferred())
+
+
 @pytest.mark.only_asyncio
 class TestMaybeDeferredToFutureAsyncio:
     @coroutine_test

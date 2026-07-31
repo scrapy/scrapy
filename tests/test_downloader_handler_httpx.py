@@ -20,6 +20,7 @@ from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
     TestHttpsBase,
     TestHttpsCustomCiphersBase,
+    TestHttpsDefaultCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
     TestHttpsTLSVersionBase,
@@ -130,6 +131,10 @@ class TestHttpsInvalidDNSPattern(
 
 
 class TestHttpsCustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBase):
+    pass
+
+
+class TestHttpsDefaultCiphers(HttpxDownloadHandlerMixin, TestHttpsDefaultCiphersBase):
     pass
 
 
