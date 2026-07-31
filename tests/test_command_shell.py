@@ -162,6 +162,16 @@ class TestShellCommand:
         assert ret == 0, out
 
 
+def _stop(p: PopenSpawn[str]) -> None:
+    p.sendeof()
+    p.wait()  # type: ignore[no-untyped-call]
+    # PopenSpawn leaves the subprocess pipes open, which triggers
+    # ResourceWarning at an arbitrary garbage collection point.
+    for pipe in (p.proc.stdin, p.proc.stdout):
+        if pipe:
+            pipe.close()
+
+
 class TestInteractiveShell:
     def test_fetch(self, mockserver: MockServer) -> None:
         args = (
@@ -179,12 +189,7 @@ class TestInteractiveShell:
         p.sendline(f"fetch('{mockserver.url('/')}')")
         p.sendline("type(response)")
         p.expect_exact("HtmlResponse")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        _stop(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -210,12 +215,7 @@ class TestInteractiveShell:
         p = PopenSpawn(args, env=env, timeout=5)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        _stop(p)
         logfile.seek(0)
         return logfile.read().decode()
 
@@ -240,12 +240,7 @@ class TestInteractiveShell:
         # shell=python was honored, regardless of platform-specific prompts.
         p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
         p.expect_exact("IPYMODULE False")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        _stop(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
