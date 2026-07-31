@@ -61,14 +61,13 @@ def iter_spider_classes(
     :attr:`~scrapy.Spider.name` is also excluded.
     """
     for obj in vars(module).values():
-        if (
-            inspect.isclass(obj)
-            and issubclass(obj, Spider)
-            and obj.__module__ == module.__name__
-            and not obj._is_ignored()
-            and (not require_name or getattr(obj, "name", None))
-        ):
-            yield obj
+        if not inspect.isclass(obj) or not issubclass(obj, Spider):
+            continue
+        if obj.__module__ != module.__name__ or obj._is_ignored():
+            continue
+        if require_name and not getattr(obj, "name", None):
+            continue
+        yield obj
 
 
 @overload
