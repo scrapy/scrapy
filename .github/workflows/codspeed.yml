@@ -1,0 +1,45 @@
+---
+name: codspeed
+
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        paths:
+            - scrapy/**
+            - tests/benchmarks/**
+            - .github/workflows/codspeed.yml
+            - tox.ini
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+    benchmark:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            id-token: write  # OIDC authentication with CodSpeed
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Set up Python 3.14
+              uses: actions/setup-python@v6
+              with:
+                  python-version: '3.14'
+            - name: Install dependencies
+              run: |
+                  pip install --upgrade pip
+                  pip install --upgrade tox
+                  tox -n -e benchmark
+            - name: Run benchmarks
+              uses: CodSpeedHQ/action@v4
+              with:
+                  mode: simulation
+                  run: tox -e benchmark

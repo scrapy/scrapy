@@ -15,14 +15,18 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 60
     env:
-      PYTEST_ADDOPTS: -n auto
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         env:
           - TOXENV: py
         include:
+          - python-version: '3.14'
+            env:
+              TOXENV: py
+            coverage: true
           - python-version: '3.14'
             env:
               TOXENV: no-reactor
@@ -42,6 +46,7 @@ jobs:
         tox
 
     - name: Upload coverage report
+      if: ${{ matrix.coverage }}
       uses: codecov/codecov-action@v5
 
     - name: Upload test results

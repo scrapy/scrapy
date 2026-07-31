@@ -3,20 +3,26 @@ from __future__ import annotations
 import dataclasses
 import io
 import random
+import sys
 from abc import ABC, abstractmethod
+from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
+from types import SimpleNamespace
 from typing import Any
 
 import attr
 import pytest
 from itemadapter import ItemAdapter
 
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.files import GCSFilesStore, S3FilesStore
+from scrapy.pipelines.files import GCSFilesStore, S3FilesStore, _md5sum
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
+from tests.utils.media_pipelines import DUMMY_SPIDER_INFO
 
 try:
     from PIL import Image
@@ -39,6 +45,11 @@ class TestImagesPipeline:
 
     def teardown_method(self):
         rmtree(self.tempdir)
+
+    def test_missing_pillow(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setitem(sys.modules, "PIL", None)
+        with pytest.raises(NotConfigured, match="requires installing Pillow"):
+            ImagesPipeline(self.tempdir, crawler=get_crawler())
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
@@ -197,6 +208,25 @@ class TestImagesPipeline:
         assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert new_im.getpixel((0, 0)) == (255, 0, 0)
 
+    @coroutine_test
+    async def test_image_downloaded(self) -> None:
+        """The image and its thumbnails are stored, and the checksum of the
+        full-size image is returned."""
+        self.pipeline.thumbs = {"small": (20, 20)}
+        _, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
+        url = "https://dev.mydeco.com/mydeco.gif"
+        response = Response(url=url, body=buf.getvalue())
+
+        checksum = await self.pipeline.image_downloaded(
+            response, Request(url=url), DUMMY_SPIDER_INFO
+        )
+
+        buf.seek(0)
+        assert checksum == _md5sum(buf)
+        name = "3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        assert Path(self.tempdir, "full", name).read_bytes() == buf.getvalue()
+        assert Path(self.tempdir, "thumbs", "small", name).exists()
+
     def test_convert_image(self):
         SIZE = (100, 100)
         # straight forward case: RGB and JPEG
@@ -229,6 +259,24 @@ class TestImagesPipeline:
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (205, 230, 255))]
+
+    def test_convert_image_legacy_resampling_filter(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Pillow older than 9.1.0 has Image.ANTIALIAS instead of
+        Image.Resampling.LANCZOS."""
+        # Image.LANCZOS is the only spelling that exists in every supported
+        # Pillow version, but Pillow defines it dynamically, hence the ignore.
+        monkeypatch.setattr(
+            self.pipeline,
+            "_Image",
+            SimpleNamespace(ANTIALIAS=Image.LANCZOS),  # type: ignore[attr-defined]
+        )
+        im, buf = _create_image("JPEG", "RGB", (100, 100), (0, 127, 255))
+
+        thumbnail, _ = self.pipeline.convert_image(im, size=(10, 25), response_body=buf)
+
+        assert thumbnail.size == (10, 10)
 
     @pytest.mark.parametrize(
         "bad_type",
@@ -581,7 +629,7 @@ class TestImagesPipelineCustomSettings:
             GCSFilesStore.POLICY = old_policy
 
 
-def _create_image(format_, *a, **kw):
+def _create_image(format_: str, *a: Any, **kw: Any) -> tuple[Image.Image, io.BytesIO]:
     buf = io.BytesIO()
     Image.new(*a, **kw).save(buf, format_)
     buf.seek(0)

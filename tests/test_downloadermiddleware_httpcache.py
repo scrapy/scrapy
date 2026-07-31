@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import email.utils
+import logging
 import shutil
 import tempfile
 import time
 from contextlib import contextmanager
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -12,6 +14,7 @@ import pytest
 
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
+from scrapy.extensions.httpcache import DummyPolicy
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
@@ -20,6 +23,14 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from scrapy.crawler import Crawler
+
+
+class AlwaysStalePolicy(DummyPolicy):
+    """:class:`~scrapy.extensions.httpcache.DummyPolicy` that always
+    revalidates cached responses."""
+
+    def is_cached_response_fresh(self, cachedresponse, request):
+        return False
 
 
 class TestBase:
@@ -93,6 +104,12 @@ class TestBase:
 class StorageTestMixin:
     """Mixin containing storage-specific test methods."""
 
+    def _corrupt_cache_entry(
+        self, storage: Any, spider: Spider, request: Request
+    ) -> None:
+        """Make the cache entry of *request* unreadable for *storage*."""
+        raise NotImplementedError
+
     def test_storage(self):
         with self._storage(HTTPCACHE_EXPIRATION_SECS=1) as (storage, crawler):
             request2 = self.request.copy()
@@ -114,6 +131,38 @@ class StorageTestMixin:
             future = time.time() + 10**6
             with mock.patch("scrapy.extensions.httpcache.time", return_value=future):
                 assert storage.retrieve_response(crawler.spider, self.request)
+
+    def test_corrupted_cache_entry_is_a_miss(self, caplog):
+        with self._middleware() as mw:
+            spider = mw.crawler.spider
+            mw.storage.store_response(spider, self.request, self.response)
+            self._corrupt_cache_entry(mw.storage, spider, self.request)
+
+            caplog.clear()
+            with caplog.at_level(logging.WARNING):
+                assert mw.process_request(self.request) is None
+
+            assert "treating it as a cache miss" in caplog.text
+            assert mw.crawler.stats.get_value("httpcache/retrieve_error") == 1
+            assert mw.crawler.stats.get_value("httpcache/miss") == 1
+
+            # Storing the response again replaces the corrupted cache entry.
+            mw.storage.store_response(spider, self.request, self.response)
+            self.assertEqualResponse(
+                self.response, mw.storage.retrieve_response(spider, self.request)
+            )
+
+    def test_corrupted_cache_entry_ignore_missing(self):
+        with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
+            spider = mw.crawler.spider
+            mw.storage.store_response(spider, self.request, self.response)
+            self._corrupt_cache_entry(mw.storage, spider, self.request)
+
+            with pytest.raises(IgnoreRequest):
+                mw.process_request(self.request)
+
+            assert mw.crawler.stats.get_value("httpcache/retrieve_error") == 1
+            assert mw.crawler.stats.get_value("httpcache/ignore") == 1
 
     def test_storage_no_content_type_header(self):
         """Test that the response body is used to get the right response class
@@ -241,6 +290,21 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
+
+    def test_revalidation_keeps_cached_response(self):
+        # The dummy policy considers every cached response valid, so a policy
+        # that subclasses it to force revalidation always gets the cached
+        # response back, whatever the new response is.
+        with self._middleware(HTTPCACHE_POLICY=AlwaysStalePolicy) as mw:
+            assert mw.process_request(self.request) is None
+            mw.process_response(self.request, self.response)
+
+            assert mw.process_request(self.request) is None
+            fresh_response = self.response.replace(body=b"new body")
+            response = mw.process_response(self.request, fresh_response)
+            self.assertEqualResponse(self.response, response)
+            assert "cached" in response.flags
+            assert mw.stats.get_value("httpcache/revalidate") == 1
 
 
 class RFC2616PolicyTestMixin(PolicyTestMixin):
@@ -513,6 +577,53 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                 else:
                     assert "cached" in res5.flags
 
+    def test_middleware_ignore_schemes(self):
+        # file responses are not cached by default
+        req = Request("file:///tmp/t.txt")
+        res = Response(req.url, headers={"Expires": self.tomorrow})
+        with self._middleware() as mw:
+            assert mw.process_request(req) is None
+            mw.process_response(req, res)
+
+            assert mw.storage.retrieve_response(mw.crawler.spider, req) is None
+            assert mw.process_request(req) is None
+
+    def test_max_stale_with_value(self):
+        # A response that expired one day ago.
+        headers = {"Date": self.yesterday, "Expires": self.yesterday}
+        with self._middleware() as mw:
+            req0 = Request("http://example.com")
+            res0 = Response(req0.url, headers=headers)
+            self._process_requestresponse(mw, req0, res0)
+
+            # max-stale greater than the staleness of the cached response
+            req1 = req0.replace(headers={"Cache-Control": "max-stale=172800"})
+            res1 = mw.process_request(req1)
+            assert isinstance(res1, Response)
+            assert "cached" in res1.flags
+
+            # max-stale lower than the staleness of the cached response
+            req2 = req0.replace(headers={"Cache-Control": "max-stale=60"})
+            assert mw.process_request(req2) is None
+
+            # a non-integer max-stale value is ignored
+            req3 = req0.replace(headers={"Cache-Control": "max-stale=soon"})
+            assert mw.process_request(req3) is None
+
+    def test_response_dated_in_the_future(self):
+        # A Date header ahead of the local clock must not make the cached
+        # response look aged.
+        headers = {"Date": self.tomorrow, "Cache-Control": "max-age=10"}
+        with self._middleware() as mw:
+            req0 = Request("http://example.com")
+            res0 = Response(req0.url, headers=headers)
+            res1 = self._process_requestresponse(mw, req0, res0)
+            assert "cached" not in res1.flags
+
+            res2 = self._process_requestresponse(mw, req0, None)
+            self.assertEqualResponse(res1, res2)
+            assert "cached" in res2.flags
+
     def test_process_exception(self):
         with self._middleware() as mw:
             res0 = Response(self.request.url, headers={"Expires": self.yesterday})
@@ -556,29 +667,43 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
 # Concrete test classes that combine storage and policy mixins
 
 
-class TestFilesystemStorageWithDummyPolicy(
-    TestBase, StorageTestMixin, DummyPolicyTestMixin
-):
+class FilesystemStorageTestMixin(StorageTestMixin):
     storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        rpath = Path(storage._get_request_path(spider, request))
+        (rpath / "response_body").unlink()
+
+
+class DbmStorageTestMixin(StorageTestMixin):
+    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        key = storage._fingerprinter.fingerprint(request).hex()
+        storage.db[f"{key}_data"] = b"not a pickle"
+
+
+class TestFilesystemStorageWithDummyPolicy(
+    TestBase, FilesystemStorageTestMixin, DummyPolicyTestMixin
+):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
 
 class TestFilesystemStorageWithRFC2616Policy(
-    TestBase, StorageTestMixin, RFC2616PolicyTestMixin
+    TestBase, FilesystemStorageTestMixin, RFC2616PolicyTestMixin
 ):
-    storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
 
-class TestDbmStorageWithDummyPolicy(TestBase, StorageTestMixin, DummyPolicyTestMixin):
-    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+class TestDbmStorageWithDummyPolicy(
+    TestBase, DbmStorageTestMixin, DummyPolicyTestMixin
+):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
 
 class TestDbmStorageWithRFC2616Policy(
-    TestBase, StorageTestMixin, RFC2616PolicyTestMixin
+    TestBase, DbmStorageTestMixin, RFC2616PolicyTestMixin
 ):
-    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
 
@@ -599,3 +724,8 @@ class TestFilesystemStorageGzipWithDummyPolicy(TestFilesystemStorageWithDummyPol
     def _get_settings(self, **new_settings) -> dict[str, Any]:
         new_settings.setdefault("HTTPCACHE_GZIP", True)
         return super()._get_settings(**new_settings)
+
+    def _corrupt_cache_entry(self, storage, spider, request) -> None:
+        # A spider killed while writing a gzip file leaves it truncated.
+        body_path = Path(storage._get_request_path(spider, request), "response_body")
+        body_path.write_bytes(body_path.read_bytes()[:-5])

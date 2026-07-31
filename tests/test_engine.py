@@ -17,6 +17,7 @@ from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, DownloadCancelledError, IgnoreRequest
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -24,7 +25,6 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.utils import async_sleep
 from tests.utils.bases.engine import TestEngineBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 from tests.utils.engine import (
@@ -165,7 +165,7 @@ class TestEngine(TestEngineBase):
             engine, "close_spider_async", new_callable=AsyncMock
         ) as close:
             stop_dfd = deferred_from_coro(engine.stop_async(mode="fast"))
-            await async_sleep(0)
+            await sleep(0)
             close.assert_called_once_with(reason="shutdown", mode="fast")
             assert not stop_dfd.called
 

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      PYTEST_ADDOPTS: -n auto
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
     strategy:
       fail-fast: false
       matrix:
@@ -35,12 +35,15 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: py
+          coverage: true
         - python-version: "3.14"
           env:
             TOXENV: default-reactor
+          coverage: true
         - python-version: "3.14"
           env:
             TOXENV: no-reactor
+          coverage: true
         # pinned due to https://github.com/pypy/pypy/issues/5388
         - python-version: pypy3.11-7.3.20
           env:
@@ -50,12 +53,15 @@ jobs:
         - python-version: "3.10.19"
           env:
             TOXENV: min
+          coverage: true
         - python-version: "3.10.19"
           env:
             TOXENV: min-default-reactor
+          coverage: true
         - python-version: "3.10.19"
           env:
             TOXENV: min-no-reactor
+          coverage: true
         # pinned due to https://github.com/pypy/pypy/issues/5388
         - python-version: pypy3.11-7.3.20
           env:
@@ -63,16 +69,20 @@ jobs:
         - python-version: "3.10.19"
           env:
             TOXENV: min-extra-deps
+          coverage: true
         - python-version: "3.10.19"
           env:
             TOXENV: min-botocore
+          coverage: true
 
         - python-version: "3.14"
           env:
             TOXENV: extra-deps
+          coverage: true
         - python-version: "3.14"
           env:
             TOXENV: no-reactor-extra-deps
+          coverage: true
         # pinned due to https://github.com/pypy/pypy/issues/5388
         - python-version: pypy3.11-7.3.20
           env:
@@ -80,6 +90,7 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: botocore
+          coverage: true
 
     steps:
     - uses: actions/checkout@v6
@@ -105,6 +116,7 @@ jobs:
         tox
 
     - name: Upload coverage report
+      if: ${{ matrix.coverage }}
       uses: codecov/codecov-action@v5
 
     - name: Upload test results
