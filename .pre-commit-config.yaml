@@ -30,3 +30,8 @@ repos:
   rev: 0.8.10
   hooks:
     - id: sphinx-scrapy
+- repo: https://github.com/zizmorcore/zizmor-pre-commit
+  rev: v1.28.0
+  hooks:
+    - id: zizmor
+      args: [--no-progress, --fix]

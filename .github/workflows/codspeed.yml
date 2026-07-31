@@ -27,10 +27,12 @@ jobs:
             id-token: write  # OIDC authentication with CodSpeed
 
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                persist-credentials: false
 
             - name: Set up Python 3.14
-              uses: actions/setup-python@v6
+              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
               with:
                   python-version: '3.14'
             - name: Install dependencies
@@ -39,7 +41,7 @@ jobs:
                   pip install --upgrade tox
                   tox -n -e benchmark
             - name: Run benchmarks
-              uses: CodSpeedHQ/action@v4
+              uses: CodSpeedHQ/action@f22792bfac16f3e14eb9fbea76f4a48e9cc22b93 # v4.19.1
               with:
                   mode: simulation
                   run: tox -e benchmark
