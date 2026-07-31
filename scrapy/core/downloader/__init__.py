@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 import warnings
-from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -138,37 +137,6 @@ class _DeprecatedSlotView:
         return f"_DeprecatedSlotView({self._key!r})"
 
 
-class _DeprecatedSlotsView(Mapping[str, _DeprecatedSlotView]):
-    """Deprecated mapping view of active downloads, keyed by slot name."""
-
-    __slots__ = ("_downloader", "_throttler")
-
-    def __init__(self, downloader: Downloader, throttler: ThrottlerProtocol) -> None:
-        self._downloader = downloader
-        self._throttler = throttler
-
-    def _active_keys(self) -> set[str]:
-        return {
-            r.meta[Downloader.DOWNLOAD_SLOT]
-            for r in self._downloader.active
-            if Downloader.DOWNLOAD_SLOT in r.meta
-        }
-
-    def __getitem__(self, key: str) -> _DeprecatedSlotView:
-        if key not in self._active_keys():
-            raise KeyError(key)
-        return _DeprecatedSlotView(self._downloader, key, self._throttler)
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._active_keys())
-
-    def __len__(self) -> int:
-        return len(self._active_keys())
-
-    def __contains__(self, key: object) -> bool:
-        return key in self._active_keys()
-
-
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
 
@@ -272,14 +240,22 @@ class Downloader:
         return self.settings.getbool("RANDOMIZE_DOWNLOAD_DELAY")
 
     @property
-    def slots(self) -> _DeprecatedSlotsView:
+    def slots(self) -> dict[str, _DeprecatedSlotView]:
         warnings.warn(
             "Downloader.slots is deprecated. Use the throttler API instead.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        assert self.crawler.throttler is not None
-        return _DeprecatedSlotsView(self, self.crawler.throttler)
+        throttler = self.crawler.throttler
+        assert throttler is not None
+        return {
+            key: _DeprecatedSlotView(self, key, throttler)
+            for key in {
+                request.meta[self.DOWNLOAD_SLOT]
+                for request in self.active
+                if self.DOWNLOAD_SLOT in request.meta
+            }
+        }
 
     def _get_slot_key(self, request: Request) -> str:
         assert self.crawler.throttler is not None
@@ -321,15 +297,33 @@ class Downloader:
         )
         return await self._download(request)
 
-    async def _acquire_download_handler_slot(self) -> None:
-        """Wait until fewer than :setting:`CONCURRENT_REQUESTS` requests are in a
-        download handler.
+    def _download_handler_slots_full(self) -> bool:
+        """Return whether every download handler slot
+        (:setting:`CONCURRENT_REQUESTS`) is taken. A closed downloader never
+        holds anything back, since no request will ever leave a download handler
+        again.
 
         The engine keeps scheduled requests under that limit by not dequeuing
         them (see :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`);
         this is what limits requests sent through
         :meth:`crawler.engine.download_async()
         <scrapy.core.engine.ExecutionEngine.download_async>` instead.
+        """
+        if self._closed:
+            return False
+        return 0 < self.total_concurrency <= len(self._in_download_handler)
+
+    async def _await_download_handler(self, request: Request) -> None:
+        """Wait until *request* may be handed to a download handler: until a
+        download handler slot is free (see
+        :meth:`_download_handler_slots_full`) and until the throttling scopes of
+        *request* have room for it there (see
+        :meth:`~scrapy.throttler.ThrottlerProtocol.download_handler_blocked`).
+
+        Both are rechecked after every wait, since waiting on one can close the
+        other, and this returns without giving up control once they are both
+        open, so that the caller hands the request over against exactly the
+        state that was checked.
 
         A slot is only held while a download handler works on a request, and
         such a request completes on its own, so a prerequisite sent from a
@@ -338,38 +332,14 @@ class Downloader:
         which keeps its slot while it waits: download handlers must not use
         ``download_async()``.
         """
-        while self._download_handler_slots_full():
-            await self._wait_for_download_handler_exit()
-
-    def _download_handler_slots_full(self) -> bool:
-        """Return whether every download handler slot is taken. A closed
-        downloader never holds anything back, since no request will ever leave a
-        download handler again."""
-        if self._closed:
-            return False
-        return 0 < self.total_concurrency <= len(self._in_download_handler)
-
-    async def _await_download_handler(self, request: Request) -> None:
-        """Wait until *request* may be handed to a download handler: until a
-        download handler slot is free (see
-        :meth:`_acquire_download_handler_slot`) and until the throttling scopes
-        of *request* have room for it there (see
-        :meth:`~scrapy.throttler.ThrottlerProtocol.download_handler_blocked`).
-
-        Both are rechecked after every wait, since waiting on one can close the
-        other, and this returns without giving up control once they are both
-        open, so that the caller hands the request over against exactly the
-        state that was checked.
-        """
         # Tracked for the whole wait so that the request does not read as being
         # in the downloader middlewares and get its slot lent away; see
         # _in_downloader_middlewares().
         self._awaiting_download_handler.add(request)
         try:
-            while True:
-                await self._acquire_download_handler_slot()
-                if self._closed or not self._download_handler_blocked(request):
-                    return
+            while self._download_handler_slots_full() or (
+                not self._closed and self._download_handler_blocked(request)
+            ):
                 await self._wait_for_download_handler_exit()
         finally:
             self._awaiting_download_handler.discard(request)

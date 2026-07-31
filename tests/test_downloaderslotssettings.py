@@ -445,7 +445,9 @@ async def test_close_releases_download_handler_waiters():
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
     downloader._in_download_handler.add(Request("https://example.com/1"))
-    waiting = deferred_from_coro(downloader._acquire_download_handler_slot())
+    waiting = deferred_from_coro(
+        downloader._await_download_handler(Request("https://example.com/2"))
+    )
     await async_sleep(0)
     assert not waiting.called, "the only download handler slot is taken"
     # No request will ever leave a download handler now, so the wait ends
@@ -457,7 +459,7 @@ async def test_close_releases_download_handler_waiters():
 
 
 @coroutine_test
-async def test_acquire_download_handler_slot_after_close():
+async def test_await_download_handler_after_close():
     crawler = get_crawler(DefaultSpider, {"CONCURRENT_REQUESTS": 1})
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
@@ -465,7 +467,7 @@ async def test_acquire_download_handler_slot_after_close():
     downloader.close()
     # A closed downloader does not hold anything back before a download
     # handler.
-    await downloader._acquire_download_handler_slot()
+    await downloader._await_download_handler(Request("https://example.com/2"))
 
 
 @coroutine_test
