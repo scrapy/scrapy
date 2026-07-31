@@ -3,7 +3,6 @@ from __future__ import annotations
 import subprocess
 import sys
 from importlib.util import find_spec
-from inspect import signature
 from io import BytesIO
 from typing import TYPE_CHECKING
 
@@ -108,7 +107,6 @@ class TestIPythonShell:
         """IPython falls back to its simple prompt, which needs no event loop,
         when stdin is not a TTY."""
         env = self._env(tmp_path)
-        env["IPY_TEST_SIMPLE_PROMPT"] = "1"
         p = subprocess.run(
             [sys.executable, "-c", CONSOLE_IN_RUNNING_LOOP],
             check=False,
@@ -135,12 +133,6 @@ class TestIPythonShell:
         when stdin is a TTY."""
         # pexpect only defines spawn, which needs a pseudo-terminal, on POSIX.
         from pexpect import spawn  # noqa: PLC0415
-        from prompt_toolkit.shortcuts import PromptSession  # noqa: PLC0415
-
-        # shell.pt_app is a PromptSession, and old prompt_toolkit versions, e.g.
-        # the one that IPython 7.1 uses, cannot run the prompt in a thread.
-        if "in_thread" not in signature(PromptSession.prompt).parameters:
-            pytest.skip("prompt_toolkit cannot run the prompt in a separate thread")
 
         env = self._env(tmp_path)
         env.pop("IPY_TEST_SIMPLE_PROMPT", None)
