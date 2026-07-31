@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import warnings
 from typing import TYPE_CHECKING, cast
-from unittest.mock import Mock
 
 import OpenSSL.SSL
 import pytest
@@ -15,7 +14,7 @@ from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
-from scrapy.core.downloader import Downloader, Slot, _Slot, tls
+from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
@@ -41,29 +40,6 @@ if TYPE_CHECKING:
 
 
 class TestSlot:
-    def test_repr(self):
-        slot = _Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "_Slot(concurrency=8, delay=0.1, randomize_delay=True)"
-
-    def test_methods(self):
-        slot = _Slot(concurrency=2, delay=0.0, randomize_delay=False)
-        assert slot.free_transfer_slots() == 2
-        assert slot.download_delay() == 0.0
-        assert "downloader.Slot" in str(slot)
-        slot.close()  # no latercall scheduled: harmless
-
-    def test_randomized_download_delay(self):
-        slot = _Slot(concurrency=1, delay=1.0, randomize_delay=True)
-        assert 0.5 <= slot.download_delay() <= 1.5
-
-    def test_close_cancels_latercall(self):
-        slot = _Slot(concurrency=1, delay=0.0, randomize_delay=False)
-        latercall = Mock()
-        slot.latercall = latercall
-        slot.close()
-        latercall.cancel.assert_called_once_with()
-        assert slot.latercall is None
-
     def test_deprecated(self):
         with pytest.warns(ScrapyDeprecationWarning, match="Slot class is deprecated"):
             Slot(concurrency=8, delay=0.1, randomize_delay=True)

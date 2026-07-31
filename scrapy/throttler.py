@@ -16,7 +16,7 @@ from typing_extensions import Self
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
-from scrapy.utils.asyncio import sleep, wait_for_first
+from scrapy.utils.asyncio import _sleep, _wait_for_first
 from scrapy.utils.defer import _Event
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -903,20 +903,18 @@ class Throttler:
                 return
             scopes = self._resolve_scope_slots(scope_values)
             wait = max(
-                [
-                    0.0,
-                    *(
-                        manager.can_send(quota_amount=quota_amount)
-                        for _, manager, quota_amount in scopes
-                    ),
-                ]
+                (
+                    manager.can_send(quota_amount=quota_amount)
+                    for _, manager, quota_amount in scopes
+                ),
+                default=0.0,
             )
             if wait > 0:
                 if self._debug:
                     logger.debug(
                         f"Throttling {request} for {wait:.2f}s (scopes: {scope_ids})"
                     )
-                await sleep(wait)
+                await _sleep(wait)
                 continue
             # Every time-based limit (delay, backoff, quota) has elapsed; the
             # only remaining reason to wait is a full concurrency slot.
@@ -936,7 +934,7 @@ class Throttler:
                     # be waiting for it, so let it go first. Only once, so that
                     # a claim that no one takes cannot spin here.
                     yielded_to_unscheduled = True
-                    await sleep(0)
+                    await _sleep(0)
                     continue
                 self._record_reservation(request, scopes)
                 return
@@ -1068,13 +1066,18 @@ class Throttler:
         slot of *scope_id*, i.e. whether every one of its other scopes already
         allows it through. A request that would keep waiting on another scope
         has no claim on the slot, so the scheduler may take it."""
+        return self._scopes_allow(request, skip=scope_id)
+
+    def _scopes_allow(self, request: Request, *, skip: ScopeID | None = None) -> bool:
+        """Return whether the :reqmeta:`delay` of *request* has elapsed and every
+        one of its scopes, except *skip*, allows it through right now."""
         now = time.monotonic()
         if self._request_delay_deadline(request, now) > now:
             return False
-        for other_id, quota_amount in self._cached_scope_quota_amounts(request):
-            if other_id == scope_id:
+        for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
+            if scope_id == skip:
                 continue
-            manager = self._live_scope_manager(other_id)
+            manager = self._live_scope_manager(scope_id)
             if manager is None:
                 continue
             if (
@@ -1087,26 +1090,19 @@ class Throttler:
     # -- Synchronous readiness API (used by a throttler-aware scheduler) ------
 
     def is_ready(self, request: Request) -> bool:
-        now = time.monotonic()
-        if self._request_delay_deadline(request, now) > now:
-            return False
         if request.meta.get("dont_throttle"):
-            return True
-        scope_values = self._cached_scope_quota_amounts(request)
-        for scope_id, quota_amount in scope_values:
-            manager = self._live_scope_manager(scope_id)
-            if manager is None:
-                continue
-            if manager.can_send(now=now, quota_amount=quota_amount) > 0:
-                return False
-            if manager.concurrency_blocked():
-                return False
+            now = time.monotonic()
+            return self._request_delay_deadline(request, now) <= now
+        if not self._scopes_allow(request):
+            return False
         # Every scope has a free slot, but an unscheduled request waiting for one
-        # of them gets it first. Checked here too, to skip building the scope id
-        # list for a waiter set that is empty most of the time.
+        # of them gets it first. The waiter set is empty most of the time, and
+        # checking that first skips building the scope id list.
         if not self._unscheduled_waiters:
             return True
-        return not self._unscheduled_claims([scope_id for scope_id, _ in scope_values])
+        return not self._unscheduled_claims(
+            [scope_id for scope_id, _ in self._cached_scope_quota_amounts(request)]
+        )
 
     def reserve(self, request: Request) -> None:
         # Reserving twice would record two sends that only one release() undoes,
@@ -1165,7 +1161,7 @@ class Throttler:
         if downloader is not None:
             middlewares_event = downloader._downloader_middlewares_event()
             events.append(middlewares_event)
-        _, pending = await wait_for_first(events)
+        _, pending = await _wait_for_first(events)
         for manager, event in pairs:
             if event in pending:
                 manager.discard_slot_available_event(event)
@@ -1184,7 +1180,7 @@ class Throttler:
         wait = self._request_delay_deadline(request, now) - now
         if wait <= 0:
             return
-        await sleep(wait)
+        await _sleep(wait)
         _mark_request_delayed(request)
 
     def _request_delay_deadline(self, request: Request, now: float) -> float:
@@ -1518,16 +1514,12 @@ class ThrottlingScopeManager:
                 "jitter", 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
             )
         )
-        self._delay_factor: float = _BACKOFF_DELAY_FACTOR
         self._max_delay: float = float(
             backoff.get("max_delay", settings.getfloat("BACKOFF_MAX_DELAY"))
         )
-        self._min_delay: float = _BACKOFF_MIN_DELAY
-        self._backoff_jitter: float = _BACKOFF_JITTER
         # Which responses/exceptions trigger backoff is decided by the backoff
         # middleware (see BackoffMiddleware), which reads the same per-scope
         # "http_codes"/"exceptions" config and the global BACKOFF_* settings.
-        self._window: float = _BACKOFF_WINDOW
 
         # Concurrency. Always limited: a scope has no way to express "no limit"
         # (see _check_scope_concurrency), so this is a positive integer.
@@ -1576,9 +1568,7 @@ class ThrottlingScopeManager:
         # the min/max bounds, which clipping a jittered value would do.
         if self._delay <= 0:
             return self._delay
-        jitter = (
-            self._backoff_jitter if self._delay > self._base_delay else self._jitter
-        )
+        jitter = _BACKOFF_JITTER if self._delay > self._base_delay else self._jitter
         return self._apply_jitter(self._delay, jitter)
 
     def _recover(self, now: float) -> None:
@@ -1586,10 +1576,10 @@ class ThrottlingScopeManager:
         # window per step; see the "backoff" docs for the algorithm.
         if self._last_backoff_time is None or self._delay <= self._base_delay:
             return
-        while now - self._last_backoff_time >= self._window:
-            self._last_backoff_time += self._window
+        while now - self._last_backoff_time >= _BACKOFF_WINDOW:
+            self._last_backoff_time += _BACKOFF_WINDOW
             self._recover_step()
-            if self._delay - self._base_delay < self._min_delay:
+            if self._delay - self._base_delay < _BACKOFF_MIN_DELAY:
                 self._reset_backoff()  # within one step of base: fully recovered
                 return
 
@@ -1606,7 +1596,7 @@ class ThrottlingScopeManager:
         # and track a server that became more permissive.
         if self._max_unsafe is not None:
             self._max_unsafe = (self._base_delay + self._max_unsafe) / 2
-            if self._max_unsafe - self._base_delay < self._min_delay:
+            if self._max_unsafe - self._base_delay < _BACKOFF_MIN_DELAY:
                 self._max_unsafe = None
 
     def _reset_backoff(self) -> None:
@@ -1719,11 +1709,13 @@ class ThrottlingScopeManager:
         else:
             # No safe delay known yet: grow exponentially to find one.
             grown = (
-                self._delay * self._delay_factor if self._delay > 0 else self._min_delay
+                self._delay * _BACKOFF_DELAY_FACTOR
+                if self._delay > 0
+                else _BACKOFF_MIN_DELAY
             )
         # Deterministic, bounded delay; jitter is applied per use in
         # _effective_delay() so it does not compound across steps.
-        self._delay = min(max(self._min_delay, grown), self._max_delay)
+        self._delay = min(max(_BACKOFF_MIN_DELAY, grown), self._max_delay)
         self._next_allowed_time = now + self._effective_delay()
 
     def reconcile_quota(

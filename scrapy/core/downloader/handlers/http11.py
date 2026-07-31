@@ -67,34 +67,11 @@ if TYPE_CHECKING:
     from typing_extensions import NotRequired
 
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
-
-
-def _max_per_host_concurrency(settings: BaseSettings) -> int:
-    """Highest per-host concurrency the throttler may admit, bounded by
-    :setting:`CONCURRENT_REQUESTS`: the default per-scope concurrency and any
-    explicit one, from :setting:`THROTTLING_SCOPES` or the deprecated
-    :setting:`DOWNLOAD_SLOTS`.
-
-    Configured values only: a scope whose concurrency is raised at run time
-    just makes the extra requests queue for a connection.
-    """
-    global_concurrency = settings.getint("CONCURRENT_REQUESTS")
-    candidates = [_default_scope_concurrency(settings)]
-    candidates += [
-        int(scope["concurrency"])
-        for setting in ("THROTTLING_SCOPES", "DOWNLOAD_SLOTS")
-        for scope in settings.getdict(setting).values()
-        if "concurrency" in scope
-    ]
-    if not global_concurrency:
-        return max(candidates)
-    return min(max(candidates), global_concurrency)
 
 
 class _ResultT(TypedDict):
@@ -116,7 +93,10 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         from twisted.internet import reactor
 
         self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
-        self._pool.maxPersistentPerHost = _max_per_host_concurrency(crawler.settings)
+        # How many keep-alive connections to retain per host: the default
+        # per-scope concurrency, i.e. how many requests a host normally has in
+        # flight. A scope configured with more just re-establishes connections.
+        self._pool.maxPersistentPerHost = _default_scope_concurrency(crawler.settings)
         self._pool._factory.noisy = False
 
         self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(

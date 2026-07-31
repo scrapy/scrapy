@@ -148,22 +148,15 @@ class ScrapyPriorityQueue:
             return
 
         for priority in startprios:
-            q = self.qfactory(priority)
-            if q:
-                self.queues[priority] = q
-            else:
-                q.close()
+            self.queues[priority] = self.qfactory(priority)
             if self._start_queue_cls:
-                q = self._sqfactory(priority)
-                if q:
-                    self._start_queues[priority] = q
-                else:
-                    q.close()
+                self._start_queues[priority] = self._sqfactory(priority)
 
         # Not min(startprios): a recorded priority may have no queue to restore
         # (e.g. it only ever held a request that failed to serialize), and
         # leaving curprio pointing at a priority that neither dict has would
-        # make peek() come up empty.
+        # make peek() come up empty. This also drops and closes the queues that
+        # turned out to have nothing to restore.
         self._update_curprio()
 
     def qfactory(self, key: int) -> QueueProtocol:
@@ -422,28 +415,17 @@ class DownloaderAwarePriorityQueue:
                 self._add_slot(slot, startprios)
 
     def _next_slot(self, stats: list[tuple[float, str]], *, update_state: bool) -> str:
+        # Lexicographic on (load, slot): the least-loaded slot, and the
+        # lowest-named one among ties.
+        min_load, slot = min(stats)
         last = self._last_selected_slot
-        min_load: float | None = None
-        best_slot: str | None = None
-        best_slot_after_last: str | None = None
-        for load, slot in stats:
-            if min_load is None or load < min_load:
-                min_load = load
-                best_slot = slot
-                best_slot_after_last = None
-                if last is not None and slot > last:
-                    best_slot_after_last = slot
-            elif load == min_load:
-                if best_slot is None or slot < best_slot:
-                    best_slot = slot
-                if (
-                    last is not None
-                    and slot > last
-                    and (best_slot_after_last is None or slot < best_slot_after_last)
-                ):
-                    best_slot_after_last = slot
-        assert best_slot is not None
-        slot = best_slot_after_last if best_slot_after_last is not None else best_slot
+        if last is not None:
+            # Round-robin among the tied slots: the first one after the last
+            # selected, so that equally-loaded slots take turns rather than the
+            # lowest-named one always winning.
+            slot = min(
+                (s for load, s in stats if load == min_load and s > last), default=slot
+            )
         if update_state:
             self._last_selected_slot = slot
         return slot
@@ -822,9 +804,9 @@ class ThrottlerAwarePriorityQueue:
 
     def get_next_request_delay(self) -> float | None:
         now = time.monotonic()
-        self._promote_ready(now)
         # Anything sendable means no wakeup is needed, and _select() answers
-        # that without walking every pending scope set.
+        # that without walking every pending scope set (it promotes the requests
+        # whose delay has elapsed on the way).
         if self._select() is not None:
             return 0.0
         delay: float | None = None

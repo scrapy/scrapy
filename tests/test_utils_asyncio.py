@@ -12,9 +12,9 @@ from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     _parallel_asyncio,
+    _sleep,
+    _wait_for_first,
     is_asyncio_available,
-    sleep,
-    wait_for_first,
 )
 from tests.utils.decorators import coroutine_test
 
@@ -165,20 +165,20 @@ class TestSleep:
     @coroutine_test
     async def test_sleep(self):
         # A zero-second sleep completes without error under any reactor mode.
-        await sleep(0)
+        await _sleep(0)
 
 
 class TestWaitForFirst:
     @coroutine_test
     async def test_empty(self):
         # No deferreds -> two empty sets, returned immediately.
-        assert await wait_for_first([]) == (set(), set())
+        assert await _wait_for_first([]) == (set(), set())
 
     @coroutine_test
     async def test_returns_done_deferred(self):
         fired: Deferred[None] = Deferred()
         fired.callback(None)
-        done, pending = await wait_for_first([fired], timeout=1)
+        done, pending = await _wait_for_first([fired], timeout=1)
         assert done == {fired}
         assert pending == set()
 
@@ -187,7 +187,7 @@ class TestWaitForFirst:
         # timeout=None -> no timeout deferred is created.
         fired: Deferred[None] = Deferred()
         fired.callback(None)
-        done, pending = await wait_for_first([fired])
+        done, pending = await _wait_for_first([fired])
         assert done == {fired}
         assert pending == set()
 
@@ -195,6 +195,6 @@ class TestWaitForFirst:
     async def test_timeout_elapses(self):
         # When the timeout fires first, every input deferred is still pending.
         never: Deferred[None] = Deferred()
-        done, pending = await wait_for_first([never], timeout=0.01)
+        done, pending = await _wait_for_first([never], timeout=0.01)
         assert done == set()
         assert pending == {never}

@@ -313,14 +313,12 @@ async def run_in_thread(
     return await maybe_deferred_to_future(deferToThread(func, *args, **kwargs))
 
 
-async def sleep(seconds: float) -> None:
+async def _sleep(seconds: float) -> None:
     """Sleep for *seconds*, working in asyncio-reactor, non-asyncio-reactor,
     and reactorless modes.
 
     Uses :func:`asyncio.sleep` when asyncio is available, and
     :func:`~twisted.internet.task.deferLater` otherwise.
-
-    .. versionadded:: VERSION
     """
     if is_asyncio_available():
         await asyncio.sleep(seconds)
@@ -333,7 +331,7 @@ async def sleep(seconds: float) -> None:
         await maybe_deferred_to_future(deferLater(reactor, seconds, lambda: None))
 
 
-async def wait_for_first(
+async def _wait_for_first(
     deferreds: Sequence[Deferred[Any]],
     *,
     timeout: float | None = None,
@@ -359,7 +357,7 @@ async def wait_for_first(
     Works transparently in asyncio-reactor, non-asyncio-reactor, and
     reactorless modes.
 
-    .. versionadded:: VERSION
+    *timeout* is only used by tests, as a guard against a wait that hangs.
     """
     if not deferreds:
         return set(), set()

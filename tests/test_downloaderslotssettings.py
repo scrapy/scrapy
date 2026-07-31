@@ -8,12 +8,10 @@ import pytest
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader
-from scrapy.core.downloader.handlers.http11 import _max_per_host_concurrency
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK
-from scrapy.settings import Settings
 from scrapy.throttler import Throttler
-from scrapy.utils.asyncio import wait_for_first
+from scrapy.utils.asyncio import _wait_for_first
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -248,7 +246,7 @@ async def test_a_lender_waits_for_its_loan_before_reaching_a_download_handler():
     # Once the loan comes back, it goes.
     downloader._leave_download_handler(borrower)
     throttler.release(borrower)
-    done, _ = await wait_for_first([reaching_a_handler], timeout=30)
+    done, _ = await _wait_for_first([reaching_a_handler], timeout=30)
     assert done, "the lender was left waiting after the borrower was done"
     await maybe_deferred_to_future(reaching_a_handler)
     assert throttler.download_handler_blocked(lender) is False
@@ -354,7 +352,7 @@ async def test_unlimited_concurrent_requests():
             crawler.crawl_async(mockserver.url("/status?n=200"), mockserver=mockserver)
         )
         # A bounded wait, so that a regression fails instead of hanging.
-        done, _ = await wait_for_first([crawl], timeout=30)
+        done, _ = await _wait_for_first([crawl], timeout=30)
         assert done, "the crawl stalled instead of running without a limit"
         await maybe_deferred_to_future(crawl)
     assert crawler.stats
@@ -397,7 +395,7 @@ async def test_download_handler_slots_do_not_deadlock_on_robotstxt(scheduler_set
             crawler.crawl_async(mockserver.url("/status?n=200"), mockserver=mockserver)
         )
         # A bounded wait, so that a regression fails instead of hanging.
-        done, _ = await wait_for_first([crawl], timeout=30)
+        done, _ = await _wait_for_first([crawl], timeout=30)
         assert done, "the crawl deadlocked waiting for a download handler slot"
         await maybe_deferred_to_future(crawl)
     assert crawler.stats
@@ -453,7 +451,7 @@ async def test_close_releases_download_handler_waiters():
     # No request will ever leave a download handler now, so the wait ends
     # instead of being left hanging.
     downloader.close()
-    done, _ = await wait_for_first([waiting], timeout=30)
+    done, _ = await _wait_for_first([waiting], timeout=30)
     assert done, "closing the downloader left a download handler slot wait hanging"
     await maybe_deferred_to_future(waiting)
 
@@ -559,37 +557,6 @@ async def test_deprecated_slot_view_without_randomization():
 
     downloader.active.discard(request)
     downloader.close()
-
-
-@pytest.mark.parametrize(
-    ("settings_dict", "expected"),
-    [
-        # The default is the deprecated setting's, which is the per-scope
-        # concurrency the throttler honors while it is still around.
-        ({}, 8),
-        ({"THROTTLING_SCOPE_CONCURRENCY": 10}, 10),
-        ({"CONCURRENT_REQUESTS_PER_DOMAIN": 11}, 11),
-        # Per-scope limits count too, from the new setting and the deprecated
-        # one alike, since the throttler honors a limit coming from either.
-        ({"THROTTLING_SCOPES": {"example.com": {"concurrency": 12}}}, 12),
-        ({"DOWNLOAD_SLOTS": {"example.com": {"concurrency": 14}}}, 14),
-        # CONCURRENT_REQUESTS caps everything, unless it is 0 (no limit).
-        ({"CONCURRENT_REQUESTS": 3}, 3),
-        ({"CONCURRENT_REQUESTS": 0, "THROTTLING_SCOPE_CONCURRENCY": 32}, 32),
-    ],
-    ids=[
-        "default",
-        "scope-concurrency",
-        "per-domain",
-        "throttling-scopes",
-        "download-slots",
-        "capped",
-        "uncapped",
-    ],
-)
-def test_max_per_host_concurrency(settings_dict: dict[str, Any], expected: int) -> None:
-    settings = Settings(settings_dict)
-    assert _max_per_host_concurrency(settings) == expected
 
 
 @coroutine_test

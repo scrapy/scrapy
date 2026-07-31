@@ -9,7 +9,7 @@ from twisted.internet import defer
 from scrapy import Request, signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.statscollectors import MemoryStatsCollector
-from scrapy.utils.asyncio import sleep
+from scrapy.utils.asyncio import _sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -201,7 +201,7 @@ async def test_waits_for_in_flight_enqueues(crawler: Crawler) -> None:
     # Let the enqueue store its request and the closing engine reach the point
     # where it waits for that enqueue.
     await maybe_deferred_to_future(started)
-    await sleep(0)
+    await _sleep(0)
     assert engine._slot.closing is not None, "the slot is not marked as closing"
     engine._start_scheduled_requests()
     assert not engine._slot.inprogress, "a closing engine started a request"

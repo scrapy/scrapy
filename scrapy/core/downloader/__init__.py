@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import random
 import warnings
-from collections import deque
 from collections.abc import Iterator, Mapping
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -33,46 +31,19 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
     from scrapy.throttler import ThrottlerProtocol, ThrottlingScopeManagerProtocol
-    from scrapy.utils.asyncio import CallLaterResult
 
 
 @dataclass(slots=True, eq=False)
 class _Slot:
-    """Downloader slot"""
+    """Downloader slot.
+
+    Nothing uses it anymore: it only gives the deprecated :class:`Slot` alias a
+    base, so that code that still builds one keeps working.
+    """
 
     concurrency: int
     delay: float
     randomize_delay: bool
-
-    active: set[Request] = field(default_factory=set, init=False, repr=False)
-    queue: deque[tuple[Request, Deferred[Response]]] = field(
-        default_factory=deque, init=False, repr=False
-    )
-    transferring: set[Request] = field(default_factory=set, init=False, repr=False)
-    lastseen: float = field(default=0, init=False, repr=False)
-    latercall: CallLaterResult | None = field(default=None, init=False, repr=False)
-
-    def free_transfer_slots(self) -> int:
-        return self.concurrency - len(self.transferring)
-
-    def download_delay(self) -> float:
-        if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # noqa: S311
-        return self.delay
-
-    def close(self) -> None:
-        if self.latercall:
-            self.latercall.cancel()
-            self.latercall = None
-
-    def __str__(self) -> str:
-        return (
-            f"<downloader.Slot concurrency={self.concurrency!r} "
-            f"delay={self.delay:.2f} randomize_delay={self.randomize_delay!r} "
-            f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
-            f"len(transferring)={len(self.transferring)} "
-            f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
-        )
 
 
 Slot = create_deprecated_class(

@@ -31,7 +31,7 @@ from scrapy.throttler import (
     scope_cache,
 )
 from scrapy.utils._headers import _parse_ratelimit_reset, _parse_retry_after
-from scrapy.utils.asyncio import call_later, wait_for_first
+from scrapy.utils.asyncio import _wait_for_first, call_later
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
@@ -602,7 +602,7 @@ class TestThrottler:
             manager.get_scope_manager(f"other-{i}")
         assert "shared" not in manager._scope_managers
 
-        done, _ = await wait_for_first([blocked], timeout=30)
+        done, _ = await _wait_for_first([blocked], timeout=30)
         assert done, "the throttler never let the request through"
         await maybe_deferred_to_future(blocked)
 
@@ -646,7 +646,7 @@ class TestUnscheduledRequests:
         # bounded so that a request that is never let through fails the test
         # instead of hanging it.
         acquired = deferred_from_coro(manager.acquire(request, **kwargs))
-        done, _ = await wait_for_first([acquired], timeout=30)
+        done, _ = await _wait_for_first([acquired], timeout=30)
         assert done, f"the throttler never let {request} through"
         await maybe_deferred_to_future(acquired)
 
@@ -663,7 +663,7 @@ class TestUnscheduledRequests:
         """Wait for an unscheduled acquire() started by :meth:`_start_waiting` to
         get through, bounded so that a request that never does fails the test
         instead of hanging it."""
-        done, _ = await wait_for_first([blocked], timeout=30)
+        done, _ = await _wait_for_first([blocked], timeout=30)
         assert done, "the unscheduled request was never let through"
         await maybe_deferred_to_future(blocked)
 
@@ -918,7 +918,7 @@ class TestUnscheduledRequests:
         second_blocked = await self._start_waiting(manager, second)
         assert len(manager._unscheduled_waiters["example.com"]) == 2
         manager.release(holder)
-        await wait_for_first([first_blocked, second_blocked])
+        await _wait_for_first([first_blocked, second_blocked])
         # Whichever of the two took the freed slot, forgetting it must not
         # forget the other one, which is still waiting for the scope.
         served = [
@@ -2183,7 +2183,7 @@ class TestThrottlerIntegration:
             crawler.crawl_async(mockserver.url("/status?n=200"), mockserver=mockserver)
         )
         # A bounded wait, so that a regression fails instead of hanging.
-        done, _ = await wait_for_first([crawl], timeout=30)
+        done, _ = await _wait_for_first([crawl], timeout=30)
         assert done, "the crawl deadlocked in the throttler"
         await maybe_deferred_to_future(crawl)
         assert crawler.stats
@@ -2219,7 +2219,7 @@ class TestThrottlerIntegration:
             )
         )
         # A bounded wait, so that a regression fails instead of hanging.
-        done, _ = await wait_for_first([crawl], timeout=30)
+        done, _ = await _wait_for_first([crawl], timeout=30)
         assert done, "the crawl deadlocked in the throttler"
         await maybe_deferred_to_future(crawl)
         assert crawler.stats
