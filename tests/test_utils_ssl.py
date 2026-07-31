@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import logging
 import warnings
+from typing import cast
+from unittest import mock
 
 import OpenSSL._util as pyOpenSSLutil
+import OpenSSL.SSL
 import pytest
 from OpenSSL import crypto
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ssl import (
+    _log_ssl_conn_debug_info,
     ffi_buf_to_string,
     get_openssl_version,
     get_temp_key_info,
@@ -47,3 +52,18 @@ def test_get_temp_key_info() -> None:
 
 def test_get_openssl_version() -> None:
     assert "OpenSSL" in get_openssl_version()
+
+
+def test_log_ssl_conn_debug_info_no_certificate(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    connection = mock.MagicMock()
+    connection.get_protocol_version_name.return_value = "TLSv1.3"
+    connection.get_cipher_name.return_value = "TLS_AES_256_GCM_SHA384"
+    connection.get_peer_certificate.return_value = None
+    with caplog.at_level(logging.DEBUG, logger="scrapy.utils.ssl"):
+        _log_ssl_conn_debug_info(
+            "example.com", cast("OpenSSL.SSL.Connection", connection)
+        )
+    assert "SSL connection to example.com using protocol TLSv1.3" in caplog.text
+    assert "certificate" not in caplog.text
