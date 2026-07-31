@@ -196,10 +196,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 if isinstance(response, Response):
                     self._count_response_size(response, request)
                 return response
-        result = await download_func(request)
-        if isinstance(result, Response):
-            self._count_response_size(result, request)
-        return result
+        response = await download_func(request)
+        self._count_response_size(response, request)
+        return response
 
     async def _process_response(
         self, response: Response | Request, request: Request

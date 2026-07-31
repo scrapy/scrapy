@@ -1,3 +1,4 @@
+import asyncio
 import warnings
 from typing import Any
 
@@ -254,6 +255,36 @@ class TestResponseRoughSize:
         assert crawler.engine
         assert crawler.engine.downloader.middleware._rough_sizes == {}
 
+    @pytest.mark.only_asyncio
+    @coroutine_test
+    async def test_same_request_downloaded_twice(self):
+        """The rough size of a request object being downloaded twice at the same
+        time is counted once, so that it is gone once both downloads finish."""
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {"RESPONSE_ROUGH_SIZE": 1024}
+
+            async def parse(self, response):
+                assert self.crawler.engine
+                request = Request("data:,a")
+                # Only one of the two downloads succeeds, the other one fails
+                # because the request object is already being downloaded.
+                await asyncio.gather(
+                    self.crawler.engine.download_async(request),
+                    self.crawler.engine.download_async(request),
+                    return_exceptions=True,
+                )
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+
+        assert crawler.engine
+        middleware = crawler.engine.downloader.middleware
+        assert middleware._rough_sizes == {}
+        assert middleware._rough_active_size == 0
+
     @coroutine_test
     async def test_rough_size_triggers_backout(self):
         """Rough sizes of requests being downloaded count toward the limit, even
@@ -418,6 +449,42 @@ class TestRequestBackout:
             "request_backout_seconds/total": gt(0),
         }
         assert _backout_stats(crawler) == expected_stats
+
+    @coroutine_test
+    async def test_request_from_process_request(self):
+        """A request returned from process_request does not count toward the
+        limit, even though requests also have a body."""
+
+        class DownloaderMiddleware:
+            def __init__(self):
+                self.replaced = False
+
+            def process_request(self, request):
+                if self.replaced:
+                    return None
+                self.replaced = True
+                return Request("data:,b", body=b"a" * 2000)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {DownloaderMiddleware: 0},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1000,
+                "RESPONSE_ROUGH_SIZE": 0,
+            }
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await maybe_deferred_to_future(crawler.crawl())
+
+        assert _count_backout_logs(self.caplog) == 0
+
+        assert _backout_stats(crawler) == {}
 
     @coroutine_test
     async def test_response_size_process_response(self):
