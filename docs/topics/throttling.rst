@@ -362,10 +362,9 @@ following keys:
     :setting:`DOWNLOAD_DELAY`.
 
 ``jitter`` (:class:`float`)
-    Magnitude of the random variation applied to ``delay``; the per-scope
-    override of :setting:`RANDOMIZE_DOWNLOAD_DELAY`. ``0`` disables it and
-    ``0.5`` means ±50% (the default when :setting:`RANDOMIZE_DOWNLOAD_DELAY` is
-    on).
+    Magnitude of the random variation applied to ``delay``, e.g. ``0.5`` means
+    ±50% and ``0`` disables it. Defaults to
+    :setting:`RANDOMIZE_DOWNLOAD_DELAY`.
 
 ``backoff`` (:class:`~scrapy.throttler.BackoffConfig`)
     Per-scope :ref:`backoff overrides <per-scope-backoff>`.
@@ -766,15 +765,10 @@ Additional settings
 
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` (default: ``True``)
 
-    Randomize delays by this factor, e.g. if ``0.2`` randomize delays between
+    Randomize delays by this factor, e.g. ``0.2`` randomizes delays between
     ``delay*0.8`` and ``delay*1.2``.
 
-    It can be set to a 2-item list with low and high factors, e.g.
-    ``[-0.1, 0.3]`` to randomize delays between ``delay*0.9`` and
-    ``delay*1.3``.
-
-    If ``True``, ``0.5`` (i.e. ±50%) is used as the randomization factor. If
-    ``False``, no randomization is applied.
+    ``True`` means ``0.5`` (i.e. ±50%), and ``False`` means no randomization.
 
 -   .. setting:: THROTTLER_DEBUG
 

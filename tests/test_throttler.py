@@ -24,6 +24,7 @@ from scrapy.throttler import (
     _default_scope_concurrency,
     _default_scope_concurrency_setting,
     _warn_on_deprecated_concurrency,
+    _warn_on_ignored_per_ip,
     _warn_on_unachievable_concurrency,
     add_scope,
     iter_scopes,
@@ -1338,6 +1339,21 @@ class TestThrottlingScopeManagerEdges:
         scope = _scope_manager(config={"id": "x", "jitter": 0})
         assert scope._apply_jitter(4.0, scope._jitter) == pytest.approx(4.0)
 
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (True, 0.5),
+            (False, 0.0),
+            (0.2, 0.2),
+            ("0.2", 0.2),
+            ("True", 0.5),
+            ("False", 0.0),
+        ],
+    )
+    def test_jitter_from_settings(self, value: Any, expected: float):
+        scope = _scope_manager({"RANDOMIZE_DOWNLOAD_DELAY": value}, {"id": "x"})
+        assert scope._jitter == pytest.approx(expected)
+
     def test_effective_delay_randomized(self):
         scope = _scope_manager(
             {"RANDOMIZE_DOWNLOAD_DELAY": True}, {"id": "x", "delay": 2.0}
@@ -1530,6 +1546,22 @@ class TestConcurrencyBridging:
                 settings, Throttler._merge_download_slots(settings)
             )
         assert "the concurrency of throttling scope 'a'=50" in caplog.text
+
+
+class TestIgnoredPerIPConcurrency:
+    def test_warns_when_set(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="no longer has any effect"
+        ) as records:
+            crawler = get_crawler(SimpleSpider, {"CONCURRENT_REQUESTS_PER_IP": 2})
+        assert crawler.throttler is not None
+        assert sum("CONCURRENT_REQUESTS_PER_IP" in str(r.message) for r in records) == 1
+
+    def test_silent_when_unset(self):
+        settings = Settings()
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _warn_on_ignored_per_ip(settings)
 
 
 class TestScopeConcurrencyValidation:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import TYPE_CHECKING
@@ -11,7 +10,6 @@ import pytest
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
 from scrapy.crawler import Crawler
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import ensure_awaitable
@@ -327,27 +325,3 @@ class TestIntegrationWithDownloaderAwareInMemory:
             assert self.crawler.stats.get_value("downloader/response_count") == len(
                 start_urls
             )
-
-
-class TestIncompatibility:
-    def _incompatible(self) -> None:
-        settings = {
-            "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.DownloaderAwarePriorityQueue",
-            "CONCURRENT_REQUESTS_PER_IP": 1,
-        }
-        crawler = get_crawler(Spider, settings)
-        scheduler = Scheduler.from_crawler(crawler)
-        spider = Spider(name="spider")
-        scheduler.open(spider)
-
-    def test_incompatibility(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                category=ScrapyDeprecationWarning,
-                message="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
-            )
-            with pytest.raises(
-                ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
-            ):
-                self._incompatible()

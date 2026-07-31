@@ -7,6 +7,7 @@ import time
 import warnings
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Iterable, Mapping
+from contextlib import suppress
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, TypeVar, cast
 from weakref import WeakKeyDictionary, WeakSet
@@ -59,9 +60,8 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     """Per-scope override of :setting:`DOWNLOAD_DELAY`."""
 
     jitter: float
-    """Magnitude of the random variation applied to ``delay``; the per-scope
-    override of :setting:`RANDOMIZE_DOWNLOAD_DELAY` (``0`` disables it, ``0.5``
-    means ±50%)."""
+    """Magnitude of the random variation applied to ``delay`` (``0`` disables it,
+    ``0.5`` means ±50%). Defaults to :setting:`RANDOMIZE_DOWNLOAD_DELAY`."""
 
     manager: str | type
     """Import path or class of a custom :setting:`THROTTLING_SCOPE_MANAGER` for
@@ -126,6 +126,43 @@ def _default_scope_concurrency(settings: BaseSettings) -> int:
     its own ``concurrency``, i.e. the value of the setting chosen by
     :func:`_default_scope_concurrency_setting`."""
     return settings.getint(_default_scope_concurrency_setting(settings))
+
+
+def _default_jitter(settings: BaseSettings) -> float:
+    """Return the default magnitude of the random variation applied to the delay
+    of a throttling scope that does not set its own ``jitter``, from
+    :setting:`RANDOMIZE_DOWNLOAD_DELAY`: the factor it holds, or the historical
+    ±50% (or none) for a boolean."""
+    value = settings["RANDOMIZE_DOWNLOAD_DELAY"]
+    if not isinstance(value, bool):
+        # float() before getbool(), which rejects a factor; a boolean would come
+        # out of it as 1.0 rather than as the historical 0.5, hence the check
+        # above. A string can hold either form.
+        with suppress(TypeError, ValueError):
+            return float(value)
+    return 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
+
+
+def _warn_on_ignored_per_ip(settings: BaseSettings) -> None:
+    """Warn that :setting:`CONCURRENT_REQUESTS_PER_IP` no longer has any effect.
+    Call once per crawl (see :meth:`Throttler.__init__`).
+
+    Nothing reads the setting anymore, so without this a crawl that sets it
+    would silently stop limiting concurrency per IP.
+    """
+    if (
+        _effective_priority(settings, "CONCURRENT_REQUESTS_PER_IP")
+        <= SETTINGS_PRIORITIES["default"]
+    ):
+        return
+    warnings.warn(
+        "The CONCURRENT_REQUESTS_PER_IP setting is deprecated and no longer "
+        "has any effect. To limit concurrency per IP address, define a "
+        "throttling scope for it: "
+        "https://docs.scrapy.org/en/latest/topics/throttling.html#throttling-per-ip",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
 
 def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
@@ -478,6 +515,7 @@ class Throttler:
         )
         _check_scope_concurrency(crawler.settings, self._scopes_config)
         _warn_on_deprecated_concurrency(crawler.settings)
+        _warn_on_ignored_per_ip(crawler.settings)
         _warn_on_unachievable_concurrency(crawler.settings, self._scopes_config)
         self._debug = crawler.settings.getbool("THROTTLER_DEBUG")
         self._default_scope_manager_cls = load_object(
@@ -1176,13 +1214,8 @@ class ThrottlingScopeManager:
             config.get("delay", settings.getfloat("DOWNLOAD_DELAY"))
         )
         # Magnitude of the random variation applied to the (non-backoff) delay,
-        # defaulting to RANDOMIZE_DOWNLOAD_DELAY's historical ±50% when delay
-        # randomization is on, and to no variation when it is off.
-        self._jitter: float = float(
-            config.get(
-                "jitter", 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
-            )
-        )
+        # defaulting to RANDOMIZE_DOWNLOAD_DELAY.
+        self._jitter: float = float(config.get("jitter", _default_jitter(settings)))
         self._max_delay: float = float(
             backoff.get("max_delay", settings.getfloat("BACKOFF_MAX_DELAY"))
         )
