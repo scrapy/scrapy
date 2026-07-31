@@ -245,6 +245,11 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
+        # The dicts are walked in the same order as in pop(), which is what makes
+        # the returned request the one that pop() then returns; a caller that
+        # peeks to decide whether to pop (see
+        # ThrottlerAwarePriorityQueue._select) would otherwise act on one request
+        # and dequeue another.
         for queues in (self.queues, self._start_queues):
             queue = queues.get(self.curprio)
             # Empty queues can linger at a priority (see pop()), and skipping
@@ -531,7 +536,18 @@ def _scope_set_key(scope_set: frozenset[ScopeID]) -> str:
 
 
 def _scope_set_from_key(key: str) -> frozenset[ScopeID]:
-    return frozenset(json.loads(key))
+    """Reverse :func:`_scope_set_key`, raising :exc:`ValueError` for a *key*
+    that it did not produce (e.g. the plain slot name that another priority
+    queue class recorded in the same place)."""
+    try:
+        scope_ids = json.loads(key)
+    except ValueError:
+        scope_ids = None
+    if not isinstance(scope_ids, list) or not all(
+        isinstance(scope_id, str) for scope_id in scope_ids
+    ):
+        raise ValueError(f"{key!r} is not a throttling scope set key.")
+    return frozenset(scope_ids)
 
 
 class ThrottlerAwarePriorityQueue:
@@ -628,8 +644,22 @@ class ThrottlerAwarePriorityQueue:
         self._band_of: dict[frozenset[ScopeID], int] = {}
 
         if slot_startprios:
-            for set_key, startprios in slot_startprios.items():
-                scope_set = _scope_set_from_key(set_key)
+            # Every key is decoded before any queue is created, so that an
+            # incompatible state does not leave restored queues open behind the
+            # error below.
+            try:
+                scope_sets = {
+                    _scope_set_from_key(set_key): startprios
+                    for set_key, startprios in slot_startprios.items()
+                }
+            except ValueError as e:
+                raise ValueError(
+                    f"ThrottlerAwarePriorityQueue cannot read its "
+                    f"``slot_startprios``: {e} Most likely, it means the state "
+                    f"is created by an incompatible priority queue. Only a crawl "
+                    f"started with the same priority queue class can be resumed."
+                ) from None
+            for scope_set, startprios in scope_sets.items():
                 self.pqueues[scope_set] = self._pqfactory(scope_set, startprios)
                 self._reindex(scope_set)
 
@@ -762,6 +792,10 @@ class ThrottlerAwarePriorityQueue:
         pending scope set: a band is left as soon as it yields a candidate, since
         no later band can beat it on priority, and a candidate of zero load ends
         the search outright, since nothing can beat it on either key.
+
+        The head of a queue is read with ``peek()``, and it is what ``pop()``
+        then returns, so the request whose readiness decides the choice is the
+        one that :meth:`pop` dequeues.
         """
         self._promote_ready(time.monotonic())
         best_load: float | None = None

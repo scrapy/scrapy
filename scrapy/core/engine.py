@@ -628,7 +628,14 @@ class ExecutionEngine:
         self, request: Request, unscheduled: bool
     ) -> Generator[Deferred[Any], Any, None]:
         """Wait for the throttler to allow *request* to be sent, tracking it as
-        held meanwhile."""
+        held meanwhile.
+
+        Under the asyncio reactor this costs a task hop per request even when
+        the throttler has nothing to wait for, because that is what turning a
+        coroutine into a :class:`~twisted.internet.defer.Deferred` takes. Skipping
+        it would mean a synchronous "would this block?" throttler API, which is
+        not worth its weight until a profile asks for it.
+        """
         self._throttler_waiting[request] = unscheduled
         throttler = self.crawler.throttler
         assert throttler is not None

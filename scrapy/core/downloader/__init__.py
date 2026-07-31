@@ -238,6 +238,8 @@ class Downloader:
         self.middleware: DownloaderMiddlewareManager = (
             DownloaderMiddlewareManager.from_crawler(crawler)
         )
+        # Kept for backward compatibility only: the throttler is what reads
+        # these values now (see Throttler._merge_download_slots).
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
@@ -456,6 +458,12 @@ class Downloader:
         that it is not using, which the throttler may then lend to a request sent
         from a downloader middleware; see
         :meth:`~scrapy.throttler.ThrottlerProtocol.acquire`.
+
+        Firing on arrival, and not only on leaving a download handler, is what
+        covers the window between a request reserving its slot and reaching the
+        downloader: a request in that window is a holder that reads as being in
+        neither place, so a prerequisite that looks for a slot to borrow then
+        finds none, and nothing else would tell it to look again.
         """
         event: Deferred[None] = Deferred()
         self._downloader_middlewares_waiters.append(event)

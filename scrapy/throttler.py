@@ -990,6 +990,14 @@ class Throttler:
         scope_ids = [scope_id for scope_id, _ in scope_values]
         yielded_to_unscheduled = False
         while True:
+            # Rechecked on every pass, and not only by acquire() before the
+            # first one: recording a second send that only one release() undoes
+            # would leave every one of these scopes permanently short of a
+            # concurrency slot. It takes an unsupported crawl (the same Request
+            # object downloaded twice at once, both waiting here) to get here,
+            # so this only keeps that from stalling those scopes for good.
+            if request in self._reserved:
+                return
             scopes = self._resolve_scope_slots(scope_values)
             wait = max(
                 [
@@ -1416,6 +1424,9 @@ class Throttler:
             return
         if self._debug:
             logger.debug(f"robots.txt Crawl-delay for scope {scope_id}: {capped}s")
+        # From the next request of the scope on: the request that triggered the
+        # robots.txt download was allowed through before the delay was known, and
+        # its send is already recorded.
         self.get_scope_manager(scope_id).set_base_delay(capped)
 
     def get_scope_delay(self, scope_id: ScopeID) -> float:

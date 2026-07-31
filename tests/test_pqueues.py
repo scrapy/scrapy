@@ -117,6 +117,28 @@ class TestPriorityQueue:
         assert queue.peek() is None
         queue.close()
 
+    def test_peek_agrees_with_pop_on_start_requests(self):
+        """A start request and a non-start request at the same priority sit in
+        separate queues, and ``peek()`` must report the one that ``pop()``
+        returns: ThrottlerAwarePriorityQueue.pop() peeks to decide whether the
+        head can be sent, and dequeues it right after."""
+        temp_dir = tempfile.mkdtemp()
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler,
+            FifoMemoryQueue,
+            temp_dir,
+            start_queue_cls=FifoMemoryQueue,
+        )
+        queue.push(
+            Request("https://example.org/start", meta={"is_start_request": True})
+        )
+        queue.push(Request("https://example.org/other"))
+
+        while len(queue):
+            peeked = queue.peek()
+            assert queue.pop().url == peeked.url
+        queue.close()
+
     def test_peek_and_pop_skip_an_empty_queue_left_by_a_failed_push(self):
         """A queue is created before the request is pushed into it, so a push
         that fails (e.g. a serialization error) leaves an empty queue behind at
@@ -957,4 +979,20 @@ class TestThrottlerAwarePriorityQueue:
                 downstream_queue_cls=FifoMemoryQueue,
                 key="",
                 startprios=[1, 2, 3],
+            )
+
+    # A state written by another priority queue class has slot names where this
+    # one expects scope set keys. A name that is not JSON at all is one case; one
+    # that happens to be (a number, a quoted string) is another, and would
+    # otherwise be read as a scope set of its own.
+    @pytest.mark.parametrize("slot", ["a.com", "123", '"a.com"'])
+    def test_foreign_slot_startprios_keys(self, slot: str):
+        crawler = get_crawler(Spider)
+        with pytest.raises(ValueError, match="same priority queue class"):
+            build_from_crawler(
+                ThrottlerAwarePriorityQueue,
+                crawler,
+                downstream_queue_cls=FifoMemoryQueue,
+                key="",
+                startprios={slot: [1]},
             )

@@ -929,6 +929,26 @@ class TestUnscheduledRequests:
         await maybe_deferred_to_future(blocked)
 
     @coroutine_test
+    async def test_the_same_request_waiting_twice_reserves_once(self) -> None:
+        """Downloading the same Request object twice at once is unsupported, but
+        it must not record two sends that a single release() undoes: that would
+        leave the scope one concurrency slot short for the rest of the crawl,
+        with nothing to ever free it again."""
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}})
+        blockers = [Request("http://example.com/1"), Request("http://example.com/2")]
+        for blocker in blockers:
+            await self._acquire(manager, blocker)
+        shared = Request("http://example.com/3")
+        first = await self._start_waiting(manager, shared)
+        second = await self._start_waiting(manager, shared)
+        for blocker in blockers:
+            manager.release(blocker)
+        await self._finish_waiting(first)
+        await self._finish_waiting(second)
+        manager.release(shared)
+        assert _scope(manager, "example.com")._active == 0
+
+    @coroutine_test
     async def test_waiters_are_forgotten_once_served(self) -> None:
         manager = _manager()
         request = Request("http://example.com/1")
