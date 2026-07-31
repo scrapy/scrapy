@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
+      # Make uv use the interpreter that actions/setup-python installed instead
+      # of downloading one of its own.
+      UV_PYTHON_PREFERENCE: only-system
     strategy:
       fail-fast: false
       matrix:
@@ -105,14 +108,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
 
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v9
+
     - name: Install mitmproxy
       run: pipx install mitmproxy
 
     - name: Run tests
       env: ${{ matrix.env }}
-      run: |
-        pip install -U tox
-        tox
+      run: uvx --with tox-uv tox
 
     - name: Upload coverage report
       if: ${{ matrix.coverage }}

@@ -15,6 +15,9 @@ jobs:
     runs-on: windows-latest
     env:
       PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
+      # Make uv use the interpreter that actions/setup-python installed instead
+      # of downloading one of its own.
+      UV_PYTHON_PREFERENCE: only-system
     strategy:
       fail-fast: false
       matrix:
@@ -62,11 +65,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v9
+
     - name: Run tests
       env: ${{ matrix.env }}
-      run: |
-        pip install -U tox
-        tox
+      run: uvx --with tox-uv tox
 
     - name: Upload coverage report
       if: ${{ matrix.coverage }}

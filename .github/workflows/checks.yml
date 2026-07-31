@@ -13,6 +13,10 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    env:
+      # Make uv use the interpreter that actions/setup-python installed instead
+      # of downloading one of its own.
+      UV_PYTHON_PREFERENCE: only-system
     strategy:
       fail-fast: false
       matrix:
@@ -45,11 +49,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v9
+
     - name: Run check
       env: ${{ matrix.env }}
-      run: |
-        pip install -U tox
-        tox
+      run: uvx --with tox-uv tox
 
   pre-commit:
     runs-on: ubuntu-latest
