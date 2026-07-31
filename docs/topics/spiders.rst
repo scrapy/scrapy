@@ -45,8 +45,7 @@ scrapy.Spider
        If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` and you use the
        default Scrapy spider loader (see :setting:`SPIDER_LOADER_CLASS`), a
        non-empty name is required for the spider to be discoverable by the
-       Scrapy commands :command:`crawl`, :command:`list`, and
-       :command:`runspider`.
+       Scrapy commands :command:`crawl` and :command:`list`.
 
        The spider name must be unique to one spider class. If two or more
        spiders have the same name, Scrapy commands :command:`crawl` and

@@ -122,6 +122,25 @@ class CheckSpider(scrapy.Spider):
         """
         self._test_contract(proj_path, contracts, parse_def)
 
+    def test_check_list_nameless_spider(self, proj_path: Path) -> None:
+        spider = proj_path / self.project_name / "spiders" / "namelessspider.py"
+        spider.write_text(
+            '''
+import scrapy
+
+class NamelessSpider(scrapy.Spider):
+    def parse(self, response):
+        """
+        @url data:,
+        """
+''',
+            encoding="utf-8",
+        )
+        name = f"{self.project_name}.spiders.namelessspider.NamelessSpider"
+        ret, out, err = proc("check", "-l", name, cwd=proj_path)
+        assert ret == 0, err
+        assert out == f"{name}\n  * parse\n"
+
     def test_SCRAPY_CHECK_set(self, proj_path: Path) -> None:
         parse_def = """
         import os

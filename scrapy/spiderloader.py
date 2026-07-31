@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Protocol, cast
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from scrapy import Request, Spider  # noqa: TC001
 from scrapy.utils.misc import load_object, walk_modules_iter
-from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -84,10 +83,8 @@ class SpiderLoader:
             )
 
     def _load_spiders(self, module: ModuleType) -> None:
-        classes = iter_spider_classes(module, require_name=self.require_name)
-        for spcls in classes:
-            qualname = global_object_name(spcls)
-            name = getattr(spcls, "name", None) or qualname
+        for spcls in iter_spider_classes(module, require_name=self.require_name):
+            name = spcls._default_name()
             self._found[name].append((module.__name__, spcls.__name__))
             self._spiders[name] = spcls
 

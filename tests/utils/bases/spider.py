@@ -41,6 +41,16 @@ class TestSpiderBase(ABC):
         spider = self.spider_class()
         assert spider.name == global_object_name(self.spider_class)
 
+    def test_ignored(self):
+        """Base spiders shipped by Scrapy are ignored, their subclasses are
+        not."""
+
+        class Subclass(self.spider_class):
+            pass
+
+        assert self.spider_class._is_ignored()
+        assert not Subclass._is_ignored()
+
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()
         spider = self.spider_class.from_crawler(crawler, "example.com")

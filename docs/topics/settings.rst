@@ -2046,13 +2046,13 @@ Default: ``True``
 
 By default, when loading spiders, Scrapy only loads
 :class:`~scrapy.spiders.Spider` subclasses that have a non-empty
-:class:`~scrapy.spiders.Spider.name` unless they are decorated with
+:attr:`~scrapy.Spider.name` unless they are decorated with
 :func:`~scrapy.spiders.ignore_spider`.
 
 If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``False``, Scrapy loads all
 :class:`~scrapy.spiders.Spider` subclasses unless they are decorated with
 :func:`~scrapy.spiders.ignore_spider`. If they do not have a non-empty
-:class:`~scrapy.spiders.Spider.name`, their fully-qualified class name is used
+:attr:`~scrapy.Spider.name`, their fully-qualified class name is used
 as a name.
 
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.

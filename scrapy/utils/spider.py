@@ -47,15 +47,6 @@ def iterate_spider_output(
     return arg_to_iter(d)
 
 
-def _is_ignored(obj: Any, *, require_name: bool) -> bool:
-    return (
-        not inspect.isclass(obj)
-        or not issubclass(obj, Spider)
-        or obj._is_ignored()
-        or (require_name and not getattr(obj, "name", None))
-    )
-
-
 def iter_spider_classes(
     module: ModuleType,
     *,
@@ -67,12 +58,15 @@ def iter_spider_classes(
 
     If `require_name` is ``True`` (default), any
     :class:`~scrapy.spiders.Spider` subclass without a non-empty
-    :class:`~scrapy.spiders.Spider.name` is also excluded.
+    :attr:`~scrapy.Spider.name` is also excluded.
     """
     for obj in vars(module).values():
         if (
-            not _is_ignored(obj, require_name=require_name)
+            inspect.isclass(obj)
+            and issubclass(obj, Spider)
             and obj.__module__ == module.__name__
+            and not obj._is_ignored()
+            and (not require_name or getattr(obj, "name", None))
         ):
             yield obj
 

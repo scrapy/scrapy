@@ -33,21 +33,19 @@ if TYPE_CHECKING:
 
 _SpiderT = TypeVar("_SpiderT", bound="type[Spider]")
 
-# Only the classes themselves are ignored, never their subclasses.
-_ignored_spiders: set[type[Spider]] = set()
-
 
 def ignore_spider(cls: _SpiderT) -> _SpiderT:
     """Mark a :class:`~scrapy.spiders.Spider` subclass to be ignored.
 
-    The default spider loader (see :setting:`SPIDER_LOADER_CLASS`) does not
-    make marked spider classes available for the :command:`crawl`,
-    :command:`list`, and :command:`runspider` commands.
+    Marked spider classes are not available to the :command:`crawl`,
+    :command:`list` and :command:`runspider` commands. Only the decorated
+    class is marked; its subclasses are unaffected.
     """
-    _ignored_spiders.add(cls)
+    cls._ignore_spider = True
     return cls
 
 
+@ignore_spider
 class Spider(object_ref):
     """Base class that any spider must subclass.
 
@@ -58,6 +56,7 @@ class Spider(object_ref):
 
     name: str
     custom_settings: dict[str, Any] | None = None
+    _ignore_spider: bool
 
     #: Start URLs. See :meth:`start`.
     start_urls: list[str]
@@ -66,14 +65,22 @@ class Spider(object_ref):
         if name is not None:
             self.name: str = name
         elif not getattr(self, "name", None):
-            self.name = global_object_name(self.__class__)
+            self.name = type(self)._default_name()
         self.__dict__.update(kwargs)
         if not hasattr(self, "start_urls"):
             self.start_urls: list[str] = []
 
     @classmethod
+    def _default_name(cls) -> str:
+        """Return the name under which spider loaders and commands know this
+        spider class, which falls back to its import path."""
+        return getattr(cls, "name", None) or global_object_name(cls)
+
+    @classmethod
     def _is_ignored(cls) -> bool:
-        return cls in _ignored_spiders
+        # The mark set by ignore_spider() is read from the class __dict__ so
+        # that subclasses do not inherit it.
+        return "_ignore_spider" in cls.__dict__
 
     @property
     def logger(self) -> SpiderLoggerAdapter:
@@ -202,9 +209,6 @@ class Spider(object_ref):
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
-
-
-ignore_spider(Spider)
 
 
 # Top-level imports
