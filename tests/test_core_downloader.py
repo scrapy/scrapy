@@ -6,15 +6,23 @@ from typing import TYPE_CHECKING, cast
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
+from twisted.internet.endpoints import HostnameEndpoint
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol as TxProtocol
 from twisted.internet.ssl import AcceptableCiphers, optionsForClientTLS
 from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
 from twisted.web import server, static
-from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
+from twisted.web.client import (
+    URI,
+    Agent,
+    BrowserLikePolicyForHTTPS,
+    _StandardEndpointFactory,
+    readBody,
+)
 from twisted.web.client import Response as TxResponse
 
 from scrapy.core.downloader import Downloader, Slot, tls
+from scrapy.core.downloader._idna import _safe_hostname_bytes
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
@@ -170,6 +178,25 @@ class TestContextFactory(TestContextFactoryBase):
             )
             factory.creatorForNetloc(b"website.tld", 443)
 
+    def test_idna_2003_only_domain(self, factory: _ScrapyClientContextFactory) -> None:
+        """Punycode hostnames of IDNA-2003-only domains, such as emoji
+        domains, should work (#4330)."""
+        creator = factory.creatorForNetloc(b"xn--i-7iq.ws", 443)
+        assert creator._hostnameBytes == b"xn--i-7iq.ws"
+        assert creator._hostnameASCII == "xn--i-7iq.ws"
+        assert creator._hostnameIsDnsName is True
+        conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
+        assert conn is not None
+
+    def test_idna_2003_only_domain_verify_certificates(self) -> None:
+        """Same as test_idna_2003_only_domain() but with certificate
+        verification enabled, which uses plain optionsForClientTLS()."""
+        crawler = get_crawler(settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": True})
+        factory = _load_context_factory_from_settings(crawler)
+        creator = factory.creatorForNetloc(b"xn--i-7iq.ws", 443)
+        assert creator._hostnameBytes == b"xn--i-7iq.ws"
+        assert creator._hostnameASCII == "xn--i-7iq.ws"
+
     def test_ctx_flags(self, factory: _ScrapyClientContextFactory) -> None:
         """The context should have the expected flags set."""
         creator = factory.creatorForNetloc(b"website.tld", 443)
@@ -294,6 +321,69 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         client_context_factory = _ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
+
+
+class TestSafeHostnameBytes:
+    """Tests for the IDNA-2003-only hostname workarounds (#4330)."""
+
+    @pytest.mark.parametrize(
+        ("hostname", "expected"),
+        [
+            ("example.com", b"example.com"),
+            ("xn--i-7iq.ws", b"xn--i-7iq.ws"),  # i❤.ws
+            ("i❤.ws", b"xn--i-7iq.ws"),
+            ("ü.example", b"xn--tda.example"),
+            # overlong ASCII label, rejected by the stdlib codec
+            ("a" * 64 + ".com", b"a" * 64 + b".com"),
+        ],
+    )
+    def test_valid(self, hostname: str, expected: bytes) -> None:
+        assert _safe_hostname_bytes(hostname) == expected
+
+    def test_invalid(self) -> None:
+        with pytest.raises(UnicodeError):
+            _safe_hostname_bytes("❤" * 200 + ".ws")
+
+    def test_host_as_bytes_and_text(self) -> None:
+        """HostnameEndpoint should not consider such hostnames invalid."""
+        assert HostnameEndpoint._hostAsBytesAndText("xn--i-7iq.ws") == (
+            False,
+            b"xn--i-7iq.ws",
+            "xn--i-7iq.ws",
+        )
+        assert HostnameEndpoint._hostAsBytesAndText("i❤.ws") == (
+            False,
+            b"xn--i-7iq.ws",
+            "i❤.ws",
+        )
+        assert HostnameEndpoint._hostAsBytesAndText("example.com") == (
+            False,
+            b"example.com",
+            "example.com",
+        )
+
+
+@pytest.mark.requires_reactor
+class TestIdna2003OnlyEndpoints:
+    """Endpoints for IDNA-2003-only domains, such as emoji domains, should be
+    connectable (#4330)."""
+
+    @pytest.mark.parametrize("scheme", ["http", "https"])
+    def test_endpoint_for_uri(self, scheme: str) -> None:
+        from twisted.internet import reactor
+
+        crawler = get_crawler()
+        endpoint_factory = _StandardEndpointFactory(
+            reactor, _load_context_factory_from_settings(crawler), 10, None
+        )
+        endpoint = endpoint_factory.endpointForURI(
+            URI.fromBytes(f"{scheme}://xn--i-7iq.ws/".encode())
+        )
+        # https endpoints are wrapped by wrapClientTLS()
+        hostname_endpoint = getattr(endpoint, "_wrappedEndpoint", endpoint)
+        assert hostname_endpoint._badHostname is False
+        assert hostname_endpoint._hostBytes == b"xn--i-7iq.ws"
+        assert hostname_endpoint._hostText == "xn--i-7iq.ws"
 
 
 @coroutine_test
