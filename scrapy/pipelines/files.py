@@ -38,7 +38,11 @@ from scrapy.pipelines.media import (
     _MediaRequestFiltered,
 )
 from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
-from scrapy.utils.boto import is_aiobotocore_available, is_botocore_available
+from scrapy.utils.boto import (
+    _get_max_pool_connections,
+    is_aiobotocore_available,
+    is_botocore_available,
+)
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
@@ -167,6 +171,9 @@ class S3FilesStore:
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
     AWS_VERIFY = None
+    # Overridden from settings.AWS_MAX_POOL_CONNECTIONS in
+    # FilesPipeline.from_crawler(); None means the botocore default
+    AWS_MAX_POOL_CONNECTIONS: int | None = None
 
     POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
     HEADERS: ClassVar[dict[str, str]] = {
@@ -180,6 +187,8 @@ class S3FilesStore:
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split("/", 1)
 
+        from botocore.config import Config  # noqa: PLC0415
+
         self._client_kwargs: dict[str, Any] = {
             "aws_access_key_id": self.AWS_ACCESS_KEY_ID,
             "aws_secret_access_key": self.AWS_SECRET_ACCESS_KEY,
@@ -188,6 +197,11 @@ class S3FilesStore:
             "region_name": self.AWS_REGION_NAME,
             "use_ssl": self.AWS_USE_SSL,
             "verify": self.AWS_VERIFY,
+            "config": (
+                Config(max_pool_connections=self.AWS_MAX_POOL_CONNECTIONS)
+                if self.AWS_MAX_POOL_CONNECTIONS is not None
+                else None
+            ),
         }
 
         # Synchronous botocore client, used when asyncio support or aiobotocore
@@ -580,6 +594,7 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_REGION_NAME = settings["AWS_REGION_NAME"]
         s3store.AWS_USE_SSL = settings["AWS_USE_SSL"]
         s3store.AWS_VERIFY = settings["AWS_VERIFY"]
+        s3store.AWS_MAX_POOL_CONNECTIONS = _get_max_pool_connections(settings)
         s3store.POLICY = settings["FILES_STORE_S3_ACL"]
 
         gcs_store: type[GCSFilesStore] = cast(
