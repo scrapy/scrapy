@@ -608,26 +608,8 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
 
-        *reason* is an arbitrary string. Built-in Scrapy :ref:`components
-        <topics-components>` use the following reasons:
-
-        -   ``finished``: When the crawl finishes normally.
-
-        -   ``shutdown``: When stopping the crawl is requested, usually by the
-            user through a system signal.
-
-        -   ``cancelled``: When :exc:`~scrapy.exceptions.CloseSpider` is
-            raised, e.g. from a spider callback, without a custom *reason*.
-
-        -   ``closespider_errorcount``, ``closespider_pagecount``,
-            ``closespider_itemcount``, ``closespider_timeout_no_item``: See
-            :class:`~scrapy.extensions.closespider.CloseSpider`.
-
-        -   ``memusage_exceeded``: See
-            :class:`~scrapy.extensions.memusage.MemoryUsage`.
-
-        -   ``robotstxt_denied``: See
-            :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`.
+        *reason* is an arbitrary string; see :stat:`finish_reason` for the
+        reasons that built-in components use.
         """
         if self.spider is None:
             raise RuntimeError("Spider not opened")

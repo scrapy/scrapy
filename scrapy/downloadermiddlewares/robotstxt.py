@@ -57,8 +57,10 @@ class RobotsTxtMiddleware:
     setting. Or you can also :ref:`implement support for a new parser
     <support-for-new-robots-parser>`.
 
-    If all :ref:`start requests <start-requests>` are ignored due to robots.txt
-    rules, the spider close reason becomes ``robotstxt_denied``.
+    If no :ref:`start request <start-requests>` can be crawled, and robots.txt
+    rules denied at least one of them, the crawl stops with the
+    ``robotstxt_denied`` :stat:`finish_reason`, as long as
+    :class:`~scrapy.spidermiddlewares.start.StartSpiderMiddleware` is enabled.
     """
 
     DOWNLOAD_PRIORITY: int = 1000
@@ -66,9 +68,8 @@ class RobotsTxtMiddleware:
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("ROBOTSTXT_OBEY"):
             raise NotConfigured
-        self._start_request_count = 0
-        self._forbidden_start_request_count = 0
-        crawler.signals.connect(self._spider_idle, signal=signals.spider_idle)
+        self._start_request_crawled = False
+        self._start_request_denied = False
         self._default_useragent: str = crawler.settings["USER_AGENT"]
         self._robotstxt_useragent: str | None = crawler.settings["ROBOTSTXT_USER_AGENT"]
         self.crawler: Crawler = crawler
@@ -80,19 +81,25 @@ class RobotsTxtMiddleware:
         # check if parser dependencies are met, this should throw an error otherwise.
         self._parserimpl.from_crawler(self.crawler, b"")
 
+        crawler.signals.connect(
+            self._response_received, signal=signals.response_received
+        )
+        crawler.signals.connect(self._spider_idle, signal=signals.spider_idle)
+
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
+    def _response_received(self, request: Request) -> None:
+        if request.meta.get("is_start_request"):
+            self._start_request_crawled = True
+
     def _spider_idle(self) -> None:
-        if (
-            not self._forbidden_start_request_count
-            or self._forbidden_start_request_count < self._start_request_count
-        ):
+        if self._start_request_crawled or not self._start_request_denied:
             return
         logger.error(
-            "Stopping the spider, all start requests failed because they "
-            "were rejected based on robots.txt rules. See "
+            "Stopping the crawl: no start request could be crawled, and at "
+            "least one of them was rejected based on robots.txt rules. See "
             "https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#topics-dlmw-robots"
         )
         raise CloseSpider("robotstxt_denied")
@@ -101,8 +108,6 @@ class RobotsTxtMiddleware:
     async def process_request(
         self, request: Request, spider: Spider | None = None
     ) -> None:
-        if request.meta.get("is_start_request"):
-            self._start_request_count += 1
         if request.meta.get("dont_obey_robotstxt"):
             return
         if request.url.startswith("data:") or request.url.startswith("file:"):
@@ -127,7 +132,7 @@ class RobotsTxtMiddleware:
             assert self.crawler.stats
             self.crawler.stats.inc_value("robotstxt/forbidden")
             if request.meta.get("is_start_request"):
-                self._forbidden_start_request_count += 1
+                self._start_request_denied = True
             raise IgnoreRequest("Forbidden by robots.txt")
 
     async def robot_parser(self, request: Request) -> RobotParser | None:

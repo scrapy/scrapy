@@ -64,6 +64,9 @@ class Root(resource.Resource):
             b"enc-gb18030",
             Data(b"<p>gb18030 encoding</p>", "text/html; charset=gb18030"),
         )
+        self.putChild(
+            b"robots.txt", Data(b"User-agent: *\nDisallow: /deny\n", "text/plain")
+        )
         self.putChild(b"redirect", Redirect(b"/redirected"))
         self.putChild(
             b"redirect-no-meta-refresh", NoMetaRefreshRedirect(b"/redirected")

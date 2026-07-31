@@ -1137,7 +1137,7 @@ RobotsTxtMiddleware
 .. module:: scrapy.downloadermiddlewares.robotstxt
    :synopsis: robots.txt middleware
 
-.. autoclass:: RobotsTxtMiddleware
+.. autoclass:: RobotsTxtMiddleware()
 
 .. reqmeta:: dont_obey_robotstxt
 

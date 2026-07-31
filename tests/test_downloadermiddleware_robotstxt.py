@@ -17,14 +17,14 @@ from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
-from tests.mockserver.robotstxt import RobotsTxtMockServer
 from tests.utils.decorators import coroutine_test
 from tests.utils.robotstxt import rerp_available
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable
+    from collections.abc import Iterable
 
     from scrapy.crawler import Crawler
+    from tests.mockserver.http import MockServer
 
 
 class TestRobotsTxtMiddleware:
@@ -289,12 +289,6 @@ class _FollowSpider(Spider):
 
 
 class TestRobotsTxtDeniedCloseReason:
-    @pytest.fixture(scope="class")
-    @classmethod
-    def server(cls) -> Generator[RobotsTxtMockServer]:
-        with RobotsTxtMockServer() as server:
-            yield server
-
     @staticmethod
     async def _finish_reason(
         spider_cls: type[Spider], settings: dict[str, Any] | None = None, **kwargs: Any
@@ -307,34 +301,50 @@ class TestRobotsTxtDeniedCloseReason:
         return crawler.stats.get_value("finish_reason")
 
     @coroutine_test
-    async def test_all_denied(self, server: RobotsTxtMockServer) -> None:
+    async def test_all_denied(self, mockserver: MockServer) -> None:
         reason = await self._finish_reason(
-            _IgnoreSpider, start_urls=[server.url("/deny/a"), server.url("/deny/b")]
+            _IgnoreSpider,
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/deny/b")],
         )
         assert reason == "robotstxt_denied"
 
     @coroutine_test
-    async def test_all_denied_low_concurrency(
-        self, server: RobotsTxtMockServer
-    ) -> None:
+    async def test_all_denied_low_concurrency(self, mockserver: MockServer) -> None:
         reason = await self._finish_reason(
             _IgnoreSpider,
             settings={"CONCURRENT_REQUESTS": 1},
-            start_urls=[server.url("/deny/a"), server.url("/deny/b")],
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/deny/b")],
         )
         assert reason == "robotstxt_denied"
 
     @coroutine_test
-    async def test_some_denied(self, server: RobotsTxtMockServer) -> None:
+    async def test_all_denied_after_redirect(self, mockserver: MockServer) -> None:
         reason = await self._finish_reason(
-            _IgnoreSpider, start_urls=[server.url("/deny/a"), server.url("/allow")]
+            _IgnoreSpider, start_urls=[mockserver.url("/redirect-to?goto=/deny/a")]
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_denied_and_download_failure(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            settings={"RETRY_ENABLED": False},
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/drop")],
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_some_denied(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/text")],
         )
         assert reason == "finished"
 
     @coroutine_test
-    async def test_denied_follow_up_request(self, server: RobotsTxtMockServer) -> None:
+    async def test_denied_follow_up_request(self, mockserver: MockServer) -> None:
         reason = await self._finish_reason(
-            _FollowSpider, start_urls=[server.url("/allow")]
+            _FollowSpider, start_urls=[mockserver.url("/text")]
         )
         assert reason == "finished"
 
