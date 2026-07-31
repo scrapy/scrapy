@@ -16,6 +16,11 @@ from scrapy.utils.response import (
     response_status_message,
 )
 
+# Catastrophic backtracking makes the checks below take orders of magnitude
+# longer than this, so the budget can be generous enough for slow interpreters
+# like PyPy.
+MAX_CPU_TIME = 0.2
+
 
 def _read_browser_output(burl: str) -> bytes:
     path = urlparse(burl).path
@@ -185,8 +190,6 @@ def test_inject_base_url(body: bytes) -> None:
 
 
 def test_open_in_browser_redos_comment():
-    MAX_CPU_TIME = 0.02
-
     # Exploit input from
     # https://makenowjust-labs.github.io/recheck/playground/
     # for /<!--.*?-->/ (old pattern to remove comments).
@@ -199,8 +202,6 @@ def test_open_in_browser_redos_comment():
 
 
 def test_open_in_browser_redos_head():
-    MAX_CPU_TIME = 0.02
-
     # Exploit input from
     # https://makenowjust-labs.github.io/recheck/playground/
     # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
