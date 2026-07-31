@@ -1,21 +1,23 @@
+import argparse
 import json
+from typing import Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
 from scrapy.settings import BaseSettings
 
 
 class Command(ScrapyCommand):
-    requires_project = False
-    default_settings = {"LOG_ENABLED": False, "SPIDER_LOADER_WARN_ONLY": True}
+    requires_crawler_process = False
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[options]"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Get settings values"
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
+        super().add_options(parser)
         parser.add_argument(
             "--get", dest="get", metavar="SETTING", help="print raw setting value"
         )
@@ -44,8 +46,9 @@ class Command(ScrapyCommand):
             help="print setting value, interpreted as a list",
         )
 
-    def run(self, args, opts):
-        settings = self.crawler_process.settings
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
+        assert self.settings is not None
+        settings = self.settings
         if opts.get:
             s = settings.get(opts.get)
             if isinstance(s, BaseSettings):

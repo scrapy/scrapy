@@ -1,10 +1,8 @@
-from twisted.internet import defer
-from twisted.trial.unittest import TestCase
-
 from scrapy.signals import request_left_downloader
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
+from tests.utils.decorators import inline_callbacks_test
 
 
 class SignalCatcherSpider(Spider):
@@ -18,41 +16,42 @@ class SignalCatcherSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        spider = cls(crawler, *args, **kwargs)
-        return spider
+        return cls(crawler, *args, **kwargs)
 
     def on_request_left(self, request, spider):
         self.caught_times += 1
 
 
-class TestCatching(TestCase):
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
+class TestCatching:
+    @classmethod
+    def setup_class(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
+    @classmethod
+    def teardown_class(cls):
+        cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_success(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl(self.mockserver.url("/status?n=200"))
-        self.assertEqual(crawler.spider.caught_times, 1)
+        assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_timeout(self):
         crawler = get_crawler(SignalCatcherSpider, {"DOWNLOAD_TIMEOUT": 0.1})
         yield crawler.crawl(self.mockserver.url("/delay?n=0.2"))
-        self.assertEqual(crawler.spider.caught_times, 1)
+        assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_disconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl(self.mockserver.url("/drop"))
-        self.assertEqual(crawler.spider.caught_times, 1)
+        assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_noconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl("http://thereisdefinetelynosuchdomain.com")
-        self.assertEqual(crawler.spider.caught_times, 1)
+        assert crawler.spider.caught_times == 1

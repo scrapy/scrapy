@@ -3,70 +3,85 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Union, cast
-
-from twisted.internet.defer import Deferred
+import warnings
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.utils.python import global_object_name
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.http.request import CallbackT
     from scrapy.settings import BaseSettings
+    from scrapy.utils.log import SpiderLoggerAdapter
 
 
-def ignore_spider(decorated_cls):
+_SpiderT = TypeVar("_SpiderT", bound="type[Spider]")
+
+# Only the classes themselves are ignored, never their subclasses.
+_ignored_spiders: set[type[Spider]] = set()
+
+
+def ignore_spider(cls: _SpiderT) -> _SpiderT:
     """Mark a :class:`~scrapy.spiders.Spider` subclass to be ignored.
 
     The default spider loader (see :setting:`SPIDER_LOADER_CLASS`) does not
     make marked spider classes available for the :command:`crawl`,
     :command:`list`, and :command:`runspider` commands.
     """
-
-    @classmethod
-    def _is_ignored(cls):
-        if cls is decorated_cls:
-            return True
-        return super(decorated_cls, cls)._is_ignored()
-
-    decorated_cls._is_ignored = _is_ignored
-    return decorated_cls
+    _ignored_spiders.add(cls)
+    return cls
 
 
 class Spider(object_ref):
-    """Base class for scrapy spiders. All spiders must inherit from this
-    class.
+    """Base class that any spider must subclass.
+
+    It provides a default :meth:`start` implementation that sends
+    requests based on the :attr:`start_urls` class attribute and calls the
+    :meth:`parse` method for each response.
     """
 
     name: str
-    custom_settings: Optional[dict] = None
+    custom_settings: dict[str, Any] | None = None
 
-    def __init__(self, name: Optional[str] = None, **kwargs: Any):
+    #: Start URLs. See :meth:`start`.
+    start_urls: list[str]
+
+    def __init__(self, name: str | None = None, **kwargs: Any):
         if name is not None:
-            self.name = name
+            self.name: str = name
         elif not getattr(self, "name", None):
             self.name = global_object_name(self.__class__)
         self.__dict__.update(kwargs)
         if not hasattr(self, "start_urls"):
-            self.start_urls: List[str] = []
+            self.start_urls: list[str] = []
 
     @classmethod
-    def _is_ignored(cls):
-        return cls is Spider
+    def _is_ignored(cls) -> bool:
+        return cls in _ignored_spiders
 
     @property
-    def logger(self) -> logging.LoggerAdapter:
+    def logger(self) -> SpiderLoggerAdapter:
+        # circular import
+        from scrapy.utils.log import SpiderLoggerAdapter  # noqa: PLC0415
+
         logger = logging.getLogger(self.name)
-        return logging.LoggerAdapter(logger, {"spider": self})
+        return SpiderLoggerAdapter(logger, {"spider": self})
 
     def log(self, message: Any, level: int = logging.DEBUG, **kw: Any) -> None:
         """Log the given message at the given log level
@@ -75,6 +90,11 @@ class Spider(object_ref):
         can use it directly (e.g. Spider.logger.info('msg')) or use any other
         Python logger too.
         """
+        warnings.warn(
+            "Spider.log() is deprecated, use methods of Spider.logger instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self.logger.log(level, message, **kw)
 
     @classmethod
@@ -84,27 +104,86 @@ class Spider(object_ref):
         return spider
 
     def _set_crawler(self, crawler: Crawler) -> None:
-        self.crawler = crawler
-        self.settings = crawler.settings
+        self.crawler: Crawler = crawler
+        self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    def start_requests(self) -> Iterable[Request]:
-        if not self.start_urls and hasattr(self, "start_url"):
-            raise AttributeError(
-                "Crawling could not start: 'start_urls' not found "
-                "or empty (but found 'start_url' attribute instead, "
-                "did you miss an 's'?)"
-            )
+    async def start(self) -> AsyncIterator[Any]:
+        """Yield the initial :class:`~scrapy.Request` objects to send.
+
+        .. versionadded:: 2.13
+
+        For example:
+
+        .. code-block:: python
+
+            from scrapy import Request, Spider
+
+
+            class MySpider(Spider):
+                name = "myspider"
+
+                async def start(self):
+                    yield Request("https://toscrape.com/")
+
+        The default implementation reads URLs from :attr:`start_urls` and
+        yields a request for each with :attr:`~scrapy.Request.dont_filter`
+        enabled. It is functionally equivalent to:
+
+        .. code-block:: python
+
+            async def start(self):
+                for url in self.start_urls:
+                    yield Request(url, dont_filter=True)
+
+        You can also yield :ref:`items <topics-items>`. For example:
+
+        .. code-block:: python
+
+            async def start(self):
+                yield {"foo": "bar"}
+
+        To write spiders that work on Scrapy versions lower than 2.13,
+        define also a synchronous ``start_requests()`` method that returns an
+        iterable. For example:
+
+        .. code-block:: python
+
+            def start_requests(self):
+                yield Request("https://toscrape.com/")
+
+        .. seealso:: :ref:`start-requests`
+        """
         for url in self.start_urls:
             yield Request(url, dont_filter=True)
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
         return self.parse(response, **kwargs)
 
-    def parse(self, response: Response, **kwargs: Any) -> Any:
-        raise NotImplementedError(
-            f"{self.__class__.__name__}.parse callback is not defined"
-        )
+    if TYPE_CHECKING:
+        parse: CallbackT
+    else:
+
+        def parse(self, response: Response, **kwargs: Any) -> Any:
+            """Process *response*, i.e. extract data from it and generate new
+            requests.
+
+            This is the default :ref:`callback <callbacks>`: Scrapy uses
+            it for the response to any request that does not define a
+            :attr:`~scrapy.Request.callback`, such as the requests that
+            :meth:`start` yields by default.
+
+            Any :attr:`~scrapy.Request.cb_kwargs` of the request are passed as
+            keyword parameters.
+
+            Spiders must define this method, unless every request that they
+            send defines a callback.
+
+            See :ref:`callback-output` about the supported return values.
+            """
+            raise NotImplementedError(
+                f"{self.__class__.__name__}.parse callback is not defined"
+            )
 
     @classmethod
     def update_settings(cls, settings: BaseSettings) -> None:
@@ -115,17 +194,29 @@ class Spider(object_ref):
         return url_is_from_spider(request.url, cls)
 
     @staticmethod
-    def close(spider: Spider, reason: str) -> Union[Deferred, None]:
+    def close(spider: Spider, reason: str) -> Deferred[None] | None:
         closed = getattr(spider, "closed", None)
         if callable(closed):
-            return cast(Union[Deferred, None], closed(reason))
+            return cast("Deferred[None] | None", closed(reason))
         return None
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
 
 
+ignore_spider(Spider)
+
+
 # Top-level imports
 from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.spiders.feed import CSVFeedSpider, XMLFeedSpider
 from scrapy.spiders.sitemap import SitemapSpider
+
+__all__ = [
+    "CSVFeedSpider",
+    "CrawlSpider",
+    "Rule",
+    "SitemapSpider",
+    "Spider",
+    "XMLFeedSpider",
+]
