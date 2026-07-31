@@ -218,12 +218,13 @@ passed through the following settings:
 
 .. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
-You can also define a custom ACL, custom endpoint, and region name for exported
-feeds using these settings:
+You can also define a custom ACL, custom endpoint, region name and connection
+pool size for exported feeds using these settings:
 
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`AWS_ENDPOINT_URL`
 -   :setting:`AWS_REGION_NAME`
+-   :setting:`AWS_MAX_POOL_CONNECTIONS`
 
 The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.

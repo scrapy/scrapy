@@ -24,6 +24,7 @@ from scrapy.extensions.feedexport import (
     FeedExporter,
     FeedSlot,
     FileFeedStorage,
+    ItemFilter,
     apply_uri_params,
 )
 from scrapy.utils.python import to_unicode
@@ -675,14 +676,14 @@ class TestFeedExport(TestFeedExportBase):
 
         formats = {
             "csv": b"foo,egg,baz\r\nbar1,spam1,\r\n",
-            "json": b'[\n{"hello": "world2", "foo": "bar2"}\n]',
+            "json": b'[\n{"foo": "bar2", "hello": "world2"}\n]',
             "jsonlines": (
-                b'{"foo": "bar1", "egg": "spam1"}\n{"hello": "world2", "foo": "bar2"}\n'
+                b'{"foo": "bar1", "egg": "spam1"}\n{"foo": "bar2", "hello": "world2"}\n'
             ),
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
-                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>"
-                b"world2</hello><foo>bar2</foo></item>\n<item><hello>world3"
+                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><foo>"
+                b"bar2</foo><hello>world2</hello></item>\n<item><hello>world3"
                 b"</hello><egg>spam3</egg></item>\n</items>"
             ),
         }
@@ -740,8 +741,8 @@ class TestFeedExport(TestFeedExportBase):
             "json": b'[\n{"foo": "bar1", "egg": "spam1"}\n]',
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
-                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>"
-                b"world2</hello><foo>bar2</foo></item>\n</items>"
+                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><foo>"
+                b"bar2</foo><hello>world2</hello></item>\n</items>"
             ),
             "jsonlines": b'{"foo": "bar1", "egg": "spam1"}\n',
         }
@@ -1289,6 +1290,13 @@ class TestFeedExporterSignals:
         assert self.feed_exporter_closed_received
 
 
+class TestItemFilter:
+    def test_no_feed_options(self):
+        item_filter = ItemFilter(None)
+        assert item_filter.item_classes == ()
+        assert item_filter.accepts(MyItem({"foo": "bar"}))
+
+
 class TestFeedExportInit:
     def test_unsupported_storage(self):
         settings = {
@@ -1299,6 +1307,24 @@ class TestFeedExportInit:
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
             FeedExporter.from_crawler(crawler)
+
+    def test_disabled_storage(self, caplog: pytest.LogCaptureFixture):
+        class DisabledFeedStorage:
+            def __init__(self, uri, *, feed_options=None):
+                raise NotConfigured("not today")
+
+        settings = {
+            "FEED_STORAGES": {"disabled": DisabledFeedStorage},
+            "FEEDS": {
+                "disabled://uri": {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        with caplog.at_level(logging.ERROR), pytest.raises(NotConfigured):
+            FeedExporter.from_crawler(crawler)
+        assert (
+            "Disabled feed storage scheme: disabled. Reason: not today" in caplog.text
+        )
 
     def test_unsupported_format(self):
         settings = {

@@ -28,6 +28,7 @@ from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.asyncio import is_asyncio_available, run_in_thread
+from scrapy.utils.boto import _get_max_pool_connections
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
@@ -213,11 +214,14 @@ class S3FeedStorage(BlockingFeedStorage):
         feed_options: dict[str, Any] | None = None,
         session_token: str | None = None,
         region_name: str | None = None,
+        max_pool_connections: int | None = None,
     ):
         try:
             import boto3.session  # noqa: PLC0415
         except ImportError:
             raise NotConfigured("missing boto3 library") from None
+        from botocore.config import Config  # noqa: PLC0415
+
         u = urlparse(uri)
         assert u.hostname
         self.bucketname: str = u.hostname
@@ -228,6 +232,7 @@ class S3FeedStorage(BlockingFeedStorage):
         self.acl: str | None = acl
         self.endpoint_url: str | None = endpoint_url
         self.region_name: str | None = region_name
+        self.max_pool_connections: int | None = max_pool_connections
 
         boto3_session = boto3.session.Session()
         self.s3_client = boto3_session.client(
@@ -237,6 +242,11 @@ class S3FeedStorage(BlockingFeedStorage):
             aws_session_token=self.session_token,
             endpoint_url=self.endpoint_url,
             region_name=self.region_name,
+            config=(
+                Config(max_pool_connections=self.max_pool_connections)
+                if self.max_pool_connections is not None
+                else None
+            ),
         )
 
         if feed_options and feed_options.get("overwrite", True) is False:
@@ -262,6 +272,7 @@ class S3FeedStorage(BlockingFeedStorage):
             acl=crawler.settings["FEED_STORAGE_S3_ACL"] or None,
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
             region_name=crawler.settings["AWS_REGION_NAME"] or None,
+            max_pool_connections=_get_max_pool_connections(crawler.settings),
             feed_options=feed_options,
         )
 
@@ -454,7 +465,7 @@ class FeedSlot:
         )
 
     def finish_exporting(self) -> None:
-        if self._exporting:
+        if self._exporting:  # pragma: no branch
             assert self.exporter
             self.exporter.finish_exporting()
             self._exporting = False
@@ -542,7 +553,7 @@ class FeedExporter:
         for slot in self.slots:
             self._schedule_slot_close(slot, spider)
 
-        if self._pending_close_tasks:
+        if self._pending_close_tasks:  # pragma: no branch
             if is_asyncio_available():
                 await asyncio.wait(
                     cast("list[asyncio.Task[None]]", list(self._pending_close_tasks))

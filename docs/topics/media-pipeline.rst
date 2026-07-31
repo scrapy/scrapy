@@ -268,6 +268,9 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
     AWS_USE_SSL = False  # or True (None by default)
     AWS_VERIFY = False  # or True (None by default)
 
+To reuse connections for as many files as you check or upload in parallel, set
+:setting:`AWS_MAX_POOL_CONNECTIONS` accordingly.
+
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
 .. _Zenko CloudServer: https://www.zenko.io/cloudserver/

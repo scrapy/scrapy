@@ -770,7 +770,7 @@ crawlers on top of it.
 
 Also, a common pattern is to build an item with data from more than one page,
 using a :ref:`trick to pass additional data to the callbacks
-<topics-request-response-ref-request-callback-arguments>`.
+<callback-data>`.
 
 
 Using spider arguments
