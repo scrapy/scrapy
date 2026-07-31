@@ -1,11 +1,22 @@
-import datetime
-import typing
-import unittest
+from __future__ import annotations
 
-from scrapy.crawler import Crawler
+import datetime
+import json
+import logging
+from typing import TYPE_CHECKING, Any
+
+import pytest
+
+from scrapy.exceptions import NotConfigured
 from scrapy.extensions.periodic_log import PeriodicLog
+from scrapy.utils.test import get_crawler
 
 from .spiders import MetaSpider
+from .utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 stats_dump_1 = {
     "log_count/INFO": 10,
@@ -51,24 +62,22 @@ stats_dump_2 = {
 }
 
 
-class TestExtPeriodicLog(PeriodicLog):
-    def set_a(self):
+class CustomPeriodicLog(PeriodicLog):
+    def set_a(self) -> None:
         self.stats._stats = stats_dump_1
 
-    def set_b(self):
+    def set_b(self) -> None:
         self.stats._stats = stats_dump_2
 
 
-def extension(settings=None):
-    crawler = Crawler(MetaSpider, settings=settings)
-    crawler._apply_settings()
-    return TestExtPeriodicLog.from_crawler(crawler)
+def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
+    crawler = get_crawler(MetaSpider, settings)
+    return CustomPeriodicLog.from_crawler(crawler)
 
 
-class TestPeriodicLog(unittest.TestCase):
+class TestPeriodicLog:
     def test_extension_enabled(self):
-        # Expected that settings for this extension loaded succesfully
-        # And on certain conditions - extension raising NotConfigured
+        # Expected that settings for this extension loaded successfully
 
         # "PERIODIC_LOG_STATS": True -> set to {"enabled": True}
         # due to TypeError exception from settings.getdict
@@ -82,19 +91,32 @@ class TestPeriodicLog(unittest.TestCase):
         assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
         assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
-    def test_log_delta(self):
-        def emulate(settings=None):
+    def test_no_interval(self):
+        with pytest.raises(NotConfigured):
+            extension({"PERIODIC_LOG_STATS": True, "LOGSTATS_INTERVAL": 0})
+
+    def test_nothing_enabled(self):
+        with pytest.raises(NotConfigured):
+            extension({"LOGSTATS_INTERVAL": 60})
+
+    @coroutine_test
+    async def test_log_delta(self):
+        def emulate(
+            settings: dict[str, Any] | None = None,
+        ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
             spider = MetaSpider()
             ext = extension(settings)
             ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_delta()
-            ext.set_a()
+            ext.set_b()
             b = ext.log_delta()
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict, condition: typing.Callable):
+        def check(
+            settings: dict[str, Any], condition: Callable[[str, Any], bool]
+        ) -> None:
             ext, a, b = emulate(settings)
             assert list(a["delta"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
@@ -115,8 +137,10 @@ class TestPeriodicLog(unittest.TestCase):
         # include multiple
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k or "scheduler/" in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" in k or "scheduler/" in k)
+            ),
         )
 
         # exclude
@@ -128,30 +152,39 @@ class TestPeriodicLog(unittest.TestCase):
         # exclude multiple
         check(
             {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/", "scheduler/"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" not in k and "scheduler/" not in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" not in k and "scheduler/" not in k)
+            ),
         )
 
         # include exclude combined
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/"], "exclude": ["bytes"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k and "bytes" not in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" in k and "bytes" not in k)
+            ),
         )
 
-    def test_log_stats(self):
-        def emulate(settings=None):
+    @coroutine_test
+    async def test_log_stats(self):
+        def emulate(
+            settings: dict[str, Any] | None = None,
+        ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
             spider = MetaSpider()
             ext = extension(settings)
             ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_crawler_stats()
-            ext.set_a()
+            ext.set_b()
             b = ext.log_crawler_stats()
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict, condition: typing.Callable):
+        def check(
+            settings: dict[str, Any], condition: Callable[[str, Any], bool]
+        ) -> None:
             ext, a, b = emulate(settings)
             assert list(a["stats"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
@@ -192,4 +225,26 @@ class TestPeriodicLog(unittest.TestCase):
             {"PERIODIC_LOG_STATS": {"include": ["downloader/"], "exclude": ["bytes"]}},
             lambda k, v: "downloader/" in k and "bytes" not in k,
         )
-        #
+
+    @coroutine_test
+    async def test_log_timing(self, caplog: pytest.LogCaptureFixture) -> None:
+        settings = {
+            "EXTENSIONS": {"scrapy.extensions.periodic_log.PeriodicLog": 0},
+            "PERIODIC_LOG_TIMING_ENABLED": True,
+            "LOGSTATS_INTERVAL": 30,
+        }
+        crawler = get_crawler(MetaSpider, settings)
+        with caplog.at_level(logging.INFO, logger="scrapy.extensions.periodic_log"):
+            await crawler.crawl_async()
+
+        records = [
+            r for r in caplog.records if r.name == "scrapy.extensions.periodic_log"
+        ]
+        assert records, "PeriodicLog logged nothing"
+        # Only the timing section is enabled, and it is logged on spider close.
+        data = json.loads(records[-1].getMessage())
+        assert list(data) == ["time"]
+        assert data["time"]["log_interval"] == 30
+        assert data["time"]["log_interval_real"] >= 0
+        assert data["time"]["elapsed"] >= 0
+        assert data["time"]["start_time"] <= data["time"]["utcnow"]

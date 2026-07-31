@@ -17,30 +17,35 @@ spider, without having to run the spider to test every change.
 Once you get familiarized with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
 
+.. _shell-config:
+
 Configuring the shell
 =====================
 
-If you have `IPython`_ installed, the Scrapy shell will use it (instead of the
-standard Python console). The `IPython`_ console is much more powerful and
-provides smart auto-completion and colorized output, among other things.
+With the :ref:`ptpython <extras>` extra, the Scrapy shell will use ptpython_
+instead of the :term:`REPL`. ptpython provides syntax highlighting, smart
+auto-completion, and more.
 
-We highly recommend you install `IPython`_, specially if you're working on
-Unix systems (where `IPython`_ excels). See the `IPython installation guide`_
-for more info.
+Failing that, with the :ref:`ipython <extras>` extra, the Scrapy shell will
+use IPython_ instead. IPython provides smart auto-completion, colorized
+output, and more.
 
-Scrapy also has support for `bpython`_, and will try to use it where `IPython`_
-is unavailable.
+Scrapy also has support for `bpython`_ via the :ref:`bpython <extras>` extra,
+and will try to use it where neither ptpython nor IPython is available.
 
 Through Scrapy's settings you can configure it to use any one of
-``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
-are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
-variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
+``ptpython``, ``ipython``, ``bpython`` or the standard ``python`` shell,
+regardless of which are installed. This is done by setting the
+``SCRAPY_PYTHON_SHELL`` environment variable; or by defining it in your
+:ref:`scrapy.cfg <topics-config-settings>`:
+
+.. code-block:: ini
 
     [settings]
     shell = bpython
 
+.. _ptpython: https://github.com/prompt-toolkit/ptpython
 .. _IPython: https://ipython.org/
-.. _IPython installation guide: https://ipython.org/install.html
 .. _bpython: https://bpython-interpreter.org/
 
 Launch the shell
@@ -111,7 +116,7 @@ Available Shortcuts
     Note, however, that this will create a temporary file in your computer,
     which won't be removed automatically.
 
-.. _<base> tag: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+.. _<base> tag: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/base
 
 Available Scrapy objects
 ------------------------
@@ -142,8 +147,10 @@ Those objects are:
 Example of shell session
 ========================
 
+.. skip: start
+
 Here's an example of a typical shell session where we start by scraping the
-https://scrapy.org page, and then proceed to scrape the https://old.reddit.com/
+https://www.scrapy.org/ page, and then proceed to scrape the https://old.reddit.com/
 page. Finally, we modify the (Reddit) request method to POST and re-fetch it
 getting an error. We end the session by typing Ctrl-D (in Unix systems) or
 Ctrl-Z in Windows.
@@ -232,6 +239,8 @@ After that, we can start playing with the objects:
     'X-Ua-Compatible': ['IE=edge'],
     'X-Xss-Protection': ['1; mode=block']}
 
+.. skip: end
+
 
 .. _topics-shell-inspect-response:
 
@@ -268,6 +277,8 @@ Here's an example of how you would call it from your spider:
 
             # Rest of parsing code.
 
+.. skip: start
+
 When you run the spider, you will get something similar to this::
 
     2014-01-23 17:48:31-0400 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
@@ -300,6 +311,8 @@ crawling::
     >>> ^D
     2014-01-23 17:50:03-0400 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
     ...
+
+.. skip: end
 
 Note that you can't use the ``fetch`` shortcut here since the Scrapy engine is
 blocked by the shell. However, after you leave the shell, the spider will

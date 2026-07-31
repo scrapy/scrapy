@@ -12,10 +12,11 @@ extensions and middlewares.
 Crawler API
 ===========
 
-The main entry point to Scrapy API is the :class:`~scrapy.crawler.Crawler`
-object, passed to extensions through the ``from_crawler`` class method. This
-object provides access to all Scrapy core components, and it's the only way for
-extensions to access them and hook their functionality into Scrapy.
+The main entry point to the Scrapy API is the :class:`~scrapy.crawler.Crawler`
+object, which :ref:`components <topics-components>` can :ref:`get for
+initialization <from-crawler>`. It provides access to all Scrapy core
+components, and it is the only way for components to access them and hook their
+functionality into Scrapy.
 
 .. module:: scrapy.crawler
    :synopsis: The Scrapy crawler
@@ -26,7 +27,9 @@ contains a dictionary of all available extensions and their order similar to
 how you :ref:`configure the downloader middlewares
 <topics-downloader-middleware-setting>`.
 
-.. class:: Crawler(spidercls, settings)
+.. autoclass:: Crawler
+    :members: get_addon, get_downloader_middleware, get_extension,
+        get_item_pipeline, get_spider_middleware
 
     The Crawler object must be instantiated with a
     :class:`scrapy.Spider` subclass and a
@@ -89,18 +92,24 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(*args, **kwargs)
+    .. automethod:: crawl_async
 
-        Starts the crawler by instantiating its spider class with the given
-        ``args`` and ``kwargs`` arguments, while setting the execution engine in
-        motion. Should be called only once.
+    .. automethod:: crawl
 
-        Returns a deferred that is fired when the crawl is finished.
+    .. automethod:: stop_async
 
     .. automethod:: stop
 
+.. autoclass:: AsyncCrawlerRunner
+   :members:
+
 .. autoclass:: CrawlerRunner
    :members:
+
+.. autoclass:: AsyncCrawlerProcess
+   :show-inheritance:
+   :members:
+   :inherited-members:
 
 .. autoclass:: CrawlerProcess
    :show-inheritance:
@@ -156,46 +165,17 @@ SpiderLoader API
 .. module:: scrapy.spiderloader
    :synopsis: The spider loader
 
-.. class:: SpiderLoader
+Custom spider loaders can be employed by specifying their path in the
+:setting:`SPIDER_LOADER_CLASS` project setting. They must implement
+:class:`SpiderLoaderProtocol`.
 
-    This class is in charge of retrieving and handling the spider classes
-    defined across the project.
+.. autoclass:: SpiderLoaderProtocol
+    :members:
 
-    Custom spider loaders can be employed by specifying their path in the
-    :setting:`SPIDER_LOADER_CLASS` project setting. They must fully implement
-    the :class:`scrapy.interfaces.ISpiderLoader` interface to guarantee an
-    errorless execution.
+.. autoclass:: SpiderLoader
+    :members:
 
-    .. method:: from_settings(settings)
-
-       This class method is used by Scrapy to create an instance of the class.
-       It's called with the current project settings, and it loads the spiders
-       found recursively in the modules of the :setting:`SPIDER_MODULES`
-       setting.
-
-       :param settings: project settings
-       :type settings: :class:`~scrapy.settings.Settings` instance
-
-    .. method:: load(spider_name)
-
-       Get the Spider class with the given name. It'll look into the previously
-       loaded spiders for a spider class with name ``spider_name`` and will raise
-       a KeyError if not found.
-
-       :param spider_name: spider class name
-       :type spider_name: str
-
-    .. method:: list()
-
-       Get the names of the available spiders in the project.
-
-    .. method:: find_by_request(request)
-
-       List the spiders' names that can handle the given request. Will try to
-       match the request's url against the domains of the spiders.
-
-       :param request: queried request
-       :type request: :class:`~scrapy.Request` instance
+.. autoclass:: DummySpiderLoader
 
 .. _topics-api-signals:
 
@@ -262,24 +242,17 @@ class (which they all inherit from).
     The following methods are not part of the stats collection api but instead
     used when implementing custom stats collectors:
 
-    .. method:: open_spider(spider)
+    .. method:: open_spider()
 
-        Open the given spider for stats collection.
+        Open the spider for stats collection.
 
-    .. method:: close_spider(spider)
+    .. method:: close_spider()
 
-        Close the given spider. After this is called, no more specific stats
+        Close the spider. After this is called, no more specific stats
         can be accessed or collected.
 
+Engine API
+==========
 
-.. _engine:
-
-ExecutionEngine API
-===================
-
-.. module:: scrapy.core.engine
-   :synopsis: Execution engine
-
-.. autoclass:: ExecutionEngine
-
-    .. automethod:: close_spider
+.. autoclass:: scrapy.core.engine.ExecutionEngine()
+   :members: close_spider_async, needs_backout

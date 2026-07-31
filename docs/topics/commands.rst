@@ -6,7 +6,7 @@
 Command line tool
 =================
 
-Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
+Scrapy is controlled through the ``scrapy`` command-line tool, to be referred to
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
 just call "commands" or "Scrapy commands".
 
@@ -114,8 +114,8 @@ some usage help and the available commands::
       scrapy <command> [options] [args]
 
     Available commands:
-      crawl         Run a spider
       fetch         Fetch a URL using the Scrapy downloader
+      runspider     Run a spider from a Python file, no project required
     [...]
 
 The first line will print the currently active project if you're inside a
@@ -163,8 +163,8 @@ information on which commands must be run from inside projects, and which not.
 
 Also keep in mind that some commands may have slightly different behaviours
 when running them from inside projects. For example, the fetch command will use
-spider-overridden behaviours (such as the ``user_agent`` attribute to override
-the user-agent) if the url being fetched is associated with some specific
+spider-overridden behaviours (such as the ``custom_settings`` attribute to
+override settings) if the url being fetched is associated with some specific
 spider. This is intentional, as the ``fetch`` command is meant to be used to
 check how spiders are downloading pages.
 
@@ -185,8 +185,8 @@ And you can see all available commands with::
 
 There are two kinds of commands, those that only work from inside a Scrapy
 project (Project-specific commands) and those that also work without an active
-Scrapy project (Global commands), though they may behave slightly different
-when running from inside a project (as they would use the project overridden
+Scrapy project (Global commands), though they may behave slightly differently
+when run from inside a project (as they would use the project overridden
 settings).
 
 Global commands:
@@ -199,6 +199,7 @@ Global commands:
 * :command:`fetch`
 * :command:`view`
 * :command:`version`
+* :command:`bench`
 
 Project-only commands:
 
@@ -207,7 +208,6 @@ Project-only commands:
 * :command:`list`
 * :command:`edit`
 * :command:`parse`
-* :command:`bench`
 
 .. command:: startproject
 
@@ -233,10 +233,7 @@ genspider
 * Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
 
-.. versionadded:: 2.6.0
-   The ability to pass a URL instead of a domain.
-
-Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+Creates a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
 Usage example::
 
@@ -253,7 +250,7 @@ Usage example::
     $ scrapy genspider -t crawl scrapyorg scrapy.org
     Created spider 'scrapyorg' using template 'crawl'
 
-This is just a convenience shortcut command for creating spiders based on
+This is just a convenient shortcut command for creating spiders based on
 pre-defined templates, but certainly not the only way to create spiders. You
 can just create the spider source code files yourself, instead of using this
 command.
@@ -266,7 +263,9 @@ crawl
 * Syntax: ``scrapy crawl <spider>``
 * Requires project: *yes*
 
-Start crawling using a spider.
+Start crawling using the spider with the given :attr:`~scrapy.Spider.name`,
+which must be one of those that :command:`list` reports. To run a spider from a
+file instead, use :command:`runspider`.
 
 Supported options:
 
@@ -274,11 +273,9 @@ Supported options:
 
 * ``-a NAME=VALUE``: set a spider argument (may be repeated)
 
-* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout), to define format set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
+* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout). To define the output format, set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
 
-* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file, to define format set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
-
-* ``--output-format FORMAT`` or ``-t FORMAT``: deprecated way to define format to use for dumping items, does not work in combination with ``-O``
+* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file. To define the output format, set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
 
 Usage examples::
 
@@ -290,9 +287,6 @@ Usage examples::
 
     $ scrapy crawl -O myfile:json myspider
     [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
-
-    $ scrapy crawl -o myfile -t csv myspider
-    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
 .. command:: check
 
@@ -317,11 +311,25 @@ Usage examples::
       * parse_item
 
     $ scrapy check
-    [FAILED] first_spider:parse_item
-    >>> 'RetailPricex' field is missing
+    F.F.
+    ======================================================================
+    FAIL: [first_spider] parse (@returns post-hook)
+    ----------------------------------------------------------------------
+    Traceback (most recent call last):
+      ...
+    scrapy.exceptions.ContractFail: Returned 92 requests, expected 0..4
 
-    [FAILED] first_spider:parse
-    >>> Returned 92 requests, expected 0..4
+    ======================================================================
+    FAIL: [first_spider] parse_item (@scrapes post-hook)
+    ----------------------------------------------------------------------
+    Traceback (most recent call last):
+      ...
+    scrapy.exceptions.ContractFail: Missing fields: RetailPricex
+
+    ----------------------------------------------------------------------
+    Ran 4 contracts in 0.174s
+
+    FAILED (failures=2)
 
 .. skip: end
 
@@ -353,7 +361,7 @@ edit
 Edit the given spider using the editor defined in the ``EDITOR`` environment
 variable or (if unset) the :setting:`EDITOR` setting.
 
-This command is provided only as a convenience shortcut for the most common
+This command is provided only as a convenient shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
 debug spiders.
 
@@ -372,7 +380,7 @@ fetch
 Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
-The interesting thing about this command is that it fetches the page how the
+The interesting thing about this command is that it fetches the page the way the
 spider would download it. For example, if the spider has a ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 
@@ -385,7 +393,7 @@ Supported options:
 
 * ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
 
-* ``--headers``: print the response's HTTP headers instead of the response's body
+* ``--headers``: print the request's and response's HTTP headers instead of the response's body
 
 * ``--no-redirect``: do not follow HTTP 3xx redirects (default is to follow them)
 
@@ -395,15 +403,19 @@ Usage examples::
     [ ... html content here ... ]
 
     $ scrapy fetch --nolog --headers http://www.example.com/
-    {'Accept-Ranges': ['bytes'],
-     'Age': ['1263   '],
-     'Connection': ['close     '],
-     'Content-Length': ['596'],
-     'Content-Type': ['text/html; charset=UTF-8'],
-     'Date': ['Wed, 18 Aug 2010 23:59:46 GMT'],
-     'Etag': ['"573c1-254-48c9c87349680"'],
-     'Last-Modified': ['Fri, 30 Jul 2010 15:30:18 GMT'],
-     'Server': ['Apache/2.2.3 (CentOS)']}
+    > Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+    > Accept-Language: en
+    > User-Agent: Scrapy/2.16.0 (+https://scrapy.org)
+    > Accept-Encoding: gzip, deflate, br
+    >
+    < Date: Wed, 08 Jul 2026 06:15:01 GMT
+    < Content-Type: text/html
+    < Server: cloudflare
+    < Last-Modified: Wed, 01 Jul 2026 17:50:18 GMT
+    < Allow: GET, HEAD
+    < Cf-Cache-Status: HIT
+    < Age: 8184
+    < Cf-Ray: a17cf3b80eddf141-DME
 
 .. command:: view
 
@@ -484,7 +496,7 @@ Supported options:
 
 * ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
 
-* ``--a NAME=VALUE``: set spider argument (may be repeated)
+* ``-a NAME=VALUE``: set spider argument (may be repeated)
 
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
@@ -513,8 +525,6 @@ Supported options:
 * ``--verbose`` or ``-v``: display information for each depth level
 
 * ``--output`` or ``-o``: dump scraped items to a file
-
-  .. versionadded:: 2.3
 
 .. skip: start
 
@@ -563,8 +573,9 @@ runspider
 * Syntax: ``scrapy runspider <spider_file.py>``
 * Requires project: *no*
 
-Run a spider self-contained in a Python file, without having to create a
-project.
+Run the spider defined in the given Python file, without requiring a project.
+
+Supported options: the same as :command:`crawl`.
 
 Example usage::
 
@@ -592,6 +603,47 @@ bench
 
 Run a quick benchmark test. :ref:`benchmarking`.
 
+.. _topics-commands-crawlerprocess:
+
+Commands that run a crawl
+=========================
+
+Many commands need to run a crawl of some kind, running either a user-provided
+spider or a special internal one:
+
+* :command:`bench`
+* :command:`check`
+* :command:`crawl`
+* :command:`fetch`
+* :command:`parse`
+* :command:`runspider`
+* :command:`shell`
+* :command:`view`
+
+They use an internal instance of :class:`scrapy.crawler.AsyncCrawlerProcess` or
+:class:`scrapy.crawler.CrawlerProcess` for this. In most cases this detail
+shouldn't matter to the user running the command, but when the user :ref:`needs
+a non-default Twisted reactor <disable-asyncio>`, it may be important.
+
+Scrapy decides which of these two classes to use based on the value of the
+:setting:`TWISTED_REACTOR` and :setting:`TWISTED_REACTOR_ENABLED` settings.
+With :setting:`TWISTED_REACTOR_ENABLED` set to ``False`` it will use
+:class:`~scrapy.crawler.AsyncCrawlerProcess`. Otherwise, if the
+:setting:`TWISTED_REACTOR` value is the default one
+(``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``),
+:class:`~scrapy.crawler.AsyncCrawlerProcess` will be used, otherwise
+:class:`~scrapy.crawler.CrawlerProcess` will be used. The :ref:`spider settings
+<spider-settings>` are not taken into account when doing this, as they are
+loaded after this decision is made. This may cause an error if the
+project-level setting is set to :ref:`the asyncio reactor <install-asyncio>`
+(:ref:`explicitly <project-settings>` or :ref:`by using the Scrapy default
+<default-settings>`) and :ref:`the setting of the spider being run
+<spider-settings>` is set to :ref:`a different one <disable-asyncio>`, because
+:class:`~scrapy.crawler.AsyncCrawlerProcess` only supports the asyncio reactor.
+In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
+``True`` (at the project level or via the command line) so that Scrapy uses
+:class:`~scrapy.crawler.CrawlerProcess` which supports all reactors.
+
 Custom project commands
 =======================
 
@@ -615,6 +667,8 @@ Example:
 .. code-block:: python
 
     COMMANDS_MODULE = "mybot.commands"
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 
