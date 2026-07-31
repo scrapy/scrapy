@@ -463,15 +463,6 @@ _STAMPED_SLOT_META_KEY = "_throttler_stamped_download_slot"
 _DELAY_DEADLINE_META_KEY = "_throttler_delay_deadline"
 
 
-def _set_request_delay(request: Request, delay: float) -> None:
-    """Hold *request* back for *delay* seconds through the :reqmeta:`delay` meta
-    key, dropping the state of any delay it inherited from the request it
-    derives from (e.g. through :meth:`Request.replace() <scrapy.Request.replace>`,
-    which copies ``meta``)."""
-    request.meta["delay"] = delay
-    request.meta.pop(_DELAY_DEADLINE_META_KEY, None)
-
-
 def _mark_request_delayed(request: Request) -> None:
     """Record that the :reqmeta:`delay` of *request* has been honored, so that it
     is not delayed again, e.g. on resuming a crawl."""

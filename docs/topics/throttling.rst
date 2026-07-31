@@ -190,11 +190,6 @@ respected automatically during :ref:`backoff <backoff>`: the scope's next
 request is held back until the indicated time (capped at
 :setting:`BACKOFF_MAX_DELAY`), on top of the usual exponential backoff step.
 
-A ``Retry-After`` header on a redirect response instead delays only the redirect
-itself, through its :reqmeta:`delay` request metadata key, leaving the rest of
-the scope unaffected. See
-:class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware`.
-
 .. _delay-scope:
 
 Delaying a scope programmatically
