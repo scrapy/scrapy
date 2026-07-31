@@ -14,7 +14,8 @@ from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
 from w3lib import __version__ as w3lib_version
 
-from tests.utils import async_sleep, get_script_run_env
+from scrapy.utils.asyncio import sleep
+from tests.utils import get_script_run_env
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -248,7 +249,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
-        await async_sleep(0.01)
+        await sleep(0.01)
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
         p.wait()  # type: ignore[no-untyped-call]
