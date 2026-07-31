@@ -93,8 +93,7 @@ def test_get_shell_embed_func_default():
 class TestIPythonShell:
     """Starting an IPython shell, with and without an asyncio event loop already
     running in the calling thread. The latter happens when inspect_response() is
-    called from a spider callback while using the asyncio reactor.
-    See https://github.com/scrapy/scrapy/issues/5447"""
+    called from a spider callback while using the asyncio reactor."""
 
     @staticmethod
     def _env(tmp_path: Path) -> dict[str, str]:
@@ -117,7 +116,7 @@ class TestIPythonShell:
             stdin=subprocess.DEVNULL,
         )
         output = p.stdout + p.stderr
-        assert "SHELL-READY" in output, output
+        assert "SHELL-READY" in output
         assert p.returncode == 0, output
 
     @pytest.mark.skipif(
@@ -156,7 +155,7 @@ class TestIPythonShell:
         finally:
             p.close()
         output = logfile.getvalue().decode()
-        assert "Traceback" not in output, output
+        assert "Traceback" not in output
         assert p.exitstatus == 0, output
 
 
