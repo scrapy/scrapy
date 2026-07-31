@@ -513,7 +513,7 @@ run:
 Because :setting:`SPIDER_MODULES` is a list setting, you can include multiple
 modules by separating them with commas.
 
-.. _crawl-optimization:
+.. _crawl-bottlenecks:
 
 Identifying crawl bottlenecks
 =============================

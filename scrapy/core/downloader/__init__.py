@@ -6,9 +6,8 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from logging import getLogger
-from time import monotonic, time
+from time import monotonic
 from typing import TYPE_CHECKING, Any
-from warnings import warn
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -16,7 +15,6 @@ from twisted.python.failure import Failure
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -47,7 +45,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-@dataclass(slots=True, eq=False, repr=False)
+@dataclass(slots=True, eq=False)
 class Slot:
     """Downloader slot"""
 
@@ -55,20 +53,13 @@ class Slot:
     delay: float
     randomize_delay: bool
 
-    active: set[Request] = field(default_factory=set, init=False)
+    active: set[Request] = field(default_factory=set, init=False, repr=False)
     queue: deque[tuple[Request, Deferred[Response]]] = field(
-        default_factory=deque, init=False
+        default_factory=deque, init=False, repr=False
     )
-    transferring: set[Request] = field(default_factory=set, init=False)
-    lastseen: float = field(default=0, init=False)
-    latercall: CallLaterResult | None = field(default=None, init=False)
-
-    def __repr__(self) -> str:
-        return (
-            f"Slot(concurrency={self.concurrency!r}, "
-            f"delay={self.delay:.2f}, "
-            f"randomize_delay={self.randomize_delay!r})"
-        )
+    transferring: set[Request] = field(default_factory=set, init=False, repr=False)
+    lastseen: float = field(default=0, init=False, repr=False)
+    latercall: CallLaterResult | None = field(default=None, init=False, repr=False)
 
     def free_transfer_slots(self) -> int:
         return self.concurrency - len(self.transferring)
@@ -112,6 +103,7 @@ def _get_concurrency_delay(
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
     _SLOT_GC_INTERVAL: float = 60.0  # seconds
+    _GC_INTERVAL: float = 1.0  # seconds
 
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
@@ -137,45 +129,8 @@ class Downloader:
         # (reason, start_time): current backout reason and when it began, or
         # (None, None) if not backing out.
         self._last_backout: tuple[str | None, float | None] = (None, None)
-
-        deprecated_setting_priority = self.settings.getpriority(
-            "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
-        )
-        assert deprecated_setting_priority is not None
-        setting_priority = self.settings.getpriority("RESPONSE_MAX_ACTIVE_SIZE")
-        assert setting_priority is not None
-        if deprecated_setting_priority > 0:
-            if setting_priority >= deprecated_setting_priority:
-                warn(
-                    (
-                        "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated "
-                        "and is being ignored because RESPONSE_MAX_ACTIVE_SIZE is "
-                        "set with an equal or higher priority. Remove "
-                        "SCRAPER_SLOT_MAX_ACTIVE_SIZE from your settings."
-                    ),
-                    ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-                self._response_max_active_size = self.settings.getint(
-                    "RESPONSE_MAX_ACTIVE_SIZE"
-                )
-            else:
-                warn(
-                    (
-                        "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, "
-                        "use RESPONSE_MAX_ACTIVE_SIZE instead."
-                    ),
-                    ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-                self._response_max_active_size = self.settings.getint(
-                    "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
-                )
-        else:
-            self._response_max_active_size = self.settings.getint(
-                "RESPONSE_MAX_ACTIVE_SIZE"
-            )
-        self._response_max_active_size_warned = False
+        self._max_active_size_warned = False
+        self._last_gc: float = 0
 
     @inlineCallbacks
     @_warn_spider_arg
@@ -183,7 +138,7 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
-        rough_size = self.middleware._count_rough_size(request)
+        self.middleware._count_rough_size(request)
         try:
             result: Response | Request = yield (
                 deferred_from_coro(
@@ -193,13 +148,13 @@ class Downloader:
             return result
         finally:
             self.active.remove(request)
-            self.middleware._discount_rough_size(rough_size)
+            self.middleware._discount_rough_size(request)
 
     def _record_backout(self, reason: str | None) -> None:
         last_reason, last_reason_start_time = self._last_backout
         if last_reason == reason:
             return
-        current_time = time()
+        current_time = monotonic()
         if last_reason is not None and self._stats is not None:
             assert last_reason_start_time is not None
             last_reason_seconds = current_time - last_reason_start_time
@@ -214,38 +169,27 @@ class Downloader:
         if 0 < self.total_concurrency <= len(self.active):
             self._record_backout("concurrency")
             return True
-        if (
-            self._response_max_active_size
-            and self.middleware.total_active_size >= self._response_max_active_size
-        ):
-            if not self._response_max_active_size_warned:
-                self._response_max_active_size_warned = True
+        max_active_size = self.middleware._max_active_size
+        if max_active_size and self.middleware._total_active_size >= max_active_size:
+            if not self._max_active_size_warned:
+                self._max_active_size_warned = True
                 logger.info(
-                    f"The active response size, i.e. the total size of all "
-                    f"bodies from responses that have been processed by "
-                    f"downloader middlewares and remain in memory, plus the "
-                    f"rough sizes of in-flight requests, is "
-                    f"{self.middleware.total_active_size} B. The "
-                    f"RESPONSE_MAX_ACTIVE_SIZE setting sets its maximum value "
-                    f"at {self._response_max_active_size} B. No more requests "
-                    f"will be processed until active response size lowers. If "
-                    f"your memory allows it, you may increase "
-                    f"RESPONSE_MAX_ACTIVE_SIZE, which should increase your "
-                    f"crawl speed. If your code keeps non-weak references to "
-                    f"Response objects, e.g. in (scheduled) requests or in a "
-                    f"container within a component, your crawl might get "
-                    f"stuck indefinitely; you can set "
-                    f"RESPONSE_MAX_ACTIVE_SIZE to 0 to disable this limit, "
-                    f"but then your code might run out of memory. This "
-                    f"message will only appear the first time this happens. "
-                    f"To learn how often request processing has been paused "
-                    f"during a crawl for this reason, see the "
-                    f"request_backout_seconds/response_max_active_size stat."
+                    f"Pausing request processing: the active response size "
+                    f"({self.middleware._total_active_size} B) has reached "
+                    f"RESPONSE_MAX_ACTIVE_SIZE ({max_active_size} B). See "
+                    f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
+                    f"and the request_backout_seconds/response_max_active_size "
+                    f"stat. This message is only logged once."
                 )
             self._record_backout("response_max_active_size")
-            # Force the garbage collection of response objects. Necessary for
-            # PyPy, which is lazier when it comes to garbage collection.
-            gc.collect()
+            # Responses are only freed once nothing references them, which for
+            # reference cycles, and for every response on PyPy, requires a
+            # garbage collection. A full collection is expensive, and this runs
+            # once per request while paused, hence the interval.
+            current_time = monotonic()
+            if current_time - self._last_gc >= self._GC_INTERVAL:
+                self._last_gc = current_time
+                gc.collect()
             return True
         self._record_backout(None)
         return False

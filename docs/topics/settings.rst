@@ -1828,34 +1828,23 @@ This counts both the size of response bodies that have passed through
 memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
 currently being downloaded.
 
-When the total exceeds this value, Scrapy pauses sending new requests to the
-downloader until it drops below the limit.
+While the total is above this value, Scrapy pauses sending new requests to the
+downloader. A higher value improves crawl speed at the cost of memory usage.
+``0`` disables the limit.
 
-If you set this to ``0``, the limit is disabled.
-
-Setting this to a lower value reduces memory usage at the cost of crawl speed.
-Setting this to a higher value (or disabling it) improves crawl speed but may
-cause memory issues when responses are large.
-
-When the limit is first reached, Scrapy logs an info-level message explaining
-the situation. Check the ``request_backout_seconds/response_max_active_size``
-stat to see how long request processing has been paused due to this limit over
-the course of a crawl.
+Scrapy logs an info-level message the first time the limit is reached. To see
+how long request processing was paused because of it over a whole crawl, check
+the ``request_backout_seconds/response_max_active_size`` stat.
 
 .. caution::
 
-    If your code stores strong references to :class:`~scrapy.http.Response`
-    objects (e.g. in a scheduled request's meta or in a component attribute),
-    the garbage collector cannot free them, and the total active size may not
-    drop below the limit. In that case your crawl might get stuck indefinitely.
-    Either avoid storing such references, or set this to ``0`` to disable the
-    limit.
-
-    To check whether your crawl is stuck due to this, connect to the
-    :ref:`telnet console <topics-telnetconsole>` and run ``prefs()`` to see
-    the count of live :class:`~scrapy.http.Response` objects. If that count
-    is large and not decreasing, you likely have strong response references.
-    See :ref:`topics-leaks` for details.
+    Responses that your code keeps a strong reference to, e.g. in the
+    :attr:`.Request.meta` of a scheduled request or in a component
+    attribute, count toward this limit until that reference is gone, so
+    accumulating them can pause a crawl indefinitely. To find out, run
+    ``prefs()`` on the :ref:`telnet console <topics-telnetconsole>` and see
+    whether the count of live :class:`~scrapy.http.Response` objects keeps
+    growing; see :ref:`topics-leaks`.
 
 .. versionadded:: VERSION
 
@@ -1864,18 +1853,14 @@ the course of a crawl.
 RESPONSE_ROUGH_SIZE
 -------------------
 
-Default: ``131072`` (128 kiB)
+Default: ``None``
 
 Estimated size (in bytes) to count toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`
-for each request that is currently being downloaded, before its actual response
-size is known.
+for each request being downloaded, whose actual response size is not known yet.
 
-This allows :setting:`RESPONSE_MAX_ACTIVE_SIZE` to provide backpressure based
-on the number of concurrent in-flight requests, not just already-received
-responses. Once the response arrives, its actual body size is counted instead.
-
-You can override this value on a per-request basis via the
-:reqmeta:`response_rough_size` request meta key.
+``None`` means a quarter of :setting:`RESPONSE_MAX_ACTIVE_SIZE` split among
+:setting:`CONCURRENT_REQUESTS` requests, so that requests being downloaded
+cannot use up the whole limit on their own. ``0`` counts only responses.
 
 .. versionadded:: VERSION
 

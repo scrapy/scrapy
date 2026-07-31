@@ -13,7 +13,6 @@ from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
-from scrapy._classutilities import ClassPropertiesMixin, classproperty
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import (
     CloseSpider,
@@ -59,33 +58,45 @@ QueueTuple: TypeAlias = tuple[Response | Failure, Request, Deferred[None]]
 _UNSET = object()
 
 
-class Slot(ClassPropertiesMixin):
+def _warn_min_response_size() -> None:
+    warnings.warn(
+        "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
+        ScrapyDeprecationWarning,
+        stacklevel=3,
+    )
+
+
+class _MinResponseSize:
+    """Deprecated alias of ``_MIN_RESPONSE_SIZE``, readable and writable both on
+    the class and on its instances."""
+
+    def __get__(self, instance: Slot | None, owner: type[Slot] | None = None) -> int:
+        _warn_min_response_size()
+        target = instance if instance is not None else owner
+        assert target is not None
+        return target._MIN_RESPONSE_SIZE
+
+    def __set__(self, instance: Slot, value: int) -> None:
+        _warn_min_response_size()
+        instance._MIN_RESPONSE_SIZE = value
+
+
+class _SlotMeta(type):
+    # Class-level assignment bypasses the _MinResponseSize descriptor.
+    def __setattr__(cls, name: str, value: Any) -> None:
+        if name == "MIN_RESPONSE_SIZE":
+            _warn_min_response_size()
+            name = "_MIN_RESPONSE_SIZE"
+        super().__setattr__(name, value)
+
+
+class Slot(metaclass=_SlotMeta):
     """Scraper slot (one per running spider)"""
 
     _MIN_RESPONSE_SIZE = 1024
-
-    @classmethod
-    def _get_min_response_size(cls) -> int:
-        warnings.warn(
-            "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return cls._MIN_RESPONSE_SIZE
-
-    @classmethod
-    def _set_min_response_size(cls, value: int) -> None:
-        warnings.warn(
-            "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        cls._MIN_RESPONSE_SIZE = value
-
-    # Typed as Any because mypy does not understand class properties.
-    MIN_RESPONSE_SIZE: Any = classproperty(_get_min_response_size).setter(
-        _set_min_response_size
-    )
+    # Any so that mypy allows class-level assignment, which _SlotMeta redirects
+    # to _MIN_RESPONSE_SIZE.
+    MIN_RESPONSE_SIZE: Any = _MinResponseSize()
 
     def __init__(self, max_active_size: Any = _UNSET):
         if max_active_size is _UNSET:
@@ -111,9 +122,10 @@ class Slot(ClassPropertiesMixin):
     def active_size(self) -> int:
         warnings.warn(
             (
-                "scrapy.core.scraper.Slot.active_size is deprecated. Read "
-                "scrapy.core.downloader.DownloaderMiddlewareManager.response_active_size "
-                "instead."
+                "scrapy.core.scraper.Slot.active_size is deprecated. The size "
+                "of responses in memory is now tracked by the downloader, and "
+                "no longer has a public API. If you have a use case for one, "
+                "please open a GitHub issue."
             ),
             ScrapyDeprecationWarning,
             stacklevel=2,
@@ -124,14 +136,8 @@ class Slot(ClassPropertiesMixin):
     def active_size(self, value: int) -> None:
         warnings.warn(
             (
-                "scrapy.core.scraper.Slot.active_size is deprecated. "
-                "scrapy.core.downloader.DownloaderMiddlewareManager.response_active_size "
-                "might work as a replacement, but modifying that attribute "
-                "might not be a good idea. If you have a use case for it, you "
-                "might want to bring it up in a GitHub issue, to discuss with "
-                "Scrapy developers if there is a better approach, or some "
-                "change we could implement in Scrapy to improve support for "
-                "your use case."
+                "scrapy.core.scraper.Slot.active_size is deprecated, and "
+                "setting it no longer has any effect on request processing."
             ),
             ScrapyDeprecationWarning,
             stacklevel=2,

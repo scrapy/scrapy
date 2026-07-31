@@ -5,18 +5,31 @@ import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider
-from scrapy.core.downloader import Slot
+from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
+from scrapy.utils.asyncio import sleep
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
 
-class TestSlot:
-    def test_repr(self):
-        slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
+def _count_backout_logs(caplog: pytest.LogCaptureFixture) -> int:
+    return sum(
+        1
+        for record in caplog.records
+        if record.levelname == "INFO"
+        and str(record.msg).startswith("Pausing request processing")
+    )
+
+
+def _backout_stats(crawler: Crawler) -> dict[str, Any]:
+    assert crawler.stats
+    return {
+        k: v
+        for k, v in crawler.stats.get_stats().items()
+        if k.startswith("request_backout_seconds/")
+    }
 
 
 class OfflineSpider(Spider):
@@ -83,7 +96,7 @@ class TestResponseMaxActiveSize:
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine
-        assert crawler.engine.downloader._response_max_active_size == 5_000_000
+        assert crawler.engine.downloader.middleware._max_active_size == 5_000_000
 
     @coroutine_test
     async def test_custom(self):
@@ -96,7 +109,7 @@ class TestResponseMaxActiveSize:
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine
-        assert crawler.engine.downloader._response_max_active_size == 0
+        assert crawler.engine.downloader.middleware._max_active_size == 0
 
     @coroutine_test
     async def test_deprecated_default(self):
@@ -108,7 +121,7 @@ class TestResponseMaxActiveSize:
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine
-        assert crawler.engine.downloader._response_max_active_size == 5_000_000
+        assert crawler.engine.downloader.middleware._max_active_size == 5_000_000
         _assert_scraper_slot_deprecation(warning_messages)
 
     @coroutine_test
@@ -122,7 +135,7 @@ class TestResponseMaxActiveSize:
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine
-        assert crawler.engine.downloader._response_max_active_size == 0
+        assert crawler.engine.downloader.middleware._max_active_size == 0
         _assert_scraper_slot_deprecation(warning_messages)
 
     @coroutine_test
@@ -142,7 +155,7 @@ class TestResponseMaxActiveSize:
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine
-        assert crawler.engine.downloader._response_max_active_size == 1
+        assert crawler.engine.downloader.middleware._max_active_size == 1
         _assert_scraper_slot_deprecation(warning_messages, ignored=True)
 
     @coroutine_test
@@ -169,7 +182,7 @@ class TestResponseMaxActiveSize:
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine
-        assert crawler.engine.downloader._response_max_active_size == 2
+        assert crawler.engine.downloader.middleware._max_active_size == 2
         _assert_scraper_slot_deprecation(warning_messages)
 
 
@@ -178,70 +191,86 @@ class TestResponseRoughSize:
     def use_caplog(self, caplog):
         self.caplog = caplog
 
+    @pytest.mark.parametrize(
+        ("settings_dict", "expected"),
+        [
+            # A quarter of RESPONSE_MAX_ACTIVE_SIZE split among
+            # CONCURRENT_REQUESTS requests.
+            ({}, 78125),
+            ({"CONCURRENT_REQUESTS": 100}, 12500),
+            ({"RESPONSE_MAX_ACTIVE_SIZE": 8_000_000}, 125_000),
+            # Unlimited concurrency leaves no number of requests to split it
+            # among.
+            ({"CONCURRENT_REQUESTS": 0}, 0),
+            ({"RESPONSE_MAX_ACTIVE_SIZE": 0}, 0),
+            ({"RESPONSE_ROUGH_SIZE": 1}, 1),
+            ({"RESPONSE_ROUGH_SIZE": 0}, 0),
+        ],
+    )
     @coroutine_test
-    async def test_default(self):
-        crawler = get_crawler(OfflineSpider)
+    async def test_value(self, settings_dict, expected):
+        crawler = get_crawler(OfflineSpider, settings_dict=settings_dict)
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.engine
-        assert crawler.engine.downloader.middleware._response_rough_size == 131072
+        assert crawler.engine.downloader.middleware._response_rough_size == expected
 
     @coroutine_test
-    async def test_custom(self):
-        """Setting RESPONSE_ROUGH_SIZE to a custom value changes the rough size."""
-        crawler = get_crawler(OfflineSpider, settings_dict={"RESPONSE_ROUGH_SIZE": 0})
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", ScrapyDeprecationWarning)
-            await maybe_deferred_to_future(crawler.crawl())
-        assert crawler.engine
-        assert crawler.engine.downloader.middleware._response_rough_size == 0
+    async def test_response_replaces_rough_size(self):
+        """The rough size of a request stops counting as soon as the size of its
+        response is known."""
+        sizes: list[tuple[int, int]] = []
 
-    @coroutine_test
-    async def test_rough_size_per_request(self):
-        """response_rough_size meta key overrides RESPONSE_ROUGH_SIZE per request.
+        class DownloaderMiddleware:
+            def __init__(self, crawler):
+                self.crawler = crawler
 
-        A low RESPONSE_MAX_ACTIVE_SIZE is set so that only requests with the
-        custom rough size of 1 pass; without the override the default 131072
-        would trigger backout and only one request would be downloaded."""
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls(crawler)
+
+            def process_response(self, request, response):
+                middleware = self.crawler.engine.downloader.middleware
+                sizes.append(
+                    (middleware._rough_active_size, middleware._response_active_size)
+                )
+                return response
 
         class TestSpider(Spider):
             name = "test"
+            start_urls = ["data:,a"]
             custom_settings = {
-                "RESPONSE_MAX_ACTIVE_SIZE": 512,
+                "DOWNLOADER_MIDDLEWARES": {DownloaderMiddleware: 0},
             }
-
-            async def start(self):
-                yield Request("data:,a", meta={"response_rough_size": 1})
-                yield Request("data:,b")
 
             def parse(self, response):
                 pass
 
         crawler = get_crawler(TestSpider)
-        self.caplog.clear()
-        with self.caplog.at_level("INFO"):
-            await maybe_deferred_to_future(crawler.crawl())
+        await maybe_deferred_to_future(crawler.crawl())
 
-        active_size_log_count = sum(
-            1
-            for r in self.caplog.records
-            if str(r.msg).startswith("The active response size")
-            and r.levelname == "INFO"
-        )
-        assert active_size_log_count == 1
+        assert sizes == [(0, 1)]
+        assert crawler.engine
+        assert crawler.engine.downloader.middleware._rough_sizes == {}
 
     @coroutine_test
     async def test_rough_size_triggers_backout(self):
-        """Rough sizes of in-flight requests count toward the backpressure limit.
+        """Rough sizes of requests being downloaded count toward the limit, even
+        if their responses turn out to be empty."""
 
-        With RESPONSE_MAX_ACTIVE_SIZE=512 and RESPONSE_ROUGH_SIZE=1024, even a
-        response with an empty body should trigger the backout log."""
+        class SlowDown:
+            """Keeps requests in flight long enough for the engine to check for
+            backout while their rough size is being counted."""
+
+            async def process_request(self, request):
+                await sleep(0.01)
 
         class TestSpider(Spider):
             name = "test"
             start_urls = ["data:,", "data:,"]
             custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {SlowDown: 0},
                 "RESPONSE_MAX_ACTIVE_SIZE": 512,
                 "RESPONSE_ROUGH_SIZE": 1024,
             }
@@ -254,26 +283,13 @@ class TestResponseRoughSize:
         with self.caplog.at_level("INFO"):
             await maybe_deferred_to_future(crawler.crawl())
 
-        matching_log_count = 0
-        for log_record in self.caplog.records:
-            if (
-                str(log_record.msg).startswith("The active response size")
-                and log_record.levelname == "INFO"
-            ):
-                matching_log_count += 1
-        assert matching_log_count == 1
+        assert _count_backout_logs(self.caplog) == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
-        assert crawler.stats
-        actual_stats = {
-            k: v
-            for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backout_seconds/")
-        }
-        assert expected_stats == actual_stats
+        assert _backout_stats(crawler) == expected_stats
 
 
 class TestRequestBackout:
@@ -296,22 +312,9 @@ class TestRequestBackout:
         with self.caplog.at_level("INFO"):
             await maybe_deferred_to_future(crawler.crawl())
 
-        matching_log_count = 0
-        for log_record in self.caplog.records:
-            if (
-                str(log_record.msg).startswith("The active response size")
-                and log_record.levelname == "INFO"
-            ):
-                matching_log_count += 1
-        assert matching_log_count == 0
+        assert _count_backout_logs(self.caplog) == 0
 
-        assert crawler.stats
-        stats = {
-            k: v
-            for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backout_seconds/")
-        }
-        assert stats == {}
+        assert _backout_stats(crawler) == {}
 
     @coroutine_test
     async def test_concurrency(self):
@@ -351,26 +354,13 @@ class TestRequestBackout:
         with self.caplog.at_level("INFO"):
             await maybe_deferred_to_future(crawler.crawl())
 
-        matching_log_count = 0
-        for log_record in self.caplog.records:
-            if (
-                str(log_record.msg).startswith("The active response size")
-                and log_record.levelname == "INFO"
-            ):
-                matching_log_count += 1
-        assert matching_log_count == 0
+        assert _count_backout_logs(self.caplog) == 0
 
         expected_stats = {
             "request_backout_seconds/concurrency": gt(0),
             "request_backout_seconds/total": gt(0),
         }
-        assert crawler.stats
-        actual_stats = {
-            k: v
-            for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backout_seconds/")
-        }
-        assert expected_stats == actual_stats
+        assert _backout_stats(crawler) == expected_stats
 
     @coroutine_test
     async def test_response_size(self):
@@ -390,26 +380,13 @@ class TestRequestBackout:
         with self.caplog.at_level("INFO"):
             await maybe_deferred_to_future(crawler.crawl())
 
-        matching_log_count = 0
-        for log_record in self.caplog.records:
-            if (
-                str(log_record.msg).startswith("The active response size")
-                and log_record.levelname == "INFO"
-            ):
-                matching_log_count += 1
-        assert matching_log_count == 1
+        assert _count_backout_logs(self.caplog) == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
-        assert crawler.stats
-        actual_stats = {
-            k: v
-            for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backout_seconds/")
-        }
-        assert expected_stats == actual_stats
+        assert _backout_stats(crawler) == expected_stats
 
     @coroutine_test
     async def test_response_size_process_request(self):
@@ -434,26 +411,13 @@ class TestRequestBackout:
         with self.caplog.at_level("INFO"):
             await maybe_deferred_to_future(crawler.crawl())
 
-        matching_log_count = 0
-        for log_record in self.caplog.records:
-            if (
-                str(log_record.msg).startswith("The active response size")
-                and log_record.levelname == "INFO"
-            ):
-                matching_log_count += 1
-        assert matching_log_count == 1
+        assert _count_backout_logs(self.caplog) == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
-        assert crawler.stats
-        actual_stats = {
-            k: v
-            for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backout_seconds/")
-        }
-        assert expected_stats == actual_stats
+        assert _backout_stats(crawler) == expected_stats
 
     @coroutine_test
     async def test_response_size_process_response(self):
@@ -478,26 +442,13 @@ class TestRequestBackout:
         with self.caplog.at_level("INFO"):
             await maybe_deferred_to_future(crawler.crawl())
 
-        matching_log_count = 0
-        for log_record in self.caplog.records:
-            if (
-                str(log_record.msg).startswith("The active response size")
-                and log_record.levelname == "INFO"
-            ):
-                matching_log_count += 1
-        assert matching_log_count == 1
+        assert _count_backout_logs(self.caplog) == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
-        assert crawler.stats
-        actual_stats = {
-            k: v
-            for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backout_seconds/")
-        }
-        assert expected_stats == actual_stats
+        assert _backout_stats(crawler) == expected_stats
 
     @coroutine_test
     async def test_response_size_process_exception(self):
@@ -529,26 +480,13 @@ class TestRequestBackout:
         with self.caplog.at_level("INFO"):
             await maybe_deferred_to_future(crawler.crawl())
 
-        matching_log_count = 0
-        for log_record in self.caplog.records:
-            if (
-                str(log_record.msg).startswith("The active response size")
-                and log_record.levelname == "INFO"
-            ):
-                matching_log_count += 1
-        assert matching_log_count == 1
+        assert _count_backout_logs(self.caplog) == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
-        assert crawler.stats
-        actual_stats = {
-            k: v
-            for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backout_seconds/")
-        }
-        assert expected_stats == actual_stats
+        assert _backout_stats(crawler) == expected_stats
 
     @coroutine_test
     async def test_response_size_download(self):
@@ -584,23 +522,10 @@ class TestRequestBackout:
         with self.caplog.at_level("INFO"):
             await maybe_deferred_to_future(crawler.crawl())
 
-        matching_log_count = 0
-        for log_record in self.caplog.records:
-            if (
-                str(log_record.msg).startswith("The active response size")
-                and log_record.levelname == "INFO"
-            ):
-                matching_log_count += 1
-        assert matching_log_count == 1
+        assert _count_backout_logs(self.caplog) == 1
 
         expected_stats = {
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
-        assert crawler.stats
-        actual_stats = {
-            k: v
-            for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backout_seconds/")
-        }
-        assert expected_stats == actual_stats
+        assert _backout_stats(crawler) == expected_stats

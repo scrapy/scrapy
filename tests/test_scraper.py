@@ -145,9 +145,10 @@ class TestSlot:
         assert actual == 0
         assert len(warning_messages) == 1
         assert str(warning_messages[0].message) == (
-            "scrapy.core.scraper.Slot.active_size is deprecated. Read "
-            "scrapy.core.downloader.DownloaderMiddlewareManager.response_active_size "
-            "instead."
+            "scrapy.core.scraper.Slot.active_size is deprecated. The size of "
+            "responses in memory is now tracked by the downloader, and no "
+            "longer has a public API. If you have a use case for one, please "
+            "open a GitHub issue."
         )
 
     def test_active_size_write(self):
@@ -158,14 +159,8 @@ class TestSlot:
             assert slot.active_size == 1
         assert len(warning_messages) == 1
         assert str(warning_messages[0].message) == (
-            "scrapy.core.scraper.Slot.active_size is deprecated. "
-            "scrapy.core.downloader.DownloaderMiddlewareManager.response_active_size "
-            "might work as a replacement, but modifying that attribute "
-            "might not be a good idea. If you have a use case for it, you "
-            "might want to bring it up in a GitHub issue, to discuss with "
-            "Scrapy developers if there is a better approach, or some "
-            "change we could implement in Scrapy to improve support for "
-            "your use case."
+            "scrapy.core.scraper.Slot.active_size is deprecated, and setting "
+            "it no longer has any effect on request processing."
         )
 
     def test_needs_backout_false(self):
