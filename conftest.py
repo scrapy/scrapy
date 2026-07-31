@@ -72,12 +72,24 @@ def mockserver() -> Generator[MockServer]:
         yield mockserver
 
 
+@pytest.fixture(scope="session")
+def mockserver_ipv6() -> Generator[MockServer]:
+    """A mockserver reachable only over the IPv6 loopback.
+
+    Tests using this must skip when :func:`ipv6_loopback_available` is False.
+    """
+    with MockServer("::1") as mockserver:
+        yield mockserver
+
+
 @pytest.fixture  # function scope because it modifies os.environ
 def proxy_server(
     request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
 ) -> Generator[str]:
     kind = request.param
-    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
+    # test classes can make the proxy listen on a different address, e.g. "::1"
+    host = getattr(request.cls, "proxy_host", "127.0.0.1")
+    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None, host=host)
     url = proxy.start()
     if kind == "https":
         url = url.replace("http://", "https://")

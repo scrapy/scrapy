@@ -34,6 +34,7 @@ from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.utils._deps_compat import (
     PYOPENSSL_X509_DEPRECATED,
     TWISTED_TLS_LIMITS_OFFBY1,
+    W3LIB_STRIPS_IPV6_BRACKETS,
 )
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
@@ -51,6 +52,7 @@ from tests.spiders import (
     SimpleSpider,
     SingleRequestSpider,
 )
+from tests.utils import ipv6_loopback_available
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -107,6 +109,20 @@ class TestHttpBase(ABC):
     @coroutine_test
     async def test_download(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+
+    @pytest.mark.skipif(
+        not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+    )
+    @pytest.mark.skipif(
+        W3LIB_STRIPS_IPV6_BRACKETS, reason="https://github.com/scrapy/w3lib/pull/253"
+    )
+    @coroutine_test
+    async def test_download_ipv6_literal(self, mockserver_ipv6: MockServer) -> None:
+        """Download from a URL whose host is an IPv6 address literal."""
+        request = Request(mockserver_ipv6.url("/text", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.body == b"Works"
@@ -1336,6 +1352,10 @@ class TestMitmProxyBase(ABC):
     # whether the handler supports HTTPS proxies with HTTPS destinations
     handler_supports_tls_in_tls: bool = True
     handler_supports_socks: bool = False
+    # whether the handler supports proxying to an IPv6 literal destination
+    handler_supports_ipv6_destination: bool = True
+    # address the proxy listens on, read by the proxy_server fixture
+    proxy_host: str = "127.0.0.1"
 
     @property
     @abstractmethod
@@ -1459,6 +1479,41 @@ class TestMitmProxyBase(ABC):
         assert responses[0].url == mockserver.url("/redirected", is_secure=https_dest)
         self._assert_got_response_code(200, caplog.text)
         self._assert_headers(responses[0].headers, https_dest)
+
+    @pytest.mark.skipif(
+        not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+    )
+    @pytest.mark.skipif(
+        W3LIB_STRIPS_IPV6_BRACKETS, reason="https://github.com/scrapy/w3lib/pull/253"
+    )
+    @pytest.mark.parametrize("proxy_server", PROXY_KINDS, indirect=True)
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_proxy_ipv6_destination(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        proxy_server: str,
+        mockserver_ipv6: MockServer,
+        https_dest: bool,
+    ) -> None:
+        """HTTP/HTTPS/SOCKS5 proxy, destination addressed by an IPv6 literal.
+
+        For an HTTPS destination this needs the CONNECT authority to bracket the
+        address, otherwise the proxy sees a malformed ``CONNECT ::1:port``.
+        """
+        if not self.handler_supports_ipv6_destination:
+            pytest.skip("IPv6 literal destinations are not supported behind a proxy")
+        self._maybe_skip(proxy_server, https_dest)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                seed=mockserver_ipv6.url("/status?n=200", is_secure=https_dest)
+            )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        self._assert_got_response_code(200, caplog.text)
+        self._assert_headers(crawler.spider.meta["responses"][0].headers, https_dest)
 
     @staticmethod
     def _assert_headers(headers: Headers, https_dest: bool) -> None:

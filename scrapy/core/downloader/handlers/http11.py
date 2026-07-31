@@ -14,7 +14,8 @@ from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import HostnameEndpoint, TCP6ClientEndpoint
+from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import (
@@ -161,7 +162,15 @@ class TunnelError(Exception):
     """An HTTP CONNECT tunnel could not be established by the proxy."""
 
 
-class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
+def _is_ipv6_literal(host: str) -> bool:
+    try:
+        return isinstance(ipaddress.ip_address(host), ipaddress.IPv6Address)
+    except ValueError:  # a hostname
+        return False
+
+
+@implementer(IStreamClientEndpoint)
+class _TunnelingEndpoint:
     """An endpoint that tunnels through proxies to allow HTTPS downloads. To
     accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
     The HTTP CONNECT is always sent when using this endpoint, I think this could
@@ -187,18 +196,49 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         bindAddress: tuple[str, int] | None = None,
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
-        super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
+        self._proxyHost: str = proxyHost
+        self._proxyPort: int = proxyPort
+        # Reach a proxy given as a name through a HostnameEndpoint, the same
+        # endpoint Twisted's Agent uses: it resolves the name with
+        # reactor.nameResolver and picks the address family from the result, so
+        # proxies that only have AAAA records work, given an IPv6-capable
+        # TWISTED_DNS_RESOLVER. A literal IPv6 address skips name resolution
+        # instead, as the default resolver would fail to resolve it.
+        self._proxyEndpoint: IStreamClientEndpoint = (
+            TCP6ClientEndpoint(reactor, proxyHost, proxyPort, timeout, bindAddress)
+            if _is_ipv6_literal(proxyHost)
+            else HostnameEndpoint(
+                reactor, proxyHost, proxyPort, timeout=timeout, bindAddress=bindAddress
+            )
+        )
         self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
         self._tunneledHost: str = host
         self._tunneledPort: int = port
         self._contextFactory: IPolicyForHTTPS = contextFactory
+        self._formattedTunneledHost: str = self._format_host(host)
         self._connectBuffer: bytearray = bytearray()
+
+    @staticmethod
+    def _format_host(host: str | bytes) -> str:
+        """
+        Format the target host for use in the CONNECT request authority.
+
+        Literal IPv6 addresses are wrapped in square brackets, as required for
+        both the request target and the Host header. Hostnames and IPv4
+        addresses are returned unchanged.
+        """
+        # Twisted passes URI.host through, which is bytes with the brackets of
+        # an IPv6 literal already stripped.
+        host = to_unicode(host, encoding="ascii")
+        return f"[{host}]" if _is_ipv6_literal(host) else host
 
     def requestTunnel(self, protocol: Protocol) -> Protocol:
         """Asks the proxy to open a tunnel."""
         assert protocol.transport
         tunnelReq = _tunnel_request_data(
-            self._tunneledHost, self._tunneledPort, self._proxyAuthHeader
+            self._formattedTunneledHost,
+            self._tunneledPort,
+            self._proxyAuthHeader,
         )
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
@@ -221,7 +261,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         if b"\r\n\r\n" not in self._connectBuffer:
             return
         self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
-        respm = _TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
+        respm = _TunnelingEndpoint._responseMatcher.match(self._connectBuffer)
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
@@ -242,7 +282,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             self._tunnelReadyDeferred.errback(
                 TunnelError(
                     "Could not open CONNECT tunnel with proxy "
-                    f"{self._host}:{self._port} [{extra!r}]"
+                    f"{self._proxyHost}:{self._proxyPort} [{extra!r}]"
                 )
             )
 
@@ -252,7 +292,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
         self._protocolFactory = protocolFactory
-        connectDeferred = super().connect(protocolFactory)
+        connectDeferred = self._proxyEndpoint.connect(protocolFactory)
         connectDeferred.addCallback(self.requestTunnel)
         connectDeferred.addErrback(self.connectFailed)
         return self._tunnelReadyDeferred
@@ -282,7 +322,7 @@ def _tunnel_request_data(
 
 
 class _TunnelingAgent(Agent):
-    """An agent that uses a ``_TunnelingTCP4ClientEndpoint`` to make HTTPS
+    """An agent that uses a ``_TunnelingEndpoint`` to make HTTPS
     downloads. It may look strange that we have chosen to subclass Agent and not
     ProxyAgent but consider that after the tunnel is opened the proxy is
     transparent to the client; thus the agent should behave like there is no
@@ -303,8 +343,8 @@ class _TunnelingAgent(Agent):
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
-    def _getEndpoint(self, uri: URI) -> _TunnelingTCP4ClientEndpoint:
-        return _TunnelingTCP4ClientEndpoint(
+    def _getEndpoint(self, uri: URI) -> _TunnelingEndpoint:
+        return _TunnelingEndpoint(
             reactor=self._reactor,
             host=uri.host,
             port=uri.port,
@@ -317,7 +357,7 @@ class _TunnelingAgent(Agent):
     def _requestWithEndpoint(
         self,
         key: Any,
-        endpoint: TCP4ClientEndpoint,
+        endpoint: IStreamClientEndpoint,
         method: bytes,
         parsedURI: URI,
         headers: TxHeaders | None,

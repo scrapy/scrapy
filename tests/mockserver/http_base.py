@@ -33,18 +33,35 @@ class BaseMockServer(ABC):
     def module_name(self) -> str:
         raise NotImplementedError
 
-    def __init__(self) -> None:
+    def __init__(self, host: str | None = None) -> None:
+        """Start a mockserver.
+
+        *host* is the address to listen on; by default every interface is bound
+        and requests are made to 127.0.0.1. Pass e.g. ``"::1"`` to test over
+        IPv6.
+        """
         if not self.listen_http and not self.listen_https:
             raise ValueError("At least one of listen_http and listen_https must be set")
 
         self.proc: Popen[str] | None = None
-        self.host: str = "127.0.0.1"
+        self.host: str = host if host is not None else "127.0.0.1"
+        self._listen_host: str | None = host
         self.http_port: int | None = None
         self.https_port: int | None = None
 
     def __enter__(self) -> Self:
+        host_args = (
+            ["--host", self._listen_host] if self._listen_host is not None else []
+        )
         self.proc = Popen(
-            [sys.executable, "-u", "-m", self.module_name, *self.get_additional_args()],
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                self.module_name,
+                *host_args,
+                *self.get_additional_args(),
+            ],
             stdout=PIPE,
             env=get_script_run_env(),
             text=True,
@@ -80,7 +97,8 @@ class BaseMockServer(ABC):
     def url(self, path: str, is_secure: bool = False) -> str:
         port = self.port(is_secure)
         scheme = "https" if is_secure else "http"
-        return f"{scheme}://{self.host}:{port}{path}"
+        host = f"[{self.host}]" if ":" in self.host else self.host
+        return f"{scheme}://{host}:{port}{path}"
 
 
 def main_factory(
@@ -95,32 +113,39 @@ def main_factory(
     def main() -> None:
         from twisted.internet import reactor
 
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--host",
+            default="",
+            help="Address to listen on, e.g. ::1 for the IPv6 loopback. "
+            "Every interface is bound by default.",
+        )
+        parser.add_argument("--keyfile", help="SSL key file")
+        parser.add_argument("--certfile", help="SSL certificate file")
+        parser.add_argument(
+            "--cipher-string",
+            default=None,
+            help="SSL cipher string (optional)",
+        )
+        parser.add_argument(
+            "--tls-min-version",
+            default=None,
+            help="Minimum accepted TLS version (optional)",
+        )
+        parser.add_argument(
+            "--tls-max-version",
+            default=None,
+            help="Maximum accepted TLS version (optional)",
+        )
+        args = parser.parse_args()
+
         root = resource_class()
         factory = Site(root)
 
         if listen_http:
-            http_port = reactor.listenTCP(0, factory)
+            http_port = reactor.listenTCP(0, factory, interface=args.host)
 
         if listen_https:
-            parser = argparse.ArgumentParser()
-            parser.add_argument("--keyfile", help="SSL key file")
-            parser.add_argument("--certfile", help="SSL certificate file")
-            parser.add_argument(
-                "--cipher-string",
-                default=None,
-                help="SSL cipher string (optional)",
-            )
-            parser.add_argument(
-                "--tls-min-version",
-                default=None,
-                help="Minimum accepted TLS version (optional)",
-            )
-            parser.add_argument(
-                "--tls-max-version",
-                default=None,
-                help="Maximum accepted TLS version (optional)",
-            )
-            args = parser.parse_args()
             context_factory_kw = {}
             if args.keyfile:
                 context_factory_kw["keyfile"] = args.keyfile
@@ -133,17 +158,22 @@ def main_factory(
             if args.tls_max_version:
                 context_factory_kw["tls_max_version"] = args.tls_max_version
             context_factory = ssl_context_factory(**context_factory_kw)
-            https_port = reactor.listenSSL(0, factory, context_factory)
+            https_port = reactor.listenSSL(
+                0, factory, context_factory, interface=args.host
+            )
 
         def print_listening():
+            def address(scheme: str, listening_port) -> str:
+                listening_host = listening_port.getHost()
+                host = listening_host.host
+                if ":" in host:  # IPv6 literal
+                    host = f"[{host}]"
+                return f"{scheme}://{host}:{listening_host.port}"
+
             if listen_http:
-                http_host = http_port.getHost()
-                http_address = f"http://{http_host.host}:{http_host.port}"
-                print(http_address)
+                print(address("http", http_port))
             if listen_https:
-                https_host = https_port.getHost()
-                https_address = f"https://{https_host.host}:{https_host.port}"
-                print(https_address)
+                print(address("https", https_port))
 
         reactor.callWhenRunning(print_listening)
         reactor.run()

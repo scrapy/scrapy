@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
+import socket
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -38,6 +40,29 @@ def get_script_run_env() -> dict[str, str]:
     env = os.environ.copy()
     env["PYTHONPATH"] = pythonpath
     return env
+
+
+def ipv6_loopback_available() -> bool:
+    """Return True if the IPv6 loopback address (``::1``) can be bound on this host.
+
+    Meant to be used in skip conditions::
+
+        @pytest.mark.skipif(
+            not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+        )
+    """
+    if not getattr(socket, "has_ipv6", False):
+        return False
+    try:
+        with contextlib.closing(
+            socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        ) as s:
+            with contextlib.suppress(OSError, AttributeError):
+                s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+            s.bind(("::1", 0))
+        return True
+    except OSError:
+        return False
 
 
 class OneShotLoop:

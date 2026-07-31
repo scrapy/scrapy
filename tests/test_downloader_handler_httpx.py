@@ -156,6 +156,10 @@ class TestHttpsProxy(TestHttpProxy):
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
     handler_supports_socks = HAS_SOCKS
+    # httpx sends an unbracketed IPv6 authority to the proxy, so the proxy
+    # answers 400; reproducible with httpx alone, without Scrapy involved.
+    # https://github.com/pydantic/httpx2/pull/1091
+    handler_supports_ipv6_destination = False
 
 
 @pytest.mark.requires_internet
