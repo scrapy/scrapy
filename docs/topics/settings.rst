@@ -305,10 +305,21 @@ These settings cannot be :ref:`set from a spider <spider-settings>`.
 
 These settings are:
 
--   :setting:`TWISTED_REACTOR_ENABLED`
+-   :setting:`ADDONS`
+-   :setting:`COMMANDS_MODULE`
+-   :setting:`FORCE_CRAWLER_PROCESS`
 -   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
     spider loader class, e.g. :setting:`SPIDER_MODULES` and
     :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
+-   :setting:`TWISTED_REACTOR_ENABLED`
+
+:setting:`ADDONS` is a special case: it can be set from a spider, but the
+``update_pre_crawler_settings()`` method of :ref:`add-ons <topics-addons>`
+enabled that way is not called.
+
+:setting:`TWISTED_REACTOR` also acts as a pre-crawler setting when running a
+:ref:`command that needs a CrawlerProcess <topics-commands-crawlerprocess>`,
+since its project-level value determines the crawler process class.
 
 .. _reactor-settings:
 
@@ -408,6 +419,9 @@ Default: ``{}``
 
 A dict containing paths to the add-ons enabled in your project and their
 priorities. For more information, see :ref:`topics-addons`.
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`, with a
+    caveat described in that section.
 
 .. setting:: ASYNCIO_EVENT_LOOP
 
@@ -1325,6 +1339,8 @@ When :setting:`TWISTED_REACTOR_ENABLED` is set to ``False``,
 Set this to ``True`` if you want to set :setting:`TWISTED_REACTOR` to a
 non-default value in :ref:`per-spider settings <spider-settings>`.
 
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
+
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -1755,7 +1771,8 @@ Default: ``False``
 
 Setting to ``True`` will log debug information about the requests scheduler.
 This currently logs (only once) if the requests cannot be serialized to disk.
-Stats counter (``scheduler/unserializable``) tracks the number of times this happens.
+The :stat:`scheduler/unserializable` stat tracks the number of times this
+happens.
 
 Example entry in logs::
 

@@ -418,8 +418,8 @@ class Scheduler(BaseScheduler):
         Unless the received request is filtered out by the Dupefilter, attempt to push
         it into the disk queue, falling back to pushing it into the memory queue.
 
-        Increment the appropriate stats, such as: ``scheduler/enqueued``,
-        ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``.
+        Increment the appropriate stats, such as: :stat:`scheduler/enqueued`,
+        :stat:`scheduler/enqueued/disk`, :stat:`scheduler/enqueued/memory`.
 
         Return ``True`` if the request was stored successfully, ``False`` otherwise.
         """
@@ -451,8 +451,8 @@ class Scheduler(BaseScheduler):
         falling back to the disk queue if the memory queue is empty.
         Return ``None`` if there are no more enqueued requests.
 
-        Increment the appropriate stats, such as: ``scheduler/dequeued``,
-        ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
+        Increment the appropriate stats, such as: :stat:`scheduler/dequeued`,
+        :stat:`scheduler/dequeued/disk`, :stat:`scheduler/dequeued/memory`.
         """
         request: Request | None = self.mqs.pop()
         assert self.stats is not None

@@ -136,6 +136,12 @@ class MySpider(scrapy.Spider):
         log = self.get_log(tmp_path, "from scrapy.spiders import Spider\n")
         assert "No spider found in file" in log
 
+    @pytest.mark.parametrize("args", [(), ("a.py", "b.py")])
+    def test_runspider_bad_arguments(self, args: tuple[str, ...]) -> None:
+        returncode, out, _ = proc("runspider", *args)
+        assert returncode == 2
+        assert "Usage" in out
+
     def test_runspider_file_not_found(self) -> None:
         _, _, log = proc("runspider", "some_non_existent_file")
         assert "File not found: some_non_existent_file" in log

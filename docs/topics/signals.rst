@@ -510,6 +510,8 @@ robots_parsed
 .. signal:: robots_parsed
 .. function:: robots_parsed(robotparser, request)
 
+    .. versionadded:: VERSION
+
     Sent by
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after it
     downloads and parses a :file:`robots.txt` file, for the host that *request*

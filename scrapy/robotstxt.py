@@ -70,7 +70,10 @@ class RobotParser(metaclass=ABCMeta):
     def crawl_delay(self, user_agent: str | bytes) -> float | None:
         """Return the ``Crawl-delay`` directive for ``user_agent`` as a number
         of seconds, or ``None`` if it is not set or the backend does not support
-        it."""
+        it.
+
+        .. versionadded:: VERSION
+        """
         return None
 
 
@@ -114,6 +117,10 @@ class RerpRobotParser(RobotParser):
         user_agent = to_unicode(user_agent)
         url = to_unicode(url)
         return cast("bool", self.rp.is_allowed(user_agent, url))
+
+    def crawl_delay(self, user_agent: str | bytes) -> float | None:
+        delay = self.rp.get_crawl_delay(to_unicode(user_agent))
+        return None if delay is None else float(delay)
 
 
 class ProtegoRobotParser(RobotParser):
