@@ -375,6 +375,8 @@ filterwarnings = [
     "ignore:.*<_io\\.FileIO name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
     # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
     "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
+    # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.
+    "ignore:The async(hat|ore) module is deprecated:DeprecationWarning",
 ]
 
 [tool.ruff.lint]
