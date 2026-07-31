@@ -13,7 +13,6 @@ from weakref import WeakKeyDictionary, WeakSet
 
 from typing_extensions import Self
 
-from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.asyncio import _wait_for_first, sleep
@@ -79,10 +78,6 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     backoff: BackoffConfig
     """Per-scope override of the :ref:`backoff <backoff>` settings; see
     :class:`BackoffConfig`."""
-
-    ignore_robots_txt: bool
-    """Silence the warning logged when this configuration is more aggressive
-    than a robots.txt ``Crawl-delay``."""
 
 
 ScopeID = str
@@ -550,19 +545,6 @@ class Throttler:
         _warn_on_deprecated_concurrency(crawler.settings)
         _warn_on_unachievable_concurrency(crawler.settings, self._scopes_config)
         self._debug = crawler.settings.getbool("THROTTLER_DEBUG")
-        self._robotstxt_obey = crawler.settings.getbool(
-            "ROBOTSTXT_OBEY"
-        ) and crawler.settings.getbool("THROTTLER_ROBOTSTXT_OBEY")
-        self._robotstxt_max_delay = crawler.settings.getfloat(
-            "THROTTLER_ROBOTSTXT_MAX_DELAY"
-        )
-        self._default_useragent: str = crawler.settings["USER_AGENT"]
-        self._robotstxt_useragent: str | None = crawler.settings["ROBOTSTXT_USER_AGENT"]
-        self._robotstxt_scope_warned: bool = False
-        if self._robotstxt_obey:
-            crawler.signals.connect(
-                self._on_robots_parsed, signal=signals.robots_parsed
-            )
         self._default_scope_manager_cls = load_object(
             crawler.settings["THROTTLING_SCOPE_MANAGER"]
         )
@@ -1111,71 +1093,6 @@ class Throttler:
                 consumed=consumed, remaining=remaining
             )
 
-    def _on_robots_parsed(self, robotparser: Any, request: Request) -> None:
-        """Honor a robots.txt ``Crawl-delay`` on the :signal:`robots_parsed`
-        signal.
-
-        It reads the ``Crawl-delay`` directive for the configured user agent from
-        the parsed robots.txt and, if present, applies it to the scope of the
-        host that *request* targets via :meth:`_apply_robots_crawl_delay`.
-        """
-        if not self._robotstxt_obey:
-            return
-        useragent: str | bytes = self._robotstxt_useragent or self._default_useragent
-        try:
-            delay = robotparser.crawl_delay(useragent)
-        except Exception:  # pragma: no cover - backend-specific failures
-            return
-        if not delay:
-            return
-        hostname = urlparse_cached(request).hostname or ""
-        # A Crawl-delay belongs to a host, so it is applied to the scope that
-        # stands for that host, i.e. the one whose id is the host name, and only
-        # if *request* is actually being sent under it. Under custom scoping
-        # there may be no such scope, and the delay cannot be attributed to any
-        # of the others: a scope shared with other hosts (e.g. one grouping
-        # requests by API cost) would slow those hosts down too.
-        if hostname not in set(iter_scopes(self.get_resolved_scopes(request))):
-            self._warn_unscoped_robots_crawl_delay(hostname)
-            return
-        self._apply_robots_crawl_delay(hostname, delay)
-
-    def _warn_unscoped_robots_crawl_delay(self, hostname: ScopeID) -> None:
-        if self._robotstxt_scope_warned:
-            return
-        self._robotstxt_scope_warned = True
-        logger.warning(
-            f"Ignoring the robots.txt Crawl-delay of {hostname!r} because "
-            f"requests for that host are not sent under a throttling scope "
-            f"named after it, so there is no scope to apply the delay to. "
-            f"Include {hostname!r} in the scopes of those requests to honor it, "
-            f"or set THROTTLER_ROBOTSTXT_OBEY to False to silence this warning. "
-            f"Further occurrences are not reported."
-        )
-
-    def _apply_robots_crawl_delay(self, scope_id: ScopeID, delay: float) -> None:
-        if not self._robotstxt_obey:
-            return
-        capped = min(delay, self._robotstxt_max_delay)
-        config = self._scopes_config.get(scope_id, {})
-        if config.get("ignore_robots_txt"):
-            return
-        if config.get("delay") is not None and float(config["delay"]) < capped:
-            logger.warning(
-                f"Throttling scope {scope_id!r} is configured with "
-                f"delay={config['delay']!r}, which is more aggressive than its "
-                f"robots.txt Crawl-delay of {capped}s. The configured value takes "
-                "precedence; set 'ignore_robots_txt': True in its THROTTLING_SCOPES "
-                "entry to silence this warning."
-            )
-            return
-        if self._debug:
-            logger.debug(f"robots.txt Crawl-delay for scope {scope_id}: {capped}s")
-        # From the next request of the scope on: the request that triggered the
-        # robots.txt download was allowed through before the delay was known, and
-        # its send is already recorded.
-        self.get_scope_manager(scope_id).set_base_delay(capped)
-
 
 class ThrottlingScopeManagerProtocol(Protocol):
     """A protocol for :setting:`THROTTLING_SCOPE_MANAGER` :ref:`components
@@ -1270,8 +1187,8 @@ class ThrottlingScopeManagerProtocol(Protocol):
     def set_base_delay(self, delay: float, *, only_increase: bool = True) -> None:
         """Set the base (non-backoff) delay of this scope to *delay* seconds.
 
-        By default it only raises the delay, to honor external hints such as a
-        robots.txt ``Crawl-delay`` directive. Pass ``only_increase=False`` to
+        By default it only raises the delay, to honor external hints without
+        making the crawl faster than configured. Pass ``only_increase=False`` to
         also allow lowering it.
         """
 

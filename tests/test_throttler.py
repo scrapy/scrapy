@@ -89,22 +89,6 @@ def _scope_managers(crawler: Any) -> list[ThrottlingScopeManager]:
     return cast("list[ThrottlingScopeManager]", managers)
 
 
-class _FakeRobotParser:
-    """A minimal robots.txt parser stub for :signal:`robots_parsed` tests.
-
-    *delay* is returned by :meth:`crawl_delay`, unless it is an exception, in
-    which case it is raised to emulate a backend-specific failure.
-    """
-
-    def __init__(self, delay: float | Exception | None):
-        self._delay = delay
-
-    def crawl_delay(self, useragent: str) -> float | None:
-        if isinstance(self._delay, Exception):
-            raise self._delay
-        return self._delay
-
-
 def _response(
     status: int = 200,
     headers: dict[str, str] | None = None,
@@ -375,101 +359,6 @@ class TestThrottler:
         manager.reconcile_quota("cost", consumed=2.0)
         assert scope._consumed == pytest.approx(2.0)
         assert scope._delay > scope._base_delay
-
-    @pytest.mark.parametrize(
-        ("settings", "parser_delay", "expected_base_delay"),
-        [
-            ({"ROBOTSTXT_OBEY": True, "RANDOMIZE_DOWNLOAD_DELAY": False}, 3.0, 3.0),
-            ({"ROBOTSTXT_OBEY": True, "THROTTLER_ROBOTSTXT_OBEY": False}, 3.0, 0.0),
-            ({"ROBOTSTXT_OBEY": True}, None, 0.0),
-            ({"ROBOTSTXT_OBEY": True}, ValueError(), 0.0),
-        ],
-        ids=["applies-delay", "obey-disabled", "no-delay", "backend-error"],
-    )
-    def test_robots_parsed_signal(self, settings, parser_delay, expected_base_delay):
-        manager = _manager(settings)
-        manager.crawler.signals.send_catch_log(
-            signal=signals.robots_parsed,
-            robotparser=_FakeRobotParser(parser_delay),
-            request=Request("http://example.com/page"),
-        )
-        scope = _scope(manager, "example.com")
-        assert scope._base_delay == expected_base_delay
-
-    def test_robots_parsed_signal_picks_the_host_scope(self):
-        # A Crawl-delay belongs to a host, so among the scopes of the request it
-        # only applies to the one named after the host.
-        manager = _manager({"ROBOTSTXT_OBEY": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
-        manager.crawler.signals.send_catch_log(
-            signal=signals.robots_parsed,
-            robotparser=_FakeRobotParser(3.0),
-            request=Request(
-                "http://example.com/page",
-                meta={"throttling_scopes": ["example.com", "cost"]},
-            ),
-        )
-        assert _scope(manager, "example.com")._base_delay == 3.0
-        assert _scope(manager, "cost")._base_delay == 0.0
-
-    def test_robots_parsed_signal_without_a_host_scope(self, caplog):
-        # Requests for the host are sent under a scope shared with other hosts,
-        # so applying the Crawl-delay to it would slow those hosts down too.
-        manager = _manager({"ROBOTSTXT_OBEY": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
-        request = Request("http://example.com/page", meta={"throttling_scopes": "cost"})
-        with caplog.at_level(logging.WARNING, logger="scrapy.throttler"):
-            manager.crawler.signals.send_catch_log(
-                signal=signals.robots_parsed,
-                robotparser=_FakeRobotParser(3.0),
-                request=request,
-            )
-        assert "example.com" not in manager._scope_managers
-        assert _scope(manager, "cost")._base_delay == 0.0
-        assert "Crawl-delay" in caplog.text
-        # The warning is only reported once per crawl.
-        caplog.clear()
-        with caplog.at_level(logging.WARNING, logger="scrapy.throttler"):
-            manager.crawler.signals.send_catch_log(
-                signal=signals.robots_parsed,
-                robotparser=_FakeRobotParser(3.0),
-                request=request,
-            )
-        assert "Crawl-delay" not in caplog.text
-
-    def test_apply_robots_crawl_delay(self):
-        manager = _manager({"ROBOTSTXT_OBEY": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
-        manager._apply_robots_crawl_delay("example.com", 3.0)
-        scope = _scope(manager, "example.com")
-        assert scope._base_delay == 3.0
-        assert scope.can_send(now=0) == 0  # nothing sent yet
-        scope.record_sent(now=0)
-        assert scope.can_send(now=0) == pytest.approx(3.0)
-
-    def test_apply_robots_crawl_delay_capped(self):
-        manager = _manager(
-            {"ROBOTSTXT_OBEY": True, "THROTTLER_ROBOTSTXT_MAX_DELAY": 2.0}
-        )
-        manager._apply_robots_crawl_delay("example.com", 30.0)
-        assert _scope(manager, "example.com")._base_delay == 2.0
-
-    def test_apply_robots_crawl_delay_disabled(self):
-        manager = _manager({"ROBOTSTXT_OBEY": True, "THROTTLER_ROBOTSTXT_OBEY": False})
-        manager._apply_robots_crawl_delay("example.com", 3.0)
-        assert _scope(manager, "example.com")._base_delay == 0.0
-
-    def test_apply_robots_crawl_delay_ignored(self, caplog):
-        manager = _manager(
-            {
-                "ROBOTSTXT_OBEY": True,
-                "THROTTLING_SCOPES": {
-                    "example.com": {"delay": 0.5, "ignore_robots_txt": True}
-                },
-            }
-        )
-        with caplog.at_level(logging.WARNING, logger="scrapy.throttler"):
-            manager._apply_robots_crawl_delay("example.com", 3.0)
-        # No warning is logged and the crawl-delay is not applied.
-        assert "Crawl-delay" not in caplog.text
-        assert _scope(manager, "example.com")._base_delay == 0.5
 
     def test_scope_limit_keeps_active_backoff(self):
         manager = _manager(
@@ -1525,31 +1414,6 @@ class TestThrottlerEdges:
         assert "Backoff for scope" in caplog.text
         scope = _scope(manager, "example.com")
         assert scope._delay > scope._base_delay
-
-    def test_on_robots_parsed_disabled(self):
-        manager = _manager({"THROTTLER_ROBOTSTXT_OBEY": False})
-        # With obeying disabled, the handler returns without touching any scope.
-        manager._on_robots_parsed(_FakeRobotParser(5.0), Request("http://example.com"))
-        assert not manager._scope_managers
-
-    def test_apply_robots_crawl_delay_warns_on_delay_conflict(self, caplog):
-        manager = _manager(
-            {
-                "ROBOTSTXT_OBEY": True,
-                "THROTTLING_SCOPES": {"example.com": {"delay": 0.5}},
-            }
-        )
-        with caplog.at_level(logging.WARNING, logger="scrapy.throttler"):
-            manager._apply_robots_crawl_delay("example.com", 3.0)
-        assert "Crawl-delay" in caplog.text
-        # The configured value takes precedence (crawl-delay not applied).
-        assert _scope(manager, "example.com")._base_delay == 0.5
-
-    def test_apply_robots_crawl_delay_debug_logging(self, caplog):
-        manager = _manager({"ROBOTSTXT_OBEY": True, "THROTTLER_DEBUG": True})
-        with caplog.at_level(logging.DEBUG, logger="scrapy.throttler"):
-            manager._apply_robots_crawl_delay("example.com", 3.0)
-        assert "Crawl-delay" in caplog.text
 
     def test_scope_limit_disabled(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})

@@ -195,38 +195,6 @@ itself, through its :reqmeta:`delay` request metadata key, leaving the rest of
 the scope unaffected. See
 :class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware`.
 
-.. _crawl-delay:
-
-robots.txt
-==========
-
-`Crawl-Delay <https://en.wikipedia.org/wiki/Robots.txt#Crawl-delay_directive>`__
-is a non-standard :file:`robots.txt` directive that indicates a number of seconds
-to wait between requests.
-
-.. setting:: THROTTLER_ROBOTSTXT_OBEY
-.. setting:: THROTTLER_ROBOTSTXT_MAX_DELAY
-
-If :setting:`ROBOTSTXT_OBEY` and :setting:`THROTTLER_ROBOTSTXT_OBEY` are
-``True`` (default), valid ``Crawl-Delay`` directives override
-:setting:`DOWNLOAD_DELAY`. The delay is raised to at least the ``Crawl-Delay``
-value (a larger configured delay is kept), capped at
-:setting:`THROTTLER_ROBOTSTXT_MAX_DELAY` (default: ``60.0``).
-
-If :setting:`THROTTLING_SCOPES` defines a smaller (more aggressive) delay, it
-will be respected, but a warning will be logged about the discrepancy with
-``Crawl-Delay``. Set ``ignore_robots_txt`` to ``True`` to silence this warning.
-
-A ``Crawl-Delay`` belongs to a host, so it is applied to the :ref:`throttling
-scope <throttling-scopes>` that stands for that host, i.e. the one whose id is
-the host name. If you use :ref:`custom throttling scopes
-<custom-throttling-scopes>` and requests for a host are not sent under a scope
-named after it, the directive cannot be honored: applying it to a scope shared
-with other hosts, e.g. one that groups requests by cost, would slow those hosts
-down too. Scrapy logs a warning when that happens; keep the host name among the
-scopes of those requests to honor the directive, or set
-:setting:`THROTTLER_ROBOTSTXT_OBEY` to ``False`` to silence the warning.
-
 .. _delay-scope:
 
 Delaying a scope programmatically
@@ -416,10 +384,6 @@ following keys:
 ``manager`` (:class:`str` or :class:`type`)
     Import path or class of a :ref:`custom scope manager
     <custom-throttling-scope-managers>` for the scope.
-
-``ignore_robots_txt`` (:class:`bool`)
-    Silences the warning logged when this configuration is more aggressive than
-    a :ref:`robots.txt Crawl-delay <crawl-delay>`.
 
 .. setting:: THROTTLER
 
