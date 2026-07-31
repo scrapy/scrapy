@@ -17,12 +17,14 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
     cancel-in-progress: true
 
-permissions:
-    contents: read
+permissions: {}
 
 jobs:
     benchmark:
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            id-token: write  # OIDC authentication with CodSpeed
 
         steps:
             - uses: actions/checkout@v6
