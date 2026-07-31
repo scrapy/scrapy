@@ -665,6 +665,8 @@ Example:
 
     COMMANDS_MODULE = "mybot.commands"
 
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
+
 .. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 
 Register commands via setup.py entry points
