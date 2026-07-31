@@ -151,7 +151,10 @@ class ScrapyPriorityQueue:
                 else:
                     q.close()
 
-        self.curprio = min(startprios)
+        # A recorded priority may have no queue to restore, e.g. if it only
+        # ever held a request that failed to serialize, so curprio comes from
+        # the queues that do exist and not from startprios.
+        self._update_curprio()
 
     def qfactory(self, key: int) -> QueueProtocol:
         return build_from_crawler(
@@ -188,41 +191,37 @@ class ScrapyPriorityQueue:
 
     def pop(self) -> Request | None:
         while self.curprio is not None:
-            try:
-                q = self.queues[self.curprio]
-            except KeyError:
-                pass
-            else:
+            for queues in (self.queues, self._start_queues):
+                q = queues.get(self.curprio)
+                # An empty queue can linger at a priority when a push failed
+                # after creating it, e.g. on a serialization error. Popping
+                # from it would return None and hide the request that the other
+                # dict may hold at the same priority.
+                if not q:
+                    continue
                 m = q.pop()
                 if not q:
-                    del self.queues[self.curprio]
-                    q.close()
-                    if not self._start_queues:
-                        self._update_curprio()
-                return m
-            if self._start_queues:
-                try:
-                    q = self._start_queues[self.curprio]
-                except KeyError:
+                    # The other dict may have no queue at this priority either,
+                    # and a curprio that neither dict has would make peek() come
+                    # up empty.
                     self._update_curprio()
-                else:
-                    m = q.pop()
-                    if not q:
-                        del self._start_queues[self.curprio]
-                        q.close()
-                        self._update_curprio()
-                    return m
-            else:
-                self._update_curprio()
+                return m
+            # Nothing to pop at this priority: refreshing drops the empty
+            # leftovers and moves on to the next priority.
+            self._update_curprio()
         return None
 
     def _update_curprio(self) -> None:
-        prios = {
-            p
-            for queues in (self.queues, self._start_queues)
-            for p, q in queues.items()
-            if q
-        }
+        # Keeping an empty queue would hold its storage open for nothing, and
+        # make close() record a priority with nothing to restore from it.
+        prios: set[int] = set()
+        for queues in (self.queues, self._start_queues):
+            for p, q in list(queues.items()):
+                if q:
+                    prios.add(p)
+                else:
+                    del queues[p]
+                    q.close()
         self.curprio = min(prios) if prios else None
 
     def peek(self) -> Request | None:
@@ -234,12 +233,17 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
-        try:
-            queue = self._start_queues[self.curprio]
-        except KeyError:
-            queue = self.queues[self.curprio]
-        # Protocols can't declare optional members
-        return cast("Request", queue.peek())  # type: ignore[attr-defined]
+        # The dicts are walked in the same order as in pop(), which is what
+        # makes the returned request the one that pop() then returns.
+        for queues in (self.queues, self._start_queues):
+            queue = queues.get(self.curprio)
+            # Empty queues can linger at a priority (see pop()), where they
+            # would hide the request that the other dict may hold at the same
+            # priority.
+            if queue:
+                # Protocols can't declare optional members
+                return cast("Request", queue.peek())  # type: ignore[attr-defined]
+        return None
 
     def close(self) -> list[int]:
         active: set[int] = set()
