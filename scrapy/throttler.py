@@ -413,10 +413,9 @@ class ThrottlerProtocol(Protocol):
     def get_scopes_key(self, request: Request) -> str:
         """Return a single string key for *request*, derived from its scopes.
 
-        For a single scope this is the scope ID itself (so the key of a
-        single-domain request matches its historical ``download_slot``); for
-        multiple scopes the sorted scope IDs are JSON-encoded into an
-        order-independent, collision-free key. This is the synchronous
+        For a single scope this is the scope ID itself; for multiple scopes the
+        sorted scope IDs are JSON-encoded into an order-independent,
+        collision-free key. This is the synchronous
         counterpart of :meth:`get_scopes`, used wherever a plain string key is
         needed (e.g. scheduler priority queues).
         """
