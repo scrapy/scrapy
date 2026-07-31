@@ -381,6 +381,8 @@ filterwarnings = [
     "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
     # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.
     "ignore:The async(hat|ore) module is deprecated:DeprecationWarning",
+    # CI runs without coverage pass --no-cov, which pytest-cov reports.
+    "ignore::pytest_cov.CovDisabledWarning",
 ]
 
 [tool.ruff.lint]
