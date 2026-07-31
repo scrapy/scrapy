@@ -103,8 +103,7 @@ The key settings are:
 
     :setting:`BACKOFF_HTTP_CODES` (default: ``[429, 502, 503, 504, 520, 521, 522, 523, 524]``)
 
-    HTTP response status codes that trigger backoff. Can be overridden per
-    scope with the ``http_codes`` key (see :ref:`per-scope-backoff`).
+    HTTP response status codes that trigger backoff.
 
 -   .. setting:: BACKOFF_MAX_DELAY
 
@@ -126,8 +125,7 @@ starts at its configured ``"delay"`` (:setting:`DOWNLOAD_DELAY` by default).
 
 A **backoff trigger** is a response whose status code is in
 :setting:`BACKOFF_HTTP_CODES` or a download exception whose type is in
-:setting:`BACKOFF_EXCEPTIONS` (both :ref:`overridable per scope
-<per-scope-backoff>`). On each trigger the scope's delay grows
+:setting:`BACKOFF_EXCEPTIONS`. On each trigger the scope's delay grows
 **exponentially**, bounded above by :setting:`BACKOFF_MAX_DELAY`, until the
 triggers stop — so a scope that starts getting throttled quickly slows down to
 a rate the server accepts.
@@ -169,18 +167,13 @@ The global ``BACKOFF_*`` settings can be overridden per scope with the
     THROTTLING_SCOPES = {
         "example.com": {
             "backoff": {
-                "http_codes": [429, 503],
-                "exceptions": ["builtins.IOError"],
                 "max_delay": 180.0,
             },
         },
     }
 
-Every key overrides the matching global ``BACKOFF_*`` setting for that scope
-(e.g. ``http_codes`` overrides :setting:`BACKOFF_HTTP_CODES`), and any key left
-out falls back to it. So a scope can, for example, treat an extra status code
-as a backoff trigger, or stop treating one of the defaults as a trigger,
-independently of every other scope.
+Each key overrides the matching global ``BACKOFF_*`` setting for that scope;
+keys left out fall back to it.
 
 .. _retry-after:
 .. _rate-limiting-headers:
@@ -908,9 +901,7 @@ Additional settings
     -   :exc:`~scrapy.exceptions.ResponseDataLossError`
 
     List of exception classes that trigger backoff when raised while
-    downloading a request. Strings are interpreted as import paths. Can be
-    overridden per scope with the ``exceptions`` key (see
-    :ref:`per-scope-backoff`).
+    downloading a request. Strings are interpreted as import paths.
 
     .. seealso:: :setting:`RETRY_EXCEPTIONS`
 

@@ -45,12 +45,6 @@ class BackoffConfig(TypedDict, total=False):
     ``True``; set it to ``False`` to disable backoff for the scope, so it relies
     solely on its configured delay and quota."""
 
-    http_codes: list[int]
-    """Per-scope override of :setting:`BACKOFF_HTTP_CODES`."""
-
-    exceptions: list[str]
-    """Per-scope override of :setting:`BACKOFF_EXCEPTIONS`."""
-
     max_delay: float
     """Per-scope override of :setting:`BACKOFF_MAX_DELAY`."""
 
@@ -1214,8 +1208,6 @@ class ThrottlingScopeManagerProtocol(Protocol):
             "quota": 1000.0,
             "window": 60.0,
             "backoff": {
-                "http_codes": [429, 503],
-                "exceptions": ["builtins.IOError"],
                 "max_delay": 180.0,
             },
         }
@@ -1406,8 +1398,7 @@ class ThrottlingScopeManager:
             backoff.get("max_delay", settings.getfloat("BACKOFF_MAX_DELAY"))
         )
         # Which responses/exceptions trigger backoff is decided by the backoff
-        # middleware (see BackoffMiddleware), which reads the same per-scope
-        # "http_codes"/"exceptions" config and the global BACKOFF_* settings.
+        # middleware (see BackoffMiddleware) from the global BACKOFF_* settings.
 
         # Concurrency. Always limited: a scope has no way to express "no limit"
         # (see _check_scope_concurrency), so this is a positive integer.

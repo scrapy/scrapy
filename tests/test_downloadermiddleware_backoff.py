@@ -133,18 +133,6 @@ class TestProcessResponse:
         mw.process_response(request, _response(request, status=429))
         assert calls == [(["example.com"], None)]
 
-    def test_per_scope_http_codes_override(self):
-        mw = _middleware(
-            {"THROTTLING_SCOPES": {"example.com": {"backoff": {"http_codes": [418]}}}}
-        )
-        calls = _spy_back_off(mw)
-        # 418 is only a backoff code for this scope's override.
-        request = _request()
-        mw.process_response(request, _response(request, status=418))
-        # A globally-configured code (429) is not one the scope backs off on.
-        mw.process_response(request, _response(request, status=429))
-        assert calls == [(["example.com"], None)]
-
     def test_deprecated_spider_arg(self):
         mw = _middleware()
         request = _request()
@@ -173,21 +161,6 @@ class TestProcessException:
         calls = _spy_back_off(mw)
         request = _request("http://example.com/a", meta={"dont_throttle": True})
         mw.process_exception(request, DownloadTimeoutError())
-        assert calls == [(["example.com"], None)]
-
-    def test_per_scope_exceptions_override(self):
-        mw = _middleware(
-            {
-                "THROTTLING_SCOPES": {
-                    "example.com": {"backoff": {"exceptions": ["builtins.ValueError"]}}
-                }
-            }
-        )
-        calls = _spy_back_off(mw)
-        # ValueError is only a backoff trigger for this scope's override.
-        mw.process_exception(_request("http://example.com/a"), ValueError())
-        # A globally-configured exception is not one the scope backs off on.
-        mw.process_exception(_request("http://example.com/a"), DownloadTimeoutError())
         assert calls == [(["example.com"], None)]
 
     def test_deprecated_spider_arg(self):
