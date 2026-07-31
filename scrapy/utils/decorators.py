@@ -10,6 +10,7 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.python import _signature
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine
@@ -109,7 +110,7 @@ def _warn_spider_arg(
 ):
     """Decorator to warn if a ``spider`` argument is passed to a function."""
 
-    sig = inspect.signature(func)
+    sig = _signature(func)
 
     def check_args(*args: _P.args, **kwargs: _P.kwargs) -> None:
         bound = sig.bind(*args, **kwargs)

@@ -105,9 +105,13 @@ Request serialization
 ---------------------
 
 For persistence to work, :class:`~scrapy.Request` objects must be
-serializable with :mod:`pickle`, except for the ``callback`` and ``errback``
-values passed to their ``__init__`` method, which must be methods of the
-running :class:`~scrapy.Spider` class.
+serializable with :mod:`pickle`, except for the :ref:`callback
+<callbacks>` and :ref:`errback
+<errbacks>` values passed to their ``__init__``
+method, which must be methods of the running :class:`~scrapy.Spider` class.
+
+Requests that cannot be serialized are kept in memory only: they are still
+sent, but they are lost when the crawl is paused.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
