@@ -49,6 +49,17 @@ jobs:
 
     - name: Set up uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      with:
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+
+    - name: Install mitmproxy
+      env:
+        # mitmproxy needs a newer Python than the oldest matrix entries, so let
+        # uv download one where no system interpreter is new enough.
+        UV_PYTHON_PREFERENCE: system
+      run: uv tool install mitmproxy
 
     - name: Run tests
       env: ${{ matrix.env }}
