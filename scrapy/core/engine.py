@@ -456,8 +456,12 @@ class ExecutionEngine:
         logger.warning(
             "Throttling is holding requests back and they are now consuming the "
             "global concurrency budget while they wait for a free slot. Consider "
-            "switching to scrapy.core.scheduler.ThrottlerAwareScheduler, which "
-            "holds throttled requests without consuming concurrency slots.",
+            "switching to the throttler-aware scheduler, which holds throttled "
+            "requests without consuming concurrency slots: set SCHEDULER to "
+            "scrapy.core.scheduler.ThrottlerAwareScheduler and "
+            "SCHEDULER_PRIORITY_QUEUE to "
+            "scrapy.pqueues.ThrottlerAwarePriorityQueue, both of which require "
+            "the other.",
             extra={"spider": self.spider},
         )
 
@@ -645,6 +649,14 @@ class ExecutionEngine:
             )
         finally:
             self._throttler_waiting.pop(request, None)
+            # While an unscheduled request waits, it claims a free slot of every
+            # one of its scopes, holding back every request that shares them
+            # (see Throttler.is_ready). Once it stops waiting it takes one slot
+            # per scope, which can leave others free for those requests, and
+            # nothing else would re-run the loop until this request is done
+            # downloading.
+            if unscheduled and self._slot is not None:
+                self._slot.nextcall.schedule()
 
     @inlineCallbacks
     def _download(
@@ -768,7 +780,7 @@ class ExecutionEngine:
         )
         return deferred_from_coro(self.close_spider_async(reason=reason))
 
-    async def close_spider_async(self, *, reason: str = "cancelled") -> None:  # noqa: PLR0912
+    async def close_spider_async(self, *, reason: str = "cancelled") -> None:  # noqa: PLR0912, PLR0915
         """Close (cancel) spider and clear all its outstanding requests.
 
         .. versionadded:: 2.14
@@ -819,8 +831,18 @@ class ExecutionEngine:
         # only exhaustive once both the slot and the scraper are closed. By then
         # the slot is also marked as closing, so awaiting these enqueues cannot
         # let _start_scheduled_requests() send new requests in the meantime.
-        while self._scheduling:
-            await maybe_deferred_to_future(next(iter(self._scheduling)))
+        # Guarded like every other step here: the scheduler must be closed (and,
+        # with a JOBDIR, its pending requests persisted) even if one of these
+        # never gets there.
+        try:
+            while self._scheduling:
+                await maybe_deferred_to_future(next(iter(self._scheduling)))
+        except Exception:
+            logger.error(
+                "Pending request scheduling failure",
+                exc_info=True,
+                extra={"spider": spider},
+            )
 
         if hasattr(self._slot.scheduler, "close"):
             try:

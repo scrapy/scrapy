@@ -5,7 +5,7 @@ import logging
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from twisted.internet.defer import Deferred
@@ -336,6 +336,23 @@ class TestEngineThrottler:
             engine._maybe_warn_throttler_backout()
         assert engine._throttler_backout_warned is True
         assert caplog.text.count("ThrottlerAwareScheduler") == 1
+
+    @coroutine_test
+    async def test_acquire_throttler_reruns_the_loop_for_unscheduled(self, engine):
+        engine._slot = Mock()
+        engine.crawler.throttler = Mock()
+        engine.crawler.throttler.acquire = AsyncMock()
+        request = Request("http://a.example")
+
+        await maybe_deferred_to_future(engine._acquire_throttler(request, False))
+        # A request from the scheduler goes on to the downloader, whose own
+        # finally block re-runs the loop once it is done with it.
+        engine._slot.nextcall.schedule.assert_not_called()
+
+        await maybe_deferred_to_future(engine._acquire_throttler(request, True))
+        # An unscheduled request stops claiming the free slots of its scopes
+        # here, which can be what lets a request that shares them through.
+        engine._slot.nextcall.schedule.assert_called_once_with()
 
     def test_spider_is_idle_false_while_scheduling(self, engine):
         engine._slot = Mock()

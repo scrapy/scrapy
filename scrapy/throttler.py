@@ -911,7 +911,9 @@ class Throttler:
         This runs on every scope creation once the limit is reached, so it walks
         the coldest end of the LRU order and stops as soon as it has enough
         candidates, rather than copying the (potentially very long) list of scope
-        ids to be able to delete while iterating.
+        ids to be able to delete while iterating. It only walks the whole order
+        when there are too few idle scopes to find, which takes as many scopes
+        busy at once as the limit allows.
         """
         if self._scope_limit <= 0:
             return

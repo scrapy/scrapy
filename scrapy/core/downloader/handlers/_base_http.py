@@ -3,6 +3,8 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING
 
+from scrapy.throttler import _default_scope_concurrency
+
 from .base import BaseDownloadHandler
 
 if TYPE_CHECKING:
@@ -15,9 +17,14 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
 
     @staticmethod
     def _max_per_host_concurrency(settings: BaseSettings) -> int:
-        """Highest per-host concurrency the throttler may admit: the per-domain
-        limit, the default ``other``-scope limit, and any explicit per-scope
-        concurrency.
+        """Highest per-host concurrency the throttler may admit: the default
+        per-scope limit and any explicit per-scope concurrency.
+
+        The default is whichever of :setting:`THROTTLING_SCOPE_CONCURRENCY` and
+        the deprecated :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` the throttler
+        actually applies, rather than the highest of the two, so that a
+        :setting:`THROTTLING_SCOPE_CONCURRENCY` set below the deprecated
+        setting's default is not read as the higher value.
 
         Per-scope concurrency is read from both :setting:`THROTTLING_SCOPES` and
         the deprecated :setting:`DOWNLOAD_SLOTS`, since the throttler honors a
@@ -37,10 +44,7 @@ class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
         for a connection instead of for the network.
         """
         global_concurrency = settings.getint("CONCURRENT_REQUESTS")
-        candidates = [
-            settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN"),
-            settings.getint("THROTTLING_SCOPE_CONCURRENCY"),
-        ]
+        candidates = [_default_scope_concurrency(settings)]
         candidates += [
             int(scope["concurrency"])
             for setting in ("THROTTLING_SCOPES", "DOWNLOAD_SLOTS")

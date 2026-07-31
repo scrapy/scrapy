@@ -210,3 +210,36 @@ async def test_waits_for_in_flight_enqueues(crawler: Crawler) -> None:
     stored.callback(None)
     await maybe_deferred_to_future(closing)
     assert events == ["enqueued", "scheduler closed"]
+
+
+@coroutine_test
+async def test_exception_in_flight_enqueue(
+    crawler: Crawler, caplog: pytest.LogCaptureFixture
+) -> None:
+    """An in-flight enqueue that fails does not keep the scheduler from being
+    closed, and hence its pending requests from being persisted."""
+    engine = ExecutionEngine(crawler, lambda _: None)
+    crawler.engine = engine
+    await engine.open_spider_async()
+    assert engine._slot is not None
+    engine.running = True
+    scheduler = engine._slot.scheduler
+    events: list[str] = []
+
+    scheduler_close = scheduler.close
+
+    def close(reason: str) -> defer.Deferred[None] | None:
+        events.append("scheduler closed")
+        return scheduler_close(reason)
+
+    scheduler.close = close  # type: ignore[method-assign]
+
+    # A tracked enqueue that ends in a failure, as the tail of
+    # _enqueue_request_async() does when it cannot reschedule the loop.
+    failed: defer.Deferred[None] = defer.Deferred()
+    failed.errback(Exception("enqueue failed"))
+    engine._scheduling.add(failed)
+
+    await engine.close_spider_async()
+    assert "Pending request scheduling failure" in caplog.text
+    assert events == ["scheduler closed"]
