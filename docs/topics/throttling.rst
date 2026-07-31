@@ -354,11 +354,6 @@ Without a higher priority, a backlog of requests ahead of it in a FIFO queue
 could keep it waiting well past the configured delay; a higher priority puts it
 at the front of the queue, so it goes out right after its delay.
 
-.. note:: Under the default scheduler a delayed request occupies a concurrency
-    slot for the whole delay while the throttler holds it back. The
-    :ref:`throttling-aware scheduler <throttler-aware-scheduler>` instead holds
-    it back in the queue, so its delay costs no concurrency slot.
-
 .. reqmeta:: dont_throttle
 
 Excluding a request from throttling
@@ -488,10 +483,6 @@ ones they end up being sent under. Throttling itself is unaffected: the scopes
 that hold a request back are always the ones
 :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes` returns.
 
-To keep that grouping accurate, use :ref:`throttling-aware scheduling
-<throttler-aware-scheduler>`, which resolves scopes asynchronously when
-enqueuing.
-
 .. _throttler-quotas:
 
 Throttler quotas
@@ -583,30 +574,6 @@ to keep an eye on which scopes are getting throttled:
         def record_backoff(self, *args, **kwargs):
             logger.info(f"Backing off scope {self._id}")
             super().record_backoff(*args, **kwargs)
-
-.. _throttler-aware-scheduler:
-
-Throttling-aware scheduling
-===========================
-
-By default, throttling is enforced at the engine, where a request waiting on
-its :ref:`throttling scopes <throttling-scopes>` holds a concurrency slot. In a
-crawl that mixes heavily-throttled scopes with unthrottled ones, this can let
-throttled requests starve unthrottled ones that could be sent right away
-(**head-of-line blocking**; Scrapy logs a warning the first time throttled
-requests start consuming the global concurrency budget while they wait).
-
-:class:`~scrapy.core.scheduler.ThrottlerAwareScheduler` avoids this. To enable
-it:
-
-.. code-block:: python
-    :caption: :file:`settings.py`
-
-    SCHEDULER = "scrapy.core.scheduler.ThrottlerAwareScheduler"
-    SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ThrottlerAwarePriorityQueue"
-
-Both settings must be changed together: each of those two classes requires the
-other, and Scrapy raises an exception at the start of the crawl otherwise.
 
 .. _throttling-examples:
 
@@ -987,10 +954,6 @@ Additional settings
 
 API
 ===
-
-.. autoclass:: scrapy.core.scheduler.ThrottlerAwareScheduler
-
-.. autoclass:: scrapy.pqueues.ThrottlerAwarePriorityQueue
 
 .. autoclass:: scrapy.throttler.ThrottlerProtocol
     :members:

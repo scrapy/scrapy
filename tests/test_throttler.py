@@ -359,19 +359,6 @@ class TestThrottler:
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
         assert manager.get_resolved_scopes(request) == "host:example.com"
 
-    def test_reserve_is_idempotent(self):
-        # Reserving twice would record two sends that a single release() cannot
-        # undo, leaving the scope permanently short of a concurrency slot.
-        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 2}}})
-        request = Request("http://example.com/1")
-        manager.reserve(request)
-        manager.reserve(request)
-        scope = _scope(manager, "example.com")
-        assert scope.get_load() == pytest.approx(0.5)
-        manager.release(request)
-        assert scope.get_load() == 0.0
-        assert scope.concurrency_blocked() is False
-
     def test_reconcile_quota_without_backoff(self):
         manager = _manager({"THROTTLING_SCOPES": {"cost": {"quota": 100.0}}})
         scope = _scope(manager, "cost")
@@ -527,14 +514,13 @@ class TestThrottler:
         _scope(manager, "b.example")
         assert set(manager._scope_managers) == {"a.example", "b.example"}
 
-    def test_scope_limit_evicts_on_reserve(self):
-        # A throttler-aware scheduler reserves every request before the engine
-        # reaches acquire(), so the scopes it creates must be capped too.
+    @coroutine_test
+    async def test_scope_limit_evicts_on_acquire(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 1})
         idle = _scope(manager, "idle.example")
         idle.record_sent(now=0.0)
         idle.record_done(now=0.0)
-        manager.reserve(Request("http://active.example/1"))
+        await manager.acquire(Request("http://active.example/1"))
         assert set(manager._scope_managers) == {"active.example"}
 
     def test_scope_limit_evicts_least_recently_used(self):
@@ -608,8 +594,6 @@ class TestThrottler:
         # The send landed on the manager that the scope has now, so the scope is
         # at its concurrency of 1 and holds the next request of it back.
         assert _scope(manager, "shared").concurrency_blocked() is True
-        second = Request("http://a.example/2", meta={"throttling_scopes": ["shared"]})
-        assert manager.is_ready(second) is False
 
     def test_scope_limit_disabled(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})
@@ -843,18 +827,19 @@ class TestUnscheduledRequests:
         waiting = Request("http://example.com/2")
         blocked = await self._start_waiting(manager, waiting)
         scheduled = Request("http://example.com/3")
-        await manager.get_scopes(scheduled)
-        # The scope is full, so nothing is ready yet.
-        assert manager.is_ready(scheduled) is False
+        scheduling = deferred_from_coro(manager.acquire(scheduled))
+        await sleep(0)
         manager.release(holder)
-        # Now there is a free slot, but the waiting unscheduled request has a
-        # claim on it: a request from the scheduler must not take it.
-        assert manager.is_ready(scheduled) is False
-        await maybe_deferred_to_future(blocked)
+        # The freed slot goes to the unscheduled request, which has a claim on
+        # it, rather than to the request from the scheduler.
+        await self._finish_waiting(blocked)
         assert waiting in manager._reserved
+        assert scheduled not in manager._reserved
         # Once it is served it no longer holds a claim on the scope.
         manager.release(waiting)
-        assert manager.is_ready(scheduled) is True
+        done, _ = await _wait_for_first([scheduling], timeout=30)
+        assert done, "the throttler never let the scheduled request through"
+        await maybe_deferred_to_future(scheduling)
 
     @coroutine_test
     async def test_scheduler_keeps_a_slot_the_unscheduled_waiter_cannot_use(
@@ -872,12 +857,9 @@ class TestUnscheduledRequests:
         # The unscheduled request is waiting for scope b, so it cannot use a free
         # slot of scope a: the scheduler gets it.
         scheduled = Request("http://example.com/3", meta={"throttling_scopes": "a"})
-        await manager.get_scopes(scheduled)
-        assert manager.is_ready(scheduled) is True
-        manager.release(blocker)
-        # Now it can use both, so it takes precedence again.
-        assert manager.is_ready(scheduled) is False
-        await maybe_deferred_to_future(blocked)
+        await self._acquire(manager, scheduled)
+        assert scheduled in manager._reserved
+        await self._stop_waiting(blocked)
 
     @coroutine_test
     async def test_the_same_request_waiting_twice_reserves_once(self) -> None:
@@ -1013,8 +995,8 @@ class TestUnscheduledRequests:
         # The waiter cannot use a free slot until its own delay elapses, so it
         # has no claim on it and the scheduler may take it.
         scheduled = Request("http://example.com/2")
-        await manager.get_scopes(scheduled)
-        assert manager.is_ready(scheduled) is True
+        await self._acquire(manager, scheduled)
+        assert scheduled in manager._reserved
 
 
 class TestThrottlingScopeManager:
@@ -1284,155 +1266,16 @@ class TestThrottlingScopeManager:
         assert scope._consumed == pytest.approx(7.0)
 
 
-class TestThrottlerReadiness:
-    """The synchronous readiness API used by a throttler-aware scheduler."""
-
-    @coroutine_test
-    async def test_is_ready_unconstrained_scope(self):
-        manager = _manager()
-        request = Request("http://example.com/a")
-        # A scope with no configured delay/concurrency/quota is always ready.
-        assert await manager.get_scopes(request) == "example.com"
-        assert manager.is_ready(request) is True
-
-    @coroutine_test
-    async def test_is_ready_without_cached_scopes(self):
-        # is_ready falls back to synchronous resolution when get_scopes was not
-        # called first (e.g. for a request restored from disk).
-        manager = _manager()
-        request = Request("http://example.com/a")
-        assert manager.is_ready(request) is True
-
-    @coroutine_test
-    async def test_readiness_creates_no_scope_managers(self):
-        """A throttler-aware scheduler asks about every queued scope set on
-        every dequeue, which on a broad crawl means every pending domain, so
-        merely considering a scope must not build (or LRU-touch) its manager: a
-        scope with no manager has no state to hold anything back with."""
-        manager = _manager(
-            {
-                "THROTTLING_SCOPES": {
-                    "example.com": {"concurrency": 1, "delay": 100.0, "quota": 1.0}
-                },
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
-            }
-        )
-        request = Request("http://example.com/1")
-        await manager.get_scopes(request)
-        assert manager.is_ready(request) is True
-        assert manager.get_time_until_ready(request) is None
-        assert manager.get_scope_load("example.com") == 0.0
-        assert not manager._scope_managers
-
-        # Actually using the scope is what creates it, and from then on its state
-        # is what the same calls read.
-        manager.reserve(request)
-        assert set(manager._scope_managers) == {"example.com"}
-        other = Request("http://example.com/2")
-        await manager.get_scopes(other)
-        assert manager.is_ready(other) is False
-        assert manager.get_time_until_ready(other) == pytest.approx(100.0, abs=1.0)
-
-    @coroutine_test
-    async def test_reserve_blocks_scope_by_base_delay(self):
-        manager = _manager(
-            {
-                "THROTTLING_SCOPES": {"example.com": {"delay": 100.0}},
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
-            }
-        )
-        first = Request("http://example.com/1")
-        second = Request("http://example.com/2")
-        await manager.get_scopes(first)
-        await manager.get_scopes(second)
-        assert manager.is_ready(first) is True
-        manager.reserve(first)
-        # The base delay now blocks any further request for the scope.
-        assert manager.is_ready(second) is False
-        assert manager.get_time_until_ready(second) == pytest.approx(100.0, abs=1.0)
-
-    @coroutine_test
-    async def test_dont_throttle_is_ready_and_reserves_nothing(self):
-        manager = _manager(
-            {
-                "THROTTLING_SCOPES": {
-                    "example.com": {"concurrency": 1, "delay": 100.0}
-                },
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
-            }
-        )
-        blocking = Request("http://example.com/1")
-        await manager.get_scopes(blocking)
-        manager.reserve(blocking)
-        scope = _scope(manager, "example.com")
-        load = scope.get_load()
-        exempt = Request("http://example.com/2", meta={"dont_throttle": True})
-        await manager.get_scopes(exempt)
-        assert manager.is_ready(exempt) is True
-        assert manager.get_time_until_ready(exempt) is None
-        # Reserving it neither takes a slot nor pushes the scope delay forward.
-        manager.reserve(exempt)
-        assert exempt not in manager._reserved
-        assert scope.get_load() == load
-
-    @coroutine_test
-    async def test_dont_throttle_still_honors_the_request_delay(self):
-        manager = _manager()
-        request = Request(
-            "http://example.com/a", meta={"delay": 100.0, "dont_throttle": True}
-        )
-        await manager.get_scopes(request)
-        assert manager.is_ready(request) is False
-        assert manager.get_time_until_ready(request) == pytest.approx(100.0, abs=1.0)
-
-    @coroutine_test
-    async def test_delay_blocks_until_deadline(self):
-        manager = _manager({"THROTTLER_DEBUG": True})
-        request = Request("http://example.com/a", meta={"delay": 100.0})
-        await manager.get_scopes(request)
-        # The per-request delay holds back the request even though its scope is
-        # otherwise unconstrained.
-        assert manager.is_ready(request) is False
-        assert manager.get_time_until_ready(request) == pytest.approx(100.0, abs=1.0)
-        # The deadline is computed once and reused by later polls.
-        deadline = request.meta["_throttler_delay_deadline"]
-        assert manager.is_ready(request) is False
-        assert request.meta["_throttler_delay_deadline"] == deadline
-
-    @coroutine_test
-    async def test_delay_not_reapplied_once_consumed(self):
-        # A request whose delay was already honored (e.g. promoted out of a
-        # throttler-aware queue's holding area, or restored on resume) is
-        # ready, so it cannot re-block its scope set on a stale deadline.
-        manager = _manager()
-        request = Request(
-            "http://example.com/a",
-            meta={"delay": 100.0, "_throttler_delay_deadline": None},
-        )
-        await manager.get_scopes(request)
-        assert manager.is_ready(request) is True
-        assert manager.get_request_delay(request) == 0.0
-
-    @coroutine_test
-    async def test_get_request_delay(self):
-        manager = _manager()
-        assert manager.get_request_delay(
-            Request("http://example.com/a", meta={"delay": 100.0})
-        ) == pytest.approx(100.0, abs=1.0)
-        # A request without a per-request delay is not held individually.
-        assert manager.get_request_delay(Request("http://example.com/b")) == 0.0
-
+class TestThrottlerBackOff:
     @coroutine_test
     async def test_back_off_delay(self):
         manager = _manager({"THROTTLER_DEBUG": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
         request = Request("http://example.com/a")
         await manager.get_scopes(request)
-        assert manager.is_ready(request) is True
         # A component can delay a whole scope on demand, like a Retry-After
         # response header does.
         manager.back_off("example.com", delay=50.0, cap=False)
-        assert manager.is_ready(request) is False
-        assert manager.get_time_until_ready(request) == pytest.approx(50.0, abs=1.0)
+        assert _scope(manager, "example.com").can_send() == pytest.approx(50.0, abs=1.0)
 
     @coroutine_test
     async def test_back_off_uncapped_delay_bypasses_max_delay(self):
@@ -1444,54 +1287,35 @@ class TestThrottlerReadiness:
         request = Request("http://example.com/a")
         await manager.get_scopes(request)
         manager.back_off("example.com", delay=1000.0, cap=False)
-        assert manager.get_time_until_ready(request) == pytest.approx(1000.0, abs=1.0)
-
-    @coroutine_test
-    async def test_reserve_blocks_on_concurrency(self):
-        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
-        first = Request("http://example.com/1")
-        second = Request("http://example.com/2")
-        await manager.get_scopes(first)
-        await manager.get_scopes(second)
-        manager.reserve(first)
-        assert manager.is_ready(second) is False
-        # Pure concurrency blocking has no time component.
-        assert manager.get_time_until_ready(second) is None
-        manager.release(first)
-        assert manager.is_ready(second) is True
-
-    @coroutine_test
-    async def test_acquire_noop_when_reserved(self):
-        manager = _manager(
-            {
-                "THROTTLING_SCOPES": {"example.com": {"delay": 100.0}},
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
-            }
+        assert _scope(manager, "example.com").can_send() == pytest.approx(
+            1000.0, abs=1.0
         )
-        request = Request("http://example.com/1")
-        await manager.get_scopes(request)
-        manager.reserve(request)
-        # A reserved request fast-paths through acquire() without re-recording
-        # the send or waiting for the delay.
-        await manager.acquire(request)
-        scope = _scope(manager, "example.com")
-        assert scope._active == 1  # reserve recorded exactly one send
 
+
+class TestThrottlerScopeLoad:
     @coroutine_test
     async def test_get_scope_load(self):
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 4}}})
         assert manager.get_scope_load("example.com") == 0.0
         request = Request("http://example.com/1")
-        await manager.get_scopes(request)
-        manager.reserve(request)
+        await manager.acquire(request)
         assert manager.get_scope_load("example.com") == pytest.approx(0.25)
 
-    def test_get_scope_load_uses_the_default_concurrency(self):
+    @coroutine_test
+    async def test_get_scope_load_uses_the_default_concurrency(self):
         manager = _manager({"THROTTLING_SCOPE_CONCURRENCY": 8})
         # A scope that sets no concurrency of its own is limited by the default.
-        request = Request("http://example.com/1")
-        manager.reserve(request)
+        await manager.acquire(Request("http://example.com/1"))
         assert manager.get_scope_load("example.com") == pytest.approx(1 / 8)
+
+    @coroutine_test
+    async def test_get_scope_load_creates_no_scope_manager(self):
+        # DownloaderAwarePriorityQueue asks for the load of every queued scope on
+        # every pop, which on a broad crawl means every pending domain, so merely
+        # asking must not build (or LRU-touch) a scope manager.
+        manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
+        assert manager.get_scope_load("example.com") == 0.0
+        assert not manager._scope_managers
 
 
 class TestParseRateHeaders:
@@ -2112,25 +1936,6 @@ class _TwoRequestSpider(Spider):
         return
 
 
-# How throttling holds a request back depends on the scheduler: the default one
-# lets it wait inside Throttler.acquire(), while a throttler-aware one keeps it
-# in its queue and polls Throttler.is_ready() instead. Those are two independent
-# code paths, and letting a request sent from a downloader middleware through is
-# the job of both, so the deadlock tests below run under each.
-_SCHEDULER_SETTINGS: dict[str, dict[str, str]] = {
-    "default_scheduler": {},
-    "throttler_aware_scheduler": {
-        "SCHEDULER": "scrapy.core.scheduler.ThrottlerAwareScheduler",
-        "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ThrottlerAwarePriorityQueue",
-    },
-}
-
-
-@pytest.fixture(params=_SCHEDULER_SETTINGS.values(), ids=list(_SCHEDULER_SETTINGS))
-def scheduler_settings(request: pytest.FixtureRequest) -> dict[str, str]:
-    return cast("dict[str, str]", request.param)
-
-
 class TestThrottlerIntegration:
     @coroutine_test
     async def test_backoff_recorded_on_429(self, mockserver):
@@ -2163,9 +1968,7 @@ class TestThrottlerIntegration:
         assert all(m._delay == m._base_delay for m in _scope_managers(crawler))
 
     @coroutine_test
-    async def test_robotstxt_does_not_wait_for_a_concurrency_slot(
-        self, mockserver, scheduler_settings
-    ):
+    async def test_robotstxt_does_not_wait_for_a_concurrency_slot(self, mockserver):
         """A robots.txt request is downloaded from a downloader middleware,
         while the request that triggered it is holding the only concurrency
         slot of the very same scope and waiting for it, so it has to borrow
@@ -2175,7 +1978,6 @@ class TestThrottlerIntegration:
             {
                 "ROBOTSTXT_OBEY": True,
                 "THROTTLING_SCOPE_CONCURRENCY": 1,
-                **scheduler_settings,
             },
         )
         crawl = deferred_from_coro(
@@ -2192,7 +1994,7 @@ class TestThrottlerIntegration:
 
     @coroutine_test
     async def test_response_prerequisite_does_not_wait_for_a_concurrency_slot(
-        self, mockserver, scheduler_settings
+        self, mockserver
     ):
         """Every concurrency slot of a scope is held by a request whose
         ``process_response`` chain is waiting for the same request sent from a
@@ -2203,7 +2005,6 @@ class TestThrottlerIntegration:
             {
                 "THROTTLING_SCOPE_CONCURRENCY": 2,
                 "DOWNLOADER_MIDDLEWARES": {_SharedPrerequisiteMiddleware: 1000},
-                **scheduler_settings,
             },
         )
         crawl = deferred_from_coro(

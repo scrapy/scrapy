@@ -346,8 +346,7 @@ class ThrottlerProtocol(Protocol):
 
         A request with the :reqmeta:`dont_throttle` metadata key is not held by
         its scopes and does not count towards them; only its own
-        :reqmeta:`delay`, if any, still applies. The same goes for
-        :meth:`is_ready`, :meth:`reserve` and :meth:`get_time_until_ready`.
+        :reqmeta:`delay`, if any, still applies.
         """
 
     def release(self, request: Request) -> None:
@@ -374,42 +373,6 @@ class ThrottlerProtocol(Protocol):
         end on their own.
         """
 
-    def is_ready(self, request: Request) -> bool:
-        """Return whether every scope of *request* allows it to be sent right
-        now, i.e. every time-based limit (delay, backoff, quota window) has
-        elapsed *and* a concurrency slot is free in every scope.
-
-        This is the synchronous, non-blocking counterpart of :meth:`acquire`,
-        used by a :ref:`throttler-aware scheduler
-        <throttler-aware-scheduler>` to decide whether a request can be
-        dequeued now. It assumes the scopes of *request* have already been
-        resolved (e.g. by an earlier :meth:`get_scopes` call at enqueue time).
-
-        It also returns ``False`` when a free slot of one of the scopes of
-        *request* is claimed by an unscheduled request waiting in
-        :meth:`acquire`, which gets it first.
-        """
-
-    def reserve(self, request: Request) -> None:
-        """Claim a send for *request*: record the send on every one of its
-        scopes and mark *request* as reserved, so that a later :meth:`acquire`
-        for it returns immediately without reserving again.
-
-        A :ref:`throttler-aware scheduler <throttler-aware-scheduler>` calls
-        this when it decides to dequeue *request* (after :meth:`is_ready`
-        returned ``True``). The reservation is released by :meth:`release`.
-        """
-
-    def get_time_until_ready(self, request: Request) -> float | None:
-        """Return the number of seconds until every time-based limit of
-        *request* would have elapsed, or ``None`` if no time-based limit is
-        currently blocking it (only a concurrency slot could be).
-
-        Used by a :ref:`throttler-aware scheduler
-        <throttler-aware-scheduler>` to schedule a wakeup when all pending
-        requests are time-blocked.
-        """
-
     def get_scopes_key(self, request: Request) -> str:
         """Return a single string key for *request*, derived from its scopes.
 
@@ -422,9 +385,9 @@ class ThrottlerProtocol(Protocol):
 
     def get_scope_load(self, scope_id: str) -> float:
         """Return the current load of the scope identified by *scope_id*: its
-        active sends divided by its concurrency limit, which a
-        :ref:`throttler-aware scheduler <throttler-aware-scheduler>` uses to
-        prefer the least-loaded scopes when dequeuing.
+        active sends divided by its concurrency limit, which
+        :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` uses to prefer the
+        least-loaded scopes when dequeuing.
 
         It can exceed ``1.0``: lending an unused slot (see the *unscheduled*
         argument of :meth:`acquire`) makes the outstanding sends of a scope
@@ -433,18 +396,6 @@ class ThrottlerProtocol(Protocol):
         A scope with no throttling state yet has a load of ``0.0``.
         Implementations should not create state just to answer this: it is
         called for every queued scope on every dequeue.
-        """
-
-    def get_request_delay(self, request: Request, now: float | None = None) -> float:
-        """Return how many seconds *request* must still be held individually
-        because of its :reqmeta:`delay`, or ``0.0`` if it has none
-        or it has already elapsed. The one-time delay is started on the first
-        call.
-
-        Unlike a scope delay, this affects only *request*: a
-        :ref:`throttler-aware scheduler <throttler-aware-scheduler>` must
-        hold the request back on its own, **without** blocking other requests
-        that share its scopes.
         """
 
     def back_off(
@@ -542,12 +493,11 @@ def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
     """Decorator for :meth:`~ThrottlerProtocol.get_scopes`
     implementations that persists the resolved scopes on ``request.meta``.
 
-    The readers of the resolved scopes — the synchronous readiness API of a
-    :ref:`throttler-aware scheduler <throttler-aware-scheduler>` and
-    :meth:`~ThrottlerProtocol.get_resolved_scopes` — read this persisted value
-    instead of resolving the scopes again, so they stay cheap and consistent,
-    and it survives a request being serialized to and restored from a
-    :ref:`disk queue <topics-jobs>`.
+    The readers of the resolved scopes — :meth:`~ThrottlerProtocol.get_scopes_key`
+    and :meth:`~ThrottlerProtocol.get_resolved_scopes` — read this persisted
+    value instead of resolving the scopes again, so they stay cheap and
+    consistent, and it survives a request being serialized to and restored from
+    a :ref:`disk queue <topics-jobs>`.
 
     The decorated method always re-resolves, so a request that inherited
     ``request.meta`` from another one (e.g. a redirect built with
@@ -842,10 +792,6 @@ class Throttler:
             del self._scope_managers[scope_id]
 
     async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
-        # A throttler-aware scheduler reserves the request before handing it
-        # to the engine, so there is nothing left to wait for or record here.
-        if request in self._reserved:
-            return
         await self._delay_request(request)
         # The scopes are resolved (and persisted, see scope_cache) even for a
         # request excluded from throttling, because its outcome still backs off
@@ -858,9 +804,9 @@ class Throttler:
         if not unscheduled:
             await self._acquire_scope_slots(request, scope_values, unscheduled=False)
             return
-        # A registration here holds back is_ready() for the whole scope (see
-        # _unscheduled_claims), so one that outlived its wait would stall a
-        # throttler-aware scheduler for good. The finally below covers every way
+        # A registration here makes the whole scope yield its free slots to
+        # this request (see _unscheduled_claims), so one that outlived its wait
+        # would hold the scope back for good. The finally below covers every way
         # this coroutine can end, including being cancelled or abandoned (both
         # of which throw into the await).
         for scope_id, _ in scope_values:
@@ -954,8 +900,7 @@ class Throttler:
 
     def _record_reservation(self, request: Request, scopes: list[ScopeSlot]) -> None:
         """Record a send on each of *request*'s *scopes* and mark *request* as
-        reserved, so :meth:`release` can later free the slots. This is the
-        shared tail of :meth:`acquire` and :meth:`reserve`."""
+        reserved, so :meth:`release` can later free the slots."""
         for scope_id, manager, quota_amount in scopes:
             manager.record_sent(quota_amount=quota_amount)
             self._scope_holders.setdefault(scope_id, WeakSet()).add(request)
@@ -1081,46 +1026,6 @@ class Throttler:
                 return False
         return True
 
-    # -- Synchronous readiness API (used by a throttler-aware scheduler) ------
-
-    def is_ready(self, request: Request) -> bool:
-        if request.meta.get("dont_throttle"):
-            now = time.monotonic()
-            return self._request_delay_deadline(request, now) <= now
-        if not self._scopes_allow(request):
-            return False
-        # Every scope has a free slot, but an unscheduled request waiting for one
-        # of them gets it first. The waiter set is empty most of the time, and
-        # checking that first skips building the scope id list.
-        if not self._unscheduled_waiters:
-            return True
-        return not self._unscheduled_claims(
-            [scope_id for scope_id, _ in self._cached_scope_quota_amounts(request)]
-        )
-
-    def reserve(self, request: Request) -> None:
-        # Reserving twice would record two sends that only one release() undoes,
-        # leaving the scope permanently short of a concurrency slot. It takes an
-        # unsupported crawl (the same Request object scheduled twice) to get
-        # here, so this only keeps that from corrupting scope state for good.
-        if request in self._reserved or request.meta.get("dont_throttle"):
-            return
-        self._record_reservation(
-            request,
-            self._resolve_scope_slots(self._cached_scope_quota_amounts(request)),
-        )
-
-    def get_time_until_ready(self, request: Request) -> float | None:
-        now = time.monotonic()
-        wait = max(0.0, self._request_delay_deadline(request, now) - now)
-        if not request.meta.get("dont_throttle"):
-            for scope_id, quota_amount in self._cached_scope_quota_amounts(request):
-                manager = self._live_scope_manager(scope_id)
-                if manager is None:
-                    continue
-                wait = max(wait, manager.can_send(now=now, quota_amount=quota_amount))
-        return wait if wait > 0 else None
-
     def get_scope_load(self, scope_id: ScopeID) -> float:
         # A scope with no manager has nothing in flight, so its load is 0: it was
         # either never used, or evicted, which only happens to idle scopes. A
@@ -1128,10 +1033,6 @@ class Throttler:
         # (see DownloaderAwarePriorityQueue), so this must not create one.
         manager = self._live_scope_manager(scope_id)
         return 0.0 if manager is None else manager.get_load()
-
-    def get_request_delay(self, request: Request, now: float | None = None) -> float:
-        now = time.monotonic() if now is None else now
-        return max(0.0, self._request_delay_deadline(request, now) - now)
 
     async def _wait_for_slot(self, managers: list[Any], *, unscheduled: bool) -> None:
         """Block until any of *managers* frees a concurrency slot or, for an
@@ -1165,11 +1066,7 @@ class Throttler:
 
     async def _delay_request(self, request: Request) -> None:
         """Honor the :reqmeta:`delay` meta key by holding *request* for the
-        requested number of seconds the first time it is processed.
-
-        This is the blocking (:meth:`acquire`) counterpart of
-        :meth:`_request_delay_deadline`, which the readiness API polls instead.
-        """
+        requested number of seconds the first time it is processed."""
         now = time.monotonic()
         wait = self._request_delay_deadline(request, now) - now
         if wait <= 0:
@@ -1181,13 +1078,10 @@ class Throttler:
         """Return the monotonic time before which *request* must not be sent due
         to its :reqmeta:`delay`, or ``0.0`` if it has none.
 
-        This is the readiness-API counterpart of :meth:`_delay_request`: a
-        throttler-aware scheduler holds the request back until this deadline
-        instead of awaiting :meth:`acquire`. The deadline is computed once, the
-        first time the request is throttled, and stored so later polls reuse it.
-        A request whose delay was already honored (a ``None`` deadline) is never
-        delayed again, so a resumed crawl does not re-block on a stale
-        deadline."""
+        The deadline is computed once, the first time the request is throttled,
+        and stored so later reads reuse it. A request whose delay was already
+        honored (a ``None`` deadline) is never delayed again, so a resumed crawl
+        does not re-block on a stale deadline."""
         delay = request.meta.get("delay")
         if not delay:
             return 0.0
@@ -1418,11 +1312,11 @@ class ThrottlingScopeManagerProtocol(Protocol):
         """Return the current load of this scope: a non-negative number, with
         ``1.0`` meaning "as busy as its concurrency limit allows".
 
-        A :ref:`throttler-aware scheduler <throttler-aware-scheduler>` uses
-        this to break ties between equally-prioritized requests, preferring the
-        least-loaded scopes. The reference implementation returns active sends
-        divided by the concurrency limit, but any consistent busyness metric
-        works; return ``0.0`` when none is meaningful.
+        :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` uses this to
+        dequeue from the least-loaded scopes first. The reference implementation
+        returns active sends divided by the concurrency limit, but any
+        consistent busyness metric works; return ``0.0`` when none is
+        meaningful.
         """
 
     def slot_available_event(self) -> Deferred[None]:
