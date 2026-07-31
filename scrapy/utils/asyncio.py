@@ -293,6 +293,24 @@ class CallLaterResult:
             self._delayed_call = None
 
 
+async def sleep(seconds: float) -> None:
+    """Sleep for *seconds*.
+
+    .. versionadded:: VERSION
+
+    This uses either :func:`asyncio.sleep` or
+    :func:`~twisted.internet.task.deferLater`, depending on whether asyncio
+    support is available.
+    """
+    if is_asyncio_available():
+        await asyncio.sleep(seconds)
+        return
+
+    from twisted.internet import reactor
+
+    await deferLater(reactor, seconds)
+
+
 async def run_in_thread(
     func: Callable[_P, _T], *args: _P.args, **kwargs: _P.kwargs
 ) -> _T:
@@ -311,24 +329,6 @@ async def run_in_thread(
     from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
     return await maybe_deferred_to_future(deferToThread(func, *args, **kwargs))
-
-
-async def _sleep(seconds: float) -> None:
-    """Sleep for *seconds*, working in asyncio-reactor, non-asyncio-reactor,
-    and reactorless modes.
-
-    Uses :func:`asyncio.sleep` when asyncio is available, and
-    :func:`~twisted.internet.task.deferLater` otherwise.
-    """
-    if is_asyncio_available():
-        await asyncio.sleep(seconds)
-    else:
-        from twisted.internet import reactor
-
-        # circular import
-        from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
-
-        await maybe_deferred_to_future(deferLater(reactor, seconds, lambda: None))
 
 
 async def _wait_for_first(

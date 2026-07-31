@@ -16,7 +16,7 @@ from typing_extensions import Self
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
-from scrapy.utils.asyncio import _sleep, _wait_for_first
+from scrapy.utils.asyncio import _wait_for_first, sleep
 from scrapy.utils.defer import _Event
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -912,7 +912,7 @@ class Throttler:
                     logger.debug(
                         f"Throttling {request} for {wait:.2f}s (scopes: {scope_ids})"
                     )
-                await _sleep(wait)
+                await sleep(wait)
                 continue
             # Every time-based limit (delay, backoff, quota) has elapsed; the
             # only remaining reason to wait is a full concurrency slot.
@@ -932,7 +932,7 @@ class Throttler:
                     # be waiting for it, so let it go first. Only once, so that
                     # a claim that no one takes cannot spin here.
                     yielded_to_unscheduled = True
-                    await _sleep(0)
+                    await sleep(0)
                     continue
                 self._record_reservation(request, scopes)
                 return
@@ -1174,7 +1174,7 @@ class Throttler:
         wait = self._request_delay_deadline(request, now) - now
         if wait <= 0:
             return
-        await _sleep(wait)
+        await sleep(wait)
         _mark_request_delayed(request)
 
     def _request_delay_deadline(self, request: Request, now: float) -> float:

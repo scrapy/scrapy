@@ -31,12 +31,11 @@ from scrapy.throttler import (
     scope_cache,
 )
 from scrapy.utils._headers import _parse_ratelimit_reset, _parse_retry_after
-from scrapy.utils.asyncio import _wait_for_first, call_later
+from scrapy.utils.asyncio import _wait_for_first, call_later, sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
-from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -351,7 +350,7 @@ class TestThrottler:
         class HostScopeThrottler(Throttler):
             @scope_cache
             async def get_scopes(self, request: Request) -> RequestScopes:
-                await async_sleep(0)  # only resolvable asynchronously
+                await sleep(0)  # only resolvable asynchronously
                 return f"host:{urlparse_cached(request).hostname}"
 
         crawler = get_crawler()
@@ -593,7 +592,7 @@ class TestThrottler:
             "http://a.example/1", meta={"throttling_scopes": ["slow", "shared"]}
         )
         blocked = deferred_from_coro(manager.acquire(waiting))
-        await async_sleep(0)
+        await sleep(0)
         assert not blocked.called, "the 'slow' scope let the request through"
 
         # Unrelated scopes are used meanwhile, pushing past the scope limit; the
@@ -655,7 +654,7 @@ class TestUnscheduledRequests:
         """Start an unscheduled acquire() and let it run up to the point where it
         blocks waiting for a concurrency slot."""
         blocked = deferred_from_coro(manager.acquire(request, unscheduled=True))
-        await async_sleep(0)
+        await sleep(0)
         return blocked
 
     @staticmethod
@@ -673,7 +672,7 @@ class TestUnscheduledRequests:
         it does not outlive the test as a pending task."""
         blocked.addBoth(lambda _: None)  # swallow the cancellation
         blocked.cancel()
-        await async_sleep(0)
+        await sleep(0)
 
     @coroutine_test
     async def test_borrows_the_slot_of_a_holder_in_the_middlewares(
@@ -2072,7 +2071,7 @@ class _DownloadHandlerPeakExtension:
                 counts[key] = counts.get(key, 0) + 1
             for key, count in counts.items():
                 self.peak[key] = max(self.peak.get(key, 0), count)
-            await async_sleep(0.005)
+            await sleep(0.005)
 
 
 class _UnscheduledFloodSpider(Spider):

@@ -12,13 +12,12 @@ from scrapy.core.downloader import Downloader
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK
 from scrapy.throttler import Throttler
-from scrapy.utils.asyncio import _wait_for_first
+from scrapy.utils.asyncio import _wait_for_first, sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider, SimpleSpider
-from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test
 
 
@@ -177,7 +176,7 @@ async def test_a_request_queued_for_a_download_handler_lends_nothing():
     downloader.active.add(holder)
     queueing = deferred_from_coro(downloader._await_download_handler(holder))
     for _ in range(10):
-        await async_sleep(0)
+        await sleep(0)
     assert not queueing.called
     assert downloader._in_downloader_middlewares(holder) is False
 
@@ -185,7 +184,7 @@ async def test_a_request_queued_for_a_download_handler_lends_nothing():
     prerequisite = Request("https://a.example/robots.txt")
     blocked = deferred_from_coro(throttler.acquire(prerequisite, unscheduled=True))
     for _ in range(10):
-        await async_sleep(0)
+        await sleep(0)
     assert not blocked.called
     assert prerequisite not in throttler._reserved
     assert crawler.stats
@@ -237,7 +236,7 @@ async def test_a_lender_waits_for_its_loan_before_reaching_a_download_handler():
     # than the borrower finishing, so it now wants the network too.
     reaching_a_handler = deferred_from_coro(downloader._await_download_handler(lender))
     for _ in range(10):
-        await async_sleep(0)
+        await sleep(0)
     assert not reaching_a_handler.called, (
         "the lender joined the borrower in a download handler, above the scope "
         "concurrency"
@@ -344,7 +343,7 @@ class UnscheduledFloodSpider(MetaSpider):
                     type(self).peak_in_download_handler,
                     len(downloader._in_download_handler),
                 )
-                await async_sleep(0.02)
+                await sleep(0.02)
 
         watcher = asyncio.ensure_future(watch())
         await asyncio.gather(
@@ -493,7 +492,7 @@ async def test_close_releases_download_handler_waiters():
     waiting = deferred_from_coro(
         downloader._await_download_handler(Request("https://example.com/2"))
     )
-    await async_sleep(0)
+    await sleep(0)
     assert not waiting.called, "the only download handler slot is taken"
     # No request will ever leave a download handler now, so the wait ends
     # instead of being left hanging.
