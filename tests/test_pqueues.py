@@ -14,6 +14,15 @@ from scrapy.utils.test import get_crawler
 from tests.utils.downloader import MockDownloader
 
 
+class DroppingFifoMemoryQueue(FifoMemoryQueue):  # type: ignore[valid-type,misc]
+    """Queue that drops requests marked with ``drop`` in their metadata, the
+    way a custom queue class could drop requests it does not want to store."""
+
+    def push(self, request):
+        if not request.meta.get("drop"):
+            super().push(request)
+
+
 class TestPriorityQueue:
     def setup_method(self):
         self.crawler = get_crawler(Spider)
@@ -180,6 +189,31 @@ class TestPriorityQueue:
         assert queue.pop().url == "https://example.org/1"
         assert queue.queues == {}
         assert queue.curprio is None
+        assert queue.pop() is None
+        assert not queue.close()
+
+    def test_push_into_a_queue_that_drops_the_request(self):
+        """A queue class may drop a request instead of storing it, and that
+        priority must not become the current one, or ``peek()`` and ``pop()``
+        would come up empty with requests still queued."""
+        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
+            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
+        temp_dir = tempfile.mkdtemp()
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler, DroppingFifoMemoryQueue, temp_dir
+        )
+        # A higher priority than the request below, so that it would become the
+        # current priority if it were stored.
+        queue.push(
+            Request("https://example.org/dropped", priority=1, meta={"drop": True})
+        )
+        kept = Request("https://example.org/kept")
+        queue.push(kept)
+
+        assert len(queue) == 1
+        assert queue.peek().url == kept.url
+        assert queue.pop().url == kept.url
+        assert queue.peek() is None
         assert queue.pop() is None
         assert not queue.close()
 

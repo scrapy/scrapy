@@ -186,30 +186,27 @@ class ScrapyPriorityQueue:
                 self.queues[priority] = self.qfactory(priority)
             q = self.queues[priority]
         q.push(request)  # this may fail (eg. serialization error)
-        if self.curprio is None or priority < self.curprio:
+        # A queue class may drop a request instead of storing it, and a
+        # priority with an empty queue must not become the current one, since
+        # pop() and peek() expect to find a request there.
+        if q and (self.curprio is None or priority < self.curprio):
             self.curprio = priority
 
+    def _curqueue(self) -> QueueProtocol:
+        assert self.curprio is not None
+        # Whichever dict holds a non-empty queue at the current priority. The
+        # other one may hold an empty queue left behind by a failed push, e.g.
+        # on a serialization error, which would hide the next request.
+        return self.queues.get(self.curprio) or self._start_queues[self.curprio]
+
     def pop(self) -> Request | None:
-        while self.curprio is not None:
-            for queues in (self.queues, self._start_queues):
-                q = queues.get(self.curprio)
-                # An empty queue can linger at a priority when a push failed
-                # after creating it, e.g. on a serialization error. Popping
-                # from it would return None and hide the request that the other
-                # dict may hold at the same priority.
-                if not q:
-                    continue
-                m = q.pop()
-                if not q:
-                    # The other dict may have no queue at this priority either,
-                    # and a curprio that neither dict has would make peek() come
-                    # up empty.
-                    self._update_curprio()
-                return m
-            # Nothing to pop at this priority: refreshing drops the empty
-            # leftovers and moves on to the next priority.
+        if self.curprio is None:
+            return None
+        q = self._curqueue()
+        request = q.pop()
+        if not q:
             self._update_curprio()
-        return None
+        return request
 
     def _update_curprio(self) -> None:
         # Keeping an empty queue would hold its storage open for nothing, and
@@ -233,17 +230,11 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
-        # The dicts are walked in the same order as in pop(), which is what
-        # makes the returned request the one that pop() then returns.
-        for queues in (self.queues, self._start_queues):
-            queue = queues.get(self.curprio)
-            # Empty queues can linger at a priority (see pop()), where they
-            # would hide the request that the other dict may hold at the same
-            # priority.
-            if queue:
-                # Protocols can't declare optional members
-                return cast("Request", queue.peek())  # type: ignore[attr-defined]
-        return None
+        # Picking the queue the same way as pop() is what makes the returned
+        # request the one that pop() then returns.
+        queue = self._curqueue()
+        # Protocols can't declare optional members
+        return cast("Request", queue.peek())  # type: ignore[attr-defined]
 
     def close(self) -> list[int]:
         active: set[int] = set()
