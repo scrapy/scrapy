@@ -21,10 +21,11 @@ class TestScraper:
             start_urls = ["data:,"]
 
             def parse(self, response):
+                assert self.crawler.engine
+                slot = self.crawler.engine.scraper.slot
+                assert slot
                 with pytest.warns(ScrapyDeprecationWarning):
-                    outcome["active_size"] = (
-                        self.crawler.engine.scraper.slot.active_size
-                    )
+                    outcome["active_size"] = slot.active_size
 
         crawler = get_crawler(
             TestSpider, settings_dict={"TELNETCONSOLE_ENABLED": False}
@@ -33,8 +34,11 @@ class TestScraper:
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
 
+        assert crawler.engine
+        slot = crawler.engine.scraper.slot
+        assert slot
         with pytest.warns(ScrapyDeprecationWarning):
-            expected = crawler.engine.scraper.slot.MIN_RESPONSE_SIZE
+            expected = slot.MIN_RESPONSE_SIZE
         assert outcome["active_size"] == expected
 
 

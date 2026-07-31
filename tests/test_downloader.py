@@ -1,4 +1,5 @@
 import warnings
+from typing import Any
 
 import pytest
 from twisted.internet.defer import Deferred
@@ -26,7 +27,9 @@ class OfflineSpider(Spider):
         pass
 
 
-def _assert_scraper_slot_deprecation(warning_messages, *, ignored=False):
+def _assert_scraper_slot_deprecation(
+    warning_messages: pytest.WarningsRecorder, *, ignored: bool = False
+) -> None:
     """Assert that a crawl emitted exactly one Scrapy deprecation warning, the
     one about SCRAPER_SLOT_MAX_ACTIVE_SIZE.
 
@@ -60,13 +63,13 @@ def _assert_scraper_slot_deprecation(warning_messages, *, ignored=False):
 class gt:
     __hash__ = None  # type: ignore[assignment]
 
-    def __init__(self, value):
+    def __init__(self, value: float):
         self.value = value
 
-    def __eq__(self, other):
-        return other > self.value
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, (int, float)) and other > self.value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f">{self.value}"
 
 
@@ -79,6 +82,7 @@ class TestResponseMaxActiveSize:
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
         assert crawler.engine.downloader._response_max_active_size == 5_000_000
 
     @coroutine_test
@@ -91,6 +95,7 @@ class TestResponseMaxActiveSize:
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
         assert crawler.engine.downloader._response_max_active_size == 0
 
     @coroutine_test
@@ -102,6 +107,7 @@ class TestResponseMaxActiveSize:
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
         assert crawler.engine.downloader._response_max_active_size == 5_000_000
         _assert_scraper_slot_deprecation(warning_messages)
 
@@ -115,6 +121,7 @@ class TestResponseMaxActiveSize:
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
         assert crawler.engine.downloader._response_max_active_size == 0
         _assert_scraper_slot_deprecation(warning_messages)
 
@@ -134,6 +141,7 @@ class TestResponseMaxActiveSize:
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
         assert crawler.engine.downloader._response_max_active_size == 1
         _assert_scraper_slot_deprecation(warning_messages, ignored=True)
 
@@ -160,6 +168,7 @@ class TestResponseMaxActiveSize:
         crawler = get_crawler(TestSpider)
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
             await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
         assert crawler.engine.downloader._response_max_active_size == 2
         _assert_scraper_slot_deprecation(warning_messages)
 
@@ -175,6 +184,7 @@ class TestResponseRoughSize:
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
         assert crawler.engine.downloader.middleware._response_rough_size == 131072
 
     @coroutine_test
@@ -184,6 +194,7 @@ class TestResponseRoughSize:
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.engine
         assert crawler.engine.downloader.middleware._response_rough_size == 0
 
     @coroutine_test
@@ -256,6 +267,7 @@ class TestResponseRoughSize:
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
+        assert crawler.stats
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
@@ -293,6 +305,7 @@ class TestRequestBackout:
                 matching_log_count += 1
         assert matching_log_count == 0
 
+        assert crawler.stats
         stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
@@ -315,7 +328,7 @@ class TestRequestBackout:
             def process_request(self, request, spider):
                 from twisted.internet import reactor
 
-                d = Deferred()
+                d: Deferred[None] = Deferred()
                 reactor.callLater(0.01, d.callback, None)
                 return d
 
@@ -351,6 +364,7 @@ class TestRequestBackout:
             "request_backout_seconds/concurrency": gt(0),
             "request_backout_seconds/total": gt(0),
         }
+        assert crawler.stats
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
@@ -389,6 +403,7 @@ class TestRequestBackout:
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
+        assert crawler.stats
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
@@ -432,6 +447,7 @@ class TestRequestBackout:
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
+        assert crawler.stats
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
@@ -475,6 +491,7 @@ class TestRequestBackout:
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
+        assert crawler.stats
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
@@ -525,6 +542,7 @@ class TestRequestBackout:
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
+        assert crawler.stats
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
@@ -544,7 +562,7 @@ class TestRequestBackout:
             def process_item(self, item, spider):
                 from twisted.internet import reactor
 
-                d = Deferred()
+                d: Deferred[dict[Any, Any]] = Deferred()
                 reactor.callLater(0, d.callback, {})
                 return d
 
@@ -557,6 +575,7 @@ class TestRequestBackout:
             }
 
             async def parse(self, response):
+                assert self.crawler.engine
                 response = await self.crawler.engine.download(Request("data:,a"))
                 yield {"response": response}
 
@@ -578,6 +597,7 @@ class TestRequestBackout:
             "request_backout_seconds/response_max_active_size": gt(0),
             "request_backout_seconds/total": gt(0),
         }
+        assert crawler.stats
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()

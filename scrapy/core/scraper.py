@@ -64,8 +64,8 @@ class Slot(ClassPropertiesMixin):
 
     _MIN_RESPONSE_SIZE = 1024
 
-    @classproperty
-    def MIN_RESPONSE_SIZE(cls):  # pylint: disable=no-self-argument
+    @classmethod
+    def _get_min_response_size(cls) -> int:
         warnings.warn(
             "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
             ScrapyDeprecationWarning,
@@ -73,14 +73,19 @@ class Slot(ClassPropertiesMixin):
         )
         return cls._MIN_RESPONSE_SIZE
 
-    @MIN_RESPONSE_SIZE.setter  # type: ignore[no-redef]
-    def MIN_RESPONSE_SIZE(cls, value):  # pylint: disable=no-self-argument
+    @classmethod
+    def _set_min_response_size(cls, value: int) -> None:
         warnings.warn(
             "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
         cls._MIN_RESPONSE_SIZE = value
+
+    # Typed as Any because mypy does not understand class properties.
+    MIN_RESPONSE_SIZE: Any = classproperty(_get_min_response_size).setter(
+        _set_min_response_size
+    )
 
     def __init__(self, max_active_size: Any = _UNSET):
         if max_active_size is _UNSET:
