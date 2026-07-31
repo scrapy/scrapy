@@ -169,7 +169,8 @@ class Request(object_ref):
         #:
         #: The callable must expect the response as its first parameter, and
         #: support any additional keyword arguments set through
-        #: :attr:`cb_kwargs`.
+        #: :attr:`cb_kwargs`. See :ref:`writing-callbacks` and
+        #: :ref:`callback-output`.
         #:
         #: In addition to an arbitrary callable, the following values are also
         #: supported:
@@ -190,8 +191,7 @@ class Request(object_ref):
         #:     raises exceptions for non-2xx responses by default, sending them
         #:     to the :attr:`errback` instead.
         #:
-        #: .. seealso::
-        #:     :ref:`topics-request-response-ref-request-callback-arguments`
+        #: .. seealso:: :ref:`callbacks`
         self.callback: CallbackT | None = callback
 
         #: :class:`~collections.abc.Callable` to handle exceptions raised
@@ -200,7 +200,7 @@ class Request(object_ref):
         #: The callable must expect a :exc:`~twisted.python.failure.Failure` as
         #: its first parameter.
         #:
-        #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
+        #: .. seealso:: :ref:`errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
         self._cookies: CookiesT | None = cookies or None
