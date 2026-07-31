@@ -199,6 +199,16 @@ BaseItemExporter
 
       -   ``None`` (all fields [2]_, default)
 
+          Fields are exported in declaration order, i.e. the order in which
+          they are defined in the :ref:`item class <item-types>`. For
+          :class:`dict` items, which have no declared fields, the key order of
+          each item is used instead.
+
+          .. versionchanged:: VERSION
+             Fields of non-\ :class:`dict` items used to be exported in the
+             order in which they had been populated, except in
+             :class:`CsvItemExporter`, which has always used declaration order.
+
       -   A list of fields:
 
           .. code-block:: python
