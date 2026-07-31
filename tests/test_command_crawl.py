@@ -23,6 +23,18 @@ class TestCrawlCommand(TestProjectBase):
         _, _, stderr = self.crawl(code, proj_path, args=args)
         return stderr
 
+    def test_no_spider(self, proj_path: Path) -> None:
+        returncode, out, _ = proc("crawl", cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
+
+    def test_multiple_spiders(self, proj_path: Path) -> None:
+        returncode, _, err = proc("crawl", "myspider", "myspider2", cwd=proj_path)
+        assert returncode == 2
+        assert (
+            "running 'scrapy crawl' with more than one spider is not supported" in err
+        )
+
     def test_no_output(self, proj_path: Path) -> None:
         spider_code = """
 import scrapy

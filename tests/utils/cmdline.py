@@ -46,3 +46,16 @@ def write_recording_editor(editor: Path) -> None:
     open (its last argument) into the file given as its first argument."""
     editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
     editor.chmod(0o755)
+
+
+def write_recording_browser(browser: Path, recorded: Path) -> None:
+    """Create an executable browser script that writes the URL it is asked to
+    open into *recorded*.
+
+    ``webbrowser`` only passes the URL to the command from the ``BROWSER``
+    environment variable, hence the hardcoded output path.
+    """
+    browser.write_text(
+        f'#!/bin/sh\nprintf "%s" "$1" > "{recorded}"\n', encoding="utf-8"
+    )
+    browser.chmod(0o755)
