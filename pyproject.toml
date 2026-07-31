@@ -366,10 +366,14 @@ filterwarnings = [
     # (CannotListenError): https://github.com/twisted/twisted/issues/6108
     # The asyncio reactor likewise leaves client sockets and transports open on
     # teardown. These surface as unraisable exceptions during finalization; the
-    # message wording varies across Python versions (sometimes there is no
-    # "Exception ignored ..." prefix at all), so match on the object repr.
+    # message wording varies across Python implementations and versions
+    # (PyPy leaves the prefix empty), so match on the object repr.
     "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
-    "ignore:.*calling deallocator <function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    # PyDispatcher iterates its connection registry while a weakref callback
+    # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
+    # can die within a single collection.
+    "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
     # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
     # files open; the resulting warning surfaces at an arbitrary GC point.
     "ignore:.*<_io\\.FileIO name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
