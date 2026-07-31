@@ -14,6 +14,7 @@ import pytest
 
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
+from scrapy.extensions.httpcache import DummyPolicy
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
@@ -23,6 +24,14 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from scrapy.crawler import Crawler
+
+
+class AlwaysStalePolicy(DummyPolicy):
+    """:class:`~scrapy.extensions.httpcache.DummyPolicy` that always
+    revalidates cached responses."""
+
+    def is_cached_response_fresh(self, cachedresponse, request):
+        return False
 
 
 class TestBase:
@@ -282,6 +291,21 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert isinstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
+
+    def test_revalidation_keeps_cached_response(self):
+        # The dummy policy considers every cached response valid, so a policy
+        # that subclasses it to force revalidation always gets the cached
+        # response back, whatever the new response is.
+        with self._middleware(HTTPCACHE_POLICY=AlwaysStalePolicy) as mw:
+            assert mw.process_request(self.request) is None
+            mw.process_response(self.request, self.response)
+
+            assert mw.process_request(self.request) is None
+            fresh_response = self.response.replace(body=b"new body")
+            response = mw.process_response(self.request, fresh_response)
+            self.assertEqualResponse(self.response, response)
+            assert "cached" in response.flags
+            assert mw.stats.get_value("httpcache/revalidate") == 1
 
 
 class RFC2616PolicyTestMixin(PolicyTestMixin):
@@ -553,6 +577,53 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                     assert "cached" not in res5.flags
                 else:
                     assert "cached" in res5.flags
+
+    def test_middleware_ignore_schemes(self):
+        # file responses are not cached by default
+        req = Request("file:///tmp/t.txt")
+        res = Response(req.url, headers={"Expires": self.tomorrow})
+        with self._middleware() as mw:
+            assert mw.process_request(req) is None
+            mw.process_response(req, res)
+
+            assert mw.storage.retrieve_response(mw.crawler.spider, req) is None
+            assert mw.process_request(req) is None
+
+    def test_max_stale_with_value(self):
+        # A response that expired one day ago.
+        headers = {"Date": self.yesterday, "Expires": self.yesterday}
+        with self._middleware() as mw:
+            req0 = Request("http://example.com")
+            res0 = Response(req0.url, headers=headers)
+            self._process_requestresponse(mw, req0, res0)
+
+            # max-stale greater than the staleness of the cached response
+            req1 = req0.replace(headers={"Cache-Control": "max-stale=172800"})
+            res1 = mw.process_request(req1)
+            assert isinstance(res1, Response)
+            assert "cached" in res1.flags
+
+            # max-stale lower than the staleness of the cached response
+            req2 = req0.replace(headers={"Cache-Control": "max-stale=60"})
+            assert mw.process_request(req2) is None
+
+            # a non-integer max-stale value is ignored
+            req3 = req0.replace(headers={"Cache-Control": "max-stale=soon"})
+            assert mw.process_request(req3) is None
+
+    def test_response_dated_in_the_future(self):
+        # A Date header ahead of the local clock must not make the cached
+        # response look aged.
+        headers = {"Date": self.tomorrow, "Cache-Control": "max-age=10"}
+        with self._middleware() as mw:
+            req0 = Request("http://example.com")
+            res0 = Response(req0.url, headers=headers)
+            res1 = self._process_requestresponse(mw, req0, res0)
+            assert "cached" not in res1.flags
+
+            res2 = self._process_requestresponse(mw, req0, None)
+            self.assertEqualResponse(res1, res2)
+            assert "cached" in res2.flags
 
     def test_process_exception(self):
         with self._middleware() as mw:

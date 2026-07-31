@@ -95,7 +95,7 @@ class MemoryUsage:
 
     def engine_stopped(self) -> None:
         for tsk in self.tasks:
-            if tsk.running:
+            if tsk.running:  # pragma: no branch
                 tsk.stop()
 
     def update(self) -> None:

@@ -19,6 +19,7 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.reactor import _asyncio_reactor_path
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
+from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import proc
 from tests.utils.decorators import coroutine_test
 
@@ -161,6 +162,33 @@ class TestShellCommand:
         )
         ret, out, _ = proc("shell", "-c", code)
         assert ret == 0, out
+
+
+class TestShellCommandWithSpider(TestProjectBase):
+    @pytest.fixture(autouse=True)
+    def create_files(self, proj_path: Path) -> None:
+        (proj_path / self.project_name / "spiders" / "myspider.py").write_text(
+            """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+""",
+            encoding="utf-8",
+        )
+
+    def test_spider(self, proj_path: Path, mockserver: MockServer) -> None:
+        ret, out, err = proc(
+            "shell",
+            "--spider",
+            "myspider",
+            mockserver.url("/text"),
+            "-c",
+            "spider.name",
+            cwd=proj_path,
+        )
+        assert ret == 0, err
+        assert out.strip() == "myspider"
 
 
 class TestInteractiveShell:

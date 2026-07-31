@@ -7,7 +7,8 @@ import pytest
 from twisted.conch.telnet import ITelnetProtocol
 from twisted.cred import credentials
 
-from scrapy.extensions.telnet import TelnetConsole
+from scrapy import Spider
+from scrapy.extensions.telnet import TelnetConsole, update_telnet_vars
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
@@ -17,16 +18,20 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from scrapy.crawler import Crawler
+    from scrapy.http import Response
 
 pytestmark = pytest.mark.requires_reactor  # TelnetConsole requires a reactor
 
 
-def _get_crawler(settings_dict: dict[str, Any] | None = None) -> Crawler:
+def _get_crawler(
+    spidercls: type[Spider] | None = None,
+    settings_dict: dict[str, Any] | None = None,
+) -> Crawler:
     settings = {
         "TELNETCONSOLE_ENABLED": True,
         **(settings_dict or {}),
     }
-    return get_crawler(settings_dict=settings)
+    return get_crawler(spidercls, settings_dict=settings)
 
 
 @contextmanager
@@ -85,3 +90,47 @@ def test_invalid_reversed_portrange() -> None:
     console = build_from_crawler(TelnetConsole, _get_crawler(settings_dict=settings))
     with pytest.raises(ValueError, match=r"invalid portrange: \[2, 1\]"):
         console.start_listening()
+
+
+@coroutine_test
+async def test_telnet_vars() -> None:
+    """Log into the console of a running crawl, which is when the telnet
+    variables are built."""
+    received: list[dict[str, Any]] = []
+
+    def on_update_telnet_vars(telnet_vars: dict[str, Any]) -> None:
+        received.append(telnet_vars)
+
+    class TelnetSpider(Spider):
+        name = "telnet"
+        start_urls = ["data:,"]
+
+        async def parse(self, response: Response) -> None:
+            assert self.crawler.extensions
+            console = next(
+                ext
+                for ext in self.crawler.extensions.middlewares
+                if isinstance(ext, TelnetConsole)
+            )
+            creds = credentials.UsernamePassword(
+                console.username.encode("utf8"), console.password.encode("utf8")
+            )
+            portal = console.protocol().protocolArgs[0]
+            await maybe_deferred_to_future(portal.login(creds, None, ITelnetProtocol))
+
+    crawler = _get_crawler(TelnetSpider)
+    crawler.signals.connect(on_update_telnet_vars, signal=update_telnet_vars)
+    await crawler.crawl_async()
+
+    assert len(received) == 1
+    telnet_vars = received[0]
+    assert telnet_vars["crawler"] is crawler
+    assert telnet_vars["engine"] is crawler.engine
+    assert telnet_vars["spider"] is crawler.spider
+    assert telnet_vars["extensions"] is crawler.extensions
+    assert telnet_vars["stats"] is crawler.stats
+    assert telnet_vars["settings"] is crawler.settings
+    assert callable(telnet_vars["est"])
+    assert callable(telnet_vars["p"])
+    assert callable(telnet_vars["prefs"])
+    assert "telnetconsole.html" in telnet_vars["help"]
