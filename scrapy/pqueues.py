@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Protocol, cast
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Collection, Iterable
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -308,6 +308,23 @@ def _slot_scopes(slot: str) -> tuple[ScopeID, ...]:
     return (slot,)
 
 
+def _scopes_load(throttler: ThrottlerProtocol, scopes: Collection[ScopeID]) -> float:
+    """Return the load of *scopes* as a whole: the highest load among them,
+    since a queue of requests sharing them cannot be dequeued faster than their
+    busiest one allows.
+
+    Spelled out rather than ``max()`` over a generator: this runs for every
+    pending scope set on every pop, which on a broad crawl means every pending
+    domain, and most scope sets hold a single scope.
+    """
+    if len(scopes) == 1:
+        return throttler.get_scope_load(next(iter(scopes)))
+    load = 0.0
+    for scope_id in scopes:
+        load = max(load, throttler.get_scope_load(scope_id))
+    return load
+
+
 class DownloaderAwarePriorityQueue:
     """PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
@@ -464,20 +481,10 @@ class DownloaderAwarePriorityQueue:
         del self._slot_scopes[slot]
 
     def _slot_stats(self) -> list[tuple[float, str]]:
-        get_load = self._throttler.get_scope_load
-        stats: list[tuple[float, str]] = []
-        for slot, scopes in self._slot_scopes.items():
-            # Spelled out rather than max() over a generator: this runs for every
-            # pending slot on every pop, and a slot stands for a single scope
-            # under the default scoping.
-            if len(scopes) == 1:
-                load = get_load(scopes[0])
-            elif not scopes:
-                load = 0.0
-            else:
-                load = max(get_load(scope) for scope in scopes)
-            stats.append((load, slot))
-        return stats
+        return [
+            (_scopes_load(self._throttler, scopes), slot)
+            for slot, scopes in self._slot_scopes.items()
+        ]
 
     def pop(self) -> Request | None:
         stats = self._slot_stats()
@@ -808,12 +815,7 @@ class ThrottlerAwarePriorityQueue:
                 head = queue.peek()
                 if head is None or not self._throttler.is_ready(head):
                     continue
-                # Spelled out rather than max() over a generator: this runs for
-                # every candidate, and most scope sets hold a single scope.
-                load = 0.0
-                for scope_id in scope_set:
-                    scope_load = self._throttler.get_scope_load(scope_id)
-                    load = max(load, scope_load)
+                load = _scopes_load(self._throttler, scope_set)
                 if not load:
                     return scope_set, queue
                 if best_load is None or load < best_load:

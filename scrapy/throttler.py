@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import random
@@ -12,17 +11,19 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, TypeVar, cast
 from weakref import WeakKeyDictionary, WeakSet
 
-from twisted.internet.defer import Deferred
 from typing_extensions import Self
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.asyncio import sleep, wait_for_first
+from scrapy.utils.defer import _Event
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
     from scrapy.http import Request
@@ -1713,7 +1714,7 @@ class ThrottlingScopeManager:
         self._last_backoff_time: float | None = None
         self._last_seen: float | None = None
         self._active: int = 0
-        self._slot_waiters: list[Deferred[None]] = []
+        self._slot_available = _Event()
         self._consumed: float = 0.0
         self._quota_window_start: float | None = None
 
@@ -1851,7 +1852,7 @@ class ThrottlingScopeManager:
     def record_done(self, now: float | None = None) -> None:
         if self._active > 0:
             self._active -= 1
-            self._fire_slot_waiters()
+            self._slot_available.fire()
 
     def concurrency_blocked(self) -> bool:
         return self._active >= self._concurrency
@@ -1860,19 +1861,10 @@ class ThrottlingScopeManager:
         return self._active / self._concurrency
 
     def slot_available_event(self) -> Deferred[None]:
-        event: Deferred[None] = Deferred()
-        self._slot_waiters.append(event)
-        return event
+        return self._slot_available.wait()
 
     def discard_slot_available_event(self, event: Deferred[None]) -> None:
-        with contextlib.suppress(ValueError):
-            self._slot_waiters.remove(event)
-
-    def _fire_slot_waiters(self) -> None:
-        waiters, self._slot_waiters = self._slot_waiters, []
-        for event in waiters:
-            if not event.called:
-                event.callback(None)
+        self._slot_available.discard(event)
 
     def record_backoff(
         self,
@@ -1955,7 +1947,7 @@ class ThrottlingScopeManager:
                 f"Scope concurrency must be 1 or higher, got {concurrency!r}."
             )
         self._concurrency = concurrency
-        self._fire_slot_waiters()
+        self._slot_available.fire()
 
     def is_idle(self, now: float, max_idle: float) -> bool:
         if self._in_backoff_until is not None and self._in_backoff_until > now:

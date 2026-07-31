@@ -10,6 +10,7 @@ from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import (
+    _Event,
     aiter_errback,
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -400,3 +401,30 @@ class TestMaybeDeferredToFutureNotAsyncio:
         result = maybe_deferred_to_future(d)
         assert isinstance(result, Deferred)
         assert result is d
+
+
+class TestEvent:
+    def test_fire(self) -> None:
+        event = _Event()
+        waiters = [event.wait(), event.wait()]
+        assert not any(waiter.called for waiter in waiters)
+        event.fire()
+        assert all(waiter.called for waiter in waiters)
+        # Firing again does not call the same waiters a second time (which would
+        # raise): they are dropped as they fire.
+        event.fire()
+
+    def test_fire_skips_already_fired(self) -> None:
+        event = _Event()
+        waiter = event.wait()
+        waiter.callback(None)  # fired out-of-band
+        event.fire()
+        assert waiter.called
+
+    def test_discard(self) -> None:
+        event = _Event()
+        waiter = event.wait()
+        event.discard(waiter)
+        event.discard(waiter)  # idempotent
+        event.fire()
+        assert not waiter.called

@@ -5,7 +5,6 @@ from typing import Any
 from urllib.parse import urlparse
 
 import pytest
-from twisted.internet.defer import Deferred
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader
@@ -407,21 +406,6 @@ async def test_download_handler_slots_do_not_deadlock_on_robotstxt(scheduler_set
 
 
 @coroutine_test
-async def test_fire_download_handler_waiters_skips_already_fired():
-    crawler = get_crawler(DefaultSpider)
-    crawler.spider = crawler._create_spider()
-    downloader = Downloader(crawler)
-    waiter: Deferred[None] = Deferred()
-    downloader._download_handler_waiters.append(waiter)
-    waiter.callback(None)  # fired out-of-band before a slot freed up
-    # The already-fired waiter is skipped rather than called a second time
-    # (which would raise).
-    downloader._fire_download_handler_waiters()
-    assert downloader._download_handler_waiters == []
-    downloader.close()
-
-
-@coroutine_test
 async def test_downloader_middlewares_event():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
@@ -445,7 +429,7 @@ async def test_discard_downloader_middlewares_event():
     downloader = Downloader(crawler)
     event = downloader._downloader_middlewares_event()
     downloader._discard_downloader_middlewares_event(event)
-    assert downloader._downloader_middlewares_waiters == []
+    assert downloader._downloader_middlewares_entry._waiters == []
     # Discarding an event that is no longer tracked is a no-op.
     downloader._discard_downloader_middlewares_event(event)
     # The dropped event is not fired by a later request reaching the

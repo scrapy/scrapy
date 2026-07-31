@@ -4,7 +4,6 @@ import random
 import warnings
 from collections import deque
 from collections.abc import Iterator, Mapping
-from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
@@ -19,6 +18,7 @@ from scrapy.throttler import _STAMPED_SLOT_META_KEY
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
+    _Event,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
@@ -224,14 +224,16 @@ class Downloader:
         # in the downloader middlewares instead (see
         # _in_downloader_middlewares()).
         self._in_download_handler: set[Request] = set()
-        self._download_handler_waiters: list[Deferred[None]] = []
+        # Fires when a request leaves a download handler, i.e. when it frees a
+        # download handler slot and room on the network for its scopes.
+        self._download_handler_exit = _Event()
         # Requests waiting for a download handler (see
         # _await_download_handler()). They are not in one yet, but they are not
         # in the downloader middlewares either (see
         # _in_downloader_middlewares()): they are past their middlewares and
         # waiting on nothing but the network.
         self._awaiting_download_handler: set[Request] = set()
-        self._downloader_middlewares_waiters: list[Deferred[None]] = []
+        self._downloader_middlewares_entry = _Event()
         self._closed: bool = False
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
@@ -257,7 +259,7 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
-        self._fire_downloader_middlewares_waiters()
+        self._downloader_middlewares_entry.fire()
         try:
             result: Response | Request = yield (
                 deferred_from_coro(
@@ -392,11 +394,7 @@ class Downloader:
         <scrapy.core.engine.ExecutionEngine.download_async>`.
         """
         while self._download_handler_slots_full():
-            # Register the waiter before giving up control, or a request leaving
-            # a download handler in between would go unnoticed.
-            waiter: Deferred[None] = Deferred()
-            self._download_handler_waiters.append(waiter)
-            await maybe_deferred_to_future(waiter)
+            await self._wait_for_download_handler_exit()
 
     def _download_handler_slots_full(self) -> bool:
         """Return whether every download handler slot is taken. A closed
@@ -444,9 +442,7 @@ class Downloader:
         A request is only ever held out of a download handler by requests that
         are in one, and those end on their own, so this cannot wait forever.
         """
-        waiter: Deferred[None] = Deferred()
-        self._download_handler_waiters.append(waiter)
-        await maybe_deferred_to_future(waiter)
+        await maybe_deferred_to_future(self._download_handler_exit.wait())
 
     def _downloader_middlewares_event(self) -> Deferred[None]:
         """Return a :class:`~twisted.internet.defer.Deferred` that fires the next
@@ -465,16 +461,13 @@ class Downloader:
         neither place, so a prerequisite that looks for a slot to borrow then
         finds none, and nothing else would tell it to look again.
         """
-        event: Deferred[None] = Deferred()
-        self._downloader_middlewares_waiters.append(event)
-        return event
+        return self._downloader_middlewares_entry.wait()
 
     def _discard_downloader_middlewares_event(self, event: Deferred[None]) -> None:
         """Drop a pending *event* returned by
         :meth:`_downloader_middlewares_event`, for a wait that ended for a
         different reason."""
-        with suppress(ValueError):
-            self._downloader_middlewares_waiters.remove(event)
+        self._downloader_middlewares_entry.discard(event)
 
     def _leave_download_handler(self, request: Request) -> None:
         """Record that no download handler is working on *request* anymore.
@@ -489,22 +482,8 @@ class Downloader:
         if request not in self._in_download_handler:
             return
         self._in_download_handler.discard(request)
-        self._fire_download_handler_waiters()
-        self._fire_downloader_middlewares_waiters()
-
-    def _fire_download_handler_waiters(self) -> None:
-        waiters = self._download_handler_waiters
-        self._download_handler_waiters = []
-        for waiter in waiters:
-            if not waiter.called:
-                waiter.callback(None)
-
-    def _fire_downloader_middlewares_waiters(self) -> None:
-        waiters = self._downloader_middlewares_waiters
-        self._downloader_middlewares_waiters = []
-        for waiter in waiters:
-            if not waiter.called:
-                waiter.callback(None)
+        self._download_handler_exit.fire()
+        self._downloader_middlewares_entry.fire()
 
     async def _download(self, request: Request) -> Response:
         await self._await_download_handler(request)
@@ -536,5 +515,5 @@ class Downloader:
         # Release anything waiting for a request to leave a download handler or
         # to reach the downloader middlewares, since neither will happen again.
         self._closed = True
-        self._fire_download_handler_waiters()
-        self._fire_downloader_middlewares_waiters()
+        self._download_handler_exit.fire()
+        self._downloader_middlewares_entry.fire()

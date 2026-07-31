@@ -1294,16 +1294,6 @@ class TestThrottlingScopeManager:
         scope.record_done(now=0.0)
         assert not event.called
 
-    def test_fire_slot_waiters_skips_already_fired(self):
-        scope = _scope_manager(config={"id": "x", "concurrency": 1})
-        scope.record_sent(now=0.0)
-        event = scope.slot_available_event()
-        event.callback(None)  # fired out-of-band before the slot frees up
-        # record_done() fires the waiters; the already-fired one is skipped
-        # rather than called a second time (which would raise).
-        scope.record_done(now=0.0)
-        assert event.called
-
     def test_set_concurrency_rejects_non_positive(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 4})
         # A scope always enforces a limit, so there is no value that lifts it.
@@ -1713,7 +1703,7 @@ class TestThrottlerEdges:
         call_later(0, m1.record_done)
         await manager._wait_for_slot([m1, m2], unscheduled=False)
         # The still-pending m2 event is discarded from its waiter list.
-        assert m2._slot_waiters == []
+        assert m2._slot_available._waiters == []
 
     @coroutine_test
     async def test_wait_for_slot_discards_the_unfired_middlewares_event(self):
@@ -1725,7 +1715,7 @@ class TestThrottlerEdges:
         # downloader.
         call_later(0, scope.record_done)
         await manager._wait_for_slot([scope], unscheduled=True)
-        assert downloader._downloader_middlewares_waiters == []
+        assert downloader._downloader_middlewares_entry._waiters == []
         downloader.close()
 
     @coroutine_test
@@ -1739,7 +1729,7 @@ class TestThrottlerEdges:
         # slot event stays pending instead.
         call_later(0, downloader._leave_download_handler, request)
         await manager._wait_for_slot([scope], unscheduled=True)
-        assert scope._slot_waiters == []
+        assert scope._slot_available._waiters == []
         downloader.close()
 
     @coroutine_test
@@ -1751,7 +1741,7 @@ class TestThrottlerEdges:
         scope.record_sent(now=0.0)
         call_later(0, scope.record_done)
         await manager._wait_for_slot([scope], unscheduled=True)
-        assert scope._slot_waiters == []
+        assert scope._slot_available._waiters == []
 
     def test_back_off_debug_logging(self, caplog):
         manager = _manager({"THROTTLER_DEBUG": True})
