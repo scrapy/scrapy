@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, cast
 from twisted.internet.defer import Deferred  # noqa: TC002
 
 from scrapy.spiders import Spider  # noqa: TC001
-from scrapy.throttler import iter_scopes
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
@@ -428,19 +427,14 @@ class Scheduler(BaseScheduler):
             return False
         return self._store(request)
 
-    def _store(self, request: Request, *push_args: Any) -> bool:
+    def _store(self, request: Request) -> bool:
         """Push *request* into the disk queue, falling back to the memory queue,
-        and increment the relevant ``scheduler/enqueued*`` stats.
-
-        Extra positional arguments are forwarded to the underlying queue
-        ``push`` calls; subclasses that store requests under additional keys
-        (e.g. a throttling scope set) pass them through here.
-        """
+        and increment the relevant ``scheduler/enqueued*`` stats."""
         assert self.stats is not None
-        if self._dqpush(request, *push_args):
+        if self._dqpush(request):
             self.stats.inc_value("scheduler/enqueued/disk")
         else:
-            self._mqpush(request, *push_args)
+            self._mqpush(request)
             self.stats.inc_value("scheduler/enqueued/memory")
         self.stats.inc_value("scheduler/enqueued")
         return True
@@ -472,11 +466,11 @@ class Scheduler(BaseScheduler):
         """
         return len(self.dqs) + len(self.mqs) if self.dqs is not None else len(self.mqs)
 
-    def _dqpush(self, request: Request, *push_args: Any) -> bool:
+    def _dqpush(self, request: Request) -> bool:
         if self.dqs is None:
             return False
         try:
-            self.dqs.push(request, *push_args)
+            self.dqs.push(request)
         except ValueError as e:  # non serializable request
             if self.logunser:
                 msg = (
@@ -496,8 +490,8 @@ class Scheduler(BaseScheduler):
             return False
         return True
 
-    def _mqpush(self, request: Request, *push_args: Any) -> None:
-        self.mqs.push(request, *push_args)
+    def _mqpush(self, request: Request) -> None:
+        self.mqs.push(request)
 
     def _dqpop(self) -> Request | None:
         if self.dqs is not None:
@@ -622,8 +616,10 @@ class ThrottlerAwareScheduler(Scheduler):
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
-        scope_set = frozenset(iter_scopes(await self._throttler.get_scopes(request)))
-        return self._store(request, scope_set)
+        # Resolving the scopes persists them on the request, which is where the
+        # priority queue reads the scope set it files the request under from.
+        await self._throttler.get_scopes(request)
+        return self._store(request)
 
     def get_next_request_delay(self) -> float | None:
         delays = [

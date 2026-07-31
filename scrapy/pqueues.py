@@ -7,7 +7,7 @@ import logging
 import time
 from typing import TYPE_CHECKING, Protocol, cast
 
-from scrapy.throttler import _mark_request_delayed
+from scrapy.throttler import _mark_request_delayed, iter_scopes
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
@@ -653,7 +653,7 @@ class ThrottlerAwarePriorityQueue:
         # Where a request that this queue cannot store goes instead (see
         # _release_delayed). Scheduler points it at the memory queue; left
         # unset, an unstorable request is dropped.
-        self.on_unstorable: Callable[[Request, frozenset[ScopeID]], None] | None = None
+        self.on_unstorable: Callable[[Request], None] | None = None
 
     def _pqfactory(
         self, scope_set: frozenset[ScopeID], startprios: Iterable[int] = ()
@@ -666,7 +666,8 @@ class ThrottlerAwarePriorityQueue:
             start_queue_cls=self._start_queue_cls,
         )
 
-    def push(self, request: Request, scope_set: frozenset[ScopeID]) -> None:
+    def push(self, request: Request) -> None:
+        scope_set = frozenset(iter_scopes(self._throttler.get_resolved_scopes(request)))
         now = time.monotonic()
         self._promote_ready(now)
         delay = self._throttler.get_request_delay(request, now)
@@ -738,7 +739,7 @@ class ThrottlerAwarePriorityQueue:
             # memory-queue second chance that a request failing to serialize at
             # enqueue time gets. Without one there is nowhere left to put it.
             if self.on_unstorable is not None:
-                self.on_unstorable(request, scope_set)
+                self.on_unstorable(request)
 
     def _select(
         self,

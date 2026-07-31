@@ -18,7 +18,6 @@ from scrapy.pqueues import (
 )
 from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
-from scrapy.throttler import iter_scopes
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -514,8 +513,8 @@ class TestThrottlerAwarePriorityQueue:
         )
 
     async def _push(self, queue, crawler, request):
-        scope_set = frozenset(iter_scopes(await crawler.throttler.get_scopes(request)))
-        queue.push(request, scope_set)
+        await crawler.throttler.get_scopes(request)
+        queue.push(request)
 
     @staticmethod
     def _assert_bands(queue):

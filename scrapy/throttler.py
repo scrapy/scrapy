@@ -110,7 +110,8 @@ def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
     this helper normalizes any of those into an iterable of scope IDs, e.g. to
     react to a request's scopes in a custom middleware.
     """
-    return (scope for scope, _ in _iter_scope_quota_amounts(scopes))
+    for scope, _ in _iter_scope_quota_amounts(scopes):
+        yield scope
 
 
 def _iter_scope_quota_amounts(

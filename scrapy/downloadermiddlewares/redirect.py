@@ -38,7 +38,7 @@ class BaseRedirectMiddleware:
             raise NotConfigured
 
         self.max_redirect_times: int = settings.getint("REDIRECT_MAX_TIMES")
-        self.max_delay: float = settings.getfloat("BACKOFF_MAX_DELAY")
+        self._max_delay: float = settings.getfloat("BACKOFF_MAX_DELAY")
         self.priority_adjust: int = settings.getint("REDIRECT_PRIORITY_ADJUST")
         self._referer_spider_middleware: RefererMiddleware | None = None
 
@@ -189,12 +189,12 @@ class BaseRedirectMiddleware:
         holds back this request only, without counting as a :ref:`backoff
         <backoff>` trigger for its scopes.
         """
-        if not self.max_delay:
+        if not self._max_delay:
             return
         retry_after = _parse_retry_after(response)
         if retry_after is None:
             return
-        _set_request_delay(redirect_request, min(retry_after, self.max_delay))
+        _set_request_delay(redirect_request, min(retry_after, self._max_delay))
 
     def _redirect_request_using_get(
         self, request: Request, response: Response, redirect_url: str
