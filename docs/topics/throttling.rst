@@ -410,11 +410,11 @@ following keys:
     Minimum seconds between requests for the scope. Defaults to
     :setting:`DOWNLOAD_DELAY`.
 
-``jitter`` (:class:`float` or 2-:class:`list`)
+``jitter`` (:class:`float`)
     Magnitude of the random variation applied to ``delay``; the per-scope
-    override of :setting:`RANDOMIZE_DOWNLOAD_DELAY`. ``0`` disables it, ``0.5``
-    means ±50% (the default when :setting:`RANDOMIZE_DOWNLOAD_DELAY` is on), and
-    a ``[low, high]`` pair multiplies the delay by ``1 + uniform(low, high)``.
+    override of :setting:`RANDOMIZE_DOWNLOAD_DELAY`. ``0`` disables it and
+    ``0.5`` means ±50% (the default when :setting:`RANDOMIZE_DOWNLOAD_DELAY` is
+    on).
 
 ``quota`` (:class:`float`)
     Maximum :ref:`quota <throttler-quotas>` consumed per ``window``.
@@ -978,21 +978,10 @@ Additional settings
 
     When the limit is exceeded, the least-recently-used idle scopes are evicted
     (an evicted scope is recreated from its configuration the next time it is
-    needed). Scopes with in-flight requests or in active backoff are never
-    evicted, so the limit may be temporarily exceeded if that many scopes are
-    busy at once. Set to ``0`` to disable the limit.
-
-    This complements :setting:`THROTTLING_SCOPE_MAX_IDLE`, which evicts scopes
-    by inactivity time rather than by count.
-
--   .. setting:: THROTTLING_SCOPE_MAX_IDLE
-
-    :setting:`THROTTLING_SCOPE_MAX_IDLE` (default: ``3600.0``)
-
-    Seconds of inactivity after which the state of a :ref:`throttling scope
-    <throttling-scopes>` is evicted from memory to bound memory usage on
-    long-running crawls. Set to ``0`` to never evict. Scopes in active backoff
-    are never evicted.
+    needed). Scopes with in-flight requests, in active backoff, or with a
+    pending delay or spent quota are never evicted, so the limit may be
+    temporarily exceeded if that many scopes are busy at once. Set to ``0`` to
+    disable the limit.
 
 .. _throttling-api:
 

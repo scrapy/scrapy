@@ -23,11 +23,10 @@ from scrapy.throttler import (
     _check_scope_concurrency,
     _default_scope_concurrency,
     _default_scope_concurrency_setting,
-    _to_scope_dict,
+    _iter_scope_quota_amounts,
     _warn_on_deprecated_concurrency,
     _warn_on_unachievable_concurrency,
     add_scope,
-    iter_scope_quota_amounts,
     iter_scopes,
     scope_cache,
 )
@@ -486,72 +485,31 @@ class TestThrottler:
         assert "Crawl-delay" not in caplog.text
         assert _scope(manager, "example.com")._base_delay == 0.5
 
-    def test_scope_eviction(self):
-        manager = _manager({"THROTTLING_SCOPE_MAX_IDLE": 100.0})
-        scope = _scope(manager, "example.com")
-        scope.record_sent(now=0.0)
-        scope.record_done(now=0.0)
-        # Not idle yet.
-        manager._last_eviction = None
-        manager._maybe_evict(now=50.0)
-        assert "example.com" in manager._scope_managers
-        # Idle past the threshold.
-        manager._last_eviction = None
-        manager._maybe_evict(now=201.0)
-        assert "example.com" not in manager._scope_managers
-
-    def test_scope_eviction_skips_active_backoff(self):
+    def test_scope_limit_keeps_active_backoff(self):
         manager = _manager(
-            {"THROTTLING_SCOPE_MAX_IDLE": 100.0, "BACKOFF_MAX_DELAY": 100_000.0}
+            {"THROTTLING_SCOPE_LIMIT": 1, "BACKOFF_MAX_DELAY": 100_000.0}
         )
-        scope = _scope(manager, "example.com")
-        scope.record_backoff(delay=10_000.0, now=0.0)
-        manager._last_eviction = None
-        manager._maybe_evict(now=5_000.0)
-        # Still in backoff (in_backoff_until far in the future), so not evicted
-        # even though it has been idle for longer than THROTTLING_SCOPE_MAX_IDLE.
-        assert "example.com" in manager._scope_managers
+        _scope(manager, "a.example").record_backoff(delay=10_000.0)
+        # Creating a second scope exceeds the limit, but the first one is still
+        # in backoff, so the limit is exceeded rather than dropping it.
+        _scope(manager, "b.example")
+        assert set(manager._scope_managers) == {"a.example", "b.example"}
 
-    def test_scope_eviction_skips_a_pending_delay(self):
+    def test_scope_limit_keeps_a_spent_quota_window(self):
         manager = _manager(
             {
-                "THROTTLING_SCOPE_MAX_IDLE": 1.0,
-                "DOWNLOAD_DELAY": 30.0,
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
+                "THROTTLING_SCOPE_LIMIT": 1,
+                "THROTTLER_WINDOW": 10_000.0,
+                "THROTTLING_SCOPES": {"a.example": {"quota": 10}},
             }
         )
-        scope = _scope(manager, "example.com")
-        scope.record_sent(now=0.0)
-        scope.record_done(now=0.0)
-        manager._last_eviction = None
-        manager._maybe_evict(now=10.0)
-        # Idle for longer than THROTTLING_SCOPE_MAX_IDLE, but its delay has not
-        # elapsed, and evicting would let the next request go out too early.
-        assert "example.com" in manager._scope_managers
-        manager._last_eviction = None
-        manager._maybe_evict(now=31.0)
-        assert "example.com" not in manager._scope_managers
-
-    def test_scope_eviction_skips_a_spent_quota_window(self):
-        manager = _manager(
-            {
-                "THROTTLING_SCOPE_MAX_IDLE": 1.0,
-                "THROTTLER_WINDOW": 30.0,
-                "THROTTLING_SCOPES": {"example.com": {"quota": 10}},
-            }
-        )
-        scope = _scope(manager, "example.com")
-        scope.record_sent(now=0.0, quota_amount=10)
-        scope.record_done(now=0.0)
-        manager._last_eviction = None
-        manager._maybe_evict(now=10.0)
-        # Idle for longer than THROTTLING_SCOPE_MAX_IDLE, but its quota window
-        # has something spent in it, and evicting would give the scope a full
-        # quota again before the window is over.
-        assert "example.com" in manager._scope_managers
-        manager._last_eviction = None
-        manager._maybe_evict(now=31.0)
-        assert "example.com" not in manager._scope_managers
+        spent = _scope(manager, "a.example")
+        spent.record_sent(quota_amount=10)
+        spent.record_done()
+        # Creating a second scope exceeds the limit, but dropping the first one
+        # would give it a full quota again before its window is over.
+        _scope(manager, "b.example")
+        assert set(manager._scope_managers) == {"a.example", "b.example"}
 
     def test_scope_limit_keeps_a_pending_delay(self):
         manager = _manager(
@@ -570,20 +528,15 @@ class TestThrottler:
         _scope(manager, "b.example")
         assert set(manager._scope_managers) == {"a.example", "b.example"}
 
-    def test_reserve_evicts_idle_scopes(self):
+    def test_scope_limit_evicts_on_reserve(self):
         # A throttler-aware scheduler reserves every request before the engine
-        # reaches acquire() (which fast-paths reserved requests), so reserve()
-        # must be the hook that evicts idle scope managers; otherwise they pile
-        # up unbounded on broad crawls.
-        manager = _manager({"THROTTLING_SCOPE_MAX_IDLE": 1.0})
+        # reaches acquire(), so the scopes it creates must be capped too.
+        manager = _manager({"THROTTLING_SCOPE_LIMIT": 1})
         idle = _scope(manager, "idle.example")
-        # Make it look long-idle: a finished send in the distant monotonic past.
         idle.record_sent(now=0.0)
         idle.record_done(now=0.0)
-        assert "idle.example" in manager._scope_managers
         manager.reserve(Request("http://active.example/1"))
-        assert "idle.example" not in manager._scope_managers
-        assert "active.example" in manager._scope_managers
+        assert set(manager._scope_managers) == {"active.example"}
 
     def test_scope_limit_evicts_least_recently_used(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 2})
@@ -624,7 +577,6 @@ class TestThrottler:
         manager = _manager(
             {
                 "THROTTLING_SCOPE_LIMIT": 2,
-                "THROTTLING_SCOPE_MAX_IDLE": 0,
                 "RANDOMIZE_DOWNLOAD_DELAY": False,
                 "THROTTLING_SCOPES": {
                     "slow": {"delay": 0.5},
@@ -1587,18 +1539,18 @@ class TestScopeHelpers:
         assert list(iter_scopes(["a", "b"])) == ["a", "b"]
 
     def test_iter_scope_quota_amounts(self):
-        assert list(iter_scope_quota_amounts(None)) == []
-        assert list(iter_scope_quota_amounts("a")) == [("a", None)]
-        assert list(iter_scope_quota_amounts({"a": 1.0})) == [("a", 1.0)]
-        assert list(iter_scope_quota_amounts(["a", "b"])) == [("a", None), ("b", None)]
+        assert list(_iter_scope_quota_amounts(None)) == []
+        assert list(_iter_scope_quota_amounts("a")) == [("a", None)]
+        assert list(_iter_scope_quota_amounts({"a": 1.0})) == [("a", 1.0)]
+        assert list(_iter_scope_quota_amounts(["a", "b"])) == [("a", None), ("b", None)]
 
-    def test_to_scope_dict(self):
-        assert _to_scope_dict({"a": 1}) == {"a": 1}
-        assert _to_scope_dict(None) == {}
-        assert _to_scope_dict("a") == {"a": None}
-        assert _to_scope_dict(["a", "b"]) == {"a": None, "b": None}
+    def test_add_scope_normalizes_every_input_shape(self):
+        assert add_scope({"a": 1}, "b") == {"a": 1, "b": None}
+        assert add_scope(None, "b") == {"b": None}
+        assert add_scope("a", "b") == {"a": None, "b": None}
+        assert add_scope(["a"], "b") == {"a": None, "b": None}
         with pytest.raises(TypeError):
-            _to_scope_dict(123)  # type: ignore[arg-type]
+            add_scope(123, "a")  # type: ignore[arg-type]
 
     def test_add_scope_without_value(self):
         # add_scope always returns a {scope_id: quota} dict, using None as the
@@ -1776,20 +1728,19 @@ class TestThrottlerEdges:
             manager._apply_robots_crawl_delay("example.com", 3.0)
         assert "Crawl-delay" in caplog.text
 
-    def test_maybe_evict_disabled(self):
-        manager = _manager({"THROTTLING_SCOPE_MAX_IDLE": 0})
-        scope = _scope(manager, "example.com")
-        scope.record_sent(now=0.0)
-        scope.record_done(now=0.0)
-        # Eviction disabled (max idle <= 0): the scope is kept regardless.
-        manager._maybe_evict(now=10_000.0)
-        assert "example.com" in manager._scope_managers
+    def test_scope_limit_disabled(self):
+        manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})
+        for scope_id in ("a.example", "b.example", "c.example"):
+            scope = _scope(manager, scope_id)
+            scope.record_sent(now=0.0)
+            scope.record_done(now=0.0)
+        # No limit: idle scopes are kept regardless.
+        assert len(manager._scope_managers) == 3
 
 
 class TestThrottlingScopeManagerEdges:
-    def test_jitter_as_range(self):
-        scope = _scope_manager(config={"id": "x", "jitter": [0.0, 0.0]})
-        # A [low, high] jitter range of [0, 0] leaves the value unchanged.
+    def test_jitter_disabled(self):
+        scope = _scope_manager(config={"id": "x", "jitter": 0})
         assert scope._apply_jitter(4.0, scope._jitter) == pytest.approx(4.0)
 
     def test_effective_delay_randomized(self):
@@ -1861,12 +1812,11 @@ class TestThrottlingScopeManagerEdges:
         scope = _scope_manager(config={"id": "x"})
         scope.record_sent(now=0.0)
         # An in-flight request keeps the scope from being evicted.
-        assert scope.is_idle(now=10_000.0, max_idle=1.0) is False
+        assert scope.is_idle(now=10_000.0) is False
 
     def test_is_idle_when_never_used(self):
         scope = _scope_manager(config={"id": "x"})
-        # A scope that was never used (no last_seen) is idle.
-        assert scope.is_idle(now=0.0, max_idle=1.0) is True
+        assert scope.is_idle(now=0.0) is True
 
     def test_is_idle_with_a_pending_delay(self):
         scope = _scope_manager(config={"id": "x", "delay": 10.0, "jitter": 0})
@@ -1874,8 +1824,8 @@ class TestThrottlingScopeManagerEdges:
         scope.record_done(now=0.0)
         # The delay is state that eviction would drop, so the scope is not idle
         # until it has elapsed.
-        assert scope.is_idle(now=5.0, max_idle=1.0) is False
-        assert scope.is_idle(now=11.0, max_idle=1.0) is True
+        assert scope.is_idle(now=5.0) is False
+        assert scope.is_idle(now=11.0) is True
 
     def test_get_load_is_relative_to_the_limit(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 4})

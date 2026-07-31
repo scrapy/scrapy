@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
-    from scrapy.throttler import ThrottlerProtocol
+    from scrapy.throttler import ThrottlingScopeManagerProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -85,9 +85,10 @@ class AutoThrottle:
         # THROTTLING_SCOPES), and the delay of any other scope has no effect on
         # how this request was throttled.
         for scope_id in iter_scopes(throttler.get_resolved_scopes(request)):
-            olddelay = self._scope_delay(throttler, scope_id)
+            scope = throttler.get_scope_manager(scope_id)
+            olddelay = self._scope_delay(scope, scope_id)
             newdelay = self._adjust_delay(olddelay, latency, response)
-            throttler.set_scope_delay(scope_id, newdelay)
+            scope.set_base_delay(newdelay, only_increase=False)
             if self.debug:
                 logger.info(
                     "slot: %(slot)s | "
@@ -103,19 +104,20 @@ class AutoThrottle:
                     extra={"spider": spider},
                 )
 
-    def _scope_delay(self, throttler: ThrottlerProtocol, scope_id: str) -> float:
+    def _scope_delay(
+        self, scope: ThrottlingScopeManagerProtocol, scope_id: str
+    ) -> float:
         """Return the current delay of *scope_id*, applying AUTOTHROTTLE_START_DELAY
         the first time the scope is seen.
 
         Adaptive tuning owns the scope delay from then on, bounded only by
         AUTOTHROTTLE_MIN_DELAY and AUTOTHROTTLE_MAX_DELAY, as it always has. So a
         robots.txt ``Crawl-delay`` only shapes the delay this extension starts
-        from, and a lower AUTOTHROTTLE_MIN_DELAY lets it be undercut later. This
-        extension is deprecated, and flooring the delay per scope instead would
-        change what AUTOTHROTTLE_MIN_DELAY means, so set that setting to the
-        lowest delay every website in the crawl may get.
+        from, and a lower AUTOTHROTTLE_MIN_DELAY lets it be undercut later; set
+        AUTOTHROTTLE_MIN_DELAY to the lowest delay every website in the crawl may
+        get.
         """
-        delay = throttler.get_scope_delay(scope_id)
+        delay = scope.get_base_delay()
         if scope_id not in self._started_scopes:
             self._started_scopes.add(scope_id)
             delay = max(delay, self._startdelay)

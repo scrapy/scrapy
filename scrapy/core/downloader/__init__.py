@@ -6,7 +6,7 @@ from collections import deque
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 
@@ -101,20 +101,7 @@ class _DeprecatedSlotView:
 
     @property
     def _scope(self) -> ThrottlingScopeManagerProtocol:
-        """The throttling scope manager backing this slot.
-
-        An existing manager is looked up without marking it as recently used
-        where the throttler offers such a lookup, so that merely reading this
-        deprecated view does not disturb the eviction order of
-        :setting:`THROTTLING_SCOPE_LIMIT`. Only a scope that has none is created,
-        which is what makes this view report the configured values of a scope
-        that has not been used yet, as the slot it replaces did.
-        """
-        live = getattr(self._throttler, "_live_scope_manager", None)
-        manager = None if live is None else live(self._key)
-        if manager is None:
-            return self._throttler.get_scope_manager(self._key)
-        return cast("ThrottlingScopeManagerProtocol", manager)
+        return self._throttler.get_scope_manager(self._key)
 
     @property
     def active(self) -> set[Request]:
@@ -280,17 +267,13 @@ class Downloader:
         i.e. it is in the downloader but neither in a download handler nor
         waiting for one (see :meth:`_await_download_handler`).
 
-        Such a request is not using the network, even though it may be holding a
-        :ref:`throttling <throttling>` concurrency slot, and it may be waiting
-        for another request that a downloader middleware is downloading. That is
-        what makes its slot safe to lend (see
-        :meth:`~scrapy.throttler.Throttler._can_lend_slot`).
-
-        A request waiting for a download handler is not using the network
-        either, but it is past its middlewares, so it waits on nothing but the
-        network and will reach a handler on its own. Lending its slot would
-        break no deadlock, and it is the one request whose progress the loan
-        would then be holding back.
+        Such a request may be holding a :ref:`throttling <throttling>`
+        concurrency slot while waiting for another request that a downloader
+        middleware is downloading, which is what makes its slot safe to lend
+        (see :meth:`~scrapy.throttler.Throttler._can_lend_slot`). A request
+        waiting for a download handler is excluded: it waits on nothing but the
+        network, so lending its slot would break no deadlock and would only hold
+        it back.
         """
         return (
             request in self.active
@@ -351,14 +334,12 @@ class Downloader:
 
     async def _enqueue_request(self, request: Request) -> Response:
         key = self._get_slot_key(request)
-        # Record that this value is ours, so that a request that inherits it
-        # (e.g. a redirect or a retry, which copy meta) resolves its own
-        # throttling scopes instead of reusing it, and is not reported as using
-        # the deprecated download_slot meta key; see
-        # Throttler._resolve_scopes_sync. Only a value of ours is stamped: an
-        # inherited one is ours if it matches the stamp that came with it, and
-        # anything else is a user's choice of scope, which must survive into the
-        # requests derived from this one.
+        # Stamp the value as ours, so that a request that inherits it (a
+        # redirect, a retry) resolves its own throttling scopes instead of
+        # reusing it, and is not reported as using the deprecated download_slot
+        # meta key; see Throttler._resolve_scopes_sync. An inherited value is
+        # ours if it matches the stamp that came with it; anything else is a
+        # user's choice of scope, which must survive into derived requests.
         previous: str | None = request.meta.get(self.DOWNLOAD_SLOT)
         if previous is None or previous == request.meta.get(_STAMPED_SLOT_META_KEY):
             request.meta[_STAMPED_SLOT_META_KEY] = key
@@ -374,24 +355,18 @@ class Downloader:
         """Wait until fewer than :setting:`CONCURRENT_REQUESTS` requests are in a
         download handler.
 
-        Requests coming from the scheduler are kept under that limit by the
-        engine, which stops dequeuing them (see
-        :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`), but requests
-        sent through :meth:`crawler.engine.download_async()
-        <scrapy.core.engine.ExecutionEngine.download_async>` never went through
-        the scheduler, so this is what limits them.
+        The engine keeps scheduled requests under that limit by not dequeuing
+        them (see :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`);
+        this is what limits requests sent through
+        :meth:`crawler.engine.download_async()
+        <scrapy.core.engine.ExecutionEngine.download_async>` instead.
 
-        A download handler slot is only held while a download handler is working
-        on a request, and such a request completes on its own. So a request that
-        a downloader middleware sends as a prerequisite of another one (as the
-        built-in robots.txt middleware does) cannot be held back by that other
-        one, which holds no such slot while its middlewares run.
-
-        That reasoning does not extend to a request sent from *within* a download
-        handler, which does hold a slot while it waits: with every slot taken by
-        such requests, none of them could ever get one. Download handlers must
-        not send requests through :meth:`crawler.engine.download_async()
-        <scrapy.core.engine.ExecutionEngine.download_async>`.
+        A slot is only held while a download handler works on a request, and
+        such a request completes on its own, so a prerequisite sent from a
+        downloader middleware cannot be held back by the request waiting for it.
+        That does not hold for a request sent from *within* a download handler,
+        which keeps its slot while it waits: download handlers must not use
+        ``download_async()``.
         """
         while self._download_handler_slots_full():
             await self._wait_for_download_handler_exit()
@@ -413,12 +388,11 @@ class Downloader:
 
         Both are rechecked after every wait, since waiting on one can close the
         other, and this returns without giving up control once they are both
-        open, so that the caller can hand the request over against exactly the
+        open, so that the caller hands the request over against exactly the
         state that was checked.
         """
-        # Tracked for the whole wait, whichever of the two it ends up waiting on,
-        # so that the request does not read as being in the downloader
-        # middlewares and get its concurrency slot lent away; see
+        # Tracked for the whole wait so that the request does not read as being
+        # in the downloader middlewares and get its slot lent away; see
         # _in_downloader_middlewares().
         self._awaiting_download_handler.add(request)
         try:
@@ -448,18 +422,14 @@ class Downloader:
         """Return a :class:`~twisted.internet.defer.Deferred` that fires the next
         time a request reaches the downloader middlewares (see
         :meth:`_in_downloader_middlewares`), i.e. when one enters the downloader
-        or leaves a download handler, as well as on :meth:`close`.
-
-        Such a request holds a :ref:`throttling <throttling>` concurrency slot
-        that it is not using, which the throttler may then lend to a request sent
-        from a downloader middleware; see
+        or leaves a download handler, as well as on :meth:`close`. That is when
+        a slot the throttler may lend out appears; see
         :meth:`~scrapy.throttler.ThrottlerProtocol.acquire`.
 
-        Firing on arrival, and not only on leaving a download handler, is what
-        covers the window between a request reserving its slot and reaching the
-        downloader: a request in that window is a holder that reads as being in
-        neither place, so a prerequisite that looks for a slot to borrow then
-        finds none, and nothing else would tell it to look again.
+        Firing on arrival too covers the window between a request reserving its
+        slot and reaching the downloader: a holder in that window reads as being
+        in neither place, so a prerequisite looking for a slot to borrow finds
+        none, and nothing else would tell it to look again.
         """
         return self._downloader_middlewares_entry.wait()
 

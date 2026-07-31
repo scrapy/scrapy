@@ -181,13 +181,15 @@ def _adjust(crawler, at, spider, download_latency, scope_delay, status=200, body
     scope_id = "example.com"
     assert crawler.throttler is not None
     at._started_scopes.add(scope_id)
-    crawler.throttler.set_scope_delay(scope_id, scope_delay)
+    crawler.throttler.get_scope_manager(scope_id).set_base_delay(
+        scope_delay, only_increase=False
+    )
     request = Request(
         f"https://{scope_id}", meta={"download_latency": download_latency}
     )
     response = Response(request.url, status=status, body=body)
     at._response_downloaded(response, request, spider)
-    return crawler.throttler.get_scope_delay(scope_id)
+    return crawler.throttler.get_scope_manager(scope_id).get_base_delay()
 
 
 @pytest.mark.parametrize(
@@ -274,7 +276,7 @@ def test_start_delay_applied_once_per_scope():
     request = Request(f"https://{scope_id}", meta={"download_latency": 5.0})
     at._response_downloaded(Response(request.url), request, spider)
     # old delay = max(0, 5.0) = 5.0; target = 5.0/1.0; new = (5+5)/2 = 5.0.
-    assert crawler.throttler.get_scope_delay(scope_id) == 5.0
+    assert crawler.throttler.get_scope_manager(scope_id).get_base_delay() == 5.0
     assert scope_id in at._started_scopes
 
 
@@ -290,7 +292,9 @@ def test_adjusts_every_scope_the_request_was_sent_under():
     scopes = ["api-budget", "example.com"]
     for scope_id in scopes:
         at._started_scopes.add(scope_id)
-        crawler.throttler.set_scope_delay(scope_id, 1.0)
+        crawler.throttler.get_scope_manager(scope_id).set_base_delay(
+            1.0, only_increase=False
+        )
     request = Request(
         "https://example.com",
         meta={"download_latency": 4.0, "throttling_scopes": scopes},
@@ -298,8 +302,8 @@ def test_adjusts_every_scope_the_request_was_sent_under():
     at._response_downloaded(Response(request.url), request, spider)
 
     # target = 4.0/1.0 = 4.0; new = max(4.0, (1.0 + 4.0)/2) = 4.0, per scope.
-    assert crawler.throttler.get_scope_delay("api-budget") == 4.0
-    assert crawler.throttler.get_scope_delay("example.com") == 4.0
+    assert crawler.throttler.get_scope_manager("api-budget").get_base_delay() == 4.0
+    assert crawler.throttler.get_scope_manager("example.com").get_base_delay() == 4.0
 
 
 def test_ignores_the_host_name_of_a_custom_scope():
@@ -309,14 +313,16 @@ def test_ignores_the_host_name_of_a_custom_scope():
     at._spider_opened(spider)
     assert crawler.throttler is not None
     at._started_scopes.add("shared-quota")
-    crawler.throttler.set_scope_delay("shared-quota", 1.0)
+    crawler.throttler.get_scope_manager("shared-quota").set_base_delay(
+        1.0, only_increase=False
+    )
     request = Request(
         "https://example.com",
         meta={"download_latency": 4.0, "throttling_scopes": "shared-quota"},
     )
     at._response_downloaded(Response(request.url), request, spider)
 
-    assert crawler.throttler.get_scope_delay("shared-quota") == 4.0
+    assert crawler.throttler.get_scope_manager("shared-quota").get_base_delay() == 4.0
     # The host name is not a scope of this request, so it is left alone: no
     # state was even created for it.
     assert at._started_scopes == {"shared-quota"}

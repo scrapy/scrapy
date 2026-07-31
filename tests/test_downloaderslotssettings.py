@@ -8,7 +8,7 @@ import pytest
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader
-from scrapy.core.downloader.handlers._base_http import BaseHttpDownloadHandler
+from scrapy.core.downloader.handlers.http11 import _max_per_host_concurrency
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
@@ -561,33 +561,6 @@ async def test_deprecated_slot_view_without_randomization():
     downloader.close()
 
 
-@coroutine_test
-async def test_deprecated_slot_view_does_not_disturb_the_scope_lru():
-    """Reading the deprecated view of a scope that already exists must not mark
-    it as recently used, which would change which scopes
-    THROTTLING_SCOPE_LIMIT evicts first."""
-    crawler = get_crawler(DefaultSpider)
-    crawler.spider = crawler._create_spider()
-    downloader = Downloader(crawler)
-    throttler = crawler.throttler
-    assert isinstance(throttler, Throttler)
-    # "example.com" is the coldest scope of the two.
-    throttler.get_scope_manager("example.com")
-    throttler.get_scope_manager("toscrape.com")
-    assert list(throttler._scope_managers) == ["example.com", "toscrape.com"]
-
-    request = Request("https://example.com")
-    request.meta[Downloader.DOWNLOAD_SLOT] = "example.com"
-    downloader.active.add(request)
-    with pytest.warns(ScrapyDeprecationWarning, match="Downloader.slots is deprecated"):
-        slots = downloader.slots
-    assert slots["example.com"].delay == 0.0
-    assert list(throttler._scope_managers) == ["example.com", "toscrape.com"]
-
-    downloader.active.discard(request)
-    downloader.close()
-
-
 @pytest.mark.parametrize(
     ("settings_dict", "expected"),
     [
@@ -616,7 +589,7 @@ async def test_deprecated_slot_view_does_not_disturb_the_scope_lru():
 )
 def test_max_per_host_concurrency(settings_dict: dict[str, Any], expected: int) -> None:
     settings = Settings(settings_dict)
-    assert BaseHttpDownloadHandler._max_per_host_concurrency(settings) == expected
+    assert _max_per_host_concurrency(settings) == expected
 
 
 @coroutine_test
