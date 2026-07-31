@@ -269,6 +269,18 @@ class ScrapyPriorityQueue:
         )
 
 
+def _decode_scope_ids(key: str) -> tuple[ScopeID, ...] | None:
+    """Return the scope IDs that *key* is a JSON array of, or ``None`` if it is
+    not such an array."""
+    try:
+        decoded = json.loads(key)
+    except ValueError:
+        return None
+    if not isinstance(decoded, list) or not all(isinstance(s, str) for s in decoded):
+        return None
+    return tuple(decoded)
+
+
 def _decode_slot_scopes(slot: str) -> tuple[ScopeID, ...]:
     """Return the :ref:`throttling scopes <throttling-scopes>` that *slot*
     stands for.
@@ -282,15 +294,8 @@ def _decode_slot_scopes(slot: str) -> tuple[ScopeID, ...]:
     """
     if not slot:
         return ()
-    if slot.startswith("["):
-        try:
-            decoded = json.loads(slot)
-        except ValueError:
-            pass
-        else:
-            if isinstance(decoded, list) and all(isinstance(s, str) for s in decoded):
-                return tuple(decoded)
-    return (slot,)
+    scope_ids = _decode_scope_ids(slot)
+    return (slot,) if scope_ids is None else scope_ids
 
 
 def _scopes_load(throttler: ThrottlerProtocol, scopes: Collection[ScopeID]) -> float:
@@ -513,13 +518,8 @@ def _scope_set_from_key(key: str) -> frozenset[ScopeID]:
     """Reverse :func:`_scope_set_key`, raising :exc:`ValueError` for a *key*
     that it did not produce (e.g. the plain slot name that another priority
     queue class recorded in the same place)."""
-    try:
-        scope_ids = json.loads(key)
-    except ValueError:
-        scope_ids = None
-    if not isinstance(scope_ids, list) or not all(
-        isinstance(scope_id, str) for scope_id in scope_ids
-    ):
+    scope_ids = _decode_scope_ids(key)
+    if scope_ids is None:
         raise ValueError(f"{key!r} is not a throttling scope set key.")
     return frozenset(scope_ids)
 

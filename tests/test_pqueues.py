@@ -743,7 +743,7 @@ class TestThrottlerAwarePriorityQueue:
         queue._promote_ready(queue._delayed[0][0])
         popped = queue.pop()
         assert popped is request
-        assert popped.meta["_throttler_delayed"] is True
+        assert popped.meta["_throttler_delay_deadline"] is None
         assert len(queue) == 0
 
     @coroutine_test
@@ -779,7 +779,7 @@ class TestThrottlerAwarePriorityQueue:
         assert popped is not None
         assert popped.url == "http://example.com/slow"
         # Its delay is marked consumed, so it does not re-block on resume.
-        assert popped.meta["_throttler_delayed"] is True
+        assert popped.meta["_throttler_delay_deadline"] is None
         resumed.close()
 
     @coroutine_test

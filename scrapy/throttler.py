@@ -517,10 +517,9 @@ _RESOLVED_SCOPES_META_KEY = "_throttler_resolved_scopes"
 # Throttler._resolve_scopes_sync.
 _STAMPED_SLOT_META_KEY = "_throttler_stamped_download_slot"
 
-# Request.meta keys tracking the state of the 'delay' meta key: whether it has
-# been honored already, and the deadline it set (see
+# Request.meta key tracking the state of the 'delay' meta key: the deadline that
+# delay set, or None once it has been honored (see
 # Throttler._request_delay_deadline).
-_DELAYED_META_KEY = "_throttler_delayed"
 _DELAY_DEADLINE_META_KEY = "_throttler_delay_deadline"
 
 
@@ -530,14 +529,13 @@ def _set_request_delay(request: Request, delay: float) -> None:
     derives from (e.g. through :meth:`Request.replace() <scrapy.Request.replace>`,
     which copies ``meta``)."""
     request.meta["delay"] = delay
-    request.meta.pop(_DELAYED_META_KEY, None)
     request.meta.pop(_DELAY_DEADLINE_META_KEY, None)
 
 
 def _mark_request_delayed(request: Request) -> None:
     """Record that the :reqmeta:`delay` of *request* has been honored, so that it
     is not delayed again, e.g. on resuming a crawl."""
-    request.meta[_DELAYED_META_KEY] = True
+    request.meta[_DELAY_DEADLINE_META_KEY] = None
 
 
 def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
@@ -1187,18 +1185,18 @@ class Throttler:
         throttler-aware scheduler holds the request back until this deadline
         instead of awaiting :meth:`acquire`. The deadline is computed once, the
         first time the request is throttled, and stored so later polls reuse it.
-        A request whose delay was already honored (the ``_throttler_delayed``
-        flag) is never delayed again, so a resumed crawl does not re-block on a
-        stale deadline."""
+        A request whose delay was already honored (a ``None`` deadline) is never
+        delayed again, so a resumed crawl does not re-block on a stale
+        deadline."""
         delay = request.meta.get("delay")
-        if not delay or request.meta.get(_DELAYED_META_KEY):
+        if not delay:
             return 0.0
-        deadline = request.meta.get(_DELAY_DEADLINE_META_KEY)
-        if deadline is None:
-            deadline = now + float(delay)
-            request.meta[_DELAY_DEADLINE_META_KEY] = deadline
-            if self._debug:
-                logger.debug(f"Holding {request} for {delay:.2f}s (delay)")
+        if _DELAY_DEADLINE_META_KEY in request.meta:
+            return request.meta[_DELAY_DEADLINE_META_KEY] or 0.0
+        deadline = now + float(delay)
+        request.meta[_DELAY_DEADLINE_META_KEY] = deadline
+        if self._debug:
+            logger.debug(f"Holding {request} for {delay:.2f}s (delay)")
         return deadline
 
     def back_off(

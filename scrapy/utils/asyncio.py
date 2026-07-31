@@ -362,23 +362,6 @@ async def _wait_for_first(
     if not deferreds:
         return set(), set()
 
-    if is_asyncio_available():
-        # circular import
-        from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
-
-        future_to_deferred = {maybe_deferred_to_future(d): d for d in deferreds}
-        done_futures, pending_futures = await asyncio.wait(
-            list(future_to_deferred),
-            timeout=timeout,
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        return (
-            {future_to_deferred[f] for f in done_futures},
-            {future_to_deferred[f] for f in pending_futures},
-        )
-
-    from twisted.internet import reactor
-
     # circular import
     from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
@@ -386,11 +369,11 @@ async def _wait_for_first(
     # whether it succeeds or fails. Unlike a DeferredList with fireOnOneErrback
     # (which would raise the first failure into this coroutine), _fire passes
     # each result through untouched, so a failure just marks its Deferred as done
-    # and stays there for the caller — matching the asyncio branch and
+    # and stays there for the caller — matching
     # asyncio.wait(return_when=FIRST_COMPLETED).
     signal: Deferred[None] = Deferred()
 
-    def _fire(result: Any) -> Any:
+    def _fire(result: Any = None) -> Any:
         if not signal.called:
             signal.callback(None)
         return result
@@ -398,12 +381,14 @@ async def _wait_for_first(
     for d in deferreds:
         d.addBoth(_fire)
 
-    if timeout is not None:
-        # onTimeoutCancel turns the timeout into a plain result, so it ends the
-        # wait with everything still pending instead of raising.
-        signal.addTimeout(timeout, reactor, onTimeoutCancel=lambda *_: None)
-
-    await maybe_deferred_to_future(signal)
+    # Firing the signal on timeout ends the wait with everything still pending,
+    # instead of raising.
+    timer = None if timeout is None else call_later(timeout, _fire)
+    try:
+        await maybe_deferred_to_future(signal)
+    finally:
+        if timer is not None:
+            timer.cancel()
 
     return (
         {d for d in deferreds if d.called},

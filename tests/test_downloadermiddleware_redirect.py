@@ -62,12 +62,12 @@ class TestRedirectMiddleware(TestRedirectBase):
         url2 = "http://www.example.com/redirected"
         # A source request whose delay was already honored must not leak that
         # state into the fresh redirect request.
-        req = Request(url, meta={"_throttler_delayed": True})
+        req = Request(url, meta={"_throttler_delay_deadline": None})
         rsp = Response(url, headers={"Location": url2, "Retry-After": "5"}, status=302)
         req2 = self.mw.process_response(req, rsp)
         assert isinstance(req2, Request)
         assert req2.meta["delay"] == 5.0
-        assert "_throttler_delayed" not in req2.meta
+        assert "_throttler_delay_deadline" not in req2.meta
 
     def test_retry_after_capped(self):
         crawler = get_crawler(DefaultSpider, settings_dict={"BACKOFF_MAX_DELAY": 2.0})

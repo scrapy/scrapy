@@ -1408,7 +1408,7 @@ class TestThrottlerReadiness:
         manager = _manager()
         request = Request(
             "http://example.com/a",
-            meta={"delay": 100.0, "_throttler_delayed": True},
+            meta={"delay": 100.0, "_throttler_delay_deadline": None},
         )
         await manager.get_scopes(request)
         assert manager.is_ready(request) is True
@@ -1630,7 +1630,7 @@ class TestThrottlerEdges:
         manager = _manager({"THROTTLER_DEBUG": True})
         request = Request("http://example.com/a", meta={"delay": 0.01})
         await manager._delay_request(request)
-        assert request.meta["_throttler_delayed"] is True
+        assert request.meta["_throttler_delay_deadline"] is None
         # A second call is a no-op (the request was already delayed).
         await manager._delay_request(request)
 
@@ -1641,7 +1641,7 @@ class TestThrottlerEdges:
         manager = _manager()
         request = Request("http://example.com/a", meta={"delay": 0.01})
         await manager._delay_request(request)
-        assert request.meta["_throttler_delayed"] is True
+        assert request.meta["_throttler_delay_deadline"] is None
 
     @coroutine_test
     async def test_wait_for_slot_discards_unfired_events(self):
