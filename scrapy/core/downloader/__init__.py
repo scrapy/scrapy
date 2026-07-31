@@ -90,9 +90,9 @@ class _DeprecatedSlotView:
             if r.meta.get(Downloader.DOWNLOAD_SLOT) == self._key
         }
 
-    # This deprecated view reads throttling scope state from private attributes
-    # of the default scope manager rather than through the scope manager
-    # protocol: these are read-only compatibility accessors, so keeping them off
+    # The delay, jitter and last-seen accessors below read private attributes of
+    # the default scope manager rather than going through the scope manager
+    # protocol: they are read-only compatibility accessors, so keeping them off
     # the protocol avoids forcing custom THROTTLING_SCOPE_MANAGER implementations
     # to provide members that only exist to feed this shim. A custom manager that
     # lacks the attribute simply falls back to the historical default.
@@ -120,11 +120,10 @@ class _DeprecatedSlotView:
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return getattr(self._scope, "_concurrency", None) or 0
+        return self._scope.get_concurrency()
 
     def free_transfer_slots(self) -> int:
-        concurrency = getattr(self._scope, "_concurrency", None) or 0
-        return concurrency - len(self.transferring)
+        return self._scope.get_concurrency() - len(self.transferring)
 
     def download_delay(self) -> float:
         delay = self.delay

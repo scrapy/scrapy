@@ -287,7 +287,7 @@ def add_scope(
     existing :ref:`quota <throttler-quotas>` is never silently overwritten;
     adding it without a quota amount leaves any existing entry untouched.
     """
-    if scopes is not None and not isinstance(scopes, (str, dict, Iterable)):
+    if scopes is not None and not isinstance(scopes, Iterable):
         raise TypeError(
             f"Invalid type ({type(scopes)}) of scopes value "
             f"{scopes!r}. Expected None, str, Iterable or dict."
@@ -1055,18 +1055,14 @@ class Throttler:
         gets it before a request from the scheduler does."""
         if not self._unscheduled_waiters:
             return False
+        # A waiter only claims the slot if every one of its other scopes already
+        # allows it through; one that would keep waiting on another scope has no
+        # claim on it, so the scheduler may take it.
         return any(
-            self._can_use_slot_now(waiter, scope_id)
+            self._scopes_allow(waiter, skip=scope_id)
             for scope_id in scope_ids
             for waiter in self._unscheduled_waiters.get(scope_id, ())
         )
-
-    def _can_use_slot_now(self, request: Request, scope_id: ScopeID) -> bool:
-        """Return whether *request* would be sent right away if it got a free
-        slot of *scope_id*, i.e. whether every one of its other scopes already
-        allows it through. A request that would keep waiting on another scope
-        has no claim on the slot, so the scheduler may take it."""
-        return self._scopes_allow(request, skip=scope_id)
 
     def _scopes_allow(self, request: Request, *, skip: ScopeID | None = None) -> bool:
         """Return whether the :reqmeta:`delay` of *request* has elapsed and every

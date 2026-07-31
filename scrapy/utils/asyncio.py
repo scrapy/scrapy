@@ -382,12 +382,12 @@ async def _wait_for_first(
     # circular import
     from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
-    # Fire a single signal Deferred as soon as any input Deferred (or the
-    # timeout) completes, whether it succeeds or fails. Unlike a DeferredList
-    # with fireOnOneErrback (which would raise the first failure into this
-    # coroutine), _fire passes each result through untouched, so a failure just
-    # marks its Deferred as done and stays there for the caller — matching the
-    # asyncio branch and asyncio.wait(return_when=FIRST_COMPLETED).
+    # Fire a single signal Deferred as soon as any input Deferred completes,
+    # whether it succeeds or fails. Unlike a DeferredList with fireOnOneErrback
+    # (which would raise the first failure into this coroutine), _fire passes
+    # each result through untouched, so a failure just marks its Deferred as done
+    # and stays there for the caller — matching the asyncio branch and
+    # asyncio.wait(return_when=FIRST_COMPLETED).
     signal: Deferred[None] = Deferred()
 
     def _fire(result: Any) -> Any:
@@ -398,18 +398,12 @@ async def _wait_for_first(
     for d in deferreds:
         d.addBoth(_fire)
 
-    timeout_deferred: Deferred[Any] | None = None
     if timeout is not None:
-        timeout_deferred = deferLater(reactor, timeout, lambda: None)
-        timeout_deferred.addBoth(_fire)
-        # Swallow the CancelledError from the finally-block cancel() below.
-        timeout_deferred.addErrback(lambda _: None)
+        # onTimeoutCancel turns the timeout into a plain result, so it ends the
+        # wait with everything still pending instead of raising.
+        signal.addTimeout(timeout, reactor, onTimeoutCancel=lambda *_: None)
 
-    try:
-        await maybe_deferred_to_future(signal)
-    finally:
-        if timeout_deferred is not None and not timeout_deferred.called:
-            timeout_deferred.cancel()
+    await maybe_deferred_to_future(signal)
 
     return (
         {d for d in deferreds if d.called},

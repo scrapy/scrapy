@@ -14,7 +14,7 @@ from scrapy.pqueues import (
     DownloaderAwarePriorityQueue,
     ScrapyPriorityQueue,
     ThrottlerAwarePriorityQueue,
-    _slot_scopes,
+    _decode_slot_scopes,
 )
 from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
@@ -447,7 +447,7 @@ class TestDownloaderAwarePriorityQueue:
     ],
 )
 def test_slot_scopes(slot: str, expected: tuple[str, ...]) -> None:
-    assert _slot_scopes(slot) == expected
+    assert _decode_slot_scopes(slot) == expected
 
 
 @pytest.mark.parametrize(

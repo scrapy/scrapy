@@ -274,7 +274,7 @@ class ScrapyPriorityQueue:
         )
 
 
-def _slot_scopes(slot: str) -> tuple[ScopeID, ...]:
+def _decode_slot_scopes(slot: str) -> tuple[ScopeID, ...]:
     """Return the :ref:`throttling scopes <throttling-scopes>` that *slot*
     stands for.
 
@@ -404,10 +404,10 @@ class DownloaderAwarePriorityQueue:
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
         # The throttling scopes each slot stands for, decoded from its key once
-        # (see _slot_scopes) rather than on every read: _slot_stats() reads the
-        # load of every pending slot on every pop, which on a broad crawl means
-        # every pending domain. Kept in step with pqueues by _add_slot() and
-        # _remove_slot(), and nowhere else.
+        # (see _decode_slot_scopes) rather than on every read: _slot_stats()
+        # reads the load of every pending slot on every pop, which on a broad
+        # crawl means every pending domain. Kept in step with pqueues by
+        # _add_slot() and _remove_slot(), and nowhere else.
         self._slot_scopes: dict[str, tuple[ScopeID, ...]] = {}
         self._last_selected_slot: str | None = None
         if slot_startprios:
@@ -446,7 +446,7 @@ class DownloaderAwarePriorityQueue:
     ) -> ScrapyPriorityQueue:
         queue = self.pqfactory(slot, startprios)
         self.pqueues[slot] = queue
-        self._slot_scopes[slot] = _slot_scopes(slot)
+        self._slot_scopes[slot] = _decode_slot_scopes(slot)
         return queue
 
     def _remove_slot(self, slot: str) -> None:
