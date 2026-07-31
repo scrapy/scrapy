@@ -114,8 +114,8 @@ some usage help and the available commands::
       scrapy <command> [options] [args]
 
     Available commands:
-      crawl         Run a spider
       fetch         Fetch a URL using the Scrapy downloader
+      runspider     Run a spider from a Python file, no project required
     [...]
 
 The first line will print the currently active project if you're inside a
@@ -263,7 +263,9 @@ crawl
 * Syntax: ``scrapy crawl <spider>``
 * Requires project: *yes*
 
-Start crawling using a spider.
+Start crawling using the spider with the given :attr:`~scrapy.Spider.name`,
+which must be one of those that :command:`list` reports. To run a spider from a
+file instead, use :command:`runspider`.
 
 Supported options:
 
@@ -571,8 +573,9 @@ runspider
 * Syntax: ``scrapy runspider <spider_file.py>``
 * Requires project: *no*
 
-Run a spider self-contained in a Python file, without having to create a
-project.
+Run the spider defined in the given Python file, without requiring a project.
+
+Supported options: the same as :command:`crawl`.
 
 Example usage::
 
@@ -664,6 +667,8 @@ Example:
 .. code-block:: python
 
     COMMANDS_MODULE = "mybot.commands"
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 

@@ -4,7 +4,7 @@ from importlib.util import find_spec
 
 import pytest
 
-from scrapy.utils.console import get_shell_embed_func
+from scrapy.utils.console import get_shell_embed_func, start_python_console
 
 
 def test_get_shell_embed_func():
@@ -59,3 +59,20 @@ def test_get_shell_embed_func_default():
     else:
         expected = "_embed_standard_shell"
     assert shell.__name__ == expected
+
+
+def test_start_python_console_exit(monkeypatch: pytest.MonkeyPatch) -> None:
+    def embed(namespace: dict[str, object], banner: str) -> None:
+        raise SystemExit
+
+    monkeypatch.setattr(
+        "scrapy.utils.console.get_shell_embed_func", lambda shells: embed
+    )
+    start_python_console()
+
+
+def test_start_python_console_no_shell(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "scrapy.utils.console.get_shell_embed_func", lambda shells: None
+    )
+    start_python_console()
