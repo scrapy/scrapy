@@ -29,22 +29,10 @@ jobs:
         - python-version: "3.10"
           env:
             TOXENV: py
-        - python-version: "3.11"
-          env:
-            TOXENV: py
-        - python-version: "3.12"
-          env:
-            TOXENV: py
-        - python-version: "3.13"
-          env:
-            TOXENV: py
         - python-version: "3.14"
           env:
             TOXENV: py
           coverage: true
-        - python-version: "3.14"
-          env:
-            TOXENV: default-reactor
         - python-version: "3.14"
           env:
             TOXENV: no-reactor

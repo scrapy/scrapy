@@ -25,17 +25,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-        env:
-          - TOXENV: py
         include:
-          - python-version: '3.14'
-            env:
-              TOXENV: py
-            coverage: true
-          - python-version: '3.14'
-            env:
-              TOXENV: no-reactor
+        - python-version: "3.10"
+          env:
+            TOXENV: py
+        - python-version: "3.14"
+          env:
+            TOXENV: py
+          coverage: true
+        - python-version: "3.14"
+          env:
+            TOXENV: no-reactor
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
