@@ -1017,9 +1017,9 @@ class Throttler:
         if not in_download_handler:
             return False
         for scope_id, manager, _ in scopes:
-            holders = self._scope_holders.get(scope_id)
-            if not holders:
-                continue
+            # *request* itself holds a slot of every scope it reserved, so the
+            # scope has holders.
+            holders = self._scope_holders[scope_id]
             # *request* has not reached a handler yet, so it does not count
             # itself.
             in_handlers = sum(1 for holder in holders if holder in in_download_handler)

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import warnings
 from types import SimpleNamespace
 from typing import Any
@@ -266,6 +267,50 @@ async def test_download_handler_gate_ignores_unthrottled_requests():
     excluded = Request("https://a.example/1", meta={"dont_throttle": True})
     await throttler.acquire(excluded)
     assert throttler.download_handler_blocked(excluded) is False
+    downloader.close()
+
+
+def test_download_handler_gate_without_an_engine():
+    crawler = get_crawler(
+        DefaultSpider, {"THROTTLING_SCOPES": {"a.example": {"concurrency": 1}}}
+    )
+    crawler.spider = crawler._create_spider()
+    throttler = crawler.throttler
+    assert throttler is not None
+    # With no engine there is no downloader, and hence no download handler to
+    # hold the request off.
+    request = Request("https://a.example/1")
+    throttler.reserve(request)
+    assert throttler.download_handler_blocked(request) is False
+
+
+def test_download_handler_gate_logs_when_debugging(caplog):
+    crawler = get_crawler(
+        DefaultSpider,
+        {
+            "THROTTLING_SCOPES": {"a.example": {"concurrency": 1}},
+            "THROTTLER_DEBUG": True,
+        },
+    )
+    crawler.spider = crawler._create_spider()
+    throttler = crawler.throttler
+    assert throttler is not None
+    downloader = Downloader(crawler)
+    crawler.engine = SimpleNamespace(downloader=downloader)
+
+    # Two requests hold a slot of a scope that has room for one, which is what
+    # lending a slot out leads to (see
+    # test_a_lender_waits_for_its_loan_before_reaching_a_download_handler), and
+    # the borrower is on the network.
+    lender = Request("https://a.example/1")
+    borrower = Request("https://a.example/robots.txt")
+    throttler.reserve(lender)
+    throttler.reserve(borrower)
+    downloader._in_download_handler.add(borrower)
+
+    with caplog.at_level(logging.DEBUG, logger="scrapy.throttler"):
+        assert throttler.download_handler_blocked(lender) is True
+    assert "Holding" in caplog.text
     downloader.close()
 
 
