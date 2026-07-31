@@ -50,8 +50,13 @@ class _Pipeline:
         return item
 
 
-def test_benchmark_crawl(benchmark: BenchmarkFixture, mockserver: MockServer) -> None:
-    """Crawl of a set of interlinked pages served over HTTP."""
+def test_overhead_http(benchmark: BenchmarkFixture, mockserver: MockServer) -> None:
+    """Per-request overhead of a crawl over HTTP.
+
+    The pages are small on purpose, so that the cost of parsing them stays
+    negligible next to the cost of moving requests and responses through the
+    engine, the middlewares and the download handler.
+    """
     query = urlencode({"total": PAGES, "show": LINKS_PER_PAGE, "order": "desc"})
     url = mockserver.url(f"/follow?{query}")
     settings = {"ITEM_PIPELINES": {_Pipeline: 100}, "LOG_ENABLED": False}
