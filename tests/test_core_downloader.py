@@ -14,6 +14,7 @@ from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
+from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
@@ -302,6 +303,23 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         client_context_factory = _ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
+
+
+@pytest.mark.parametrize(
+    ("concurrency", "active", "expected"),
+    [
+        (2, 1, False),
+        (2, 2, True),
+        (0, 0, False),
+        (0, 2, False),
+    ],
+)
+def test_needs_backout(concurrency: int, active: int, expected: bool) -> None:
+    crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS": concurrency})
+    downloader = Downloader(crawler)
+    downloader.active = {Request(f"https://example.com/{i}") for i in range(active)}
+    assert downloader.needs_backout() is expected
+    downloader.close()
 
 
 @coroutine_test
