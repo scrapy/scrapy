@@ -4,6 +4,7 @@ from scrapy.robotstxt import (
     ProtegoRobotParser,
     PythonRobotParser,
     RerpRobotParser,
+    RobotParser,
     decode_robotstxt,
 )
 from scrapy.utils._deps_compat import STDLIB_IMPROVED_ROBOTFILEPARSER
@@ -110,6 +111,22 @@ class BaseRobotParserTest:
         assert not rp.allowed("https://site.local/wiki/Käyttäjä:", "*")
         assert rp.allowed("https://site.local/some/randome/page.html", "*")
         assert not rp.allowed("https://site.local/some/randome/page.html", "UnicödeBöt")
+
+
+class TestRobotParser:
+    def test_crawl_delay_unsupported(self):
+        class AllowAllRobotParser(RobotParser):
+            @classmethod
+            def from_crawler(cls, crawler, robotstxt_body):
+                return cls()
+
+            def allowed(self, url, user_agent):
+                return True
+
+        rp = AllowAllRobotParser.from_crawler(
+            crawler=None, robotstxt_body=b"User-agent: *\nCrawl-delay: 10\n"
+        )
+        assert rp.crawl_delay("*") is None
 
 
 class TestDecodeRobotsTxt:
