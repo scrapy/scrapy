@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pexpect import EOF
 
-from scrapy.utils.console import get_shell_embed_func
+from scrapy.utils.console import get_shell_embed_func, start_python_console
 from scrapy.utils.test import get_testenv
 
 if TYPE_CHECKING:
@@ -34,7 +34,6 @@ async def main():
 
 asyncio.run(main())
 """
-from scrapy.utils.console import get_shell_embed_func, start_python_console
 
 
 def test_get_shell_embed_func():
@@ -167,6 +166,8 @@ class TestIPythonShell:
         output = logfile.getvalue().decode()
         assert "Traceback" not in output, output
         assert p.exitstatus == 0, output
+
+
 def test_start_python_console_exit(monkeypatch: pytest.MonkeyPatch) -> None:
     def embed(namespace: dict[str, object], banner: str) -> None:
         raise SystemExit
