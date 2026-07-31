@@ -81,6 +81,8 @@ class TestPriorityQueue:
         remain at a different one must not leave ``curprio`` pointing at a
         priority that no queue has, which would make ``peek()`` come up empty
         with requests still queued."""
+        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
+            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
             self.crawler,
@@ -107,6 +109,8 @@ class TestPriorityQueue:
         """A start request and a non-start request at the same priority sit in
         separate queues, and ``peek()`` must report the one that ``pop()``
         returns, since a caller may peek to decide whether to pop."""
+        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
+            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
             self.crawler,
@@ -129,6 +133,8 @@ class TestPriorityQueue:
         that fails (e.g. a serialization error) leaves an empty queue behind at
         that priority. Neither ``peek()`` nor ``pop()`` may let it hide the
         request that the other dict holds at the same priority."""
+        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
+            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
             self.crawler,
