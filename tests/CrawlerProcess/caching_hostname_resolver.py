@@ -10,8 +10,9 @@ class CachingHostnameResolverSpider(scrapy.Spider):
     """
 
     name = "caching_hostname_resolver_spider"
+    url: str
 
-    def start_requests(self):
+    async def start(self):
         yield scrapy.Request(self.url)
 
     def parse(self, response):
@@ -28,7 +29,7 @@ if __name__ == "__main__":
     process = CrawlerProcess(
         settings={
             "RETRY_ENABLED": False,
-            "DNS_RESOLVER": "scrapy.resolver.CachingHostnameResolver",
+            "TWISTED_DNS_RESOLVER": "scrapy.resolver.CachingHostnameResolver",
         }
     )
     process.crawl(CachingHostnameResolverSpider, url=sys.argv[1])
