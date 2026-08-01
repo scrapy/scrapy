@@ -23,7 +23,7 @@ from twisted.web.client import Response as TxResponse
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot, tls
-from scrapy.core.downloader._idna import _safe_hostname_bytes
+from scrapy.core.downloader._idna_patch import _safe_hostname_bytes
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
