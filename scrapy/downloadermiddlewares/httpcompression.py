@@ -112,6 +112,7 @@ class HttpCompressionMiddleware:
         if request.method == "HEAD":
             return response
         content_encoding = response.headers.getlist("Content-Encoding")
+        original_content_encoding = response.headers.get("Content-Encoding")
         if content_encoding:
             max_size = request.meta.get("download_maxsize", self._max_size)
             warn_size = request.meta.get("download_warnsize", self._warn_size)
@@ -152,8 +153,10 @@ class HttpCompressionMiddleware:
                 # responsetypes guessing is reliable
                 kwargs["encoding"] = None
             response = response.replace(cls=respcls, **kwargs)
-            if not content_encoding:
-                del response.headers["Content-Encoding"]
+            if original_content_encoding:
+                response.headers["Content-Encoding"] = original_content_encoding
+            else:
+                response.headers.pop("Content-Encoding", None)
         return response
 
     def _handle_encoding(
