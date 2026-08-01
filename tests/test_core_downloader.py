@@ -47,6 +47,10 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
     from twisted.web.iweb import IBodyProducer
 
+# hostnames rejected by the idna package: punycode emoji domain (i❤.ws) and
+# domain with an underscore
+IDNA_REJECTED_HOSTNAMES = ["xn--i-7iq.ws", "foo_bar.example"]
+
 
 class TestSlot:
     def test_repr(self):
@@ -179,13 +183,7 @@ class TestContextFactory(TestContextFactoryBase):
             )
             factory.creatorForNetloc(b"website.tld", 443)
 
-    @pytest.mark.parametrize(
-        "hostname",
-        [
-            b"xn--i-7iq.ws",  # i❤.ws
-            b"foo_bar.example",
-        ],
-    )
+    @pytest.mark.parametrize("hostname", [h.encode() for h in IDNA_REJECTED_HOSTNAMES])
     def test_idna_rejected_hostname(
         self, factory: _ScrapyClientContextFactory, hostname: bytes
     ) -> None:
@@ -198,18 +196,14 @@ class TestContextFactory(TestContextFactoryBase):
         conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
         assert conn is not None
 
-    @pytest.mark.parametrize(
-        "hostname",
-        [
-            b"xn--i-7iq.ws",  # i❤.ws
-            b"foo_bar.example",
-        ],
-    )
+    @pytest.mark.parametrize("hostname", [h.encode() for h in IDNA_REJECTED_HOSTNAMES])
     def test_idna_rejected_hostname_verify_certificates(self, hostname: bytes) -> None:
         """Same as test_idna_rejected_hostname() but with certificate
         verification enabled, which uses plain optionsForClientTLS()."""
         crawler = get_crawler(settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": True})
-        factory = _load_context_factory_from_settings(crawler)
+        factory = cast(
+            "_ScrapyClientContextFactory", _load_context_factory_from_settings(crawler)
+        )
         creator = factory.creatorForNetloc(hostname, 443)
         assert creator._hostnameBytes == hostname
         assert creator._hostnameASCII == hostname.decode("ascii")
@@ -380,28 +374,24 @@ class TestSafeHostnameBytes:
         with pytest.raises(UnicodeError):
             _safe_hostname_bytes("❤" * 200 + ".ws")
 
-    def test_host_as_bytes_and_text(self) -> None:
+    @pytest.mark.parametrize(
+        ("host", "expected"),
+        [
+            ("xn--i-7iq.ws", (False, b"xn--i-7iq.ws", "xn--i-7iq.ws")),
+            ("i❤.ws", (False, b"xn--i-7iq.ws", "i❤.ws")),
+            ("foo_bar.example", (False, b"foo_bar.example", "foo_bar.example")),
+            ("example.com", (False, b"example.com", "example.com")),
+            # bytes hostnames are decoded instead of encoded
+            (b"xn--i-7iq.ws", (False, b"xn--i-7iq.ws", "i❤.ws")),
+            (b"foo_bar.example", (False, b"foo_bar.example", "foo_bar.example")),
+            (b"example.com", (False, b"example.com", "example.com")),
+        ],
+    )
+    def test_host_as_bytes_and_text(
+        self, host: bytes | str, expected: tuple[bool, bytes, str]
+    ) -> None:
         """HostnameEndpoint should not consider such hostnames invalid."""
-        assert HostnameEndpoint._hostAsBytesAndText("xn--i-7iq.ws") == (
-            False,
-            b"xn--i-7iq.ws",
-            "xn--i-7iq.ws",
-        )
-        assert HostnameEndpoint._hostAsBytesAndText("i❤.ws") == (
-            False,
-            b"xn--i-7iq.ws",
-            "i❤.ws",
-        )
-        assert HostnameEndpoint._hostAsBytesAndText("foo_bar.example") == (
-            False,
-            b"foo_bar.example",
-            "foo_bar.example",
-        )
-        assert HostnameEndpoint._hostAsBytesAndText("example.com") == (
-            False,
-            b"example.com",
-            "example.com",
-        )
+        assert HostnameEndpoint._hostAsBytesAndText(host) == expected
 
 
 @pytest.mark.requires_reactor
@@ -410,13 +400,7 @@ class TestIdnaRejectedEndpoints:
     domains or domains with underscores, should be connectable."""
 
     @pytest.mark.parametrize("scheme", ["http", "https"])
-    @pytest.mark.parametrize(
-        "hostname",
-        [
-            "xn--i-7iq.ws",  # i❤.ws
-            "foo_bar.example",
-        ],
-    )
+    @pytest.mark.parametrize("hostname", IDNA_REJECTED_HOSTNAMES)
     def test_endpoint_for_uri(self, scheme: str, hostname: str) -> None:
         from twisted.internet import reactor
 
