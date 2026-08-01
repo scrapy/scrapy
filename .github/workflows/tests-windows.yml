@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   tests:
+    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: windows-latest
     env:
       PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
