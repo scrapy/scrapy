@@ -10,24 +10,35 @@ patches Twisted to fall back to it. Ideally Twisted would do this itself.
 
 from __future__ import annotations
 
+import re
+
 from twisted.internet import _idna
 
 _original_idna_bytes = _idna._idnaBytes
 _original_idna_text = _idna._idnaText
+
+# Letters, digits and hyphens, plus the underscore that the idna package
+# rejects. The stdlib codec passes any other ASCII through as well, e.g. the
+# ":" that Twisted parses out of a bracketless IPv6 netloc, and Twisted must
+# keep treating those as invalid hostnames instead of resolving them.
+_HOSTNAME = re.compile(rb"[a-zA-Z0-9._\-]+\Z")
 
 
 def _safe_hostname_bytes(hostname: str) -> bytes:
     """Punycode *hostname* with IDNA 2003, which accepts emoji labels and passes
     already-encoded (``xn--``) ones through.
 
-    Raises UnicodeError if it cannot be encoded at all.
+    Raises UnicodeError if it cannot be encoded into a hostname at all.
     """
     try:
-        return hostname.encode("idna")
+        encoded = hostname.encode("idna")
     except UnicodeError:
         # The stdlib codec also rejects some ASCII hostnames, e.g. overlong
         # labels; non-ASCII ones raise UnicodeError again here.
-        return hostname.encode("ascii")
+        encoded = hostname.encode("ascii")
+    if not _HOSTNAME.match(encoded):
+        raise UnicodeError(f"invalid hostname: {hostname}")
+    return encoded
 
 
 def _patched_idna_bytes(text: str) -> bytes:
@@ -41,6 +52,8 @@ def _patched_idna_text(octets: bytes) -> str:
     try:
         return _original_idna_text(octets)
     except UnicodeError:
+        if not _HOSTNAME.match(octets):
+            raise
         return octets.decode("idna")
 
 

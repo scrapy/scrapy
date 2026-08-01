@@ -370,9 +370,19 @@ class TestSafeHostnameBytes:
     def test_valid(self, hostname: str, expected: bytes) -> None:
         assert _safe_hostname_bytes(hostname) == expected
 
-    def test_invalid(self) -> None:
+    @pytest.mark.parametrize(
+        "hostname",
+        [
+            "❤" * 200 + ".ws",
+            # not hostnames at all: Twisted parses ":" out of a bracketless
+            # IPv6 netloc on old versions
+            ":",
+            "[::1]",
+        ],
+    )
+    def test_invalid(self, hostname: str) -> None:
         with pytest.raises(UnicodeError):
-            _safe_hostname_bytes("❤" * 200 + ".ws")
+            _safe_hostname_bytes(hostname)
 
     @pytest.mark.parametrize(
         ("host", "expected"),
@@ -385,12 +395,17 @@ class TestSafeHostnameBytes:
             (b"xn--i-7iq.ws", (False, b"xn--i-7iq.ws", "i❤.ws")),
             (b"foo_bar.example", (False, b"foo_bar.example", "foo_bar.example")),
             (b"example.com", (False, b"example.com", "example.com")),
+            # invalid hostnames must stay invalid, or Twisted resolves them
+            # instead of failing early
+            (":", (True, b":", ":")),
+            ("[::1]", (True, b"[::1]", "[::1]")),
+            (b":", (True, b":", ":")),
         ],
     )
     def test_host_as_bytes_and_text(
         self, host: bytes | str, expected: tuple[bool, bytes, str]
     ) -> None:
-        """HostnameEndpoint should not consider such hostnames invalid."""
+        """HostnameEndpoint should consider only invalid hostnames invalid."""
         assert HostnameEndpoint._hostAsBytesAndText(host) == expected
 
 
