@@ -21,6 +21,7 @@ from twisted.web.client import (
 )
 from twisted.web.client import Response as TxResponse
 
+from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader._idna import _safe_hostname_bytes
 from scrapy.core.downloader.contextfactory import (
@@ -178,24 +179,40 @@ class TestContextFactory(TestContextFactoryBase):
             )
             factory.creatorForNetloc(b"website.tld", 443)
 
-    def test_idna_2003_only_domain(self, factory: _ScrapyClientContextFactory) -> None:
-        """Punycode hostnames of IDNA-2003-only domains, such as emoji
-        domains, should work (#4330)."""
-        creator = factory.creatorForNetloc(b"xn--i-7iq.ws", 443)
-        assert creator._hostnameBytes == b"xn--i-7iq.ws"
-        assert creator._hostnameASCII == "xn--i-7iq.ws"
+    @pytest.mark.parametrize(
+        "hostname",
+        [
+            b"xn--i-7iq.ws",  # i❤.ws
+            b"foo_bar.example",
+        ],
+    )
+    def test_idna_rejected_hostname(
+        self, factory: _ScrapyClientContextFactory, hostname: bytes
+    ) -> None:
+        """Hostnames rejected by the idna package, such as punycode emoji
+        domains or domains with underscores, should work."""
+        creator = factory.creatorForNetloc(hostname, 443)
+        assert creator._hostnameBytes == hostname
+        assert creator._hostnameASCII == hostname.decode("ascii")
         assert creator._hostnameIsDnsName is True
         conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
         assert conn is not None
 
-    def test_idna_2003_only_domain_verify_certificates(self) -> None:
-        """Same as test_idna_2003_only_domain() but with certificate
+    @pytest.mark.parametrize(
+        "hostname",
+        [
+            b"xn--i-7iq.ws",  # i❤.ws
+            b"foo_bar.example",
+        ],
+    )
+    def test_idna_rejected_hostname_verify_certificates(self, hostname: bytes) -> None:
+        """Same as test_idna_rejected_hostname() but with certificate
         verification enabled, which uses plain optionsForClientTLS()."""
         crawler = get_crawler(settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": True})
         factory = _load_context_factory_from_settings(crawler)
-        creator = factory.creatorForNetloc(b"xn--i-7iq.ws", 443)
-        assert creator._hostnameBytes == b"xn--i-7iq.ws"
-        assert creator._hostnameASCII == "xn--i-7iq.ws"
+        creator = factory.creatorForNetloc(hostname, 443)
+        assert creator._hostnameBytes == hostname
+        assert creator._hostnameASCII == hostname.decode("ascii")
 
     def test_ctx_flags(self, factory: _ScrapyClientContextFactory) -> None:
         """The context should have the expected flags set."""
@@ -323,8 +340,26 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         await self._assert_factory_works(server_url, client_context_factory)
 
 
+@pytest.mark.parametrize(
+    ("concurrency", "active", "expected"),
+    [
+        (2, 1, False),
+        (2, 2, True),
+        (0, 0, False),
+        (0, 2, False),
+    ],
+)
+def test_needs_backout(concurrency: int, active: int, expected: bool) -> None:
+    crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS": concurrency})
+    downloader = Downloader(crawler)
+    downloader.active = {Request(f"https://example.com/{i}") for i in range(active)}
+    assert downloader.needs_backout() is expected
+    downloader.close()
+
+
 class TestSafeHostnameBytes:
-    """Tests for the IDNA-2003-only hostname workarounds (#4330)."""
+    """Tests for the workarounds for hostnames rejected by the idna
+    package."""
 
     @pytest.mark.parametrize(
         ("hostname", "expected"),
@@ -333,6 +368,7 @@ class TestSafeHostnameBytes:
             ("xn--i-7iq.ws", b"xn--i-7iq.ws"),  # i❤.ws
             ("i❤.ws", b"xn--i-7iq.ws"),
             ("ü.example", b"xn--tda.example"),
+            ("foo_bar.example", b"foo_bar.example"),
             # overlong ASCII label, rejected by the stdlib codec
             ("a" * 64 + ".com", b"a" * 64 + b".com"),
         ],
@@ -356,6 +392,11 @@ class TestSafeHostnameBytes:
             b"xn--i-7iq.ws",
             "i❤.ws",
         )
+        assert HostnameEndpoint._hostAsBytesAndText("foo_bar.example") == (
+            False,
+            b"foo_bar.example",
+            "foo_bar.example",
+        )
         assert HostnameEndpoint._hostAsBytesAndText("example.com") == (
             False,
             b"example.com",
@@ -364,12 +405,19 @@ class TestSafeHostnameBytes:
 
 
 @pytest.mark.requires_reactor
-class TestIdna2003OnlyEndpoints:
-    """Endpoints for IDNA-2003-only domains, such as emoji domains, should be
-    connectable (#4330)."""
+class TestIdnaRejectedEndpoints:
+    """Endpoints for hostnames rejected by the idna package, such as emoji
+    domains or domains with underscores, should be connectable."""
 
     @pytest.mark.parametrize("scheme", ["http", "https"])
-    def test_endpoint_for_uri(self, scheme: str) -> None:
+    @pytest.mark.parametrize(
+        "hostname",
+        [
+            "xn--i-7iq.ws",  # i❤.ws
+            "foo_bar.example",
+        ],
+    )
+    def test_endpoint_for_uri(self, scheme: str, hostname: str) -> None:
         from twisted.internet import reactor
 
         crawler = get_crawler()
@@ -377,13 +425,13 @@ class TestIdna2003OnlyEndpoints:
             reactor, _load_context_factory_from_settings(crawler), 10, None
         )
         endpoint = endpoint_factory.endpointForURI(
-            URI.fromBytes(f"{scheme}://xn--i-7iq.ws/".encode())
+            URI.fromBytes(f"{scheme}://{hostname}/".encode())
         )
         # https endpoints are wrapped by wrapClientTLS()
         hostname_endpoint = getattr(endpoint, "_wrappedEndpoint", endpoint)
         assert hostname_endpoint._badHostname is False
-        assert hostname_endpoint._hostBytes == b"xn--i-7iq.ws"
-        assert hostname_endpoint._hostText == "xn--i-7iq.ws"
+        assert hostname_endpoint._hostBytes == hostname.encode("ascii")
+        assert hostname_endpoint._hostText == hostname
 
 
 @coroutine_test

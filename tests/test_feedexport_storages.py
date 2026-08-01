@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import string
+import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -14,6 +15,7 @@ import pytest
 from w3lib.url import path_to_file_uri
 
 import scrapy
+from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import (
     BlockingFeedStorage,
     FileFeedStorage,
@@ -166,6 +168,12 @@ class TestFTPFeedStorage:
         st = FTPFeedStorage(f"ftp://foo:{pw_quoted}@example.com/some_path", {})
         assert st.password == string.punctuation
 
+    def test_uri_without_hostname(self):
+        with pytest.raises(
+            ValueError, match="Got a storage URI without a hostname: ftp:///some_path"
+        ):
+            FTPFeedStorage("ftp:///some_path")
+
 
 class MyBlockingFeedStorage(BlockingFeedStorage):
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -203,6 +211,13 @@ class TestBlockingFeedStorage:
 
         with pytest.raises(OSError, match="Not a Directory:"):
             b.open(spider=spider)
+
+
+def test_s3_without_boto3(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "boto3", None)
+    monkeypatch.setitem(sys.modules, "boto3.session", None)
+    with pytest.raises(NotConfigured, match="missing boto3 library"):
+        S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
 
 
 @pytest.mark.requires_boto3
@@ -380,6 +395,41 @@ class TestS3FeedStorage:
         assert storage.secret_key == "secret_key"
         assert storage.region_name == region_name
         assert storage.s3_client._client_config.region_name == region_name
+
+    def test_init_without_max_pool_connections(self) -> None:
+        storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
+        assert storage.max_pool_connections is None
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == 10
+
+    def test_init_with_max_pool_connections(self) -> None:
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            max_pool_connections=30,
+        )
+        assert storage.max_pool_connections == 30
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == 30
+
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
+            ({}, 10),
+            ({"REACTOR_THREADPOOL_MAXSIZE": 20}, 20),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30}, 30),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30, "REACTOR_THREADPOOL_MAXSIZE": 20}, 30),
+        ],
+    )
+    def test_from_crawler_max_pool_connections(
+        self, settings: dict[str, Any], expected: int
+    ) -> None:
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        assert storage.max_pool_connections == expected
+        config: Any = storage.s3_client.meta.config
+        assert config.max_pool_connections == expected
 
     @coroutine_test
     async def test_store_without_acl(self):

@@ -1,9 +1,11 @@
-"""Workarounds for the idna package rejecting IDNA-2003-only hostnames.
+"""Workarounds for the idna package rejecting hostnames that resolve fine.
 
-Some registered domains, such as emoji domains, are only valid under IDNA
-2003, so the idna package (used by Twisted) rejects them, even in their
-punycode (``xn--``) form, while the IDNA 2003 implementation of the standard
-library handles them fine (https://github.com/scrapy/scrapy/issues/4330).
+The idna package (used by Twisted) rejects some hostnames that exist in
+practice: domains that are only valid under IDNA 2003, such as emoji domains,
+even in their punycode (``xn--``) form
+(https://github.com/scrapy/scrapy/issues/4330), and domains with underscores
+(https://github.com/scrapy/scrapy/issues/3321). The IDNA 2003 implementation
+of the standard library handles them fine.
 
 The ideal long-term fix would be for Twisted's ``_idnaBytes()`` to fall back
 to the standard library codec when ``idna.encode()`` raises; until then,
