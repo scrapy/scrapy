@@ -127,14 +127,31 @@ example:
 
 
     class MyComponent:
-        def __init__(self):
+        @classmethod
+        def from_crawler(cls, crawler):
             if not is_asyncio_available():
                 raise ValueError(
-                    f"{MyComponent.__qualname__} requires the asyncio support. "
+                    f"{cls.__qualname__} requires the asyncio support. "
                     f"Make sure you have configured the asyncio reactor in the "
                     f"TWISTED_REACTOR setting. See the asyncio documentation "
                     f"of Scrapy for more information."
                 )
+            return cls()
+
+.. note::
+
+    :func:`~scrapy.utils.asyncio.is_asyncio_available` must not be called in
+    a component's ``__init__()`` method, because components are created during
+    :meth:`Crawler._apply_settings() <scrapy.crawler.Crawler._apply_settings>`,
+    before the Twisted reactor (or asyncio loop) is fully set up. Calling it
+    there will raise a :exc:`RuntimeError` when
+    :setting:`TWISTED_REACTOR_ENABLED` is ``False``, or return a misleading
+    result when the reactor is installed but not yet running.
+
+    Instead, use the :meth:`from_crawler` classmethod to perform the check,
+    where the reactor is already installed. This is also the recommended
+    pattern for Scrapy components that need access to the crawler instance
+    (see :ref:`topics-components`).
 
 .. autofunction:: scrapy.utils.asyncio.is_asyncio_available
 .. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
