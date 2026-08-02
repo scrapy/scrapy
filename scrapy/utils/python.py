@@ -90,15 +90,18 @@ def to_bytes(
 ) -> bytes:
     """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
+    if isinstance(text, str):
+        if encoding is None:
+            encoding = "utf-8"
+        return text.encode(encoding, errors)
+
     if isinstance(text, bytes):
         return text
+
     if not isinstance(text, str):
         raise TypeError(
             f"to_bytes must receive a str or bytes object, got {type(text).__name__}"
         )
-    if encoding is None:
-        encoding = "utf-8"
-    return text.encode(encoding, errors)
 
 
 def _chunk_iter(text: str, chunk_size: int) -> Iterable[tuple[str, int]]:
