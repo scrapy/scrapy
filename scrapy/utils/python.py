@@ -32,6 +32,10 @@ _VT = TypeVar("_VT")
 _P = ParamSpec("_P")
 
 
+def _identity(x: _T) -> _T:
+    return x
+
+
 def is_listlike(x: Any) -> bool:
     """
     >>> is_listlike("foo")
@@ -56,10 +60,18 @@ def is_listlike(x: Any) -> bool:
     return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
-def unique(list_: Iterable[_T], key: Callable[[_T], Any] = lambda x: x) -> list[_T]:
+def unique(list_: Iterable[_T], key: Callable[[_T], Any] = _identity) -> list[_T]:
     """efficient function to uniquify a list preserving item order"""
     seen = set()
     result: list[_T] = []
+    if key is _identity:
+        for item in list_:
+            if item in seen:
+                continue
+            seen.add(item)
+            result.append(item)
+        return result
+
     for item in list_:
         seenkey = key(item)
         if seenkey in seen:
