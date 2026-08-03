@@ -823,6 +823,30 @@ SitemapSpider
 
         Default is ``sitemap_alternate_links`` disabled.
 
+    .. attribute:: sitemap_meta
+
+        Sitemap entry keys to copy into the :attr:`~scrapy.Request.meta` of the
+        requests generated from those entries, so that callbacks can read
+        sitemap data such as ``lastmod``:
+
+        .. versionadded:: VERSION
+
+        .. code-block:: python
+
+            sitemap_meta = {"lastmod"}
+
+
+            def parse(self, response):
+                yield {"lastmod": response.meta.get("lastmod")}
+
+        Use a dict to store an entry key under a different meta key, e.g.
+        ``sitemap_meta = {"lastmod": "sitemap_lastmod"}``.
+
+        See :meth:`sitemap_filter` for the available entry keys. Keys missing
+        from an entry are skipped.
+
+        By default no sitemap data is copied.
+
     .. method:: sitemap_filter(entries)
 
         This is a filter function that could be overridden to select sitemap entries
@@ -856,16 +880,17 @@ SitemapSpider
                         if date_time.year >= 2005:
                             yield entry
 
-                def parse(self, response):
-                    # At the same time, you can get lastmod from meta
-                    item = your_item()
-                    item["lastmod"] = response.meta.get("lastmod")
-
         This would retrieve only ``entries`` modified on 2005 and the following
         years.
 
         Entries are dict objects extracted from the sitemap document.
         Usually, the key is the tag name and the value is the text inside it.
+
+        The `sitemaps protocol`_ defines ``loc``, ``lastmod``, ``changefreq``
+        and ``priority`` for ``urlset`` entries, and ``loc`` and ``lastmod``
+        for ``sitemapindex`` entries. Sites may use additional tags, such as
+        those of the image, video and news sitemap extensions, which become
+        keys as well.
 
         It's important to notice that:
 
@@ -873,6 +898,8 @@ SitemapSpider
         - alternate links are stored in a list with the key ``alternate``
           (see ``sitemap_alternate_links``)
         - namespaces are removed, so lxml tags named as ``{namespace}tagname`` become only ``tagname``
+        - the value is the text of the tag, so a tag with nested tags, such as
+          ``<image:image>``, gets an empty string
 
         If you omit this method, all entries found in sitemaps will be
         processed, observing other attributes and their settings.
@@ -965,6 +992,7 @@ Combine SitemapSpider with other sources of urls:
 .. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/params.html
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
+.. _sitemaps protocol: https://www.sitemaps.org/protocol.html
 .. _robots.txt: https://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
