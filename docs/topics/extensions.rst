@@ -149,23 +149,6 @@ Log Count extension
 
 .. autoclass:: LogCount
 
-.. _topics-extensions-ref-telnetconsole:
-
-Telnet console extension
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.extensions.telnet
-   :synopsis: Telnet console
-
-.. class:: TelnetConsole
-
-Provides a telnet console for getting into a Python interpreter inside the
-currently running Scrapy process, which can be very useful for debugging.
-
-The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
-setting, and the server will listen in the port specified in
-:setting:`TELNETCONSOLE_PORT`.
-
 .. _topics-extensions-ref-memusage:
 
 Memory usage extension
@@ -495,3 +478,34 @@ signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
+
+.. _topics-extensions-ref-telnetconsole:
+
+Telnet console extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.telnet
+   :synopsis: Telnet console
+
+.. class:: TelnetConsole
+
+Provides a telnet console for getting into a Python interpreter inside the
+currently running Scrapy process, which can be very useful for debugging.
+
+The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
+setting, and the server will listen in the port specified in
+:setting:`TELNETCONSOLE_PORT`.
+
+Remote control extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.remote_control
+   :synopsis: Remote control extension
+
+.. class:: RemoteControl
+
+Provides an HTTP server
+
+The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
+setting, and the server will listen in the port specified in
+:setting:`TELNETCONSOLE_PORT`.
