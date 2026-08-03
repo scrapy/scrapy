@@ -4,68 +4,89 @@ references to live object instances.
 If you want live objects for a particular class to be tracked, you only have to
 subclass from object_ref (instead of object).
 
-About performance: This library has a minimal performance impact when enabled,
-and no performance penalty at all when disabled (as object_ref becomes just an
-alias to object in that case).
+This library has a minimal performance impact.
+
+.. note:: PyPy uses a tracing garbage collector, so objects may
+    remain in the ``live_refs`` longer than expected, even after they
+    go out of scope. If deterministic behavior is required, you may need
+    to explicitly trigger garbage collection or call ``trackref.live_refs.clear()``.
 """
 
-from __future__ import print_function
-import weakref
-from time import time
-from operator import itemgetter
+from __future__ import annotations
+
 from collections import defaultdict
-import six
+from operator import itemgetter
+from time import monotonic_ns
+from types import NoneType
+from typing import TYPE_CHECKING, Any
+from weakref import WeakKeyDictionary
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
-NoneType = type(None)
-live_refs = defaultdict(weakref.WeakKeyDictionary)
+live_refs: defaultdict[type, WeakKeyDictionary[object, float]] = defaultdict(
+    WeakKeyDictionary
+)
 
 
-class object_ref(object):
-    """Inherit from this class (instead of object) to a keep a record of live
-    instances"""
+class object_ref:
+    """Inherit from this class if you want to track live instances with the
+    ``trackref`` module."""
 
     __slots__ = ()
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         obj = object.__new__(cls)
-        live_refs[cls][obj] = time()
+        live_refs[cls][obj] = monotonic_ns()
         return obj
 
 
-def format_live_refs(ignore=NoneType):
+# using Any as it's hard to type type(None)
+def format_live_refs(ignore: Any = NoneType) -> str:
     """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
-    now = time()
-    for cls, wdict in sorted(six.iteritems(live_refs),
-                             key=lambda x: x[0].__name__):
+    now_ns = monotonic_ns()
+    for cls, wdict in sorted(live_refs.items(), key=lambda x: x[0].__name__):
         if not wdict:
             continue
         if issubclass(cls, ignore):
             continue
-        oldest = min(six.itervalues(wdict))
-        s += "%-30s %6d   oldest: %ds ago\n" % (
-            cls.__name__, len(wdict), now - oldest
-        )
+        oldest_ns = min(wdict.values())
+        s += f"{cls.__name__:<30} {len(wdict):6}   oldest: {int((now_ns - oldest_ns) // 1e9)}s ago\n"
     return s
 
 
-def print_live_refs(*a, **kw):
-    """Print tracked objects"""
+def print_live_refs(*a: Any, **kw: Any) -> None:
+    """Print a report of live references, grouped by class name.
+
+    :param ignore: if given, all objects from the specified class (or tuple of
+        classes) will be ignored.
+    :type ignore: type or tuple
+    """
     print(format_live_refs(*a, **kw))
 
 
-def get_oldest(class_name):
-    """Get the oldest object for a specific class name"""
-    for cls, wdict in six.iteritems(live_refs):
+def get_oldest(class_name: str) -> Any:
+    """Return the oldest object alive with the given class name, or ``None`` if
+    none is found. Use :func:`print_live_refs` first to get a list of all
+    tracked live objects per class name."""
+    for cls, wdict in live_refs.items():
         if cls.__name__ == class_name:
             if not wdict:
                 break
-            return min(six.iteritems(wdict), key=itemgetter(1))[0]
+            return min(wdict.items(), key=itemgetter(1))[0]
+    return None
 
 
-def iter_all(class_name):
-    """Iterate over all objects of the same class by its class name"""
-    for cls, wdict in six.iteritems(live_refs):
+def iter_all(class_name: str) -> Iterable[Any]:
+    """Return an iterator over all objects alive with the given class name. Use
+    :func:`print_live_refs` first to get a list of all tracked live objects per
+    class name."""
+    for cls, wdict in live_refs.items():
         if cls.__name__ == class_name:
-            return six.iterkeys(wdict)
+            return wdict.keys()
+    return ()

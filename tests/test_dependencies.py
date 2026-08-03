@@ -1,16 +1,31 @@
-from importlib import import_module
-from twisted.trial import unittest
+from __future__ import annotations
 
-class ScrapyUtilsTest(unittest.TestCase):
-    def test_required_openssl_version(self):
-        try:
-            module = import_module('OpenSSL')
-        except ImportError as ex:
-            raise unittest.SkipTest("OpenSSL is not available")
+import os
+import re
+from configparser import ConfigParser
+from pathlib import Path
 
-        if hasattr(module, '__version__'):
-            installed_version = [int(x) for x in module.__version__.split('.')[:2]]
-            assert installed_version >= [0, 6], "OpenSSL >= 0.6 required"
+import pytest
+from twisted import version as twisted_version
 
-if __name__ == "__main__":
-    unittest.main()
+
+class TestScrapyUtils:
+    def test_pinned_twisted_version(self):
+        """When running tests within a Tox environment with pinned
+        dependencies, make sure that the version of Twisted is the pinned
+        version.
+
+        See https://github.com/scrapy/scrapy/pull/4814#issuecomment-706230011
+        """
+        if not os.environ.get("_SCRAPY_MIN", None):
+            pytest.skip("Not in a min environment")
+
+        tox_config_file_path = Path(__file__).parent / ".." / "tox.ini"
+        config_parser = ConfigParser()
+        config_parser.read(tox_config_file_path)
+        pattern = r"Twisted==([\d.]+)"
+        match = re.search(pattern, config_parser["min"]["deps"])
+        assert match
+        pinned_twisted_version_string = match[1]
+
+        assert twisted_version.short() == pinned_twisted_version_string

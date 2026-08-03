@@ -1,3 +1,5 @@
+.. _getting-help:
+
 ============
 Getting help
 ============
@@ -51,9 +53,8 @@ help from the Scrapy community:
 *   If you think your problem may happen to someone else in the future, prepare
     a `good question`_ and ask on StackOverflow_.
 
-*   Otherwise, you may ask for help on the Scrapy web chat, the `#scrapy`_ IRC
-    channel at Freenode. Be ready to wait for a bit, though; most people cannot
-    watch the chat 24/7.
+*   Otherwise, you may ask for help on the `Scrapy Discord`_ server. Be ready
+    to wait for a bit, though; most people cannot watch the chat 24/7.
 
 .. _good question: https://stackoverflow.com/help/how-to-ask
 
@@ -66,8 +67,8 @@ wait for a response, please see if you can `help someone else`_.
 
 .. _help someone else: https://stackoverflow.com/unanswered/tagged/scrapy?tab=newest
 
-.. _#scrapy: http://webchat.freenode.net?randomnick=1&channels=%23scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _mailing list: https://groups.google.com/forum/#!forum/scrapy-users
 .. _reddit: https://www.reddit.com/r/scrapy/
+.. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
 .. _StackOverflow: https://stackoverflow.com/tags/scrapy

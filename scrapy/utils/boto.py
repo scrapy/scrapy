@@ -1,21 +1,22 @@
 """Boto/botocore helpers"""
 
-from __future__ import absolute_import
-import six
+from __future__ import annotations
 
-from scrapy.exceptions import NotConfigured
+from importlib.util import find_spec
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from scrapy.settings import BaseSettings
 
 
-def is_botocore():
-    try:
-        import botocore
-        return True
-    except ImportError:
-        if six.PY2:
-            try:
-                import boto
-                return False
-            except ImportError:
-                raise NotConfigured('missing botocore or boto library')
-        else:
-            raise NotConfigured('missing botocore library')
+def is_botocore_available() -> bool:
+    return find_spec("botocore") is not None
+
+
+def _get_max_pool_connections(settings: BaseSettings) -> int:
+    """Return the maximum number of connections that AWS clients may keep in
+    their connection pool.
+    """
+    return settings.getint("AWS_MAX_POOL_CONNECTIONS") or settings.getint(
+        "REACTOR_THREADPOOL_MAXSIZE"
+    )

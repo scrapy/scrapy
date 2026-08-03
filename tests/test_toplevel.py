@@ -1,30 +1,35 @@
-from unittest import TestCase
-import six
 import scrapy
 
 
-class ToplevelTestCase(TestCase):
+def test_version():
+    assert isinstance(scrapy.__version__, str)
 
-    def test_version(self):
-        self.assertIs(type(scrapy.__version__), six.text_type)
 
-    def test_version_info(self):
-        self.assertIs(type(scrapy.version_info), tuple)
+def test_version_info():
+    assert isinstance(scrapy.version_info, tuple)
 
-    def test_request_shortcut(self):
-        from scrapy.http import Request, FormRequest
-        self.assertIs(scrapy.Request, Request)
-        self.assertIs(scrapy.FormRequest, FormRequest)
 
-    def test_spider_shortcut(self):
-        from scrapy.spiders import Spider
-        self.assertIs(scrapy.Spider, Spider)
+def test_request_shortcut():
+    from scrapy.http import FormRequest, Request  # noqa: PLC0415
 
-    def test_selector_shortcut(self):
-        from scrapy.selector import Selector
-        self.assertIs(scrapy.Selector, Selector)
+    assert scrapy.Request is Request
+    assert scrapy.FormRequest is FormRequest
 
-    def test_item_shortcut(self):
-        from scrapy.item import Item, Field
-        self.assertIs(scrapy.Item, Item)
-        self.assertIs(scrapy.Field, Field)
+
+def test_spider_shortcut():
+    from scrapy.spiders import Spider  # noqa: PLC0415
+
+    assert scrapy.Spider is Spider
+
+
+def test_selector_shortcut():
+    from scrapy.selector import Selector  # noqa: PLC0415
+
+    assert scrapy.Selector is Selector
+
+
+def test_item_shortcut():
+    from scrapy.item import Field, Item  # noqa: PLC0415
+
+    assert scrapy.Item is Item
+    assert scrapy.Field is Field

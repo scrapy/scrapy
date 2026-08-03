@@ -1,88 +1,186 @@
-import logging
-from OpenSSL import SSL
+from __future__ import annotations
 
-from scrapy import twisted_version
+import logging
+import warnings
+from typing import TYPE_CHECKING, Any
+
+from OpenSSL import SSL
+from service_identity import VerificationError
+from service_identity.exceptions import CertificateError
+from service_identity.hazmat import (
+    DNS_ID,
+    IPAddress_ID,
+    ServiceID,
+    verify_service_identity,
+)
+from service_identity.pyopenssl import (
+    extract_patterns,
+    verify_hostname,
+    verify_ip_address,
+)
+from twisted.internet._sslverify import ClientTLSOptions
+from twisted.internet.ssl import AcceptableCiphers, TLSVersion
+
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.deprecate import create_deprecated_class
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from OpenSSL.crypto import X509
+    from twisted.protocols.tls import TLSMemoryBIOProtocol
 
 
 logger = logging.getLogger(__name__)
 
-METHOD_SSLv3 = 'SSLv3'
-METHOD_TLS = 'TLS'
-METHOD_TLSv10 = 'TLSv1.0'
-METHOD_TLSv11 = 'TLSv1.1'
-METHOD_TLSv12 = 'TLSv1.2'
 
-openssl_methods = {
-    METHOD_TLS:    SSL.SSLv23_METHOD,                   # protocol negotiation (recommended)
-    METHOD_SSLv3:  SSL.SSLv3_METHOD,                    # SSL 3 (NOT recommended)
-    METHOD_TLSv10: SSL.TLSv1_METHOD,                    # TLS 1.0 only
-    METHOD_TLSv11: getattr(SSL, 'TLSv1_1_METHOD', 5),   # TLS 1.1 only
-    METHOD_TLSv12: getattr(SSL, 'TLSv1_2_METHOD', 6),   # TLS 1.2 only
+_openssl_methods: dict[str, int] = {
+    "TLS": SSL.SSLv23_METHOD,  # protocol negotiation (recommended)
+    "TLSv1.0": SSL.TLSv1_METHOD,  # TLS 1.0 only
+    "TLSv1.1": SSL.TLSv1_1_METHOD,  # TLS 1.1 only
+    "TLSv1.2": SSL.TLSv1_2_METHOD,  # TLS 1.2 only
 }
 
-if twisted_version >= (14, 0, 0):
-    # ClientTLSOptions requires a recent-enough version of Twisted.
-    # Not having ScrapyClientTLSOptions should not matter for older
-    # Twisted versions because it is not used in the fallback
-    # ScrapyClientContextFactory.
 
-    # taken from twisted/twisted/internet/_sslverify.py
-
-    try:
-        # XXX: this try-except is not needed in Twisted 17.0.0+ because
-        # it requires pyOpenSSL 0.16+.
-        from OpenSSL.SSL import SSL_CB_HANDSHAKE_DONE, SSL_CB_HANDSHAKE_START
-    except ImportError:
-        SSL_CB_HANDSHAKE_START = 0x10
-        SSL_CB_HANDSHAKE_DONE = 0x20
-
-    from twisted.internet.ssl import AcceptableCiphers
-    from twisted.internet._sslverify import (ClientTLSOptions,
-                                             verifyHostname,
-                                             VerificationError)
-    try:
-        # XXX: this import would fail on Debian jessie with system installed
-        # service_identity library, due to lack of cryptography.x509 dependency
-        # See https://github.com/pyca/service_identity/issues/21
-        from service_identity.exceptions import CertificateError
-        verification_errors = (CertificateError, VerificationError)
-    except ImportError:
-        verification_errors = VerificationError
-
-    if twisted_version < (17, 0, 0):
-        from twisted.internet._sslverify import _maybeSetHostNameIndication
-        set_tlsext_host_name = _maybeSetHostNameIndication
-    else:
-        def set_tlsext_host_name(connection, hostNameBytes):
-            connection.set_tlsext_host_name(hostNameBytes)
+def __getattr__(name: str) -> Any:
+    if name == "DEFAULT_CIPHERS":
+        warnings.warn(
+            "scrapy.core.downloader.tls.DEFAULT_CIPHERS is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")
+    deprecated = {
+        "METHOD_TLS": "TLS",
+        "METHOD_TLSv10": "TLSv1.0",
+        "METHOD_TLSv11": "TLSv1.1",
+        "METHOD_TLSv12": "TLSv1.2",
+        "openssl_methods": _openssl_methods,
+    }
+    if name in deprecated:
+        warnings.warn(
+            f"scrapy.core.downloader.tls.{name} is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deprecated[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-    class ScrapyClientTLSOptions(ClientTLSOptions):
-        """
-        SSL Client connection creator ignoring certificate verification errors
-        (for genuinely invalid certificates or bugs in verification code).
+_TWISTED_VERSION_MAP: dict[str, TLSVersion] = {
+    "TLSv1.0": TLSVersion.TLSv1_0,
+    "TLSv1.1": TLSVersion.TLSv1_1,
+    "TLSv1.2": TLSVersion.TLSv1_2,
+    "TLSv1.3": TLSVersion.TLSv1_3,
+}
 
-        Same as Twisted's private _sslverify.ClientTLSOptions,
-        except that VerificationError, CertificateError and ValueError
-        exceptions are caught, so that the connection is not closed, only
-        logging warnings.
-        """
 
-        def _identityVerifyingInfoCallback(self, connection, where, ret):
-            if where & SSL_CB_HANDSHAKE_START:
-                set_tlsext_host_name(connection, self._hostnameBytes)
-            elif where & SSL_CB_HANDSHAKE_DONE:
-                try:
-                    verifyHostname(connection, self._hostnameASCII)
-                except verification_errors as e:
-                    logger.warning(
-                        'Remote certificate is not valid for hostname "{}"; {}'.format(
-                            self._hostnameASCII, e))
+class _ScrapyClientTLSOptions(ClientTLSOptions):
+    """
+    SSL Client connection creator ignoring certificate verification errors
+    (for genuinely invalid certificates or bugs in verification code).
 
-                except ValueError as e:
-                    logger.warning(
-                        'Ignoring error while verifying certificate '
-                        'from host "{}" (exception: {})'.format(
-                            self._hostnameASCII, repr(e)))
+    Same as Twisted's private _sslverify.ClientTLSOptions,
+    except that VerificationError, CertificateError and ValueError
+    exceptions are caught, so that the connection is not closed, only
+    logging warnings.
 
-    DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')
+    Instances of this class are returned from
+    :class:`._ScrapyClientContextFactory`.
+
+    This class is used on Twisted older than 26.4.0.
+    """
+
+    def _identityVerifyingInfoCallback(
+        self, connection: SSL.Connection, where: int, ret: Any
+    ) -> None:
+        if where & SSL.SSL_CB_HANDSHAKE_DONE:
+            try:
+                if self._hostnameIsDnsName:
+                    verify_hostname(connection, self._hostnameASCII)
+                else:
+                    verify_ip_address(connection, self._hostnameASCII)
+            except (CertificateError, VerificationError) as e:
+                logger.warning(
+                    'Remote certificate is not valid for hostname "%s"; %s',
+                    self._hostnameASCII,
+                    e,
+                )
+            except ValueError as e:
+                logger.warning(
+                    "Ignoring error while verifying certificate "
+                    'from host "%s" (exception: %r)',
+                    self._hostnameASCII,
+                    e,
+                )
+        else:
+            super()._identityVerifyingInfoCallback(connection, where, ret)  # type: ignore[misc]
+
+
+ScrapyClientTLSOptions = create_deprecated_class(
+    "ScrapyClientTLSOptions",
+    _ScrapyClientTLSOptions,
+    subclass_warn_message="{old} is deprecated.",
+    instance_warn_message="{cls} is deprecated.",
+)
+
+
+class _ScrapyClientTLSOptions26(ClientTLSOptions):
+    """
+    SSL Client connection creator ignoring certificate verification errors
+    (for genuinely invalid certificates or bugs in verification code).
+
+    Same as Twisted's private _sslverify.ClientTLSOptions,
+    except that VerificationError, CertificateError and ValueError
+    exceptions are caught, so that the connection is not closed, only
+    logging warnings.
+
+    Instances of this class are returned from
+    :class:`._ScrapyClientContextFactory`.
+
+    This class is used on Twisted 26.4.0 and newer.
+    """
+
+    def clientConnectionForTLS(
+        self, tlsProtocol: TLSMemoryBIOProtocol
+    ) -> SSL.Connection:
+        """This method is needed to override the verify callback."""
+        conn = super().clientConnectionForTLS(tlsProtocol)
+        callback = self._verifyCB(self._hostnameIsDnsName, self._hostnameASCII)
+        conn.set_verify(SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT, callback)
+        return conn
+
+    @staticmethod
+    def _verifyCB(
+        hostIsDNS: bool, hostnameASCII: str
+    ) -> Callable[[SSL.Connection, X509, int, int, int], bool]:
+        svcid: ServiceID = (
+            DNS_ID(hostnameASCII) if hostIsDNS else IPAddress_ID(hostnameASCII)
+        )
+
+        def verifyCallback(
+            conn: SSL.Connection, cert: X509, err: int, depth: int, ok: int
+        ) -> bool:
+            if depth != 0:
+                # We are only verifying the leaf certificate.
+                return True
+
+            try:
+                verify_service_identity(extract_patterns(cert), [svcid], [])
+            except (CertificateError, VerificationError) as e:
+                logger.warning(
+                    'Remote certificate is not valid for hostname "%s"; %s',
+                    hostnameASCII,
+                    e,
+                )
+            except ValueError as e:
+                logger.warning(
+                    "Ignoring error while verifying certificate "
+                    'from host "%s" (exception: %r)',
+                    hostnameASCII,
+                    e,
+                )
+
+            return True
+
+        return verifyCallback

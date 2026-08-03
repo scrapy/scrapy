@@ -64,7 +64,6 @@ Basic concepts
    topics/settings
    topics/exceptions
 
-
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
 
@@ -74,14 +73,14 @@ Basic concepts
 :doc:`topics/selectors`
     Extract the data from web pages using XPath.
 
-:doc:`topics/shell`
-    Test your extraction code in an interactive environment.
-
 :doc:`topics/items`
     Define the data you want to scrape.
 
 :doc:`topics/loaders`
     Populate your items with the extracted data.
+
+:doc:`topics/shell`
+    Test your extraction code in an interactive environment.
 
 :doc:`topics/item-pipeline`
     Post-process and store your scraped data.
@@ -111,24 +110,16 @@ Built-in services
 
    topics/logging
    topics/stats
-   topics/email
    topics/telnetconsole
-   topics/webservice
 
 :doc:`topics/logging`
-    Learn how to use Python's builtin logging on Scrapy.
+    Learn how to use Python's built-in logging on Scrapy.
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
 
-:doc:`topics/email`
-    Send email notifications when certain events occur.
-
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
-
-:doc:`topics/webservice`
-    Monitor and control a crawler using a web service.
 
 .. _section-solving-problems:
 
@@ -143,6 +134,7 @@ Solving specific problems
    topics/debug
    topics/contracts
    topics/practices
+   topics/security
    topics/broad-crawls
    topics/developer-tools
    topics/dynamic-content
@@ -152,18 +144,24 @@ Solving specific problems
    topics/autothrottle
    topics/benchmarking
    topics/jobs
+   topics/coroutines
+   topics/asyncio
 
 :doc:`faq`
     Get answers to most frequently asked questions.
 
 :doc:`topics/debug`
-    Learn how to debug common problems of your scrapy spider.
+    Learn how to debug common problems of your Scrapy spider.
 
 :doc:`topics/contracts`
     Learn how to use contracts for testing your spiders.
 
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
+
+:doc:`topics/security`
+    Understand the security implications of Scrapy defaults and how to harden
+    them.
 
 :doc:`topics/broad-crawls`
     Tune Scrapy for crawling a lot domains in parallel.
@@ -192,6 +190,12 @@ Solving specific problems
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
 
+:doc:`topics/coroutines`
+    Use the :ref:`coroutine syntax <async>`.
+
+:doc:`topics/asyncio`
+    Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
+
 .. _extending-scrapy:
 
 Extending Scrapy
@@ -202,16 +206,23 @@ Extending Scrapy
    :hidden:
 
    topics/architecture
+   topics/addons
    topics/downloader-middleware
    topics/spider-middleware
    topics/extensions
-   topics/api
    topics/signals
+   topics/scheduler
    topics/exporters
+   topics/download-handlers
+   topics/components
+   topics/api
 
 
 :doc:`topics/architecture`
     Understand the Scrapy architecture.
+
+:doc:`topics/addons`
+    Enable and configure third-party extensions.
 
 :doc:`topics/downloader-middleware`
     Customize how pages get requested and downloaded.
@@ -222,14 +233,24 @@ Extending Scrapy
 :doc:`topics/extensions`
     Extend Scrapy with your custom functionality
 
-:doc:`topics/api`
-    Use it on extensions and middlewares to extend Scrapy functionality
-
 :doc:`topics/signals`
     See all available signals and how to work with them.
 
+:doc:`topics/scheduler`
+    Understand the scheduler component.
+
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
+
+:doc:`topics/download-handlers`
+    Customize how requests are downloaded or add support for new URL schemes.
+
+:doc:`topics/components`
+    Learn the common API and some good practices when building custom Scrapy
+    components.
+
+:doc:`topics/api`
+    Use it on extensions and middlewares to extend Scrapy functionality.
 
 
 All the rest

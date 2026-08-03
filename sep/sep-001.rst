@@ -94,7 +94,7 @@ Defining adaptors
 ItemForm
 ~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    class NewsForm(ItemForm):
@@ -106,7 +106,7 @@ ItemForm
 ItemBuilder
 ~~~~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    class NewsBuilder(ItemBuilder):
@@ -121,36 +121,36 @@ Creating an Item
 ItemForm
 ~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    ia = NewsForm(response)
-   ia['url'] = response.url
-   ia['headline'] = x.x('//h1[@class="headline"]')
+   ia["url"] = response.url
+   ia["headline"] = x.x('//h1[@class="headline"]')
 
    # if we want to add another value to the same field
-   ia['headline'] += x.x('//h1[@class="headline2"]')
+   ia["headline"] += x.x('//h1[@class="headline2"]')
 
    # if we want to replace the field value other value to the same field
-   ia['headline'] = x.x('//h1[@class="headline3"]')
+   ia["headline"] = x.x('//h1[@class="headline3"]')
 
    return ia.get_item()
 
 ItemBuilder
 ~~~~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    il = NewsBuilder(response)
-   il.add_value('url', response.url)
-   il.add_value('headline', x.x('//h1[@class="headline"]'))
+   il.add_value("url", response.url)
+   il.add_value("headline", x.x('//h1[@class="headline"]'))
 
    # if we want to add another value to the same field
-   il.add_value('headline', x.x('//h1[@class="headline2"]'))
+   il.add_value("headline", x.x('//h1[@class="headline2"]'))
 
    # if we want to replace the field value other value to the same field
-   il.replace_value('headline', x.x('//h1[@class="headline3"]'))
+   il.replace_value("headline", x.x('//h1[@class="headline3"]'))
 
    return il.get_item()
 
@@ -160,20 +160,20 @@ Using different adaptors per Spider/Site
 ItemForm
 ~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    class SiteNewsFrom(NewsForm):
-       published = adaptor(HtmlNewsForm.published, to_date('%d.%m.%Y'))
+       published = adaptor(HtmlNewsForm.published, to_date("%d.%m.%Y"))
 
 ItemBuilder
 ~~~~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    class SiteNewsBuilder(NewsBuilder):
-       published = adaptor(HtmlNewsBuilder.published, to_date('%d.%m.%Y'))
+       published = adaptor(HtmlNewsBuilder.published, to_date("%d.%m.%Y"))
 
 Check the value of an item being-extracted
 ------------------------------------------
@@ -181,24 +181,24 @@ Check the value of an item being-extracted
 ItemForm
 ~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    ia = NewsForm(response)
-   ia['headline'] = x.x('//h1[@class="headline"]')
-   if not ia['headline']:
-       ia['headline'] = x.x('//h1[@class="title"]')
+   ia["headline"] = x.x('//h1[@class="headline"]')
+   if not ia["headline"]:
+       ia["headline"] = x.x('//h1[@class="title"]')
 
 ItemBuilder
 ~~~~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    il = NewsBuilder(response)
-   il.add_value('headline', x.x('//h1[@class="headline"]'))
-   if not nf.get_value('headline'):
-       il.add_value('headline', x.x('//h1[@class="title"]'))
+   il.add_value("headline", x.x('//h1[@class="headline"]'))
+   if not nf.get_value("headline"):
+       il.add_value("headline", x.x('//h1[@class="title"]'))
 
 Adding a value to a list attribute/field
 ----------------------------------------
@@ -206,18 +206,18 @@ Adding a value to a list attribute/field
 ItemForm
 ~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
-   ia['headline'] += x.x('//h1[@class="headline"]')
+   ia["headline"] += x.x('//h1[@class="headline"]')
 
 ItemBuilder
 ~~~~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
-   il.add_value('headline', x.x('//h1[@class="headline"]'))
+   il.add_value("headline", x.x('//h1[@class="headline"]'))
 
 Passing run-time arguments to adaptors
 --------------------------------------
@@ -225,24 +225,24 @@ Passing run-time arguments to adaptors
 ItemForm
 ~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    # Only approach is passing arguments when instantiating the form
-   ia = NewsForm(response, default_unit='cm')
-   ia['width'] = x.x('//p[@class="width"]')
+   ia = NewsForm(response, default_unit="cm")
+   ia["width"] = x.x('//p[@class="width"]')
 
 ItemBuilder
 ~~~~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
-   il.add_value('width', x.x('//p[@class="width"]'), default_unit='cm')
+   il.add_value("width", x.x('//p[@class="width"]'), default_unit="cm")
 
    # an alternative approach (more efficient)
-   il = NewsBuilder(response, default_unit='cm')
-   il.add_value('width', x.x('//p[@class="width"]'))
+   il = NewsBuilder(response, default_unit="cm")
+   il.add_value("width", x.x('//p[@class="width"]'))
 
 Passing run-time arguments to adaptors (same argument name)
 -----------------------------------------------------------
@@ -250,25 +250,26 @@ Passing run-time arguments to adaptors (same argument name)
 ItemForm
 ~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
    class MySiteForm(ItemForm):
-       witdth = adaptor(ItemForm.witdh, default_unit='cm')
-       volume = adaptor(ItemForm.witdh, default_unit='lt')
+       width = adaptor(ItemForm.width, default_unit="cm")
+       volume = adaptor(ItemForm.width, default_unit="lt")
 
-   ia['width'] = x.x('//p[@class="width"]')
-   ia['volume'] = x.x('//p[@class="volume"]')
 
-   # another example passing parametes on instance
-   ia = NewsForm(response, encoding='utf-8')
-   ia['name'] = x.x('//p[@class="name"]')
+   ia["width"] = x.x('//p[@class="width"]')
+   ia["volume"] = x.x('//p[@class="volume"]')
+
+   # another example passing parameters on instance
+   ia = NewsForm(response, encoding="utf-8")
+   ia["name"] = x.x('//p[@class="name"]')
 
 ItemBuilder
 ~~~~~~~~~~~
 
-::
+.. code-block:: python
 
    #!python
-   il.add_value('width', x.x('//p[@class="width"]'), default_unit='cm')
-   il.add_value('volume', x.x('//p[@class="volume"]'), default_unit='lt')
+   il.add_value("width", x.x('//p[@class="width"]'), default_unit="cm")
+   il.add_value("volume", x.x('//p[@class="volume"]'), default_unit="lt")

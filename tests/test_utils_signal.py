@@ -1,79 +1,147 @@
-from testfixtures import LogCapture
-from twisted.trial import unittest
-from twisted.python.failure import Failure
-from twisted.internet import defer, reactor
+from __future__ import annotations
+
+import asyncio
+from typing import TYPE_CHECKING, Any
+
+import pytest
 from pydispatch import dispatcher
+from twisted.internet import defer
+from twisted.python.failure import Failure
 
-from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
+from scrapy.utils.asyncio import call_later
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
+from scrapy.utils.signal import (
+    send_catch_log,
+    send_catch_log_async,
+    send_catch_log_deferred,
+)
+from scrapy.utils.test import get_from_asyncio_queue
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
-class SendCatchLogTest(unittest.TestCase):
+class TestSendCatchLog:
+    # whether the function being tested returns exceptions or failures
+    returns_exceptions: bool = False
 
-    @defer.inlineCallbacks
-    def test_send_catch_log(self):
+    @coroutine_test
+    async def test_send_catch_log(self, caplog: pytest.LogCaptureFixture) -> None:
         test_signal = object()
-        handlers_called = set()
+        handlers_called: set[Callable[..., None]] = set()
 
         dispatcher.connect(self.error_handler, signal=test_signal)
         dispatcher.connect(self.ok_handler, signal=test_signal)
-        with LogCapture() as l:
-            result = yield defer.maybeDeferred(
-                self._get_result, test_signal, arg='test',
-                handlers_called=handlers_called
-            )
+        caplog.clear()
+        result = await ensure_awaitable(
+            self._get_result(test_signal, arg="test", handlers_called=handlers_called)
+        )
 
         assert self.error_handler in handlers_called
         assert self.ok_handler in handlers_called
-        self.assertEqual(len(l.records), 1)
-        record = l.records[0]
-        self.assertIn('error_handler', record.getMessage())
-        self.assertEqual(record.levelname, 'ERROR')
-        self.assertEqual(result[0][0], self.error_handler)
-        self.assertIsInstance(result[0][1], Failure)
-        self.assertEqual(result[1], (self.ok_handler, "OK"))
+        assert len(caplog.records) == 1
+        record = caplog.records[0]
+        assert "error_handler" in record.getMessage()
+        assert record.levelname == "ERROR"
+        assert result[0][0] == self.error_handler  # pylint: disable=comparison-with-callable
+        assert isinstance(
+            result[0][1], Exception if self.returns_exceptions else Failure
+        )
+        assert result[1] == (self.ok_handler, "OK")
 
         dispatcher.disconnect(self.error_handler, signal=test_signal)
         dispatcher.disconnect(self.ok_handler, signal=test_signal)
 
-    def _get_result(self, signal, *a, **kw):
+    def _get_result(self, signal: Any, *a: Any, **kw: Any) -> Any:
         return send_catch_log(signal, *a, **kw)
 
     def error_handler(self, arg, handlers_called):
         handlers_called.add(self.error_handler)
-        a = 1/0
+        1 / 0
 
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        assert arg == 'test'
+        assert arg == "test"
         return "OK"
 
 
-class SendCatchLogDeferredTest(SendCatchLogTest):
-
-    def _get_result(self, signal, *a, **kw):
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+class TestSendCatchLogDeferred(TestSendCatchLog):
+    def _get_result(self, signal: Any, *a: Any, **kw: Any) -> Any:
         return send_catch_log_deferred(signal, *a, **kw)
 
 
-class SendCatchLogDeferredTest2(SendCatchLogTest):
-
+class TestSendCatchLogDeferred2(TestSendCatchLogDeferred):
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        assert arg == 'test'
-        d = defer.Deferred()
-        reactor.callLater(0, d.callback, "OK")
+        assert arg == "test"
+        d: defer.Deferred[str] = defer.Deferred()
+        call_later(0, d.callback, "OK")
         return d
 
+
+class TestSendCatchLogDeferredAsyncDef(TestSendCatchLogDeferred):
+    async def ok_handler(self, arg, handlers_called):
+        handlers_called.add(self.ok_handler)
+        assert arg == "test"
+        await defer.succeed(42)
+        return "OK"
+
+
+@pytest.mark.only_asyncio
+class TestSendCatchLogDeferredAsyncio(TestSendCatchLogDeferred):
+    async def ok_handler(self, arg, handlers_called):
+        handlers_called.add(self.ok_handler)
+        assert arg == "test"
+        await asyncio.sleep(0.2)
+        return await get_from_asyncio_queue("OK")
+
+
+class TestSendCatchLogAsync(TestSendCatchLog):
+    returns_exceptions = True
+
     def _get_result(self, signal, *a, **kw):
-        return send_catch_log_deferred(signal, *a, **kw)
+        return deferred_from_coro(send_catch_log_async(signal, *a, **kw))
 
-class SendCatchLogTest2(unittest.TestCase):
 
-    def test_error_logged_if_deferred_not_supported(self):
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+class TestSendCatchLogAsync2(TestSendCatchLogAsync):
+    def ok_handler(self, arg, handlers_called):
+        handlers_called.add(self.ok_handler)
+        assert arg == "test"
+        d: defer.Deferred[str] = defer.Deferred()
+        call_later(0, d.callback, "OK")
+        return d
+
+
+class TestSendCatchLogAsyncAsyncDef(TestSendCatchLogAsync):
+    async def ok_handler(self, arg, handlers_called):
+        handlers_called.add(self.ok_handler)
+        assert arg == "test"
+        await defer.succeed(42)
+        return "OK"
+
+
+@pytest.mark.only_asyncio
+class TestSendCatchLogAsyncAsyncio(TestSendCatchLogAsync):
+    async def ok_handler(self, arg, handlers_called):
+        handlers_called.add(self.ok_handler)
+        assert arg == "test"
+        await asyncio.sleep(0.2)
+        return await get_from_asyncio_queue("OK")
+
+
+class TestSendCatchLog2:
+    def test_error_logged_if_deferred_not_supported(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        def test_handler():
+            return defer.Deferred()
+
         test_signal = object()
-        test_handler = lambda: defer.Deferred()
         dispatcher.connect(test_handler, test_signal)
-        with LogCapture() as l:
-            send_catch_log(test_signal)
-        self.assertEqual(len(l.records), 1)
-        self.assertIn("Cannot return deferreds from signal handler", str(l))
+        send_catch_log(test_signal)
+        assert len(caplog.records) == 1
+        assert "Cannot return deferreds from signal handler" in caplog.text
         dispatcher.disconnect(test_handler, test_signal)

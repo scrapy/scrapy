@@ -1,43 +1,71 @@
-import unittest
+from __future__ import annotations
+
 import os
-import tempfile
-import shutil
-import contextlib
-from scrapy.utils.project import data_path
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import pytest
+
+from scrapy.utils.misc import set_environ
+from scrapy.utils.project import data_path, get_project_settings
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
-@contextlib.contextmanager
-def inside_a_project():
-    prev_dir = os.getcwd()
-    project_dir = tempfile.mkdtemp()
+@pytest.fixture
+def proj_path(tmp_path: Path) -> Generator[Path]:
+    prev_dir = Path.cwd()
+    project_dir = tmp_path
 
     try:
         os.chdir(project_dir)
-        with open('scrapy.cfg', 'w') as f:
-            # create an empty scrapy.cfg
-            f.close()
+        Path("scrapy.cfg").touch()
 
         yield project_dir
     finally:
         os.chdir(prev_dir)
-        shutil.rmtree(project_dir)
 
 
-class ProjectUtilsTest(unittest.TestCase):
-    def test_data_path_outside_project(self):
-        self.assertEqual(
-            os.path.join('.scrapy', 'somepath'),
-            data_path('somepath')
-        )
-        abspath = os.path.join(os.path.sep, 'absolute', 'path')
-        self.assertEqual(abspath, data_path(abspath))
+def test_data_path_outside_project() -> None:
+    assert str(Path(".scrapy", "somepath")) == data_path("somepath")
+    abspath = str(Path(os.path.sep, "absolute", "path"))
+    assert abspath == data_path(abspath)
 
-    def test_data_path_inside_project(self):
-        with inside_a_project() as proj_path:
-            expected = os.path.join(proj_path, '.scrapy', 'somepath')
-            self.assertEqual(
-                os.path.realpath(expected),
-                os.path.realpath(data_path('somepath'))
-            )
-            abspath = os.path.join(os.path.sep, 'absolute', 'path')
-            self.assertEqual(abspath, data_path(abspath))
+
+def test_data_path_inside_project(proj_path: Path) -> None:
+    expected = proj_path / ".scrapy" / "somepath"
+    assert expected.resolve() == Path(data_path("somepath")).resolve()
+    abspath = str(Path(os.path.sep, "absolute", "path").resolve())
+    assert abspath == data_path(abspath)
+
+
+class TestGetProjectSettings:
+    def test_valid_envvar(self):
+        value = "tests.test_cmdline.settings"
+        envvars = {
+            "SCRAPY_SETTINGS_MODULE": value,
+        }
+        with set_environ(**envvars):
+            settings = get_project_settings()
+        assert settings.get("SETTINGS_MODULE") == value
+
+    def test_invalid_envvar(self):
+        envvars = {
+            "SCRAPY_FOO": "bar",
+        }
+        with set_environ(**envvars):
+            settings = get_project_settings()
+
+        assert settings.get("SCRAPY_FOO") is None
+
+    def test_valid_and_invalid_envvars(self):
+        value = "tests.test_cmdline.settings"
+        envvars = {
+            "SCRAPY_FOO": "bar",
+            "SCRAPY_SETTINGS_MODULE": value,
+        }
+        with set_environ(**envvars):
+            settings = get_project_settings()
+        assert settings.get("SETTINGS_MODULE") == value
+        assert settings.get("SCRAPY_FOO") is None

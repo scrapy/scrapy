@@ -13,51 +13,56 @@ Author: dufferzafar
 """
 
 import re
+import sys
+from pathlib import Path
 
-# Used for remembering the file (and its contents)
-# so we don't have to open the same file again.
-_filename = None
-_contents = None
 
-# A regex that matches standard linkcheck output lines
-line_re = re.compile(u'(.*)\:\d+\:\s\[(.*)\]\s(?:(.*)\sto\s(.*)|(.*))')
+def main():
+    # Used for remembering the file (and its contents)
+    # so we don't have to open the same file again.
+    _filename = None
+    _contents = None
 
-# Read lines from the linkcheck output file
-try:
-    with open("build/linkcheck/output.txt") as out:
-        output_lines = out.readlines()
-except IOError:
-    print("linkcheck output not found; please run linkcheck first.")
-    exit(1)
+    # A regex that matches standard linkcheck output lines
+    line_re = re.compile(r"(.*)\:\d+\:\s\[(.*)\]\s(?:(.*)\sto\s(.*)|(.*))")
 
-# For every line, fix the respective file
-for line in output_lines:
-    match = re.match(line_re, line)
+    # Read lines from the linkcheck output file
+    try:
+        with Path("build/linkcheck/output.txt").open(encoding="utf-8") as out:
+            output_lines = out.readlines()
+    except OSError:
+        print("linkcheck output not found; please run linkcheck first.")
+        sys.exit(1)
 
-    if match:
-        newfilename = match.group(1)
-        errortype = match.group(2)
+    # For every line, fix the respective file
+    for line in output_lines:
+        match = re.match(line_re, line)
 
-        # Broken links can't be fixed and
-        # I am not sure what do with the local ones.
-        if errortype.lower() in ["broken", "local"]:
-            print("Not Fixed: " + line)
+        if match:
+            newfilename = match.group(1)
+            errortype = match.group(2)
+
+            # Broken links can't be fixed and
+            # I am not sure what do with the local ones.
+            if errortype.lower() in ["broken", "local"]:
+                print("Not Fixed: " + line)
+            else:
+                # If this is a new file
+                if newfilename != _filename:
+                    # Update the previous file
+                    if _filename:
+                        Path(_filename).write_text(_contents, encoding="utf-8")
+
+                    _filename = newfilename
+
+                    # Read the new file to memory
+                    _contents = Path(_filename).read_text(encoding="utf-8")
+
+                _contents = _contents.replace(match.group(3), match.group(4))
         else:
-            # If this is a new file
-            if newfilename != _filename:
+            # We don't understand what the current line means!
+            print("Not Understood: " + line)
 
-                # Update the previous file
-                if _filename:
-                    with open(_filename, "w") as _file:
-                        _file.write(_contents)
 
-                _filename = newfilename
-
-                # Read the new file to memory
-                with open(_filename) as _file:
-                    _contents = _file.read()
-
-            _contents = _contents.replace(match.group(3), match.group(4))
-    else:
-        # We don't understand what the current line means!
-        print("Not Understood: " + line)
+if __name__ == "__main__":
+    main()

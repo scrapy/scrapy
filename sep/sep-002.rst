@@ -16,10 +16,11 @@ called !ListField.
 Proposed Implementation
 =======================
 
-::
+.. code-block:: python
 
    #!python
    from scrapy.item.fields import BaseField
+
 
    class ListField(BaseField):
        def __init__(self, field, default=None):
@@ -27,7 +28,7 @@ Proposed Implementation
            super(ListField, self).__init__(default)
 
        def to_python(self, value):
-           if hasattr(value, '__iter__'): # str/unicode not allowed
+           if hasattr(value, "__iter__"):  # str/unicode not allowed
                return [self._field.to_python(v) for v in value]
            else:
                raise TypeError("Expected iterable, got %s" % type(value).__name__)
@@ -42,11 +43,12 @@ Usage Scenarios
 Defining a list field
 ---------------------
 
-::
+.. code-block:: python
 
    #!python
    from scrapy.item.models import Item
    from scrapy.item.fields import ListField, TextField, DateField, IntegerField
+
 
    class Article(Item):
        categories = ListField(TextField)
@@ -56,14 +58,16 @@ Defining a list field
 Another case of products and variants which highlights the fact that it's
 important to instantiate !ListField with field instances, not classes:
 
-::
+.. code-block:: python
 
    #!python
    from scrapy.item.models import Item
    from scrapy.item.fields import ListField, TextField
 
+
    class Variant(Item):
        name = TextField()
+
 
    class Product(Variant):
        variants = ListField(ItemField(Variant))
@@ -71,42 +75,42 @@ important to instantiate !ListField with field instances, not classes:
 Assigning a list field
 ----------------------
 
-::
+.. code-block:: python
 
    #!python
    i = Article()
 
-   i['categories'] = []
-   i['categories'] = ['politics', 'sport']
-   i['categories'] = ['test', 1] -> raises TypeError
-   i['categories'] = asd -> raises TypeError
+   i["categories"] = []
+   i["categories"] = ["politics", "sport"]
+   i["categories"] = ["test", 1]  # -> raises TypeError
+   i["categories"] = asd  # -> raises TypeError
 
-   i['dates'] = []
-   i['dates'] = ['2009-01-01']  # raises TypeError? (depends on TextField)
+   i["dates"] = []
+   i["dates"] = ["2009-01-01"]  # raises TypeError? (depends on TextField)
 
-   i['numbers'] = ['1', 2, '3']
-   i['numbers'] # returns [1, 2, 3]
+   i["numbers"] = ["1", 2, "3"]
+   i["numbers"]  # returns [1, 2, 3]
 
 Default values
 --------------
 
-::
+.. code-block:: python
 
    #!python
    i = Article()
 
-   i['categories'] # raises KeyError
-   i.get('categories') # returns None
+   i["categories"]  # raises KeyError
+   i.get("categories")  # returns None
 
-   i['numbers'] # returns []
+   i["numbers"]  # returns []
 
 Appending values
 ----------------
 
-::
+.. code-block:: python
 
    #!python
    i = Article()
 
-   i['categories'] = ['one', 'two']
-   i['categories'].append(3) # XXX: should this fail?
+   i["categories"] = ["one", "two"]
+   i["categories"].append(3)  # XXX: should this fail?

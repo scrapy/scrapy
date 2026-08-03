@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <base href='http://example.com' />
+    <title>Sample page with links for testing LinkExtractor</title>
+  </head>
+  <body>
+    <div id='wrapper'>
+      <div id='subwrapper'>
+        <area href='sample1.html' alt='sample1'/>
+        <a href='sample2.html'>sample 2<img src='sample2.jpg' alt='sample2'/></a>
+      </div>
+      <a href='http://example.com/sample3.html' title='sample 3'>sample 3 text</a>
+      <a href='sample3.html'>sample 3 repetition</a>
+      <a href='sample3.html'>sample 3 repetition</a>
+      <a href='sample3.html#foo'>sample 3 repetition with fragment</a>
+      <a href='http://www.google.com/something'></a>
+      <a href='http://example.com/innertag.html'><strong>inner</strong> tag</a>
+      <a href='page 4.html'>href with whitespaces</a>
+    </div>
+  </body>
+</html>
