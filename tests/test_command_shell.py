@@ -191,6 +191,11 @@ class MySpider(scrapy.Spider):
 
 
 class TestInteractiveShell:
+    # Starting an interactive shell involves an interpreter start-up, Scrapy
+    # imports and shell imports, which on PyPy with coverage enabled can take
+    # well over 10 seconds.
+    TIMEOUT = 60
+
     def test_fetch(self, mockserver: MockServer) -> None:
         args = (
             sys.executable,
@@ -201,7 +206,7 @@ class TestInteractiveShell:
         env = os.environ.copy()
         env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline(f"fetch('{mockserver.url('/')}')")
@@ -235,7 +240,7 @@ class TestInteractiveShell:
     def _run_interactive_shell(self, env: dict[str, str]) -> str:
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendeof()
@@ -256,7 +261,7 @@ class TestInteractiveShell:
         self._isolate_config(env, config_home)
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=10)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         # The standard Python shell never imports IPython, whereas the IPython
@@ -289,7 +294,7 @@ class TestInteractiveShell:
         env["SCRAPY_PYTHON_SHELL"] = "ipython"
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=30)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
