@@ -56,7 +56,8 @@ def put_child(parent: resource.Resource, path: bytes, child: resource.Resource) 
 class BaseResource(resource.Resource):
     """Base class for mockserver resources, with type hints."""
 
-    def __init__(self) -> None:
+    # Only needed to give subclasses a typed __init__ to call.
+    def __init__(self) -> None:  # pylint: disable=useless-parent-delegation
         super().__init__()  # type: ignore[no-untyped-call]
 
 
