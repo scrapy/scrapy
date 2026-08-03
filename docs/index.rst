@@ -12,7 +12,16 @@ testing.
 .. _web crawling: https://en.wikipedia.org/wiki/Web_crawler
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 
-.. _section-first-steps:
+Getting help
+============
+
+Having trouble? Read the :doc:`FAQ <faq>`, ask a question in `GitHub
+Discussions`_ or report a bug on our `issue tracker`_. See
+:doc:`intro/getting-help` for more options.
+
+.. _GitHub Discussions: https://github.com/scrapy/scrapy/discussions
+.. _issue tracker: https://github.com/scrapy/scrapy/issues
+
 
 First steps
 ===========
@@ -21,14 +30,11 @@ First steps
    :caption: First steps
    :hidden:
 
-   intro/getting-help
    intro/overview
    intro/install
    intro/tutorial
    intro/examples
-
-:doc:`intro/getting-help`
-    Find support beyond the Scrapy documentation.
+   intro/getting-help
 
 :doc:`intro/overview`
     Understand what Scrapy is and how it can help you.
@@ -41,6 +47,9 @@ First steps
 
 :doc:`intro/examples`
     Learn more by playing with a pre-made Scrapy project.
+
+:doc:`intro/getting-help`
+    Find support beyond this documentation.
 
 .. _section-basics:
 
@@ -121,7 +130,6 @@ Built-in services
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
 
-.. _section-solving-problems:
 
 Solving specific problems
 =========================
