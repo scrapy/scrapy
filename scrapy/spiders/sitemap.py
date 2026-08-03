@@ -69,7 +69,8 @@ class SitemapSpider(Spider):
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
-            return (Request(url, callback=self._parse_sitemap) for url in urls)
+            yield from (Request(url, callback=self._parse_sitemap) for url in urls)
+            return
 
         body = self._get_sitemap_body(response)
         if not body:
@@ -78,19 +79,28 @@ class SitemapSpider(Spider):
                 {"response": response},
                 extra={"spider": self},
             )
-            return ()
+            return
 
         s = Sitemap(body)
 
         if s.type == "sitemapindex":
             urls = list(self._get_urls_from_sitemapindex(self.sitemap_filter(s)))
-            return (Request(loc, callback=self._parse_sitemap) for loc in urls)
+            yield from (Request(loc, callback=self._parse_sitemap) for loc in urls)
+            return
 
         if s.type == "urlset":
-            url_callback_pairs = list(
-                self._get_urls_and_callbacks_from_urlset(self.sitemap_filter(s))
-            )
-            return (Request(loc, callback=c) for loc, c in url_callback_pairs)
+            for entry in self.sitemap_filter(s):
+                meta = {"lastmod": entry.get("lastmod")}
+                if (loc := entry["loc"]) and (c := self._get_callback_from_url(loc)):
+                    yield Request(loc, c, meta=meta)
+                # Also consider alternate URLs (xhtml:link rel="alternate")
+                if self.sitemap_alternate_links and (
+                    alt_list := entry.get("alternate")
+                ):
+                    for loc in alt_list:
+                        if c := self._get_callback_from_url(loc):
+                            yield Request(loc, c, meta=meta)
+            return
 
         logger.warning(
             "Ignoring invalid sitemap: %(response)s",
@@ -98,14 +108,18 @@ class SitemapSpider(Spider):
             extra={"spider": self},
         )
 
-        return ()
-
     def _get_urls_from_sitemapindex(
         self, it: Iterable[dict[str, Any]]
     ) -> Iterable[str]:
         for loc in iterloc(it, self.sitemap_alternate_links):
             if any(x.search(loc) for x in self._follow):
                 yield loc
+
+    def _get_callback_from_url(self, url: str) -> CallbackT | None:
+        for r, c in self._cbs:
+            if r.search(url):
+                return c
+        return None
 
     def _get_urls_and_callbacks_from_urlset(
         self, it: Iterable[dict[str, Any]]
