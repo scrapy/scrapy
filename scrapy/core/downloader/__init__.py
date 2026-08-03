@@ -140,7 +140,8 @@ class Downloader:
             self.active.remove(request)
 
     def needs_backout(self) -> bool:
-        return len(self.active) >= self.total_concurrency
+        # A total concurrency of 0 means no limit.
+        return 0 < self.total_concurrency <= len(self.active)
 
     @_warn_spider_arg
     def _get_slot(

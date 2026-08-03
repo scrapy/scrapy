@@ -299,6 +299,23 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         await self._assert_factory_works(server_url, client_context_factory)
 
 
+@pytest.mark.parametrize(
+    ("concurrency", "active", "expected"),
+    [
+        (2, 1, False),
+        (2, 2, True),
+        (0, 0, False),
+        (0, 2, False),
+    ],
+)
+def test_needs_backout(concurrency: int, active: int, expected: bool) -> None:
+    crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS": concurrency})
+    downloader = Downloader(crawler)
+    downloader.active = {Request(f"https://example.com/{i}") for i in range(active)}
+    assert downloader.needs_backout() is expected
+    downloader.close()
+
+
 @coroutine_test
 async def test_fetch_deprecated_spider_arg():
     class CustomDownloader(Downloader):

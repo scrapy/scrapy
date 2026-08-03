@@ -83,6 +83,14 @@ stopping it cleanly. Forced, sudden or otherwise unclean shutdown can lead to
 data corruption in the job directory, which may prevent the spider from
 resuming correctly.
 
+Scrapy version changes
+----------------------
+
+The contents of a job directory are an implementation detail of the Scrapy
+version that wrote them. A job must be resumed with the same Scrapy version
+that paused it; after upgrading or downgrading Scrapy, start a new job with a
+new job directory.
+
 Cookies expiration
 ------------------
 

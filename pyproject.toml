@@ -69,8 +69,8 @@ brotli = [
 gcs = ["google-cloud-storage>=1.29.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
-ipython = ["ipython>=7.1.0"]
-ptpython = ["ptpython>=2.0.1"]
+ipython = ["ipython>=8.15.0"]
+ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
 s3 = ["boto3>=1.20.0"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
@@ -125,17 +125,6 @@ module = [
     "tests.test_contracts",
     "tests.test_core_downloader",
     "tests.test_downloader_handler_twisted_ftp",
-    "tests.test_downloadermiddleware_cookies",
-    "tests.test_downloadermiddleware_httpauth",
-    "tests.test_downloadermiddleware_httpcache",
-    "tests.test_downloadermiddleware_httpcompression",
-    "tests.test_downloadermiddleware_httpproxy",
-    "tests.test_downloadermiddleware_offsite",
-    "tests.test_downloadermiddleware_redirect",
-    "tests.test_downloadermiddleware_redirect_base",
-    "tests.test_downloadermiddleware_redirect_metarefresh",
-    "tests.test_downloadermiddleware_retry",
-    "tests.test_downloadermiddleware_robotstxt",
     "tests.test_downloaderslotssettings",
     "tests.test_dupefilters",
     "tests.test_engine_loop",
@@ -167,7 +156,6 @@ module = [
     "tests.test_request_cb_kwargs",
     "tests.test_request_dict",
     "tests.test_request_left",
-    "tests.test_robotstxt_interface",
     "tests.test_scheduler_base",
     "tests.test_settings",
     "tests.test_spider",
