@@ -118,13 +118,10 @@ allow_incomplete_defs = true # 59 errors
 # TODO
 [[tool.mypy.overrides]]
 module = [
-    "tests.mockserver.*",
     "tests.spiders",
     "tests.test_closespider",
     "tests.test_cmdline",
     "tests.test_contracts",
-    "tests.test_core_downloader",
-    "tests.test_downloader_handler_twisted_ftp",
     "tests.test_downloaderslotssettings",
     "tests.test_dupefilters",
     "tests.test_engine_loop",
@@ -135,7 +132,6 @@ module = [
     "tests.test_feedexport_postprocess",
     "tests.test_feedexport_storages",
     "tests.test_feedexport_uri_params",
-    "tests.test_http2_client_protocol",
     "tests.test_item",
     "tests.test_linkextractors",
     "tests.test_loader",
