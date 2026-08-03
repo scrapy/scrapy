@@ -856,6 +856,11 @@ SitemapSpider
                         if date_time.year >= 2005:
                             yield entry
 
+                def parse(self, response):
+                    # At the same time, you can get lastmod from meta
+                    item = your_item()
+                    item["lastmod"] = response.meta.get("lastmod")
+
         This would retrieve only ``entries`` modified on 2005 and the following
         years.
 
