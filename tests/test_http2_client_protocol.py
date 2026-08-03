@@ -75,7 +75,7 @@ class Data:
     STR_LARGE = generate_random_string(LARGE_SIZE)
 
     EXTRA_SMALL = generate_random_string(1024 * 15)
-    EXTRA_LARGE = generate_random_string((1024**2) * 15)
+    EXTRA_LARGE = generate_random_string(LARGE_SIZE)
 
     HTML_SMALL = make_html_body(STR_SMALL)
     HTML_LARGE = make_html_body(STR_LARGE)
