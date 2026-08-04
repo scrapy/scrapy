@@ -22,6 +22,7 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 
+from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
@@ -75,7 +76,7 @@ class DeferredFSFilesStore(FSFilesStore):
     """A simple store with persist_file() returning a deferred."""
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
-        deferred = Deferred()
+        deferred: Deferred[None] = Deferred()
         # short-hand super() doesn't work in nested functions
         parent_persist_file = super().persist_file
 
@@ -152,7 +153,7 @@ class TestFilesPipeline:
             file_path(
                 Request("http://www.dorma.co.uk/images/product_details/2532"),
                 response=Response("http://www.dorma.co.uk/images/product_details/2532"),
-                info=object(),
+                info=object(),  # type: ignore[arg-type]
             )
             == "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1"
         )
@@ -383,7 +384,7 @@ class TestFilesPipeline:
         """
 
         class CustomFilesPipeline(FilesPipeline):
-            def file_path(self, request, response=None, info=None, item=None):
+            def file_path(self, request, response=None, info=None, item=None) -> str:
                 return f"full/{item.get('path')}"
 
         file_path = CustomFilesPipeline.from_crawler(
@@ -476,7 +477,7 @@ class TestFilesPipeline:
         item["file_urls"] = bad_type
 
         with pytest.raises(TypeError, match="file_urls must be a list of URLs"):
-            list(pipeline.get_media_requests(item, None))
+            list(pipeline.get_media_requests(item, None))  # type: ignore[arg-type]
 
 
 class TestFilesPipelineFieldsMixin(ABC):
@@ -491,10 +492,10 @@ class TestFilesPipelineFieldsMixin(ABC):
         pipeline = FilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": tmp_path})
         )
-        requests = list(pipeline.get_media_requests(item, None))
+        requests = list(pipeline.get_media_requests(item, None))  # type: ignore[arg-type]
         assert requests[0].url == url
         results = [(True, {"url": url})]
-        item = pipeline.item_completed(results, item, None)
+        item = pipeline.item_completed(results, item, None)  # type: ignore[arg-type]
         files = ItemAdapter(item).get("files")
         assert files == [results[0][1]]
         assert isinstance(item, self.item_class)
@@ -512,10 +513,10 @@ class TestFilesPipelineFieldsMixin(ABC):
                 },
             )
         )
-        requests = list(pipeline.get_media_requests(item, None))
+        requests = list(pipeline.get_media_requests(item, None))  # type: ignore[arg-type]
         assert requests[0].url == url
         results = [(True, {"url": url})]
-        item = pipeline.item_completed(results, item, None)
+        item = pipeline.item_completed(results, item, None)  # type: ignore[arg-type]
         custom_files = ItemAdapter(item).get("custom_files")
         assert custom_files == [results[0][1]]
         assert isinstance(item, self.item_class)
@@ -581,8 +582,10 @@ class TestFilesPipelineCustomSettings:
         ("FILES_RESULT_FIELD", "FILES_RESULT_FIELD", "files_result_field"),
     }
 
-    def _generate_fake_settings(self, tmp_path, prefix=None):
-        def random_string():
+    def _generate_fake_settings(
+        self, tmp_path: Path, prefix: str | None = None
+    ) -> dict[str, Any]:
+        def random_string() -> str:
             return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
         settings = {
@@ -599,7 +602,7 @@ class TestFilesPipelineCustomSettings:
             for k, v in settings.items()
         }
 
-    def _generate_fake_pipeline(self):
+    def _generate_fake_pipeline(self) -> type[FilesPipeline]:
         class UserDefinedFilePipeline(FilesPipeline):
             EXPIRES = 1001
             FILES_URLS_FIELD = "alfa"
@@ -739,14 +742,14 @@ class TestFilesPipelineCustomSettings:
 
     def test_file_pipeline_using_pathlike_objects(self, tmp_path):
         class CustomFilesPipelineWithPathLikeDir(FilesPipeline):
-            def file_path(self, request, response=None, info=None, *, item=None):
-                return Path("subdir") / Path(request.url).name
+            def file_path(self, request, response=None, info=None, *, item=None) -> str:
+                return str(Path("subdir") / Path(request.url).name)
 
         pipeline = CustomFilesPipelineWithPathLikeDir.from_crawler(
             get_crawler(None, {"FILES_STORE": tmp_path})
         )
         request = Request("http://example.com/image01.jpg")
-        assert pipeline.file_path(request) == Path("subdir/image01.jpg")
+        assert pipeline.file_path(request) == str(Path("subdir/image01.jpg"))
 
 
 class TestFSFilesStore:
@@ -1092,7 +1095,7 @@ class TestFTPFileStore:
                 store.port,
                 store.username,
                 store.password,
-                store.USE_ACTIVE_MODE,
+                bool(store.USE_ACTIVE_MODE),
             )
         assert data == content
 
@@ -1160,7 +1163,7 @@ class TestBuildFromCrawler:
             _from_crawler_called = False
 
             @classmethod
-            def from_crawler(cls, crawler):
+            def from_crawler(cls, crawler: Crawler) -> "Pipeline":
                 settings = crawler.settings
                 store_uri = settings["FILES_STORE"]
                 o = cls(store_uri, crawler=crawler)
@@ -1179,7 +1182,7 @@ def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
     settings = Settings()
     settings.clear()
     settings.set("FILES_STORE", store, priority="cmdline")
-    crawler = get_crawler(settings_dict=settings)
+    crawler = get_crawler(settings_dict=dict(settings))
 
     with pytest.raises(NotConfigured):
         FilesPipeline.from_crawler(crawler)
