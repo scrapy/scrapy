@@ -7,12 +7,19 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import PIPE, Popen
 from tempfile import mkdtemp
+from typing import TYPE_CHECKING
 
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import FTPServer
 
 from tests.utils import get_script_run_env
+
+if TYPE_CHECKING:
+    from types import TracebackType
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class MockFTPServer:
@@ -26,7 +33,7 @@ class MockFTPServer:
         self.port: int | None = None
         self.path: Path | None = None
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.path = Path(mkdtemp())
         self.proc = Popen(
             [sys.executable, "-u", "-m", "tests.mockserver.ftp", "-d", str(self.path)],
@@ -34,6 +41,7 @@ class MockFTPServer:
             env=get_script_run_env(),
             text=True,
         )
+        assert self.proc.stderr is not None
         for line in self.proc.stderr:
             if "starting FTP server" in line and (
                 m := re.search(r"starting FTP server on ([^ :]+):(\d+),", line)
@@ -48,12 +56,18 @@ class MockFTPServer:
             )
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         rmtree(str(self.path))
+        assert self.proc is not None
         self.proc.kill()
         self.proc.communicate()
 
-    def url(self, path):
+    def url(self, path: str) -> str:
         return f"ftp://{self.host}:{self.port}/{path}"
 
 
