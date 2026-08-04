@@ -53,9 +53,9 @@ When configuring these settings, note that:
 -   :setting:`CONCURRENT_REQUESTS` caps
     :setting:`THROTTLING_SCOPE_CONCURRENCY`.
 
--   If ``DOWNLOAD_DELAY`` ≥ response time, concurrency is effectively ``1``,
-    because the next request to the domain is not sent until the delay elapses,
-    by which time the previous response has already arrived.
+-   If :setting:`DOWNLOAD_DELAY` ≥ response time, concurrency is effectively
+    ``1``, because the next request to the domain is not sent until the delay
+    elapses, by which time the previous response has already arrived.
 
 .. [1] You can :ref:`customize <throttling-scopes>` how requests are grouped
     for throttling, but domain-based throttling works well in most cases. For
