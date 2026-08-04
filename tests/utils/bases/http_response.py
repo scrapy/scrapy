@@ -7,13 +7,15 @@ import pytest
 from w3lib.encoding import resolve_encoding
 
 from scrapy.exceptions import NotSupported
-from scrapy.http import Headers, Request, Response
+from scrapy.http import Headers, Request, Response, TextResponse
 from scrapy.link import Link
 from scrapy.utils._deps_compat import W3LIB_STRIPS_URLS
 from tests import get_testdata
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from parsel import Selector
 
 
 class TestResponseBase(ABC):
@@ -25,14 +27,14 @@ class TestResponseBase(ABC):
     def test_init(self):
         # Response requires url in the constructor
         with pytest.raises(TypeError):
-            self.response_class()
+            self.response_class()  # type: ignore[call-arg]
         assert isinstance(
             self.response_class("http://example.com/"), self.response_class
         )
         with pytest.raises(TypeError):
-            self.response_class(b"http://example.com")
+            self.response_class(b"http://example.com")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
-            self.response_class(url="http://example.com", body={})
+            self.response_class(url="http://example.com", body={})  # type: ignore[arg-type]
         # body can be str or None
         assert isinstance(
             self.response_class("http://example.com/", body=b""),
@@ -67,12 +69,12 @@ class TestResponseBase(ABC):
 
         r = self.response_class("http://www.example.com", status=301)
         assert r.status == 301
-        r = self.response_class("http://www.example.com", status="301")
+        r = self.response_class("http://www.example.com", status="301")  # type: ignore[arg-type]
         assert r.status == 301
         with pytest.raises(ValueError, match=r"invalid literal for int\(\)"):
-            self.response_class("http://example.com", status="lala200")
+            self.response_class("http://example.com", status="lala200")  # type: ignore[arg-type]
 
-    def test_copy(self):
+    def test_copy(self) -> None:
         """Test Response copy"""
 
         r1 = self.response_class("http://www.example.com", body=b"Some body")
@@ -121,7 +123,7 @@ class TestResponseBase(ABC):
     def test_copy_inherited_classes(self):
         """Test Response children copies preserve their class"""
 
-        class CustomResponse(self.response_class):
+        class CustomResponse(self.response_class):  # type: ignore[misc,name-defined]
             pass
 
         r1 = CustomResponse("http://www.example.com")
@@ -129,7 +131,7 @@ class TestResponseBase(ABC):
 
         assert isinstance(r2, CustomResponse)
 
-    def test_replace(self):
+    def test_replace(self) -> None:
         """Test Response.replace() method"""
         hdrs = Headers({"key": "value"})
         r1 = self.response_class("http://www.example.com")
@@ -146,7 +148,9 @@ class TestResponseBase(ABC):
         assert r4.body == b""
         assert not r4.flags
 
-    def _assert_response_values(self, response, encoding, body):
+    def _assert_response_values(
+        self, response: TextResponse, encoding: str, body: str | bytes
+    ) -> None:
         if isinstance(body, str):
             body_unicode = body
             body_bytes = body.encode(encoding)
@@ -160,15 +164,15 @@ class TestResponseBase(ABC):
         assert response.body == body_bytes
         assert response.text == body_unicode
 
-    def _assert_response_encoding(self, response, encoding):
+    def _assert_response_encoding(self, response: TextResponse, encoding: str) -> None:
         assert response.encoding == resolve_encoding(encoding)
 
     def test_immutable_attributes(self):
         r = self.response_class("http://example.com")
         with pytest.raises(AttributeError):
-            r.url = "http://example2.com"
+            r.url = "http://example2.com"  # type: ignore[misc]
         with pytest.raises(AttributeError):
-            r.body = "xxx"
+            r.body = "xxx"  # type: ignore[misc,assignment]
 
     def test_setter_mutable_lazy_loading(self):
         """Mutable attributes are set internally to None only until they are
@@ -256,7 +260,7 @@ class TestResponseBase(ABC):
     def test_follow_None_url(self):
         r = self.response_class("http://example.com")
         with pytest.raises(ValueError, match="url can't be None"):
-            r.follow(None)
+            r.follow(None)  # type: ignore[arg-type]
 
     def test_follow_None_encoding(self):
         r = self.response_class("http://example.com")
@@ -368,20 +372,20 @@ class TestResponseBase(ABC):
         r = self.response_class("http://example.com")
         if self.response_class == Response:
             with pytest.raises(TypeError):
-                list(r.follow_all(urls=None))
+                list(r.follow_all(urls=None))  # type: ignore[arg-type]
             with pytest.raises(TypeError):
-                list(r.follow_all(urls=12345))
+                list(r.follow_all(urls=12345))  # type: ignore[arg-type]
             with pytest.raises(ValueError, match="url can't be None"):
-                list(r.follow_all(urls=[None]))
+                list(r.follow_all(urls=[None]))  # type: ignore[list-item]
         else:
             with pytest.raises(
                 ValueError, match="Please supply exactly one of the following arguments"
             ):
-                list(r.follow_all(urls=None))
+                list(r.follow_all(urls=None))  # type: ignore[arg-type]
             with pytest.raises(TypeError):
-                list(r.follow_all(urls=12345))
+                list(r.follow_all(urls=12345))  # type: ignore[arg-type]
             with pytest.raises(ValueError, match="url can't be None"):
-                list(r.follow_all(urls=[None]))
+                list(r.follow_all(urls=[None]))  # type: ignore[list-item]
 
     @pytest.mark.xfail(
         not W3LIB_STRIPS_URLS,
@@ -427,14 +431,14 @@ class TestResponseBase(ABC):
 
     def _assert_followed_url(
         self,
-        follow_obj: str | Link,
+        follow_obj: str | Link | Selector,
         target_url: str,
         response: Response | None = None,
         encoding: str | None = None,
     ) -> None:
         if response is None:
             response = self._links_response()
-        req = response.follow(follow_obj)
+        req = response.follow(follow_obj)  # type: ignore[arg-type]
         assert req.url == target_url
         if encoding is not None:
             assert req.encoding == encoding

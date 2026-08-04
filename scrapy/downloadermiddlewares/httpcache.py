@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from email.utils import formatdate
 from typing import TYPE_CHECKING
 
@@ -26,6 +27,9 @@ if TYPE_CHECKING:
     from scrapy.settings import Settings
     from scrapy.spiders import Spider
     from scrapy.statscollectors import StatsCollector
+
+
+logger = logging.getLogger(__name__)
 
 
 class HttpCacheMiddleware:
@@ -77,9 +81,20 @@ class HttpCacheMiddleware:
             return None
 
         # Look for cached response and check if expired
-        cachedresponse: Response | None = self.storage.retrieve_response(
-            self.crawler.spider, request
-        )
+        cachedresponse: Response | None
+        try:
+            cachedresponse = self.storage.retrieve_response(
+                self.crawler.spider, request
+            )
+        except Exception:
+            self.stats.inc_value("httpcache/retrieve_error")
+            logger.warning(
+                f"Could not read the cache entry for {request}, treating it as a "
+                f"cache miss.",
+                exc_info=True,
+                extra={"spider": self.crawler.spider},
+            )
+            cachedresponse = None
         if cachedresponse is None:
             self.stats.inc_value("httpcache/miss")
             if self.ignore_missing:

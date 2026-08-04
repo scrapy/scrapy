@@ -320,6 +320,42 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         assert new_item["results"] == [(True, {})]
 
     @coroutine_test
+    async def test_failures_are_cached_across_multiple_items(self):
+        self.pipe.LOG_FAILED_RESULTS = False
+        exc = Exception("foo")
+        req1 = Request("http://url1", meta={"response": exc})
+        new_item = await self.pipe.process_item({"requests": req1})
+        assert new_item["results"][0][1].value is exc
+
+        # rsp2 is ignored, the cached failure must be reused because request
+        # fingerprints are the same
+        req2 = Request(
+            req1.url, meta={"response": Response("http://donot.download.me")}
+        )
+        new_item = await self.pipe.process_item({"requests": req2})
+        assert new_item["results"][0][0] is False
+        assert new_item["results"][0][1].value is exc
+        assert self.pipe._mockcalled.count("media_to_download") == 1
+
+    @coroutine_test
+    async def test_cached_failure_calls_errback(self):
+        """The errback of a request is called for a cached failure as well."""
+        self.pipe.LOG_FAILED_RESULTS = False
+        exc = Exception("foo")
+        await self.pipe.process_item(
+            {"requests": Request("http://url1", meta={"response": exc})}
+        )
+
+        def errback(failure):
+            self.pipe._mockcalled.append("request_errback")
+            return {"recovered": failure.value}
+
+        req = Request("http://url1", errback=errback)
+        new_item = await self.pipe.process_item({"requests": req})
+        assert new_item["results"] == [(True, {"recovered": exc})]
+        assert self.pipe._mockcalled.count("request_errback") == 1
+
+    @coroutine_test
     async def test_results_are_cached_for_requests_of_single_item(self):
         rsp1 = Response("http://url1")
         req1 = Request("http://url1", meta={"response": rsp1})
@@ -491,6 +527,30 @@ class TestBuildFromCrawler:
         assert pipe.crawler == self.crawler
         assert pipe._fingerprinter
         assert pipe._from_crawler_called
+
+
+class MediaFailedNonePipeline(MockedMediaPipeline):
+    def media_failed(self, failure, request, info):
+        self._mockcalled.append("media_failed")
+
+
+class TestMediaFailedNone(TestBaseMediaPipeline):
+    """Test what happens when media_failed() neither raises an exception nor
+    returns a failure."""
+
+    pipeline_class = MediaFailedNonePipeline
+
+    @coroutine_test
+    async def test_result_none(self):
+        req = Request("http://url1", meta={"response": Exception("foo")})
+        new_item = await self.pipe.process_item({"requests": req})
+        assert new_item["results"] == [(True, None)]
+        assert self.pipe._mockcalled == [
+            "get_media_requests",
+            "media_to_download",
+            "media_failed",
+            "item_completed",
+        ]
 
 
 class MediaFailedFailurePipeline(MockedMediaPipeline):

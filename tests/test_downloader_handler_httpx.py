@@ -15,6 +15,8 @@ from scrapy.core.downloader.handlers._httpx import (
     HttpxDownloadHandler,
 )
 from scrapy.exceptions import DownloadFailedError
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
@@ -161,3 +163,15 @@ class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
 @pytest.mark.requires_internet
 class TestRealWebsite(HttpxDownloadHandlerMixin, TestRealWebsiteBase):
     pass
+
+
+@pytest.mark.parametrize(("concurrency", "expected"), [(16, 16), (0, None)])
+@coroutine_test
+async def test_pool_limits(concurrency: int, expected: int | None) -> None:
+    crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS": concurrency})
+    handler = build_from_crawler(HttpxDownloadHandler, crawler)
+    try:
+        assert handler._limits.max_connections == expected
+        assert handler._limits.max_keepalive_connections == expected
+    finally:
+        await handler.close()

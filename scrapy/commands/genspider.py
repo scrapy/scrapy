@@ -32,10 +32,7 @@ def sanitize_module_name(module_name: str) -> str:
 
 def extract_domain(url: str) -> str:
     """Extract domain name from URL string"""
-    o = urlparse(url)
-    if o.scheme == "" and o.netloc == "":
-        o = urlparse("//" + url.lstrip("/"))
-    return o.netloc
+    return urlparse(url).netloc
 
 
 def verify_url_scheme(url: str) -> str:

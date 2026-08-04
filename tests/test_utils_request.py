@@ -475,3 +475,14 @@ class TestRequestToCurl:
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=1'"
         )
         self._test_request(request_object, expected_curl_command)
+
+    def test_request_to_curl_method(self) -> None:
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            'curl -X POST https://www.httpbin.org/post --data-raw \'{"foo": "bar"}\''
+        )
+        assert request_object.to_curl() == expected_curl_command

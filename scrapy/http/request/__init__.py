@@ -50,7 +50,9 @@ class VerboseCookie(TypedDict):
     secure: NotRequired[bool]
 
 
-CookiesT: TypeAlias = dict[str | bytes, str | bytes] | list[VerboseCookie]
+CookiesT: TypeAlias = (
+    dict[str | bytes, str | bytes | bool | float | int] | list[VerboseCookie]
+)
 
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
@@ -169,7 +171,8 @@ class Request(object_ref):
         #:
         #: The callable must expect the response as its first parameter, and
         #: support any additional keyword arguments set through
-        #: :attr:`cb_kwargs`.
+        #: :attr:`cb_kwargs`. See :ref:`writing-callbacks` and
+        #: :ref:`callback-output`.
         #:
         #: In addition to an arbitrary callable, the following values are also
         #: supported:
@@ -190,8 +193,7 @@ class Request(object_ref):
         #:     raises exceptions for non-2xx responses by default, sending them
         #:     to the :attr:`errback` instead.
         #:
-        #: .. seealso::
-        #:     :ref:`topics-request-response-ref-request-callback-arguments`
+        #: .. seealso:: :ref:`callbacks`
         self.callback: CallbackT | None = callback
 
         #: :class:`~collections.abc.Callable` to handle exceptions raised
@@ -200,7 +202,7 @@ class Request(object_ref):
         #: The callable must expect a :exc:`~twisted.python.failure.Failure` as
         #: its first parameter.
         #:
-        #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
+        #: .. seealso:: :ref:`errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
         self._cookies: CookiesT | None = cookies or None
@@ -386,6 +388,20 @@ class Request(object_ref):
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
+
+    def to_curl(self) -> str:
+        """Return a string with a `cURL <https://curl.se/>`_ command equivalent
+        to this request.
+
+        Inverse of :meth:`from_curl`. See also
+        :func:`scrapy.utils.request.request_to_curl`.
+
+        .. versionadded:: VERSION
+        """
+        # Imported here to avoid a circular import.
+        from scrapy.utils.request import request_to_curl  # noqa: PLC0415
+
+        return request_to_curl(self)
 
     def to_dict(self, *, spider: scrapy.Spider | None = None) -> dict[str, Any]:
         """Return a dictionary containing the Request's data.
