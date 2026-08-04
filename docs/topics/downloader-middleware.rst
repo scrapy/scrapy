@@ -156,6 +156,61 @@ defines one or more of these methods:
       :param exception: the raised exception
       :type exception: an ``Exception`` object
 
+.. _mw-download:
+
+Downloading a request from a downloader middleware
+==================================================
+
+A downloader middleware can download a request of its own while it processes
+another one, e.g. to fetch something that the request it is processing needs.
+The built-in :ref:`robots.txt middleware <topics-dlmw-robots>` does that: it
+holds each request while it downloads the ``robots.txt`` file of its website.
+
+Use :meth:`crawler.engine.download_async()
+<scrapy.core.engine.ExecutionEngine.download_async>` for that:
+
+.. code-block:: python
+
+    from scrapy import Request
+    from scrapy.http.request import NO_CALLBACK
+
+
+    class TokenMiddleware:
+        def __init__(self, crawler):
+            self.crawler = crawler
+            self.token = None
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            return cls(crawler)
+
+        async def process_request(self, request):
+            if request.meta.get("dont_obey_robotstxt"):
+                return
+            if self.token is None:
+                response = await self.crawler.engine.download_async(
+                    Request(
+                        "https://example.com/token",
+                        callback=NO_CALLBACK,
+                        meta={"dont_obey_robotstxt": True},
+                    )
+                )
+                self.token = response.text
+            request.headers["Authorization"] = self.token
+
+Requests that you download this way go through the downloader middleware chain
+as well, including your own middleware and the :ref:`robots.txt middleware
+<topics-dlmw-robots>`, which holds a request until the ``robots.txt`` file of
+its website arrives. Be careful not to introduce deadlocks: a request that you
+download must not end up waiting for the request that is waiting for it. Hence
+:reqmeta:`dont_obey_robotstxt` above, which makes both middlewares let the token
+request through.
+
+While the first token response is in transit, ``process_request`` runs for other
+requests as well, and the middleware above downloads a token for each of them.
+Cache the task that downloads the token, and not only its result, to download
+the token only once.
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
