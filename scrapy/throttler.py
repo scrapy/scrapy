@@ -491,7 +491,7 @@ class Throttler:
     """The default :setting:`THROTTLER` class.
 
     It assigns to each request its domain or subdomain as scope and handles
-    backoff according to :ref:`backoff settings <basic-throttling>`.
+    backoff according to :ref:`backoff settings <backoff>`.
 
     Subclass it and override :meth:`get_default_scopes` to assign scopes
     differently.

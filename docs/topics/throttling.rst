@@ -7,8 +7,8 @@ Throttling
 .. versionadded:: VERSION
 
 Sending too many requests too quickly can `overwhelm websites`_.
-:ref:`Throttling <basic-throttling>` and :ref:`backoff <backoff>` aim to
-prevent that.
+:ref:`Concurrency and delay limits <basic-throttling>` and :ref:`backoff
+<backoff>` aim to prevent that.
 
 .. _overwhelm websites: https://en.wikipedia.org/wiki/Denial-of-service_attack
 
@@ -92,10 +92,8 @@ Backoff
 =======
 
 When servers respond with rate limiting errors (like HTTP 429) or network
-timeouts occur, request rate is automatically reduced using `exponential
-backoff`_.
-
-.. _exponential backoff: https://en.wikipedia.org/wiki/Exponential_backoff
+timeouts occur, request rate is automatically reduced, and restored again as
+the server recovers.
 
 The key settings are:
 
