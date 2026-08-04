@@ -2,7 +2,7 @@ from logging import INFO
 
 import pytest
 
-from scrapy import Request, Spider
+from scrapy import Request
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.http.response import Response
@@ -59,29 +59,20 @@ def test_target_concurrency_invalid(value):
 
 
 @pytest.mark.parametrize(
-    ("spider", "setting", "expected"),
+    ("setting", "expected"),
     [
-        (UNSET, UNSET, DOWNLOAD_DELAY),
-        (1.0, UNSET, 1.0),
-        (UNSET, 1.0, 1.0),
-        (1.0, 2.0, 1.0),
-        (3.0, 2.0, 3.0),
+        (UNSET, DOWNLOAD_DELAY),
+        (1.0, 1.0),
     ],
 )
-def test_mindelay_definition(spider, setting, expected):
+def test_mindelay_definition(setting, expected):
     settings = {}
     if setting is not UNSET:
         settings["DOWNLOAD_DELAY"] = setting
 
-    class _TestSpider(Spider):
-        name = "test"
-
-    if spider is not UNSET:
-        _TestSpider.download_delay = spider
-
-    crawler = get_crawler(settings, _TestSpider)
+    crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    at._spider_opened(_TestSpider())
+    at._spider_opened(DefaultSpider())
     assert at.mindelay == expected
 
 
@@ -103,52 +94,35 @@ def test_maxdelay_definition(value, expected):
 
 
 @pytest.mark.parametrize(
-    ("min_spider", "min_setting", "start_setting", "expected"),
+    ("min_setting", "start_setting", "expected"),
     [
-        (UNSET, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
-        (AUTOTHROTTLE_START_DELAY - 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
-        (AUTOTHROTTLE_START_DELAY + 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
-        (UNSET, AUTOTHROTTLE_START_DELAY - 1.0, UNSET, AUTOTHROTTLE_START_DELAY),
-        (UNSET, AUTOTHROTTLE_START_DELAY + 1.0, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
-        (UNSET, UNSET, AUTOTHROTTLE_START_DELAY - 1.0, AUTOTHROTTLE_START_DELAY - 1.0),
-        (UNSET, UNSET, AUTOTHROTTLE_START_DELAY + 1.0, AUTOTHROTTLE_START_DELAY + 1.0),
-        (
-            AUTOTHROTTLE_START_DELAY + 1.0,
-            AUTOTHROTTLE_START_DELAY + 2.0,
-            UNSET,
-            AUTOTHROTTLE_START_DELAY + 1.0,
-        ),
+        (UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
+        (AUTOTHROTTLE_START_DELAY - 1.0, UNSET, AUTOTHROTTLE_START_DELAY),
+        (AUTOTHROTTLE_START_DELAY + 1.0, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
+        (UNSET, AUTOTHROTTLE_START_DELAY - 1.0, AUTOTHROTTLE_START_DELAY - 1.0),
+        (UNSET, AUTOTHROTTLE_START_DELAY + 1.0, AUTOTHROTTLE_START_DELAY + 1.0),
         (
             AUTOTHROTTLE_START_DELAY + 2.0,
-            UNSET,
             AUTOTHROTTLE_START_DELAY + 1.0,
             AUTOTHROTTLE_START_DELAY + 2.0,
         ),
         (
             AUTOTHROTTLE_START_DELAY + 1.0,
-            UNSET,
             AUTOTHROTTLE_START_DELAY + 2.0,
             AUTOTHROTTLE_START_DELAY + 2.0,
         ),
     ],
 )
-def test_startdelay_definition(min_spider, min_setting, start_setting, expected):
+def test_startdelay_definition(min_setting, start_setting, expected):
     settings = {}
     if min_setting is not UNSET:
         settings["DOWNLOAD_DELAY"] = min_setting
     if start_setting is not UNSET:
         settings["AUTOTHROTTLE_START_DELAY"] = start_setting
 
-    class _TestSpider(Spider):
-        name = "test"
-
-    if min_spider is not UNSET:
-        _TestSpider.download_delay = min_spider
-
-    crawler = get_crawler(settings, _TestSpider)
+    crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = _TestSpider()
-    at._spider_opened(spider)
+    at._spider_opened(DefaultSpider())
     assert at._startdelay == expected
 
 

@@ -1417,7 +1417,8 @@ Deprecations
 
     - ``download_warnsize`` (use :setting:`DOWNLOAD_WARNSIZE`)
 
-    - ``max_concurrent_requests`` (use :setting:`CONCURRENT_REQUESTS`)
+    - ``max_concurrent_requests`` (use
+      :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`)
 
     - ``user_agent`` (use :setting:`USER_AGENT`)
 

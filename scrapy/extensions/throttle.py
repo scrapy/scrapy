@@ -55,17 +55,16 @@ class AutoThrottle:
         return cls(crawler)
 
     def _spider_opened(self, spider: Spider) -> None:
-        self.mindelay = self._min_delay(spider)
-        self.maxdelay = self._max_delay(spider)
+        self.mindelay = self._min_delay()
+        self.maxdelay = self._max_delay()
         self._startdelay = max(
             self.mindelay, self.crawler.settings.getfloat("AUTOTHROTTLE_START_DELAY")
         )
 
-    def _min_delay(self, spider: Spider) -> float:
-        s = self.crawler.settings
-        return getattr(spider, "download_delay", s.getfloat("DOWNLOAD_DELAY"))
+    def _min_delay(self) -> float:
+        return self.crawler.settings.getfloat("DOWNLOAD_DELAY")
 
-    def _max_delay(self, spider: Spider) -> float:
+    def _max_delay(self) -> float:
         return self.crawler.settings.getfloat("AUTOTHROTTLE_MAX_DELAY")
 
     def _response_downloaded(
