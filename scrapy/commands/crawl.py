@@ -16,7 +16,7 @@ class Command(BaseRunSpiderCommand):
         return "[options] <spider>"
 
     def short_desc(self) -> str:
-        return "Run a spider"
+        return "Run a spider of the current project, by name"
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) < 1:

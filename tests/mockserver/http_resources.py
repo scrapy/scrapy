@@ -3,7 +3,7 @@ from __future__ import annotations
 import gzip
 import json
 import random
-from typing import TYPE_CHECKING, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 from urllib.parse import urlencode
 
 from twisted.internet.task import deferLater
@@ -14,17 +14,24 @@ from twisted.web.util import Redirect, redirectTo
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from twisted.internet.defer import Deferred
-    from twisted.web.http import Request
+    from twisted.python.failure import Failure
+    from twisted.web.http import Request as HTTPRequest
+    from twisted.web.server import Request
 
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
-def getarg(request, name, default=None, type_=None):
+def getarg(
+    request: Request,
+    name: bytes,
+    default: Any = None,
+    type_: Callable[[bytes], Any] | None = None,
+) -> Any:
     if name in request.args:
         value = request.args[name][0]
         if type_ is not None:
@@ -33,73 +40,91 @@ def getarg(request, name, default=None, type_=None):
     return default
 
 
-def close_connection(request):
+def close_connection(request: Request) -> None:
     # We have to force a disconnection for HTTP/1.1 clients. Otherwise
     # client keeps the connection open waiting for more data.
     request.channel.loseConnection()
     request.finish()
 
 
+def put_child(parent: resource.Resource, path: bytes, child: resource.Resource) -> None:
+    # zope.interface has no type hints, so mypy cannot tell that Resource
+    # instances provide the IResource interface that putChild() expects.
+    parent.putChild(path, child)  # type: ignore[arg-type]
+
+
+class BaseResource(resource.Resource):
+    """Base class for mockserver resources, with type hints."""
+
+    # Only needed to give subclasses a typed __init__ to call.
+    def __init__(self) -> None:  # pylint: disable=useless-parent-delegation
+        super().__init__()  # type: ignore[no-untyped-call]
+
+
 # most of the following resources are copied from twisted.web.test.test_webclient
-class ForeverTakingResource(resource.Resource):
+class ForeverTakingResource(BaseResource):
     """
     L{ForeverTakingResource} is a resource which never finishes responding
     to requests.
     """
 
-    def __init__(self, write=False):
-        resource.Resource.__init__(self)
+    def __init__(self, write: bool = False):
+        super().__init__()
         self._write = write
 
-    def render(self, request):
+    def render(self, request: Request) -> int:
         if self._write:
             request.write(b"some bytes")
         return server.NOT_DONE_YET
 
 
-class HostHeaderResource(resource.Resource):
+class HostHeaderResource(BaseResource):
     """
     A testing resource which renders itself as the value of the host header
     from the request.
     """
 
-    def render(self, request):
-        return request.requestHeaders.getRawHeaders(b"host")[0]
+    def render(self, request: Request) -> bytes:
+        headers = request.requestHeaders.getRawHeaders(b"host")
+        assert headers
+        return headers[0]
 
 
-class ClientIPResource(resource.Resource):
+class ClientIPResource(BaseResource):
     """
     A testing resource which renders itself as the request client IP address.
     """
 
-    def render(self, request):
+    def render(self, request: Request) -> bytes:
         client_address = request.getClientAddress()
         if client_address is None or client_address.host is None:
             return b""
         return to_bytes(client_address.host)
 
 
-class PayloadResource(resource.Resource):
+class PayloadResource(BaseResource):
     """
     A testing resource which renders itself as the contents of the request body
     as long as the request body is 100 bytes long, otherwise which renders
     itself as C{"ERROR"}.
     """
 
-    def render(self, request):
-        data = request.content.read()
-        contentLength = request.requestHeaders.getRawHeaders(b"content-length")[0]
-        if len(data) != 100 or int(contentLength) != 100:
+    def render(self, request: Request) -> bytes:
+        assert request.content
+        data: bytes = request.content.read()
+        content_length = request.requestHeaders.getRawHeaders(b"content-length")
+        assert content_length
+        if len(data) != 100 or int(content_length[0]) != 100:
             return b"ERROR"
         return data
 
 
-class LeafResource(resource.Resource):
+class LeafResource(BaseResource):
     isLeaf = True
 
     def deferRequest(
         self,
-        request: Request,
+        request: HTTPRequest,
         delay: float,
         f: Callable[_P, _T],
         *a: _P.args,
@@ -107,7 +132,7 @@ class LeafResource(resource.Resource):
     ) -> Deferred[_T]:
         from twisted.internet import reactor
 
-        def _cancelrequest(_):
+        def _cancelrequest(_: Failure) -> None:
             # silence CancelledError
             d.addErrback(lambda _: None)
             d.cancel()
@@ -118,12 +143,13 @@ class LeafResource(resource.Resource):
 
 
 class Follow(LeafResource):
-    def render(self, request):
+    def render(self, request: Request) -> int:
         total = getarg(request, b"total", 100, type_=int)
         show = getarg(request, b"show", 1, type_=int)
         order = getarg(request, b"order", b"desc")
         maxlatency = getarg(request, b"maxlatency", 0, type_=float)
         n = getarg(request, b"n", total, type_=int)
+        nlist: Sequence[int]
         if order == b"rand":
             nlist = [random.randint(1, total) for _ in range(show)]
         else:  # order == "desc"
@@ -133,7 +159,7 @@ class Follow(LeafResource):
         self.deferRequest(request, lag, self.renderRequest, request, nlist)
         return NOT_DONE_YET
 
-    def renderRequest(self, request, nlist):
+    def renderRequest(self, request: Request, nlist: Sequence[int]) -> None:
         s = """<html> <head></head> <body>"""
         args = request.args.copy()
         for nl in nlist:
@@ -146,45 +172,47 @@ class Follow(LeafResource):
 
 
 class Delay(LeafResource):
-    def render_GET(self, request):
+    def render_GET(self, request: Request) -> int:
         n = getarg(request, b"n", 1, type_=float)
         b = getarg(request, b"b", 1, type_=int)
         if b:
             # send headers now and delay body
-            request.write("")
+            request.write(b"")
         self.deferRequest(request, n, self._delayedRender, request, n)
         return NOT_DONE_YET
 
-    def _delayedRender(self, request, n):
+    def _delayedRender(self, request: Request, n: float) -> None:
         request.write(to_bytes(f"Response delayed for {n:.3f} seconds\n"))
         request.finish()
 
 
 class Status(LeafResource):
-    def render_GET(self, request):
+    def render_GET(self, request: Request) -> bytes:
         n = getarg(request, b"n", 200, type_=int)
         request.setResponseCode(n)
         return b""
 
 
 class Raw(LeafResource):
-    def render_GET(self, request):
+    def render_GET(self, request: Request) -> int:
         request.startedWriting = 1
         self.deferRequest(request, 0, self._delayedRender, request)
         return NOT_DONE_YET
 
     render_POST = render_GET
 
-    def _delayedRender(self, request):
+    def _delayedRender(self, request: Request) -> None:
         raw = getarg(request, b"raw", b"HTTP 1.1 200 OK\n")
         request.startedWriting = 1
         request.write(raw)
+        assert request.channel.transport is not None
         request.channel.transport.loseConnection()
         request.finish()
 
 
 class Echo(LeafResource):
-    def render_GET(self, request):
+    def render_GET(self, request: Request) -> bytes:
+        assert request.content
         output = {
             "headers": {
                 to_unicode(k): [to_unicode(v) for v in vs]
@@ -198,27 +226,29 @@ class Echo(LeafResource):
 
 
 class RedirectTo(LeafResource):
-    def render(self, request):
+    def render(self, request: Request) -> bytes:
         goto = getarg(request, b"goto", b"/")
         # we force the body content, otherwise Twisted redirectTo()
         # returns HTML with <meta http-equiv="refresh"
-        redirectTo(goto, request)
+        # zope.interface has no type hints, so mypy cannot tell that Request
+        # provides the IRequest interface.
+        redirectTo(goto, request)  # type: ignore[arg-type]
         return b"redirecting..."
 
 
 class Partial(LeafResource):
-    def render_GET(self, request):
+    def render_GET(self, request: Request) -> int:
         request.setHeader(b"Content-Length", b"1024")
         self.deferRequest(request, 0, self._delayedRender, request)
         return NOT_DONE_YET
 
-    def _delayedRender(self, request):
+    def _delayedRender(self, request: Request) -> None:
         request.write(b"partial content\n")
         request.finish()
 
 
 class Drop(Partial):
-    def _delayedRender(self, request):
+    def _delayedRender(self, request: Request) -> None:
         abort = getarg(request, b"abort", 0, type_=int)
         request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
@@ -233,8 +263,10 @@ class Drop(Partial):
 
 
 class ArbitraryLengthPayloadResource(LeafResource):
-    def render(self, request):
-        return request.content.read()
+    def render(self, request: Request) -> bytes:
+        assert request.content
+        data: bytes = request.content.read()
+        return data
 
 
 class NoMetaRefreshRedirect(Redirect):
@@ -245,21 +277,23 @@ class NoMetaRefreshRedirect(Redirect):
         )
 
 
-class ContentLengthHeaderResource(resource.Resource):
+class ContentLengthHeaderResource(BaseResource):
     """
     A testing resource which renders itself as the value of the Content-Length
     header from the request.
     """
 
-    def render(self, request):
-        return request.requestHeaders.getRawHeaders(b"content-length")[0]
+    def render(self, request: Request) -> bytes:
+        headers = request.requestHeaders.getRawHeaders(b"content-length")
+        assert headers
+        return headers[0]
 
 
-class ChunkedResource(resource.Resource):
-    def render(self, request):
+class ChunkedResource(BaseResource):
+    def render(self, request: Request) -> int:
         from twisted.internet import reactor
 
-        def response():
+        def response() -> None:
             request.write(b"chunked ")
             request.write(b"content\n")
             request.finish()
@@ -268,11 +302,11 @@ class ChunkedResource(resource.Resource):
         return server.NOT_DONE_YET
 
 
-class BrokenChunkedResource(resource.Resource):
-    def render(self, request):
+class BrokenChunkedResource(BaseResource):
+    def render(self, request: Request) -> int:
         from twisted.internet import reactor
 
-        def response():
+        def response() -> None:
             request.write(b"chunked ")
             request.write(b"content\n")
             # Disable terminating chunk on finish.
@@ -283,11 +317,11 @@ class BrokenChunkedResource(resource.Resource):
         return server.NOT_DONE_YET
 
 
-class BrokenDownloadResource(resource.Resource):
-    def render(self, request):
+class BrokenDownloadResource(BaseResource):
+    def render(self, request: Request) -> int:
         from twisted.internet import reactor
 
-        def response():
+        def response() -> None:
             request.setHeader(b"Content-Length", b"20")
             request.write(b"partial")
             close_connection(request)
@@ -296,22 +330,24 @@ class BrokenDownloadResource(resource.Resource):
         return server.NOT_DONE_YET
 
 
-class EmptyContentTypeHeaderResource(resource.Resource):
+class EmptyContentTypeHeaderResource(BaseResource):
     """
     A testing resource which renders itself as the value of request body
     without content-type header in response.
     """
 
-    def render(self, request):
+    def render(self, request: Request) -> bytes:
+        assert request.content
         request.setHeader("content-type", "")
-        return request.content.read()
+        data: bytes = request.content.read()
+        return data
 
 
-class LargeChunkedFileResource(resource.Resource):
-    def render(self, request):
+class LargeChunkedFileResource(BaseResource):
+    def render(self, request: Request) -> int:
         from twisted.internet import reactor
 
-        def response():
+        def response() -> None:
             for _ in range(1024):
                 request.write(b"x" * 1024)
             request.finish()
@@ -320,17 +356,17 @@ class LargeChunkedFileResource(resource.Resource):
         return server.NOT_DONE_YET
 
 
-class DuplicateHeaderResource(resource.Resource):
-    def render(self, request):
+class DuplicateHeaderResource(BaseResource):
+    def render(self, request: Request) -> bytes:
         request.responseHeaders.setRawHeaders(b"Set-Cookie", [b"a=b", b"c=d"])
         return b""
 
 
-class LargeHeadersResource(resource.Resource):
+class LargeHeadersResource(BaseResource):
     """Return a response with ``count`` headers whose values are ``size`` bytes
     long each."""
 
-    def render(self, request):
+    def render(self, request: Request) -> bytes:
         size = getarg(request, b"size", 100, type_=int)
         count = getarg(request, b"count", 1, type_=int)
         for index in range(count):
@@ -340,37 +376,39 @@ class LargeHeadersResource(resource.Resource):
         return b""
 
 
-class UriResource(resource.Resource):
+class UriResource(BaseResource):
     """Return the full uri that was requested"""
 
-    def getChild(self, path, request):
+    def getChild(self, path: bytes, request: Request) -> resource.Resource:
         return self
 
-    def render(self, request):
+    def render(self, request: Request) -> bytes | int:
         # Note: this is an ugly hack for CONNECT request timeout test.
         #       Returning some data here fail SSL/TLS handshake
         # ToDo: implement proper HTTPS proxy tests, not faking them.
         if request.method != b"CONNECT":
             return request.uri
+        assert request.transport is not None
         request.transport.write(b"HTTP/1.1 200 Connection established\r\n\r\n")
         return NOT_DONE_YET
 
 
-class ResponseHeadersResource(resource.Resource):
+class ResponseHeadersResource(BaseResource):
     """Return a response with headers set from the JSON request body"""
 
-    def render(self, request):
+    def render(self, request: Request) -> bytes:
+        assert request.content
         body = json.loads(request.content.read().decode())
         for header_name, header_value in body.items():
             request.responseHeaders.setRawHeaders(header_name, [header_value])
         return json.dumps(body).encode("utf-8")
 
 
-class Compress(resource.Resource):
+class Compress(BaseResource):
     """Compress the data sent in the request url params and set Content-Encoding header"""
 
-    def render(self, request):
-        data = request.args.get(b"data")[0]
+    def render(self, request: Request) -> bytes:
+        data = request.args[b"data"][0]
 
         accept_encoding_header = request.getHeader(b"accept-encoding")
 
@@ -384,10 +422,10 @@ class Compress(resource.Resource):
         return b"Did not receive a valid accept-encoding header"
 
 
-class SetCookie(resource.Resource):
+class SetCookie(BaseResource):
     """Return a response with a Set-Cookie header for each request url parameter"""
 
-    def render(self, request):
+    def render(self, request: Request) -> bytes:
         for cookie_name, cookie_values in request.args.items():
             for cookie_value in cookie_values:
                 cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()
