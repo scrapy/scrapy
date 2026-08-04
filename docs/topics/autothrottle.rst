@@ -7,9 +7,6 @@ AutoThrottle extension
 This is an extension for automatically throttling crawling speed based on load
 of both the Scrapy server and the website you are crawling.
 
-.. versionchanged:: VERSION
-    Delays are adjusted per :ref:`throttling scope <throttling-scopes>`.
-
 Design goals
 ============
 
@@ -125,8 +122,8 @@ The settings used to control the AutoThrottle extension are:
 * :setting:`AUTOTHROTTLE_MAX_DELAY`
 * :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`
 * :setting:`AUTOTHROTTLE_DEBUG`
-* :setting:`THROTTLING_SCOPE_CONCURRENCY`
 * :setting:`DOWNLOAD_DELAY`
+* :setting:`THROTTLING_SCOPE_CONCURRENCY`
 
 For more information see :ref:`autothrottle-algorithm`.
 
