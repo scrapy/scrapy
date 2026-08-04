@@ -169,7 +169,7 @@ class TestRFPDupeFilter:
             "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
         }
         crawler = get_crawler(SimpleSpider, settings_dict=settings)
-        spider = build_from_crawler(SimpleSpider, crawler)
+        spider = SimpleSpider.from_crawler(crawler)
         dupefilter = _get_dupefilter(crawler=crawler)
 
         r1 = Request("http://scrapytest.org/index.html")
@@ -200,7 +200,7 @@ class TestRFPDupeFilter:
         if df:
             settings["DUPEFILTER_CLASS"] = df
         crawler = get_crawler(SimpleSpider, settings_dict=settings)
-        spider = build_from_crawler(SimpleSpider, crawler)
+        spider = SimpleSpider.from_crawler(crawler)
         dupefilter = _get_dupefilter(crawler=crawler)
 
         r1 = Request("http://scrapytest.org/index.html")

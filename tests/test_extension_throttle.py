@@ -81,7 +81,7 @@ def test_mindelay_definition(setting, expected):
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
     _mock_downloader(crawler)
-    at._spider_opened(build_from_crawler(DefaultSpider, crawler))
+    at._spider_opened(DefaultSpider.from_crawler(crawler))
     assert at.mindelay == expected
 
 
@@ -99,7 +99,7 @@ def test_maxdelay_definition(value, expected):
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
     _mock_downloader(crawler)
-    at._spider_opened(build_from_crawler(DefaultSpider, crawler))
+    at._spider_opened(DefaultSpider.from_crawler(crawler))
     assert at.maxdelay == expected
 
 
@@ -133,7 +133,7 @@ def test_startdelay_definition(min_setting, start_setting, expected):
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
     downloader = _mock_downloader(crawler)
-    at._spider_opened(build_from_crawler(DefaultSpider, crawler))
+    at._spider_opened(DefaultSpider.from_crawler(crawler))
     assert downloader._delay == expected
 
 
@@ -159,7 +159,7 @@ def test_skipped(meta, slot):
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
     downloader = _mock_downloader(crawler)
-    spider = build_from_crawler(DefaultSpider, crawler)
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
     request = Request("https://example.com", meta=meta)
 
@@ -187,7 +187,7 @@ def test_adjustment(download_latency, target_concurrency, slot_delay, expected):
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
     downloader = _mock_downloader(crawler)
-    spider = build_from_crawler(DefaultSpider, crawler)
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
     meta = {"download_latency": download_latency, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
@@ -221,7 +221,7 @@ def test_adjustment_limits(mindelay, maxdelay, expected):
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
     downloader = _mock_downloader(crawler)
-    spider = build_from_crawler(DefaultSpider, crawler)
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
     meta = {"download_latency": download_latency, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
@@ -251,7 +251,7 @@ def test_adjustment_bad_response(
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
     downloader = _mock_downloader(crawler)
-    spider = build_from_crawler(DefaultSpider, crawler)
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
     meta = {"download_latency": download_latency, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
@@ -271,7 +271,7 @@ def test_debug(caplog):
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
     downloader = _mock_downloader(crawler)
-    spider = build_from_crawler(DefaultSpider, crawler)
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
     meta = {"download_latency": 1.0, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
@@ -299,7 +299,7 @@ def test_debug_disabled(caplog):
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
     downloader = _mock_downloader(crawler)
-    spider = build_from_crawler(DefaultSpider, crawler)
+    spider = DefaultSpider.from_crawler(crawler)
     at._spider_opened(spider)
     meta = {"download_latency": 1.0, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)

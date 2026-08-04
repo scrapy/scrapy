@@ -102,7 +102,7 @@ class TestFTPFeedStorage:
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        return build_from_crawler(TestSpider, crawler)
+        return TestSpider.from_crawler(crawler)
 
     async def _store(self, uri, content, feed_options=None, settings=None):
         crawler = get_crawler(settings_dict=settings or {})
@@ -188,7 +188,7 @@ class TestBlockingFeedStorage:
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        return build_from_crawler(TestSpider, crawler)
+        return TestSpider.from_crawler(crawler)
 
     def test_default_temp_dir(self):
         b = MyBlockingFeedStorage()

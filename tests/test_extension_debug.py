@@ -67,7 +67,7 @@ def test_stacktracedump_dump_stacktrace(caplog: pytest.LogCaptureFixture) -> Non
     crawler = get_crawler()
     crawler.engine = mock.Mock()
     ext = build_from_crawler(StackTraceDump, crawler)
-    spider = build_from_crawler(DefaultSpider, crawler)
+    spider = DefaultSpider.from_crawler(crawler)
     with caplog.at_level(logging.INFO, logger="scrapy.extensions.debug"):
         ext.dump_stacktrace(0, None)
     for r in caplog.records:

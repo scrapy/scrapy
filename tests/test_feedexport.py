@@ -1252,7 +1252,7 @@ class TestFeedExporterSignals:
     ) -> None:
         crawler = get_crawler(settings_dict=self.settings)
         feed_exporter = build_from_crawler(FeedExporter, crawler)
-        spider = build_from_crawler(scrapy.Spider, crawler, "default")
+        spider = scrapy.Spider.from_crawler(crawler, "default")
         crawler.signals.connect(
             feed_exporter_signal_handler,
             signal=signals.feed_exporter_closed,

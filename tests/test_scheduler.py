@@ -47,7 +47,7 @@ async def create_scheduler(
 ) -> AsyncGenerator[Scheduler]:
     mock_crawler = MockCrawler(priority_queue_cls, jobdir)
     scheduler = build_from_crawler(Scheduler, mock_crawler)
-    spider = build_from_crawler(Spider, mock_crawler, name="spider")
+    spider = Spider.from_crawler(mock_crawler, name="spider")
     await ensure_awaitable(scheduler.open(spider))
     try:
         yield scheduler
@@ -334,7 +334,7 @@ class TestIncompatibility:
         }
         crawler = get_crawler(Spider, settings)
         scheduler = build_from_crawler(Scheduler, crawler)
-        spider = build_from_crawler(Spider, crawler, name="spider")
+        spider = Spider.from_crawler(crawler, name="spider")
         scheduler.open(spider)
 
     def test_incompatibility(self):

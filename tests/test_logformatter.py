@@ -31,7 +31,7 @@ class TestLogFormatter:
     def setup_method(self):
         crawler = get_crawler()
         self.formatter = build_from_crawler(LogFormatter, crawler)
-        self.spider = build_from_crawler(Spider, crawler, "default")
+        self.spider = Spider.from_crawler(crawler, "default")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
@@ -76,7 +76,7 @@ class TestLogFormatter:
         item = {}
         exception = DropItem("Test drop")
         response = Response("http://www.example.com")
-        spider = build_from_crawler(Spider, get_crawler(Spider), "foo")
+        spider = Spider.from_crawler(get_crawler(Spider), "foo")
 
         logkws = self.formatter.dropped(item, exception, response, spider)
         assert logkws["level"] == logging.WARNING
@@ -200,7 +200,7 @@ class TestLogformatterSubclass(TestLogFormatter):
     def setup_method(self):
         crawler = get_crawler(Spider)
         self.formatter = build_from_crawler(LogFormatterSubclass, crawler)
-        self.spider = build_from_crawler(Spider, crawler, "default")
+        self.spider = Spider.from_crawler(crawler, "default")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com")

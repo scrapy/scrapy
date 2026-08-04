@@ -12,7 +12,6 @@ import pytest
 
 from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import SitemapSpider
-from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
 from tests.spiders import RawResponseSpider
@@ -52,7 +51,7 @@ class TestSitemapSpider(TestSpiderBase):
 
     def assertSitemapBody(self, response: Response, body: bytes | None) -> None:
         crawler = get_crawler()
-        spider = build_from_crawler(self.spider_class, crawler, "example.com")
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         assert spider._get_sitemap_body(response) == body
 
     def test_get_sitemap_body(self):
@@ -374,7 +373,7 @@ Sitemap: /sitemap-relative-url.xml
     def test_compression_bomb_setting(self):
         settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
         crawler = get_crawler(settings_dict=settings)
-        spider = build_from_crawler(self.spider_class, crawler, "example.com")
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
         body = body_path.read_bytes()
         request = Request(url="https://example.com")
@@ -387,7 +386,7 @@ Sitemap: /sitemap-relative-url.xml
             download_maxsize = 10_000_000
 
         crawler = get_crawler()
-        spider = build_from_crawler(DownloadMaxSizeSpider, crawler, "example.com")
+        spider = DownloadMaxSizeSpider.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
         body = body_path.read_bytes()
         request = Request(url="https://example.com")
@@ -396,7 +395,7 @@ Sitemap: /sitemap-relative-url.xml
 
     def test_compression_bomb_request_meta(self):
         crawler = get_crawler()
-        spider = build_from_crawler(self.spider_class, crawler, "example.com")
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
         body = body_path.read_bytes()
         request = Request(
@@ -408,7 +407,7 @@ Sitemap: /sitemap-relative-url.xml
     def test_download_warnsize_setting(self, caplog: pytest.LogCaptureFixture) -> None:
         settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
         crawler = get_crawler(settings_dict=settings)
-        spider = build_from_crawler(self.spider_class, crawler, "example.com")
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
         body = body_path.read_bytes()
         request = Request(url="https://example.com")
@@ -436,7 +435,7 @@ Sitemap: /sitemap-relative-url.xml
             download_warnsize = 10_000_000
 
         crawler = get_crawler()
-        spider = build_from_crawler(DownloadWarnSizeSpider, crawler, "example.com")
+        spider = DownloadWarnSizeSpider.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
         body = body_path.read_bytes()
         request = Request(
@@ -462,7 +461,7 @@ Sitemap: /sitemap-relative-url.xml
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         crawler = get_crawler()
-        spider = build_from_crawler(self.spider_class, crawler, "example.com")
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
         body = body_path.read_bytes()
         request = Request(
@@ -491,7 +490,7 @@ Sitemap: /sitemap-relative-url.xml
             sitemap_urls = ["https://toscrape.com/sitemap.xml"]
 
         crawler = get_crawler(TestSpider)
-        spider = build_from_crawler(TestSpider, crawler)
+        spider = TestSpider.from_crawler(crawler)
         requests = [request async for request in spider.start()]
 
         assert len(requests) == 1

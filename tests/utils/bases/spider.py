@@ -11,7 +11,6 @@ from scrapy import signals
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
-from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests.utils.decorators import inline_callbacks_test
 
@@ -45,7 +44,7 @@ class TestSpiderBase(ABC):
 
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()
-        spider = build_from_crawler(self.spider_class, crawler, "example.com")
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         assert hasattr(spider, "crawler")
         assert spider.crawler is crawler
         assert hasattr(spider, "settings")
@@ -55,9 +54,7 @@ class TestSpiderBase(ABC):
         with mock.patch.object(
             self.spider_class, "__init__", return_value=None
         ) as mock_init:
-            build_from_crawler(
-                self.spider_class, get_crawler(), "example.com", foo="bar"
-            )
+            self.spider_class.from_crawler(get_crawler(), "example.com", foo="bar")
             mock_init.assert_called_once_with("example.com", foo="bar")
 
     def test_closed_signal_call(self):
@@ -68,7 +65,7 @@ class TestSpiderBase(ABC):
                 self.closed_called = True
 
         crawler = get_crawler()
-        spider = build_from_crawler(TestSpider, crawler, "example.com")
+        spider = TestSpider.from_crawler(crawler, "example.com")
         crawler.signals.send_catch_log(signal=signals.spider_opened, spider=spider)
         crawler.signals.send_catch_log(
             signal=signals.spider_closed, spider=spider, reason=None

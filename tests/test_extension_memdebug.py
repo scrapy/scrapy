@@ -31,7 +31,7 @@ def test_spider_closed_sets_stats() -> None:
     tracked = [TrackedObject(), TrackedObject()]
     CollectedObject()
 
-    ext.spider_closed(build_from_crawler(DefaultSpider, crawler), "finished")
+    ext.spider_closed(DefaultSpider.from_crawler(crawler), "finished")
 
     assert crawler.stats
     assert crawler.stats.get_value("memdebug/gc_garbage_count") == len(gc.garbage)

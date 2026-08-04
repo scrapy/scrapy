@@ -260,7 +260,7 @@ class Crawler:
             raise
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
-        return build_from_crawler(self.spidercls, self, *args, **kwargs)
+        return self.spidercls.from_crawler(self, *args, **kwargs)
 
     def _create_engine(self) -> ExecutionEngine:
         return ExecutionEngine(self, lambda _: self.stop_async())

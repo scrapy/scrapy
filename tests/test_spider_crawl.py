@@ -10,7 +10,6 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, TextResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule, Spider
-from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.spider import TestSpiderBase
 from tests.utils.decorators import coroutine_test
@@ -236,13 +235,13 @@ class TestCrawlSpider(TestSpiderBase):
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_follow_links_attribute_population(self):
         crawler = get_crawler()
-        spider = build_from_crawler(self.spider_class, crawler, "example.com")
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         assert hasattr(spider, "_follow_links")
         assert spider._follow_links
 
         settings_dict = {"CRAWLSPIDER_FOLLOW_LINKS": False}
         crawler = get_crawler(settings_dict=settings_dict)
-        spider = build_from_crawler(self.spider_class, crawler, "example.com")
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         assert hasattr(spider, "_follow_links")
         assert not spider._follow_links
 
@@ -306,7 +305,7 @@ class TestCrawlSpider(TestSpiderBase):
             allowed_domains = ["example.org"]
             rules = (Rule(),)
 
-        spider = build_from_crawler(_CrawlSpider, get_crawler(_CrawlSpider))
+        spider = _CrawlSpider.from_crawler(get_crawler(_CrawlSpider))
         results = [
             r async for r in spider.parse_with_rules(response, None, {}, follow=True)
         ]
@@ -328,7 +327,7 @@ class TestCrawlSpider(TestSpiderBase):
             allowed_domains = ["example.org"]
             rules = (Rule(),)
 
-        spider = build_from_crawler(_CrawlSpider, get_crawler(_CrawlSpider))
+        spider = _CrawlSpider.from_crawler(get_crawler(_CrawlSpider))
         results = [
             r
             async for r in spider.parse_with_rules(
