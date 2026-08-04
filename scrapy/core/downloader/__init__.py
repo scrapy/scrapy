@@ -4,7 +4,7 @@ import random
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
-from time import monotonic
+from time import monotonic, time
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -19,6 +19,7 @@ from scrapy.utils.asyncio import (
     CallLaterResult,
     call_later,
     create_looping_call,
+    sleep,
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
@@ -38,6 +39,30 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
+
+
+# Request.meta key holding the delay of a request and the time before which it
+# must not be sent because of it. The deadline is a wall-clock time, so that it
+# survives a crawl being resumed from a disk queue.
+_DELAY_DEADLINE_META_KEY = "_delay_deadline"
+
+
+def _start_delay_countdown(request: Request) -> None:
+    """Turn the ``delay`` meta key of *request*, if any, into a deadline.
+
+    Requests are stamped as they are scheduled, so that their delay runs while
+    they wait for their turn instead of only once they get it.
+
+    ``delay`` is consumed, so that a copy of the request, such as a retry or a
+    redirect, is not held again, while setting the key again asks for a new
+    delay. What the request has been through is left on ``delayed``.
+    """
+    delay = request.meta.pop("delay", None)
+    if not delay:
+        return
+    delay = float(delay)
+    request.meta[_DELAY_DEADLINE_META_KEY] = (delay, time() + delay)
+    request.meta["delayed"] = [*request.meta.get("delayed", []), delay]
 
 
 @dataclass(slots=True, eq=False)
@@ -156,8 +181,30 @@ class Downloader:
 
         return key
 
+    async def _delay_request(self, request: Request) -> None:
+        """Hold *request* until the deadline of its ``delay`` meta key.
+
+        The wait happens before the request gets a slot, so it does not take a
+        slot concurrency spot.
+        """
+        # A request that skipped the scheduler, e.g. one from
+        # ExecutionEngine.download_async(), starts its countdown here.
+        _start_delay_countdown(request)
+        countdown = request.meta.pop(_DELAY_DEADLINE_META_KEY, None)
+        if countdown is None:
+            return
+        delay, deadline = countdown
+        # A deadline further away than the delay means the clock moved backwards
+        # since it was set, which takes a crawl resumed from a disk queue, e.g.
+        # on a machine with a lagging clock. Capping keeps the wait to what the
+        # delay asked for.
+        wait = min(deadline - time(), delay)
+        if wait > 0:
+            await sleep(wait)
+
     # passed as download_func into self.middleware.download() in self.fetch()
     async def _enqueue_request(self, request: Request) -> Response:
+        await self._delay_request(request)
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
