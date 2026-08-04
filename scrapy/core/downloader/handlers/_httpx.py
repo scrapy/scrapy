@@ -92,8 +92,8 @@ class HttpxDownloadHandler(_Base):
         self._ssl_context: ssl.SSLContext = _make_ssl_context(crawler.settings)
         self._bind_host: str | None = self._get_bind_address_host()
         self._limits: httpx.Limits = httpx.Limits(
-            # hard limit on simultaneous connections (None for no limit, which is
-            # what a CONCURRENT_REQUESTS of 0 means)
+            # hard limit on simultaneous connections (None for no limit, which
+            # is what a CONCURRENT_REQUESTS of 0 means)
             max_connections=self._pool_size_total or None,
             # total number of idle connections in the pool (extra ones are closed)
             max_keepalive_connections=self._pool_size_total or None,
