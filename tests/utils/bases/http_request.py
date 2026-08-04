@@ -3,8 +3,9 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import pytest
+from twisted.python.failure import Failure
 
-from scrapy.http import Headers, Request
+from scrapy.http import Headers, Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.utils.request import request_to_curl
 
@@ -22,15 +23,15 @@ class TestRequestBase(ABC):
     def test_init(self):
         # Request requires url in the __init__ method
         with pytest.raises(TypeError):
-            self.request_class()
+            self.request_class()  # type: ignore[call-arg]
 
         # url argument must be basestring
         with pytest.raises(TypeError):
-            self.request_class(123)
+            self.request_class(123)  # type: ignore[arg-type]
 
         # priority argument must be an integer
         with pytest.raises(TypeError, match="Request priority not an integer"):
-            self.request_class("http://www.example.com", priority="1")
+            self.request_class("http://www.example.com", priority="1")  # type: ignore[arg-type]
 
         r = self.request_class("http://www.example.com")
         assert isinstance(r.url, str)
@@ -205,14 +206,17 @@ class TestRequestBase(ABC):
     def test_copy(self):
         """Test Request copy"""
 
-        def somecallback():
+        def somecallback(response: Response) -> None:
+            pass
+
+        def someerrback(failure: Failure) -> None:
             pass
 
         r1 = self.request_class(
             "http://www.example.com",
             flags=["f1", "f2"],
             callback=somecallback,
-            errback=somecallback,
+            errback=someerrback,
         )
         r1.meta["foo"] = "bar"
         r1.cb_kwargs["key"] = "value"
@@ -220,7 +224,7 @@ class TestRequestBase(ABC):
 
         # make sure callbaclks are copied
         assert r1.callback is somecallback
-        assert r1.errback is somecallback
+        assert r1.errback is someerrback
         assert r2.callback is r1.callback
         assert r2.errback is r1.errback
 
@@ -251,7 +255,7 @@ class TestRequestBase(ABC):
     def test_copy_inherited_classes(self):
         """Test Request children copies preserve their class"""
 
-        class CustomRequest(self.request_class):
+        class CustomRequest(self.request_class):  # type: ignore[misc,name-defined]
             pass
 
         r1 = CustomRequest("http://www.example.com")
@@ -283,7 +287,9 @@ class TestRequestBase(ABC):
         assert r4.dont_filter is False
 
         # the cls argument allows changing the resulting class
-        custom_request_cls = type("CustomRequest", (self.request_class,), {})
+        custom_request_cls: type[Request] = type(
+            "CustomRequest", (self.request_class,), {}
+        )
         r5 = r1.replace(cls=custom_request_cls)
         assert isinstance(r5, custom_request_cls)
         assert r5.url == r1.url
@@ -295,33 +301,36 @@ class TestRequestBase(ABC):
     def test_immutable_attributes(self):
         r = self.request_class("http://example.com")
         with pytest.raises(AttributeError):
-            r.url = "http://example2.com"
+            r.url = "http://example2.com"  # type: ignore[misc]
         with pytest.raises(AttributeError):
-            r.body = "xxx"
+            r.body = "xxx"  # type: ignore[misc,assignment]
 
     def test_callback_and_errback(self):
-        def a_function():
+        def a_callback(response: Response) -> None:
+            pass
+
+        def an_errback(failure: Failure) -> None:
             pass
 
         r1 = self.request_class("http://example.com")
         assert r1.callback is None
         assert r1.errback is None
 
-        r2 = self.request_class("http://example.com", callback=a_function)
-        assert r2.callback is a_function
+        r2 = self.request_class("http://example.com", callback=a_callback)
+        assert r2.callback is a_callback
         assert r2.errback is None
 
-        r3 = self.request_class("http://example.com", errback=a_function)
+        r3 = self.request_class("http://example.com", errback=an_errback)
         assert r3.callback is None
-        assert r3.errback is a_function
+        assert r3.errback is an_errback
 
         r4 = self.request_class(
             url="http://example.com",
-            callback=a_function,
-            errback=a_function,
+            callback=a_callback,
+            errback=an_errback,
         )
-        assert r4.callback is a_function
-        assert r4.errback is a_function
+        assert r4.callback is a_callback
+        assert r4.errback is an_errback
 
         r5 = self.request_class(
             url="http://example.com",
@@ -329,18 +338,18 @@ class TestRequestBase(ABC):
             errback=NO_CALLBACK,
         )
         assert r5.callback is NO_CALLBACK
-        assert r5.errback is NO_CALLBACK
+        assert r5.errback is NO_CALLBACK  # type: ignore[comparison-overlap]
 
     def test_callback_and_errback_type(self):
         with pytest.raises(TypeError):
-            self.request_class("http://example.com", callback="a_function")
+            self.request_class("http://example.com", callback="a_function")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
-            self.request_class("http://example.com", errback="a_function")
+            self.request_class("http://example.com", errback="a_function")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
             self.request_class(
                 url="http://example.com",
-                callback="a_function",
-                errback="a_function",
+                callback="a_function",  # type: ignore[arg-type]
+                errback="a_function",  # type: ignore[arg-type]
             )
 
     def test_setters(self):
