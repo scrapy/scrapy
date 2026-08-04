@@ -100,6 +100,10 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
+        self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
+        self._apply_deprecated_spider_attr(
+            "max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"
+        )
         self._warn_on_deprecated_default_settings()
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
@@ -172,6 +176,30 @@ class Crawler:
                     category=ScrapyDeprecationWarning,
                     stacklevel=3,
                 )
+
+    def _apply_deprecated_spider_attr(self, attr: str, setting: str) -> None:
+        """Bridge a deprecated spider attribute onto *setting*, warning about
+        the deprecation (and about being ignored when *setting* is already set
+        at spider or higher priority)."""
+        spider = self.spider if self.spider is not None else self.spidercls
+        if not hasattr(spider, attr):
+            return
+        if (self.settings.getpriority(setting) or 0) >= SETTINGS_PRIORITIES["spider"]:
+            warnings.warn(
+                f"The {attr!r} spider attribute is deprecated. It is also being "
+                f"ignored because {setting} is already set at spider or higher "
+                f"priority. Remove the {attr!r} attribute from your spider.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=3,
+            )
+            return
+        warnings.warn(
+            f"The {attr!r} spider attribute is deprecated. Use the {setting} "
+            f"setting instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=3,
+        )
+        self.settings.set(setting, getattr(spider, attr), priority="spider")
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.

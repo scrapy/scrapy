@@ -470,16 +470,17 @@ class ExecutionEngine:
         """
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        try:
-            response_or_request = await maybe_deferred_to_future(
-                self._download(request)
-            )
-        finally:
-            assert self._slot is not None
-            self._slot.remove_request(request)
-        if isinstance(response_or_request, Request):
-            return await self.download_async(response_or_request)
-        return response_or_request
+        while True:
+            try:
+                response_or_request = await maybe_deferred_to_future(
+                    self._download(request)
+                )
+            finally:
+                assert self._slot is not None
+                self._slot.remove_request(request)
+            if not isinstance(response_or_request, Request):
+                return response_or_request
+            request = response_or_request
 
     @inlineCallbacks
     def _download(

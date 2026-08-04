@@ -205,10 +205,11 @@ Request objects
         Request metadata can also be accessed through the
         :attr:`~scrapy.http.Response.meta` attribute of a response.
 
-        To pass data from one spider callback to another, consider using
-        :attr:`cb_kwargs` instead. However, request metadata may be the right
-        choice in certain scenarios, such as to maintain some debugging data
-        across all follow-up requests (e.g. the source URL).
+        To pass your own data from one spider callback to another, use
+        :attr:`cb_kwargs` instead, see :ref:`callback-data`. However, request
+        metadata may be the right choice in certain scenarios, such as to
+        maintain some debugging data across all follow-up requests (e.g. the
+        source URL).
 
         A common use of request metadata is to define request-specific
         parameters for Scrapy components (extensions, middlewares, etc.). For
@@ -248,7 +249,7 @@ Request objects
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
-       :ref:`topics-request-response-ref-request-callback-arguments`.
+       :ref:`callback-data`.
 
     .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs, cls])
 
@@ -256,9 +257,11 @@ Request objects
        given new values by whichever keyword arguments are specified. The
        :attr:`~scrapy.Request.cb_kwargs` and :attr:`~scrapy.Request.meta` attributes are shallow
        copied by default (unless new values are given as arguments). See also
-       :ref:`topics-request-response-ref-request-callback-arguments`.
+       :ref:`callback-data`.
 
     .. automethod:: from_curl
+
+    .. automethod:: to_curl
 
     .. automethod:: to_dict
 
@@ -342,159 +345,7 @@ Other functions related to requests
 
 .. autofunction:: scrapy.utils.request.request_from_dict
 
-
-.. _topics-request-response-ref-request-callback-arguments:
-
-Passing additional data to callback functions
----------------------------------------------
-
-The callback of a request is a function that will be called when the response
-of that request is downloaded. The callback function will be called with the
-downloaded :class:`Response` object as its first argument.
-
-Example:
-
-.. code-block:: python
-
-    def parse_page1(self, response):
-        return scrapy.Request(
-            "http://www.example.com/some_page.html", callback=self.parse_page2
-        )
-
-
-    def parse_page2(self, response):
-        # this would log http://www.example.com/some_page.html
-        self.logger.info("Visited %s", response.url)
-
-In some cases you may be interested in passing arguments to those callback
-functions so you can receive the arguments later, in the second callback.
-The following example shows how to achieve this by using the
-:attr:`.Request.cb_kwargs` attribute:
-
-.. code-block:: python
-
-    def parse(self, response):
-        request = scrapy.Request(
-            "http://www.example.com/index.html",
-            callback=self.parse_page2,
-            cb_kwargs=dict(main_url=response.url),
-        )
-        request.cb_kwargs["foo"] = "bar"  # add more arguments for the callback
-        yield request
-
-
-    def parse_page2(self, response, main_url, foo):
-        yield dict(
-            main_url=main_url,
-            other_url=response.url,
-            foo=foo,
-        )
-
-.. caution:: :attr:`.Request.cb_kwargs` was introduced in version ``1.7``.
-   Prior to that, using :attr:`.Request.meta` was recommended for passing
-   information around callbacks. After ``1.7``, :attr:`.Request.cb_kwargs`
-   became the preferred way for handling user information, leaving :attr:`.Request.meta`
-   for communication with components like middlewares and extensions.
-
-.. _topics-request-response-ref-errbacks:
-
-Using errbacks to catch exceptions in request processing
---------------------------------------------------------
-
-The errback of a request is a function that will be called when an exception
-is raise while processing it.
-
-It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
-be used to track connection establishment timeouts, DNS errors etc.
-
-Here's an example spider logging all errors and catching some specific
-errors if needed:
-
-.. code-block:: python
-
-    import scrapy
-
-    from scrapy.spidermiddlewares.httperror import HttpError
-    from twisted.internet.error import DNSLookupError
-    from twisted.internet.error import TimeoutError, TCPTimedOutError
-
-
-    class ErrbackSpider(scrapy.Spider):
-        name = "errback_example"
-        start_urls = [
-            "http://www.httpbin.org/",  # HTTP 200 expected
-            "http://www.httpbin.org/status/404",  # Not found error
-            "http://www.httpbin.org/status/500",  # server issue
-            "http://www.httpbin.org:12345/",  # non-responding host, timeout expected
-            "https://example.invalid/",  # DNS error expected
-        ]
-
-        async def start(self):
-            for u in self.start_urls:
-                yield scrapy.Request(
-                    u,
-                    callback=self.parse_httpbin,
-                    errback=self.errback_httpbin,
-                    dont_filter=True,
-                )
-
-        def parse_httpbin(self, response):
-            self.logger.info(f"Got successful response from {response.url}")
-            # do something useful here...
-
-        def errback_httpbin(self, failure):
-            # log all failures
-            self.logger.error(repr(failure))
-
-            # in case you want to do something special for some errors,
-            # you may need the failure's type:
-
-            if failure.check(HttpError):
-                # these exceptions come from HttpError spider middleware
-                # you can get the non-200 response
-                response = failure.value.response
-                self.logger.error("HttpError on %s", response.url)
-
-            elif failure.check(DNSLookupError):
-                # this is the original request
-                request = failure.request
-                self.logger.error("DNSLookupError on %s", request.url)
-
-            elif failure.check(TimeoutError, TCPTimedOutError):
-                request = failure.request
-                self.logger.error("TimeoutError on %s", request.url)
-
-
-.. _errback-cb_kwargs:
-
-Accessing additional data in errback functions
-----------------------------------------------
-
-In case of a failure to process the request, you may be interested in
-accessing arguments to the callback functions so you can process further
-based on the arguments in the errback. The following example shows how to
-achieve this by using ``Failure.request.cb_kwargs``:
-
-.. code-block:: python
-
-    def parse(self, response):
-        request = scrapy.Request(
-            "http://www.example.com/index.html",
-            callback=self.parse_page2,
-            errback=self.errback_page2,
-            cb_kwargs=dict(main_url=response.url),
-        )
-        yield request
-
-
-    def parse_page2(self, response, main_url):
-        pass
-
-
-    def errback_page2(self, failure):
-        yield dict(
-            main_url=failure.request.cb_kwargs["main_url"],
-        )
+.. autofunction:: scrapy.utils.httpobj.urlparse_cached
 
 
 .. _request-fingerprints:
@@ -696,6 +547,319 @@ The following built-in Scrapy components have such restrictions:
     the number of bytes of a request fingerprint, plus 5. For example,
     if a request fingerprint is made of 20 bytes (default),
     45-character-long keys must be supported.
+
+
+.. _callbacks:
+
+Callbacks
+=========
+
+A callback is a function that Scrapy calls with the :class:`Response` of a
+:class:`~scrapy.Request` once that request has been downloaded, so that you can
+extract data from that response and generate additional requests to continue
+the crawl:
+
+.. code-block:: python
+
+    from scrapy import Request, Spider
+
+
+    class BookSpider(Spider):
+        name = "books"
+
+        async def start(self):
+            yield Request("https://books.toscrape.com/", callback=self.parse_home)
+
+        def parse_home(self, response):
+            for url in response.css("h3 a::attr(href)").getall():
+                yield Request(response.urljoin(url), callback=self.parse_book)
+
+        def parse_book(self, response):
+            yield {"title": response.css("h1::text").get()}
+
+Requests may also define an :ref:`errback <errbacks>`, which Scrapy calls
+instead of the callback when an exception is raised while processing the
+request or its response, e.g. a connection error or, by default, a non-2xx
+response.
+
+
+.. _callback-assignment:
+
+Assigning a callback to a request
+---------------------------------
+
+To assign a callback to a request, use the ``callback`` parameter of
+:class:`~scrapy.Request`, which sets the :attr:`.Request.callback` attribute:
+
+.. code-block:: python
+
+    from scrapy import Request
+
+
+    def parse_home(response): ...
+
+
+    request = Request("https://books.toscrape.com/", callback=parse_home)
+
+Requests with no callback, i.e. with :attr:`~scrapy.Request.callback` set to
+``None``, are handled by the :meth:`~scrapy.Spider.parse` method of the spider:
+
+.. code-block:: python
+
+    request = Request("https://books.toscrape.com/")  # Handled by parse()
+
+If a request is never meant to reach a spider callback, e.g. because a
+:ref:`component <topics-components>` sends it and handles its response itself,
+assign the special :func:`~scrapy.http.request.NO_CALLBACK` value to it
+instead, so that :ref:`downloader middlewares <topics-downloader-middleware>`
+can tell such requests apart.
+
+While :attr:`~scrapy.Request.callback` only accepts callables, some spider
+classes let you also define a callback by name: both :attr:`CrawlSpider.rules
+<scrapy.spiders.CrawlSpider.rules>` and :attr:`SitemapSpider.sitemap_rules
+<scrapy.spiders.SitemapSpider.sitemap_rules>` accept the name of a spider
+method as a string.
+
+
+.. _writing-callbacks:
+
+Writing a callback
+------------------
+
+Any callable can be a callback, as long as it takes the response as its first
+positional parameter, and any :ref:`additional callback data <callback-data>`
+as keyword parameters. Spider methods are the most common choice, but plain
+functions, lambda expressions and other callable objects work as well.
+
+.. note:: If you enable :ref:`job persistence <topics-jobs>` through the
+    :setting:`JOBDIR` setting, callbacks must be methods of the running spider.
+    Requests with any other callback cannot be serialized, so they are kept in
+    memory only and lost when you pause the crawl. See
+    :ref:`request-serialization`.
+
+A callback can be:
+
+-   A regular function:
+
+    .. code-block:: python
+
+        def parse(self, response):
+            return {"url": response.url}
+
+-   A generator function:
+
+    .. code-block:: python
+
+        def parse(self, response):
+            yield {"url": response.url}
+
+-   A coroutine function, i.e. defined with ``async def``:
+
+    .. code-block:: python
+
+        async def parse(self, response):
+            return {"url": response.url}
+
+-   An asynchronous generator function:
+
+    .. code-block:: python
+
+        async def parse(self, response):
+            yield {"url": response.url}
+
+The last two allow using ``await``, ``async for`` and ``async with`` in your
+callback. See :ref:`topics-coroutines`.
+
+
+.. _callback-output:
+
+Callback output
+---------------
+
+A callback may return or yield any of the following:
+
+-   ``None``, which does nothing.
+
+    Callbacks that produce no output at all, e.g. callbacks that only log
+    information about the response, are perfectly valid. ``None`` values within
+    an iterable of callback output are ignored as well.
+
+-   A :class:`~scrapy.Request` object, which Scrapy schedules, downloads and
+    eventually sends to its own callback.
+
+-   An :ref:`item object <topics-items>`, which Scrapy sends to the
+    :ref:`item pipelines <topics-item-pipeline>`.
+
+    Any object that is neither ``None`` nor a :class:`~scrapy.Request` object
+    is treated as an item.
+
+-   An iterable of any of the values above, e.g. a list or, more commonly, a
+    generator.
+
+    :term:`Asynchronous iterables <asynchronous iterable>`, e.g. an
+    :term:`asynchronous generator`, are also supported.
+
+.. note:: When a callback *returns* an object, Scrapy iterates that object if
+    it supports iteration, except for :class:`dict`, :class:`~scrapy.Item`,
+    :class:`str` and :class:`bytes` objects, which are always handled as single
+    items.
+
+.. note:: In a generator callback, a ``return`` statement with a value does not
+    produce any output, since such a value is not part of what the generator
+    yields. Scrapy logs a warning when it detects such a callback, see
+    :setting:`WARN_ON_GENERATOR_RETURN_VALUE`.
+
+Before Scrapy acts on the output of a callback, that output goes through the
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output` method
+of your :ref:`spider middlewares <topics-spider-middleware>`, which may modify
+it or drop part of it.
+
+If a callback raises an exception, the :attr:`~scrapy.Request.errback` of the
+request is *not* called. The exception goes through the
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_exception`
+method of your spider middlewares instead and, unless one of them handles it,
+Scrapy logs it and sends the :signal:`spider_error` signal.
+
+
+.. _callback-data:
+.. _topics-request-response-ref-request-callback-arguments:
+
+Passing additional data to callback functions
+---------------------------------------------
+
+In some cases you may be interested in passing data to a callback in addition
+to the response, e.g. data extracted from the response that triggered the
+request. The following example shows how to achieve this by using the
+:attr:`.Request.cb_kwargs` attribute:
+
+.. code-block:: python
+
+    from scrapy import Request
+
+
+    def parse(self, response):
+        request = Request(
+            "http://www.example.com/index.html",
+            callback=self.parse_page2,
+            cb_kwargs=dict(main_url=response.url),
+        )
+        request.cb_kwargs["foo"] = "bar"  # add more arguments for the callback
+        yield request
+
+
+    def parse_page2(self, response, main_url, foo):
+        yield dict(
+            main_url=main_url,
+            other_url=response.url,
+            foo=foo,
+        )
+
+:attr:`.Request.cb_kwargs` is the recommended way to pass your own data to a
+callback. Use :attr:`.Request.meta` only for data aimed at :ref:`components
+<topics-components>`, such as middlewares and extensions.
+
+.. _errbacks:
+.. _topics-request-response-ref-errbacks:
+
+Errbacks
+========
+
+The errback of a request is a function that will be called when an exception
+is raise while processing it.
+
+It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
+be used to track connection establishment timeouts, DNS errors etc.
+
+Here's an example spider logging all errors and catching some specific
+errors if needed:
+
+.. code-block:: python
+
+    from scrapy import Request, Spider
+    from scrapy.spidermiddlewares.httperror import HttpError
+    from twisted.internet.error import DNSLookupError
+    from twisted.internet.error import TimeoutError, TCPTimedOutError
+
+
+    class ErrbackSpider(Spider):
+        name = "errback_example"
+        start_urls = [
+            "http://www.httpbin.org/",  # HTTP 200 expected
+            "http://www.httpbin.org/status/404",  # Not found error
+            "http://www.httpbin.org/status/500",  # server issue
+            "http://www.httpbin.org:12345/",  # non-responding host, timeout expected
+            "https://example.invalid/",  # DNS error expected
+        ]
+
+        async def start(self):
+            for u in self.start_urls:
+                yield Request(
+                    u,
+                    callback=self.parse_httpbin,
+                    errback=self.errback_httpbin,
+                    dont_filter=True,
+                )
+
+        def parse_httpbin(self, response):
+            self.logger.info(f"Got successful response from {response.url}")
+            # do something useful here...
+
+        def errback_httpbin(self, failure):
+            # log all failures
+            self.logger.error(repr(failure))
+
+            # in case you want to do something special for some errors,
+            # you may need the failure's type:
+
+            if failure.check(HttpError):
+                # these exceptions come from HttpError spider middleware
+                # you can get the non-200 response
+                response = failure.value.response
+                self.logger.error("HttpError on %s", response.url)
+
+            elif failure.check(DNSLookupError):
+                # this is the original request
+                request = failure.request
+                self.logger.error("DNSLookupError on %s", request.url)
+
+            elif failure.check(TimeoutError, TCPTimedOutError):
+                request = failure.request
+                self.logger.error("TimeoutError on %s", request.url)
+
+
+.. _errback-cb_kwargs:
+
+Accessing additional data in errback functions
+----------------------------------------------
+
+In case of a failure to process the request, you may be interested in
+accessing arguments to the callback functions so you can process further
+based on the arguments in the errback. The following example shows how to
+achieve this by using ``Failure.request.cb_kwargs``:
+
+.. code-block:: python
+
+    from scrapy import Request
+
+
+    def parse(self, response):
+        request = Request(
+            "http://www.example.com/index.html",
+            callback=self.parse_page2,
+            errback=self.errback_page2,
+            cb_kwargs=dict(main_url=response.url),
+        )
+        yield request
+
+
+    def parse_page2(self, response, main_url):
+        pass
+
+
+    def errback_page2(self, failure):
+        yield dict(
+            main_url=failure.request.cb_kwargs["main_url"],
+        )
 
 
 .. _topics-request-meta:

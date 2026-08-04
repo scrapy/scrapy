@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -52,6 +53,9 @@ if not H2_ENABLED:
 
 if find_spec("httpx2") is None and find_spec("httpx") is None:
     collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
+
+if find_spec("pytest_codspeed") is None:
+    collect_ignore.append("tests/benchmarks")
 
 
 def pytest_addoption(parser, pluginmanager):
@@ -135,5 +139,6 @@ def pytest_runtest_setup(item):
         pytest.skip("mitmdump is not available")
 
 
-# Generate localhost certificate files, needed by some tests
-generate_keys()
+# Generate localhost certificate files, needed by some tests (but only once if xdist is used)
+if "PYTEST_XDIST_WORKER" not in os.environ:
+    generate_keys()
