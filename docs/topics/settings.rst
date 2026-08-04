@@ -953,10 +953,6 @@ desired.
 
 .. _spider-download_delay-attribute:
 
-.. note::
-
-    This delay can be set per spider using :attr:`download_delay` spider attribute.
-
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
 
