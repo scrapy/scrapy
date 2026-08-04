@@ -1,5 +1,7 @@
 name: Auto-close LLM PRs
-on:
+# The workflow only reads the pull request body through the API, it never
+# checks out or runs pull request code, so pull_request_target is safe here.
+on:  # zizmor: ignore[dangerous-triggers]
   pull_request_target:
     types: [opened]
 permissions:
@@ -11,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR body and close if LLM-written
-        uses: actions/github-script@v6
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

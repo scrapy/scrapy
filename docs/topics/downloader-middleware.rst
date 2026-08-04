@@ -567,6 +567,10 @@ defines the methods described below.
 
       Return response if present in cache, or ``None`` otherwise.
 
+      If this method raises an exception, e.g. because the cache entry is
+      corrupted, the middleware logs a warning and handles the request as a
+      cache miss.
+
       :param spider: the spider which generated the request
       :type spider: :class:`~scrapy.Spider` object
 

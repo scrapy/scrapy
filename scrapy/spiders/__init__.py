@@ -143,6 +143,22 @@ class Spider(object_ref):
     else:
 
         def parse(self, response: Response, **kwargs: Any) -> Any:
+            """Process *response*, i.e. extract data from it and generate new
+            requests.
+
+            This is the default :ref:`callback <callbacks>`: Scrapy uses
+            it for the response to any request that does not define a
+            :attr:`~scrapy.Request.callback`, such as the requests that
+            :meth:`start` yields by default.
+
+            Any :attr:`~scrapy.Request.cb_kwargs` of the request are passed as
+            keyword parameters.
+
+            Spiders must define this method, unless every request that they
+            send defines a callback.
+
+            See :ref:`callback-output` about the supported return values.
+            """
             raise NotImplementedError(
                 f"{self.__class__.__name__}.parse callback is not defined"
             )

@@ -41,7 +41,7 @@ class Command(BaseRunSpiderCommand):
     spider: Spider | None = None
     items: ClassVar[dict[int, list[Any]]] = {}
     requests: ClassVar[dict[int, list[Request]]] = {}
-    spidercls: type[Spider] | None
+    spidercls: type[Spider] | None = None
 
     first_response = None
 
@@ -346,6 +346,8 @@ class Command(BaseRunSpiderCommand):
                 self.first_response = response
 
             cb = self._get_callback(spider=spider, opts=opts, response=response)
+            assert response.request
+            response.request.callback = cb
 
             # parse items and requests
             depth: int = response.meta["_depth"]

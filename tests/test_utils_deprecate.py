@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import warnings
 from unittest import mock
@@ -38,7 +40,7 @@ class TestWarnWhenSubclassed:
         )
         with pytest.warns(MyWarning, match=msg) as w:
 
-            class UserClass(Deprecated):
+            class UserClass(Deprecated):  # type: ignore[misc, valid-type]
                 pass
 
         assert w[0].lineno == inspect.getsourcelines(UserClass)[1]
@@ -57,7 +59,7 @@ class TestWarnWhenSubclassed:
             match=r"UserClass inherits from deprecated class bar\.OldClass, please inherit from foo\.NewClass",
         ):
 
-            class UserClass(Deprecated):
+            class UserClass(Deprecated):  # type: ignore[misc, valid-type]
                 pass
 
         with pytest.warns(
@@ -76,7 +78,7 @@ class TestWarnWhenSubclassed:
             match="UserClass inherits from deprecated class",
         ):
 
-            class UserClass(Deprecated):
+            class UserClass(Deprecated):  # type: ignore[misc, valid-type]
                 pass
 
         with warnings.catch_warnings():
@@ -95,16 +97,16 @@ class TestWarnWhenSubclassed:
             match="UserClass inherits from deprecated class",
         ):
 
-            class UserClass(Deprecated):
+            class UserClass(Deprecated):  # type: ignore[misc, valid-type]
                 pass
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", MyWarning)
 
-            class FooClass(Deprecated):
+            class FooClass(Deprecated):  # type: ignore[misc, valid-type]
                 pass
 
-            class BarClass(Deprecated):
+            class BarClass(Deprecated):  # type: ignore[misc, valid-type]
                 pass
 
     def test_warning_on_instance(self):
@@ -112,22 +114,20 @@ class TestWarnWhenSubclassed:
             "Deprecated", NewName, warn_category=MyWarning
         )
 
-        with pytest.warns(MyWarning) as w:
-            _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())
-
-        w = [x for x in w if x.category is MyWarning]
+        with pytest.warns(
+            MyWarning,
+            match=r"tests\.test_utils_deprecate\.Deprecated is deprecated, "
+            r"instantiate tests\.test_utils_deprecate\.NewName instead\.",
+        ) as w:
+            _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())  # type: ignore[arg-type]
         assert len(w) == 1
-        assert (
-            str(w[0].message) == "tests.test_utils_deprecate.Deprecated is deprecated, "
-            "instantiate tests.test_utils_deprecate.NewName instead."
-        )
         assert w[0].lineno == lineno
 
         # ignore subclassing warnings
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", MyWarning)
 
-            class UserClass(Deprecated):
+            class UserClass(Deprecated):  # type: ignore[misc, valid-type]
                 pass
 
         with warnings.catch_warnings():
@@ -141,7 +141,7 @@ class TestWarnWhenSubclassed:
             match=r"UserClass2 inherits from deprecated class tests\.test_utils_deprecate\.Deprecated, please inherit from tests\.test_utils_deprecate\.NewName",
         ):
 
-            class UserClass2(Deprecated):
+            class UserClass2(Deprecated):  # type: ignore[misc, valid-type]
                 pass
 
     def test_issubclass(self):
@@ -155,10 +155,10 @@ class TestWarnWhenSubclassed:
             class UpdatedUserClass1a(NewName):
                 pass
 
-            class OutdatedUserClass1(DeprecatedName):
+            class OutdatedUserClass1(DeprecatedName):  # type: ignore[misc, valid-type]
                 pass
 
-            class OutdatedUserClass1a(DeprecatedName):
+            class OutdatedUserClass1a(DeprecatedName):  # type: ignore[misc, valid-type]
                 pass
 
             class UnrelatedClass:
@@ -174,7 +174,7 @@ class TestWarnWhenSubclassed:
         assert not issubclass(OutdatedUserClass1a, OutdatedUserClass1)
 
         with pytest.raises(TypeError):
-            issubclass(object(), DeprecatedName)
+            issubclass(object(), DeprecatedName)  # type: ignore[arg-type]
 
     def test_isinstance(self):
         with warnings.catch_warnings():
@@ -187,10 +187,10 @@ class TestWarnWhenSubclassed:
             class UpdatedUserClass2a(NewName):
                 pass
 
-            class OutdatedUserClass2(DeprecatedName):
+            class OutdatedUserClass2(DeprecatedName):  # type: ignore[misc, valid-type]
                 pass
 
-            class OutdatedUserClass2a(DeprecatedName):
+            class OutdatedUserClass2a(DeprecatedName):  # type: ignore[misc, valid-type]
                 pass
 
             class UnrelatedClass:
@@ -211,7 +211,7 @@ class TestWarnWhenSubclassed:
             warnings.simplefilter("ignore", ScrapyDeprecationWarning)
             Deprecated = create_deprecated_class("Deprecated", NewName, {"foo": "bar"})
 
-        assert Deprecated.foo == "bar"
+        assert Deprecated.foo == "bar"  # type: ignore[attr-defined]
 
     def test_deprecate_a_class_with_custom_metaclass(self):
         Meta1 = type("Meta1", (type,), {})
@@ -242,7 +242,7 @@ class TestWarnWhenSubclassed:
             match=r"UserClass inherits from deprecated class tests\.test_utils_deprecate\.AlsoDeprecated, please inherit from foo\.Bar",
         ):
 
-            class UserClass(AlsoDeprecated):
+            class UserClass(AlsoDeprecated):  # type: ignore[misc, valid-type]
                 pass
 
     def test_inspect_stack(self):

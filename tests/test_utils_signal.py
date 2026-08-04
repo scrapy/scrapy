@@ -21,9 +21,6 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
 
 class TestSendCatchLog:
     # whether the function being tested returns exceptions or failures
