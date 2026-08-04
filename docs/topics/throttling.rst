@@ -32,10 +32,6 @@ Each domain and subdomain is treated separately: requests to
 ``books.toscrape.com`` and ``quotes.toscrape.com`` each have their own
 throttling limits, as do ``toscrape.com`` and ``books.toscrape.com``.
 
-When a request has multiple throttling scopes, it is not sent until all of them
-allow it. The more scopes it has, the rarer that is, so it may wait considerably
-longer than requests that need only one of them.
-
 The main throttling :ref:`settings <topics-settings>` are:
 
 -   .. setting:: THROTTLING_SCOPE_CONCURRENCY
@@ -417,8 +413,7 @@ Per-IP concurrency limiting
 
 A concurrency limit keyed by IP is just a throttling scope whose id is the
 request's IP, with a ``concurrency`` limit. A request then carries two scopes,
-its domain and its IP, and is only sent when **both** allow it (see
-:ref:`throttling-scopes`).
+its domain and its IP, and is only sent when **both** allow it.
 
 -   Implement a :ref:`throttler <custom-throttler>` that adds
     the request's IP as a second scope:
