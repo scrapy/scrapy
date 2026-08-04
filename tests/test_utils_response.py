@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 from time import process_time
 from urllib.parse import urlparse
@@ -15,7 +17,7 @@ from scrapy.utils.response import (
 )
 
 
-def _read_browser_output(burl: str):
+def _read_browser_output(burl: str) -> bytes:
     path = urlparse(burl).path
     if not path or not Path(path).exists():
         path = burl.replace("file://", "")
@@ -38,7 +40,7 @@ def test_open_in_browser():
 
     resp = Response(url, body=body)
     with pytest.raises(TypeError):
-        open_in_browser(resp, debug=True)  # pylint: disable=unexpected-keyword-arg
+        open_in_browser(resp, _openfunc=browser_open)  # type: ignore[arg-type]
 
 
 def test_get_meta_refresh():
@@ -224,7 +226,7 @@ def test_open_in_browser_redos_head():
         (b"<!-- <head>fake</head> --><head>real</head>", b"<head>real</head>"),
     ],
 )
-def test_remove_html_comments(input_body, output_body):
+def test_remove_html_comments(input_body: bytes, output_body: bytes) -> None:
     assert _remove_html_comments(input_body) == output_body
 
 
@@ -320,4 +322,4 @@ def test_open_in_browser_text_response_uses_txt_extension():
 def test_open_in_browser_raises_for_unsupported_response_type():
     response = Response("http://www.example.com", body=b"binary")
     with pytest.raises(TypeError):
-        open_in_browser(response, _openfunc=lambda _: True)
+        open_in_browser(response, _openfunc=lambda _: True)  # type: ignore[arg-type]

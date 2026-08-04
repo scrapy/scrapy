@@ -141,6 +141,8 @@ coverage_ignore_pyobjects = [
     r"^scrapy\.linkextractors\.lxmlhtml\.LxmlParserLinkExtractor",
 ]
 
+# -- Options for the autodoc extension ----------------------------------------
+autodoc_member_order = "bysource"
 
 # -- Options for the InterSphinx extension -----------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
@@ -158,6 +160,7 @@ scrapy_intersphinx_enable = [
     "itemloaders",
     "parsel",
     "pytest",
+    "pypug",
     "scrapy-lint",
     "sphinx",
     "tox",

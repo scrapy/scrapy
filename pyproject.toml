@@ -60,6 +60,25 @@ Source = "https://github.com/scrapy/scrapy"
 Tracker = "https://github.com/scrapy/scrapy/issues"
 "Release notes" = "https://docs.scrapy.org/en/latest/news.html"
 
+[project.optional-dependencies]
+bpython = ["bpython>=0.7.1"]
+brotli = [
+    "brotli>=1.2.0; implementation_name != 'pypy'",
+    "brotlicffi>=1.2.0.0; implementation_name == 'pypy'",
+]
+gcs = ["google-cloud-storage>=1.29.0"]
+httpx = ["httpx2[http2,socks]>=2.0.0"]
+images = ["Pillow>=8.3.2"]
+ipython = ["ipython>=8.15.0"]
+ptpython = ["ptpython>=3.0.23"]
+robotparser = ["robotexclusionrulesparser>=1.6.2"]
+s3 = ["boto3>=1.20.0"]
+twisted-http2 = ["Twisted[http2]>=21.7.0"]
+uvloop = [
+    "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
+]
+zstd = ["zstandard>=0.16.0; implementation_name != 'pypy'"]
+
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
 
@@ -94,7 +113,48 @@ untyped_calls_exclude = [
 [[tool.mypy.overrides]]
 module = "tests.*"
 allow_untyped_defs = true
-allow_incomplete_defs = true # 48 errors
+allow_incomplete_defs = true # 59 errors
+
+# TODO
+[[tool.mypy.overrides]]
+module = [
+    "tests.spiders",
+    "tests.test_closespider",
+    "tests.test_cmdline",
+    "tests.test_contracts",
+    "tests.test_downloaderslotssettings",
+    "tests.test_dupefilters",
+    "tests.test_engine_loop",
+    "tests.test_exporters",
+    "tests.test_extension_statsmailer",
+    "tests.test_extension_throttle",
+    "tests.test_feedexport",
+    "tests.test_feedexport_postprocess",
+    "tests.test_feedexport_storages",
+    "tests.test_feedexport_uri_params",
+    "tests.test_item",
+    "tests.test_linkextractors",
+    "tests.test_loader",
+    "tests.test_logformatter",
+    "tests.test_mail",
+    "tests.test_pipeline_crawl",
+    "tests.test_pipeline_files",
+    "tests.test_pipeline_images",
+    "tests.test_pipeline_media",
+    "tests.test_pipelines",
+    "tests.test_pqueues",
+    "tests.test_scheduler_base",
+    "tests.test_settings",
+    "tests.test_spider",
+    "tests.test_spider_crawl",
+    "tests.test_spidermiddleware_output_chain",
+    "tests.test_spidermiddleware_process_start",
+    "tests.test_spider_sitemap",
+    "tests.test_squeues",
+    "tests.test_squeues_request",
+    "tests.test_stats",
+    "tests.utils.bases.spider",
+]
 check_untyped_defs = false
 
 # Interface classes are hard to support
@@ -131,13 +191,12 @@ module = [
     "pyftpdlib.*",
     "pytest_twisted",
     "robotexclusionrulesparser",
-    "testfixtures",
     "zope.interface.*",
 ]
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.16.0"
+current_version = "2.17.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -269,7 +328,7 @@ markers = [
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
-    "requires_mitmproxy: marks tests that need mitmproxy",
+    "requires_mitmproxy: marks tests that need a mitmdump executable",
     "requires_internet: marks tests that need real Internet access",
 ]
 filterwarnings = [

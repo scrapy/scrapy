@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from gzip import BadGzipFile
 from pathlib import Path
 

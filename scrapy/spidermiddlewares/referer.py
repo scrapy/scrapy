@@ -92,7 +92,7 @@ class ReferrerPolicy(ABC):
         )
 
     def origin(self, url: str) -> str | None:
-        """Return serialized origin (scheme, host, path) for a request or response URL."""
+        """Return serialized origin (scheme, host, port) for a request or response URL."""
         return self.strip_url(url, origin_only=True)
 
     def potentially_trustworthy(self, url: str) -> bool:

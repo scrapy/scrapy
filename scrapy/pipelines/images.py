@@ -47,7 +47,7 @@ class ImageException(FileException):
 
 
 class ImagesPipeline(FilesPipeline):
-    """Abstract pipeline that implement the image thumbnail generation logic"""
+    """Pipeline that implements the handling logic specific to images."""
 
     MEDIA_NAME: str = "image"
 

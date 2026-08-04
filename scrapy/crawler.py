@@ -40,7 +40,11 @@ from scrapy.utils.reactor import (
     verify_installed_asyncio_event_loop,
     verify_installed_reactor,
 )
-from scrapy.utils.reactorless import install_reactor_import_hook
+from scrapy.utils.reactorless import (
+    ReactorImportHook,
+    install_reactor_import_hook,
+    uninstall_reactor_import_hook,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Generator, Iterable
@@ -97,6 +101,10 @@ class Crawler:
             return
 
         self.addons.load_settings(self.settings)
+        self._apply_deprecated_spider_attr("download_delay", "DOWNLOAD_DELAY")
+        self._apply_deprecated_spider_attr(
+            "max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"
+        )
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
@@ -174,6 +182,30 @@ class Crawler:
                 f"(in the project settings or with '-s FORCE_CRAWLER_PROCESS=True' "
                 f"on the command line) to use the spider's reactor."
             ) from None
+
+    def _apply_deprecated_spider_attr(self, attr: str, setting: str) -> None:
+        """Bridge a deprecated spider attribute onto *setting*, warning about
+        the deprecation (and about being ignored when *setting* is already set
+        at spider or higher priority)."""
+        spider = self.spider if self.spider is not None else self.spidercls
+        if not hasattr(spider, attr):
+            return
+        if (self.settings.getpriority(setting) or 0) >= SETTINGS_PRIORITIES["spider"]:
+            warnings.warn(
+                f"The {attr!r} spider attribute is deprecated. It is also being "
+                f"ignored because {setting} is already set at spider or higher "
+                f"priority. Remove the {attr!r} attribute from your spider.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=3,
+            )
+            return
+        warnings.warn(
+            f"The {attr!r} spider attribute is deprecated. Use the {setting} "
+            f"setting instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=3,
+        )
+        self.settings.set(setting, getattr(spider, attr), priority="spider")
 
     def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.
@@ -555,8 +587,8 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         """
         Run a crawler with the provided arguments.
 
-        It will call the given Crawler's :meth:`~Crawler.crawl` method, while
-        keeping track of it so it can be stopped later.
+        It will call the given Crawler's :meth:`~Crawler.crawl_async` method,
+        while keeping track of it so it can be stopped later.
 
         If ``crawler_or_spidercls`` isn't a :class:`~scrapy.crawler.Crawler`
         instance, this method will try to create one using this parameter as
@@ -797,7 +829,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
         """
         This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
         size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS
-        resolver based on :setting:`DNSCACHE_ENABLED`.
+        resolver based on :setting:`TWISTED_DNS_RESOLVER`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
@@ -861,6 +893,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
         self._reactorless_loop: asyncio.AbstractEventLoop | None = None
+        self._reactor_import_hook: ReactorImportHook | None = None
         # We want the asyncio event loop to be installed early, so that it's
         # always the correct one. And as we do that, we can also install the
         # reactor here.
@@ -873,7 +906,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
                     "TWISTED_REACTOR_ENABLED is False but a Twisted reactor is installed."
                 )
             self._reactorless_loop = set_asyncio_event_loop(loop_path)
-            install_reactor_import_hook()
+            self._reactor_import_hook = install_reactor_import_hook()
         elif is_reactor_installed():
             # The user could install a reactor before this class is instantiated.
             # We need to make sure the reactor is the correct one and the loop
@@ -899,10 +932,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
         When using a reactor it adjusts its pool size to
         :setting:`REACTOR_THREADPOOL_MAXSIZE` and installs a DNS resolver based
-        on :setting:`DNSCACHE_ENABLED`.
+        on :setting:`TWISTED_DNS_RESOLVER`.
 
-        If ``stop_after_crawl`` is True, the reactor will be stopped after all
-        crawlers have finished, using :meth:`join`.
+        If ``stop_after_crawl`` is True, the reactor/event loop will be stopped
+        after all crawlers have finished, using :meth:`join`.
 
         :param bool stop_after_crawl: stop or not the reactor when all
             crawlers have finished
@@ -1003,6 +1036,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.run_until_complete(loop.shutdown_default_executor())
         finally:
+            # loop.close() can raise, so we uninstall the hook first
+            if self._reactor_import_hook:  # pragma: no branch
+                uninstall_reactor_import_hook(self._reactor_import_hook)
+                self._reactor_import_hook = None
             self._reactorless_main_task = None
             asyncio.set_event_loop(None)
             loop.close()

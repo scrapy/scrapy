@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import pytest
@@ -14,7 +15,9 @@ from scrapy.core.downloader.handlers._httpx import (
     HttpxDownloadHandler,
 )
 from scrapy.exceptions import DownloadFailedError
-from tests.test_downloader_handlers_http_base import (
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
+from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
     TestHttpsBase,
@@ -37,7 +40,8 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.only_asyncio
 
-pytest.importorskip("httpx")
+if find_spec("httpx2") is None and find_spec("httpx") is None:
+    pytest.skip("Neither httpx2 nor httpx are installed", allow_module_level=True)
 
 
 class HttpxDownloadHandlerMixin:
@@ -159,3 +163,15 @@ class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
 @pytest.mark.requires_internet
 class TestRealWebsite(HttpxDownloadHandlerMixin, TestRealWebsiteBase):
     pass
+
+
+@pytest.mark.parametrize(("concurrency", "expected"), [(16, 16), (0, None)])
+@coroutine_test
+async def test_pool_limits(concurrency: int, expected: int | None) -> None:
+    crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS": concurrency})
+    handler = build_from_crawler(HttpxDownloadHandler, crawler)
+    try:
+        assert handler._limits.max_connections == expected
+        assert handler._limits.max_keepalive_connections == expected
+    finally:
+        await handler.close()

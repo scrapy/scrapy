@@ -233,7 +233,7 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
                 return result
 
             def process_request(self, request):
-                d = Deferred()
+                d: Deferred[Response] = Deferred()
                 d.addCallback(self.cb)
                 d.callback(resp)
                 return d
@@ -298,6 +298,8 @@ class TestDownloadDeprecated(TestManagerBase):
             return succeed(resp)
 
         async with self.get_mwman() as mwman:
+            assert mwman.crawler
+            assert mwman.crawler.spider
             with pytest.warns(
                 ScrapyDeprecationWarning,
                 match=r"DownloaderMiddlewareManager.download\(\) is deprecated, use download_async\(\) instead",

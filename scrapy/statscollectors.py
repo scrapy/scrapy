@@ -101,9 +101,21 @@ class StatsCollector:
 
 
 class MemoryStatsCollector(StatsCollector):
+    """A simple stats collector that keeps the stats of the last scraping run
+    (for each spider) in memory, after they're closed. The stats can be
+    accessed through the :attr:`spider_stats` attribute, which is a dict keyed
+    by spider name.
+
+    This is the default stats collector used in Scrapy.
+    """
+
+    spider_stats: dict[str, StatsT]
+    """A dict of dicts (keyed by spider name) containing the stats of the last
+    scraping run for each spider."""
+
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
-        self.spider_stats: dict[str, StatsT] = {}
+        self.spider_stats = {}
 
     def _persist_stats(self, stats: StatsT) -> None:
         if self._crawler.spider:
@@ -111,6 +123,13 @@ class MemoryStatsCollector(StatsCollector):
 
 
 class DummyStatsCollector(StatsCollector):
+    """A stats collector which does nothing but is very efficient (because it
+    does nothing). This stats collector can be set via the
+    :setting:`STATS_CLASS` setting, to disable stats collection in order to
+    improve performance. However, the performance penalty of stats collection
+    is usually marginal compared to other Scrapy workload like parsing pages.
+    """
+
     def get_value(
         self, key: str, default: Any = None, spider: Spider | None = None
     ) -> Any:

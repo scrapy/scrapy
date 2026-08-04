@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import warnings
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, unquote_to_bytes
 
 import pytest
@@ -10,34 +11,41 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import FormRequest, HtmlResponse
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
-from tests.test_http_request import TestRequest
+from tests.utils.bases.http_request import TestRequestBase
+
+if TYPE_CHECKING:
+    from scrapy import Request
 
 
-def _buildresponse(body, **kwargs):
+def _buildresponse(body: bytes | str, **kwargs: Any) -> HtmlResponse:
     kwargs.setdefault("body", body)
     kwargs.setdefault("url", "http://example.com")
     kwargs.setdefault("encoding", "utf-8")
     return HtmlResponse(**kwargs)
 
 
-def _qs(req, encoding="utf-8", to_unicode=False):
-    qs = req.body if req.method == "POST" else req.url.partition("?")[2]
-    uqs = unquote_to_bytes(qs)
-    if to_unicode:
-        uqs = uqs.decode(encoding)
-    return parse_qs(uqs, True)
+def _query_string(req: Request) -> bytes:
+    return req.body if req.method == "POST" else req.url.partition("?")[2].encode()
+
+
+def _qs(req: Request) -> dict[bytes, list[bytes]]:
+    return parse_qs(unquote_to_bytes(_query_string(req)), True)
+
+
+def _qs_unicode(req: Request, encoding: str = "utf-8") -> dict[str, list[str]]:
+    qs = unquote_to_bytes(_query_string(req)).decode(encoding)
+    return parse_qs(qs, True)
+
+
+def _assert_query_equal(first: bytes, second: bytes) -> None:
+    assert sorted(to_unicode(first).split("&")) == sorted(to_unicode(second).split("&"))
 
 
 # FormRequest.from_response() is deprecated in favor of form2request, so the
 # many tests below that exercise it ignore the resulting deprecation warning.
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestFormRequest(TestRequest):
+class TestFormRequest(TestRequestBase):
     request_class = FormRequest
-
-    def assertQueryEqual(self, first, second, msg=None):
-        first = to_unicode(first).split("&")
-        second = to_unicode(second).split("&")
-        assert sorted(first) == sorted(second), msg
 
     def test_init_not_deprecated(self):
         # Building a request directly from form data is not deprecated.
@@ -75,20 +83,22 @@ class TestFormRequest(TestRequest):
         assert fs[b"b"] == [b"2"]
         assert fs.get(b"c") is None
 
-        data = {"a": "1", "b": "2"}
+        mapping = {"a": "1", "b": "2"}
         fs = _qs(
-            self.request_class("http://www.example.com/", method="GET", formdata=data)
+            self.request_class(
+                "http://www.example.com/", method="GET", formdata=mapping
+            )
         )
         assert fs[b"a"] == [b"1"]
         assert fs[b"b"] == [b"2"]
 
     def test_default_encoding_bytes(self):
         # using default encoding (utf-8)
-        data = {b"one": b"two", b"price": b"\xc2\xa3 100"}
+        data: dict[Any, Any] = {b"one": b"two", b"price": b"\xc2\xa3 100"}
         r2 = self.request_class("http://www.example.com", formdata=data)
         assert r2.method == "POST"
         assert r2.encoding == "utf-8"
-        self.assertQueryEqual(r2.body, b"price=%C2%A3+100&one=two")
+        _assert_query_equal(r2.body, b"price=%C2%A3+100&one=two")
         assert r2.headers[b"Content-Type"] == b"application/x-www-form-urlencoded"
 
     def test_default_encoding_textual_data(self):
@@ -97,26 +107,26 @@ class TestFormRequest(TestRequest):
         r2 = self.request_class("http://www.example.com", formdata=data)
         assert r2.method == "POST"
         assert r2.encoding == "utf-8"
-        self.assertQueryEqual(r2.body, b"price=%C2%A3+100&%C2%B5+one=two")
+        _assert_query_equal(r2.body, b"price=%C2%A3+100&%C2%B5+one=two")
         assert r2.headers[b"Content-Type"] == b"application/x-www-form-urlencoded"
 
     def test_default_encoding_mixed_data(self):
         # using default encoding (utf-8)
-        data = {"\u00b5one": b"two", b"price\xc2\xa3": "\u00a3 100"}
+        data: dict[Any, Any] = {"\u00b5one": b"two", b"price\xc2\xa3": "\u00a3 100"}
         r2 = self.request_class("http://www.example.com", formdata=data)
         assert r2.method == "POST"
         assert r2.encoding == "utf-8"
-        self.assertQueryEqual(r2.body, b"%C2%B5one=two&price%C2%A3=%C2%A3+100")
+        _assert_query_equal(r2.body, b"%C2%B5one=two&price%C2%A3=%C2%A3+100")
         assert r2.headers[b"Content-Type"] == b"application/x-www-form-urlencoded"
 
     def test_custom_encoding_bytes(self):
-        data = {b"\xb5 one": b"two", b"price": b"\xa3 100"}
+        data: dict[Any, Any] = {b"\xb5 one": b"two", b"price": b"\xa3 100"}
         r2 = self.request_class(
             "http://www.example.com", formdata=data, encoding="latin1"
         )
         assert r2.method == "POST"
         assert r2.encoding == "latin1"
-        self.assertQueryEqual(r2.body, b"price=%A3+100&%B5+one=two")
+        _assert_query_equal(r2.body, b"price=%A3+100&%B5+one=two")
         assert r2.headers[b"Content-Type"] == b"application/x-www-form-urlencoded"
 
     def test_custom_encoding_textual_data(self):
@@ -131,7 +141,7 @@ class TestFormRequest(TestRequest):
         # using multiples values for a single key
         data = {"price": "\xa3 100", "colours": ["red", "blue", "green"]}
         r3 = self.request_class("http://www.example.com", formdata=data)
-        self.assertQueryEqual(
+        _assert_query_equal(
             r3.body, b"colours=red&colours=blue&colours=green&price=%C2%A3+100"
         )
 
@@ -173,7 +183,7 @@ class TestFormRequest(TestRequest):
         assert req.method == "POST"
         assert req.headers[b"Content-type"] == b"application/x-www-form-urlencoded"
         assert req.url == "http://www.example.com/this/post.php"
-        fs = _qs(req, to_unicode=True)
+        fs = _qs_unicode(req)
         assert set(fs["test £"]) == {"val1", "val2"}
         assert set(fs["one"]) == {"two", "three"}
         assert fs["test2"] == ["xxx µ"]
@@ -196,7 +206,7 @@ class TestFormRequest(TestRequest):
         assert req.method == "POST"
         assert req.headers[b"Content-type"] == b"application/x-www-form-urlencoded"
         assert req.url == "http://www.example.com/this/post.php"
-        fs = _qs(req, to_unicode=True, encoding="latin1")
+        fs = _qs_unicode(req, encoding="latin1")
         assert set(fs["test £"]) == {"val1", "val2"}
         assert set(fs["one"]) == {"two", "three"}
         assert fs["test2"] == ["xxx µ"]
@@ -218,7 +228,7 @@ class TestFormRequest(TestRequest):
         assert req.method == "POST"
         assert req.headers[b"Content-type"] == b"application/x-www-form-urlencoded"
         assert req.url == "http://www.example.com/this/post.php"
-        fs = _qs(req, to_unicode=True)
+        fs = _qs_unicode(req)
         assert set(fs["test £"]) == {"val1", "val2"}
         assert set(fs["one"]) == {"two", "three"}
         assert fs["test2"] == ["xxx µ"]
@@ -305,7 +315,10 @@ class TestFormRequest(TestRequest):
             <input type="hidden" name="two" value="3">
             </form>"""
         )
-        req = self.request_class.from_response(response, formdata={"two": None})
+        req = self.request_class.from_response(
+            response,
+            formdata={"two": None},  # type: ignore[arg-type]
+        )
         fs = _qs(req)
         assert fs[b"one"] == [b"1"]
         assert b"two" not in fs
@@ -450,7 +463,7 @@ class TestFormRequest(TestRequest):
         req = self.request_class.from_response(
             response, clickdata={"name": "price in \u00a3"}
         )
-        fs = _qs(req, to_unicode=True)
+        fs = _qs_unicode(req)
         assert fs["price in \u00a3"]
 
     def test_from_response_unicode_clickdata_latin1(self):
@@ -466,7 +479,7 @@ class TestFormRequest(TestRequest):
         req = self.request_class.from_response(
             response, clickdata={"name": "price in \u00a5"}
         )
-        fs = _qs(req, to_unicode=True, encoding="latin1")
+        fs = _qs_unicode(req, encoding="latin1")
         assert fs["price in \u00a5"]
 
     def test_from_response_multiple_forms_clickdata(self):
@@ -737,7 +750,7 @@ class TestFormRequest(TestRequest):
             </form>"""
         )
         req = self.request_class.from_response(res)
-        fs = _qs(req, to_unicode=True)
+        fs = _qs_unicode(req)
         assert fs == {"i1": ["i1v2"], "i2": ["i2v1"], "i4": ["i4v2", "i4v3"]}
 
     def test_from_response_radio(self):
@@ -1022,7 +1035,7 @@ class TestFormRequest(TestRequest):
         with pytest.raises(
             ValueError, match="formdata should be a dict or iterable of tuples"
         ):
-            FormRequest.from_response(response, formdata=123)
+            FormRequest.from_response(response, formdata=123)  # type: ignore[arg-type]
 
     def test_form_response_with_custom_invalid_formdata_value_error(self):
         """Test that a ValueError is raised for fault-inducing iterable formdata input"""
@@ -1037,7 +1050,7 @@ class TestFormRequest(TestRequest):
         with pytest.raises(
             ValueError, match="formdata should be a dict or iterable of tuples"
         ):
-            FormRequest.from_response(response, formdata=("a",))
+            FormRequest.from_response(response, formdata=("a",))  # type: ignore[arg-type]
 
     def test_get_form_with_xpath_no_form_parent(self):
         """Test that _get_from raised a ValueError when an XPath selects an element

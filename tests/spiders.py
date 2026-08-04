@@ -38,6 +38,35 @@ class MockServerSpider(Spider):
         self.is_secure = is_secure
 
 
+class RawResponseSpider(MockServerSpider):
+    """Base class for spiders that fetch a response built by the test itself.
+
+    Subclasses return the body from :meth:`raw_body` and request
+    :attr:`raw_url`, which the mock server answers with that body verbatim
+    under :attr:`content_type`. This lets tests reach parsing code that only
+    a specific kind of response triggers while still going through a regular
+    crawl, instead of calling internal parsing methods directly.
+    """
+
+    name = "raw_response"
+    content_type = "text/plain"
+
+    def raw_body(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def raw_url(self) -> str:
+        assert self.mockserver
+        raw = (
+            "HTTP/1.1 200 OK\r\n"
+            f"Content-Type: {self.content_type}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            f"{self.raw_body()}"
+        )
+        return self.mockserver.url("/raw?" + urlencode({"raw": raw}))
+
+
 class MetaSpider(MockServerSpider):
     name = "meta"
 
@@ -496,6 +525,23 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
         self.logger.info("[errback] status %i", failure.value.response.status)
 
 
+class CrawlSpiderWithoutErrback(CrawlSpiderWithParseMethod):
+    name = "crawl_spider_without_errback"
+
+    async def start(self):
+        test_body = b"""
+        <html>
+            <head><title>Page title</title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
+                <p><a href="/status?n=404">Item 404</a></p>  <!-- failure, no errback -->
+            </body>
+        </html>
+        """
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
+
+
 class CrawlSpiderWithProcessRequestCallbackKeywordArguments(CrawlSpiderWithParseMethod):
     name = "crawl_spider_with_process_request_cb_kwargs"
     rules = (
@@ -571,3 +617,19 @@ class HeadersReceivedErrbackSpider(HeadersReceivedCallbackSpider):
     def headers_received(self, headers, body_length, request, spider):
         self.meta["headers_received"] = headers
         raise StopDownload(fail=True)
+
+
+class ExceptionSpider(Spider):
+    name = "exception"
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        raise ValueError("Exception in from_crawler method")
+
+
+class NoRequestsSpider(Spider):
+    name = "no_request"
+
+    async def start(self):
+        return
+        yield

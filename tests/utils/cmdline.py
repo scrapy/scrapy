@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import subprocess
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from scrapy.utils.test import get_testenv
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def call(*args: str, **popen_kwargs: Any) -> int:
@@ -36,3 +39,23 @@ def proc(*args: str, **popen_kwargs: Any) -> tuple[int, str, str]:
         pytest.fail("Command took too much time to complete")
 
     return p.returncode, p.stdout, p.stderr
+
+
+def write_recording_editor(editor: Path) -> None:
+    """Create an executable editor script that writes the path it is asked to
+    open (its last argument) into the file given as its first argument."""
+    editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
+    editor.chmod(0o755)
+
+
+def write_recording_browser(browser: Path, recorded: Path) -> None:
+    """Create an executable browser script that writes the URL it is asked to
+    open into *recorded*.
+
+    ``webbrowser`` only passes the URL to the command from the ``BROWSER``
+    environment variable, hence the hardcoded output path.
+    """
+    browser.write_text(
+        f'#!/bin/sh\nprintf "%s" "$1" > "{recorded}"\n', encoding="utf-8"
+    )
+    browser.chmod(0o755)
