@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import pytest
 
 from scrapy import Request
-from scrapy.core.downloader.handlers._httpx import (
+from scrapy.core.downloader.handlers._httpx import (  # type: ignore[attr-defined]
     HAS_HTTP2,
     HAS_SOCKS,
     HttpxDownloadHandler,
@@ -51,7 +51,7 @@ if find_spec("httpx2") is None and find_spec("httpx") is None:
 # This check can be dropped once the httpx2 requirement is bumped to >= 2.4.0.
 try:
     for _hostname in IDNA_REJECTED_HOSTNAMES:
-        httpx.URL(f"http://{_hostname}").host
+        _ = httpx.URL(f"http://{_hostname}").host
 except Exception:
     HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES = False
 else:
