@@ -535,7 +535,7 @@ class Throttler:
         synchronous :meth:`~ThrottlerProtocol.get_scopes_key`, which is what the
         :ref:`scheduler <topics-scheduler>` groups queued requests by. Override
         :meth:`~ThrottlerProtocol.get_scopes` only for scoping that needs
-        ``await``; see :ref:`custom-throttling-scopes`.
+        ``await``; see :ref:`async-throttling-scopes`.
         """
         return urlparse_cached(request).hostname or ""
 

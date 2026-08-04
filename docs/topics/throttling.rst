@@ -17,16 +17,24 @@ Sending too many requests too quickly can `overwhelm websites`_.
         Adjust scope delays dynamically based on response latencies.
 
 .. _basic-throttling:
+.. _throttling-scopes:
 
 Concurrency and delay
 =====================
 
-Requests are throttled on a **per-domain basis** by default [1]_. This allows
+Requests are throttled on a **per-domain basis** by default [1]_: each domain is
+a separate `throttling scope
+<https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#section-1.4-4.4>`__,
+i.e. an aspect of a request that can be throttled independently. This allows
 efficient crawling of multiple sites simultaneously.
 
 Each domain and subdomain is treated separately: requests to
 ``books.toscrape.com`` and ``quotes.toscrape.com`` each have their own
 throttling limits, as do ``toscrape.com`` and ``books.toscrape.com``.
+
+When a request has multiple throttling scopes, it is not sent until all of them
+allow it. The more scopes it has, the rarer that is, so it may wait considerably
+longer than requests that need only one of them.
 
 The main throttling :ref:`settings <topics-settings>` are:
 
@@ -61,7 +69,7 @@ When configuring these settings, note that:
     ``1``, because the next request to the domain is not sent until the delay
     elapses, by which time the previous response has already arrived.
 
-.. [1] You can :ref:`customize <throttling-scopes>` how requests are grouped
+.. [1] You can :ref:`customize <custom-throttler>` how requests are grouped
     for throttling, but domain-based throttling works well in most cases. For
     more complex domain grouping strategies, see
     :ref:`alternative-domain-throttling`.
@@ -133,7 +141,7 @@ throttling for such requests:
     }
 
 .. note:: These custom throttling groups persist through redirects. For
-    redirect-aware throttling assignment, see :ref:`custom-throttling-scopes`.
+    redirect-aware throttling assignment, see :ref:`custom-throttler`.
 
 .. reqmeta:: delay
 
@@ -177,52 +185,17 @@ otherwise impose, set the :reqmeta:`dont_throttle` request metadata key to
 
 Its own :reqmeta:`delay`, if any, is still honored.
 
-.. _throttling-scopes:
-
-Throttling scopes
-=================
-
-`Throttling scopes
-<https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#section-1.4-4.4>`__
-represent aspects of requests that can be throttled independently.
-
-When a request has multiple throttling scopes, it is not sent until all of its
-throttling scopes allow it. The more scopes it has, the rarer that is, so it may
-wait considerably longer than requests that need only one of them.
-
-.. _custom-throttling-scopes:
-
-Customizing throttling scopes
------------------------------
-
-There are 2 ways to customize throttling scopes.
-
-To **configure existing scopes**, use the :setting:`THROTTLING_SCOPES` setting.
-Its keys are scope IDs and its values are
-:class:`~scrapy.throttler.ThrottlingScopeConfig` dicts, which accept the
-following keys:
-
-``concurrency`` (:class:`int`)
-    Maximum number of concurrent requests for the scope, ``1`` or higher.
-    Defaults to :setting:`THROTTLING_SCOPE_CONCURRENCY`.
-
-``delay`` (:class:`float`)
-    Minimum seconds between requests for the scope. Defaults to
-    :setting:`DOWNLOAD_DELAY`.
-
-``jitter`` (:class:`float`)
-    Magnitude of the random variation applied to ``delay``, e.g. ``0.5`` means
-    ±50% and ``0`` disables it. Defaults to
-    :setting:`RANDOMIZE_DOWNLOAD_DELAY`.
-
 .. setting:: THROTTLER
 
-To **change how scopes are assigned** (or anything beyond per-scope settings),
-set :setting:`THROTTLER` (default:
-:class:`~scrapy.throttler.Throttler`) to a :ref:`component
-<topics-components>` that implements
-:class:`~scrapy.throttler.ThrottlerProtocol` (or its import
-path as a string):
+.. _custom-throttler:
+
+Custom throttlers
+=================
+
+To change how scopes are assigned, or anything beyond per-scope settings, set
+:setting:`THROTTLER` (default: :class:`~scrapy.throttler.Throttler`) to a
+:ref:`component <topics-components>` that implements
+:class:`~scrapy.throttler.ThrottlerProtocol` (or its import path as a string):
 
 .. code-block:: python
     :caption: :file:`settings.py`
@@ -251,7 +224,7 @@ the scopes of a request that does not choose its own through the
 .. _async-throttling-scopes:
 
 Scoping that needs ``await``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 
 :meth:`~scrapy.throttler.Throttler.get_default_scopes` is synchronous. For
 scoping that must ``await`` something, override
@@ -360,7 +333,7 @@ To apply different throttling settings to different endpoints of the same
 domain and not enforce any common throttling, effectively treating them as
 different domains:
 
--   Implement a :ref:`throttler <custom-throttling-scopes>` that sets
+-   Implement a :ref:`throttler <custom-throttler>` that sets
     endpoint-specific throttling scopes for that domain:
 
     .. code-block:: python
@@ -407,7 +380,7 @@ to:
             "api.example": {"concurrency": 1000, "delay": 0.08},
         }
 
--   Implement a :ref:`throttler <custom-throttling-scopes>` that:
+-   Implement a :ref:`throttler <custom-throttler>` that:
 
     -   Adds a throttling scope for the URL being scraped.
 
@@ -447,7 +420,7 @@ request's IP, with a ``concurrency`` limit. A request then carries two scopes,
 its domain and its IP, and is only sent when **both** allow it (see
 :ref:`throttling-scopes`).
 
--   Implement a :ref:`throttler <custom-throttling-scopes>` that adds
+-   Implement a :ref:`throttler <custom-throttler>` that adds
     the request's IP as a second scope:
 
     .. code-block:: python

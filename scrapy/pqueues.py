@@ -306,7 +306,7 @@ class DownloaderAwarePriorityQueue:
     A slot stands for the :ref:`throttling scopes <throttling-scopes>` of the
     requests it holds, and its load is the highest load among those scopes,
     since a slot cannot be dequeued faster than its busiest scope allows. So
-    requests with :ref:`several scopes <custom-throttling-scopes>` are balanced
+    requests with several scopes are balanced
     by whichever of their scopes is the most constrained.
 
     .. note:: Slots are keyed by
