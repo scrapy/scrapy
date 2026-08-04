@@ -116,6 +116,18 @@ class TestEngineDownloadAsync:
         engine._slot.add_request.assert_called_once_with(request)
         engine._slot.remove_request.assert_called_once_with(request)
 
+    @coroutine_test
+    async def test_download_async_fetch_needs_spider(self, engine):
+        engine._downloader_fetch_needs_spider = True
+        request = Request("http://example.com")
+        response = Response("http://example.com", body=b"test body")
+        engine.spider = Mock()
+        engine.downloader.fetch.return_value = defer.succeed(response)
+
+        result = await self._download(engine, request)
+        assert result == response
+        engine.downloader.fetch.assert_called_once_with(request, engine.spider)
+
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestEngineDownload(TestEngineDownloadAsync):

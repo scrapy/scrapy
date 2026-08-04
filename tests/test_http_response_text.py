@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import codecs
+from typing import cast
 from unittest import mock
 
 import pytest
@@ -14,6 +15,12 @@ from tests.utils.bases.http_response import TestResponseBase
 class TestTextResponse(TestResponseBase):
     response_class = TextResponse
 
+    def _links_response(self) -> TextResponse:
+        return cast("TextResponse", super()._links_response())
+
+    def _links_response_no_href(self) -> TextResponse:
+        return cast("TextResponse", super()._links_response_no_href())
+
     def test_follow_None_encoding(self):
         # unlike the base Response, TextResponse.follow() falls back to the
         # response encoding when encoding is None instead of raising
@@ -21,7 +28,7 @@ class TestTextResponse(TestResponseBase):
         req = r.follow("foo", encoding=None)
         assert req.encoding == "cp1252"
 
-    def test_replace(self):
+    def test_replace(self) -> None:
         super().test_replace()
         r1 = self.response_class(
             "http://www.example.com", body="hello", encoding="cp852"
@@ -344,7 +351,7 @@ class TestTextResponse(TestResponseBase):
     def test_follow_selector_list(self):
         resp = self._links_response()
         with pytest.raises(ValueError, match="SelectorList"):
-            resp.follow(resp.css("a"))
+            resp.follow(resp.css("a"))  # type: ignore[arg-type]
 
     def test_follow_selector_invalid(self):
         resp = self._links_response()
@@ -616,7 +623,7 @@ class CustomResponse(TextResponse):
 class TestCustomResponse(TestTextResponse):
     response_class = CustomResponse
 
-    def test_copy(self):
+    def test_copy(self) -> None:
         super().test_copy()
         r1 = self.response_class(
             url="https://example.org",
@@ -632,7 +639,7 @@ class TestCustomResponse(TestTextResponse):
         assert r1.lost == "lost"
         assert r2.lost is None
 
-    def test_replace(self):
+    def test_replace(self) -> None:
         super().test_replace()
         r1 = self.response_class(
             url="https://example.org",
