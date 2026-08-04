@@ -191,7 +191,8 @@ Custom throttlers
 To change how scopes are assigned, or anything beyond per-scope settings, set
 :setting:`THROTTLER` (default: :class:`~scrapy.throttler.Throttler`) to a
 :ref:`component <topics-components>` that implements
-:class:`~scrapy.throttler.ThrottlerProtocol` (or its import path as a string):
+:class:`~scrapy.throttler.ThrottlerProtocol` (or to its import path as a
+string):
 
 .. code-block:: python
     :caption: :file:`settings.py`
