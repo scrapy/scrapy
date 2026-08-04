@@ -34,11 +34,11 @@ def _colorize(text: str, colorize: bool = True) -> str:
     if not colorize or not sys.stdout.isatty() or not _tty_supports_color():
         return text
     try:
-        from pygments import highlight
+        from pygments import highlight  # noqa: PLC0415
     except ImportError:
         return text
-    from pygments.formatters import TerminalFormatter
-    from pygments.lexers import PythonLexer
+    from pygments.formatters import TerminalFormatter  # noqa: PLC0415
+    from pygments.lexers import PythonLexer  # noqa: PLC0415
 
     return highlight(text, PythonLexer(), TerminalFormatter())
 

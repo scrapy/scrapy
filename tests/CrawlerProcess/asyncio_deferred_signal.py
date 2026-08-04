@@ -9,14 +9,14 @@ from scrapy.utils.defer import deferred_from_coro
 
 
 class UppercasePipeline:
-    async def _open_spider(self, spider):
+    async def _open_spider(self, spider: Spider) -> None:
         spider.logger.info("async pipeline opened!")
         await asyncio.sleep(0.1)
 
     def open_spider(self, spider):
         return deferred_from_coro(self._open_spider(spider))
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         return {"url": item["url"].upper()}
 
 

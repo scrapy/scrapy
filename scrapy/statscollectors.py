@@ -8,6 +8,8 @@ import logging
 import pprint
 from typing import TYPE_CHECKING, Any
 
+from scrapy.utils.decorators import _warn_spider_arg
+
 if TYPE_CHECKING:
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -23,6 +25,34 @@ class StatsCollector:
     def __init__(self, crawler: Crawler):
         self._dump: bool = crawler.settings.getbool("STATS_DUMP")
         self._stats: StatsT = {}
+        self._crawler: Crawler = crawler
+
+    def __getattribute__(self, name: str) -> Any:
+        cached_name = f"_cached_{name}"
+        try:
+            return super().__getattribute__(cached_name)
+        except AttributeError:
+            pass
+
+        original_attr = super().__getattribute__(name)
+
+        if name in {
+            "get_value",
+            "get_stats",
+            "set_value",
+            "set_stats",
+            "inc_value",
+            "max_value",
+            "min_value",
+            "clear_stats",
+            "open_spider",
+            "close_spider",
+        } and callable(original_attr):
+            wrapped = _warn_spider_arg(original_attr)
+            setattr(self, cached_name, wrapped)
+            return wrapped
+
+        return original_attr
 
     def get_value(
         self, key: str, default: Any = None, spider: Spider | None = None
@@ -53,31 +83,53 @@ class StatsCollector:
     def clear_stats(self, spider: Spider | None = None) -> None:
         self._stats.clear()
 
-    def open_spider(self, spider: Spider) -> None:
+    def open_spider(self, spider: Spider | None = None) -> None:
         pass
 
-    def close_spider(self, spider: Spider, reason: str) -> None:
+    def close_spider(
+        self, spider: Spider | None = None, reason: str | None = None
+    ) -> None:
         if self._dump:
             logger.info(
                 "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
-                extra={"spider": spider},
+                extra={"spider": self._crawler.spider},
             )
-        self._persist_stats(self._stats, spider)
+        self._persist_stats(self._stats)
 
-    def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
+    def _persist_stats(self, stats: StatsT) -> None:
         pass
 
 
 class MemoryStatsCollector(StatsCollector):
+    """A simple stats collector that keeps the stats of the last scraping run
+    (for each spider) in memory, after they're closed. The stats can be
+    accessed through the :attr:`spider_stats` attribute, which is a dict keyed
+    by spider name.
+
+    This is the default stats collector used in Scrapy.
+    """
+
+    spider_stats: dict[str, StatsT]
+    """A dict of dicts (keyed by spider name) containing the stats of the last
+    scraping run for each spider."""
+
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
-        self.spider_stats: dict[str, StatsT] = {}
+        self.spider_stats = {}
 
-    def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
-        self.spider_stats[spider.name] = stats
+    def _persist_stats(self, stats: StatsT) -> None:
+        if self._crawler.spider:
+            self.spider_stats[self._crawler.spider.name] = stats
 
 
 class DummyStatsCollector(StatsCollector):
+    """A stats collector which does nothing but is very efficient (because it
+    does nothing). This stats collector can be set via the
+    :setting:`STATS_CLASS` setting, to disable stats collection in order to
+    improve performance. However, the performance penalty of stats collection
+    is usually marginal compared to other Scrapy workload like parsing pages.
+    """
+
     def get_value(
         self, key: str, default: Any = None, spider: Spider | None = None
     ) -> Any:

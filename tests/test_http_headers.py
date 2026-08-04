@@ -6,9 +6,6 @@ from scrapy.http import Headers
 
 
 class TestHeaders:
-    def assertSortedEqual(self, first, second, msg=None):
-        assert sorted(first) == sorted(second), msg
-
     def test_basics(self):
         h = Headers({"Content-Type": "text/html", "Content-Length": 1234})
         assert h["Content-Type"]
@@ -39,7 +36,7 @@ class TestHeaders:
         assert h["X-Forwarded-For"] == b"ip2"
         assert h.get("X-Forwarded-For") == b"ip2"
         assert h.getlist("X-Forwarded-For") == [b"ip1", b"ip2"]
-        assert h.getlist("X-Forwarded-For") is not hlist
+        assert h.getlist("X-Forwarded-For") is not hlist  # type: ignore[comparison-overlap]
 
     def test_multivalue_for_one_header(self):
         h = Headers((("a", "b"), ("a", "c")))
@@ -49,19 +46,19 @@ class TestHeaders:
 
     def test_encode_utf8(self):
         h = Headers({"key": "\xa3"}, encoding="utf-8")
-        key, val = dict(h).popitem()
+        key, val = dict(h.items()).popitem()
         assert isinstance(key, bytes), key
         assert isinstance(val[0], bytes), val[0]
         assert val[0] == b"\xc2\xa3"
 
     def test_encode_latin1(self):
         h = Headers({"key": "\xa3"}, encoding="latin1")
-        key, val = dict(h).popitem()
+        _, val = dict(h.items()).popitem()
         assert val[0] == b"\xa3"
 
     def test_encode_multiple(self):
         h = Headers({"key": ["\xa3"]}, encoding="utf-8")
-        key, val = dict(h).popitem()
+        _, val = dict(h.items()).popitem()
         assert val[0] == b"\xc2\xa3"
 
     def test_delete_and_contains(self):
@@ -75,7 +72,7 @@ class TestHeaders:
         h = Headers()
         hlist = ["ip1", "ip2"]
         olist = h.setdefault("X-Forwarded-For", hlist)
-        assert h.getlist("X-Forwarded-For") is not hlist
+        assert h.getlist("X-Forwarded-For") is not hlist  # type: ignore[comparison-overlap]
         assert h.getlist("X-Forwarded-For") is olist
 
         h = Headers()
@@ -87,16 +84,16 @@ class TestHeaders:
         idict = {"Content-Type": "text/html", "X-Forwarded-For": ["ip1", "ip2"]}
 
         h = Headers(idict)
-        assert dict(h) == {
+        assert dict(h.items()) == {
             b"Content-Type": [b"text/html"],
             b"X-Forwarded-For": [b"ip1", b"ip2"],
         }
-        self.assertSortedEqual(h.keys(), [b"X-Forwarded-For", b"Content-Type"])
-        self.assertSortedEqual(
-            h.items(),
-            [(b"X-Forwarded-For", [b"ip1", b"ip2"]), (b"Content-Type", [b"text/html"])],
-        )
-        self.assertSortedEqual(h.values(), [b"ip2", b"text/html"])
+        assert sorted(h.keys()) == [b"Content-Type", b"X-Forwarded-For"]
+        assert sorted(h.items()) == [
+            (b"Content-Type", [b"text/html"]),
+            (b"X-Forwarded-For", [b"ip1", b"ip2"]),
+        ]
+        assert set(h.values()) == {b"ip2", b"text/html"}
 
     def test_update(self):
         h = Headers()
@@ -140,6 +137,7 @@ class TestHeaders:
         h1["foo"] = "bar"
         h1["foo"] = None
         h1.setdefault("foo", "bar")
+        assert h1["foo"] is None
         assert h1.get("foo") is None
         assert h1.getlist("foo") == []
 
@@ -161,4 +159,4 @@ class TestHeaders:
         with pytest.raises(TypeError, match="Unsupported value type"):
             Headers().setdefault("foo", object())
         with pytest.raises(TypeError, match="Unsupported value type"):
-            Headers().setlist("foo", [object()])
+            Headers().setlist("foo", [object()])  # type: ignore[list-item]

@@ -1,38 +1,109 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import pytest
+
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.depth import DepthMiddleware
 from scrapy.spiders import Spider
+from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
 
-class TestDepthMiddleware:
-    def setup_method(self):
-        crawler = get_crawler(Spider, {"DEPTH_LIMIT": 1, "DEPTH_STATS_VERBOSE": True})
-        self.spider = crawler._create_spider("scrapytest.org")
+@pytest.fixture
+def crawler() -> Crawler:
+    return get_crawler(Spider, {"DEPTH_LIMIT": 1, "DEPTH_STATS_VERBOSE": True})
 
-        self.stats = crawler.stats
-        self.stats.open_spider(self.spider)
 
-        self.mw = DepthMiddleware.from_crawler(crawler)
+@pytest.fixture
+def stats(crawler: Crawler) -> Generator[StatsCollector]:
+    assert crawler.stats is not None
+    crawler.stats.open_spider()
 
-    def test_process_spider_output(self):
-        req = Request("http://scrapytest.org")
-        resp = Response("http://scrapytest.org")
-        resp.request = req
-        result = [Request("http://scrapytest.org")]
+    yield crawler.stats
 
-        out = list(self.mw.process_spider_output(resp, result, self.spider))
-        assert out == result
+    crawler.stats.close_spider()
 
-        rdc = self.stats.get_value("request_depth_count/1", spider=self.spider)
-        assert rdc == 1
 
-        req.meta["depth"] = 1
+@pytest.fixture
+def mw(crawler: Crawler) -> DepthMiddleware:
+    return DepthMiddleware.from_crawler(crawler)
 
-        out2 = list(self.mw.process_spider_output(resp, result, self.spider))
-        assert not out2
 
-        rdm = self.stats.get_value("request_depth_max", spider=self.spider)
-        assert rdm == 1
+def test_process_spider_output(mw: DepthMiddleware, stats: StatsCollector) -> None:
+    req = Request("http://scrapytest.org")
+    resp = Response("http://scrapytest.org")
+    resp.request = req
+    result = [Request("http://scrapytest.org")]
 
-    def teardown_method(self):
-        self.stats.close_spider(self.spider, "")
+    out = list(mw.process_spider_output(resp, result))
+    assert out == result
+
+    rdc = stats.get_value("request_depth_count/1")
+    assert rdc == 1
+
+    req.meta["depth"] = 1
+
+    out2 = list(mw.process_spider_output(resp, result))
+    assert not out2
+
+    rdm = stats.get_value("request_depth_max")
+    assert rdm == 1
+
+
+def test_process_spider_output_no_response(
+    mw: DepthMiddleware, stats: StatsCollector
+) -> None:
+    result = [Request("https://example.com")]
+
+    out = list(mw.process_spider_output(None, result))
+    assert out == result
+    assert "depth" not in out[0].meta
+    assert stats.get_value("request_depth_count/0") is None
+
+
+@coroutine_test
+async def test_process_spider_output_async_no_response(
+    mw: DepthMiddleware, stats: StatsCollector
+) -> None:
+    result = [Request("https://example.com")]
+
+    out = await collect_asyncgen(
+        mw.process_spider_output_async(None, as_async_generator(result))
+    )
+    assert out == result
+    assert "depth" not in out[0].meta
+    assert stats.get_value("request_depth_count/0") is None
+
+
+def test_priority_and_non_verbose_stats() -> None:
+    crawler = get_crawler(
+        Spider,
+        {"DEPTH_LIMIT": 0, "DEPTH_STATS_VERBOSE": False, "DEPTH_PRIORITY": 10},
+    )
+    assert crawler.stats is not None
+    crawler.stats.open_spider()
+    try:
+        mw = build_from_crawler(DepthMiddleware, crawler)
+        resp = Response("http://toscrape.com")
+        resp.request = Request("http://toscrape.com")
+        resp.request.meta["depth"] = 2
+        out = list(mw.process_spider_output(resp, [Request("http://toscrape.com")]))
+        assert len(out) == 1
+        # priority is decremented by depth * DEPTH_PRIORITY
+        assert out[0].priority == -30
+        assert out[0].meta["depth"] == 3
+        # non-verbose stats don't track per-depth counts but still track the max
+        assert crawler.stats.get_value("request_depth_count/3") is None
+        assert crawler.stats.get_value("request_depth_max") == 3
+    finally:
+        crawler.stats.close_spider()

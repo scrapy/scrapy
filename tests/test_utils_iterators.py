@@ -1,13 +1,13 @@
+from __future__ import annotations
+
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse, XmlResponse
-from scrapy.utils.iterators import _body_or_str, csviter, xmliter, xmliter_lxml
+from scrapy.utils.iterators import _body_or_str, csviter, xmliter_lxml
 from tests import get_testdata
 
 
-class XmliterBase:
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+class TestXmliter:
     def test_xmliter(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -31,7 +31,7 @@ class XmliterBase:
                 x.xpath("name/text()").getall(),
                 x.xpath("./type/text()").getall(),
             )
-            for x in self.xmliter(response, "product")
+            for x in xmliter_lxml(response, "product")
         ]
 
         assert attrs == [
@@ -39,7 +39,6 @@ class XmliterBase:
             ("002", ["Name 2"], ["Type 2"]),
         ]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_unusual_node(self):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
             <root>
@@ -49,11 +48,10 @@ class XmliterBase:
         """
         response = XmlResponse(url="http://example.com", body=body)
         nodenames = [
-            e.xpath("name()").getall() for e in self.xmliter(response, "matchme...")
+            e.xpath("name()").getall() for e in xmliter_lxml(response, "matchme...")
         ]
         assert nodenames == [["matchme..."]]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_unicode(self):
         # example taken from https://github.com/scrapy/scrapy/issues/1665
         body = """<?xml version="1.0" encoding="UTF-8"?>
@@ -104,7 +102,7 @@ class XmliterBase:
                     x.xpath("./skammstafanir/stuttskammstöfun/text()").getall(),
                     x.xpath("./tímabil/fyrstaþing/text()").getall(),
                 )
-                for x in self.xmliter(r, "þingflokkur")
+                for x in xmliter_lxml(r, "þingflokkur")
             ]
 
             assert attrs == [
@@ -113,19 +111,17 @@ class XmliterBase:
                 ("27", ["A"], ["27"]),
             ]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_text(self):
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             "<products><product>one</product><product>two</product></products>"
         )
 
-        assert [x.xpath("text()").getall() for x in self.xmliter(body, "product")] == [
+        assert [x.xpath("text()").getall() for x in xmliter_lxml(body, "product")] == [
             ["one"],
             ["two"],
         ]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaces(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -146,7 +142,7 @@ class XmliterBase:
             </rss>
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
-        my_iter = self.xmliter(response, "item")
+        my_iter = xmliter_lxml(response, "item")
         node = next(my_iter)
         node.register_namespace("g", "http://base.google.com/ns/1.0")
         assert node.xpath("title/text()").getall() == ["Item 1"]
@@ -163,7 +159,6 @@ class XmliterBase:
         assert node.xpath("id/text()").getall() == []
         assert node.xpath("price/text()").getall() == []
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaced_nodename(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -184,14 +179,13 @@ class XmliterBase:
             </rss>
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
-        my_iter = self.xmliter(response, "g:image_link")
+        my_iter = xmliter_lxml(response, "g:image_link")
         node = next(my_iter)
         node.register_namespace("g", "http://base.google.com/ns/1.0")
         assert node.xpath("text()").extract() == [
             "http://www.mydummycompany.com/images/item1.jpg"
         ]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaced_nodename_missing(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -212,30 +206,27 @@ class XmliterBase:
             </rss>
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
-        my_iter = self.xmliter(response, "g:link_image")
+        my_iter = xmliter_lxml(response, "g:link_image")
         with pytest.raises(StopIteration):
             next(my_iter)
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_exception(self):
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             "<products><product>one</product><product>two</product></products>"
         )
 
-        iter = self.xmliter(body, "product")
-        next(iter)
-        next(iter)
+        my_iter = xmliter_lxml(body, "product")
+        next(my_iter)
+        next(my_iter)
         with pytest.raises(StopIteration):
-            next(iter)
+            next(my_iter)
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_objtype_exception(self):
-        i = self.xmliter(42, "product")
+        i = xmliter_lxml(42, "product")  # type: ignore[arg-type]
         with pytest.raises(TypeError):
             next(i)
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_encoding(self):
         body = (
             b'<?xml version="1.0" encoding="ISO-8859-9"?>\n'
@@ -245,30 +236,9 @@ class XmliterBase:
         )
         response = XmlResponse("http://www.example.com", body=body)
         assert (
-            next(self.xmliter(response, "item")).get()
+            next(xmliter_lxml(response, "item")).get()
             == "<item>Some Turkish Characters \xd6\xc7\u015e\u0130\u011e\xdc \xfc\u011f\u0131\u015f\xe7\xf6</item>"
         )
-
-
-class TestXmliter(XmliterBase):
-    xmliter = staticmethod(xmliter)
-
-    def test_deprecation(self):
-        body = b"""
-            <?xml version="1.0" encoding="UTF-8"?>
-            <products>
-              <product></product>
-            </products>
-        """
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="xmliter",
-        ):
-            next(self.xmliter(body, "product"))
-
-
-class TestLxmlXmliter(XmliterBase):
-    xmliter = staticmethod(xmliter_lxml)
 
     def test_xmliter_iterate_namespace(self):
         body = b"""
@@ -290,10 +260,10 @@ class TestLxmlXmliter(XmliterBase):
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
 
-        no_namespace_iter = self.xmliter(response, "image_link")
+        no_namespace_iter = xmliter_lxml(response, "image_link")
         assert len(list(no_namespace_iter)) == 0
 
-        namespace_iter = self.xmliter(
+        namespace_iter = xmliter_lxml(
             response, "image_link", "http://base.google.com/ns/1.0"
         )
         node = next(namespace_iter)
@@ -325,24 +295,19 @@ class TestLxmlXmliter(XmliterBase):
         </root>
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
-        my_iter = self.xmliter(response, "table", "http://www.w3.org/TR/html4/", "h")
+        my_iter = xmliter_lxml(response, "table", "http://www.w3.org/TR/html4/", "h")
 
         node = next(my_iter)
         assert len(node.xpath("h:tr/h:td").getall()) == 2
         assert node.xpath("h:tr/h:td[1]/text()").getall() == ["Apples"]
         assert node.xpath("h:tr/h:td[2]/text()").getall() == ["Bananas"]
 
-        my_iter = self.xmliter(
+        my_iter = xmliter_lxml(
             response, "table", "http://www.w3schools.com/furniture", "f"
         )
 
         node = next(my_iter)
         assert node.xpath("f:name/text()").getall() == ["African Coffee Table"]
-
-    def test_xmliter_objtype_exception(self):
-        i = self.xmliter(42, "product")
-        with pytest.raises(TypeError):
-            next(i)
 
 
 class TestUtilsCsv:
@@ -460,13 +425,13 @@ class TestUtilsCsv:
         body = get_testdata("feeds", "feed-sample3.csv")
 
         response = TextResponse(url="http://example.com/", body=body)
-        iter = csviter(response)
-        next(iter)
-        next(iter)
-        next(iter)
-        next(iter)
+        my_iter = csviter(response)
+        next(my_iter)
+        next(my_iter)
+        next(my_iter)
+        next(my_iter)
         with pytest.raises(StopIteration):
-            next(iter)
+            next(my_iter)
 
     def test_csviter_encoding(self):
         body1 = get_testdata("feeds", "feed-sample4.csv")
@@ -493,23 +458,32 @@ class TestUtilsCsv:
         ]
 
 
-class TestHelper:
+class TestBodyOrStr:
     bbody = b"utf8-body"
     ubody = bbody.decode("utf8")
-    txtresponse = TextResponse(url="http://example.org/", body=bbody, encoding="utf-8")
-    response = Response(url="http://example.org/", body=bbody)
 
-    def test_body_or_str(self):
-        for obj in (self.bbody, self.ubody, self.txtresponse, self.response):
-            r1 = _body_or_str(obj)
-            self._assert_type_and_value(r1, self.ubody, obj)
-            r2 = _body_or_str(obj, unicode=True)
-            self._assert_type_and_value(r2, self.ubody, obj)
-            r3 = _body_or_str(obj, unicode=False)
-            self._assert_type_and_value(r3, self.bbody, obj)
-            assert type(r1) is type(r2)
-            assert type(r1) is not type(r3)
+    @pytest.mark.parametrize(
+        "obj",
+        [
+            bbody,
+            ubody,
+            TextResponse(url="http://example.org/", body=bbody, encoding="utf-8"),
+            Response(url="http://example.org/", body=bbody),
+        ],
+    )
+    def test_body_or_str(self, obj: Response | str | bytes) -> None:
+        r1 = _body_or_str(obj)
+        self._assert_type_and_value(r1, self.ubody, obj)
+        r2 = _body_or_str(obj, unicode=True)
+        self._assert_type_and_value(r2, self.ubody, obj)
+        r3 = _body_or_str(obj, unicode=False)
+        self._assert_type_and_value(r3, self.bbody, obj)
+        assert type(r1) is type(r2)
+        assert type(r1) is not type(r3)  # type: ignore[comparison-overlap]
 
-    def _assert_type_and_value(self, a, b, obj):
+    @staticmethod
+    def _assert_type_and_value(
+        a: str | bytes, b: str | bytes, obj: Response | str | bytes
+    ) -> None:
         assert type(a) is type(b), f"Got {type(a)}, expected {type(b)} for {obj!r}"
         assert a == b

@@ -1,29 +1,34 @@
-from testfixtures import LogCapture
-from twisted.internet import defer
-from twisted.trial.unittest import TestCase
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
 
 from scrapy import Request, signals
 from scrapy.http.response import Response
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import SingleRequestSpider
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
+
+if TYPE_CHECKING:
+    import pytest
 
 OVERRIDDEN_URL = "https://example.org"
 
 
 class ProcessResponseMiddleware:
-    def process_response(self, request, response, spider):
+    def process_response(self, request, response):
         return response.replace(request=Request(OVERRIDDEN_URL))
 
 
 class RaiseExceptionRequestMiddleware:
-    def process_request(self, request, spider):
+    def process_request(self, request):
         1 / 0
         return request
 
 
 class CatchExceptionOverrideRequestMiddleware:
-    def process_exception(self, request, exception, spider):
+    def process_exception(self, request, exception):
         return Response(
             url="http://localhost/",
             body=b"Caught " + exception.__class__.__name__.encode("utf-8"),
@@ -32,7 +37,7 @@ class CatchExceptionOverrideRequestMiddleware:
 
 
 class CatchExceptionDoNotOverrideRequestMiddleware:
-    def process_exception(self, request, exception, spider):
+    def process_exception(self, request, exception):
         return Response(
             url="http://localhost/",
             body=b"Caught " + exception.__class__.__name__.encode("utf-8"),
@@ -47,45 +52,56 @@ class AlternativeCallbacksSpider(SingleRequestSpider):
 
 
 class AlternativeCallbacksMiddleware:
-    def process_response(self, request, response, spider):
+    def __init__(self, crawler):
+        self.crawler = crawler
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
+    def process_response(self, request, response):
         new_request = request.replace(
             url=OVERRIDDEN_URL,
-            callback=spider.alt_callback,
+            callback=self.crawler.spider.alt_callback,
             cb_kwargs={"foo": "bar"},
         )
         return response.replace(request=new_request)
 
 
-class TestCrawl(TestCase):
+class TestCrawl:
+    mockserver: MockServer
+
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_response_200(self):
         url = self.mockserver.url("/status?n=200")
         crawler = get_crawler(SingleRequestSpider)
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         response = crawler.spider.meta["responses"][0]
         assert response.request.url == url
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_response_error(self):
         for status in ("404", "500"):
             url = self.mockserver.url(f"/status?n={status}")
             crawler = get_crawler(SingleRequestSpider)
             yield crawler.crawl(seed=url, mockserver=self.mockserver)
+            assert isinstance(crawler.spider, SingleRequestSpider)
             failure = crawler.spider.meta["failure"]
             response = failure.value.response
             assert failure.request.url == url
             assert response.request.url == url
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_downloader_middleware_raise_exception(self):
         url = self.mockserver.url("/status?n=200")
         crawler = get_crawler(
@@ -97,12 +113,15 @@ class TestCrawl(TestCase):
             },
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         failure = crawler.spider.meta["failure"]
         assert failure.request.url == url
         assert isinstance(failure.value, ZeroDivisionError)
 
-    @defer.inlineCallbacks
-    def test_downloader_middleware_override_request_in_process_response(self):
+    @coroutine_test
+    async def test_downloader_middleware_override_request_in_process_response(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         Downloader middleware which returns a response with an specific 'request' attribute.
 
@@ -127,24 +146,23 @@ class TestCrawl(TestCase):
         )
         crawler.signals.connect(signal_handler, signal=signals.response_received)
 
-        with LogCapture() as log:
-            yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(seed=url, mockserver=self.mockserver)
 
+        assert isinstance(crawler.spider, SingleRequestSpider)
         response = crawler.spider.meta["responses"][0]
         assert response.request.url == OVERRIDDEN_URL
 
         assert signal_params["response"].url == url
         assert signal_params["request"].url == OVERRIDDEN_URL
 
-        log.check_present(
-            (
-                "scrapy.core.engine",
-                "DEBUG",
-                f"Crawled (200) <GET {OVERRIDDEN_URL}> (referer: None)",
-            ),
-        )
+        assert (
+            "scrapy.core.engine",
+            logging.DEBUG,
+            f"Crawled (200) <GET {OVERRIDDEN_URL}> (referer: None)",
+        ) in caplog.record_tuples
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_downloader_middleware_override_in_process_exception(self):
         """
         An exception is raised but caught by the next middleware, which
@@ -163,11 +181,12 @@ class TestCrawl(TestCase):
             },
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         response = crawler.spider.meta["responses"][0]
         assert response.body == b"Caught ZeroDivisionError"
         assert response.request.url == OVERRIDDEN_URL
 
-    @defer.inlineCallbacks
+    @inline_callbacks_test
     def test_downloader_middleware_do_not_override_in_process_exception(self):
         """
         An exception is raised but caught by the next middleware, which
@@ -186,12 +205,15 @@ class TestCrawl(TestCase):
             },
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         response = crawler.spider.meta["responses"][0]
         assert response.body == b"Caught ZeroDivisionError"
         assert response.request.url == url
 
-    @defer.inlineCallbacks
-    def test_downloader_middleware_alternative_callback(self):
+    @coroutine_test
+    async def test_downloader_middleware_alternative_callback(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """
         Downloader middleware which returns a response with a
         specific 'request' attribute, with an alternative callback
@@ -205,14 +227,11 @@ class TestCrawl(TestCase):
             },
         )
 
-        with LogCapture() as log:
-            url = self.mockserver.url("/status?n=200")
-            yield crawler.crawl(seed=url, mockserver=self.mockserver)
-
-        log.check_present(
-            (
-                "alternative_callbacks_spider",
-                "INFO",
-                "alt_callback was invoked with foo=bar",
-            ),
-        )
+        url = self.mockserver.url("/status?n=200")
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(seed=url, mockserver=self.mockserver)
+        assert (
+            "alternative_callbacks_spider",
+            logging.INFO,
+            "alt_callback was invoked with foo=bar",
+        ) in caplog.record_tuples

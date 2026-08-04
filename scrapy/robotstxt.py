@@ -3,7 +3,10 @@ from __future__ import annotations
 import logging
 import sys
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+from urllib.robotparser import RobotFileParser
+
+from protego import Protego
 
 from scrapy.utils.python import to_unicode
 
@@ -25,7 +28,7 @@ def decode_robotstxt(
         if to_native_str_type:
             body_decoded = to_unicode(robotstxt_body)
         else:
-            body_decoded = robotstxt_body.decode("utf-8", errors="ignore")
+            body_decoded = robotstxt_body.decode("utf-8-sig", errors="ignore")
     except UnicodeDecodeError:
         # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
         # Switch to 'allow all' state.
@@ -64,11 +67,18 @@ class RobotParser(metaclass=ABCMeta):
         :type user_agent: str or bytes
         """
 
+    def crawl_delay(self, user_agent: str | bytes) -> float | None:
+        """Return the ``Crawl-delay`` directive for ``user_agent`` as a number
+        of seconds, or ``None`` if it is not set or the backend does not support
+        it.
+
+        .. versionadded:: VERSION
+        """
+        return None
+
 
 class PythonRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
-        from urllib.robotparser import RobotFileParser
-
         self.spider: Spider | None = spider
         body_decoded = decode_robotstxt(robotstxt_body, spider, to_native_str_type=True)
         self.rp: RobotFileParser = RobotFileParser()
@@ -84,10 +94,14 @@ class PythonRobotParser(RobotParser):
         url = to_unicode(url)
         return self.rp.can_fetch(user_agent, url)
 
+    def crawl_delay(self, user_agent: str | bytes) -> float | None:
+        delay = self.rp.crawl_delay(to_unicode(user_agent))
+        return None if delay is None else float(delay)
+
 
 class RerpRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
-        from robotexclusionrulesparser import RobotExclusionRulesParser
+        from robotexclusionrulesparser import RobotExclusionRulesParser  # noqa: PLC0415
 
         self.spider: Spider | None = spider
         self.rp: RobotExclusionRulesParser = RobotExclusionRulesParser()
@@ -102,13 +116,15 @@ class RerpRobotParser(RobotParser):
     def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
         user_agent = to_unicode(user_agent)
         url = to_unicode(url)
-        return self.rp.is_allowed(user_agent, url)
+        return cast("bool", self.rp.is_allowed(user_agent, url))
+
+    def crawl_delay(self, user_agent: str | bytes) -> float | None:
+        delay = self.rp.get_crawl_delay(to_unicode(user_agent))
+        return None if delay is None else float(delay)
 
 
 class ProtegoRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
-        from protego import Protego
-
         self.spider: Spider | None = spider
         body_decoded = decode_robotstxt(robotstxt_body, spider)
         self.rp = Protego.parse(body_decoded)
@@ -122,3 +138,7 @@ class ProtegoRobotParser(RobotParser):
         user_agent = to_unicode(user_agent)
         url = to_unicode(url)
         return self.rp.can_fetch(url, user_agent)
+
+    def crawl_delay(self, user_agent: str | bytes) -> float | None:
+        delay = self.rp.crawl_delay(to_unicode(user_agent))
+        return None if delay is None else float(delay)

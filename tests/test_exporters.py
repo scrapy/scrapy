@@ -3,8 +3,7 @@ import json
 import marshal
 import pickle
 import re
-import tempfile
-import unittest
+from abc import ABC, abstractmethod
 from datetime import datetime
 from io import BytesIO
 from typing import Any
@@ -54,7 +53,7 @@ class CustomFieldDataclass:
     age: int = dataclasses.field(metadata={"serializer": custom_serializer})
 
 
-class TestBaseItemExporter:
+class TestBaseItemExporter(ABC):
     item_class: type = MyItem
     custom_field_item_class: type = CustomFieldItem
 
@@ -63,10 +62,11 @@ class TestBaseItemExporter:
         self.output = BytesIO()
         self.ie = self._get_exporter()
 
-    def _get_exporter(self, **kwargs):
-        return BaseItemExporter(**kwargs)
+    @abstractmethod
+    def _get_exporter(self, **kwargs) -> BaseItemExporter:
+        raise NotImplementedError
 
-    def _check_output(self):
+    def _check_output(self):  # noqa: B027
         pass
 
     def _assert_expected_item(self, exported_dict):
@@ -84,11 +84,7 @@ class TestBaseItemExporter:
 
     def assertItemExportWorks(self, item):
         self.ie.start_exporting()
-        try:
-            self.ie.export_item(item)
-        except NotImplementedError:
-            if self.ie.__class__ is not BaseItemExporter:
-                raise
+        self.ie.export_item(item)
         self.ie.finish_exporting()
         # Delete the item exporter object, so that if it causes the output
         # file handle to be closed, which should not be the case, follow-up
@@ -122,6 +118,18 @@ class TestBaseItemExporter:
         ie = self._get_exporter(fields_to_export={"name": "名稱"})
         assert list(ie._get_serialized_fields(self.i)) == [("名稱", "John\xa3")]
 
+    def test_field_order(self):
+        item = self.item_class(age="22", name="John\xa3")
+        ie = self._get_exporter()
+        assert [name for name, _ in ie._get_serialized_fields(item)] == ["name", "age"]
+
+    def test_field_order_dict_item(self):
+        ie = self._get_exporter()
+        assert [name for name, _ in ie._get_serialized_fields({"age": "22"})] == ["age"]
+        assert [
+            name for name, _ in ie._get_serialized_fields({"age": "22", "name": "John"})
+        ] == ["age", "name"]
+
     def test_field_custom_serializer(self):
         i = self.custom_field_item_class(name="John\xa3", age="22")
         a = ItemAdapter(i)
@@ -131,11 +139,6 @@ class TestBaseItemExporter:
             == "John\xa3"
         )
         assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == "24"
-
-
-class TestBaseItemExporterDataclass(TestBaseItemExporter):
-    item_class = MyDataClass
-    custom_field_item_class = CustomFieldDataclass
 
 
 class TestPythonItemExporter(TestBaseItemExporter):
@@ -203,9 +206,7 @@ class TestPprintItemExporter(TestBaseItemExporter):
         return PprintItemExporter(self.output, **kwargs)
 
     def _check_output(self):
-        self._assert_expected_item(
-            eval(self.output.getvalue())  # pylint: disable=eval-used
-        )
+        self._assert_expected_item(eval(self.output.getvalue()))
 
 
 class TestPprintItemExporterDataclass(TestPprintItemExporter):
@@ -252,7 +253,6 @@ class TestPickleItemExporterDataclass(TestPickleItemExporter):
 
 class TestMarshalItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
-        self.output = tempfile.TemporaryFile()
         return MarshalItemExporter(self.output, **kwargs)
 
     def _check_output(self):
@@ -262,7 +262,7 @@ class TestMarshalItemExporter(TestBaseItemExporter):
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
         item.pop("time")  # datetime is not marshallable
-        fp = tempfile.TemporaryFile()
+        fp = BytesIO()
         ie = MarshalItemExporter(fp)
         ie.start_exporting()
         ie.export_item(item)
@@ -270,6 +270,7 @@ class TestMarshalItemExporter(TestBaseItemExporter):
         del ie  # See the first “del self.ie” in this file for context.
         fp.seek(0)
         assert marshal.load(fp) == item
+        fp.close()
 
 
 class TestMarshalItemExporterDataclass(TestMarshalItemExporter):
@@ -279,7 +280,11 @@ class TestMarshalItemExporterDataclass(TestMarshalItemExporter):
 
 class TestCsvItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
-        self.output = tempfile.TemporaryFile()
+        # We need a fresh instance for each exporter, because
+        # CsvItemExporter.stream.__del__() closes the underlying file
+        # (CsvItemExporter.finish_exporting() calls detach() but not all tests
+        # call it).
+        self.output = BytesIO()
         return CsvItemExporter(self.output, **kwargs)
 
     def assertCsvEqual(self, first, second, msg=None):
@@ -391,6 +396,20 @@ class TestCsvItemExporter(TestBaseItemExporter):
             errors="xmlcharrefreplace",
         )
 
+    def test_csv_dropped_fields_warning(self, caplog):
+        out = BytesIO()
+        exporter = CsvItemExporter(out)
+        exporter.start_exporting()
+
+        exporter.export_item({"name": "Apple"})
+
+        with caplog.at_level("WARNING", logger="scrapy.exporters"):
+            exporter.export_item({"name": "Banana", "price": 2.00})
+
+        assert len(caplog.records) == 1
+        assert "CSVExporter dropped fields" in caplog.text
+        assert "price" in caplog.text
+
 
 class TestCsvItemExporterDataclass(TestCsvItemExporter):
     item_class = MyDataClass
@@ -399,6 +418,11 @@ class TestCsvItemExporterDataclass(TestCsvItemExporter):
 
 class TestXmlItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
+        # We need a fresh instance for each exporter, because
+        # XmlItemExporter.stream.__del__() closes the underlying file
+        # (XmlItemExporter.finish_exporting() calls detach() but not all tests
+        # call it).
+        self.output = BytesIO()
         return XmlItemExporter(self.output, **kwargs)
 
     def assertXmlEquivalent(self, first, second, msg=None):
@@ -662,7 +686,7 @@ class TestCustomExporterItem:
 
     def setup_method(self):
         if self.item_class is None:
-            raise unittest.SkipTest("item class is None")
+            pytest.skip("item class is None")
 
     def test_exporter_custom_serializer(self):
         class CustomItemExporter(BaseItemExporter):
@@ -670,6 +694,9 @@ class TestCustomExporterItem:
                 if name == "age":
                     return str(int(value) + 1)
                 return super().serialize_field(field, name, value)
+
+            def export_item(self, item: Any) -> None:
+                pass
 
         i = self.item_class(name="John", age="22")
         a = ItemAdapter(i)

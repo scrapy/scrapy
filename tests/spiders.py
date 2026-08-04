@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 from twisted.internet import defer
@@ -18,21 +19,60 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
-from scrapy.utils.test import get_from_asyncio_queue, get_web_client_agent_req
+from scrapy.utils.test import get_from_asyncio_queue
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
 
 class MockServerSpider(Spider):
-    def __init__(self, mockserver=None, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        mockserver: MockServer | None = None,
+        is_secure: bool = False,
+        **kwargs: Any,
+    ):
         super().__init__(*args, **kwargs)
         self.mockserver = mockserver
+        self.is_secure = is_secure
+
+
+class RawResponseSpider(MockServerSpider):
+    """Base class for spiders that fetch a response built by the test itself.
+
+    Subclasses return the body from :meth:`raw_body` and request
+    :attr:`raw_url`, which the mock server answers with that body verbatim
+    under :attr:`content_type`. This lets tests reach parsing code that only
+    a specific kind of response triggers while still going through a regular
+    crawl, instead of calling internal parsing methods directly.
+    """
+
+    name = "raw_response"
+    content_type = "text/plain"
+
+    def raw_body(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def raw_url(self) -> str:
+        assert self.mockserver
+        raw = (
+            "HTTP/1.1 200 OK\r\n"
+            f"Content-Type: {self.content_type}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            f"{self.raw_body()}"
+        )
+        return self.mockserver.url("/raw?" + urlencode({"raw": raw}))
 
 
 class MetaSpider(MockServerSpider):
     name = "meta"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.meta = {}
+        self.meta: dict[str, Any] = {}
 
     def closed(self, reason):
         self.meta["close_reason"] = reason
@@ -83,19 +123,19 @@ class DelaySpider(MetaSpider):
 class LogSpider(MetaSpider):
     name = "log_spider"
 
-    def log_debug(self, message: str, extra: dict | None = None):
+    def log_debug(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.debug(message, extra=extra)
 
-    def log_info(self, message: str, extra: dict | None = None):
+    def log_info(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.info(message, extra=extra)
 
-    def log_warning(self, message: str, extra: dict | None = None):
+    def log_warning(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.warning(message, extra=extra)
 
-    def log_error(self, message: str, extra: dict | None = None):
+    def log_error(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.error(message, extra=extra)
 
-    def log_critical(self, message: str, extra: dict | None = None):
+    def log_critical(self, message: str, extra: dict[str, Any] | None = None):
         self.logger.critical(message, extra=extra)
 
     def parse(self, response):
@@ -198,28 +238,24 @@ class AsyncDefDeferredDirectSpider(SimpleSpider):
     name = "asyncdef_deferred_direct"
 
     async def parse(self, response):
-        resp = await get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        yield {"code": resp.code}
+        await defer.succeed(None)
+        yield {"code": 200}
 
 
 class AsyncDefDeferredWrappedSpider(SimpleSpider):
     name = "asyncdef_deferred_wrapped"
 
     async def parse(self, response):
-        resp = await deferred_to_future(
-            get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        )
-        yield {"code": resp.code}
+        await deferred_to_future(defer.succeed(None))
+        yield {"code": 200}
 
 
 class AsyncDefDeferredMaybeWrappedSpider(SimpleSpider):
-    name = "asyncdef_deferred_wrapped"
+    name = "asyncdef_deferred_maybe_wrapped"
 
     async def parse(self, response):
-        resp = await maybe_deferred_to_future(
-            get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        )
-        yield {"code": resp.code}
+        await maybe_deferred_to_future(defer.succeed(None))
+        yield {"code": 200}
 
 
 class AsyncDefAsyncioGenSpider(SimpleSpider):
@@ -392,7 +428,7 @@ class DuplicateStartSpider(MockServerSpider):
 
     async def start(self):
         for i in range(self.distinct_urls):
-            for j in range(self.dupe_factor):
+            for _ in range(self.dupe_factor):
                 url = self.mockserver.url(f"/echo?headers=1&body=test{i}")
                 yield Request(url, dont_filter=self.dont_filter)
 
@@ -410,7 +446,7 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     """
 
     name = "crawl_spider_with_parse_method"
-    custom_settings: dict = {
+    custom_settings: dict[str, Any] = {
         "RETRY_HTTP_CODES": [],  # no need to retry
     }
     rules = (Rule(LinkExtractor(), callback="parse", follow=True),)
@@ -418,7 +454,7 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     async def start(self):
         test_body = b"""
         <html>
-            <head><title>Page title<title></head>
+            <head><title>Page title</title></head>
             <body>
                 <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
                 <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->
@@ -472,7 +508,7 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
     async def start(self):
         test_body = b"""
         <html>
-            <head><title>Page title<title></head>
+            <head><title>Page title</title></head>
             <body>
                 <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
                 <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->
@@ -487,6 +523,23 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
 
     def errback(self, failure):
         self.logger.info("[errback] status %i", failure.value.response.status)
+
+
+class CrawlSpiderWithoutErrback(CrawlSpiderWithParseMethod):
+    name = "crawl_spider_without_errback"
+
+    async def start(self):
+        test_body = b"""
+        <html>
+            <head><title>Page title</title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
+                <p><a href="/status?n=404">Item 404</a></p>  <!-- failure, no errback -->
+            </body>
+        </html>
+        """
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
 
 
 class CrawlSpiderWithProcessRequestCallbackKeywordArguments(CrawlSpiderWithParseMethod):
@@ -516,7 +569,7 @@ class BytesReceivedCallbackSpider(MetaSpider):
 
     async def start(self):
         body = b"a" * self.full_response_length
-        url = self.mockserver.url("/alpayload")
+        url = self.mockserver.url("/alpayload", is_secure=self.is_secure)
         yield Request(url, method="POST", body=body, errback=self.errback)
 
     def parse(self, response):
@@ -544,7 +597,10 @@ class HeadersReceivedCallbackSpider(MetaSpider):
         return spider
 
     async def start(self):
-        yield Request(self.mockserver.url("/status"), errback=self.errback)
+        yield Request(
+            self.mockserver.url("/status", is_secure=self.is_secure),
+            errback=self.errback,
+        )
 
     def parse(self, response):
         self.meta["response"] = response
@@ -561,3 +617,19 @@ class HeadersReceivedErrbackSpider(HeadersReceivedCallbackSpider):
     def headers_received(self, headers, body_length, request, spider):
         self.meta["headers_received"] = headers
         raise StopDownload(fail=True)
+
+
+class ExceptionSpider(Spider):
+    name = "exception"
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        raise ValueError("Exception in from_crawler method")
+
+
+class NoRequestsSpider(Spider):
+    name = "no_request"
+
+    async def start(self):
+        return
+        yield

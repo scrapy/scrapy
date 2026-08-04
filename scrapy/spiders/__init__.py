@@ -17,7 +17,7 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterable
+    from collections.abc import AsyncIterator
 
     from twisted.internet.defer import Deferred
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
-    from scrapy.settings import BaseSettings, _SettingsKeyT
+    from scrapy.settings import BaseSettings
     from scrapy.utils.log import SpiderLoggerAdapter
 
 
@@ -39,7 +39,7 @@ class Spider(object_ref):
     """
 
     name: str
-    custom_settings: dict[_SettingsKeyT, Any] | None = None
+    custom_settings: dict[str, Any] | None = None
 
     #: Start URLs. See :meth:`start`.
     start_urls: list[str]
@@ -55,7 +55,8 @@ class Spider(object_ref):
 
     @property
     def logger(self) -> SpiderLoggerAdapter:
-        from scrapy.utils.log import SpiderLoggerAdapter
+        # circular import
+        from scrapy.utils.log import SpiderLoggerAdapter  # noqa: PLC0415
 
         logger = logging.getLogger(self.name)
         return SpiderLoggerAdapter(logger, {"spider": self})
@@ -67,6 +68,11 @@ class Spider(object_ref):
         can use it directly (e.g. Spider.logger.info('msg')) or use any other
         Python logger too.
         """
+        warnings.warn(
+            "Spider.log() is deprecated, use methods of Spider.logger instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self.logger.log(level, message, **kw)
 
     @classmethod
@@ -126,30 +132,6 @@ class Spider(object_ref):
 
         .. seealso:: :ref:`start-requests`
         """
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", category=ScrapyDeprecationWarning, module=r"^scrapy\.spiders$"
-            )
-            for item_or_request in self.start_requests():
-                yield item_or_request
-
-    def start_requests(self) -> Iterable[Any]:
-        warnings.warn(
-            (
-                "The Spider.start_requests() method is deprecated, use "
-                "Spider.start() instead. If you are calling "
-                "super().start_requests() from a Spider.start() override, "
-                "iterate super().start() instead."
-            ),
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        if not self.start_urls and hasattr(self, "start_url"):
-            raise AttributeError(
-                "Crawling could not start: 'start_urls' not found "
-                "or empty (but found 'start_url' attribute instead, "
-                "did you miss an 's'?)"
-            )
         for url in self.start_urls:
             yield Request(url, dont_filter=True)
 
@@ -161,6 +143,22 @@ class Spider(object_ref):
     else:
 
         def parse(self, response: Response, **kwargs: Any) -> Any:
+            """Process *response*, i.e. extract data from it and generate new
+            requests.
+
+            This is the default :ref:`callback <callbacks>`: Scrapy uses
+            it for the response to any request that does not define a
+            :attr:`~scrapy.Request.callback`, such as the requests that
+            :meth:`start` yields by default.
+
+            Any :attr:`~scrapy.Request.cb_kwargs` of the request are passed as
+            keyword parameters.
+
+            Spiders must define this method, unless every request that they
+            send defines a callback.
+
+            See :ref:`callback-output` about the supported return values.
+            """
             raise NotImplementedError(
                 f"{self.__class__.__name__}.parse callback is not defined"
             )

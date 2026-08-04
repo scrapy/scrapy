@@ -136,6 +136,19 @@ Core Stats extension
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
 
+The following stats are collected: :stat:`elapsed_time_seconds`,
+:stat:`finish_reason`, :stat:`finish_time`, :stat:`item_dropped_count`,
+:stat:`item_dropped_reasons_count/{exception}`, :stat:`item_scraped_count`,
+:stat:`response_received_count`, :stat:`start_time`.
+
+Log Count extension
+~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.logcount
+   :synopsis: Basic stats logging
+
+.. autoclass:: LogCount
+
 .. _topics-extensions-ref-telnetconsole:
 
 Telnet console extension
@@ -167,20 +180,16 @@ Memory usage extension
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 
-1. sends a notification e-mail when it exceeds a certain value
-2. closes the spider when it exceeds a certain value
-
-The notification e-mails can be triggered when a certain warning value is
-reached (:setting:`MEMUSAGE_WARNING_MB`) and when the maximum value is reached
-(:setting:`MEMUSAGE_LIMIT_MB`) which will also cause the spider to be closed
-and the Scrapy process to be terminated.
+1. sends a :signal:`memusage_warning_reached` signal when it exceeds
+   :setting:`MEMUSAGE_WARNING_MB`
+2. closes the spider with the ``"memusage_exceeded"`` reason when it exceeds
+   :setting:`MEMUSAGE_LIMIT_MB`
 
 This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
 can be configured with the following settings:
 
 * :setting:`MEMUSAGE_LIMIT_MB`
 * :setting:`MEMUSAGE_WARNING_MB`
-* :setting:`MEMUSAGE_NOTIFY_MAIL`
 * :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
 
 Memory debugger extension
@@ -197,7 +206,8 @@ An extension for debugging memory usage. It collects information about:
 * objects left alive that shouldn't. For more info, see :ref:`topics-leaks-trackrefs`
 
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
-info will be stored in the stats.
+info will be stored in the :stat:`memdebug/gc_garbage_count` and
+:stat:`memdebug/live_refs/{cls}` stats.
 
 .. _topics-extensions-ref-spiderstate:
 
@@ -243,6 +253,7 @@ settings:
 * :setting:`CLOSESPIDER_TIMEOUT_NO_ITEM`
 * :setting:`CLOSESPIDER_ITEMCOUNT`
 * :setting:`CLOSESPIDER_PAGECOUNT`
+* :setting:`CLOSESPIDER_PAGECOUNT_NO_ITEM`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
 
 .. note::
@@ -256,12 +267,11 @@ settings:
 CLOSESPIDER_TIMEOUT
 """""""""""""""""""
 
-Default: ``0``
+Default: ``0.0``
 
-An integer which specifies a number of seconds. If the spider remains open for
-more than that number of second, it will be automatically closed with the
-reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
-timeout.
+If the spider remains open for more than this number of seconds, it will be
+automatically closed with the reason ``closespider_timeout``. If zero (or non
+set), spiders won't be closed by timeout.
 
 .. setting:: CLOSESPIDER_TIMEOUT_NO_ITEM
 
@@ -323,27 +333,6 @@ An integer which specifies the maximum number of errors to receive before
 closing the spider. If the spider generates more than that number of errors,
 it will be closed with the reason ``closespider_errorcount``. If zero (or non
 set), spiders won't be closed by number of errors.
-
-StatsMailer extension
-~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.extensions.statsmailer
-   :synopsis: StatsMailer extension
-
-.. class:: StatsMailer
-
-This simple extension can be used to send a notification e-mail every time a
-domain has finished scraping, including the Scrapy stats collected. The email
-will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
-setting.
-
-Emails can be sent using the :class:`~scrapy.mail.MailSender` class. To see a
-full list of parameters, including examples on how to instantiate
-:class:`~scrapy.mail.MailSender` and use mail settings, see
-:ref:`topics-email`.
-
-.. module:: scrapy.extensions.debug
-   :synopsis: Extensions for debugging Scrapy
 
 .. module:: scrapy.extensions.periodic_log
    :synopsis: Periodic stats logging
@@ -419,7 +408,7 @@ Example extension configuration:
     custom_settings = {
         "LOG_LEVEL": "INFO",
         "PERIODIC_LOG_STATS": {
-            "include": ["downloader/", "scheduler/", "log_count/", "item_scraped_count/"],
+            "include": ["downloader/", "scheduler/", "log_count/", "item_scraped_count"],
         },
         "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
         "PERIODIC_LOG_TIMING_ENABLED": True,
@@ -463,6 +452,9 @@ Default: ``False``
 
 Debugging extensions
 --------------------
+
+.. module:: scrapy.extensions.debug
+   :synopsis: Extensions for debugging Scrapy
 
 Stack trace dump extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

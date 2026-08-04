@@ -104,10 +104,8 @@ class TestSelector:
             Selector(TextResponse(url="http://example.com", body=b""), text="")
 
 
+@pytest.mark.skipif(not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath")
 class TestJMESPath:
-    @pytest.mark.skipif(
-        not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
-    )
     def test_json_has_html(self) -> None:
         """Sometimes the information is returned in a json wrapper"""
 
@@ -145,9 +143,6 @@ class TestJMESPath:
         assert resp.jmespath("html").css("div > b").getall() == ["<b>f</b>"]
         assert resp.jmespath("content").jmespath("name.age").get() == "18"
 
-    @pytest.mark.skipif(
-        not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
-    )
     def test_html_has_json(self) -> None:
         body = """
         <div>
@@ -193,9 +188,6 @@ class TestJMESPath:
         ]
         assert resp.xpath("//div/content").jmespath("total").get() == "4"
 
-    @pytest.mark.skipif(
-        not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
-    )
     def test_jmestpath_with_re(self) -> None:
         body = """
             <div>
@@ -248,13 +240,14 @@ class TestJMESPath:
             r"(\d+)"
         ) == ["18", "32", "22", "25"]
 
-    @pytest.mark.skipif(PARSEL_18_PLUS, reason="parsel >= 1.8 supports jmespath")
-    def test_jmespath_not_available(self) -> None:
-        body = """
-        {
-            "website": {"name": "Example"}
-        }
-        """
-        resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
-        with pytest.raises(AttributeError):
-            resp.jmespath("website.name").get()
+
+@pytest.mark.skipif(PARSEL_18_PLUS, reason="parsel >= 1.8 supports jmespath")
+def test_jmespath_not_available() -> None:
+    body = """
+    {
+        "website": {"name": "Example"}
+    }
+    """
+    resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
+    with pytest.raises(AttributeError):
+        resp.jmespath("website.name").get()

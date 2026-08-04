@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import warnings
+from importlib.util import find_spec
 from itertools import chain
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
@@ -14,6 +16,8 @@ from scrapy.utils._compression import (
     _unbrotli,
     _unzstd,
 )
+from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.gz import gunzip
 
 if TYPE_CHECKING:
@@ -30,24 +34,30 @@ ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
 
 try:
     try:
-        import brotli  # noqa: F401
+        import brotli
     except ImportError:
-        import brotlicffi  # noqa: F401
+        import brotlicffi as brotli
 except ImportError:
     pass
 else:
-    ACCEPTED_ENCODINGS.append(b"br")
+    try:
+        brotli.Decompressor.can_accept_more_data  # noqa: B018
+    except AttributeError:  # pragma: no cover
+        warnings.warn(
+            "You have brotli installed. But 'br' encoding support now requires "
+            "brotli's or brotlicffi's version >= 1.2.0. Please upgrade "
+            "brotli/brotlicffi to make Scrapy decode 'br' encoded responses.",
+            stacklevel=2,
+        )
+    else:
+        ACCEPTED_ENCODINGS.append(b"br")
 
-try:
-    import zstandard  # noqa: F401
-except ImportError:
-    pass
-else:
+if find_spec("zstandard") is not None:
     ACCEPTED_ENCODINGS.append(b"zstd")
 
 
 class HttpCompressionMiddleware:
-    """This middleware allows compressed (gzip, deflate) traffic to be
+    """This middleware allows compressed (gzip, deflate etc.) traffic to be
     sent/received from websites"""
 
     def __init__(
@@ -57,6 +67,12 @@ class HttpCompressionMiddleware:
         crawler: Crawler | None = None,
     ):
         if not crawler:
+            warnings.warn(
+                "Instantiating HttpCompressionMiddleware without a 'crawler' "
+                "argument is deprecated.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             self.stats = stats
             self._max_size = 1073741824
             self._warn_size = 33554432
@@ -74,67 +90,70 @@ class HttpCompressionMiddleware:
 
     def open_spider(self, spider: Spider) -> None:
         if hasattr(spider, "download_maxsize"):
+            warn_on_deprecated_spider_attribute("download_maxsize", "DOWNLOAD_MAXSIZE")
             self._max_size = spider.download_maxsize
         if hasattr(spider, "download_warnsize"):
+            warn_on_deprecated_spider_attribute(
+                "download_warnsize", "DOWNLOAD_WARNSIZE"
+            )
             self._warn_size = spider.download_warnsize
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if request.method == "HEAD":
             return response
-        if isinstance(response, Response):
-            content_encoding = response.headers.getlist("Content-Encoding")
-            if content_encoding:
-                max_size = request.meta.get("download_maxsize", self._max_size)
-                warn_size = request.meta.get("download_warnsize", self._warn_size)
-                try:
-                    decoded_body, content_encoding = self._handle_encoding(
-                        response.body, content_encoding, max_size
-                    )
-                except _DecompressionMaxSizeExceeded:
-                    raise IgnoreRequest(
-                        f"Ignored response {response} because its body "
-                        f"({len(response.body)} B compressed) exceeded "
-                        f"DOWNLOAD_MAXSIZE ({max_size} B) during "
-                        f"decompression."
-                    )
-                if len(response.body) < warn_size <= len(decoded_body):
-                    logger.warning(
-                        f"{response} body size after decompression "
-                        f"({len(decoded_body)} B) is larger than the "
-                        f"download warning size ({warn_size} B)."
-                    )
-                if content_encoding:
-                    self._warn_unknown_encoding(response, content_encoding)
-                response.headers["Content-Encoding"] = content_encoding
-                if self.stats:
-                    self.stats.inc_value(
-                        "httpcompression/response_bytes",
-                        len(decoded_body),
-                        spider=spider,
-                    )
-                    self.stats.inc_value(
-                        "httpcompression/response_count", spider=spider
-                    )
-                respcls = responsetypes.from_args(
-                    headers=response.headers, url=response.url, body=decoded_body
+        content_encoding = response.headers.getlist("Content-Encoding")
+        if content_encoding:
+            max_size = request.meta.get("download_maxsize", self._max_size)
+            warn_size = request.meta.get("download_warnsize", self._warn_size)
+            try:
+                decoded_body, content_encoding = self._handle_encoding(
+                    response.body, content_encoding, max_size
                 )
-                kwargs: dict[str, Any] = {"body": decoded_body}
-                if issubclass(respcls, TextResponse):
-                    # force recalculating the encoding until we make sure the
-                    # responsetypes guessing is reliable
-                    kwargs["encoding"] = None
-                response = response.replace(cls=respcls, **kwargs)
-                if not content_encoding:
-                    del response.headers["Content-Encoding"]
-
+            except _DecompressionMaxSizeExceeded as e:
+                msg = (
+                    f"Ignored response {response} because its body "
+                    f"({len(response.body)} B compressed, "
+                    f"{e.decompressed_size} B decompressed so far) exceeded "
+                    f"DOWNLOAD_MAXSIZE ({max_size} B) during decompression."
+                )
+                logger.warning(msg)
+                raise IgnoreRequest(msg) from e
+            if len(response.body) < warn_size <= len(decoded_body):
+                logger.warning(
+                    f"{response} body size after decompression "
+                    f"({len(decoded_body)} B) is larger than the "
+                    f"download warning size ({warn_size} B)."
+                )
+            if content_encoding:
+                self._warn_unknown_encoding(response, content_encoding)
+            response.headers["Content-Encoding"] = content_encoding
+            if self.stats:
+                self.stats.inc_value(
+                    "httpcompression/response_bytes",
+                    len(decoded_body),
+                )
+                self.stats.inc_value("httpcompression/response_count")
+            respcls = responsetypes.from_args(
+                headers=response.headers, url=response.url, body=decoded_body
+            )
+            kwargs: dict[str, Any] = {"body": decoded_body}
+            if issubclass(respcls, TextResponse):
+                # force recalculating the encoding until we make sure the
+                # responsetypes guessing is reliable
+                kwargs["encoding"] = None
+            response = response.replace(cls=respcls, **kwargs)
+            if not content_encoding:
+                del response.headers["Content-Encoding"]
         return response
 
     def _handle_encoding(
@@ -187,7 +206,7 @@ class HttpCompressionMiddleware:
             f"from unsupported encoding(s) '{encodings_str}'."
         )
         if b"br" in encodings:
-            msg += " You need to install brotli or brotlicffi to decode 'br'."
+            msg += " You need to install brotli or brotlicffi >= 1.2.0 to decode 'br'."
         if b"zstd" in encodings:
             msg += " You need to install zstandard to decode 'zstd'."
         logger.warning(msg)

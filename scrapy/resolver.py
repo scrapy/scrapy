@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import attr
 from twisted.internet import defer
 from twisted.internet.base import ReactorBase, ThreadedResolver
 from twisted.internet.interfaces import (
@@ -70,12 +71,18 @@ class CachingThreadedResolver(ThreadedResolver):
         return result
 
 
+def _address_with_port(address: IAddress, port: int) -> IAddress:
+    if getattr(address, "port", port) == port:
+        return address
+    return attr.evolve(address, port=port)
+
+
 @implementer(IHostResolution)
 class HostResolution:
     def __init__(self, name: str):
         self.name: str = name
 
-    def cancel(self) -> None:
+    def cancel(self) -> None:  # pragma: no cover
         raise NotImplementedError
 
 
@@ -97,7 +104,11 @@ class _CachingResolutionReceiver:
     def resolutionComplete(self) -> None:
         self.resolutionReceiver.resolutionComplete()
         if self.addresses:
-            dnscache[self.hostName] = self.addresses
+            # Name resolution does not depend on the port, so cache entries are
+            # kept port-agnostic and the requested port is set on cache hits.
+            dnscache[self.hostName] = [
+                _address_with_port(address, 0) for address in self.addresses
+            ]
 
 
 @implementer(IHostnameResolver)
@@ -142,7 +153,7 @@ class CachingHostnameResolver:
                 transportSemantics,
             )
         resolutionReceiver.resolutionBegan(HostResolution(hostName))
-        for addr in addresses:
-            resolutionReceiver.addressResolved(addr)
+        for address in addresses:
+            resolutionReceiver.addressResolved(_address_with_port(address, portNumber))
         resolutionReceiver.resolutionComplete()
         return resolutionReceiver

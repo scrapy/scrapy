@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 import pytest
-from testfixtures import LogCapture
-from twisted.internet import defer
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase
 
 from scrapy.exceptions import DropItem
 from scrapy.http import Request, Response
@@ -12,8 +12,11 @@ from scrapy.item import Field, Item
 from scrapy.logformatter import LogFormatter
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
 from tests.spiders import ItemSpider
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
 
 class CustomItem(Item):
@@ -29,14 +32,14 @@ class TestLogFormatter:
         self.spider = Spider("default")
         self.spider.crawler = get_crawler()
 
-    def test_crawled_with_referer(self):
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
         assert logline == "Crawled (200) <GET http://www.example.com> (referer: None)"
 
-    def test_crawled_without_referer(self):
+    def test_crawled_with_referer(self):
         req = Request(
             "http://www.example.com", headers={"referer": "http://example.com"}
         )
@@ -110,7 +113,7 @@ class TestLogFormatter:
         assert logkws["level"] == unsupported_value
 
         with pytest.raises(TypeError):
-            logging.log(logkws["level"], "message")
+            logging.log(logkws["level"], "message")  # noqa: LOG015
 
     def test_dropitem_custom_log_level(self):
         item = {}
@@ -199,7 +202,7 @@ class TestLogformatterSubclass(TestLogFormatter):
         self.spider = Spider("default")
         self.spider.crawler = get_crawler(Spider)
 
-    def test_crawled_with_referer(self):
+    def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
@@ -208,7 +211,7 @@ class TestLogformatterSubclass(TestLogFormatter):
             logline == "Crawled (200) <GET http://www.example.com> (referer: None) []"
         )
 
-    def test_crawled_without_referer(self):
+    def test_crawled_with_referer(self):
         req = Request(
             "http://www.example.com",
             headers={"referer": "http://example.com"},
@@ -247,24 +250,15 @@ class SkipMessagesLogFormatter(LogFormatter):
 class DropSomeItemsPipeline:
     drop = True
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         if self.drop:
             self.drop = False
             raise DropItem("Ignoring item")
         self.drop = True
 
 
-class TestShowOrSkipMessages(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    def setUp(self):
+class TestShowOrSkipMessages:
+    def setup_method(self):
         self.base_settings = {
             "LOG_LEVEL": "DEBUG",
             "ITEM_PIPELINES": {
@@ -272,22 +266,26 @@ class TestShowOrSkipMessages(TestCase):
             },
         }
 
-    @defer.inlineCallbacks
-    def test_show_messages(self):
+    @coroutine_test
+    async def test_show_messages(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         crawler = get_crawler(ItemSpider, self.base_settings)
-        with LogCapture() as lc:
-            yield crawler.crawl(mockserver=self.mockserver)
-        assert "Scraped from <200 http://127.0.0.1:" in str(lc)
-        assert "Crawled (200) <GET http://127.0.0.1:" in str(lc)
-        assert "Dropped: Ignoring item" in str(lc)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(mockserver=mockserver)
+        assert "Scraped from <200 http://127.0.0.1:" in caplog.text
+        assert "Crawled (200) <GET http://127.0.0.1:" in caplog.text
+        assert "Dropped: Ignoring item" in caplog.text
 
-    @defer.inlineCallbacks
-    def test_skip_messages(self):
+    @coroutine_test
+    async def test_skip_messages(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         settings = self.base_settings.copy()
         settings["LOG_FORMATTER"] = SkipMessagesLogFormatter
         crawler = get_crawler(ItemSpider, settings)
-        with LogCapture() as lc:
-            yield crawler.crawl(mockserver=self.mockserver)
-        assert "Scraped from <200 http://127.0.0.1:" not in str(lc)
-        assert "Crawled (200) <GET http://127.0.0.1:" not in str(lc)
-        assert "Dropped: Ignoring item" not in str(lc)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(mockserver=mockserver)
+        assert "Scraped from <200 http://127.0.0.1:" not in caplog.text
+        assert "Crawled (200) <GET http://127.0.0.1:" not in caplog.text
+        assert "Dropped: Ignoring item" not in caplog.text

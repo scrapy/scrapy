@@ -58,18 +58,20 @@ class LogFormatter:
     logging an action the method must return ``None``.
 
     Here is an example on how to create a custom log formatter to lower the severity level of
-    the log message when an item is dropped from the pipeline::
+    the log message when an item is dropped from the pipeline:
 
-            class PoliteLogFormatter(logformatter.LogFormatter):
-                def dropped(self, item, exception, response, spider):
-                    return {
-                        'level': logging.INFO, # lowering the level from logging.WARNING
-                        'msg': "Dropped: %(exception)s" + os.linesep + "%(item)s",
-                        'args': {
-                            'exception': exception,
-                            'item': item,
-                        }
-                    }
+    .. code-block:: python
+
+        class PoliteLogFormatter(logformatter.LogFormatter):
+            def dropped(self, item, exception, response, spider):
+                return {
+                    "level": logging.INFO,  # lowering the level from logging.WARNING
+                    "msg": "Dropped: %(exception)s" + os.linesep + "%(item)s",
+                    "args": {
+                        "exception": exception,
+                        "item": item,
+                    },
+                }
     """
 
     def crawled(
@@ -116,7 +118,7 @@ class LogFormatter:
         self,
         item: Any,
         exception: BaseException,
-        response: Response | None,
+        response: Response | Failure | None,
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
@@ -137,13 +139,11 @@ class LogFormatter:
         self,
         item: Any,
         exception: BaseException,
-        response: Response | None,
+        response: Response | Failure | None,
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item causes an error while it is passing
         through the item pipeline.
-
-        .. versionadded:: 2.0
         """
         return {
             "level": logging.ERROR,
@@ -160,10 +160,7 @@ class LogFormatter:
         response: Response | Failure,
         spider: Spider,
     ) -> LogFormatterResult:
-        """Logs an error message from a spider.
-
-        .. versionadded:: 2.0
-        """
+        """Logs an error message from a spider."""
         return {
             "level": logging.ERROR,
             "msg": SPIDERERRORMSG,
@@ -182,8 +179,6 @@ class LogFormatter:
     ) -> LogFormatterResult:
         """Logs a download error message from a spider (typically coming from
         the engine).
-
-        .. versionadded:: 2.0
         """
         args: dict[str, Any] = {"request": request}
         if errmsg:

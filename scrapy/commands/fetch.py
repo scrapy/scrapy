@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+from argparse import Namespace  # noqa: TC003
+from typing import TYPE_CHECKING, Any
 
 from w3lib.url import is_url
 
@@ -12,14 +13,13 @@ from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 
 if TYPE_CHECKING:
-    from argparse import ArgumentParser, Namespace
+    from argparse import ArgumentParser
+    from collections.abc import AsyncIterator
 
     from scrapy import Spider
 
 
 class Command(ScrapyCommand):
-    requires_project = False
-
     def syntax(self) -> str:
         return "[options] <url>"
 
@@ -90,10 +90,10 @@ class Command(ScrapyCommand):
         else:
             spidercls = spidercls_for_request(spider_loader, request, spidercls)
 
-        async def start(self):
+        async def start(self: Spider) -> AsyncIterator[Any]:
             yield request
 
-        spidercls.start = start  # type: ignore[method-assign,attr-defined]
+        spidercls.start = start  # type: ignore[method-assign]
 
         self.crawler_process.crawl(spidercls)
         self.crawler_process.start()

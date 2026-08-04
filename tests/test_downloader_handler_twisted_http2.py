@@ -2,232 +2,216 @@
 
 from __future__ import annotations
 
-import json
+import logging
+import sys
 from typing import TYPE_CHECKING, Any
-from unittest import mock
 
 import pytest
-from testfixtures import LogCapture
-from twisted.internet import defer, error
-from twisted.web import server
-from twisted.web.error import SchemeNotSupported
 from twisted.web.http import H2_ENABLED
 
+from scrapy import Spider
+from scrapy.crawler import Crawler
+from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import Request
-from scrapy.spiders import Spider
-from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.test import get_crawler
-from tests.mockserver import ssl_context_factory
-from tests.test_downloader_handlers_http_base import (
-    TestHttpMockServerBase,
+from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
-    TestHttps11Base,
+    TestHttpsBase,
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
+    TestHttpsTLSVersionBase,
     TestHttpsWrongHostnameBase,
-    UriResource,
+    TestHttpWithCrawlerBase,
+    TestMitmProxyBase,
+    TestRealWebsiteBase,
+    TestSimpleHttpsBase,
 )
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
+    from tests.mockserver.http import MockServer
 
 
-pytestmark = pytest.mark.skipif(
-    not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
-)
+pytestmark = [
+    pytest.mark.requires_reactor,  # H2DownloadHandler requires a reactor
+    pytest.mark.skipif(
+        not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+    ),
+]
 
 
 class H2DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         # the import can fail when H2_ENABLED is False
-        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
+        from scrapy.core.downloader.handlers.http2 import (  # noqa: PLC0415
+            H2DownloadHandler,
+        )
 
         return H2DownloadHandler
-
-
-class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
-    HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
-
-    def test_protocol(self):
-        request = Request(self.getURL("host"), method="GET")
-        d = self.download_request(request, Spider("foo"))
-        d.addCallback(lambda r: r.protocol)
-        d.addCallback(self.assertEqual, "h2")
-        return d
-
-    @defer.inlineCallbacks
-    def test_download_with_maxsize_very_large_file(self):
-        from twisted.internet import reactor
-
-        with mock.patch("scrapy.core.http2.stream.logger") as logger:
-            request = Request(self.getURL("largechunkedfile"))
-
-            def check(logger):
-                logger.error.assert_called_once_with(mock.ANY)
-
-            d = self.download_request(request, Spider("foo", download_maxsize=1500))
-            yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
-
-            # As the error message is logged in the dataReceived callback, we
-            # have to give a bit of time to the reactor to process the queue
-            # after closing the connection.
-            d = defer.Deferred()
-            d.addCallback(check)
-            reactor.callLater(0.1, d.callback, logger)
-            yield d
-
-    @defer.inlineCallbacks
-    def test_unsupported_scheme(self):
-        request = Request("ftp://unsupported.scheme")
-        d = self.download_request(request, Spider("foo"))
-        yield self.assertFailure(d, SchemeNotSupported)
-
-    def test_download_broken_content_cause_data_loss(self, url="broken"):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_chunked_content_cause_data_loss(self):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_content_allow_data_loss(self, url="broken"):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_chunked_content_allow_data_loss(self):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_content_allow_data_loss_via_setting(self, url="broken"):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_concurrent_requests_same_domain(self):
-        spider = Spider("foo")
-
-        request1 = Request(self.getURL("file"))
-        d1 = self.download_request(request1, spider)
-        d1.addCallback(lambda r: r.body)
-        d1.addCallback(self.assertEqual, b"0123456789")
-
-        request2 = Request(self.getURL("echo"), method="POST")
-        d2 = self.download_request(request2, spider)
-        d2.addCallback(lambda r: r.headers["Content-Length"])
-        d2.addCallback(self.assertEqual, b"79")
-
-        return defer.DeferredList([d1, d2])
-
-    @pytest.mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
-    def test_connect_request(self):
-        request = Request(self.getURL("file"), method="CONNECT")
-        d = self.download_request(request, Spider("foo"))
-        d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEqual, b"")
-        return d
-
-    def test_custom_content_length_good(self):
-        request = Request(self.getURL("contentlength"))
-        custom_content_length = str(len(request.body))
-        request.headers["Content-Length"] = custom_content_length
-        d = self.download_request(request, Spider("foo"))
-        d.addCallback(lambda r: r.text)
-        d.addCallback(self.assertEqual, custom_content_length)
-        return d
-
-    def test_custom_content_length_bad(self):
-        request = Request(self.getURL("contentlength"))
-        actual_content_length = str(len(request.body))
-        bad_content_length = str(len(request.body) + 1)
-        request.headers["Content-Length"] = bad_content_length
-        log = LogCapture()
-        d = self.download_request(request, Spider("foo"))
-        d.addCallback(lambda r: r.text)
-        d.addCallback(self.assertEqual, actual_content_length)
-        d.addCallback(
-            lambda _: log.check_present(
-                (
-                    "scrapy.core.http2.stream",
-                    "WARNING",
-                    f"Ignoring bad Content-Length header "
-                    f"{bad_content_length!r} of request {request}, sending "
-                    f"{actual_content_length!r} instead",
-                )
-            )
-        )
-        d.addCallback(lambda _: log.uninstall())
-        return d
-
-    def test_duplicate_header(self):
-        request = Request(self.getURL("echo"))
-        header, value1, value2 = "Custom-Header", "foo", "bar"
-        request.headers.appendlist(header, value1)
-        request.headers.appendlist(header, value2)
-        d = self.download_request(request, Spider("foo"))
-        d.addCallback(lambda r: json.loads(r.text)["headers"][header])
-        d.addCallback(self.assertEqual, [value1, value2])
-        return d
-
-
-class Https2WrongHostnameTestCase(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
-    pass
-
-
-class Https2InvalidDNSId(H2DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
-    pass
-
-
-class Https2InvalidDNSPattern(H2DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase):
-    pass
-
-
-class Https2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase):
-    pass
-
-
-class Http2MockServerTestCase(TestHttpMockServerBase):
-    """HTTP 2.0 test case with MockServer"""
 
     @property
     def settings_dict(self) -> dict[str, Any] | None:
         return {
             "DOWNLOAD_HANDLERS": {
-                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler"
+                "http": None,
+                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
             }
         }
 
+
+def test_not_configured_without_reactor() -> None:
+    from scrapy.core.downloader.handlers.http2 import H2DownloadHandler  # noqa: PLC0415
+
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
+    with pytest.raises(NotConfigured):
+        H2DownloadHandler.from_crawler(crawler)
+
+
+class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
+    http2 = True
+    handler_supports_http2_dataloss = False
+
+    @coroutine_test
+    async def test_protocol(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/host", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.protocol == "h2"
+
+    def test_download_conn_failed(self) -> None:  # type: ignore[override]
+        # Unlike HTTP11DownloadHandler which raises it from download_request()
+        # (without any special handling), here ConnectionRefusedError (raised in
+        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
+        # an unhandled exception in a Deferred and the handler waits until
+        # DOWNLOAD_TIMEOUT.
+        pytest.skip("The handler doesn't properly reraise ConnectionRefusedError")
+
+    def test_download_dns_error(self) -> None:  # type: ignore[override]
+        # Unlike HTTP11DownloadHandler which raises it from download_request()
+        # (without any special handling), here DNSLookupError (raised in
+        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
+        # an unhandled exception in a Deferred and the handler waits until
+        # DOWNLOAD_TIMEOUT.
+        pytest.skip("The handler doesn't properly reraise DNSLookupError")
+
+    @coroutine_test
+    async def test_concurrent_requests_same_domain(
+        self, mockserver: MockServer
+    ) -> None:
+        request1 = Request(mockserver.url("/text", is_secure=self.is_secure))
+        request2 = Request(
+            mockserver.url("/echo", is_secure=self.is_secure), method="POST"
+        )
+        async with self.get_dh() as download_handler:
+            response1 = await download_handler.download_request(request1)
+            assert response1.body == b"Works"
+            response2 = await download_handler.download_request(request2)
+            assert response2.headers["Content-Length"] == b"79"
+
+    @pytest.mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
+    @coroutine_test
+    async def test_connect_request(self, mockserver: MockServer) -> None:
+        request = Request(
+            mockserver.url("/file", is_secure=self.is_secure), method="CONNECT"
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b""
+
+    @coroutine_test
+    async def test_custom_content_length_good(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
+        custom_content_length = str(len(request.body))
+        request.headers["Content-Length"] = custom_content_length
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.text == custom_content_length
+
+    @coroutine_test
+    async def test_custom_content_length_bad(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
+        actual_content_length = str(len(request.body))
+        bad_content_length = str(len(request.body) + 1)
+        request.headers["Content-Length"] = bad_content_length
+        async with self.get_dh() as download_handler:
+            with caplog.at_level(logging.DEBUG):
+                response = await download_handler.download_request(request)
+        assert response.text == actual_content_length
+        assert (
+            "scrapy.core.http2.stream",
+            logging.WARNING,
+            f"Ignoring bad Content-Length header "
+            f"{bad_content_length!r} of request {request}, sending "
+            f"{actual_content_length!r} instead",
+        ) in caplog.record_tuples
+
+    @coroutine_test
+    async def test_data_loss_handling(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
+
+
+class TestSimpleHttp2(H2DownloadHandlerMixin, TestSimpleHttpsBase):
+    pass
+
+
+class TestHttp2WrongHostname(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
+    pass
+
+
+class TestHttp2InvalidDNSId(H2DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+    pass
+
+
+class TestHttp2InvalidDNSPattern(
+    H2DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
+):
+    pass
+
+
+class TestHttp2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+    pass
+
+
+class TestHttp2TLSVersion(H2DownloadHandlerMixin, TestHttpsTLSVersionBase):
+    pass
+
+
+class TestHttp2WithCrawler(H2DownloadHandlerMixin, TestHttpWithCrawlerBase):
+    is_secure = True
+
+    def test_bytes_received_stop_download_callback(self) -> None:  # type: ignore[override]
+        pytest.skip("bytes_received support is not implemented")
+
+    def test_bytes_received_stop_download_errback(self) -> None:  # type: ignore[override]
+        pytest.skip("bytes_received support is not implemented")
+
+    def test_headers_received_stop_download_callback(self) -> None:  # type: ignore[override]
+        pytest.skip("headers_received support is not implemented")
+
+    def test_headers_received_stop_download_errback(self) -> None:  # type: ignore[override]
+        pytest.skip("headers_received support is not implemented")
+
+
+@pytest.mark.skip(reason="Proxy support is not implemented yet")
+class TestHttp2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True
 
 
-class Https2ProxyTestCase(H2DownloadHandlerMixin, TestHttpProxyBase):
-    # only used for HTTPS tests
-    keyfile = "keys/localhost.key"
-    certfile = "keys/localhost.crt"
+@pytest.mark.skip(reason="Proxy support is not implemented yet")
+@pytest.mark.requires_mitmproxy
+class TestMitmProxy(H2DownloadHandlerMixin, TestMitmProxyBase):
+    pass
 
-    scheme = "https"
-    host = "127.0.0.1"
 
-    expected_http_proxy_request_body = b"/"
-
-    def setUp(self):
-        from twisted.internet import reactor
-
-        site = server.Site(UriResource(), timeout=None)
-        self.port = reactor.listenSSL(
-            0,
-            site,
-            ssl_context_factory(self.keyfile, self.certfile),
-            interface=self.host,
-        )
-        self.portno = self.port.getHost().port
-        self.download_handler = build_from_crawler(
-            self.download_handler_cls, get_crawler()
-        )
-        self.download_request = self.download_handler.download_request
-
-    def getURL(self, path):
-        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
-
-    @defer.inlineCallbacks
-    def test_download_with_proxy_https_timeout(self):
-        with pytest.raises(NotImplementedError):
-            yield super().test_download_with_proxy_https_timeout()
+@pytest.mark.requires_internet
+class TestRealWebsite(H2DownloadHandlerMixin, TestRealWebsiteBase):
+    @property
+    def platform_cert_store_works(self) -> bool:
+        return sys.platform != "win32"
