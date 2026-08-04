@@ -113,7 +113,6 @@ instance, which can be accessed and used like this:
 
     class MySpider(scrapy.Spider):
         name = "myspider"
-        allowed_domains = ["scrapy.org"]
         start_urls = ["https://scrapy.org"]
 
         def parse(self, response):
@@ -132,7 +131,6 @@ Python logger you want. For example:
 
     class MySpider(scrapy.Spider):
         name = "myspider"
-        allowed_domains = ["scrapy.org"]
         start_urls = ["https://scrapy.org"]
 
         def parse(self, response):

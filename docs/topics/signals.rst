@@ -26,7 +26,6 @@ Here is a simple example showing how you can catch signals and perform some acti
 
     class DmozSpider(Spider):
         name = "dmoz"
-        allowed_domains = ["dmoz.org"]
         start_urls = [
             "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
             "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/",
@@ -68,7 +67,6 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 
     class SignalSpider(scrapy.Spider):
         name = "signals"
-        allowed_domains = ["quotes.toscrape.com"]
         start_urls = ["https://quotes.toscrape.com/page/1/"]
 
         @classmethod

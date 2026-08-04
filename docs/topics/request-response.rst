@@ -325,7 +325,6 @@ credentials:
 
     class LoginSpider(scrapy.Spider):
         name = "example.com"
-        allowed_domains = ["www.example.com"]
         start_urls = ["http://www.example.com/users/login.php"]
 
         def parse(self, response):
@@ -567,7 +566,6 @@ the crawl:
 
     class BookSpider(Spider):
         name = "books"
-        allowed_domains = ["books.toscrape.com"]
 
         async def start(self):
             yield Request("https://books.toscrape.com/", callback=self.parse_home)
@@ -785,7 +783,6 @@ errors if needed:
 
     class ErrbackSpider(Spider):
         name = "errback_example"
-        allowed_domains = ["www.httpbin.org", "example.invalid"]
         start_urls = [
             "http://www.httpbin.org/",  # HTTP 200 expected
             "http://www.httpbin.org/status/404",  # Not found error
@@ -1051,7 +1048,6 @@ signals will stop the download of a given response. See the following example:
 
     class StopSpider(scrapy.Spider):
         name = "stop"
-        allowed_domains = ["docs.scrapy.org"]
         start_urls = ["https://docs.scrapy.org/en/latest/"]
 
         @classmethod

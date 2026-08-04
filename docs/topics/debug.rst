@@ -16,7 +16,6 @@ Consider the following Scrapy spider below:
 
     class MySpider(scrapy.Spider):
         name = "myspider"
-        allowed_domains = ["example.com"]
         start_urls = (
             "http://example.com/page1",
             "http://example.com/page2",
