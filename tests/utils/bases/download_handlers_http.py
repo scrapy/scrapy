@@ -73,6 +73,9 @@ class TestHttpBase(ABC):
     # h2.connection.H2Connection.receive_data()), thus closing all streams that
     # were using it, and we handle this as a normal exception.
     handler_supports_http2_dataloss: bool = True
+    # whether the handler can request hostnames that the idna package rejects
+    # (see IDNA_REJECTED_HOSTNAMES)
+    handler_supports_idna_rejected_hostnames: bool = True
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
     default_handler_settings: ClassVar[dict[str, Any]] = {}
@@ -413,6 +416,8 @@ class TestHttpBase(ABC):
     ) -> None:
         """Hostnames that the idna package rejects, such as punycode emoji
         domains or domains with underscores, should still be downloadable."""
+        if not self.handler_supports_idna_rejected_hostnames:
+            pytest.skip("This handler cannot request IDNA-rejected hostnames")
         scheme = "https" if self.is_secure else "http"
         port = mockserver.port(is_secure=self.is_secure)
         request = Request(f"{scheme}://{hostname}:{port}/text")
