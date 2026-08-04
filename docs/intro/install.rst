@@ -17,28 +17,27 @@ the PyPy implementation (see :ref:`python:implementations`).
 Installing Scrapy
 =================
 
-If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
-the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows
-and macOS.
+Install Scrapy and its dependencies from PyPI with::
 
-To install Scrapy using ``conda``, run::
+    pip install scrapy
 
-  conda install -c conda-forge scrapy
+We strongly recommend that you install Scrapy in :ref:`a dedicated virtual
+environment <intro-using-virtualenv>`, to avoid conflicting with your system
+packages.
 
-Alternatively, if you’re already familiar with installation of Python packages,
-you can install Scrapy and its dependencies from PyPI with::
+Alternatively:
 
-    pip install Scrapy
+-   From a `uv`_ project, e.g. one created with ``uv init``. ``uv`` manages the
+    virtual environment for you::
 
-We strongly recommend that you install Scrapy in :ref:`a dedicated virtualenv <intro-using-virtualenv>`,
-to avoid conflicting with your system packages.
+        uv add scrapy
 
-Note that sometimes this may require solving compilation issues for some Scrapy
-dependencies depending on your operating system, so be sure to check the
-:ref:`intro-install-platform-notes`.
+-   From the `conda-forge`_ channel, with ``conda``::
 
-For more detailed and platform-specific instructions, as well as
-troubleshooting information, read on.
+        conda install -c conda-forge scrapy
+
+If the installation fails while building one of the dependencies, see
+:ref:`install-no-wheel`.
 
 
 Things that are good to know
@@ -52,17 +51,9 @@ Scrapy is written in pure Python and depends on a few key Python packages (among
 * `twisted`_, an asynchronous networking framework
 * `cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs
 
-Some of these packages themselves depend on non-Python packages
-that might require additional installation steps depending on your platform.
-Please check :ref:`platform-specific guides below <intro-install-platform-notes>`.
-
-In case of any trouble related to these dependencies,
-please refer to their respective installation instructions:
-
-* `lxml installation`_
-* :doc:`cryptography installation <cryptography:installation>`
-
-.. _lxml installation: https://lxml.de/installation.html
+Some of these packages include compiled code. They provide binary wheels for
+common platforms, so that installing them requires no compiler; see
+:ref:`install-no-wheel` if no wheel matches your platform.
 
 
 .. _intro-using-virtualenv:
@@ -86,8 +77,6 @@ See :ref:`tut-venv` on how to create your virtual environment.
 
 Once you have created a virtual environment, you can install Scrapy inside it with ``pip``,
 just like any other Python package.
-(See :ref:`platform-specific guides <intro-install-platform-notes>`
-below for non-Python dependencies that you may need to install beforehand).
 
 .. _extras:
 
@@ -140,142 +129,65 @@ The following extras are available:
      - :ref:`Zstandard response decompression <http-compression>`
 
 
+.. _install-notes:
 .. _intro-install-platform-notes:
 
 Platform specific installation notes
 ====================================
 
+.. _install-windows:
 .. _intro-install-windows:
 
 Windows
 -------
 
-Though it's possible to install Scrapy on Windows using pip, we recommend you
-install `Anaconda`_ or `Miniconda`_ and use the package from the
-`conda-forge`_ channel, which will avoid most installation issues.
+Install Scrapy :ref:`as described above <intro-install-scrapy>`. Dependencies
+that include compiled code provide wheels for 64-bit x86 Windows, so no
+compiler is needed.
 
-Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
+On 32-bit or ARM64 Windows some of those wheels are missing, see
+:ref:`install-no-wheel`. An additional option there is `WSL`_, which lets you
+follow the :ref:`Linux instructions <install-linux>` instead. Note that your
+code then runs on Linux, so Windows paths do not work in settings like
+:setting:`FEEDS`.
 
-  conda install -c conda-forge scrapy
-
-To install Scrapy on Windows using ``pip``:
-
-.. warning::
-    This installation method requires “Microsoft Visual C++” for installing some
-    Scrapy dependencies, which demands significantly more disk space than Anaconda.
-
-#. Download and execute `Microsoft C++ Build Tools`_ to install the Visual Studio Installer.
-
-#. Run the Visual Studio Installer.
-
-#. Under the Workloads section, select **C++ build tools**.
-
-#. Check the installation details and make sure following packages are selected as optional components:
-
-    * **MSVC**  (e.g MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.23) )
-
-    * **Windows SDK**  (e.g Windows 10 SDK (10.0.18362.0))
-
-#. Install the Visual Studio Build Tools.
-
-Now, you should be able to :ref:`install Scrapy <intro-install-scrapy>` using ``pip``.
-
+.. _install-linux:
 .. _intro-install-ubuntu:
 
-Ubuntu 14.04 or above
----------------------
+Linux
+-----
 
-Scrapy is currently tested with recent-enough versions of lxml,
-twisted and pyOpenSSL, and is compatible with recent Ubuntu distributions.
-But it should support older versions of Ubuntu too, like Ubuntu 14.04,
-albeit with potential issues with TLS connections.
+Install Scrapy :ref:`as described above <intro-install-scrapy>`. Dependencies
+that include compiled code provide ``manylinux`` and ``musllinux`` wheels, so
+no compiler is needed.
 
-**Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
-typically too old and slow to catch up with the latest Scrapy release.
+**Don't** use the Scrapy package provided by your distribution, e.g.
+``python-scrapy`` on Debian and Ubuntu, they are typically too old and slow to
+catch up with the latest Scrapy release.
 
-
-To install Scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
-these dependencies::
-
-    sudo apt-get install python3 python3-dev python3-pip libxml2-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev
-
-- ``python3-dev``, ``zlib1g-dev``, ``libxml2-dev`` and ``libxslt1-dev``
-  are required for ``lxml``
-- ``libssl-dev`` and ``libffi-dev`` are required for ``cryptography``
-
-Inside a :ref:`virtualenv <intro-using-virtualenv>`,
-you can install Scrapy with ``pip`` after that::
-
-    pip install scrapy
-
-.. note::
-    The same non-Python dependencies can be used to install Scrapy in Debian
-    Jessie (8.0) and above.
-
-
+.. _install-macos:
 .. _intro-install-macos:
 
 macOS
 -----
 
-Building Scrapy's dependencies requires the presence of a C compiler and
-development headers. On macOS this is typically provided by Apple’s Xcode
-development tools. To install the Xcode command-line tools, open a terminal
-window and run::
+Install Scrapy :ref:`as described above <intro-install-scrapy>`. Dependencies
+that include compiled code provide wheels for both Intel and Apple silicon, so
+no compiler is needed.
 
-    xcode-select --install
+We recommend against using the Python interpreter that comes with macOS.
+Install a separate one instead, e.g. with `homebrew`_::
 
-There's a `known issue <https://github.com/pypa/pip/issues/2468>`_ that
-prevents ``pip`` from updating system packages. This has to be addressed to
-successfully install Scrapy and its dependencies. Here are some proposed
-solutions:
-
-* *(Recommended)* **Don't** use system Python. Install a new, updated version
-  that doesn't conflict with the rest of your system. Here's how to do it using
-  the `homebrew`_ package manager:
-
-  * Install `homebrew`_ following the instructions in https://brew.sh/
-
-  * Update your ``PATH`` variable to state that homebrew packages should be
-    used before system packages (Change ``.bashrc`` to ``.zshrc`` accordingly
-    if you're using `zsh`_ as default shell)::
-
-      echo "export PATH=/usr/local/bin:/usr/local/sbin:$PATH" >> ~/.bashrc
-
-  * Reload ``.bashrc`` to ensure the changes have taken place::
-
-      source ~/.bashrc
-
-  * Install python::
-
-      brew install python
-
-*   *(Optional)* :ref:`Install Scrapy inside a Python virtual environment
-    <intro-using-virtualenv>`.
-
-  This method is a workaround for the above macOS issue, but it's an overall
-  good practice for managing dependencies and can complement the first method.
-
-After any of these workarounds you should be able to install Scrapy::
-
-  pip install Scrapy
+    brew install python
 
 
 PyPy
 ----
 
 We recommend using the latest PyPy version.
-For PyPy3, only Linux installation was tested.
 
-Most Scrapy dependencies now have binary wheels for CPython, but not for PyPy.
-This means that these dependencies will be built during installation.
-On macOS, you are likely to face an issue with building the Cryptography
-dependency. The solution to this problem is described
-`here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,
-that is to ``brew install openssl`` and then export the flags that this command
-recommends (only needed when installing Scrapy). Installing on Linux has no special
-issues besides installing build dependencies.
-Installing Scrapy with PyPy on Windows is not tested.
+Dependencies that include compiled code provide PyPy wheels for Linux and
+64-bit x86 Windows. On macOS some are missing, see :ref:`install-no-wheel`.
 
 You can check that Scrapy is installed correctly by running ``scrapy bench``.
 If this command gives errors such as
@@ -284,10 +196,39 @@ that the ``PyPyDispatcher`` dependency wasn't installed. To fix this issue, run
 ``pip install 'PyPyDispatcher>=2.1.0'``.
 
 
+.. _install-troubleshooting:
 .. _intro-install-troubleshooting:
 
 Troubleshooting
 ===============
+
+.. _install-no-wheel:
+
+Installation fails while building a dependency
+----------------------------------------------
+
+When ``pip`` finds no wheel matching your Python version and platform, it
+builds the dependency from its source distribution instead, which requires a
+build toolchain and the libraries that the dependency wraps. To check whether
+that is what fails for you, ask ``pip`` for wheels only::
+
+    pip install --only-binary :all: scrapy
+
+With ``uv``, use ``uv add --no-build scrapy`` instead.
+
+If that fails, no wheel is available, and you have the following options,
+easiest first:
+
+-   Use an older Python version. Wheels for a new Python version may take
+    weeks to become available after its release.
+
+-   Use ``conda``, e.g. through `Miniforge`_, and install Scrapy from the
+    `conda-forge`_ channel.
+
+-   Build the dependency from source, following its own installation
+    instructions, e.g. `lxml installation`_ or :doc:`cryptography installation
+    <cryptography:installation>`. Beyond a C compiler, this may require a Rust
+    compiler, development files of libraries like libxml2 or OpenSSL, or both.
 
 AttributeError: 'module' object has no attribute 'OP_NO_TLSv1_1'
 ----------------------------------------------------------------
@@ -312,17 +253,15 @@ reinstall Twisted with the :code:`tls` extra option::
 
 For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 
-.. _Python: https://www.python.org/
 .. _lxml: https://lxml.de/index.html
+.. _lxml installation: https://lxml.de/installation.html
 .. _parsel: https://pypi.org/project/parsel/
 .. _w3lib: https://pypi.org/project/w3lib/
 .. _twisted: https://twisted.org/
 .. _cryptography: https://cryptography.io/en/latest/
 .. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
-.. _setuptools: https://pypi.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
-.. _zsh: https://www.zsh.org/
-.. _Anaconda: https://www.anaconda.com/docs/main
-.. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
-.. _Microsoft C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+.. _uv: https://docs.astral.sh/uv/
+.. _Miniforge: https://conda-forge.org/download/
 .. _conda-forge: https://conda-forge.org/
+.. _WSL: https://learn.microsoft.com/en-us/windows/wsl/install
