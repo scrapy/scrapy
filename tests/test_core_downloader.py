@@ -16,7 +16,7 @@ from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
-from scrapy import Request
+from scrapy import Request, Spider
 from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
@@ -33,13 +33,16 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http_resources import PayloadResource
+from tests.mockserver.http_resources import PayloadResource, put_child
 from tests.mockserver.utils import ssl_context_factory
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from twisted.internet.interfaces import IListeningPort
     from twisted.python.failure import Failure
     from twisted.web.iweb import IBodyProducer
+
+    from scrapy.http import Response
 
 
 class TestSlot:
@@ -54,7 +57,7 @@ class TestContextFactoryBase:
     async def server_url(self, tmp_path):
         (tmp_path / "file").write_bytes(b"0123456789")
         r = static.File(str(tmp_path))
-        r.putChild(b"payload", PayloadResource())
+        put_child(r, b"payload", PayloadResource())
         site = server.Site(r, timeout=None)
         port = self._listen(site)
         portno = port.getHost().port
@@ -63,7 +66,7 @@ class TestContextFactoryBase:
 
         await port.stopListening()
 
-    def _listen(self, site):
+    def _listen(self, site: server.Site) -> IListeningPort:
         from twisted.internet import reactor
 
         return reactor.listenSSL(
@@ -319,7 +322,10 @@ def test_needs_backout(concurrency: int, active: int, expected: bool) -> None:
 @coroutine_test
 async def test_fetch_deprecated_spider_arg():
     class CustomDownloader(Downloader):
-        def fetch(self, request, spider):  # pylint: disable=signature-differs
+        # requiring the spider argument is what triggers the deprecation
+        def fetch(  # type: ignore[override]  # pylint: disable=signature-differs
+            self, request: Request, spider: Spider
+        ) -> Deferred[Response | Request]:
             return super().fetch(request, spider)
 
     crawler = get_crawler(DefaultSpider, {"DOWNLOADER": CustomDownloader})
