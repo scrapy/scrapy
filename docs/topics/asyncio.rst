@@ -111,6 +111,31 @@ The following function helps with a reverse wrapping:
 .. autofunction:: scrapy.utils.defer.ensure_awaitable
 
 
+Running blocking code in threads
+================================
+
+Use :func:`~scrapy.utils.decorators.inthread` to run blocking code, such as a
+synchronous web service client, in a separate thread. The decorated function
+returns a :class:`~twisted.internet.defer.Deferred`, so you can return it from
+Scrapy component methods that support Deferreds. For example:
+
+.. code-block:: python
+
+    from scrapy.utils.decorators import inthread
+
+
+    class BlockingClientPipeline:
+        @inthread
+        def process_item(self, item, spider):
+            item["details"] = blocking_client.get_details(item["id"])
+            return item
+
+To await the result from a coroutine, first convert the Deferred as described
+in :ref:`asyncio-await-dfd`.
+
+.. autofunction:: scrapy.utils.decorators.inthread
+
+
 .. _enforce-asyncio-requirement:
 
 Enforcing asyncio as a requirement
