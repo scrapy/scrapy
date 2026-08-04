@@ -23,7 +23,10 @@ from twisted.web.client import Response as TxResponse
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot, tls
-from scrapy.core.downloader._idna_patch import _safe_hostname_bytes
+from scrapy.core.downloader._idna_patch import (
+    _install_twisted_idna_fallbacks,
+    _safe_hostname_bytes,
+)
 from scrapy.core.downloader.contextfactory import (
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
@@ -39,6 +42,7 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+from tests import IDNA_REJECTED_HOSTNAMES
 from tests.mockserver.http_resources import PayloadResource
 from tests.mockserver.utils import ssl_context_factory
 from tests.utils.decorators import coroutine_test
@@ -47,9 +51,12 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
     from twisted.web.iweb import IBodyProducer
 
-# hostnames rejected by the idna package: punycode emoji domain (i❤.ws) and
-# domain with an underscore
-IDNA_REJECTED_HOSTNAMES = ["xn--i-7iq.ws", "foo_bar.example"]
+
+@pytest.fixture(autouse=True, scope="module")
+def _twisted_idna_fallbacks() -> None:
+    """The download handlers install these when built; the tests below exercise
+    the patched Twisted helpers directly, so they need them installed too."""
+    _install_twisted_idna_fallbacks()
 
 
 class TestSlot:
