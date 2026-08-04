@@ -93,9 +93,6 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         from twisted.internet import reactor
 
         self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
-        # How many keep-alive connections to retain per host: the default
-        # per-scope concurrency, i.e. how many requests a host normally has in
-        # flight. A scope configured with more just re-establishes connections.
         self._pool.maxPersistentPerHost = _default_scope_concurrency(crawler.settings)
         self._pool._factory.noisy = False
 
