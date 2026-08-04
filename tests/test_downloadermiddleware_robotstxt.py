@@ -23,7 +23,6 @@ from tests.utils.robotstxt import rerp_available
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from scrapy.crawler import Crawler
     from tests.mockserver.http import MockServer
 
 
@@ -43,7 +42,7 @@ class TestRobotsTxtMiddleware:
         with pytest.raises(NotConfigured):
             RobotsTxtMiddleware(self.crawler)
 
-    def _get_successful_crawler(self) -> Crawler:
+    def _get_successful_crawler(self) -> mock.MagicMock:
         crawler = self.crawler
         crawler.settings.set("ROBOTSTXT_OBEY", True)
         ROBOTS = """
@@ -58,8 +57,8 @@ Disallow: /some/randome/page.html
 """.encode()
         response = TextResponse("http://site.local/robots.txt", body=ROBOTS)
 
-        async def return_response(request):
-            deferred = Deferred()
+        async def return_response(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
             call_later(0, deferred.callback, response)
             return await maybe_deferred_to_future(deferred)
 
@@ -134,15 +133,15 @@ Disallow: /some/randome/page.html
             Request("http://site.local/static/", meta=meta), middleware
         )
 
-    def _get_garbage_crawler(self) -> Crawler:
+    def _get_garbage_crawler(self) -> mock.MagicMock:
         crawler = self.crawler
         crawler.settings.set("ROBOTSTXT_OBEY", True)
         response = Response(
             "http://site.local/robots.txt", body=b"GIF89a\xd3\x00\xfe\x00\xa2"
         )
 
-        async def return_response(request):
-            deferred = Deferred()
+        async def return_response(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
             call_later(0, deferred.callback, response)
             return await maybe_deferred_to_future(deferred)
 
@@ -158,13 +157,13 @@ Disallow: /some/randome/page.html
         await self.assertNotIgnored(Request("http://site.local/admin/main"), middleware)
         await self.assertNotIgnored(Request("http://site.local/static/"), middleware)
 
-    def _get_emptybody_crawler(self) -> Crawler:
+    def _get_emptybody_crawler(self) -> mock.MagicMock:
         crawler = self.crawler
         crawler.settings.set("ROBOTSTXT_OBEY", True)
         response = Response("http://site.local/robots.txt")
 
-        async def return_response(request):
-            deferred = Deferred()
+        async def return_response(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
             call_later(0, deferred.callback, response)
             return await maybe_deferred_to_future(deferred)
 
@@ -184,8 +183,8 @@ Disallow: /some/randome/page.html
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
         err = CannotResolveHostError("Robotstxt address not found")
 
-        async def return_failure(request):
-            deferred = Deferred()
+        async def return_failure(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
             call_later(0, deferred.errback, failure.Failure(err))
             return await maybe_deferred_to_future(deferred)
 
@@ -212,8 +211,8 @@ Disallow: /some/randome/page.html
     async def test_ignore_robotstxt_request(self):
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
 
-        async def ignore_request(request):
-            deferred = Deferred()
+        async def ignore_request(request: Request) -> Response:
+            deferred: Deferred[Response] = Deferred()
             call_later(0, deferred.errback, failure.Failure(IgnoreRequest()))
             return await maybe_deferred_to_future(deferred)
 
@@ -240,7 +239,7 @@ Disallow: /some/randome/page.html
     @coroutine_test
     async def test_robotstxt_local_file(self):
         middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
-        middleware.process_request_2 = mock.MagicMock()
+        middleware.process_request_2 = mock.MagicMock()  # type: ignore[method-assign]
 
         await middleware.process_request(Request("data:text/plain,Hello World data"))
         assert not middleware.process_request_2.called
