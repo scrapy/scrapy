@@ -12,6 +12,11 @@ Sending too many requests too quickly can `overwhelm websites`_.
 
 .. _overwhelm websites: https://en.wikipedia.org/wiki/Denial-of-service_attack
 
+.. seealso::
+
+    :ref:`topics-autothrottle`
+        Adjust scope delays dynamically based on response latencies.
+
 .. _basic-throttling:
 
 Concurrency and delay

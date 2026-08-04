@@ -159,6 +159,7 @@ Solving specific problems
    topics/media-pipeline
    topics/deploy
    topics/throttling
+   topics/autothrottle
    topics/benchmarking
    topics/jobs
    topics/coroutines
@@ -201,6 +202,9 @@ Solving specific problems
 :doc:`topics/throttling`
     Control request throttling to avoid overloading websites and comply with
     rate limits.
+
+:doc:`topics/autothrottle`
+    Adjust crawl rate dynamically based on load.
 
 :doc:`topics/benchmarking`
     Check how Scrapy performs on your hardware.

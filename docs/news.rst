@@ -2838,9 +2838,10 @@ New features
     :meth:`~scrapy.crawler.Crawler.get_spider_middleware`.
     (:issue:`6181`)
 
--   Slot delay updates by the ``scrapy.extensions.throttle.AutoThrottle``
-    extension based on response latencies can now be disabled for specific
-    requests via the ``autothrottle_dont_adjust_delay`` meta key.
+-   Slot delay updates by the :ref:`AutoThrottle extension
+    <topics-autothrottle>` based on response latencies can now be disabled for
+    specific requests via the :reqmeta:`autothrottle_dont_adjust_delay` meta
+    key.
     (:issue:`6246`, :issue:`6527`)
 
 -   If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
@@ -7795,7 +7796,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
 
   - Item loaders now support nested loaders (:issue:`1467`).
   - ``FormRequest.from_response`` improvements (:issue:`1382`, :issue:`1137`).
-  - Added setting ``AUTOTHROTTLE_TARGET_CONCURRENCY`` and improved
+  - Added setting :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` and improved
     AutoThrottle docs (:issue:`1324`).
   - Added ``response.text`` to get body as unicode (:issue:`1730`).
   - Anonymous S3 connections (:issue:`1358`).
@@ -8998,7 +8999,7 @@ Scrapy changes:
 
 - added :ref:`topics-contracts`, a mechanism for testing spiders in a formal/reproducible way
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
-- documented ``scrapy.extensions.throttle.AutoThrottle`` and added to extensions installed by default. You still need to enable it with ``AUTOTHROTTLE_ENABLED``
+- documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
 - added a ``process_start_requests()`` method to spider middlewares
 - dropped Signals singleton. Signals should now be accessed through the Crawler.signals attribute. See the signals documentation for more info.

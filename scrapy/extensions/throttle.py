@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
-from warnings import warn
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured
 from scrapy.throttler import iter_scopes
 
 if TYPE_CHECKING:
@@ -25,15 +24,6 @@ class AutoThrottle:
         self.crawler: Crawler = crawler
         if not crawler.settings.getbool("AUTOTHROTTLE_ENABLED"):
             raise NotConfigured
-
-        warn(
-            "You have set the AUTOTHROTTLE_ENABLED setting to True, however "
-            "the AutoThrottle extension is deprecated; use throttler and "
-            "backoff settings instead: "
-            "https://docs.scrapy.org/en/latest/topics/throttling.html",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
 
         self.debug: bool = crawler.settings.getbool("AUTOTHROTTLE_DEBUG")
         self.target_concurrency: float = crawler.settings.getfloat(
