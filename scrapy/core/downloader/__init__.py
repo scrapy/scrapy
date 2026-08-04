@@ -256,14 +256,14 @@ class Downloader:
 
     def _get_slot_key(self, request: Request) -> str:
         assert self.crawler.throttler is not None
-        return self.crawler.throttler.get_scopes_key(request)
+        return self.crawler.throttler._get_scopes_key(request)
 
     def get_slot_key(self, request: Request) -> str:
         warnings.warn(
             "Downloader.get_slot_key() is deprecated. Use "
-            "crawler.throttler.get_scopes_key() for the run-time key, or "
-            "urlparse_cached(request).hostname if you only need the request "
-            "domain.",
+            "crawler.throttler.get_applied_scopes() for the throttling scopes of "
+            "a request, or urlparse_cached(request).hostname if you only need "
+            "the request domain.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )

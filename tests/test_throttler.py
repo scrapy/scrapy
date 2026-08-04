@@ -17,6 +17,7 @@ from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings, default_settings
 from scrapy.throttler import (
+    _APPLIED_SCOPES_META_KEY,
     RequestScopes,
     Throttler,
     ThrottlingScopeManager,
@@ -26,9 +27,7 @@ from scrapy.throttler import (
     _warn_on_deprecated_concurrency,
     _warn_on_ignored_per_ip,
     _warn_on_unachievable_concurrency,
-    add_scope,
     iter_scopes,
-    scope_cache,
 )
 from scrapy.utils.asyncio import _wait_for_first, call_later, sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
@@ -86,116 +85,75 @@ def test_deprecated_concurrency_defaults_differ():
 
 
 class TestThrottler:
-    @coroutine_test
-    async def test_get_scopes_returns_netloc(self):
+    def test_get_scopes_returns_hostname(self):
         manager = _manager()
-        assert (
-            await manager.get_scopes(Request("http://example.com/a")) == "example.com"
-        )
+        assert manager.get_scopes(Request("http://example.com/a")) == "example.com"
 
-    @coroutine_test
-    async def test_get_scopes_cached(self):
-        manager = _manager()
-        request = Request("http://example.com/a")
-        first = await manager.get_scopes(request)
-        # get_scopes is deterministic per request, so a second call yields the
-        # same scopes.
-        assert await manager.get_scopes(request) == first
-
-    @coroutine_test
-    async def test_get_scopes_meta_string(self):
+    def test_applied_scopes_meta_string(self):
         manager = _manager()
         request = Request("http://example.com/a", meta={"throttling_scopes": "api"})
-        assert await manager.get_scopes(request) == "api"
+        assert manager.get_applied_scopes(request) == "api"
 
-    @coroutine_test
-    async def test_get_scopes_meta_iterable(self):
+    def test_applied_scopes_meta_iterable(self):
         manager = _manager()
         request = Request(
             "http://example.com/a", meta={"throttling_scopes": ["api", "users"]}
         )
-        assert await manager.get_scopes(request) == ["api", "users"]
+        assert manager.get_applied_scopes(request) == ["api", "users"]
 
-    @coroutine_test
-    async def test_get_scopes_persisted_in_meta(self):
-        from scrapy.throttler import _RESOLVED_SCOPES_META_KEY  # noqa: PLC0415
-
+    def test_applied_scopes_persisted_in_meta(self):
         manager = _manager()
         request = Request("http://example.com/a")
-        scopes = await manager.get_scopes(request)
-        assert request.meta[_RESOLVED_SCOPES_META_KEY] == scopes
+        scopes = manager.get_applied_scopes(request)
+        assert request.meta[_APPLIED_SCOPES_META_KEY] == scopes
 
-    @coroutine_test
-    async def test_scope_cache_works_without_crawler(self):
-        # scope_cache only persists to meta; it needs nothing from the manager.
-        from scrapy.throttler import _RESOLVED_SCOPES_META_KEY  # noqa: PLC0415
-
-        class CrawlerlessManager:
-            @scope_cache
-            async def get_scopes(self, request: Request) -> RequestScopes:
-                return "scope"
-
-        request = Request("http://example.com/a")
-        assert await CrawlerlessManager().get_scopes(request) == "scope"
-        assert request.meta[_RESOLVED_SCOPES_META_KEY] == "scope"
-
-    @coroutine_test
-    async def test_get_resolved_scopes_reuses_persisted_scopes(self):
-        # Once get_scopes has resolved and persisted the scopes, the synchronous
-        # get_resolved_scopes accessor reuses them instead of resolving again.
+    def test_applied_scopes_reuse_the_persisted_scopes(self):
         calls: list[str] = []
 
-        class CountingManager(Throttler):
-            @scope_cache
-            async def get_scopes(self, request: Request) -> RequestScopes:
+        class CountingThrottler(Throttler):
+            def get_scopes(self, request: Request) -> RequestScopes:
                 calls.append(request.url)
                 return urlparse_cached(request).netloc
 
-        manager = CountingManager(get_crawler())
+        manager = CountingThrottler(get_crawler())
         request = Request("http://example.com/a")
-        await manager.get_scopes(request)
+        assert list(iter_scopes(manager.get_applied_scopes(request))) == ["example.com"]
         assert calls == ["http://example.com/a"]
-        assert list(iter_scopes(manager.get_resolved_scopes(request))) == [
-            "example.com"
-        ]
         # No second resolution.
+        assert list(iter_scopes(manager.get_applied_scopes(request))) == ["example.com"]
         assert calls == ["http://example.com/a"]
 
-    @coroutine_test
-    async def test_get_scopes_survives_disk_roundtrip(self):
+    def test_applied_scopes_survive_a_disk_roundtrip(self):
         from scrapy.utils.request import request_from_dict  # noqa: PLC0415
 
         manager = _manager()
         request = Request(
             "http://example.com/a", meta={"throttling_scopes": ["bucket"]}
         )
-        await manager.get_scopes(request)
-        # A request restored from a disk queue is a fresh object; the synchronous
-        # readiness path must still recover its scopes from the persisted meta,
-        # without re-running get_scopes.
+        manager._resolve_scopes(request)
+        # A request restored from a disk queue is a fresh object; the readiness
+        # path must still recover its scopes from the persisted meta.
         restored = request_from_dict(request.to_dict())
-        assert manager.get_resolved_scopes(restored) == ["bucket"]
+        assert manager.get_applied_scopes(restored) == ["bucket"]
 
-    @coroutine_test
-    async def test_get_scopes_reresolved_after_cross_host_replace(self):
+    def test_scopes_reresolved_after_cross_host_replace(self):
         # A redirect built with Request.replace() copies meta (including the
-        # persisted scopes), but get_scopes always re-resolves (it never reads
-        # the persisted value back), so it must not reuse the original host's
-        # scopes.
+        # persisted scopes), but every resolution starts over (it never reads the
+        # persisted value back), so it must not reuse the original host's scopes.
         manager = _manager()
         request = Request("http://example.com/a")
-        assert await manager.get_scopes(request) == "example.com"
+        assert manager._resolve_scopes(request) == "example.com"
         redirected = request.replace(url="http://other.example/a")
-        assert await manager.get_scopes(redirected) == "other.example"
+        assert manager._resolve_scopes(redirected) == "other.example"
 
     def test_get_scopes_key_single(self):
         manager = _manager()
-        assert manager.get_scopes_key(Request("http://example.com/a")) == "example.com"
+        assert manager._get_scopes_key(Request("http://example.com/a")) == "example.com"
 
     def test_get_scopes_key_empty(self):
         manager = _manager()
         request = Request("http://example.com/a", meta={"throttling_scopes": []})
-        assert manager.get_scopes_key(request) == ""
+        assert manager._get_scopes_key(request) == ""
 
     def test_get_scopes_key_multiple(self):
         manager = _manager()
@@ -203,16 +161,15 @@ class TestThrottler:
             "http://example.com/a", meta={"throttling_scopes": ["b", "a"]}
         )
         # Multiple scopes yield a deterministic (sorted) JSON key.
-        assert manager.get_scopes_key(request) == '["a", "b"]'
+        assert manager._get_scopes_key(request) == '["a", "b"]'
 
-    @coroutine_test
-    async def test_get_default_scopes_override_reaches_every_reader(self):
-        """Overriding the synchronous scoping hook is enough: everything that
-        needs the scopes of a request agrees on them, including the synchronous
-        key that the scheduler groups queued requests by."""
+    def test_get_scopes_override_reaches_every_reader(self):
+        """Overriding the scoping hook is enough: everything that needs the
+        scopes of a request agrees on them, including the key that the scheduler
+        groups queued requests by."""
 
         class NetlocThrottler(Throttler):
-            def get_default_scopes(self, request: Request) -> RequestScopes:
+            def get_scopes(self, request: Request) -> RequestScopes:
                 return urlparse_cached(request).netloc
 
         crawler = get_crawler(SimpleSpider, {"THROTTLER": NetlocThrottler})
@@ -221,13 +178,12 @@ class TestThrottler:
         # A port, so that the result differs from the default host-name scoping.
         request = Request("https://example.com:8080/a")
 
-        assert throttler.get_scopes_key(request) == "example.com:8080"
-        assert await throttler.get_scopes(request) == "example.com:8080"
-        assert throttler.get_resolved_scopes(request) == "example.com:8080"
+        assert throttler._get_scopes_key(request) == "example.com:8080"
+        assert throttler.get_applied_scopes(request) == "example.com:8080"
 
-    def test_get_default_scopes_yields_to_the_meta_key(self):
+    def test_get_scopes_yields_to_the_meta_key(self):
         class NetlocThrottler(Throttler):
-            def get_default_scopes(self, request: Request) -> RequestScopes:
+            def get_scopes(self, request: Request) -> RequestScopes:
                 return "unused"
 
         crawler = get_crawler(SimpleSpider, {"THROTTLER": NetlocThrottler})
@@ -236,7 +192,7 @@ class TestThrottler:
         # A request that chooses its own scopes still gets them, so a custom
         # hook does not cost throttling_scopes support.
         request = Request("https://example.com/a", meta={"throttling_scopes": "chosen"})
-        assert throttler.get_scopes_key(request) == "chosen"
+        assert throttler._get_scopes_key(request) == "chosen"
 
     def test_release_frees_concurrency(self):
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
@@ -297,18 +253,17 @@ class TestThrottler:
     async def test_dont_throttle_still_resolves_scopes(self):
         # Skipping throttling must not skip scope resolution: the outcome of a
         # dont_throttle request still backs off its scopes, and a middleware
-        # finds them through get_resolved_scopes().
+        # finds them through get_applied_scopes().
         class HostScopeThrottler(Throttler):
-            @scope_cache
-            async def get_scopes(self, request: Request) -> RequestScopes:
-                await sleep(0)  # only resolvable asynchronously
+            def get_scopes(self, request: Request) -> RequestScopes:
                 return f"host:{urlparse_cached(request).hostname}"
 
         crawler = get_crawler()
         manager = HostScopeThrottler.from_crawler(crawler)
         request = Request("http://example.com/1", meta={"dont_throttle": True})
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
-        assert manager.get_resolved_scopes(request) == "host:example.com"
+        assert manager.get_applied_scopes(request) == "host:example.com"
+        assert request.meta[_APPLIED_SCOPES_META_KEY] == "host:example.com"
 
     def test_scope_limit_keeps_a_pending_delay(self):
         manager = _manager(
@@ -790,7 +745,7 @@ class TestUnscheduledRequests:
         # in acquire() for a slot that has just freed up but has not resumed
         # yet to take it.
         waiting = Request("http://example.com/1")
-        await manager.get_scopes(waiting)
+        manager._resolve_scopes(waiting)
         manager._unscheduled_waiters["example.com"] = WeakSet([waiting])
         # A request from the scheduler yields control so that the waiter gets
         # the slot first, but only once, so that a claim that no one takes
@@ -803,7 +758,7 @@ class TestUnscheduledRequests:
     async def test_a_waiter_under_its_own_delay_has_no_claim(self) -> None:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         waiting = Request("http://example.com/1", meta={"delay": 1000.0})
-        await manager.get_scopes(waiting)
+        manager._resolve_scopes(waiting)
         manager._unscheduled_waiters["example.com"] = WeakSet([waiting])
         # The waiter cannot use a free slot until its own delay elapses, so it
         # has no claim on it and the scheduler may take it.
@@ -943,22 +898,16 @@ class TestScopeHelpers:
         assert list(iter_scopes("a")) == ["a"]
         assert list(iter_scopes(["a", "b"])) == ["a", "b"]
 
-    def test_add_scope_normalizes_every_input_shape(self):
-        assert add_scope(None, "b") == ["b"]
-        assert add_scope("a", "b") == ["a", "b"]
-        assert add_scope(["a"], "b") == ["a", "b"]
-        with pytest.raises(TypeError):
-            add_scope(123, "a")  # type: ignore[arg-type]
+    def test_one_shot_iterables_are_materialized(self):
+        # The persisted scopes must stay re-iterable and serializable.
+        class GeneratorThrottler(Throttler):
+            def get_scopes(self, request: Request) -> RequestScopes:
+                return (scope for scope in ("a", "b"))
 
-    def test_add_scope_of_an_existing_scope(self):
-        assert add_scope(["a", "b"], "a") == ["a", "b"]
-
-    def test_add_scope_does_not_mutate_its_input(self):
-        # The scopes of a request are the ones persisted on request.meta (see
-        # scope_cache), so adding a scope must not touch them.
-        scopes = ["a"]
-        assert add_scope(scopes, "b") == ["a", "b"]
-        assert scopes == ["a"]
+        manager = GeneratorThrottler(get_crawler())
+        request = Request("http://example.com/a")
+        assert manager._resolve_scopes(request) == ["a", "b"]
+        assert manager.get_applied_scopes(request) == ["a", "b"]
 
 
 class TestThrottlerEdges:

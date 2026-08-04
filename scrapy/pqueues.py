@@ -275,8 +275,8 @@ def _decode_slot_scopes(slot: str) -> tuple[ScopeID, ...]:
     stands for.
 
     This reverses the three encodings of
-    :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes_key`: an empty string
-    for no scope, the ID itself for a single one, a JSON array of sorted IDs for
+    ``ThrottlerProtocol._get_scopes_key()``: an empty string for no scope, the ID
+    itself for a single one, a JSON array of sorted IDs for
     several. A single scope whose ID looks like such an array is indistinguishable
     from it, and is read as the array; the only cost is a load reading for a
     scope with a very unusual name.
@@ -308,16 +308,6 @@ class DownloaderAwarePriorityQueue:
     since a slot cannot be dequeued faster than its busiest scope allows. So
     requests with several scopes are balanced
     by whichever of their scopes is the most constrained.
-
-    .. note:: Slots are keyed by
-        :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes_key`, which
-        resolves the scopes of a request synchronously, because
-        :meth:`~scrapy.core.scheduler.BaseScheduler.enqueue_request` is
-        synchronous. Custom scoping is therefore best expressed by overriding
-        :meth:`~scrapy.throttler.Throttler.get_default_scopes`, which that key
-        goes through. Scoping that needs ``await`` cannot be reproduced by any
-        synchronous method, and grouping is approximate for it; see
-        :ref:`async-throttling-scopes`.
 
     Disk persistence
     ================
@@ -456,7 +446,7 @@ class DownloaderAwarePriorityQueue:
         return request
 
     def push(self, request: Request) -> None:
-        slot = self._throttler.get_scopes_key(request)
+        slot = self._throttler._get_scopes_key(request)
         queue = self.pqueues.get(slot)
         if queue is None:
             queue = self._add_slot(slot)

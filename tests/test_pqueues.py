@@ -429,8 +429,8 @@ class TestDownloaderAwarePriorityQueue:
 @pytest.mark.parametrize(
     ("slot", "expected"),
     [
-        # No scope, a single scope, and several scopes, as get_scopes_key()
-        # encodes them.
+        # No scope, a single scope, and several scopes, as the
+        # throttler encodes them.
         ("", ()),
         ("example.com", ("example.com",)),
         ('["a", "b"]', ("a", "b")),

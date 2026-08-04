@@ -200,8 +200,8 @@ string):
     THROTTLER = "myproject.throttling.MyThrottler"
 
 The simplest way is to subclass :class:`~scrapy.throttler.Throttler` and
-override :meth:`~scrapy.throttler.Throttler.get_default_scopes`, which decides
-the scopes of a request that does not choose its own through the
+override :meth:`~scrapy.throttler.Throttler.get_scopes`, which decides the
+scopes of a request that does not choose its own through the
 :reqmeta:`throttling_scopes` metadata key:
 
 .. code-block:: python
@@ -212,33 +212,11 @@ the scopes of a request that does not choose its own through the
 
 
     class MyThrottler(Throttler):
-        def get_default_scopes(self, request):
+        def get_scopes(self, request):
             # One scope per host *and port*, rather than one per host name, so
             # that e.g. example.com:8080 is throttled separately from
             # example.com.
             return urlparse_cached(request).netloc
-
-.. _async-throttling-scopes:
-
-Scoping that needs ``await``
-----------------------------
-
-:meth:`~scrapy.throttler.Throttler.get_default_scopes` is synchronous. For
-scoping that must ``await`` something, override
-:meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes` instead, and decorate it
-with :func:`~scrapy.throttler.scope_cache` so that the scopes it resolves are
-persisted on the request.
-
-Mind the following trade-off when you do: because
-:meth:`~scrapy.core.scheduler.BaseScheduler.enqueue_request` is synchronous, the
-:ref:`scheduler <topics-scheduler>` groups queued requests by the output of
-:meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes_key`, which cannot
-``await`` your :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes` and falls
-back on the synchronous resolution. Queued requests are then grouped, and their
-load balanced, under the scopes that resolution comes up with rather than the
-ones they end up being sent under. Throttling itself is unaffected: the scopes
-that hold a request back are always the ones
-:meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes` returns.
 
 .. _throttling-examples:
 
@@ -273,7 +251,7 @@ Alternative approaches include:
 
 
         class MyThrottler(Throttler):
-            def get_default_scopes(self, request):
+            def get_scopes(self, request):
                 extracted = tldextract.extract(request.url)
                 return extracted.registered_domain or urlparse_cached(request).netloc
 
@@ -301,7 +279,7 @@ Alternative approaches include:
 
 
         class MyThrottler(Throttler):
-            def get_default_scopes(self, request):
+            def get_scopes(self, request):
                 extracted = tldextract.extract(request.url)
                 if not extracted.registered_domain:
                     return urlparse_cached(request).netloc
@@ -340,10 +318,10 @@ different domains:
 
 
         class MyThrottler(Throttler):
-            def get_default_scopes(self, request):
+            def get_scopes(self, request):
                 parsed_url = urlparse_cached(request)
                 if parsed_url.netloc != "api.example":
-                    return super().get_default_scopes(request)
+                    return super().get_scopes(request)
                 return f"{parsed_url.netloc}{parsed_url.path}"
 
 -   Use the :setting:`THROTTLING_SCOPES` setting to set different throttling
@@ -390,21 +368,20 @@ to:
 
             from urllib.parse import urlparse
 
-            from scrapy.throttler import add_scope, Throttler
+            from scrapy.throttler import Throttler
             from scrapy.utils.httpobj import urlparse_cached
             from w3lib.url import url_query_parameter
 
 
             class MyThrottler(Throttler):
-                def get_default_scopes(self, request):
-                    scopes = super().get_default_scopes(request)
-                    if urlparse_cached(request).netloc != "api.example":
-                        return scopes
+                def get_scopes(self, request):
+                    api_domain = urlparse_cached(request).netloc
+                    if api_domain != "api.example":
+                        return super().get_scopes(request)
                     target_url = url_query_parameter(request.url, "url")
                     if not target_url:
-                        return scopes
-                    target_domain = urlparse(target_url).netloc
-                    return add_scope(scopes, target_domain)
+                        return api_domain
+                    return [api_domain, urlparse(target_url).netloc]
 
 
 .. _throttling-per-ip:
@@ -421,27 +398,31 @@ its domain and its IP, and is only sent when **both** allow it.
 
     .. code-block:: python
 
-        import socket
-
-        from scrapy.throttler import Throttler, add_scope, scope_cache
-        from scrapy.utils.asyncio import run_in_thread
+        from scrapy.throttler import Throttler
         from scrapy.utils.httpobj import urlparse_cached
+
+        ADDRESSES = {
+            "books.toscrape.com": "203.0.113.1",
+            "quotes.toscrape.com": "203.0.113.1",
+        }
 
 
         class IPThrottler(Throttler):
-            @scope_cache
-            async def get_scopes(self, request):
-                scopes = await super().get_scopes(request)
-                host = urlparse_cached(request).hostname
-                address = await run_in_thread(socket.gethostbyname, host)
-                return add_scope(scopes, address)
+            def get_scopes(self, request):
+                host = urlparse_cached(request).hostname or ""
+                address = ADDRESSES.get(host)
+                return [host, address] if address else host
 
-    Resolving the address requires ``await``, so this overrides
-    :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes` rather than
-    :meth:`~scrapy.throttler.Throttler.get_default_scopes`, with the
-    :ref:`grouping trade-off <async-throttling-scopes>` that implies: queued
-    requests are grouped by host name, so the IP scope of a request is not
-    accounted for until it is sent.
+-   Use the :setting:`THROTTLING_SCOPES` setting to limit the concurrency of the
+    address:
+
+    .. code-block:: python
+        :caption: :file:`settings.py`
+
+        THROTTLING_SCOPES = {"203.0.113.1": {"concurrency": 2}}
+
+    Both hosts above then share those two concurrency slots, on top of the
+    limits of their own scopes.
 
 .. _throttling-settings:
 
@@ -487,13 +468,11 @@ API
     :members:
 
 .. autoclass:: scrapy.throttler.Throttler
-    :members: get_default_scopes
+    :members: get_scopes
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeManager
     :members: get_base_delay, set_base_delay, get_concurrency, set_concurrency
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeConfig
 
-.. autofunction:: scrapy.throttler.scope_cache
-.. autofunction:: scrapy.throttler.add_scope
 .. autofunction:: scrapy.throttler.iter_scopes

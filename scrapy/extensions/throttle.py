@@ -73,7 +73,7 @@ class AutoThrottle:
         # request may be throttled under scopes of the user's choosing (see
         # THROTTLING_SCOPES), and the delay of any other scope has no effect on
         # how this request was throttled.
-        for scope_id in iter_scopes(throttler.get_resolved_scopes(request)):
+        for scope_id in iter_scopes(throttler.get_applied_scopes(request)):
             scope = throttler.get_scope_manager(scope_id)
             olddelay = self._scope_delay(scope, scope_id)
             newdelay = self._adjust_delay(olddelay, latency, response)

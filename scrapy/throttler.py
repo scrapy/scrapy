@@ -6,10 +6,9 @@ import random
 import time
 import warnings
 from collections import OrderedDict
-from collections.abc import Awaitable, Callable, Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from contextlib import suppress
-from functools import wraps
-from typing import TYPE_CHECKING, Any, Protocol, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Protocol, TypedDict, cast
 from weakref import WeakKeyDictionary, WeakSet
 
 from typing_extensions import Self
@@ -58,8 +57,8 @@ if TYPE_CHECKING:
 def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
     """Iterate over the scope IDs of *scopes*, whatever its form.
 
-    :class:`~ThrottlerProtocol.get_scopes` (and
-    :meth:`~ThrottlerProtocol.get_resolved_scopes`) may return a single scope ID,
+    :meth:`~ThrottlerProtocol.get_scopes` and
+    :meth:`~ThrottlerProtocol.get_applied_scopes` may return a single scope ID,
     an iterable of them, or ``None``; this helper normalizes any of those into an
     iterable of scope IDs, e.g. to react to a request's scopes in a custom
     middleware.
@@ -249,50 +248,29 @@ def _check_scope_concurrency(
             )
 
 
-def add_scope(scopes: RequestScopes, scope: ScopeID, /) -> list[ScopeID]:
-    """Add *scope* to *scopes*, returning a new list of scope IDs and leaving
-    *scopes* untouched.
-
-    This is a utility function to help extending the output of
-    :meth:`~ThrottlerProtocol.get_scopes`, e.g. in
-    :class:`Throttler` subclasses.
-    """
-    if scopes is not None and not isinstance(scopes, Iterable):
-        raise TypeError(
-            f"Invalid type ({type(scopes)}) of scopes value "
-            f"{scopes!r}. Expected None, str or Iterable."
-        )
-    # A new list, so that the caller's scopes (for a request, the ones persisted
-    # on request.meta; see scope_cache) are never modified.
-    result = dict.fromkeys(iter_scopes(scopes))
-    result[scope] = None
-    return list(result)
-
-
 class ThrottlerProtocol(Protocol):
     """A protocol for :setting:`THROTTLER` :ref:`components
     <topics-components>`."""
 
-    async def get_scopes(self, request: Request) -> RequestScopes:
+    def get_scopes(self, request: Request) -> RequestScopes:
         """Return the :ref:`throttling scopes <throttling-scopes>` that apply
         to *request*.
 
         Return ``None`` if no scopes apply, a string for a single scope, or an
         iterable of strings for multiple scopes.
+
+        This is the extension point for custom scoping; see
+        :ref:`custom-throttler`.
         """
 
-    def get_resolved_scopes(self, request: Request) -> RequestScopes:
+    def get_applied_scopes(self, request: Request) -> RequestScopes:
         """Return the :ref:`throttling scopes <throttling-scopes>` under which
-        *request* was (or will be) sent, without re-resolving them.
+        *request* was (or will be) sent.
 
-        This is the synchronous counterpart of :meth:`get_scopes`: it returns
-        the scopes resolved earlier (e.g. at enqueue or :meth:`acquire` time)
-        and persisted on ``request.meta``, falling back to a best-effort
-        synchronous resolution only if none were persisted. Use it, rather than
-        :meth:`get_scopes`, to attribute a response or exception to the very
-        scopes the request was sent under — e.g. from a downloader middleware or
-        a spider callback that wants to adjust the delay of those scopes based
-        on the response.
+        Use it, rather than :meth:`get_scopes`, to attribute a response or
+        exception to the very scopes the request was sent under — e.g. from a
+        downloader middleware or a spider callback that wants to adjust the delay
+        of those scopes based on the response.
         """
 
     async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
@@ -337,14 +315,13 @@ class ThrottlerProtocol(Protocol):
         end on their own.
         """
 
-    def get_scopes_key(self, request: Request) -> str:
+    def _get_scopes_key(self, request: Request) -> str:
         """Return a single string key for *request*, derived from its scopes.
 
         For a single scope this is the scope ID itself; for multiple scopes the
         sorted scope IDs are JSON-encoded into an order-independent,
-        collision-free key. This is the synchronous
-        counterpart of :meth:`get_scopes`, used wherever a plain string key is
-        needed (e.g. scheduler priority queues).
+        collision-free key. It is used wherever a plain string key is needed
+        (e.g. scheduler priority queues).
         """
 
     def get_scope_load(self, scope_id: str) -> float:
@@ -370,14 +347,10 @@ class ThrottlerProtocol(Protocol):
         delay with :meth:`~ThrottlingScopeManager.set_base_delay`."""
 
 
-_GetScopesMethod = TypeVar(
-    "_GetScopesMethod", bound=Callable[..., Awaitable[RequestScopes]]
-)
-
-
-# Request.meta key under which scope_cache persists the resolved scopes so that
-# they survive a request being serialized to and restored from a disk queue.
-_RESOLVED_SCOPES_META_KEY = "_throttler_resolved_scopes"
+# Request.meta key under which Throttler._resolve_scopes() persists the scopes of
+# a request so that they survive it being serialized to and restored from a disk
+# queue.
+_APPLIED_SCOPES_META_KEY = "_throttler_applied_scopes"
 
 # Request.meta key under which the downloader records the 'download_slot' value
 # it set itself (see Downloader._enqueue_request), so that the deprecation of
@@ -397,55 +370,12 @@ def _mark_request_delayed(request: Request) -> None:
     request.meta[_DELAY_DEADLINE_META_KEY] = None
 
 
-def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
-    """Decorator for :meth:`~ThrottlerProtocol.get_scopes`
-    implementations that persists the resolved scopes on ``request.meta``.
-
-    The readers of the resolved scopes — :meth:`~ThrottlerProtocol.get_scopes_key`
-    and :meth:`~ThrottlerProtocol.get_resolved_scopes` — read this persisted
-    value instead of resolving the scopes again, so they stay cheap and
-    consistent, and it survives a request being serialized to and restored from
-    a :ref:`disk queue <topics-jobs>`.
-
-    The decorated method always re-resolves, so a request that inherited
-    ``request.meta`` from another one (e.g. a redirect built with
-    :meth:`Request.replace() <scrapy.Request.replace>`, which copies ``meta``)
-    overwrites the inherited scopes with its own.
-
-    For example:
-
-    .. code-block:: python
-
-        from scrapy.utils.httpobj import urlparse_cached
-        from scrapy.throttler import scope_cache
-
-
-        class MyThrottler:
-            @scope_cache
-            async def get_scopes(self, request):
-                return urlparse_cached(request).hostname or ""
-    """
-
-    @wraps(f)
-    async def wrapper(self: Any, request: Request) -> RequestScopes:
-        scopes = await f(self, request)
-        # Materialize one-shot iterables so the persisted value stays
-        # re-iterable and serializable.
-        if not isinstance(scopes, (str, dict)) and isinstance(scopes, Iterable):
-            scopes = list(scopes)
-        request.meta[_RESOLVED_SCOPES_META_KEY] = scopes
-        return scopes
-
-    return wrapper  # type: ignore[return-value]
-
-
 class Throttler:
     """The default :setting:`THROTTLER` class.
 
     It assigns to each request its domain or subdomain as scope.
 
-    Subclass it and override :meth:`get_default_scopes` to assign scopes
-    differently.
+    Subclass it and override :meth:`get_scopes` to assign scopes differently.
     """
 
     @classmethod
@@ -521,67 +451,65 @@ class Throttler:
             scopes[slot_id] = {**translated, **scopes.get(slot_id, {})}
         return scopes
 
-    @scope_cache
-    async def get_scopes(self, request: Request) -> RequestScopes:
-        return self._resolve_scopes_sync(request)
-
-    def get_default_scopes(self, request: Request) -> RequestScopes:
+    def get_scopes(self, request: Request) -> RequestScopes:
         """Return the :ref:`throttling scopes <throttling-scopes>` of *request*
         when it does not choose its own through the :reqmeta:`throttling_scopes`
         metadata key: its host name.
-
-        This is the extension point to prefer for custom scoping: everything
-        that needs the scopes of a request goes through it, including the
-        synchronous :meth:`~ThrottlerProtocol.get_scopes_key`, which is what the
-        :ref:`scheduler <topics-scheduler>` groups queued requests by. Override
-        :meth:`~ThrottlerProtocol.get_scopes` only for scoping that needs
-        ``await``; see :ref:`async-throttling-scopes`.
         """
         return urlparse_cached(request).hostname or ""
 
-    def _resolve_scopes_sync(self, request: Request) -> RequestScopes:
-        """Best-effort synchronous scope resolution: the
-        :reqmeta:`throttling_scopes` metadata key if the request sets one, and
-        otherwise :meth:`get_default_scopes`.
+    def _resolve_scopes(self, request: Request) -> RequestScopes:
+        """Return the :ref:`throttling scopes <throttling-scopes>` of *request*
+        and persist them on ``request.meta``, where :meth:`get_applied_scopes`
+        reads them back, and whence they survive the request being serialized to
+        and restored from a :ref:`disk queue <topics-jobs>`.
 
-        It backs :meth:`get_scopes` and :meth:`get_scopes_key`, and is also the
-        fallback for the synchronous readiness methods when no scopes were
-        persisted on ``request.meta`` by an earlier :meth:`get_scopes` call (see
-        :func:`scope_cache`).
+        The scopes are the :reqmeta:`throttling_scopes` metadata key if the
+        request sets one, and otherwise the output of :meth:`get_scopes`.
+
+        Every call resolves anew, so a request that inherited ``request.meta``
+        from another one (e.g. a redirect built with :meth:`Request.replace()
+        <scrapy.Request.replace>`, which copies ``meta``) replaces the inherited
+        scopes with its own.
         """
-        scopes = request.meta.get("throttling_scopes")
-        if scopes is not None:
-            return cast("RequestScopes", scopes)
-        download_slot = request.meta.get("download_slot")
-        # A value the downloader stamped (see Downloader._enqueue_request) is
-        # bookkeeping rather than intent: honoring the one a derived request
-        # (a redirect, a retry) inherits would keep it in the scope of a
-        # different host. Anything else is a user's choice of scope.
-        if download_slot is not None and download_slot != request.meta.get(
-            _STAMPED_SLOT_META_KEY
-        ):
-            warnings.warn(
-                "The 'download_slot' request meta key is deprecated. Use "
-                "'throttling_scopes' instead.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            return cast("RequestScopes", download_slot)
-        return self.get_default_scopes(request)
+        scopes: Any = request.meta.get("throttling_scopes")
+        if scopes is None:
+            download_slot = request.meta.get("download_slot")
+            # A value the downloader stamped (see Downloader._enqueue_request) is
+            # bookkeeping rather than intent: honoring the one a derived request
+            # (a redirect, a retry) inherits would keep it in the scope of a
+            # different host. Anything else is a user's choice of scope.
+            if download_slot is not None and download_slot != request.meta.get(
+                _STAMPED_SLOT_META_KEY
+            ):
+                warnings.warn(
+                    "The 'download_slot' request meta key is deprecated. Use "
+                    "'throttling_scopes' instead.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+                scopes = download_slot
+            else:
+                scopes = self.get_scopes(request)
+        # Materialize one-shot iterables so the persisted value stays
+        # re-iterable and serializable.
+        if not isinstance(scopes, str) and isinstance(scopes, Iterable):
+            scopes = list(scopes)
+        request.meta[_APPLIED_SCOPES_META_KEY] = scopes
+        return cast("RequestScopes", scopes)
 
-    def get_scopes_key(self, request: Request) -> str:
-        scopes = self._resolve_scopes_sync(request)
-        scope_ids = sorted(iter_scopes(scopes))
+    def _get_scopes_key(self, request: Request) -> str:
+        scope_ids = sorted(iter_scopes(self._resolve_scopes(request)))
         if not scope_ids:
             return ""
         if len(scope_ids) == 1:
             return scope_ids[0]
         return json.dumps(scope_ids)
 
-    def get_resolved_scopes(self, request: Request) -> RequestScopes:
-        if _RESOLVED_SCOPES_META_KEY in request.meta:
-            return cast("RequestScopes", request.meta[_RESOLVED_SCOPES_META_KEY])
-        return self._resolve_scopes_sync(request)
+    def get_applied_scopes(self, request: Request) -> RequestScopes:
+        if _APPLIED_SCOPES_META_KEY in request.meta:
+            return cast("RequestScopes", request.meta[_APPLIED_SCOPES_META_KEY])
+        return self._resolve_scopes(request)
 
     # -- Scope-state coordination (called from the request lifecycle) --------
 
@@ -659,10 +587,10 @@ class Throttler:
 
     async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
         await self._delay_request(request)
-        # The scopes are resolved (and persisted, see scope_cache) even for a
+        # The scopes are resolved (and persisted, see _resolve_scopes) even for a
         # request excluded from throttling, because its outcome still backs off
-        # its scopes, and get_resolved_scopes() is how a middleware finds them.
-        scope_ids = list(iter_scopes(await self.get_scopes(request)))
+        # its scopes, and get_applied_scopes() is how a middleware finds them.
+        scope_ids = list(iter_scopes(self._resolve_scopes(request)))
         if request.meta.get("dont_throttle"):
             return
         if not scope_ids:
@@ -875,7 +803,7 @@ class Throttler:
         now = time.monotonic()
         if self._request_delay_deadline(request, now) > now:
             return False
-        for scope_id in iter_scopes(self.get_resolved_scopes(request)):
+        for scope_id in iter_scopes(self.get_applied_scopes(request)):
             if scope_id == skip:
                 continue
             manager = self._live_scope_manager(scope_id)
