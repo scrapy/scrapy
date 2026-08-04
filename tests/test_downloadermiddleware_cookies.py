@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from typing import Any
 
 import pytest
 
@@ -220,7 +221,7 @@ class TestCookiesMiddleware:
 
     def test_complex_cookies(self):
         # merge some cookies into jar
-        cookies = [
+        cookies: list[VerboseCookie] = [
             {
                 "name": "C1",
                 "value": "value1",
@@ -484,13 +485,13 @@ class TestCookiesMiddleware:
 
     def _test_cookie_redirect(
         self,
-        source,
-        target,
+        source: str | dict[str, Any],
+        target: str | dict[str, Any],
         *,
-        cookies1,
-        cookies2,
-    ):
-        input_cookies = {"a": "b"}
+        cookies1: bool,
+        cookies2: bool,
+    ) -> None:
+        input_cookies: CookiesT = {"a": "b"}
 
         if not isinstance(source, dict):
             source = {"url": source}
@@ -552,11 +553,11 @@ class TestCookiesMiddleware:
 
     def _test_cookie_header_redirect(
         self,
-        source,
-        target,
+        source: str | dict[str, Any],
+        target: str | dict[str, Any],
         *,
-        cookies2,
-    ):
+        cookies2: bool,
+    ) -> None:
         """Test the handling of a user-defined Cookie header when building a
         redirect follow-up request.
 
@@ -624,14 +625,14 @@ class TestCookiesMiddleware:
 
     def _test_user_set_cookie_domain_followup(
         self,
-        url1,
-        url2,
-        domain,
+        url1: str,
+        url2: str,
+        domain: str,
         *,
-        cookies1,
-        cookies2,
-    ):
-        input_cookies = [
+        cookies1: bool,
+        cookies2: bool,
+    ) -> None:
+        input_cookies: list[VerboseCookie] = [
             {
                 "name": "a",
                 "value": "b",
@@ -687,16 +688,16 @@ class TestCookiesMiddleware:
 
     def _test_server_set_cookie_domain_followup(
         self,
-        url1,
-        url2,
-        domain,
+        url1: str,
+        url2: str,
+        domain: str,
         *,
-        cookies,
-    ):
+        cookies: bool,
+    ) -> None:
         request1 = Request(url1)
         self.mw.process_request(request1)
 
-        input_cookies = [
+        input_cookies: list[VerboseCookie] = [
             {
                 "name": "a",
                 "value": "b",
@@ -748,8 +749,14 @@ class TestCookiesMiddleware:
         )
 
     def _test_cookie_redirect_scheme_change(
-        self, secure, from_scheme, to_scheme, cookies1, cookies2, cookies3
-    ):
+        self,
+        secure: bool | object,
+        from_scheme: str,
+        to_scheme: str,
+        cookies1: bool,
+        cookies2: bool,
+        cookies3: bool,
+    ) -> None:
         """When a redirect causes the URL scheme to change from *from_scheme*
         to *to_scheme*, while domain and port remain the same, and given a
         cookie on the initial request with its secure attribute set to
@@ -757,10 +764,11 @@ class TestCookiesMiddleware:
         initial request (*cookies1*), if it should be kept by the redirect
         middleware (*cookies2*), and if it should be present on the Cookie
         header in the redirected request (*cookie3*)."""
-        cookie_kwargs = {}
+        cookie: VerboseCookie = {"name": "a", "value": "b"}
         if secure is not UNSET:
-            cookie_kwargs["secure"] = secure
-        input_cookies = [{"name": "a", "value": "b", **cookie_kwargs}]
+            assert isinstance(secure, bool)
+            cookie["secure"] = secure
+        input_cookies = [cookie]
 
         request1 = Request(f"{from_scheme}://a.example", cookies=input_cookies)
         self.mw.process_request(request1)

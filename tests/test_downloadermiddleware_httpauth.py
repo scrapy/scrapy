@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from w3lib.http import basic_auth_header
 
@@ -11,8 +13,10 @@ from scrapy.utils.test import get_crawler
 _DOMAIN_NOT_SET = object()
 
 
-def make_mw(user="", passwd="", domain=_DOMAIN_NOT_SET):
-    settings: dict = {
+def make_mw(
+    user: str = "", passwd: str = "", domain: str | object = _DOMAIN_NOT_SET
+) -> HttpAuthMiddleware:
+    settings: dict[str, Any] = {
         "HTTPAUTH_USER": user,
         "HTTPAUTH_PASS": passwd,
     }

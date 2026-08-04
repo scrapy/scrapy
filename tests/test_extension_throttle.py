@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from scrapy import Request, Spider
+from scrapy import Request
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.http.response import Response
@@ -23,6 +23,13 @@ def get_crawler(settings=None, spidercls=None):
     settings = settings or {}
     settings["AUTOTHROTTLE_ENABLED"] = True
     return _get_crawler(settings_dict=settings, spidercls=spidercls)
+
+
+def _mock_downloader(crawler):
+    """Give *crawler* a mock engine, whose downloader AutoThrottle reads."""
+    crawler.engine = Mock()
+    crawler.engine.downloader.slots = {}
+    return crawler.engine.downloader
 
 
 @pytest.mark.parametrize(
@@ -60,29 +67,21 @@ def test_target_concurrency_invalid(value):
 
 
 @pytest.mark.parametrize(
-    ("spider", "setting", "expected"),
+    ("setting", "expected"),
     [
-        (UNSET, UNSET, DOWNLOAD_DELAY),
-        (1.0, UNSET, 1.0),
-        (UNSET, 1.0, 1.0),
-        (1.0, 2.0, 1.0),
-        (3.0, 2.0, 3.0),
+        (UNSET, DOWNLOAD_DELAY),
+        (1.0, 1.0),
     ],
 )
-def test_mindelay_definition(spider, setting, expected):
+def test_mindelay_definition(setting, expected):
     settings = {}
     if setting is not UNSET:
         settings["DOWNLOAD_DELAY"] = setting
 
-    class _TestSpider(Spider):
-        name = "test"
-
-    if spider is not UNSET:
-        _TestSpider.download_delay = spider
-
-    crawler = get_crawler(settings, _TestSpider)
+    crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    at._spider_opened(build_from_crawler(_TestSpider, crawler))
+    _mock_downloader(crawler)
+    at._spider_opened(build_from_crawler(DefaultSpider, crawler))
     assert at.mindelay == expected
 
 
@@ -99,58 +98,43 @@ def test_maxdelay_definition(value, expected):
         settings["AUTOTHROTTLE_MAX_DELAY"] = value
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
+    _mock_downloader(crawler)
     at._spider_opened(build_from_crawler(DefaultSpider, crawler))
     assert at.maxdelay == expected
 
 
 @pytest.mark.parametrize(
-    ("min_spider", "min_setting", "start_setting", "expected"),
+    ("min_setting", "start_setting", "expected"),
     [
-        (UNSET, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
-        (AUTOTHROTTLE_START_DELAY - 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
-        (AUTOTHROTTLE_START_DELAY + 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
-        (UNSET, AUTOTHROTTLE_START_DELAY - 1.0, UNSET, AUTOTHROTTLE_START_DELAY),
-        (UNSET, AUTOTHROTTLE_START_DELAY + 1.0, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
-        (UNSET, UNSET, AUTOTHROTTLE_START_DELAY - 1.0, AUTOTHROTTLE_START_DELAY - 1.0),
-        (UNSET, UNSET, AUTOTHROTTLE_START_DELAY + 1.0, AUTOTHROTTLE_START_DELAY + 1.0),
-        (
-            AUTOTHROTTLE_START_DELAY + 1.0,
-            AUTOTHROTTLE_START_DELAY + 2.0,
-            UNSET,
-            AUTOTHROTTLE_START_DELAY + 1.0,
-        ),
+        (UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
+        (AUTOTHROTTLE_START_DELAY - 1.0, UNSET, AUTOTHROTTLE_START_DELAY),
+        (AUTOTHROTTLE_START_DELAY + 1.0, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
+        (UNSET, AUTOTHROTTLE_START_DELAY - 1.0, AUTOTHROTTLE_START_DELAY - 1.0),
+        (UNSET, AUTOTHROTTLE_START_DELAY + 1.0, AUTOTHROTTLE_START_DELAY + 1.0),
         (
             AUTOTHROTTLE_START_DELAY + 2.0,
-            UNSET,
             AUTOTHROTTLE_START_DELAY + 1.0,
             AUTOTHROTTLE_START_DELAY + 2.0,
         ),
         (
             AUTOTHROTTLE_START_DELAY + 1.0,
-            UNSET,
             AUTOTHROTTLE_START_DELAY + 2.0,
             AUTOTHROTTLE_START_DELAY + 2.0,
         ),
     ],
 )
-def test_startdelay_definition(min_spider, min_setting, start_setting, expected):
+def test_startdelay_definition(min_setting, start_setting, expected):
     settings = {}
     if min_setting is not UNSET:
         settings["DOWNLOAD_DELAY"] = min_setting
     if start_setting is not UNSET:
         settings["AUTOTHROTTLE_START_DELAY"] = start_setting
 
-    class _TestSpider(Spider):
-        name = "test"
-
-    if min_spider is not UNSET:
-        _TestSpider.download_delay = min_spider
-
-    crawler = get_crawler(settings, _TestSpider)
+    crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
-    spider = build_from_crawler(_TestSpider, crawler)
-    at._spider_opened(spider)
-    assert spider.download_delay == expected
+    downloader = _mock_downloader(crawler)
+    at._spider_opened(build_from_crawler(DefaultSpider, crawler))
+    assert downloader._delay == expected
 
 
 @pytest.mark.parametrize(
@@ -174,15 +158,13 @@ def test_startdelay_definition(min_spider, min_setting, start_setting, expected)
 def test_skipped(meta, slot):
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
+    downloader = _mock_downloader(crawler)
     spider = build_from_crawler(DefaultSpider, crawler)
     at._spider_opened(spider)
     request = Request("https://example.com", meta=meta)
 
-    crawler.engine = Mock()
-    crawler.engine.downloader = Mock()
-    crawler.engine.downloader.slots = {}
     if slot is not None:
-        crawler.engine.downloader.slots[slot] = object()
+        downloader.slots[slot] = object()
     at._adjust_delay = None  # Raise exception if called.
 
     at._response_downloaded(None, request, spider)
@@ -204,18 +186,16 @@ def test_adjustment(download_latency, target_concurrency, slot_delay, expected):
     settings = {"AUTOTHROTTLE_TARGET_CONCURRENCY": target_concurrency}
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
+    downloader = _mock_downloader(crawler)
     spider = build_from_crawler(DefaultSpider, crawler)
     at._spider_opened(spider)
     meta = {"download_latency": download_latency, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
     response = Response(request.url)
 
-    crawler.engine = Mock()
-    crawler.engine.downloader = Mock()
-    crawler.engine.downloader.slots = {}
     slot = Mock()
     slot.delay = slot_delay
-    crawler.engine.downloader.slots["foo"] = slot
+    downloader.slots["foo"] = slot
 
     at._response_downloaded(response, request, spider)
 
@@ -240,18 +220,16 @@ def test_adjustment_limits(mindelay, maxdelay, expected):
     }
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
+    downloader = _mock_downloader(crawler)
     spider = build_from_crawler(DefaultSpider, crawler)
     at._spider_opened(spider)
     meta = {"download_latency": download_latency, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
     response = Response(request.url)
 
-    crawler.engine = Mock()
-    crawler.engine.downloader = Mock()
-    crawler.engine.downloader.slots = {}
     slot = Mock()
     slot.delay = slot_delay
-    crawler.engine.downloader.slots["foo"] = slot
+    downloader.slots["foo"] = slot
 
     at._response_downloaded(response, request, spider)
 
@@ -272,18 +250,16 @@ def test_adjustment_bad_response(
     settings = {"AUTOTHROTTLE_TARGET_CONCURRENCY": target_concurrency}
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
+    downloader = _mock_downloader(crawler)
     spider = build_from_crawler(DefaultSpider, crawler)
     at._spider_opened(spider)
     meta = {"download_latency": download_latency, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
     response = Response(request.url, status=400)
 
-    crawler.engine = Mock()
-    crawler.engine.downloader = Mock()
-    crawler.engine.downloader.slots = {}
     slot = Mock()
     slot.delay = slot_delay
-    crawler.engine.downloader.slots["foo"] = slot
+    downloader.slots["foo"] = slot
 
     at._response_downloaded(response, request, spider)
 
@@ -294,19 +270,17 @@ def test_debug(caplog):
     settings = {"AUTOTHROTTLE_DEBUG": True}
     crawler = get_crawler(settings)
     at = build_from_crawler(AutoThrottle, crawler)
+    downloader = _mock_downloader(crawler)
     spider = build_from_crawler(DefaultSpider, crawler)
     at._spider_opened(spider)
     meta = {"download_latency": 1.0, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
     response = Response(request.url, body=b"foo")
 
-    crawler.engine = Mock()
-    crawler.engine.downloader = Mock()
-    crawler.engine.downloader.slots = {}
     slot = Mock()
     slot.delay = 2.0
     slot.transferring = (None, None)
-    crawler.engine.downloader.slots["foo"] = slot
+    downloader.slots["foo"] = slot
 
     caplog.clear()
     with caplog.at_level(INFO):
@@ -324,19 +298,17 @@ def test_debug(caplog):
 def test_debug_disabled(caplog):
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
+    downloader = _mock_downloader(crawler)
     spider = build_from_crawler(DefaultSpider, crawler)
     at._spider_opened(spider)
     meta = {"download_latency": 1.0, "download_slot": "foo"}
     request = Request("https://example.com", meta=meta)
     response = Response(request.url, body=b"foo")
 
-    crawler.engine = Mock()
-    crawler.engine.downloader = Mock()
-    crawler.engine.downloader.slots = {}
     slot = Mock()
     slot.delay = 2.0
     slot.transferring = (None, None)
-    crawler.engine.downloader.slots["foo"] = slot
+    downloader.slots["foo"] = slot
 
     caplog.clear()
     with caplog.at_level(INFO):

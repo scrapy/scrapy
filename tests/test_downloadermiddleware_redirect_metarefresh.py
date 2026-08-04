@@ -21,7 +21,7 @@ from tests.utils.redirect import (
 )
 
 
-def meta_refresh_body(url, interval=5):
+def meta_refresh_body(url: str, interval: int = 5) -> bytes:
     html = f"""<html><head><meta http-equiv="refresh" content="{interval};url={url}"/></head></html>"""
     return html.encode("utf-8")
 
@@ -34,10 +34,14 @@ class TestMetaRefreshMiddleware(TestRedirectBase):
         crawler = get_crawler(Spider)
         self.mw = build_from_crawler(self.mwcls, crawler)
 
-    def _body(self, interval=5, url="http://example.org/newpage"):
+    def _body(
+        self, interval: int = 5, url: str = "http://example.org/newpage"
+    ) -> bytes:
         return meta_refresh_body(url, interval)
 
-    def get_response(self, request, location):
+    def get_response(
+        self, request: Request, location: str, status: int = 302
+    ) -> Response:
         return HtmlResponse(request.url, body=self._body(url=location))
 
     def test_meta_refresh(self):
@@ -75,7 +79,7 @@ class TestMetaRefreshMiddleware(TestRedirectBase):
         assert "Content-Length" not in req2.headers, (
             "Content-Length header must not be present in redirected request"
         )
-        assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
+        assert not req2.body, f"Redirected body must be empty, not {req2.body!r}"
 
     def test_ignore_tags_default(self):
         req = Request(url="http://example.org")
@@ -142,7 +146,9 @@ def test_meta_refresh_schemes(url, location, target):
 
 def test_warning_meta_refresh_middleware(caplog):
     crawler = get_crawler()
-    crawler.get_spider_middleware = MagicMock(return_value=None)
+    crawler.get_spider_middleware = MagicMock(  # type: ignore[method-assign]
+        return_value=None
+    )
     mw = build_from_crawler(MetaRefreshMiddleware, crawler)
     with caplog.at_level(logging.WARNING):
         mw._engine_started()

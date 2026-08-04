@@ -30,7 +30,7 @@ from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
 )
-from tests.mockserver.http_resources import LeafResource, Status
+from tests.mockserver.http_resources import LeafResource, Status, put_child
 from tests.mockserver.utils import ssl_context_factory
 
 if TYPE_CHECKING:
@@ -199,18 +199,18 @@ class TestHttps2ClientProtocol:
     @pytest.fixture
     def site(self, tmp_path):
         r = File(str(tmp_path))
-        r.putChild(b"get-data-html-small", GetDataHtmlSmall())
-        r.putChild(b"get-data-html-large", GetDataHtmlLarge())
+        put_child(r, b"get-data-html-small", GetDataHtmlSmall())
+        put_child(r, b"get-data-html-large", GetDataHtmlLarge())
 
-        r.putChild(b"post-data-json-small", PostDataJsonSmall())
-        r.putChild(b"post-data-json-large", PostDataJsonLarge())
+        put_child(r, b"post-data-json-small", PostDataJsonSmall())
+        put_child(r, b"post-data-json-large", PostDataJsonLarge())
 
-        r.putChild(b"dataloss", Dataloss())
-        r.putChild(b"no-content-length-header", NoContentLengthHeader())
-        r.putChild(b"status", Status())
-        r.putChild(b"query-params", QueryParams())
-        r.putChild(b"timeout", TimeoutResponse())
-        r.putChild(b"request-headers", RequestHeaders())
+        put_child(r, b"dataloss", Dataloss())
+        put_child(r, b"no-content-length-header", NoContentLengthHeader())
+        put_child(r, b"status", Status())
+        put_child(r, b"query-params", QueryParams())
+        put_child(r, b"timeout", TimeoutResponse())
+        put_child(r, b"request-headers", RequestHeaders())
         return Site(r, timeout=None)
 
     @async_yield_fixture  # type: ignore[untyped-decorator]

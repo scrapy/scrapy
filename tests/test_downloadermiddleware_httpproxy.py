@@ -15,7 +15,8 @@ class TestHttpProxyMiddleware:
         self._oldenv = os.environ.copy()
 
     def teardown_method(self):
-        os.environ = self._oldenv
+        os.environ.clear()
+        os.environ.update(self._oldenv)
 
     def test_not_enabled(self):
         crawler = get_crawler(Spider, {"HTTPPROXY_ENABLED": False})
@@ -23,7 +24,8 @@ class TestHttpProxyMiddleware:
             build_from_crawler(HttpProxyMiddleware, crawler)
 
     def test_no_environment_proxies(self):
-        os.environ = {"dummy_proxy": "reset_env_and_do_not_raise"}
+        os.environ.clear()
+        os.environ["dummy_proxy"] = "reset_env_and_do_not_raise"
         mw = HttpProxyMiddleware()
 
         for url in ("http://e.com", "https://e.com", "file:///tmp/a"):

@@ -575,7 +575,7 @@ CONCURRENT_REQUESTS
 Default: ``16``
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed by the Scrapy downloader.
+performed by the Scrapy downloader. Use ``0`` for no limit.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
@@ -952,10 +952,6 @@ and only increase :setting:`DOWNLOAD_DELAY` once
 desired.
 
 .. _spider-download_delay-attribute:
-
-.. note::
-
-    This delay can be set per spider using :attr:`download_delay` spider attribute.
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
