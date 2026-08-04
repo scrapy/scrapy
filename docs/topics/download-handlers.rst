@@ -86,6 +86,7 @@ An optional base class for custom handlers is provided:
 .. autoclass:: scrapy.core.downloader.handlers.base.BaseDownloadHandler
     :members:
     :undoc-members:
+    :exclude-members: close, download_request, lazy
 
 .. _download-handlers-exceptions:
 
