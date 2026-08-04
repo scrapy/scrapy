@@ -227,13 +227,6 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
-.. _backoff-mw:
-
-BackoffMiddleware
------------------
-
-.. autoclass:: scrapy.downloadermiddlewares.backoff.BackoffMiddleware
-
 .. _cookies-mw:
 
 CookiesMiddleware

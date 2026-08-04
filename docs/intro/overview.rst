@@ -82,10 +82,9 @@ error happens while handling it.
 While this enables you to do very fast crawls (sending multiple concurrent
 requests at the same time, in a fault-tolerant way) Scrapy also gives you
 control over :ref:`throttling <throttling>`, e.g. you can set a delay between
-requests to the same domain, set a maximum concurrency per domain, customize
-the :ref:`backoff <backoff>` behavior, or even :ref:`use an auto-throttling
-extension <topics-autothrottle>` that tries to figure these settings out
-automatically.
+requests to the same domain, set a maximum concurrency per domain, or even
+:ref:`use an auto-throttling extension <topics-autothrottle>` that tries to
+figure these settings out automatically.
 
 .. note::
 

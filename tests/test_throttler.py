@@ -30,7 +30,6 @@ from scrapy.throttler import (
     iter_scopes,
     scope_cache,
 )
-from scrapy.utils._headers import _parse_ratelimit_reset, _parse_retry_after
 from scrapy.utils.asyncio import _wait_for_first, call_later, sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
@@ -72,22 +71,6 @@ def _scope_manager(
 
 def _scope(manager: Throttler, scope_id: str) -> ThrottlingScopeManager:
     return manager.get_scope_manager(scope_id)
-
-
-def _scope_managers(crawler: Any) -> list[ThrottlingScopeManager]:
-    throttler = crawler.throttler
-    assert isinstance(throttler, Throttler)
-    return list(throttler._scope_managers.values())
-
-
-def _response(
-    status: int = 200,
-    headers: dict[str, str] | None = None,
-    url: str = "http://example.com",
-    meta: dict[str, Any] | None = None,
-) -> Response:
-    request = Request(url, meta=meta or {})
-    return Response(url, status=status, headers=headers or {}, request=request)
 
 
 def test_deprecated_concurrency_defaults_differ():
@@ -326,16 +309,6 @@ class TestThrottler:
         request = Request("http://example.com/1", meta={"dont_throttle": True})
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
         assert manager.get_resolved_scopes(request) == "host:example.com"
-
-    def test_scope_limit_keeps_active_backoff(self):
-        manager = _manager(
-            {"THROTTLING_SCOPE_LIMIT": 1, "BACKOFF_MAX_DELAY": 100_000.0}
-        )
-        _scope(manager, "a.example")._record_backoff(delay=10_000.0)
-        # Creating a second scope exceeds the limit, but the first one is still
-        # in backoff, so the limit is exceeded rather than dropping it.
-        _scope(manager, "b.example")
-        assert set(manager._scope_managers) == {"a.example", "b.example"}
 
     def test_scope_limit_keeps_a_pending_delay(self):
         manager = _manager(
@@ -869,129 +842,6 @@ class TestThrottlingScopeManager:
         )
         assert scope._base_delay == pytest.approx(0.0)
 
-    def test_exponential_backoff(self):
-        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(1.0)
-        scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(2.0)
-        scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(4.0)
-
-    def test_backoff_cap(self):
-        scope = _scope_manager(
-            {"DOWNLOAD_DELAY": 0.0, "BACKOFF_MAX_DELAY": 5.0},
-        )
-        for _ in range(5):
-            scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(5.0)
-
-    @pytest.mark.parametrize(
-        ("max_delay", "backoff_delay", "expected"),
-        [
-            (100.0, 20.0, 20.0),
-            (10.0, 999.0, 10.0),
-        ],
-        ids=["within-cap", "capped"],
-    )
-    def test_retry_after_delay(self, max_delay, backoff_delay, expected):
-        scope = _scope_manager({"BACKOFF_MAX_DELAY": max_delay})
-        scope._record_backoff(delay=backoff_delay, now=0.0)
-        assert scope._can_send(now=0.0) == pytest.approx(expected)
-
-    def test_uncapped_backoff_delay(self):
-        # cap=False (used by trusted back_off() calls) ignores BACKOFF_MAX_DELAY.
-        scope = _scope_manager({"BACKOFF_MAX_DELAY": 10.0})
-        scope._record_backoff(delay=999.0, now=0.0, cap=False)
-        assert scope._can_send(now=0.0) == pytest.approx(999.0)
-
-    def test_recovery_bisects_toward_ideal(self):
-        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        # No safe delay known yet: growth is exponential (1 -> 2 -> 4 -> 8), and
-        # the last delay to trigger is remembered as _max_unsafe.
-        for _ in range(4):
-            scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(8.0)
-        assert scope._max_unsafe == pytest.approx(4.0)
-        assert scope._min_safe is None
-        # A quiet window proves 8.0 is safe -> it becomes _min_safe, and the
-        # delay probes halfway down toward _max_unsafe: (4 + 8) / 2 = 6.
-        scope._can_send(now=60.0)
-        assert scope._min_safe == pytest.approx(8.0)
-        assert scope._delay == pytest.approx(6.0)
-        # The probe at 6.0 triggers: _max_unsafe rises to it and the delay jumps
-        # straight back up to the known-safe delay (8.0) rather than creeping.
-        scope._record_backoff(now=60.0)
-        assert scope._max_unsafe == pytest.approx(6.0)
-        assert scope._delay == pytest.approx(8.0)
-
-    def test_recovery_reaches_base_and_resets(self):
-        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        scope._record_backoff(now=0.0)
-        assert scope._delay > scope._base_delay
-        # Enough quiet windows bring the delay back within one step of the base
-        # delay, at which point the backoff state is fully cleared.
-        scope._can_send(now=600.0)
-        assert scope._delay == pytest.approx(0.0)
-        assert scope._max_unsafe is None
-        assert scope._min_safe is None
-
-    def test_recovery_tracks_a_more_permissive_server(self):
-        # A delay that used to trigger stops doing so (the server's ideal delay
-        # dropped): _max_unsafe must not pin the delay above the new ideal.
-        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        for _ in range(4):
-            scope._record_backoff(now=0.0)
-        assert scope._max_unsafe == pytest.approx(4.0)
-        # Many quiet windows in a row: the delay keeps probing down, _max_unsafe
-        # is retired once reached, and recovery converges all the way to base.
-        scope._can_send(now=6000.0)
-        assert scope._delay == pytest.approx(0.0)
-        assert scope._max_unsafe is None
-
-    def test_backoff_escapes_stale_safe_delay(self):
-        # Once a delay that recovery had marked safe starts triggering again
-        # (the server got stricter), the stale _min_safe is dropped and growth
-        # goes back to exponential to find a working delay quickly.
-        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        for _ in range(4):
-            scope._record_backoff(now=0.0)
-        scope._can_send(now=60.0)  # _min_safe = 8.0, delay = 6.0
-        assert scope._min_safe == pytest.approx(8.0)
-        # A trigger at or above _min_safe means it is no longer safe: drop it
-        # and resume exponential growth (8.0 * 2 = 16.0).
-        scope._delay = 8.0
-        scope._record_backoff(now=60.0)
-        assert scope._min_safe is None
-        assert scope._delay == pytest.approx(16.0)
-
-    def test_backoff_disabled(self):
-        # With backoff disabled for the scope, triggers (including hard delays)
-        # are ignored: the delay stays at the base and nothing is held back.
-        scope = _scope_manager(
-            {"DOWNLOAD_DELAY": 0.0},
-            {"id": "x", "backoff": {"enabled": False}},
-        )
-        scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(0.0)
-        assert scope._can_send(now=0.0) == 0
-        scope._record_backoff(delay=999.0, now=0.0)
-        assert scope._can_send(now=0.0) == 0
-
-    def test_backoff_enabled_by_default(self):
-        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0}, {"id": "x"})
-        scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(1.0)
-
-    def test_per_scope_backoff_override(self):
-        scope = _scope_manager(
-            {"DOWNLOAD_DELAY": 0.0, "BACKOFF_MAX_DELAY": 100.0},
-            {"id": "x", "backoff": {"max_delay": 5.0}},
-        )
-        for _ in range(5):
-            scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(5.0)
-
     def test_set_base_delay_raises_only(self):
         scope = _scope_manager(
             {"RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x", "delay": 5.0}
@@ -1000,14 +850,6 @@ class TestThrottlingScopeManager:
         assert scope._base_delay == 5.0
         scope.set_base_delay(8.0)  # higher -> applied
         assert scope._base_delay == 8.0
-        assert scope._delay == 8.0
-
-    def test_zero_base_delay_first_step_uses_seed(self):
-        # With a zero base delay the first step starts from the positive seed,
-        # not zero (which would pin the delay at zero, disabling backoff).
-        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(1.0)
 
     def test_default_scope_concurrency(self):
         scope = _scope_manager()
@@ -1069,34 +911,6 @@ class TestThrottlingScopeManager:
         assert scope._concurrency == 5
 
 
-class TestThrottlerBackOff:
-    @coroutine_test
-    async def test_back_off_delay(self):
-        manager = _manager({"THROTTLER_DEBUG": True, "RANDOMIZE_DOWNLOAD_DELAY": False})
-        request = Request("http://example.com/a")
-        await manager.get_scopes(request)
-        # A component can delay a whole scope on demand, like a Retry-After
-        # response header does.
-        manager.back_off("example.com", delay=50.0, cap=False)
-        assert _scope(manager, "example.com")._can_send() == pytest.approx(
-            50.0, abs=1.0
-        )
-
-    @coroutine_test
-    async def test_back_off_uncapped_delay_bypasses_max_delay(self):
-        # BACKOFF_MAX_DELAY caps untrusted input (headers), but a cap=False
-        # back_off() is a trusted call, so it may exceed the cap.
-        manager = _manager(
-            {"BACKOFF_MAX_DELAY": 30.0, "RANDOMIZE_DOWNLOAD_DELAY": False}
-        )
-        request = Request("http://example.com/a")
-        await manager.get_scopes(request)
-        manager.back_off("example.com", delay=1000.0, cap=False)
-        assert _scope(manager, "example.com")._can_send() == pytest.approx(
-            1000.0, abs=1.0
-        )
-
-
 class TestThrottlerScopeLoad:
     @coroutine_test
     async def test_get_scope_load(self):
@@ -1121,42 +935,6 @@ class TestThrottlerScopeLoad:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         assert manager.get_scope_load("example.com") == 0.0
         assert not manager._scope_managers
-
-
-class TestParseRateHeaders:
-    @pytest.mark.parametrize(
-        ("value", "expected"),
-        [
-            (b"\xff\xfe", None),  # undecodable bytes
-            ("garbage-not-a-date", None),  # neither a number nor a valid date
-            ("5", 5.0),  # delta-seconds
-            # Both forms report a request for no wait at all as no delay.
-            ("0", None),
-            # A naive HTTP date (no timezone) in the past is treated as UTC and
-            # yields no positive delay.
-            ("Wed, 21 Oct 2015 07:28:00", None),
-        ],
-        ids=[
-            "undecodable",
-            "garbage",
-            "seconds",
-            "zero-seconds",
-            "naive-past-date",
-        ],
-    )
-    def test_parse_retry_after(self, value, expected):
-        assert _parse_retry_after(_response(headers={"Retry-After": value})) == expected
-
-    @pytest.mark.parametrize(
-        "value",
-        [b"\xff\xfe", "not-a-number"],
-        ids=["undecodable", "non-numeric"],
-    )
-    def test_parse_ratelimit_reset_invalid(self, value):
-        assert (
-            _parse_ratelimit_reset(_response(headers={"RateLimit-Reset": value}))
-            is None
-        )
 
 
 class TestScopeHelpers:
@@ -1302,14 +1080,6 @@ class TestThrottlerEdges:
         await manager._wait_for_slot([scope], unscheduled=True)
         assert scope._slot_available._waiters == []
 
-    def test_back_off_debug_logging(self, caplog):
-        manager = _manager({"THROTTLER_DEBUG": True})
-        with caplog.at_level(logging.DEBUG, logger="scrapy.throttler"):
-            manager.back_off("example.com")
-        assert "Backoff for scope" in caplog.text
-        scope = _scope(manager, "example.com")
-        assert scope._delay > scope._base_delay
-
     def test_scope_limit_disabled(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})
         for scope_id in ("a.example", "b.example", "c.example"):
@@ -1353,44 +1123,6 @@ class TestThrottlingScopeManagerEdges:
         # Calling _record_done() with nothing in flight is a harmless no-op.
         scope._record_done(now=0.0)
         assert scope._active == 0
-
-    def test_set_base_delay_during_backoff(self):
-        scope = _scope_manager({"DOWNLOAD_DELAY": 0.0}, {"id": "x"})
-        scope._record_backoff(now=0.0)
-        backoff_delay = scope._delay
-        # Raising the base delay mid-backoff updates the base but not the current
-        # (higher) backoff delay.
-        scope.set_base_delay(0.5)
-        assert scope._base_delay == 0.5
-        assert scope._delay == backoff_delay
-
-    def test_set_base_delay_above_the_backoff_delay(self):
-        # A base delay raised past the current backoff delay takes over: leaving
-        # the delay below the base would apply neither value, since recovery also
-        # gives up once the delay is within the base.
-        scope = _scope_manager(
-            {"DOWNLOAD_DELAY": 1.0, "RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x"}
-        )
-        scope._record_backoff(now=0.0)
-        assert scope._delay == pytest.approx(2.0)
-        scope.set_base_delay(20.0, only_increase=False)
-        assert scope._base_delay == pytest.approx(20.0)
-        assert scope._delay == pytest.approx(20.0)
-        # It is the delay the next send is spaced by...
-        scope._record_sent(now=100.0)
-        assert scope._can_send(now=100.0) == pytest.approx(20.0)
-        # ...and it stays there: there is no backoff left above the base to
-        # recover from.
-        scope._can_send(now=10_000.0)
-        assert scope._delay == pytest.approx(20.0)
-
-    def test_record_sent_clears_expired_backoff(self):
-        scope = _scope_manager(config={"id": "x"})
-        scope._record_backoff(delay=5.0, now=0.0)
-        assert scope._in_backoff_until == pytest.approx(5.0)
-        scope._record_sent(now=10.0)
-        # The hard backoff window has passed, so it is cleared.
-        assert scope._in_backoff_until is None
 
     def test_is_idle_with_active_requests(self):
         scope = _scope_manager(config={"id": "x"})
@@ -1714,36 +1446,6 @@ class _TwoRequestSpider(Spider):
 
 
 class TestThrottlerIntegration:
-    @coroutine_test
-    async def test_backoff_recorded_on_429(self, mockserver):
-        crawler = get_crawler(SimpleSpider, {"RETRY_ENABLED": False})
-        await crawler.crawl_async(
-            mockserver.url("/status?n=429"), mockserver=mockserver
-        )
-        managers = _scope_managers(crawler)
-        assert managers, "no throttling scope was created"
-        assert any(m._delay > m._base_delay for m in managers)
-
-    @coroutine_test
-    async def test_backoff_recorded_on_download_error(self, mockserver):
-        crawler = get_crawler(SimpleSpider, {"RETRY_ENABLED": False})
-        # A dropped connection raises a DownloadFailedError, which the engine
-        # routes through the throttler before re-raising.
-        await crawler.crawl_async(
-            mockserver.url("/drop?abort=1"), mockserver=mockserver
-        )
-        managers = _scope_managers(crawler)
-        assert managers, "no throttling scope was created"
-        assert any(m._delay > m._base_delay for m in managers)
-
-    @coroutine_test
-    async def test_no_backoff_on_200(self, mockserver):
-        crawler = get_crawler(SimpleSpider)
-        await crawler.crawl_async(
-            mockserver.url("/status?n=200"), mockserver=mockserver
-        )
-        assert all(m._delay == m._base_delay for m in _scope_managers(crawler))
-
     @coroutine_test
     async def test_robotstxt_does_not_wait_for_a_concurrency_slot(self, mockserver):
         """A robots.txt request is downloaded from a downloader middleware,

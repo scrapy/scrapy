@@ -89,16 +89,16 @@ class _DeprecatedSlotView:
             if r.meta.get(Downloader.DOWNLOAD_SLOT) == self._key
         }
 
-    # The delay, jitter and last-seen accessors below read private attributes of
-    # the scope manager: they are read-only compatibility accessors, so they do
-    # not warrant public members on it.
+    # The jitter and last-seen accessors below read private attributes of the
+    # scope manager: they are read-only compatibility accessors, so they do not
+    # warrant public members on it.
     @property
     def lastseen(self) -> float:
         return self._scope._last_seen or 0.0
 
     @property
     def delay(self) -> float:
-        return self._scope._delay
+        return self._scope.get_base_delay()
 
     @delay.setter
     def delay(self, value: float) -> None:

@@ -7,8 +7,7 @@ Throttling
 .. versionadded:: VERSION
 
 Sending too many requests too quickly can `overwhelm websites`_.
-:ref:`Concurrency and delay limits <basic-throttling>` and :ref:`backoff
-<backoff>` aim to prevent that.
+:ref:`Concurrency and delay limits <basic-throttling>` aim to prevent that.
 
 .. _overwhelm websites: https://en.wikipedia.org/wiki/Denial-of-service_attack
 
@@ -90,156 +89,6 @@ other domains:
         "books.toscrape.com": {"concurrency": 32, "delay": 0.1},
         "quotes.toscrape.com": {"concurrency": 16, "delay": 0.1},
     }
-
-.. _backoff:
-
-Backoff
-=======
-
-When servers respond with rate limiting errors (like HTTP 429) or network
-timeouts occur, request rate is automatically reduced, and restored again as
-the server recovers.
-
-The key settings are:
-
--   .. setting:: BACKOFF_HTTP_CODES
-
-    :setting:`BACKOFF_HTTP_CODES` (default: ``[429, 502, 503, 504, 520, 521, 522, 523, 524]``)
-
-    HTTP response status codes that trigger backoff.
-
--   .. setting:: BACKOFF_MAX_DELAY
-
-    :setting:`BACKOFF_MAX_DELAY` (default: ``300.0``)
-
-    Maximum delay, in seconds, that backoff can reach. Also caps
-    :ref:`Retry-After <retry-after>` and :ref:`RateLimit-Reset
-    <rate-limiting-headers>` delays.
-
-See :ref:`throttling-settings` for additional backoff settings.
-
-.. _backoff-algorithm:
-
-How backoff works
------------------
-
-Every :ref:`throttling scope <throttling-scopes>` keeps a current delay that
-starts at its configured ``"delay"`` (:setting:`DOWNLOAD_DELAY` by default).
-
-A **backoff trigger** is a response whose status code is in
-:setting:`BACKOFF_HTTP_CODES` or a download exception whose type is in
-:setting:`BACKOFF_EXCEPTIONS`. On each trigger the scope's delay grows
-**exponentially**, bounded above by :setting:`BACKOFF_MAX_DELAY`, until the
-triggers stop — so a scope that starts getting throttled quickly slows down to
-a rate the server accepts.
-
-Once things are quiet again, the delay **drifts back down**, probing for the
-lowest delay that does not trigger backoff and settling around it. It keeps
-tracking that ideal as it changes over the course of a crawl, rather than
-snapping back to the configured delay and having to ramp up all over again. If
-a response carries a :ref:`Retry-After or RateLimit-Reset
-<rate-limiting-headers>` value, the scope also honors it as a one-time delay
-before its next request.
-
-Backoff only ever *tightens* a scope: the delay can grow above the configured
-``"delay"`` and recover back down to it, but never below it, and backoff never
-raises the concurrency limit. So set the ``"delay"`` and ``"concurrency"`` you
-actually want for a scope; backoff makes things gentler from there when a server
-pushes back, and returns to them once it recovers.
-
-Backoff triggers are detected by the
-:class:`~scrapy.downloadermiddlewares.backoff.BackoffMiddleware`, a built-in
-:ref:`downloader middleware <topics-downloader-middleware>` enabled by default.
-Any component can also trigger backoff programmatically for arbitrary scopes —
-e.g. based on the response body of a specific site — through
-:meth:`crawler.throttler.back_off()
-<scrapy.throttler.ThrottlerProtocol.back_off>`.
-
-.. _per-scope-backoff:
-
-Per-scope backoff configuration
--------------------------------
-
-The global ``BACKOFF_*`` settings can be overridden per scope with the
-``"backoff"`` key of a :setting:`THROTTLING_SCOPES` entry, an instance of
-:class:`~scrapy.throttler.BackoffConfig`:
-
-.. code-block:: python
-    :caption: :file:`settings.py`
-
-    THROTTLING_SCOPES = {
-        "example.com": {
-            "backoff": {
-                "max_delay": 180.0,
-            },
-        },
-    }
-
-Each key overrides the matching global ``BACKOFF_*`` setting for that scope;
-keys left out fall back to it.
-
-.. _retry-after:
-.. _rate-limiting-headers:
-
-Rate limiting headers
-=====================
-
-Servers may include `Retry-After
-<https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Retry-After>`__
-or `RateLimit-Reset
-<https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#name-ratelimit-reset>`__
-headers to indicate when you should make your next request. These headers are
-respected automatically during :ref:`backoff <backoff>`: the scope's next
-request is held back until the indicated time (capped at
-:setting:`BACKOFF_MAX_DELAY`), on top of the usual exponential backoff step.
-
-.. _delay-scope:
-
-Delaying a scope programmatically
-=================================
-
-You can delay a :ref:`throttling scope <throttling-scopes>` on demand through
-:meth:`crawler.throttler.back_off()
-<scrapy.throttler.ThrottlerProtocol.back_off>`:
-
-.. skip: next
-
-.. code-block:: python
-
-    crawler.throttler.back_off("example.com", delay=30.0, cap=False)
-
-This holds back the scope's next request for at least the given number of
-seconds and registers a :ref:`backoff <backoff>` trigger. Like a
-``Retry-After`` header, it is a one-time delay rather than a permanent one (the
-scope's delay also grows by one backoff step and then recovers); call it again,
-e.g. on each matching response, to keep a scope slowed down for longer.
-
-Passing ``cap=False`` marks the delay as trusted, so it is **not** capped at
-:setting:`BACKOFF_MAX_DELAY` the way :ref:`untrusted delays
-<rate-limiting-headers>` from response headers are.
-
-It is useful to react to situations that :ref:`automatic backoff <backoff>`
-cannot detect on its own, such as a soft block that comes back as a ``200``
-response. For example, a spider callback can slow down the whole domain when it
-detects a maintenance page, and reschedule the current request:
-
-.. code-block:: python
-
-    from scrapy import Request, Spider
-    from scrapy.utils.httpobj import urlparse_cached
-
-
-    class MySpider(Spider):
-        name = "myspider"
-        start_urls = ["https://example.com/"]
-
-        def parse(self, response):
-            if "under maintenance" in response.text:
-                scope = urlparse_cached(response).netloc
-                self.crawler.throttler.back_off(scope, delay=600.0, cap=False)
-                yield response.request.replace(dont_filter=True)
-                return
-            # Normal parsing follows.
 
 .. _per-request-throttling:
 
@@ -326,10 +175,7 @@ otherwise impose, set the :reqmeta:`dont_throttle` request metadata key to
 
     Request("https://example.com/login", meta={"dont_throttle": True})
 
-Its own :reqmeta:`delay`, if any, is still honored, and so is what its outcome
-says about the server: a :setting:`BACKOFF_HTTP_CODES` response or a
-:setting:`BACKOFF_EXCEPTIONS` exception still triggers :ref:`backoff <backoff>`
-for its scopes.
+Its own :reqmeta:`delay`, if any, is still honored.
 
 .. _throttling-scopes:
 
@@ -368,9 +214,6 @@ following keys:
     Magnitude of the random variation applied to ``delay``, e.g. ``0.5`` means
     ±50% and ``0`` disables it. Defaults to
     :setting:`RANDOMIZE_DOWNLOAD_DELAY`.
-
-``backoff`` (:class:`~scrapy.throttler.BackoffConfig`)
-    Per-scope :ref:`backoff overrides <per-scope-backoff>`.
 
 .. setting:: THROTTLER
 
@@ -593,46 +436,6 @@ to:
                     target_domain = urlparse(target_url).netloc
                     return add_scope(scopes, target_domain)
 
--   Add a :ref:`downloader middleware <topics-downloader-middleware>` that
-    differentiates between exhaustion of the target website and exhaustion of
-    the API itself. The API returns ``200`` even when the target website
-    rate-limits it, reporting the upstream status in a header; the middleware
-    backs off the **target-website** scope (not the API scope) in that case,
-    checking the upstream status against :setting:`BACKOFF_HTTP_CODES`:
-
-    .. code-block:: python
-
-        from scrapy.throttler import iter_scopes
-        from scrapy.utils.httpobj import urlparse_cached
-
-
-        class UpstreamBackoffMiddleware:
-            def __init__(self, crawler):
-                self.throttler = crawler.throttler
-                self.backoff_codes = {
-                    int(code) for code in crawler.settings.getlist("BACKOFF_HTTP_CODES")
-                }
-
-            @classmethod
-            def from_crawler(cls, crawler):
-                return cls(crawler)
-
-            def process_response(self, request, response, spider):
-                if urlparse_cached(request).netloc == "api.example":
-                    upstream_status = int(
-                        response.headers.get("X-Upstream-Status-Code", b"200")
-                    )
-                    if upstream_status in self.backoff_codes:
-                        scopes = [
-                            scope
-                            for scope in iter_scopes(
-                                self.throttler.get_resolved_scopes(request)
-                            )
-                            if scope != "api.example"
-                        ]
-                        self.throttler.back_off(scopes)
-                return response
-
 
 .. _throttling-per-ip:
 
@@ -676,30 +479,6 @@ its domain and its IP, and is only sent when **both** allow it (see
 Additional settings
 ===================
 
--   .. setting:: BACKOFF_ENABLED
-
-    :setting:`BACKOFF_ENABLED` (default: ``True``)
-
-    Whether to enable the :class:`~scrapy.downloadermiddlewares.backoff.BackoffMiddleware`,
-    which drives :ref:`backoff <backoff>` from download outcomes. Set it to
-    ``False`` to disable backoff without having to remove the middleware from
-    :setting:`DOWNLOADER_MIDDLEWARES`.
-
--   .. setting:: BACKOFF_EXCEPTIONS
-
-    :setting:`BACKOFF_EXCEPTIONS`
-
-    Default:
-
-    -   :exc:`~scrapy.exceptions.DownloadFailedError`
-    -   :exc:`~scrapy.exceptions.DownloadTimeoutError`
-    -   :exc:`~scrapy.exceptions.ResponseDataLossError`
-
-    List of exception classes that trigger backoff when raised while
-    downloading a request. Strings are interpreted as import paths.
-
-    .. seealso:: :setting:`RETRY_EXCEPTIONS`
-
 -   .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` (default: ``True``)
@@ -713,8 +492,8 @@ Additional settings
 
     :setting:`THROTTLER_DEBUG` (default: ``False``)
 
-    Whether to log :ref:`throttling <throttling>` decisions (per-scope delays,
-    backoff steps and recoveries) for debugging.
+    Whether to log :ref:`throttling <throttling>` decisions (per-scope delays)
+    for debugging.
 
 -   .. setting:: THROTTLING_SCOPE_LIMIT
 
@@ -726,9 +505,9 @@ Additional settings
 
     When the limit is exceeded, the least-recently-used idle scopes are evicted
     (an evicted scope is recreated from its configuration the next time it is
-    needed). Scopes with in-flight requests, in active backoff, or with a
-    pending delay are never evicted, so the limit may be temporarily exceeded if
-    that many scopes are busy at once. Set to ``0`` to disable the limit.
+    needed). Scopes with in-flight requests or with a pending delay are never
+    evicted, so the limit may be temporarily exceeded if that many scopes are
+    busy at once. Set to ``0`` to disable the limit.
 
 .. _throttling-api:
 
@@ -745,8 +524,6 @@ API
     :members: get_base_delay, set_base_delay, get_concurrency, set_concurrency
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeConfig
-
-.. autoclass:: scrapy.throttler.BackoffConfig
 
 .. autofunction:: scrapy.throttler.scope_cache
 .. autofunction:: scrapy.throttler.add_scope

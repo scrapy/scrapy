@@ -34,10 +34,6 @@ __all__ = [
     "AWS_SESSION_TOKEN",
     "AWS_USE_SSL",
     "AWS_VERIFY",
-    "BACKOFF_ENABLED",
-    "BACKOFF_EXCEPTIONS",
-    "BACKOFF_HTTP_CODES",
-    "BACKOFF_MAX_DELAY",
     "BOT_NAME",
     "CLOSESPIDER_ERRORCOUNT",
     "CLOSESPIDER_ITEMCOUNT",
@@ -245,15 +241,6 @@ AWS_SESSION_TOKEN = None
 AWS_USE_SSL = None
 AWS_VERIFY = None
 
-BACKOFF_ENABLED = True
-BACKOFF_EXCEPTIONS = [
-    "scrapy.exceptions.DownloadFailedError",
-    "scrapy.exceptions.DownloadTimeoutError",
-    "scrapy.exceptions.ResponseDataLossError",
-]
-BACKOFF_HTTP_CODES = [429, 502, 503, 504, 520, 521, 522, 523, 524]
-BACKOFF_MAX_DELAY = 300.0
-
 BOT_NAME = "scrapybot"
 
 CLOSESPIDER_ERRORCOUNT = 0
@@ -343,7 +330,6 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
     "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
     "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
-    "scrapy.downloadermiddlewares.backoff.BackoffMiddleware": 650,
     "scrapy.downloadermiddlewares.cookies.CookiesMiddleware": 700,
     "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 750,
     "scrapy.downloadermiddlewares.stats.DownloaderStats": 850,

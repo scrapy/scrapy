@@ -76,10 +76,6 @@ AutoThrottle algorithm adjusts download delays based on the following rules:
    :setting:`THROTTLING_SCOPE_CONCURRENCY` and
    never set a download delay lower than :setting:`DOWNLOAD_DELAY`.
 
-.. note:: :ref:`Backoff <backoff>` may raise the delay of a scope above the
-   value that this extension sets, which is the delay that backoff recovers
-   back down to.
-
 .. _download-latency:
 
 In Scrapy, the download latency is measured as the time elapsed between

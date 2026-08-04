@@ -33,22 +33,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class BackoffConfig(TypedDict, total=False):
-    """Per-scope override of the backoff settings.
-
-    Used as the value of the ``"backoff"`` key of :class:`ThrottlingScopeConfig`
-    entries.
-    """
-
-    enabled: bool
-    """Whether :ref:`backoff <backoff>` applies to this scope. Defaults to
-    ``True``; set it to ``False`` to disable backoff for the scope, so it relies
-    solely on its configured delay."""
-
-    max_delay: float
-    """Per-scope override of :setting:`BACKOFF_MAX_DELAY`."""
-
-
 class ThrottlingScopeConfig(TypedDict, total=False):
     """Accepted keys of :setting:`THROTTLING_SCOPES` entries."""
 
@@ -62,10 +46,6 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     jitter: float
     """Magnitude of the random variation applied to ``delay`` (``0`` disables it,
     ``0.5`` means ±50%). Defaults to :setting:`RANDOMIZE_DOWNLOAD_DELAY`."""
-
-    backoff: BackoffConfig
-    """Per-scope override of the :ref:`backoff <backoff>` settings; see
-    :class:`BackoffConfig`."""
 
 
 ScopeID = str
@@ -311,7 +291,8 @@ class ThrottlerProtocol(Protocol):
         synchronous resolution only if none were persisted. Use it, rather than
         :meth:`get_scopes`, to attribute a response or exception to the very
         scopes the request was sent under — e.g. from a downloader middleware or
-        a spider callback that wants to :meth:`back_off` based on the response.
+        a spider callback that wants to adjust the delay of those scopes based
+        on the response.
         """
 
     async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
@@ -379,35 +360,6 @@ class ThrottlerProtocol(Protocol):
         A scope with no throttling state yet has a load of ``0.0``.
         Implementations should not create state just to answer this: it is
         called for every queued scope on every dequeue.
-        """
-
-    def back_off(
-        self,
-        scopes: RequestScopes,
-        *,
-        delay: float | None = None,
-        cap: bool = True,
-    ) -> None:
-        """Register a :ref:`backoff <backoff>` trigger for each of *scopes*.
-
-        This is the general-purpose way to make a scope slow down, available to
-        any component through :attr:`crawler.throttler
-        <scrapy.crawler.Crawler.throttler>`. The built-in :class:`backoff
-        middleware <scrapy.downloadermiddlewares.backoff.BackoffMiddleware>`
-        calls it for :setting:`BACKOFF_HTTP_CODES` responses and
-        :setting:`BACKOFF_EXCEPTIONS` exceptions, but a downloader middleware or
-        spider callback can call it too (e.g. to back off based on the response
-        body of a specific site).
-
-        *scopes* accepts the same shapes as the output of :meth:`get_scopes`
-        (typically the result of :meth:`get_resolved_scopes` for a request).
-
-        A backoff step is always applied to the scope's delay.
-        When *delay* is given, the scope is *additionally* held back for at
-        least *delay* seconds before its next request: a one-time hold (e.g.
-        from a :ref:`Retry-After <retry-after>` header), not a change to the
-        steady-state delay. *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`;
-        set it to ``False`` for trusted, programmatic delays.
         """
 
     def get_scope_manager(self, scope_id: str) -> ThrottlingScopeManager:
@@ -490,8 +442,7 @@ def scope_cache(f: _GetScopesMethod) -> _GetScopesMethod:
 class Throttler:
     """The default :setting:`THROTTLER` class.
 
-    It assigns to each request its domain or subdomain as scope and handles
-    backoff according to :ref:`backoff settings <backoff>`.
+    It assigns to each request its domain or subdomain as scope.
 
     Subclass it and override :meth:`get_default_scopes` to assign scopes
     differently.
@@ -771,8 +722,8 @@ class Throttler:
                     )
                 await sleep(wait)
                 continue
-            # Every time-based limit (delay, backoff) has elapsed; the only
-            # remaining reason to wait is a full concurrency slot.
+            # The delay has elapsed; the only remaining reason to wait is a full
+            # concurrency slot.
             blocked = [
                 (scope_id, manager)
                 for scope_id, manager in scopes
@@ -1003,45 +954,17 @@ class Throttler:
             logger.debug(f"Holding {request} for {delay:.2f}s (delay)")
         return deadline
 
-    def back_off(
-        self,
-        scopes: RequestScopes,
-        *,
-        delay: float | None = None,
-        cap: bool = True,
-    ) -> None:
-        for scope_id in iter_scopes(scopes):
-            if self._debug:
-                logger.debug(f"Backoff for scope {scope_id} (delay: {delay})")
-            self.get_scope_manager(scope_id)._record_backoff(delay=delay, cap=cap)
-
-
-# Internal tuning of the backoff algorithm, hardcoded rather than exposed as
-# settings. _BACKOFF_MIN_DELAY must stay positive: it seeds the exponential
-# when the base delay is 0 (a 0 seed would pin the delay at 0 forever).
-_BACKOFF_DELAY_FACTOR = 2.0
-_BACKOFF_JITTER = 0.1
-_BACKOFF_MIN_DELAY = 1.0
-_BACKOFF_WINDOW = 60.0
-
 
 class ThrottlingScopeManager:
     r"""Manager of the run-time throttling state of a single :ref:`throttling
     scope <throttling-scopes>`, reachable through
     :meth:`~ThrottlerProtocol.get_scope_manager`.
 
-    It implements a per-scope state machine covering delay, exponential
-    :ref:`backoff <backoff>` and concurrency:
+    It implements a per-scope state machine covering delay and concurrency:
 
     -   A base delay (the scope ``"delay"`` config, defaulting to
         :setting:`DOWNLOAD_DELAY`) is enforced between consecutive requests for
         the scope.
-
-    -   On a backoff trigger the delay grows (see :meth:`_record_backoff`); after
-        quiet recovery windows it recovers (see :meth:`_recover`). The
-        :ref:`backoff docs <backoff>` describe the algorithm. Backoff can be
-        turned off for a scope with the ``"backoff"`` config's ``"enabled"``
-        key, leaving it to rely solely on its delay.
 
     -   No more than ``"concurrency"`` requests (defaulting to
         :setting:`THROTTLING_SCOPE_CONCURRENCY`) are allowed in flight at once.
@@ -1054,22 +977,15 @@ class ThrottlingScopeManager:
 
     def __init__(self, crawler: Crawler, config: dict[str, Any]) -> None:
         settings = crawler.settings
-        backoff: dict[str, Any] = config.get("backoff", {})
         self._id: ScopeID = config.get("id", "")
-        self._backoff_enabled: bool = backoff.get("enabled", True)
         # The per-scope delay defaults to DOWNLOAD_DELAY; a scope can override
         # it with its own "delay" config (see THROTTLING_SCOPES).
         self._base_delay: float = float(
             config.get("delay", settings.getfloat("DOWNLOAD_DELAY"))
         )
-        # Magnitude of the random variation applied to the (non-backoff) delay,
-        # defaulting to RANDOMIZE_DOWNLOAD_DELAY.
+        # Magnitude of the random variation applied to the delay, defaulting to
+        # RANDOMIZE_DOWNLOAD_DELAY.
         self._jitter: float = float(config.get("jitter", _default_jitter(settings)))
-        self._max_delay: float = float(
-            backoff.get("max_delay", settings.getfloat("BACKOFF_MAX_DELAY"))
-        )
-        # Which responses/exceptions trigger backoff is decided by the backoff
-        # middleware (see BackoffMiddleware) from the global BACKOFF_* settings.
 
         # Concurrency. Always limited: a scope has no way to express "no limit"
         # (see _check_scope_concurrency), so this is a positive integer.
@@ -1078,14 +994,7 @@ class ThrottlingScopeManager:
         )
 
         # State.
-        self._delay: float = self._base_delay
-        # Bracket for the recovery search (see _recover): highest delay known to
-        # trigger, lowest known safe. None until observed.
-        self._max_unsafe: float | None = None
-        self._min_safe: float | None = None
         self._next_allowed_time: float | None = None
-        self._in_backoff_until: float | None = None
-        self._last_backoff_time: float | None = None
         self._last_seen: float | None = None
         self._active: int = 0
         self._slot_available = _Event()
@@ -1103,71 +1012,23 @@ class ThrottlingScopeManager:
         return value * (1 + random.uniform(-jitter, jitter))  # noqa: S311
 
     def _effective_delay(self) -> float:
-        # self._delay is the deterministic delay (the base delay, or the bounded
-        # exponential value while backing off). Jitter is applied per use, so
-        # that it neither compounds across steps nor piles probability mass on
-        # the min/max bounds, which clipping a jittered value would do.
-        if self._delay <= 0:
-            return self._delay
-        jitter = _BACKOFF_JITTER if self._delay > self._base_delay else self._jitter
-        return self._apply_jitter(self._delay, jitter)
-
-    def _recover(self, now: float) -> None:
-        # Bracketing search for the smallest tolerated delay, one recovery
-        # window per step; see the "backoff" docs for the algorithm.
-        if self._last_backoff_time is None or self._delay <= self._base_delay:
-            return
-        while now - self._last_backoff_time >= _BACKOFF_WINDOW:
-            self._last_backoff_time += _BACKOFF_WINDOW
-            self._recover_step()
-            if self._delay - self._base_delay < _BACKOFF_MIN_DELAY:
-                self._reset_backoff()  # within one step of base: fully recovered
-                return
-
-    def _recover_step(self) -> None:
-        current = self._delay
-        # A full quiet window proves the current delay safe; probe halfway down
-        # toward _max_unsafe (or the base delay) to look for a smaller one.
-        self._min_safe = (
-            current if self._min_safe is None else min(self._min_safe, current)
-        )
-        lower = self._base_delay if self._max_unsafe is None else self._max_unsafe
-        self._delay = max(self._base_delay, (lower + self._min_safe) / 2)
-        # Decay _max_unsafe toward base so probing can descend past a stale bound
-        # and track a server that became more permissive.
-        if self._max_unsafe is not None:
-            self._max_unsafe = (self._base_delay + self._max_unsafe) / 2
-            if self._max_unsafe - self._base_delay < _BACKOFF_MIN_DELAY:
-                self._max_unsafe = None
-
-    def _reset_backoff(self) -> None:
-        """Return the scope to its non-backoff steady state."""
-        self._delay = self._base_delay
-        self._max_unsafe = None
-        self._min_safe = None
-        self._in_backoff_until = None
-        self._last_backoff_time = None
+        # Jitter is applied per use, rather than stored, so that every interval
+        # gets its own random variation.
+        if self._base_delay <= 0:
+            return self._base_delay
+        return self._apply_jitter(self._base_delay, self._jitter)
 
     def _can_send(self, now: float | None = None) -> float:
-        # _can_send() only refreshes passive, time-based state (backoff recovery)
-        # to reflect the current time.
-        now = self._now(now)
-        self._recover(now)
-        waits = [0.0]
-        if self._in_backoff_until is not None:
-            waits.append(self._in_backoff_until - now)
-        if self._next_allowed_time is not None:
-            waits.append(self._next_allowed_time - now)
         # Concurrency is enforced separately, via _concurrency_blocked() and
         # _slot_available_event(), so acquire() can wait for a freed slot without
         # polling.
-        return max(waits)
+        if self._next_allowed_time is None:
+            return 0.0
+        return max(0.0, self._next_allowed_time - self._now(now))
 
     def _record_sent(self, now: float | None = None) -> None:
         now = self._now(now)
         self._last_seen = now
-        if self._in_backoff_until is not None and now >= self._in_backoff_until:
-            self._in_backoff_until = None
         self._next_allowed_time = now + self._effective_delay()
         self._active += 1
 
@@ -1188,64 +1049,13 @@ class ThrottlingScopeManager:
     def _discard_slot_available_event(self, event: Deferred[None]) -> None:
         self._slot_available.discard(event)
 
-    def _record_backoff(
-        self,
-        delay: float | None = None,
-        now: float | None = None,
-        cap: bool = True,
-    ) -> None:
-        """Apply a backoff to this scope.
-
-        *delay*, when given, is a hard minimum delay in seconds (e.g. from a
-        ``Retry-After`` header). When omitted, a backoff step is applied
-        instead.
-
-        *cap* limits *delay* to :setting:`BACKOFF_MAX_DELAY`. It is ``True`` for
-        untrusted input such as response headers, and may be set to ``False``
-        for trusted, programmatic delays (see
-        :meth:`ThrottlerProtocol.back_off`).
-        """
-        if not self._backoff_enabled:
-            return
-        now = self._now(now)
-        self._last_seen = now
-        self._last_backoff_time = now
-        if delay is not None:
-            # A hard delay (e.g. Retry-After) is a one-time hold, not the
-            # steady-state delay; the exponential step below still applies.
-            hard = min(float(delay), self._max_delay) if cap else float(delay)
-            self._in_backoff_until = now + hard
-        # The current delay just triggered: it is the new lower bound of the
-        # recovery search (see _recover).
-        self._max_unsafe = (
-            self._delay
-            if self._max_unsafe is None
-            else max(self._max_unsafe, self._delay)
-        )
-        if self._min_safe is not None and self._min_safe <= self._max_unsafe:
-            self._min_safe = None  # stale (server got stricter): rediscover it
-        if self._min_safe is not None:
-            # Jump straight back to the known-safe delay; recovery only probes
-            # below it, so triggering stops at once instead of creeping up.
-            grown = self._min_safe
-        else:
-            # No safe delay known yet: grow exponentially to find one.
-            grown = (
-                self._delay * _BACKOFF_DELAY_FACTOR
-                if self._delay > 0
-                else _BACKOFF_MIN_DELAY
-            )
-        # Deterministic, bounded delay; jitter is applied per use in
-        # _effective_delay() so it does not compound across steps.
-        self._delay = min(max(_BACKOFF_MIN_DELAY, grown), self._max_delay)
-        self._next_allowed_time = now + self._effective_delay()
-
     def get_base_delay(self) -> float:
-        """Return the base (non-backoff) delay of this scope, in seconds."""
+        """Return the base delay of this scope, in seconds, i.e. the delay
+        before jitter is applied to it."""
         return self._base_delay
 
     def set_base_delay(self, delay: float, *, only_increase: bool = True) -> None:
-        """Set the base (non-backoff) delay of this scope to *delay* seconds.
+        """Set the base delay of this scope to *delay* seconds.
 
         By default it only raises the delay, to honor external hints without
         making the crawl faster than configured. Pass ``only_increase=False`` to
@@ -1253,15 +1063,7 @@ class ThrottlingScopeManager:
         """
         if only_increase and delay <= self._base_delay:
             return
-        # Checked before the base changes.
-        backing_off = self._delay > self._base_delay
         self._base_delay = delay
-        # Reflect the change in the effective delay, unless a backoff is raising
-        # it above the new base right now. A backoff that no longer clears the
-        # base is over, and leaving the delay below the base would apply neither
-        # value, since _recover() also gives up once within the base.
-        if not backing_off or self._delay < delay:
-            self._delay = delay
 
     def get_concurrency(self) -> int:
         """Return the maximum number of concurrent requests allowed for this
@@ -1281,8 +1083,6 @@ class ThrottlingScopeManager:
         self._slot_available.fire()
 
     def _is_idle(self, now: float) -> bool:
-        if self._in_backoff_until is not None and self._in_backoff_until > now:
-            return False
         # A delay that has not elapsed yet would let the next request for the
         # scope go out earlier than its delay allows.
         if self._next_allowed_time is not None and self._next_allowed_time > now:
