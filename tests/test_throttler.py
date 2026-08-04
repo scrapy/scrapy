@@ -4,7 +4,7 @@ import asyncio
 import logging
 import warnings
 from collections import ChainMap
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from weakref import WeakSet
 
 import pytest
@@ -71,22 +71,13 @@ def _scope_manager(
 
 
 def _scope(manager: Throttler, scope_id: str) -> ThrottlingScopeManager:
-    """Return the concrete scope manager for *scope_id*, for tests that inspect
-    its private state (``get_scope_manager`` is only typed to return the
-    protocol)."""
-    manager_ = manager.get_scope_manager(scope_id)
-    assert isinstance(manager_, ThrottlingScopeManager)
-    return manager_
+    return manager.get_scope_manager(scope_id)
 
 
 def _scope_managers(crawler: Any) -> list[ThrottlingScopeManager]:
-    """Return the concrete scope managers a crawl created, for integration
-    tests that inspect their private state."""
     throttler = crawler.throttler
     assert isinstance(throttler, Throttler)
-    managers = list(throttler._scope_managers.values())
-    assert all(isinstance(m, ThrottlingScopeManager) for m in managers)
-    return cast("list[ThrottlingScopeManager]", managers)
+    return list(throttler._scope_managers.values())
 
 
 def _response(
@@ -214,13 +205,6 @@ class TestThrottler:
         redirected = request.replace(url="http://other.example/a")
         assert await manager.get_scopes(redirected) == "other.example"
 
-    def test_scope_manager_class_in_config(self):
-        manager = _manager(
-            {"THROTTLING_SCOPES": {"example.com": {"manager": ThrottlingScopeManager}}}
-        )
-        scope = manager.get_scope_manager("example.com")
-        assert isinstance(scope, ThrottlingScopeManager)
-
     def test_get_scopes_key_single(self):
         manager = _manager()
         assert manager.get_scopes_key(Request("http://example.com/a")) == "example.com"
@@ -275,14 +259,14 @@ class TestThrottler:
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
         scope = _scope(manager, "example.com")
         request = Request("http://example.com")
-        scope.record_sent(now=0.0)
+        scope._record_sent(now=0.0)
         manager._reserved[request] = [("example.com", scope)]
-        assert scope.concurrency_blocked() is True
+        assert scope._concurrency_blocked() is True
         manager.release(request)
-        assert scope.concurrency_blocked() is False
+        assert scope._concurrency_blocked() is False
         # Releasing again is a no-op.
         manager.release(request)
-        assert scope.concurrency_blocked() is False
+        assert scope._concurrency_blocked() is False
 
     @coroutine_test
     async def test_acquire_waits_for_freed_slot(self):
@@ -293,13 +277,13 @@ class TestThrottler:
         # can await the slot event under the asyncio reactor.
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(r1)))
         scope = _scope(manager, "example.com")
-        assert scope.concurrency_blocked() is True
-        assert scope.concurrency_blocked() is True
+        assert scope._concurrency_blocked() is True
+        assert scope._concurrency_blocked() is True
         # acquire(r2) must block until r1 frees the slot; release it on the next
         # event loop tick so the event-driven wait wakes up.
         call_later(0, manager.release, r1)
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(r2)))
-        assert scope.concurrency_blocked() is True
+        assert scope._concurrency_blocked() is True
         assert r2 in manager._reserved
 
     @coroutine_test
@@ -315,7 +299,7 @@ class TestThrottler:
         blocking = Request("http://example.com/1")
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(blocking)))
         scope = _scope(manager, "example.com")
-        assert scope.concurrency_blocked() is True
+        assert scope._concurrency_blocked() is True
         # Without dont_throttle this would wait for the scope delay and then
         # forever for the slot that `blocking` holds.
         exempt = Request("http://example.com/2", meta={"dont_throttle": True})
@@ -324,7 +308,7 @@ class TestThrottler:
         # state stays as `blocking` left it.
         assert exempt not in manager._reserved
         manager.release(exempt)
-        assert scope.concurrency_blocked() is True
+        assert scope._concurrency_blocked() is True
 
     @coroutine_test
     async def test_dont_throttle_still_resolves_scopes(self):
@@ -347,7 +331,7 @@ class TestThrottler:
         manager = _manager(
             {"THROTTLING_SCOPE_LIMIT": 1, "BACKOFF_MAX_DELAY": 100_000.0}
         )
-        _scope(manager, "a.example").record_backoff(delay=10_000.0)
+        _scope(manager, "a.example")._record_backoff(delay=10_000.0)
         # Creating a second scope exceeds the limit, but the first one is still
         # in backoff, so the limit is exceeded rather than dropping it.
         _scope(manager, "b.example")
@@ -362,8 +346,8 @@ class TestThrottler:
             }
         )
         delayed = _scope(manager, "a.example")
-        delayed.record_sent()
-        delayed.record_done()
+        delayed._record_sent()
+        delayed._record_done()
         # Creating a second scope exceeds the limit, but the first one still
         # tracks a delay that has not elapsed, so the limit is exceeded rather
         # than dropping it.
@@ -374,8 +358,8 @@ class TestThrottler:
     async def test_scope_limit_evicts_on_acquire(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 1})
         idle = _scope(manager, "idle.example")
-        idle.record_sent(now=0.0)
-        idle.record_done(now=0.0)
+        idle._record_sent(now=0.0)
+        idle._record_done(now=0.0)
         await manager.acquire(Request("http://active.example/1"))
         assert set(manager._scope_managers) == {"active.example"}
 
@@ -384,8 +368,8 @@ class TestThrottler:
         # Use three scopes in order; each send/done leaves them idle.
         for scope_id in ("a.example", "b.example", "c.example"):
             scope = _scope(manager, scope_id)
-            scope.record_sent(now=0.0)
-            scope.record_done(now=0.0)
+            scope._record_sent(now=0.0)
+            scope._record_done(now=0.0)
         # The limit caps live managers at 2, dropping the least-recently-used.
         assert set(manager._scope_managers) == {"b.example", "c.example"}
 
@@ -394,7 +378,7 @@ class TestThrottler:
         # Two scopes with in-flight requests cannot be evicted, so the limit is
         # exceeded rather than dropping a scope that still tracks a live send.
         for scope_id in ("a.example", "b.example"):
-            _scope(manager, scope_id).record_sent(now=0.0)
+            _scope(manager, scope_id)._record_sent(now=0.0)
         assert set(manager._scope_managers) == {"a.example", "b.example"}
 
     def test_scope_limit_keeps_the_scopes_being_resolved(self):
@@ -449,14 +433,14 @@ class TestThrottler:
 
         # The send landed on the manager that the scope has now, so the scope is
         # at its concurrency of 1 and holds the next request of it back.
-        assert _scope(manager, "shared").concurrency_blocked() is True
+        assert _scope(manager, "shared")._concurrency_blocked() is True
 
     def test_scope_limit_disabled(self):
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})
         for i in range(5):
             scope = _scope(manager, f"{i}.example")
-            scope.record_sent(now=0.0)
-            scope.record_done(now=0.0)
+            scope._record_sent(now=0.0)
+            scope._record_done(now=0.0)
         assert len(manager._scope_managers) == 5
 
 
@@ -522,7 +506,7 @@ class TestUnscheduledRequests:
         holder = Request("http://example.com/1")
         await self._acquire(manager, holder)
         scope = _scope(manager, "example.com")
-        assert scope.concurrency_blocked() is True
+        assert scope._concurrency_blocked() is True
         self._hold_in_middlewares(monkeypatch, manager, holder)
         # The holder is not using the slot it took, and its middlewares may well
         # be waiting for this very request, so this one borrows it instead of
@@ -587,7 +571,7 @@ class TestUnscheduledRequests:
         holder = Request("http://example.com/1")
         await self._acquire(manager, holder)
         assert holder not in downloader.active
-        assert _scope(manager, "example.com").concurrency_blocked() is True
+        assert _scope(manager, "example.com")._concurrency_blocked() is True
 
         prerequisite = Request("http://example.com/2")
         blocked = await self._start_waiting(manager, prerequisite)
@@ -796,10 +780,10 @@ class TestUnscheduledRequests:
         # so there is no unused slot to borrow: instead of assuming that an
         # untracked holder is in the downloader middlewares, the unscheduled
         # request waits for a slot.
-        scope.record_sent()
-        assert scope.concurrency_blocked() is True
+        scope._record_sent()
+        assert scope._concurrency_blocked() is True
         prerequisite = Request("http://example.com/1")
-        call_later(0, scope.record_done)
+        call_later(0, scope._record_done)
         await self._acquire(manager, prerequisite, unscheduled=True)
         assert manager.crawler.stats
         assert manager.crawler.stats.get_value("throttler/borrowed_slots") is None
@@ -858,17 +842,17 @@ class TestUnscheduledRequests:
 class TestThrottlingScopeManager:
     def test_no_delay_by_default(self):
         scope = _scope_manager()
-        scope.record_sent(now=0.0)
-        assert scope.can_send(now=0.0) == 0
+        scope._record_sent(now=0.0)
+        assert scope._can_send(now=0.0) == 0
 
     def test_base_delay_enforced(self):
         scope = _scope_manager(
             {"RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x", "delay": 2.0}
         )
-        scope.record_sent(now=10.0)
-        assert scope.can_send(now=10.0) == pytest.approx(2.0)
-        assert scope.can_send(now=11.0) == pytest.approx(1.0)
-        assert scope.can_send(now=12.0) == 0
+        scope._record_sent(now=10.0)
+        assert scope._can_send(now=10.0) == pytest.approx(2.0)
+        assert scope._can_send(now=11.0) == pytest.approx(1.0)
+        assert scope._can_send(now=12.0) == 0
 
     def test_base_delay_defaults_to_download_delay(self):
         # With no explicit scope "delay", the base delay is DOWNLOAD_DELAY.
@@ -887,11 +871,11 @@ class TestThrottlingScopeManager:
 
     def test_exponential_backoff(self):
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(1.0)
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(2.0)
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(4.0)
 
     def test_backoff_cap(self):
@@ -899,7 +883,7 @@ class TestThrottlingScopeManager:
             {"DOWNLOAD_DELAY": 0.0, "BACKOFF_MAX_DELAY": 5.0},
         )
         for _ in range(5):
-            scope.record_backoff(now=0.0)
+            scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(5.0)
 
     @pytest.mark.parametrize(
@@ -912,42 +896,42 @@ class TestThrottlingScopeManager:
     )
     def test_retry_after_delay(self, max_delay, backoff_delay, expected):
         scope = _scope_manager({"BACKOFF_MAX_DELAY": max_delay})
-        scope.record_backoff(delay=backoff_delay, now=0.0)
-        assert scope.can_send(now=0.0) == pytest.approx(expected)
+        scope._record_backoff(delay=backoff_delay, now=0.0)
+        assert scope._can_send(now=0.0) == pytest.approx(expected)
 
     def test_uncapped_backoff_delay(self):
         # cap=False (used by trusted back_off() calls) ignores BACKOFF_MAX_DELAY.
         scope = _scope_manager({"BACKOFF_MAX_DELAY": 10.0})
-        scope.record_backoff(delay=999.0, now=0.0, cap=False)
-        assert scope.can_send(now=0.0) == pytest.approx(999.0)
+        scope._record_backoff(delay=999.0, now=0.0, cap=False)
+        assert scope._can_send(now=0.0) == pytest.approx(999.0)
 
     def test_recovery_bisects_toward_ideal(self):
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
         # No safe delay known yet: growth is exponential (1 -> 2 -> 4 -> 8), and
         # the last delay to trigger is remembered as _max_unsafe.
         for _ in range(4):
-            scope.record_backoff(now=0.0)
+            scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(8.0)
         assert scope._max_unsafe == pytest.approx(4.0)
         assert scope._min_safe is None
         # A quiet window proves 8.0 is safe -> it becomes _min_safe, and the
         # delay probes halfway down toward _max_unsafe: (4 + 8) / 2 = 6.
-        scope.can_send(now=60.0)
+        scope._can_send(now=60.0)
         assert scope._min_safe == pytest.approx(8.0)
         assert scope._delay == pytest.approx(6.0)
         # The probe at 6.0 triggers: _max_unsafe rises to it and the delay jumps
         # straight back up to the known-safe delay (8.0) rather than creeping.
-        scope.record_backoff(now=60.0)
+        scope._record_backoff(now=60.0)
         assert scope._max_unsafe == pytest.approx(6.0)
         assert scope._delay == pytest.approx(8.0)
 
     def test_recovery_reaches_base_and_resets(self):
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         assert scope._delay > scope._base_delay
         # Enough quiet windows bring the delay back within one step of the base
         # delay, at which point the backoff state is fully cleared.
-        scope.can_send(now=600.0)
+        scope._can_send(now=600.0)
         assert scope._delay == pytest.approx(0.0)
         assert scope._max_unsafe is None
         assert scope._min_safe is None
@@ -957,11 +941,11 @@ class TestThrottlingScopeManager:
         # dropped): _max_unsafe must not pin the delay above the new ideal.
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
         for _ in range(4):
-            scope.record_backoff(now=0.0)
+            scope._record_backoff(now=0.0)
         assert scope._max_unsafe == pytest.approx(4.0)
         # Many quiet windows in a row: the delay keeps probing down, _max_unsafe
         # is retired once reached, and recovery converges all the way to base.
-        scope.can_send(now=6000.0)
+        scope._can_send(now=6000.0)
         assert scope._delay == pytest.approx(0.0)
         assert scope._max_unsafe is None
 
@@ -971,13 +955,13 @@ class TestThrottlingScopeManager:
         # goes back to exponential to find a working delay quickly.
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
         for _ in range(4):
-            scope.record_backoff(now=0.0)
-        scope.can_send(now=60.0)  # _min_safe = 8.0, delay = 6.0
+            scope._record_backoff(now=0.0)
+        scope._can_send(now=60.0)  # _min_safe = 8.0, delay = 6.0
         assert scope._min_safe == pytest.approx(8.0)
         # A trigger at or above _min_safe means it is no longer safe: drop it
         # and resume exponential growth (8.0 * 2 = 16.0).
         scope._delay = 8.0
-        scope.record_backoff(now=60.0)
+        scope._record_backoff(now=60.0)
         assert scope._min_safe is None
         assert scope._delay == pytest.approx(16.0)
 
@@ -988,15 +972,15 @@ class TestThrottlingScopeManager:
             {"DOWNLOAD_DELAY": 0.0},
             {"id": "x", "backoff": {"enabled": False}},
         )
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(0.0)
-        assert scope.can_send(now=0.0) == 0
-        scope.record_backoff(delay=999.0, now=0.0)
-        assert scope.can_send(now=0.0) == 0
+        assert scope._can_send(now=0.0) == 0
+        scope._record_backoff(delay=999.0, now=0.0)
+        assert scope._can_send(now=0.0) == 0
 
     def test_backoff_enabled_by_default(self):
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0}, {"id": "x"})
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(1.0)
 
     def test_per_scope_backoff_override(self):
@@ -1005,7 +989,7 @@ class TestThrottlingScopeManager:
             {"id": "x", "backoff": {"max_delay": 5.0}},
         )
         for _ in range(5):
-            scope.record_backoff(now=0.0)
+            scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(5.0)
 
     def test_set_base_delay_raises_only(self):
@@ -1022,7 +1006,7 @@ class TestThrottlingScopeManager:
         # With a zero base delay the first step starts from the positive seed,
         # not zero (which would pin the delay at zero, disabling backoff).
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0})
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(1.0)
 
     def test_default_scope_concurrency(self):
@@ -1039,40 +1023,40 @@ class TestThrottlingScopeManager:
 
     def test_concurrency_limit(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 2})
-        scope.record_sent(now=0.0)
-        # Concurrency is enforced via concurrency_blocked(), not can_send().
-        assert scope.can_send(now=0.0) == 0
-        assert scope.concurrency_blocked() is False
-        scope.record_sent(now=0.0)
+        scope._record_sent(now=0.0)
+        # Concurrency is enforced via _concurrency_blocked(), not _can_send().
+        assert scope._can_send(now=0.0) == 0
+        assert scope._concurrency_blocked() is False
+        scope._record_sent(now=0.0)
         # Two in flight, limit reached -> blocked.
-        assert scope.can_send(now=0.0) == 0
-        assert scope.concurrency_blocked() is True
-        scope.record_done(now=0.0)
-        assert scope.concurrency_blocked() is False
+        assert scope._can_send(now=0.0) == 0
+        assert scope._concurrency_blocked() is True
+        scope._record_done(now=0.0)
+        assert scope._concurrency_blocked() is False
 
     def test_record_done_fires_slot_available_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
-        scope.record_sent(now=0.0)
-        event = scope.slot_available_event()
+        scope._record_sent(now=0.0)
+        event = scope._slot_available_event()
         assert not event.called
-        scope.record_done(now=0.0)
+        scope._record_done(now=0.0)
         assert event.called
 
     def test_set_concurrency_fires_slot_available_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
-        scope.record_sent(now=0.0)
-        event = scope.slot_available_event()
+        scope._record_sent(now=0.0)
+        event = scope._slot_available_event()
         assert not event.called
         scope.set_concurrency(5)
         assert event.called
 
     def test_discard_slot_available_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})
-        event = scope.slot_available_event()
-        scope.discard_slot_available_event(event)
-        scope.discard_slot_available_event(event)  # idempotent
-        scope.record_sent(now=0.0)
-        scope.record_done(now=0.0)
+        event = scope._slot_available_event()
+        scope._discard_slot_available_event(event)
+        scope._discard_slot_available_event(event)  # idempotent
+        scope._record_sent(now=0.0)
+        scope._record_done(now=0.0)
         assert not event.called
 
     def test_set_concurrency_rejects_non_positive(self):
@@ -1094,7 +1078,9 @@ class TestThrottlerBackOff:
         # A component can delay a whole scope on demand, like a Retry-After
         # response header does.
         manager.back_off("example.com", delay=50.0, cap=False)
-        assert _scope(manager, "example.com").can_send() == pytest.approx(50.0, abs=1.0)
+        assert _scope(manager, "example.com")._can_send() == pytest.approx(
+            50.0, abs=1.0
+        )
 
     @coroutine_test
     async def test_back_off_uncapped_delay_bypasses_max_delay(self):
@@ -1106,7 +1092,7 @@ class TestThrottlerBackOff:
         request = Request("http://example.com/a")
         await manager.get_scopes(request)
         manager.back_off("example.com", delay=1000.0, cap=False)
-        assert _scope(manager, "example.com").can_send() == pytest.approx(
+        assert _scope(manager, "example.com")._can_send() == pytest.approx(
             1000.0, abs=1.0
         )
 
@@ -1269,11 +1255,11 @@ class TestThrottlerEdges:
         manager = _manager()
         m1 = _scope_manager(config={"id": "a", "concurrency": 1})
         m2 = _scope_manager(config={"id": "b", "concurrency": 1})
-        m1.record_sent(now=0.0)
-        m2.record_sent(now=0.0)
+        m1._record_sent(now=0.0)
+        m2._record_sent(now=0.0)
         # Free m1's slot on the next tick so the wait wakes up with m1's event
         # fired while m2's event is still pending.
-        call_later(0, m1.record_done)
+        call_later(0, m1._record_done)
         await manager._wait_for_slot([m1, m2], unscheduled=False)
         # The still-pending m2 event is discarded from its waiter list.
         assert m2._slot_available._waiters == []
@@ -1282,11 +1268,11 @@ class TestThrottlerEdges:
     async def test_wait_for_slot_discards_the_unfired_middlewares_event(self):
         manager, downloader = _manager_with_downloader()
         scope = _scope_manager(config={"id": "a", "concurrency": 1})
-        scope.record_sent(now=0.0)
+        scope._record_sent(now=0.0)
         # The scope frees its slot first, so the middlewares event of the
         # unscheduled wait stays pending and must not be left behind on the
         # downloader.
-        call_later(0, scope.record_done)
+        call_later(0, scope._record_done)
         await manager._wait_for_slot([scope], unscheduled=True)
         assert downloader._downloader_middlewares_entry._waiters == []
         downloader.close()
@@ -1295,7 +1281,7 @@ class TestThrottlerEdges:
     async def test_wait_for_slot_discards_the_unfired_slot_event(self):
         manager, downloader = _manager_with_downloader()
         scope = _scope_manager(config={"id": "a", "concurrency": 1})
-        scope.record_sent(now=0.0)
+        scope._record_sent(now=0.0)
         request = Request("http://example.com/1")
         downloader._in_download_handler.add(request)
         # This time the request reaches the middlewares first, so the scope's
@@ -1311,8 +1297,8 @@ class TestThrottlerEdges:
         # relies on the scope events alone.
         manager = _manager()
         scope = _scope_manager(config={"id": "a", "concurrency": 1})
-        scope.record_sent(now=0.0)
-        call_later(0, scope.record_done)
+        scope._record_sent(now=0.0)
+        call_later(0, scope._record_done)
         await manager._wait_for_slot([scope], unscheduled=True)
         assert scope._slot_available._waiters == []
 
@@ -1328,8 +1314,8 @@ class TestThrottlerEdges:
         manager = _manager({"THROTTLING_SCOPE_LIMIT": 0})
         for scope_id in ("a.example", "b.example", "c.example"):
             scope = _scope(manager, scope_id)
-            scope.record_sent(now=0.0)
-            scope.record_done(now=0.0)
+            scope._record_sent(now=0.0)
+            scope._record_done(now=0.0)
         # No limit: idle scopes are kept regardless.
         assert len(manager._scope_managers) == 3
 
@@ -1358,19 +1344,19 @@ class TestThrottlingScopeManagerEdges:
         scope = _scope_manager(
             {"RANDOMIZE_DOWNLOAD_DELAY": True}, {"id": "x", "delay": 2.0}
         )
-        scope.record_sent(now=0.0)
+        scope._record_sent(now=0.0)
         # A randomized base delay lands within [0.5, 1.5] * delay.
-        assert 1.0 <= scope.can_send(now=0.0) <= 3.0
+        assert 1.0 <= scope._can_send(now=0.0) <= 3.0
 
     def test_record_done_without_active(self):
         scope = _scope_manager(config={"id": "x"})
-        # Calling record_done() with nothing in flight is a harmless no-op.
-        scope.record_done(now=0.0)
+        # Calling _record_done() with nothing in flight is a harmless no-op.
+        scope._record_done(now=0.0)
         assert scope._active == 0
 
     def test_set_base_delay_during_backoff(self):
         scope = _scope_manager({"DOWNLOAD_DELAY": 0.0}, {"id": "x"})
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         backoff_delay = scope._delay
         # Raising the base delay mid-backoff updates the base but not the current
         # (higher) backoff delay.
@@ -1385,55 +1371,55 @@ class TestThrottlingScopeManagerEdges:
         scope = _scope_manager(
             {"DOWNLOAD_DELAY": 1.0, "RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x"}
         )
-        scope.record_backoff(now=0.0)
+        scope._record_backoff(now=0.0)
         assert scope._delay == pytest.approx(2.0)
         scope.set_base_delay(20.0, only_increase=False)
         assert scope._base_delay == pytest.approx(20.0)
         assert scope._delay == pytest.approx(20.0)
         # It is the delay the next send is spaced by...
-        scope.record_sent(now=100.0)
-        assert scope.can_send(now=100.0) == pytest.approx(20.0)
+        scope._record_sent(now=100.0)
+        assert scope._can_send(now=100.0) == pytest.approx(20.0)
         # ...and it stays there: there is no backoff left above the base to
         # recover from.
-        scope.can_send(now=10_000.0)
+        scope._can_send(now=10_000.0)
         assert scope._delay == pytest.approx(20.0)
 
     def test_record_sent_clears_expired_backoff(self):
         scope = _scope_manager(config={"id": "x"})
-        scope.record_backoff(delay=5.0, now=0.0)
+        scope._record_backoff(delay=5.0, now=0.0)
         assert scope._in_backoff_until == pytest.approx(5.0)
-        scope.record_sent(now=10.0)
+        scope._record_sent(now=10.0)
         # The hard backoff window has passed, so it is cleared.
         assert scope._in_backoff_until is None
 
     def test_is_idle_with_active_requests(self):
         scope = _scope_manager(config={"id": "x"})
-        scope.record_sent(now=0.0)
+        scope._record_sent(now=0.0)
         # An in-flight request keeps the scope from being evicted.
-        assert scope.is_idle(now=10_000.0) is False
+        assert scope._is_idle(now=10_000.0) is False
 
     def test_is_idle_when_never_used(self):
         scope = _scope_manager(config={"id": "x"})
-        assert scope.is_idle(now=0.0) is True
+        assert scope._is_idle(now=0.0) is True
 
     def test_is_idle_with_a_pending_delay(self):
         scope = _scope_manager(config={"id": "x", "delay": 10.0, "jitter": 0})
-        scope.record_sent(now=0.0)
-        scope.record_done(now=0.0)
+        scope._record_sent(now=0.0)
+        scope._record_done(now=0.0)
         # The delay is state that eviction would drop, so the scope is not idle
         # until it has elapsed.
-        assert scope.is_idle(now=5.0) is False
-        assert scope.is_idle(now=11.0) is True
+        assert scope._is_idle(now=5.0) is False
+        assert scope._is_idle(now=11.0) is True
 
     def test_get_load_is_relative_to_the_limit(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 4})
-        scope.record_sent(now=0.0)
-        assert scope.get_load() == pytest.approx(0.25)
+        scope._record_sent(now=0.0)
+        assert scope._get_load() == pytest.approx(0.25)
         # Borrowing (see Throttler._borrow_slots) can push a scope past its
         # limit, and the load reflects that rather than being clipped at 1.
         for _ in range(4):
-            scope.record_sent(now=0.0)
-        assert scope.get_load() == pytest.approx(1.25)
+            scope._record_sent(now=0.0)
+        assert scope._get_load() == pytest.approx(1.25)
 
 
 class TestConcurrencyBridging:

@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
-    from scrapy.throttler import ThrottlerProtocol, ThrottlingScopeManagerProtocol
+    from scrapy.throttler import ThrottlerProtocol, ThrottlingScopeManager
 
 
 @dataclass(slots=True, eq=False)
@@ -70,7 +70,7 @@ class _DeprecatedSlotView:
         self._throttler = throttler
 
     @property
-    def _scope(self) -> ThrottlingScopeManagerProtocol:
+    def _scope(self) -> ThrottlingScopeManager:
         return self._throttler.get_scope_manager(self._key)
 
     @property
@@ -90,18 +90,15 @@ class _DeprecatedSlotView:
         }
 
     # The delay, jitter and last-seen accessors below read private attributes of
-    # the default scope manager rather than going through the scope manager
-    # protocol: they are read-only compatibility accessors, so keeping them off
-    # the protocol avoids forcing custom THROTTLING_SCOPE_MANAGER implementations
-    # to provide members that only exist to feed this shim. A custom manager that
-    # lacks the attribute simply falls back to the historical default.
+    # the scope manager: they are read-only compatibility accessors, so they do
+    # not warrant public members on it.
     @property
     def lastseen(self) -> float:
-        return getattr(self._scope, "_last_seen", None) or 0.0
+        return self._scope._last_seen or 0.0
 
     @property
     def delay(self) -> float:
-        return getattr(self._scope, "_delay", 0.0)
+        return self._scope._delay
 
     @delay.setter
     def delay(self, value: float) -> None:
@@ -109,7 +106,7 @@ class _DeprecatedSlotView:
 
     @property
     def randomize_delay(self) -> bool:
-        return bool(getattr(self._scope, "_jitter", None))
+        return bool(self._scope._jitter)
 
     @property
     def concurrency(self) -> int:

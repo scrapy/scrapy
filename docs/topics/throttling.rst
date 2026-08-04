@@ -369,10 +369,6 @@ following keys:
 ``backoff`` (:class:`~scrapy.throttler.BackoffConfig`)
     Per-scope :ref:`backoff overrides <per-scope-backoff>`.
 
-``manager`` (:class:`str` or :class:`type`)
-    Import path or class of a :ref:`custom scope manager
-    <custom-throttling-scope-managers>` for the scope.
-
 .. setting:: THROTTLER
 
 To **change how scopes are assigned** (or anything beyond per-scope settings),
@@ -427,66 +423,6 @@ load balanced, under the scopes that resolution comes up with rather than the
 ones they end up being sent under. Throttling itself is unaffected: the scopes
 that hold a request back are always the ones
 :meth:`~scrapy.throttler.ThrottlerProtocol.get_scopes` returns.
-
-.. _custom-throttling-scope-managers:
-
-Customizing throttling scope managers
--------------------------------------
-
-.. setting:: THROTTLING_SCOPE_MANAGER
-
-The :setting:`THROTTLING_SCOPE_MANAGER` setting (default:
-:class:`~scrapy.throttler.ThrottlingScopeManager`) is a :ref:`component
-<topics-components>` that implements the
-:class:`~scrapy.throttler.ThrottlingScopeManagerProtocol` (or its import path
-as a string):
-
-.. code-block:: python
-    :caption: :file:`settings.py`
-
-    THROTTLING_SCOPE_MANAGER = "myproject.throttling.MyThrottlingScopeManager"
-
-For each throttling scope, an instance of this class manages that scope's
-run-time throttling state: its delay and concurrency limits, and any gradual
-:ref:`backoff <backoff>`.
-
-You can implement your own throttling scope manager if you wish to change the
-throttling behavior beyond what settings allow.
-
-You can also define a custom throttling scope manager for a specific throttling
-scope by setting the ``"manager"`` key in the :setting:`THROTTLING_SCOPES`
-setting:
-
-.. code-block:: python
-    :caption: :file:`settings.py`
-
-    THROTTLING_SCOPES = {
-        "api.example": {
-            "manager": "myproject.throttling.MyThrottlingScopeManager",
-        },
-    }
-
-The simplest approach is to subclass the default
-:class:`~scrapy.throttler.ThrottlingScopeManager` and override only the methods
-whose behavior you want to change; implementing the
-:class:`~scrapy.throttler.ThrottlingScopeManagerProtocol` from scratch is also
-supported. For example, this manager logs a message whenever a scope backs off,
-to keep an eye on which scopes are getting throttled:
-
-.. code-block:: python
-    :caption: :file:`myproject/throttling.py`
-
-    import logging
-
-    from scrapy.throttler import ThrottlingScopeManager
-
-    logger = logging.getLogger(__name__)
-
-
-    class LoggingScopeManager(ThrottlingScopeManager):
-        def record_backoff(self, *args, **kwargs):
-            logger.info(f"Backing off scope {self._id}")
-            super().record_backoff(*args, **kwargs)
 
 .. _throttling-examples:
 
@@ -803,11 +739,9 @@ API
 .. autoclass:: scrapy.throttler.Throttler
     :members: get_default_scopes
 
-.. autoclass:: scrapy.throttler.ThrottlingScopeManagerProtocol
-    :members:
-    :member-order: bysource
-
 .. autoclass:: scrapy.throttler.ThrottlingScopeManager
+    :members: get_base_delay, set_base_delay, get_concurrency, set_concurrency
+    :member-order: bysource
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeConfig
 

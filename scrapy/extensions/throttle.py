@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
-    from scrapy.throttler import ThrottlingScopeManagerProtocol
+    from scrapy.throttler import ThrottlingScopeManager
 
 
 logger = logging.getLogger(__name__)
@@ -103,9 +103,7 @@ class AutoThrottle:
                     extra={"spider": spider},
                 )
 
-    def _scope_delay(
-        self, scope: ThrottlingScopeManagerProtocol, scope_id: str
-    ) -> float:
+    def _scope_delay(self, scope: ThrottlingScopeManager, scope_id: str) -> float:
         """Return the current delay of *scope_id*, applying AUTOTHROTTLE_START_DELAY
         the first time the scope is seen.
 
