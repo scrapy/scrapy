@@ -2042,6 +2042,13 @@ Backward-incompatible changes
     ``process_start_requests()`` has been replaced by ``process_start()``.
     (:issue:`6729`)
 
+-   The ``scrape_func`` callable passed to
+    ``scrapy.core.spidermw.SpiderMiddlewareManager.scrape_response()`` is now
+    called with 2 parameters, ``response`` and ``request``, instead of 3, and
+    must return a :class:`~twisted.internet.defer.Deferred` instead of an
+    iterable.
+    (:issue:`6787`)
+
 -   The now-deprecated ``start_requests()`` method, when it returns an iterable
     instead of being defined as a generator, is now executed *after* the
     :ref:`scheduler <topics-scheduler>` instance has been created.
