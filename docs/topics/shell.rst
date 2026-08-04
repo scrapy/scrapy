@@ -48,6 +48,38 @@ regardless of which are installed. This is done by setting the
 .. _IPython: https://ipython.org/
 .. _bpython: https://bpython-interpreter.org/
 
+Customizing shell variables
+---------------------------
+
+To add default imports or run code whenever the shell fetches a response,
+create a :ref:`custom project command <topics-commands-custom>` that extends
+the built-in :command:`shell` command. For example:
+
+.. code-block:: python
+    :caption: myproject/commands/shell.py
+
+    import json
+
+    from scrapy.commands.shell import Command as ShellCommand
+
+
+    class Command(ShellCommand):
+        def update_vars(self, vars):
+            vars["json"] = json
+
+            response = vars.get("response")
+            if response is not None:
+                vars["title"] = response.css("title::text").get()
+
+The :meth:`~scrapy.commands.shell.Command.update_vars` method receives all
+shell variables when the shell starts and after every call to ``fetch()``. In
+the project settings, point :setting:`COMMANDS_MODULE` to the package that
+contains the command:
+
+.. code-block:: python
+
+    COMMANDS_MODULE = "myproject.commands"
+
 Launch the shell
 ================
 
