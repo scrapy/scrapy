@@ -26,6 +26,7 @@ Here is a simple example showing how you can catch signals and perform some acti
 
     class DmozSpider(Spider):
         name = "dmoz"
+        allowed_domains = ["dmoz.org"]
         start_urls = [
             "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
             "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/",
