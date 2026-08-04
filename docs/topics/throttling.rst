@@ -734,14 +734,12 @@ API
 
 .. autoclass:: scrapy.throttler.ThrottlerProtocol
     :members:
-    :member-order: bysource
 
 .. autoclass:: scrapy.throttler.Throttler
     :members: get_default_scopes
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeManager
     :members: get_base_delay, set_base_delay, get_concurrency, set_concurrency
-    :member-order: bysource
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeConfig
 

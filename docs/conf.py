@@ -143,6 +143,7 @@ coverage_ignore_pyobjects = [
 ]
 
 # -- Options for the autodoc extension ----------------------------------------
+autodoc_member_order = "bysource"
 autodoc_type_aliases = {
     "RequestScopes": "RequestScopes",
 }

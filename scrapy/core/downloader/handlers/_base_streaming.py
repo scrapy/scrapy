@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import logging
 import time
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, NoReturn, TypedDict, TypeVar
 from urllib.parse import quote, urlsplit
@@ -56,7 +56,7 @@ class _BaseResponseArgs(TypedDict):
     protocol: str | None
 
 
-class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_ResponseT]):
+class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT]):
     """A base class for HTTP download handlers that follow the streaming logic flow."""
 
     _DEFAULT_CONNECT_TIMEOUT: ClassVar[float] = 10
