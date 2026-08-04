@@ -296,12 +296,16 @@ class TestRedirectMiddleware(TestRedirectBase):
         assert req2.url == url3
         assert req2.method == "HEAD"
 
-    def _assert_passthrough(self, req, mw=None):
+    def _assert_passthrough(
+        self, req: Request, mw: RedirectMiddleware | None = None
+    ) -> None:
         url2 = "http://www.example.com/redirected"
         rsp = Response(req.url, headers={"Location": url2}, status=301, request=req)
         assert (mw or self.mw).process_response(req, rsp) is rsp
 
-    def _assert_redirected(self, req, mw=None):
+    def _assert_redirected(
+        self, req: Request, mw: RedirectMiddleware | None = None
+    ) -> None:
         url2 = "http://www.example.com/redirected"
         rsp = Response(req.url, headers={"Location": url2}, status=301, request=req)
         assert isinstance((mw or self.mw).process_response(req, rsp), Request)
@@ -357,7 +361,7 @@ class TestRedirectMiddleware(TestRedirectBase):
         # Already warned about above, hence no warning expected here.
         self._assert_redirected(Request(url, meta={"handle_httpstatus_list": [404]}))
 
-    def _spider_attribute_mw(self, codes):
+    def _spider_attribute_mw(self, codes: list[int]) -> RedirectMiddleware:
         class HandlingSpider(DefaultSpider):
             handle_httpstatus_list = codes
 
@@ -482,15 +486,17 @@ def test_response_referrer_policy(policy, source_url, target_url, expected_refer
         status=301,
         headers={"Location": target_url, **extra_headers},
     )
-    source_request = redirect_mw.process_response(source_request, response_redirect)
-    assert isinstance(source_request, Request)
+    target_request = redirect_mw.process_response(source_request, response_redirect)
+    assert isinstance(target_request, Request)
 
-    assert source_request.headers.get("Referer") == expected_referrer
+    assert target_request.headers.get("Referer") == expected_referrer
 
 
 def test_no_warning_when_referer_middleware_present(caplog):
     crawler = get_crawler()
-    crawler.get_spider_middleware = MagicMock(return_value=MagicMock())
+    crawler.get_spider_middleware = MagicMock(  # type: ignore[method-assign]
+        return_value=MagicMock()
+    )
     mw = build_from_crawler(RedirectMiddleware, crawler)
     caplog.clear()
     with caplog.at_level(logging.WARNING):
@@ -504,7 +510,9 @@ def test_no_warning_when_referer_middleware_present(caplog):
 
 def test_warning_redirect_middleware(caplog):
     crawler = get_crawler()
-    crawler.get_spider_middleware = MagicMock(return_value=None)
+    crawler.get_spider_middleware = MagicMock(  # type: ignore[method-assign]
+        return_value=None
+    )
     mw = build_from_crawler(RedirectMiddleware, crawler)
     with caplog.at_level(logging.WARNING):
         mw._engine_started()
@@ -527,7 +535,9 @@ def test_warning_subclass(caplog):
         pass
 
     crawler = get_crawler()
-    crawler.get_spider_middleware = MagicMock(return_value=None)
+    crawler.get_spider_middleware = MagicMock(  # type: ignore[method-assign]
+        return_value=None
+    )
     mw = build_from_crawler(MyRedirectMiddleware, crawler)
     with caplog.at_level(logging.WARNING):
         mw._engine_started()

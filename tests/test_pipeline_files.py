@@ -33,7 +33,7 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
-from scrapy.pipelines.media import MediaPipeline, _MediaRequestFiltered
+from scrapy.pipelines.media import _MediaRequestFiltered
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -43,11 +43,7 @@ from tests.mockserver.ftp import MockFTPServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 from .utils.cloud import mock_google_cloud_storage
-from .utils.media_pipelines import mocked_download_func
-
-# required by persist_file() and stat_file(), but as some stores don't use the argument
-# we can pass this singleton to keep type hints correct
-DUMMY_SPIDER_INFO = MediaPipeline.SpiderInfo(DefaultSpider())
+from .utils.media_pipelines import DUMMY_SPIDER_INFO, mocked_download_func
 
 
 def get_ftp_content_and_delete(
@@ -94,15 +90,18 @@ class DeferredFSFilesStore(FSFilesStore):
 class TestFilesPipeline:
     def setup_method(self):
         self.tempdir = mkdtemp()
-        settings_dict = {"FILES_STORE": self.tempdir}
-        crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
-        crawler.spider = crawler._create_spider()
-        crawler.engine = MagicMock(download_async=mocked_download_func)
-        self.pipeline = FilesPipeline.from_crawler(crawler)
-        self.pipeline.open_spider()
+        self.pipeline = self._create_pipeline(FilesPipeline)
 
     def teardown_method(self):
         rmtree(self.tempdir)
+
+    def _create_pipeline(self, pipeline_cls: type[FilesPipeline]) -> FilesPipeline:
+        crawler = get_crawler(DefaultSpider, {"FILES_STORE": self.tempdir})
+        crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=mocked_download_func)
+        pipeline = pipeline_cls.from_crawler(crawler)
+        pipeline.open_spider()
+        return pipeline
 
     def test_file_path_query_parameters(self):
         file_path = self.pipeline.file_path
@@ -253,6 +252,107 @@ class TestFilesPipeline:
             result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "cached"
+
+    @coroutine_test
+    async def test_file_stat_without_last_modified(self) -> None:
+        """A stat result without a last modification time forces a download."""
+        item_url = "http://example.com/file4.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore, "stat_file", return_value={"checksum": "abc"}
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["checksum"] != "abc"
+        assert result["files"][0]["status"] == "downloaded"
+
+    @coroutine_test
+    async def test_file_empty_content(self, caplog: pytest.LogCaptureFixture) -> None:
+        item_url = "http://example.com/empty.pdf"
+        item = _create_item_with_files(item_url)
+        request = Request(
+            item_url, meta={"response": Response(item_url, status=200, body=b"")}
+        )
+        with (
+            caplog.at_level(logging.WARNING),
+            mock.patch.object(
+                FilesPipeline, "get_media_requests", return_value=[request]
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"] == []
+        assert "File (empty-content): Empty file from" in caplog.text
+
+    @coroutine_test
+    async def test_file_downloaded_file_exception(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A FileException from file_downloaded() is logged as a warning and
+        kept as is."""
+
+        class FailingFilesPipeline(FilesPipeline):
+            def file_downloaded(self, response, request, info, *, item=None):
+                raise FileException("boom")
+
+        item_url = "http://example.com/file5.pdf"
+        item = _create_item_with_files(item_url)
+        pipeline = self._create_pipeline(FailingFilesPipeline)
+        with (
+            caplog.at_level(logging.WARNING),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await pipeline.process_item(item)
+        assert result["files"] == []
+        records = [
+            r for r in caplog.records if "Error processing file" in r.getMessage()
+        ]
+        assert len(records) == 1
+        assert records[0].levelname == "WARNING"
+        assert "boom" in records[0].getMessage()
+
+    @coroutine_test
+    async def test_file_downloaded_unknown_error(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Any other exception from file_downloaded() is logged as an error and
+        reported as a FileException."""
+
+        class FailingFilesPipeline(FilesPipeline):
+            def file_downloaded(self, response, request, info, *, item=None):
+                raise RuntimeError("boom")
+
+        item_url = "http://example.com/file6.pdf"
+        item = _create_item_with_files(item_url)
+        pipeline = self._create_pipeline(FailingFilesPipeline)
+        with (
+            caplog.at_level(logging.WARNING),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await pipeline.process_item(item)
+        assert result["files"] == []
+        records = [
+            r for r in caplog.records if "Error processing file" in r.getMessage()
+        ]
+        assert len(records) == 1
+        assert records[0].levelname == "ERROR"
+        exc_info = records[0].exc_info
+        assert exc_info is not None
+        assert exc_info[0] is RuntimeError
 
     @coroutine_test
     async def test_async_store(self) -> None:
@@ -648,9 +748,24 @@ class TestFilesPipelineCustomSettings:
         request = Request("http://example.com/image01.jpg")
         assert pipeline.file_path(request) == Path("subdir/image01.jpg")
 
-    def test_files_store_constructor_with_pathlike_object(self, tmp_path):
-        fs_store = FSFilesStore(tmp_path)
-        assert fs_store.basedir == str(tmp_path)
+
+class TestFSFilesStore:
+    def test_constructor_with_pathlike_object(self, tmp_path: Path) -> None:
+        assert FSFilesStore(tmp_path).basedir == str(tmp_path)
+
+    def test_constructor_with_uri(self, tmp_path: Path) -> None:
+        assert FSFilesStore(f"file://{tmp_path}").basedir == str(tmp_path)
+
+    def test_stat_file(self, tmp_path: Path) -> None:
+        store = FSFilesStore(tmp_path)
+        store.persist_file("full/filename", BytesIO(b"data"), DUMMY_SPIDER_INFO)
+        stat = store.stat_file("full/filename", DUMMY_SPIDER_INFO)
+        assert stat["checksum"] == "8d777f385d3dfec8815d20f7496026dc"
+        assert stat["last_modified"] == pytest.approx(time.time(), abs=60)
+
+    def test_stat_missing_file(self, tmp_path: Path) -> None:
+        store = FSFilesStore(tmp_path)
+        assert store.stat_file("full/filename", DUMMY_SPIDER_INFO) == {}
 
 
 @pytest.mark.requires_botocore
@@ -696,6 +811,59 @@ class TestS3FilesStore:
             assert buffer.method_calls == [mock.call.seek(0)]
 
     @inline_callbacks_test
+    def test_persist_without_headers(self):
+        """Without custom headers only the default ones are sent."""
+        bucket = "mybucket"
+        key = "export.csv"
+        buffer = mock.MagicMock()
+
+        store = S3FilesStore(f"s3://{bucket}/{key}")
+        from botocore.stub import Stubber  # noqa: PLC0415
+
+        with Stubber(store.s3_client) as stub:
+            stub.add_response(
+                "put_object",
+                expected_params={
+                    "ACL": S3FilesStore.POLICY,
+                    "Body": buffer,
+                    "Bucket": bucket,
+                    "CacheControl": S3FilesStore.HEADERS["Cache-Control"],
+                    "Key": key,
+                    "Metadata": {},
+                },
+                service_response={},
+            )
+
+            yield store.persist_file("", buffer, info=DUMMY_SPIDER_INFO)
+
+            stub.assert_no_pending_responses()
+
+    def test_missing_botocore(self):
+        with (
+            mock.patch(
+                "scrapy.pipelines.files.is_botocore_available", return_value=False
+            ),
+            pytest.raises(NotConfigured, match="missing botocore library"),
+        ):
+            S3FilesStore("s3://mybucket/key")
+
+    def test_wrong_uri_scheme(self):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Incorrect URI scheme in ftp://mybucket/key, expected 's3'"
+            ),
+        ):
+            S3FilesStore("ftp://mybucket/key")
+
+    def test_unsupported_header(self):
+        store = S3FilesStore("s3://mybucket/key")
+        with pytest.raises(
+            TypeError, match='Header "X-Custom" is not supported by botocore'
+        ):
+            store._headers_to_botocore_kwargs({"X-Custom": "value"})
+
+    @inline_callbacks_test
     def test_stat(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -726,6 +894,33 @@ class TestS3FilesStore:
             }
 
             stub.assert_no_pending_responses()
+
+    def test_default_max_pool_connections(self) -> None:
+        store = S3FilesStore("s3://mybucket/prefix/")
+        config: Any = store.s3_client.meta.config
+        assert config.max_pool_connections == 10
+
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
+            ({}, 10),
+            ({"REACTOR_THREADPOOL_MAXSIZE": 20}, 20),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30}, 30),
+            ({"AWS_MAX_POOL_CONNECTIONS": 30, "REACTOR_THREADPOOL_MAXSIZE": 20}, 30),
+        ],
+    )
+    def test_max_pool_connections(
+        self, monkeypatch: pytest.MonkeyPatch, settings: dict[str, Any], expected: int
+    ) -> None:
+        # restores the value that FilesPipeline.from_crawler() sets on the class
+        monkeypatch.setattr(S3FilesStore, "AWS_MAX_POOL_CONNECTIONS", None)
+        crawler = get_crawler(
+            settings_dict={"FILES_STORE": "s3://mybucket/prefix/", **settings}
+        )
+        store = FilesPipeline.from_crawler(crawler).store
+        assert isinstance(store, S3FilesStore)
+        config: Any = store.s3_client.meta.config
+        assert config.max_pool_connections == expected
 
 
 class TestGCSFilesStore:
@@ -900,6 +1095,28 @@ class TestFTPFileStore:
                 store.USE_ACTIVE_MODE,
             )
         assert data == content
+
+    @inline_callbacks_test
+    def test_persist_active_mode(self, monkeypatch: pytest.MonkeyPatch):
+        data = b"active mode"
+        path = "full/filename"
+        monkeypatch.setattr(FTPFilesStore, "FTP_USERNAME", "anonymous")
+        monkeypatch.setattr(FTPFilesStore, "FTP_PASSWORD", "guest")
+        monkeypatch.setattr(FTPFilesStore, "USE_ACTIVE_MODE", True)
+        with MockFTPServer() as ftp_server:
+            store = FTPFilesStore(ftp_server.url("/"))
+            yield store.persist_file(path, BytesIO(data), info=DUMMY_SPIDER_INFO)
+            stat = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
+        assert stat["checksum"] == "ff1575649a39a27c13faa0d37c84bab3"
+
+    def test_wrong_uri_scheme(self):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Incorrect URI scheme in http://example.com/, expected 'ftp'"
+            ),
+        ):
+            FTPFilesStore("http://example.com/")
 
 
 class ItemWithFiles(Item):

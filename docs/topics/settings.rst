@@ -305,10 +305,21 @@ These settings cannot be :ref:`set from a spider <spider-settings>`.
 
 These settings are:
 
--   :setting:`TWISTED_REACTOR_ENABLED`
+-   :setting:`ADDONS`
+-   :setting:`COMMANDS_MODULE`
+-   :setting:`FORCE_CRAWLER_PROCESS`
 -   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
     spider loader class, e.g. :setting:`SPIDER_MODULES` and
     :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
+-   :setting:`TWISTED_REACTOR_ENABLED`
+
+:setting:`ADDONS` is a special case: it can be set from a spider, but the
+``update_pre_crawler_settings()`` method of :ref:`add-ons <topics-addons>`
+enabled that way is not called.
+
+:setting:`TWISTED_REACTOR` also acts as a pre-crawler setting when running a
+:ref:`command that needs a CrawlerProcess <topics-commands-crawlerprocess>`,
+since its project-level value determines the crawler process class.
 
 .. _reactor-settings:
 
@@ -409,6 +420,9 @@ Default: ``{}``
 A dict containing paths to the add-ons enabled in your project and their
 priorities. For more information, see :ref:`topics-addons`.
 
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`, with a
+    caveat described in that section.
+
 .. setting:: ASYNCIO_EVENT_LOOP
 
 ASYNCIO_EVENT_LOOP
@@ -457,6 +471,26 @@ AWS_ENDPOINT_URL
 Default: ``None``
 
 Endpoint URL used for S3-like storage, for example Minio or s3.scality.
+
+.. setting:: AWS_MAX_POOL_CONNECTIONS
+
+AWS_MAX_POOL_CONNECTIONS
+------------------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Maximum number of connections that AWS clients, such as those of the
+:ref:`S3 feed storage backend <topics-feed-storage-s3>` and of the
+:ref:`S3 media pipeline storage backend <media-pipelines-s3>`, keep in their
+connection pool.
+
+If ``None``, the value of :setting:`REACTOR_THREADPOOL_MAXSIZE` is used.
+
+Values lower than the number of parallel AWS calls do not limit those calls, but
+their connections are closed instead of reused, which hurts performance, and
+``Connection pool is full, discarding connection`` warnings are logged.
 
 .. setting:: AWS_REGION_NAME
 
@@ -541,7 +575,7 @@ CONCURRENT_REQUESTS
 Default: ``16``
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed by the Scrapy downloader.
+performed by the Scrapy downloader. Use ``0`` for no limit.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
@@ -918,10 +952,6 @@ and only increase :setting:`DOWNLOAD_DELAY` once
 desired.
 
 .. _spider-download_delay-attribute:
-
-.. note::
-
-    This delay can be set per spider using :attr:`download_delay` spider attribute.
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
@@ -1381,6 +1411,8 @@ When :setting:`TWISTED_REACTOR_ENABLED` is set to ``False``,
 
 Set this to ``True`` if you want to set :setting:`TWISTED_REACTOR` to a
 non-default value in :ref:`per-spider settings <spider-settings>`.
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. setting:: FTP_PASSIVE_MODE
 
@@ -1885,7 +1917,8 @@ Default: ``False``
 
 Setting to ``True`` will log debug information about the requests scheduler.
 This currently logs (only once) if the requests cannot be serialized to disk.
-Stats counter (``scheduler/unserializable``) tracks the number of times this happens.
+The :stat:`scheduler/unserializable` stat tracks the number of times this
+happens.
 
 Example entry in logs::
 

@@ -3,21 +3,27 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
 import scrapy
 from scrapy.cmdline import _pop_command_name, execute
-from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
 from tests.utils.bases.commands import TestProjectBase
-from tests.utils.cmdline import call, proc, write_recording_editor
+from tests.utils.cmdline import (
+    call,
+    proc,
+    write_recording_browser,
+    write_recording_editor,
+)
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from tests.mockserver.http import MockServer
 
 
 class EmptyCommand(ScrapyCommand):
@@ -105,6 +111,93 @@ class TestCommandSettings:
             "Optional Arguments\n==================\n\n"
             "Global Options\n--------------\n"
         )
+
+
+class TestGlobalOptions:
+    """Tests for the options that every command supports."""
+
+    spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+
+    async def start(self):
+        self.logger.debug("It works!")
+        return
+        yield
+"""
+
+    @pytest.fixture
+    def spider_path(self, tmp_path: Path) -> Path:
+        path = tmp_path / "myspider.py"
+        path.write_text(self.spider_code, encoding="utf-8")
+        return path
+
+    def test_invalid_set(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "-s", "FOO")
+        assert returncode == 2
+        assert "Invalid -s value, use -s NAME=VALUE" in err
+
+    def test_invalid_spider_argument(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "-a", "FOO")
+        assert returncode == 2
+        assert "Invalid -a value, use -a NAME=VALUE" in err
+
+    def test_logfile(self, tmp_path: Path, spider_path: Path) -> None:
+        logfile = tmp_path / "scrapy.log"
+        returncode, _, err = proc(
+            "runspider", str(spider_path), "--logfile", str(logfile)
+        )
+        assert returncode == 0, err
+        assert "It works!" in logfile.read_text(encoding="utf-8")
+        assert "It works!" not in err
+
+    def test_loglevel(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "--loglevel", "INFO")
+        assert returncode == 0, err
+        assert "It works!" not in err
+        assert "Spider closed (finished)" in err
+
+    def test_nolog(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "--nolog")
+        assert returncode == 0, err
+        assert not err
+
+    def test_pidfile(self, tmp_path: Path, spider_path: Path) -> None:
+        pidfile = tmp_path / "scrapy.pid"
+        returncode, _, err = proc(
+            "runspider", str(spider_path), "--pidfile", str(pidfile)
+        )
+        assert returncode == 0, err
+        assert pidfile.read_text(encoding="utf-8").strip().isdigit()
+
+    def test_pdb(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "--pdb")
+        assert returncode == 0, err
+        assert "It works!" in err
+
+
+class TestSettingsCommand:
+    @pytest.mark.parametrize(
+        ("option", "setting", "expected"),
+        [
+            ("--get", "BOT_NAME", "scrapybot"),
+            ("--getbool", "COOKIES_ENABLED", "True"),
+            ("--getint", "CONCURRENT_REQUESTS", "16"),
+            ("--getfloat", "DOWNLOAD_DELAY", "0.0"),
+            ("--getlist", "SPIDER_MODULES", "[]"),
+        ],
+    )
+    def test_get(self, option: str, setting: str, expected: str) -> None:
+        returncode, out, err = proc("settings", option, setting)
+        assert returncode == 0, err
+        assert out.startswith(expected)
+
+    def test_no_option(self) -> None:
+        returncode, out, err = proc("settings")
+        assert returncode == 0, err
+        assert not out
 
 
 class TestCommandCrawlerProcess(TestProjectBase):
@@ -577,18 +670,31 @@ class TestBenchCommand:
 
 
 class TestViewCommand:
-    def test_methods(self) -> None:
-        command = view.Command()
-        command.settings = Settings()
-        parser = argparse.ArgumentParser(
-            prog="scrapy",
-            prefix_chars="-",
-            formatter_class=ScrapyHelpFormatter,
-            conflict_handler="resolve",
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell browser script"
+    )
+    def test_view(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mockserver: MockServer
+    ) -> None:
+        opened = tmp_path / "opened.txt"
+        browser = tmp_path / "fake-browser.sh"
+        write_recording_browser(browser, opened)
+        monkeypatch.setenv("BROWSER", str(browser))
+
+        returncode, _, err = proc("view", mockserver.url("/html"), cwd=tmp_path)
+
+        assert returncode == 0, err
+        url = opened.read_text(encoding="utf-8")
+        assert url.startswith("file://")
+        body = Path(url.removeprefix("file://")).read_text(encoding="utf-8")
+        assert "<p class='one'>Works</p>" in body
+
+    def test_non_text_response(self, mockserver: MockServer) -> None:
+        returncode, _, err = proc(
+            "view", mockserver.url("/static/files/images/scrapy.png")
         )
-        command.add_options(parser)
-        assert command.short_desc() == "Open URL in browser, as seen by Scrapy"
-        assert "URL using the Scrapy downloader and show its" in command.long_desc()
+        assert returncode == 0, err
+        assert "Cannot view a non-text response." in err
 
 
 class TestEditCommand(TestProjectBase):
@@ -614,6 +720,11 @@ class TestEditCommand(TestProjectBase):
         returncode, _, err = proc("edit", "nonexistent", cwd=proj_path)
         assert returncode == 1
         assert "Spider not found: nonexistent" in err
+
+    def test_edit_no_spider(self, proj_path: Path) -> None:
+        returncode, out, _ = proc("edit", cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
 
 
 class TestHelpMessage(TestProjectBase):
