@@ -171,15 +171,15 @@ at the front of the queue, so it goes out right after its delay.
 Excluding a request from throttling
 -----------------------------------
 
-To send a request as soon as possible, regardless of what its scopes would
-otherwise impose, set the :reqmeta:`dont_throttle` request metadata key to
-``True``:
+To exempt a request from the concurrency and delay limits of its scopes, set the
+:reqmeta:`dont_throttle` request metadata key to ``True``:
 
 .. code-block:: python
 
     Request("https://example.com/login", meta={"dont_throttle": True})
 
-Its own :reqmeta:`delay`, if any, is still honored.
+It does not count towards those limits either, so it does not delay other
+requests of the same scopes.
 
 .. setting:: THROTTLER
 
