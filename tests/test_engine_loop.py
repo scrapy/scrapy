@@ -6,10 +6,9 @@ from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.utils.asyncio import call_later
+from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
-from tests.utils import async_sleep
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -65,23 +64,23 @@ class TestMain:
             async def start(self):
                 yield Request("data:,a")
 
-                await async_sleep(seconds)
+                await sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.pause()
                 self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
 
                 # During this time, the scheduler reports having requests but
                 # returns None.
-                await async_sleep(seconds)
+                await sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.unpause()
 
                 # The scheduler request is processed.
-                await async_sleep(seconds)
+                await sleep(seconds)
 
                 yield Request("data:,c")
 
-                await async_sleep(seconds)
+                await sleep(seconds)
 
                 self.crawler.engine._slot.scheduler.pause()
                 self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,d"))
