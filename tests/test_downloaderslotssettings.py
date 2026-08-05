@@ -99,6 +99,26 @@ async def test_download_slots_deprecated():
 
 
 @coroutine_test
+async def test_per_slot_settings_deprecated():
+    settings = {"DOWNLOAD_SLOTS": {"example.com": {"concurrency": 2}}}
+    crawler = get_crawler(DefaultSpider, settings_dict=settings)
+    crawler.spider = crawler._create_spider()
+    with pytest.warns(
+        ScrapyDeprecationWarning, match="DOWNLOAD_SLOTS setting is deprecated"
+    ):
+        downloader = Downloader(crawler)
+    with pytest.warns(
+        ScrapyDeprecationWarning, match="Downloader.per_slot_settings is deprecated"
+    ):
+        assert downloader.per_slot_settings == settings["DOWNLOAD_SLOTS"]
+    with pytest.warns(
+        ScrapyDeprecationWarning, match="Downloader.per_slot_settings is deprecated"
+    ):
+        downloader.per_slot_settings = {}
+    downloader.close()
+
+
+@coroutine_test
 async def test_slots_deprecated():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()

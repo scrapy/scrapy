@@ -162,18 +162,36 @@ class Downloader:
         self.middleware: DownloaderMiddlewareManager = (
             DownloaderMiddlewareManager.from_crawler(crawler)
         )
-        # Kept for backward compatibility only: the throttler is what reads
-        # these values now (see Throttler._merge_download_slots).
-        self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
+        self._per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
-        if self.per_slot_settings:
+        if self._per_slot_settings:
             warnings.warn(
                 "The DOWNLOAD_SLOTS setting is deprecated. Use THROTTLING_SCOPES for "
                 "per-domain configuration instead.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
+
+    @property
+    def per_slot_settings(self) -> dict[str, dict[str, Any]]:
+        self._warn_per_slot_settings()
+        return self._per_slot_settings
+
+    @per_slot_settings.setter
+    def per_slot_settings(self, value: dict[str, dict[str, Any]]) -> None:
+        self._warn_per_slot_settings()
+        self._per_slot_settings = value
+
+    @staticmethod
+    def _warn_per_slot_settings() -> None:
+        warnings.warn(
+            "Downloader.per_slot_settings is deprecated, and Scrapy no longer "
+            "uses it. Use THROTTLING_SCOPES for per-domain configuration "
+            "instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=3,
+        )
 
     @inlineCallbacks
     @_warn_spider_arg
@@ -193,8 +211,7 @@ class Downloader:
             self.active.remove(request)
 
     def needs_backout(self) -> bool:
-        """Return whether the :setting:`CONCURRENT_REQUESTS` limit is reached.
-        A limit of ``0`` means no limit, so nothing is ever held back."""
+        # A total concurrency of 0 means no limit.
         return 0 < self.total_concurrency <= len(self.active)
 
     def _in_downloader_middlewares(self, request: Request) -> bool:
