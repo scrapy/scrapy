@@ -165,6 +165,35 @@ class TestRealWebsite(HttpxDownloadHandlerMixin, TestRealWebsiteBase):
     pass
 
 
+@coroutine_test
+async def test_proxy_clients() -> None:
+    proxy = "http://proxy.example:8080"
+    handler = build_from_crawler(HttpxDownloadHandler, get_crawler())
+    try:
+        client = handler._get_client(proxy, (("X-A", "1"),))
+        assert handler._get_client(proxy, (("X-A", "1"),)) is client
+        assert handler._get_client(proxy, (("X-A", "2"),)) is not client
+        assert handler._get_client(proxy) is not client
+        assert len(handler._proxy_clients) == 3
+    finally:
+        await handler.close()
+
+
+@coroutine_test
+async def test_proxy_headers_ignored_for_socks(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    if not HAS_SOCKS:  # pragma: no cover
+        pytest.skip("SOCKS support is not installed")
+    handler = build_from_crawler(HttpxDownloadHandler, get_crawler())
+    try:
+        with caplog.at_level("WARNING"):
+            handler._get_client("socks5://proxy.example:1080", (("X-A", "1"),))
+    finally:
+        await handler.close()
+    assert "the SOCKS protocol has no headers" in caplog.text
+
+
 @pytest.mark.parametrize(("concurrency", "expected"), [(16, 16), (0, None)])
 @coroutine_test
 async def test_pool_limits(concurrency: int, expected: int | None) -> None:
