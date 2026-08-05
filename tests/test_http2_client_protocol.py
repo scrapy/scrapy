@@ -761,7 +761,9 @@ class TestHttps2ClientProtocol:
 
         response_headers = json.loads(str(response.body, "utf-8"))
         assert isinstance(response_headers, dict)
+        # The server reports header names in its own case.
+        received = {k.lower(): v for k, v in response_headers.items()}
         for k, v in request.headers.items():
-            k_decoded, v_decoded = str(k, "utf-8"), str(v[0], "utf-8")
-            assert k_decoded in response_headers
-            assert v_decoded == response_headers[k_decoded]
+            k_decoded, v_decoded = str(k, "utf-8").lower(), str(v[0], "utf-8")
+            assert k_decoded in received
+            assert v_decoded == received[k_decoded]
