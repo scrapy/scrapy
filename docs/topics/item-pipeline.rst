@@ -330,6 +330,36 @@ passes through ``PricePipeline`` before it reaches the :ref:`feed exports
 .. _books.toscrape.com: https://books.toscrape.com/
 
 
+.. _test-item-pipeline:
+
+Testing an item pipeline
+========================
+
+To send the items from a single URL through your item pipelines, use the
+:command:`parse` command with the ``--pipelines`` option::
+
+    scrapy parse --pipelines "https://books.toscrape.com/"
+
+To test specific item data instead, add a callback that builds an item out of
+its keyword arguments:
+
+.. skip: next
+.. code-block:: python
+
+    class BooksSpider(scrapy.Spider):
+        # ...
+
+        def parse_item(self, response, **fields):
+            yield BookItem(**fields)
+
+and pass those keyword arguments in the command line::
+
+    scrapy parse --pipelines -c parse_item --cbkwargs '{"title": "Test", "price": 10}' "https://books.toscrape.com/"
+
+Pass any URL that your spider handles; it is downloaded even though the
+callback ignores it.
+
+
 Common pitfalls
 ===============
 
