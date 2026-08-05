@@ -4,7 +4,6 @@ Queues that handle requests
 
 from __future__ import annotations
 
-import gc
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
@@ -243,11 +242,10 @@ def test_sqlite_queue_survives_unclean_shutdown(
     key = str(tmp_path / "queue")
     queue = queue_cls.from_crawler(crawler=crawler, key=key)
     queue.push(Request("https://toscrape.com"))
-    # No close(), as if the process had been killed. The SQLite connection is
-    # part of a reference cycle, so a garbage collection is needed to release
-    # the underlying file, which on Windows cannot be removed while open.
-    del queue
-    gc.collect()
+    # No close(), as if the process had been killed. The connection is closed
+    # directly instead, since on Windows the file cannot be removed later while
+    # it is still open.
+    queue._db.close()
 
     queue = queue_cls.from_crawler(crawler=crawler, key=key)
     try:
