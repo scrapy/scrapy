@@ -1417,7 +1417,8 @@ Deprecations
 
     - ``download_warnsize`` (use :setting:`DOWNLOAD_WARNSIZE`)
 
-    - ``max_concurrent_requests`` (use :setting:`CONCURRENT_REQUESTS`)
+    - ``max_concurrent_requests`` (use
+      :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`)
 
     - ``user_agent`` (use :setting:`USER_AGENT`)
 
@@ -2040,6 +2041,13 @@ Backward-incompatible changes
 -   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
     ``process_start_requests()`` has been replaced by ``process_start()``.
     (:issue:`6729`)
+
+-   The ``scrape_func`` callable passed to
+    ``scrapy.core.spidermw.SpiderMiddlewareManager.scrape_response()`` is now
+    called with 2 parameters, ``response`` and ``request``, instead of 3, and
+    must return a :class:`~twisted.internet.defer.Deferred` instead of an
+    iterable.
+    (:issue:`6787`)
 
 -   The now-deprecated ``start_requests()`` method, when it returns an iterable
     instead of being defined as a generator, is now executed *after* the
