@@ -508,10 +508,7 @@ class ExecutionEngine:
                 return response_or_request
             request = response_or_request
 
-    @inlineCallbacks
-    def _acquire_throttler(
-        self, request: Request, unscheduled: bool
-    ) -> Generator[Deferred[Any], Any, None]:
+    def _acquire_throttler(self, request: Request, unscheduled: bool) -> Deferred[None]:
         """Wait for the throttler to allow *request* to be sent, tracking it as
         held meanwhile.
 
@@ -524,11 +521,8 @@ class ExecutionEngine:
         self._throttler_waiting.add(request)
         throttler = self.crawler.throttler
         assert throttler is not None
-        try:
-            yield deferred_from_coro(
-                throttler.acquire(request, unscheduled=unscheduled)
-            )
-        finally:
+
+        def released(result: Any) -> Any:
             self._throttler_waiting.discard(request)
             # While an unscheduled request waits, it claims a free slot of every
             # one of its scopes, holding back every request that shares them
@@ -538,6 +532,13 @@ class ExecutionEngine:
             # request is done downloading.
             if unscheduled and self._slot is not None:
                 self._slot.nextcall.schedule()
+            return result
+
+        d: Deferred[None] = deferred_from_coro(
+            throttler.acquire(request, unscheduled=unscheduled)
+        )
+        d.addBoth(released)
+        return d
 
     @inlineCallbacks
     def _download(

@@ -228,6 +228,50 @@ class TestThrottler:
         assert r2 in manager._reserved
 
     @coroutine_test
+    async def test_a_waiter_passes_on_a_slot_it_cannot_use(self) -> None:
+        """A freed slot wakes a single waiter (see
+        ``ThrottlingScopeManager._record_done``). If that waiter is one that
+        another of its scopes still holds back, it must hand the slot to the next
+        waiter, or the slot would sit unused until the scope frees another one.
+        """
+        manager = _manager(
+            {
+                "THROTTLING_SCOPES": {
+                    "held": {"concurrency": 1},
+                    "shared": {"concurrency": 1},
+                }
+            }
+        )
+        holder = Request("http://a.example/0", meta={"throttling_scopes": ["shared"]})
+        await manager.acquire(holder)
+        blocker = Request("http://a.example/1", meta={"throttling_scopes": ["held"]})
+        await manager.acquire(blocker)
+
+        # Waits on both scopes, and is woken first, since it registers first.
+        two_scopes = Request(
+            "http://a.example/2", meta={"throttling_scopes": ["held", "shared"]}
+        )
+        first = deferred_from_coro(manager.acquire(two_scopes))
+        await sleep(0)
+        one_scope = Request(
+            "http://a.example/3", meta={"throttling_scopes": ["shared"]}
+        )
+        second = deferred_from_coro(manager.acquire(one_scope))
+        await sleep(0)
+        assert not first.called
+        assert not second.called
+
+        manager.release(holder)
+        done, _ = await _wait_for_first([second], timeout=30)
+        assert second in done, "the freed 'shared' slot went to no one"
+        assert not first.called, "the 'held' scope let the request through"
+
+        manager.release(blocker)
+        manager.release(one_scope)
+        done, _ = await _wait_for_first([first], timeout=30)
+        assert first in done
+
+    @coroutine_test
     async def test_dont_throttle_skips_the_gate(self):
         manager = _manager(
             {
@@ -867,6 +911,16 @@ class TestThrottlingScopeManager:
         assert not event.called
         scope._record_done(now=0.0)
         assert event.called
+
+    def test_record_done_fires_one_event_per_freed_slot(self):
+        scope = _scope_manager(config={"id": "x", "concurrency": 2})
+        scope._record_sent(now=0.0)
+        scope._record_sent(now=0.0)
+        events = [scope._slot_available_event() for _ in range(3)]
+        scope._record_done(now=0.0)
+        assert [event.called for event in events] == [True, False, False]
+        scope._record_done(now=0.0)
+        assert [event.called for event in events] == [True, True, False]
 
     def test_set_concurrency_fires_slot_available_event(self):
         scope = _scope_manager(config={"id": "x", "concurrency": 1})

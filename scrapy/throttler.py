@@ -15,7 +15,7 @@ from typing_extensions import Self
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.asyncio import _wait_for_first, sleep
-from scrapy.utils.defer import _Event
+from scrapy.utils.defer import _Event, maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
 
@@ -415,6 +415,11 @@ class Throttler(ThrottlerProtocol):
         _warn_on_ignored_per_ip(crawler.settings)
         _warn_on_unachievable_concurrency(crawler.settings, self._scopes_config)
         self._debug = crawler.settings.getbool("THROTTLER_DEBUG")
+        self._scope_defaults: dict[str, Any] = {
+            "concurrency": _default_scope_concurrency(crawler.settings),
+            "delay": crawler.settings.getfloat("DOWNLOAD_DELAY"),
+            "jitter": _default_jitter(crawler.settings),
+        }
         # Ordered by least-recently-used first (see get_scope_manager), so the
         # scope limit can evict the coldest idle scopes (see THROTTLING_SCOPE_LIMIT).
         self._scope_managers: OrderedDict[ScopeID, ThrottlingScopeManager] = (
@@ -493,14 +498,15 @@ class Throttler(ThrottlerProtocol):
         <scrapy.Request.replace>`, which copies ``meta``) replaces the inherited
         scopes with its own.
         """
-        scopes: Any = request.meta.get("throttling_scopes")
+        meta = request.meta
+        scopes: Any = meta.get("throttling_scopes")
         if scopes is None:
-            download_slot = request.meta.get("download_slot")
+            download_slot = meta.get("download_slot")
             # A value the downloader stamped (see Downloader._enqueue_request) is
             # bookkeeping rather than intent: honoring the one a derived request
             # (a redirect, a retry) inherits would keep it in the scope of a
             # different host. Anything else is a user's choice of scope.
-            if download_slot is not None and download_slot != request.meta.get(
+            if download_slot is not None and download_slot != meta.get(
                 _STAMPED_SLOT_META_KEY
             ):
                 warnings.warn(
@@ -513,7 +519,7 @@ class Throttler(ThrottlerProtocol):
             else:
                 scopes = self.get_scopes(request)
         scope_ids = _normalize_scopes(scopes)
-        request.meta[_APPLIED_SCOPES_META_KEY] = scope_ids
+        meta[_APPLIED_SCOPES_META_KEY] = scope_ids
         return scope_ids
 
     def get_scopes_key(self, request: Request) -> str:
@@ -537,8 +543,11 @@ class Throttler(ThrottlerProtocol):
             # Mark as most-recently-used for the LRU scope limit.
             self._scope_managers.move_to_end(scope_id)
             return manager
-        config: dict[str, Any] = dict(self._scopes_config.get(scope_id, {}))
-        config.setdefault("id", scope_id)
+        config: dict[str, Any] = {
+            **self._scope_defaults,
+            "id": scope_id,
+            **self._scopes_config.get(scope_id, {}),
+        }
         manager = build_from_crawler(ThrottlingScopeManager, self.crawler, config)
         self._scope_managers[scope_id] = manager
         self._enforce_scope_limit(scope_id)
@@ -604,7 +613,8 @@ class Throttler(ThrottlerProtocol):
             del self._scope_managers[scope_id]
 
     async def acquire(self, request: Request, *, unscheduled: bool = False) -> None:
-        await self._delay_request(request)
+        if request.meta.get("delay"):
+            await self._delay_request(request)
         # The scopes are resolved (and persisted, see _resolve_scopes) even for a
         # request excluded from throttling, because its outcome still backs off
         # its scopes, and get_applied_scopes() is how a middleware finds them.
@@ -670,11 +680,13 @@ class Throttler(ThrottlerProtocol):
                 continue
             # The delay has elapsed; the only remaining reason to wait is a full
             # concurrency slot.
-            blocked = [
-                (scope_id, manager)
-                for scope_id, manager in scopes
-                if manager._concurrency_blocked()
-            ]
+            blocked: list[ScopeSlot] = []
+            free: list[ScopeSlot] = []
+            for scope_id, manager in scopes:
+                if manager._concurrency_blocked():
+                    blocked.append((scope_id, manager))
+                else:
+                    free.append((scope_id, manager))
             if not blocked:
                 if (
                     not unscheduled
@@ -702,6 +714,11 @@ class Throttler(ThrottlerProtocol):
                     f"Throttling {request} until a concurrency slot frees up "
                     f"(scopes: {scope_ids})"
                 )
+            # A scope with room while another one holds this request back may
+            # have woken it for a slot it is not going to take, and only one
+            # waiter is woken per freed slot, so that slot would sit unused.
+            for _, manager in free:
+                manager._wake_waiters()
             await self._wait_for_slot(
                 [manager for _, manager in blocked], unscheduled=unscheduled
             )
@@ -773,10 +790,17 @@ class Throttler(ThrottlerProtocol):
             # *request* itself holds a slot of every scope it reserved, so the
             # scope has holders.
             holders = self._scope_holders[scope_id]
+            concurrency = manager.get_concurrency()
+            # *request* is one of the holders and has not reached a handler yet,
+            # so up to that many holders leave too few of them for the count
+            # below to reach the limit. Only a lent slot (see _can_lend_slot)
+            # takes a scope past that, so this skips the scan almost always.
+            if len(holders) <= concurrency:
+                continue
             # *request* has not reached a handler yet, so it does not count
             # itself.
             in_handlers = sum(1 for holder in holders if holder in in_download_handler)
-            if in_handlers >= manager.get_concurrency():
+            if in_handlers >= concurrency:
                 if self._debug:
                     logger.debug(
                         f"Holding {request} off the network: scope {scope_id} "
@@ -856,14 +880,35 @@ class Throttler(ThrottlerProtocol):
         Every event is registered before this coroutine gives up control, or one
         firing in between would go unnoticed.
         """
+        downloader = self._downloader() if unscheduled else None
+        if downloader is None and len(managers) == 1:
+            # By far the most common case: one scope, and nothing but a freed
+            # slot to wait for. Awaiting the event directly skips building the
+            # bookkeeping that _wait_for_first needs to tell several apart.
+            manager = managers[0]
+            event = manager._slot_available_event()
+            try:
+                await maybe_deferred_to_future(event)
+            except BaseException:
+                # This wait is over without having taken the slot it may have
+                # been woken for; hand that slot to the next waiter.
+                manager._discard_slot_available_event(event)
+                manager._wake_waiters()
+                raise
+            return
         pairs = [(manager, manager._slot_available_event()) for manager in managers]
         events = [event for _, event in pairs]
-        downloader = self._downloader() if unscheduled else None
         middlewares_event: Deferred[None] | None = None
         if downloader is not None:
             middlewares_event = downloader._downloader_middlewares_event()
             events.append(middlewares_event)
-        _, pending = await _wait_for_first(events)
+        try:
+            _, pending = await _wait_for_first(events)
+        except BaseException:
+            for manager, event in pairs:
+                manager._discard_slot_available_event(event)
+                manager._wake_waiters()
+            raise
         for manager, event in pairs:
             if event in pending:
                 manager._discard_slot_available_event(event)
@@ -927,19 +972,23 @@ class ThrottlingScopeManager:
     def __init__(self, crawler: Crawler, config: dict[str, Any]) -> None:
         settings = crawler.settings
         self._id: ScopeID = config.get("id", "")
-        # The per-scope delay defaults to DOWNLOAD_DELAY; a scope can override
-        # it with its own "delay" config (see THROTTLING_SCOPES).
         self._base_delay: float = float(
-            config.get("delay", settings.getfloat("DOWNLOAD_DELAY"))
+            config["delay"]
+            if "delay" in config
+            else settings.getfloat("DOWNLOAD_DELAY")
         )
         # Magnitude of the random variation applied to the delay, defaulting to
         # DOWNLOAD_DELAY_JITTER.
-        self._jitter: float = float(config.get("jitter", _default_jitter(settings)))
+        self._jitter: float = float(
+            config["jitter"] if "jitter" in config else _default_jitter(settings)
+        )
 
         # Concurrency. Always limited: a scope has no way to express "no limit"
         # (see _check_scope_concurrency), so this is a positive integer.
         self._concurrency: int = int(
-            config.get("concurrency", _default_scope_concurrency(settings))
+            config["concurrency"]
+            if "concurrency" in config
+            else _default_scope_concurrency(settings)
         )
 
         # State.
@@ -985,7 +1034,18 @@ class ThrottlingScopeManager:
     def _record_done(self, now: float | None = None) -> None:
         if self._active > 0:
             self._active -= 1
-            self._slot_available.fire()
+            # One slot freed, so one waiter woken: see _Event.fire().
+            self._slot_available.fire(1)
+
+    def _wake_waiters(self) -> None:
+        """Wake one waiter per free concurrency slot.
+
+        :meth:`_record_done` wakes the waiter of the slot it frees, so this is
+        for the callers that make room some other way, and for a waiter that was
+        woken for a slot it turned out not to use and has to pass it on (see
+        :meth:`Throttler._acquire_scope_slots`).
+        """
+        self._slot_available.fire(self._concurrency - self._active)
 
     def _concurrency_blocked(self) -> bool:
         return self._active >= self._concurrency
@@ -1030,7 +1090,7 @@ class ThrottlingScopeManager:
                 f"Scope concurrency must be 1 or higher, got {concurrency!r}."
             )
         self._concurrency = concurrency
-        self._slot_available.fire()
+        self._wake_waiters()
 
     def _is_idle(self, now: float) -> bool:
         # A delay that has not elapsed yet would let the next request for the

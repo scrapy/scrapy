@@ -414,6 +414,16 @@ class TestEvent:
         # raise): they are dropped as they fire.
         event.fire()
 
+    def test_fire_limit(self) -> None:
+        event = _Event()
+        waiters = [event.wait(), event.wait(), event.wait()]
+        event.fire(0)
+        assert not any(waiter.called for waiter in waiters)
+        event.fire(2)
+        assert [waiter.called for waiter in waiters] == [True, True, False]
+        event.fire(2)
+        assert all(waiter.called for waiter in waiters)
+
     def test_fire_skips_already_fired(self) -> None:
         event = _Event()
         waiter = event.wait()

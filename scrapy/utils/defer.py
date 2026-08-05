@@ -598,8 +598,19 @@ class _Event:
         with suppress(ValueError):
             self._waiters.remove(waiter)
 
-    def fire(self) -> None:
-        waiters, self._waiters = self._waiters, []
+    def fire(self, limit: int | None = None) -> None:
+        """Fire every waiter, or only the *limit* oldest ones.
+
+        A limit is for an event that hands out a countable resource, one waiter
+        per unit of it: waking the rest would only have them find it taken and
+        wait again, which on a busy event is most of the work they do.
+        """
+        if limit is None:
+            waiters, self._waiters = self._waiters, []
+        elif limit <= 0:
+            return
+        else:
+            waiters, self._waiters = self._waiters[:limit], self._waiters[limit:]
         for waiter in waiters:
             if not waiter.called:
                 waiter.callback(None)
