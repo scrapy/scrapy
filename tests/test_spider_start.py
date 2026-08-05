@@ -23,7 +23,10 @@ ITEM_B = {"id": "b"}
 
 class TestMain:
     async def _test_spider(
-        self, spider: type[Spider], expected_items: list[Any] | None = None
+        self,
+        spider: type[Spider],
+        expected_items: list[Any] | None = None,
+        settings: dict[str, Any] | None = None,
     ) -> None:
         actual_items = []
         expected_items = [] if expected_items is None else expected_items
@@ -31,7 +34,7 @@ class TestMain:
         def track_item(item, response, spider):
             actual_items.append(item)
 
-        crawler = get_crawler(spider)
+        crawler = get_crawler(spider, settings)
         crawler.signals.connect(track_item, signals.item_scraped)
         await crawler.crawl_async()
         assert crawler.stats
@@ -98,3 +101,24 @@ class TestMain:
             yield ITEM_A
 
         await self._test_start(start, [ITEM_A])
+
+    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
+    @coroutine_test
+    async def test_slow_pipeline(self):
+        class SlowPipeline:
+            async def process_item(self, item):
+                await maybe_deferred_to_future(twisted_sleep(SLEEP_SECONDS))
+                return item
+
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                yield ITEM_A
+                yield ITEM_B
+
+        await self._test_spider(
+            TestSpider,
+            [ITEM_A, ITEM_B],
+            {"ITEM_PIPELINES": {SlowPipeline: 0}},
+        )
