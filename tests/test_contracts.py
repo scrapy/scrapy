@@ -164,6 +164,20 @@ class DemoSpider(Spider):
         """
         return self.returns_request_async(response)
 
+    def returns_async_gen_sync(self, response):
+        """method which returns an async generator without being defined with async def
+        @url http://scrapy.org
+        @returns items 1 1
+        """
+        return self.returns_async_gen(response)
+
+    async def raises_async(self, response):
+        """async method which raises an exception
+        @url http://scrapy.org
+        @returns items 1 1
+        """
+        raise ValueError("async callback error")
+
     def returns_dict_fail(self, response):
         """method which returns item
         @url http://scrapy.org
@@ -484,6 +498,23 @@ class TestContractsManager:
 
         request = self.conman.from_method(spider.returns_coroutine, self.results)
         request.callback(response)
+        self.should_error()
+
+    def test_returns_async_gen_sync(self):
+        spider = DemoSpider()
+        response = ResponseMock()
+
+        request = self.conman.from_method(spider.returns_async_gen_sync, self.results)
+        request.callback(response)
+        self.should_error()
+
+    @coroutine_test
+    async def test_raises_async(self):
+        spider = DemoSpider()
+        response = ResponseMock()
+
+        request = self.conman.from_method(spider.raises_async, self.results)
+        await request.callback(response)
         self.should_error()
 
     def test_returns_invalid_argument_count(self):
