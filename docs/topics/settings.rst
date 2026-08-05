@@ -2328,6 +2328,11 @@ also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
 
+Set it to a value that identifies you, including a URL or an email address
+where website owners can reach you, e.g. ``"MyProject
+(+https://example.com/bot)"``, so that they can ask you to adjust your crawler
+rather than block it.
+
 .. setting:: WARN_ON_GENERATOR_RETURN_VALUE
 
 WARN_ON_GENERATOR_RETURN_VALUE
