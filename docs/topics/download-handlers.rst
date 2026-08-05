@@ -203,9 +203,6 @@ Other limitations:
 -   IPv6 support requires setting :setting:`TWISTED_DNS_RESOLVER`
     to ``scrapy.resolver.CachingHostnameResolver``.
 
--   No support for the :signal:`bytes_received` and :signal:`headers_received`
-    signals.
-
 Known limitations of the HTTP/2 support:
 
 -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
