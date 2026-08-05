@@ -73,6 +73,28 @@ the project settings. Here is an example:
     [settings]
     default = myproject.settings
 
+Renaming a project
+------------------
+
+If you rename a Scrapy project directory (for example, renaming ``myproject`` to ``newproject``), you must update the project module references in the following files for Scrapy commands to continue working:
+
+1. In ``scrapy.cfg``, update the ``default`` settings module path:
+
+   .. code-block:: ini
+
+       [settings]
+       default = newproject.settings
+
+2. In ``newproject/settings.py``, update the bot name and spider module paths:
+
+   .. code-block:: python
+
+       BOT_NAME = "newproject"
+       SPIDER_MODULES = ["newproject.spiders"]
+       NEWSPIDER_MODULE = "newproject.spiders"
+
+3. Update any custom imports inside ``middlewares.py``, ``pipelines.py``, or spider files that reference the old project package name.
+
 .. _topics-project-envvar:
 
 Sharing the root directory between projects
