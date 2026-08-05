@@ -149,6 +149,15 @@ scheduler_empty
 
     See :ref:`start-requests-lazy` for an example.
 
+    .. warning:: Only wait for this signal from
+        :meth:`~scrapy.Spider.start`. While no request can be sent, e.g. while
+        the responses being parsed exceed
+        :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`, the engine does not ask the
+        scheduler for requests, and hence this signal is not sent. So waiting
+        for it from a :ref:`callback <callbacks>` can hang the crawl,
+        because the response being parsed is itself one of the responses that
+        may be blocking requests.
+
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
 
