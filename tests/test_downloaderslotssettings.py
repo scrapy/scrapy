@@ -18,15 +18,15 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
     custom_settings = {
         "DOWNLOAD_DELAY": 1,
-        "RANDOMIZE_DOWNLOAD_DELAY": False,
+        "DOWNLOAD_DELAY_JITTER": 0,
         "DOWNLOAD_SLOTS": {
             "quotes.toscrape.com": {
                 "concurrency": 1,
                 "delay": 2,
-                "randomize_delay": False,
+                "jitter": 0,
                 "throttle": False,
             },
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+            "books.toscrape.com": {"delay": 3, "jitter": 0},
         },
     }
 
@@ -86,7 +86,7 @@ async def test_params():
     params = {
         "concurrency": 1,
         "delay": 2,
-        "randomize_delay": False,
+        "jitter": 0,
     }
     settings = {
         "DOWNLOAD_SLOTS": {
@@ -104,6 +104,22 @@ async def test_params():
         assert getattr(expected, param) == getattr(actual, param), (
             f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
         )
+
+
+@pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+@coroutine_test
+async def test_deprecated_randomize_delay_param(value: bool, expected: float):
+    settings = {"DOWNLOAD_SLOTS": {"example.com": {"randomize_delay": value}}}
+    crawler = get_crawler(DefaultSpider, settings_dict=settings)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The randomize_delay key of the DOWNLOAD_SLOTS setting is deprecated",
+    ):
+        _, slot = downloader._get_slot(Request("https://example.com"))
+    downloader.close()
+    assert slot.jitter == expected
 
 
 @coroutine_test
