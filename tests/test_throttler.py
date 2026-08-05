@@ -1046,10 +1046,11 @@ class TestThrottlerEdges:
     async def test_delay_request(self):
         manager = _manager({"THROTTLER_DEBUG": True})
         request = Request("http://example.com/a", meta={"delay": 0.01})
-        await manager._delay_request(request)
+        await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
         assert request.meta["_throttler_delay_deadline"] is None
-        # A second call is a no-op (the request was already delayed).
-        await manager._delay_request(request)
+        manager.release(request)
+        # A second pass is a no-op (the request was already delayed).
+        await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
 
     @coroutine_test
     async def test_delay_request_without_debug(self):
@@ -1057,7 +1058,7 @@ class TestThrottlerEdges:
         # without emitting the debug message.
         manager = _manager()
         request = Request("http://example.com/a", meta={"delay": 0.01})
-        await manager._delay_request(request)
+        await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
         assert request.meta["_throttler_delay_deadline"] is None
 
     @coroutine_test
