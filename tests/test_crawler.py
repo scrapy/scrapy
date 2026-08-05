@@ -85,6 +85,14 @@ class TestCrawler:
         crawler._apply_settings()
         assert getattr(crawler, attr) is not None
 
+    @pytest.mark.parametrize(
+        "attr",
+        ["engine", "extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_on_class(self, attr: str) -> None:
+        # Introspection tools such as help() read these off the class.
+        assert getattr(Crawler, attr) is getattr(Crawler, attr)
+
     def test_late_attr_engine_before_crawl(self) -> None:
         crawler = get_raw_crawler(DefaultSpider)
         crawler._apply_settings()
