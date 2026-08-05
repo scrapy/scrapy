@@ -11,7 +11,7 @@ from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.throttler import _STAMPED_SLOT_META_KEY
+from scrapy.throttler import _STAMPED_SLOT_META_KEY, _default_jitter
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
@@ -234,7 +234,7 @@ class Downloader:
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return self.settings.getbool("RANDOMIZE_DOWNLOAD_DELAY")
+        return bool(_default_jitter(self.settings))
 
     @property
     def slots(self) -> dict[str, _DeprecatedSlotView]:

@@ -7,7 +7,6 @@ import time
 import warnings
 from collections import OrderedDict
 from collections.abc import Iterable, Mapping
-from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, cast
 from weakref import WeakKeyDictionary, WeakSet
 
@@ -43,8 +42,7 @@ class ThrottlingScopeConfig(TypedDict, total=False):
     """Per-scope override of :setting:`DOWNLOAD_DELAY`."""
 
     jitter: float
-    """Magnitude of the random variation applied to ``delay`` (``0`` disables it,
-    ``0.5`` means ±50%). Defaults to :setting:`RANDOMIZE_DOWNLOAD_DELAY`."""
+    """Per-scope override of :setting:`DOWNLOAD_DELAY_JITTER`."""
 
 
 ScopeID = str
@@ -105,17 +103,16 @@ def _default_scope_concurrency(settings: BaseSettings) -> int:
 
 def _default_jitter(settings: BaseSettings) -> float:
     """Return the default magnitude of the random variation applied to the delay
-    of a throttling scope that does not set its own ``jitter``, from
-    :setting:`RANDOMIZE_DOWNLOAD_DELAY`: the factor it holds, or the historical
-    ±50% (or none) for a boolean."""
-    value = settings["RANDOMIZE_DOWNLOAD_DELAY"]
-    if not isinstance(value, bool):
-        # float() before getbool(), which rejects a factor; a boolean would come
-        # out of it as 1.0 rather than as the historical 0.5, hence the check
-        # above. A string can hold either form.
-        with suppress(TypeError, ValueError):
-            return float(value)
-    return 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
+    of a throttling scope that does not set its own ``jitter``:
+    :setting:`DOWNLOAD_DELAY_JITTER`, or the deprecated
+    ``RANDOMIZE_DOWNLOAD_DELAY`` when set at a higher :ref:`priority
+    <populating-settings>`, mapped to the historical ±50% or none (see
+    :func:`_warn_on_deprecated_randomization`)."""
+    if _effective_priority(settings, "RANDOMIZE_DOWNLOAD_DELAY") > _effective_priority(
+        settings, "DOWNLOAD_DELAY_JITTER"
+    ):
+        return 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
+    return settings.getfloat("DOWNLOAD_DELAY_JITTER")
 
 
 def _warn_on_ignored_per_ip(settings: BaseSettings) -> None:
@@ -179,6 +176,28 @@ def _warn_on_deprecated_concurrency(settings: BaseSettings) -> None:
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
+
+
+def _warn_on_deprecated_randomization(settings: BaseSettings) -> None:
+    """Warn that :setting:`RANDOMIZE_DOWNLOAD_DELAY` is deprecated when it is
+    set. Call once per crawl (see :meth:`Throttler.__init__`).
+
+    Both defaults mean the same ±50%, so a crawl that sets neither needs no
+    warning.
+    """
+    if (
+        _effective_priority(settings, "RANDOMIZE_DOWNLOAD_DELAY")
+        <= SETTINGS_PRIORITIES["default"]
+    ):
+        return
+    warnings.warn(
+        "The RANDOMIZE_DOWNLOAD_DELAY setting is deprecated, use "
+        "DOWNLOAD_DELAY_JITTER instead: it takes the magnitude of the random "
+        "variation as a number, e.g. 0.5 for the ±50% that "
+        "RANDOMIZE_DOWNLOAD_DELAY enables, or 0 to disable it.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
 
 def _check_scope_config(setting: str, scope_id: str, config: Any) -> Mapping[str, Any]:
@@ -391,6 +410,7 @@ class Throttler:
         )
         _check_scope_concurrency(crawler.settings, self._scopes_config)
         _warn_on_deprecated_concurrency(crawler.settings)
+        _warn_on_deprecated_randomization(crawler.settings)
         _warn_on_ignored_per_ip(crawler.settings)
         _warn_on_unachievable_concurrency(crawler.settings, self._scopes_config)
         self._debug = crawler.settings.getbool("THROTTLER_DEBUG")
@@ -912,7 +932,7 @@ class ThrottlingScopeManager:
             config.get("delay", settings.getfloat("DOWNLOAD_DELAY"))
         )
         # Magnitude of the random variation applied to the delay, defaulting to
-        # RANDOMIZE_DOWNLOAD_DELAY.
+        # DOWNLOAD_DELAY_JITTER.
         self._jitter: float = float(config.get("jitter", _default_jitter(settings)))
 
         # Concurrency. Always limited: a scope has no way to express "no limit"
@@ -934,10 +954,11 @@ class ThrottlingScopeManager:
     @staticmethod
     def _apply_jitter(value: float, jitter: float) -> float:
         """Spread *value* by ±*jitter*, e.g. a *jitter* of ``0.5`` returns
-        ``value * uniform(0.5, 1.5)``."""
+        ``value * uniform(0.5, 1.5)``. A *jitter* above ``1`` would reach into
+        negative delays, which are floored at ``0``."""
         if not jitter:
             return value
-        return value * (1 + random.uniform(-jitter, jitter))  # noqa: S311
+        return max(0.0, value * (1 + random.uniform(-jitter, jitter)))  # noqa: S311
 
     def _effective_delay(self) -> float:
         # Jitter is applied per use, rather than stored, so that every interval

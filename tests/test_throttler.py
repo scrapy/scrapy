@@ -22,9 +22,11 @@ from scrapy.throttler import (
     Throttler,
     ThrottlingScopeManager,
     _check_scope_concurrency,
+    _default_jitter,
     _default_scope_concurrency,
     _default_scope_concurrency_setting,
     _warn_on_deprecated_concurrency,
+    _warn_on_deprecated_randomization,
     _warn_on_ignored_per_ip,
     _warn_on_unachievable_concurrency,
     iter_scopes,
@@ -232,7 +234,7 @@ class TestThrottler:
                 "THROTTLING_SCOPES": {
                     "example.com": {"concurrency": 1, "delay": 100.0}
                 },
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
+                "DOWNLOAD_DELAY_JITTER": 0,
             }
         )
         blocking = Request("http://example.com/1")
@@ -270,7 +272,7 @@ class TestThrottler:
             {
                 "THROTTLING_SCOPE_LIMIT": 1,
                 "DOWNLOAD_DELAY": 30.0,
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
+                "DOWNLOAD_DELAY_JITTER": 0,
             }
         )
         delayed = _scope(manager, "a.example")
@@ -330,7 +332,7 @@ class TestThrottler:
         manager = _manager(
             {
                 "THROTTLING_SCOPE_LIMIT": 2,
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
+                "DOWNLOAD_DELAY_JITTER": 0,
                 "THROTTLING_SCOPES": {
                     "slow": {"delay": 0.5},
                     "shared": {"concurrency": 1},
@@ -774,9 +776,7 @@ class TestThrottlingScopeManager:
         assert scope._can_send(now=0.0) == 0
 
     def test_base_delay_enforced(self):
-        scope = _scope_manager(
-            {"RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x", "delay": 2.0}
-        )
+        scope = _scope_manager({"DOWNLOAD_DELAY_JITTER": 0}, {"id": "x", "delay": 2.0})
         scope._record_sent(now=10.0)
         assert scope._can_send(now=10.0) == pytest.approx(2.0)
         assert scope._can_send(now=11.0) == pytest.approx(1.0)
@@ -785,22 +785,20 @@ class TestThrottlingScopeManager:
     def test_base_delay_defaults_to_download_delay(self):
         # With no explicit scope "delay", the base delay is DOWNLOAD_DELAY.
         scope = _scope_manager(
-            {"DOWNLOAD_DELAY": 2.0, "RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x"}
+            {"DOWNLOAD_DELAY": 2.0, "DOWNLOAD_DELAY_JITTER": 0}, {"id": "x"}
         )
         assert scope._base_delay == pytest.approx(2.0)
 
     def test_scope_delay_overrides_download_delay(self):
         # An explicit scope "delay" overrides DOWNLOAD_DELAY.
         scope = _scope_manager(
-            {"DOWNLOAD_DELAY": 2.0, "RANDOMIZE_DOWNLOAD_DELAY": False},
+            {"DOWNLOAD_DELAY": 2.0, "DOWNLOAD_DELAY_JITTER": 0},
             {"id": "x", "delay": 0.0},
         )
         assert scope._base_delay == pytest.approx(0.0)
 
     def test_set_base_delay_raises_only(self):
-        scope = _scope_manager(
-            {"RANDOMIZE_DOWNLOAD_DELAY": False}, {"id": "x", "delay": 5.0}
-        )
+        scope = _scope_manager({"DOWNLOAD_DELAY_JITTER": 0}, {"id": "x", "delay": 5.0})
         scope.set_base_delay(2.0)  # lower -> ignored
         assert scope._base_delay == 5.0
         scope.set_base_delay(8.0)  # higher -> applied
@@ -932,7 +930,7 @@ class TestThrottlerEdges:
         manager = _manager(
             {
                 "THROTTLING_SCOPES": {"example.com": {"delay": 0.02}},
-                "RANDOMIZE_DOWNLOAD_DELAY": False,
+                "DOWNLOAD_DELAY_JITTER": 0,
                 "THROTTLER_DEBUG": True,
             }
         )
@@ -1044,24 +1042,18 @@ class TestThrottlingScopeManagerEdges:
         scope = _scope_manager(config={"id": "x", "jitter": 0})
         assert scope._apply_jitter(4.0, scope._jitter) == pytest.approx(4.0)
 
-    @pytest.mark.parametrize(
-        ("value", "expected"),
-        [
-            (True, 0.5),
-            (False, 0.0),
-            (0.2, 0.2),
-            ("0.2", 0.2),
-            ("True", 0.5),
-            ("False", 0.0),
-        ],
-    )
+    @pytest.mark.parametrize(("value", "expected"), [(0.2, 0.2), ("0.2", 0.2)])
     def test_jitter_from_settings(self, value: Any, expected: float):
-        scope = _scope_manager({"RANDOMIZE_DOWNLOAD_DELAY": value}, {"id": "x"})
+        scope = _scope_manager({"DOWNLOAD_DELAY_JITTER": value}, {"id": "x"})
         assert scope._jitter == pytest.approx(expected)
+
+    def test_jitter_above_one_does_not_go_below_zero(self):
+        scope = _scope_manager(config={"id": "x", "delay": 2.0, "jitter": 3.0})
+        assert min(scope._effective_delay() for _ in range(100)) >= 0.0
 
     def test_effective_delay_randomized(self):
         scope = _scope_manager(
-            {"RANDOMIZE_DOWNLOAD_DELAY": True}, {"id": "x", "delay": 2.0}
+            {"DOWNLOAD_DELAY_JITTER": 0.5}, {"id": "x", "delay": 2.0}
         )
         scope._record_sent(now=0.0)
         # A randomized base delay lands within [0.5, 1.5] * delay.
@@ -1213,6 +1205,67 @@ class TestConcurrencyBridging:
                 settings, Throttler._merge_download_slots(settings)
             )
         assert "the concurrency of throttling scope 'a'=50" in caplog.text
+
+
+class TestJitterBridging:
+    def _settings(self, **kwargs: Any) -> Settings:
+        settings = Settings()
+        for name, value in kwargs.items():
+            settings.set(name, value, priority="spider")
+        return settings
+
+    def test_default_when_neither_set(self):
+        assert _default_jitter(Settings()) == 0.5
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (True, 0.5),
+            (False, 0.0),
+            # Every spelling that RANDOMIZE_DOWNLOAD_DELAY has ever accepted as
+            # a boolean keeps meaning the same ±50%, or none.
+            (1, 0.5),
+            (0, 0.0),
+            ("1", 0.5),
+            ("0", 0.0),
+            ("True", 0.5),
+            ("false", 0.0),
+        ],
+    )
+    def test_randomize_maps_to_a_magnitude(self, value: Any, expected: float):
+        settings = self._settings(RANDOMIZE_DOWNLOAD_DELAY=value)
+        assert _default_jitter(settings) == pytest.approx(expected)
+
+    def test_jitter_wins_when_higher_priority(self):
+        settings = self._settings(DOWNLOAD_DELAY_JITTER=0.2)
+        settings.set("RANDOMIZE_DOWNLOAD_DELAY", False, priority="default")
+        assert _default_jitter(settings) == pytest.approx(0.2)
+
+    def test_jitter_wins_on_explicit_tie(self):
+        settings = self._settings(
+            RANDOMIZE_DOWNLOAD_DELAY=False, DOWNLOAD_DELAY_JITTER=0.2
+        )
+        assert _default_jitter(settings) == pytest.approx(0.2)
+
+    def test_randomize_reaches_the_scope_manager(self):
+        with pytest.warns(ScrapyDeprecationWarning, match="is deprecated"):
+            crawler = get_crawler(SimpleSpider, {"RANDOMIZE_DOWNLOAD_DELAY": False})
+        assert crawler.throttler is not None
+        assert crawler.throttler.get_scope_manager("example.com")._jitter == 0.0
+
+    def test_warns_when_randomize_set(self):
+        settings = self._settings(RANDOMIZE_DOWNLOAD_DELAY=True)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="RANDOMIZE_DOWNLOAD_DELAY setting is deprecated",
+        ):
+            _warn_on_deprecated_randomization(settings)
+
+    @pytest.mark.parametrize("settings_dict", [{}, {"DOWNLOAD_DELAY_JITTER": 0}])
+    def test_no_warning_otherwise(self, settings_dict: dict[str, Any]):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _warn_on_deprecated_randomization(self._settings(**settings_dict))
 
 
 class TestIgnoredPerIPConcurrency:

@@ -505,7 +505,7 @@ async def test_deprecated_downloader_properties():
         DefaultSpider,
         settings_dict={
             "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
-            "RANDOMIZE_DOWNLOAD_DELAY": True,
+            "DOWNLOAD_DELAY_JITTER": 0.5,
         },
     )
     crawler.spider = crawler._create_spider()
@@ -570,7 +570,7 @@ async def test_deprecated_slot_view_without_randomization():
         DefaultSpider,
         settings_dict={
             "THROTTLING_SCOPES": {"example.com": {"delay": 2.0}},
-            "RANDOMIZE_DOWNLOAD_DELAY": False,
+            "DOWNLOAD_DELAY_JITTER": 0,
         },
     )
     crawler.spider = crawler._create_spider()

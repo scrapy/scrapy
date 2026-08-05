@@ -429,14 +429,12 @@ its domain and its IP, and is only sent when **both** allow it.
 Additional settings
 ===================
 
--   .. setting:: RANDOMIZE_DOWNLOAD_DELAY
+-   .. setting:: DOWNLOAD_DELAY_JITTER
 
-    :setting:`RANDOMIZE_DOWNLOAD_DELAY` (default: ``True``)
+    :setting:`DOWNLOAD_DELAY_JITTER` (default: ``0.5``)
 
     Randomize delays by this factor, e.g. ``0.2`` randomizes delays between
-    ``delay*0.8`` and ``delay*1.2``.
-
-    ``True`` means ``0.5`` (i.e. ±50%), and ``False`` means no randomization.
+    ``delay*0.8`` and ``delay*1.2``. ``0`` disables randomization.
 
 -   .. setting:: THROTTLER_DEBUG
 

@@ -3615,7 +3615,7 @@ New features
 
 -   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
     ``CONCURRENT_REQUESTS_PER_DOMAIN`` and
-    :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
+    ``RANDOMIZE_DOWNLOAD_DELAY`` can now be set on a per-domain basis
     via the new ``DOWNLOAD_SLOTS`` setting. (:issue:`5328`)
 
 -   Added :meth:`.TextResponse.jmespath`, a shortcut for JMESPath selectors
@@ -7694,7 +7694,7 @@ Documentation
 - Download stats badge removed from README (:issue:`2160`).
 - New Scrapy :ref:`architecture diagram <topics-architecture>` (:issue:`2165`).
 - Updated ``Response`` parameters documentation (:issue:`2197`).
-- Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
+- Reworded misleading ``RANDOMIZE_DOWNLOAD_DELAY`` description (:issue:`2190`).
 - Add StackOverflow as a support channel (:issue:`2257`).
 
 .. _release-1.1.4:
