@@ -7,7 +7,7 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred
 
@@ -89,10 +89,16 @@ class RobotsTxtMiddleware:
         if netloc not in self._parsers:
             self._parsers[netloc] = Deferred()
             robotsurl = f"{url.scheme}://{url.netloc}/robots.txt"
+            meta: dict[str, Any] = {
+                "dont_obey_robotstxt": True,
+                "is_robotstxt_request": True,
+            }
+            if "download_handler" in request.meta:
+                meta["download_handler"] = request.meta["download_handler"]
             robotsreq = Request(
                 robotsurl,
                 priority=self.DOWNLOAD_PRIORITY,
-                meta={"dont_obey_robotstxt": True},
+                meta=meta,
                 callback=NO_CALLBACK,
             )
             assert self.crawler.engine
