@@ -632,6 +632,37 @@ class TestUnscheduledRequests:
         await self._stop_waiting(blocked)
 
     @coroutine_test
+    async def test_a_waiter_claim_only_looks_at_the_scopes_holding_it_back(
+        self,
+    ) -> None:
+        manager = _manager(
+            {
+                "THROTTLING_SCOPES": {"full": {"concurrency": 1}},
+                "THROTTLING_SCOPE_LIMIT": 4,
+            }
+        )
+        blocker = Request("http://example.com/1", meta={"throttling_scopes": "full"})
+        await self._acquire(manager, blocker)
+        waiting = Request(
+            "http://example.com/2",
+            meta={"throttling_scopes": ["evicted", "free", "shared", "full"]},
+        )
+        blocked = await self._start_waiting(manager, waiting)
+        # A new scope pushes past the scope limit while the waiter is blocked on
+        # "full", dropping "evicted", the coldest idle scope of the waiter.
+        manager.get_scope_manager("other")
+        assert "evicted" not in manager._scope_managers
+        # An evicted scope has no state to hold the waiter back, and "free" lets
+        # it through, so only "full" decides: the waiter cannot use a free slot
+        # of "shared" and the scheduler gets it.
+        scheduled = Request(
+            "http://example.com/3", meta={"throttling_scopes": "shared"}
+        )
+        await self._acquire(manager, scheduled)
+        assert scheduled in manager._reserved
+        await self._stop_waiting(blocked)
+
+    @coroutine_test
     async def test_the_same_request_waiting_twice_reserves_once(self) -> None:
         """Downloading the same Request object twice at once is unsupported, but
         it must not record two sends that a single release() undoes: that would
