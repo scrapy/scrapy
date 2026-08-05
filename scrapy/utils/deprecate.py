@@ -65,10 +65,11 @@ def create_deprecated_class(
     # deprecated_class() takes the module of the alias from its calling frame,
     # which is this function and the decorator wrapping it, so skip past both.
     frame = inspect.currentframe()
-    while frame is not None and frame.f_globals.get("__name__") in _WRAPPER_MODULES:
+    assert frame is not None
+    while frame.f_globals.get("__name__") in _WRAPPER_MODULES:
+        assert frame.f_back is not None
         frame = frame.f_back
-    if frame is not None:
-        cls.__module__ = frame.f_globals.get("__name__", cls.__module__)
+    cls.__module__ = frame.f_globals.get("__name__", cls.__module__)
     return cls
 
 

@@ -6,11 +6,20 @@ from unittest import mock
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.deprecate import create_deprecated_class, update_classpath
+from scrapy.utils.deprecate import attribute, create_deprecated_class, update_classpath
 
 
 class NewName:
     pass
+
+
+def test_attribute():
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match=r"NewName\.old attribute is deprecated and will be no longer supported"
+        r" in Scrapy 1\.0, use NewName\.new attribute instead",
+    ):
+        attribute(NewName(), "old", "new", version="1.0")
 
 
 class TestCreateDeprecatedClass:
