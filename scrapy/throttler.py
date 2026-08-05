@@ -103,7 +103,7 @@ def _default_jitter(settings: BaseSettings) -> float:
     of a throttling scope that does not set its own ``jitter``:
     :setting:`DOWNLOAD_DELAY_JITTER`, or the deprecated
     ``RANDOMIZE_DOWNLOAD_DELAY`` when set at a higher :ref:`priority
-    <populating-settings>`, mapped to the historical ±50% or none (see
+    <populating-settings>`, mapped to ±50% or none (see
     :func:`_warn_on_deprecated_randomization`)."""
     if _effective_priority(settings, "RANDOMIZE_DOWNLOAD_DELAY") > _effective_priority(
         settings, "DOWNLOAD_DELAY_JITTER"
@@ -442,9 +442,9 @@ class Throttler(ThrottlerProtocol):
 
         Each ``DOWNLOAD_SLOTS`` entry is translated to a throttling scope keyed
         by the same slot name (the default manager keys domain scopes by host
-        name, which is what download slots used too): ``concurrency`` and
+        name, matching how download slots are keyed): ``concurrency`` and
         ``delay`` map directly, and the ``randomize_delay`` boolean maps to a
-        ``jitter`` magnitude (the historical ±50%, or none). An explicit
+        ``jitter`` magnitude (±50%, or none). An explicit
         ``THROTTLING_SCOPES`` entry for the same scope takes precedence over the
         translated one. The deprecation warning is emitted by the downloader.
 

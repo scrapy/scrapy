@@ -59,7 +59,7 @@ class TestScopeConcurrencyBridge:
         return _default_scope_concurrency(settings)
 
     def test_neither_set_preserves_per_domain_default(self) -> None:
-        # Neither setting overridden: keep the historical per-domain default.
+        # Neither setting overridden: keep the per-domain default.
         assert self._resolve(Settings()) == 8
 
     def test_per_domain_overrides(self) -> None:

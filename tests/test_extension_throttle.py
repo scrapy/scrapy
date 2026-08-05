@@ -318,7 +318,7 @@ def test_debug(caplog):
         (
             "scrapy.extensions.throttle",
             INFO,
-            "slot: example.com | delay: 1500 ms (-500) | latency: 1000 ms | size:     3 bytes",
+            "scope: example.com | delay: 1500 ms (-500) | latency: 1000 ms | size:     3 bytes",
         ),
     ]
 

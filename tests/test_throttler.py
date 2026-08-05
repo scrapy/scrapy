@@ -1109,8 +1109,8 @@ class TestConcurrencyBridging:
         return settings
 
     def test_default_when_neither_set(self):
-        # Neither setting is set explicitly: the historical per-domain default
-        # (8) is kept for backward compatibility over the scope default (1).
+        # Neither setting is set explicitly: the per-domain default (8) is kept
+        # for backward compatibility over the scope default (1).
         assert _default_scope_concurrency(Settings()) == 8
 
     def test_per_domain_wins_when_higher_priority(self):

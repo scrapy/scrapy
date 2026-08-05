@@ -284,9 +284,8 @@ class Downloader:
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        # Mirrors the historical keying (an explicit download_slot wins, else
-        # the domain); the slot key used at run time comes from the throttler
-        # (see _get_slot_key()).
+        # An explicit download_slot wins, else the domain. The key used at run
+        # time comes from the throttler (see _get_slot_key()).
         meta_slot: str | None = request.meta.get(self.DOWNLOAD_SLOT)
         if meta_slot is not None:
             return meta_slot

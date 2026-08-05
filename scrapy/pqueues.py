@@ -144,11 +144,11 @@ class ScrapyPriorityQueue:
             if self._start_queue_cls:
                 self._start_queues[priority] = self._sqfactory(priority)
 
-        # Not min(startprios): a recorded priority may have no queue to restore
-        # (e.g. it only ever held a request that failed to serialize), and
-        # leaving curprio pointing at a priority that neither dict has would
-        # make peek() come up empty. This also drops and closes the queues that
-        # turned out to have nothing to restore.
+        # A recorded priority may have no request to restore (e.g. it only ever
+        # held a request that failed to serialize), and curprio must point at a
+        # priority that one of the two dicts has a request at, or peek() comes up
+        # empty. This also drops and closes the queues that turned out to have
+        # nothing to restore.
         self._update_curprio()
 
     def qfactory(self, key: int) -> QueueProtocol:

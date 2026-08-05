@@ -68,10 +68,9 @@ class AutoThrottle:
         ):
             return
 
-        # The scopes the request was sent under, rather than its host name: a
-        # request may be throttled under scopes of the user's choosing (see
-        # THROTTLING_SCOPES), and the delay of any other scope has no effect on
-        # how this request was throttled.
+        # Only the scopes the request was sent under: a request may be throttled
+        # under scopes of the user's choosing (see THROTTLING_SCOPES), and the
+        # delay of any scope it was not sent under had no effect on it.
         for scope_id in throttler.get_applied_scopes(request):
             scope = throttler.get_scope_manager(scope_id)
             olddelay = self._scope_delay(scope, scope_id)
@@ -79,16 +78,11 @@ class AutoThrottle:
             scope.set_base_delay(newdelay, only_increase=False)
             if self.debug:
                 logger.info(
-                    "slot: %(slot)s | "
-                    "delay:%(delay)5d ms (%(delaydiff)+d) | "
-                    "latency:%(latency)5d ms | size:%(size)6d bytes",
-                    {
-                        "slot": scope_id,
-                        "delay": newdelay * 1000,
-                        "delaydiff": (newdelay - olddelay) * 1000,
-                        "latency": latency * 1000,
-                        "size": len(response.body),
-                    },
+                    f"scope: {scope_id} | "
+                    f"delay:{newdelay * 1000:5.0f} ms "
+                    f"({(newdelay - olddelay) * 1000:+.0f}) | "
+                    f"latency:{latency * 1000:5.0f} ms | "
+                    f"size:{len(response.body):6d} bytes",
                     extra={"spider": spider},
                 )
 
@@ -97,7 +91,7 @@ class AutoThrottle:
         the first time the scope is seen.
 
         Adaptive tuning owns the scope delay from then on, bounded only by
-        AUTOTHROTTLE_MIN_DELAY and AUTOTHROTTLE_MAX_DELAY, as it always has. So a
+        AUTOTHROTTLE_MIN_DELAY and AUTOTHROTTLE_MAX_DELAY. So a
         robots.txt ``Crawl-delay`` only shapes the delay this extension starts
         from, and a lower AUTOTHROTTLE_MIN_DELAY lets it be undercut later; set
         AUTOTHROTTLE_MIN_DELAY to the lowest delay every website in the crawl may
