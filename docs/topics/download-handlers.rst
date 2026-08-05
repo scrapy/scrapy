@@ -60,6 +60,10 @@ for them through the :reqmeta:`download_handler` metadata key:
         "playwright": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
     }
 
+.. invisible-code-block: python
+
+    from scrapy import Request
+
 .. code-block:: python
 
     Request("https://example.com", meta={"download_handler": "playwright"})
