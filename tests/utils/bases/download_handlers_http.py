@@ -297,12 +297,12 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.status == 200
-        received_headers = set(response.headers.keys())
+        received_headers = {key.lower() for key in response.headers}
         allowed_headers = {
-            b"Content-Length",
-            b"Content-Type",
-            b"Date",
-            b"Server",
+            b"content-length",
+            b"content-type",
+            b"date",
+            b"server",
         }
         extra_headers = received_headers - allowed_headers
         assert not extra_headers, response.headers

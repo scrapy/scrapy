@@ -140,7 +140,11 @@ HTTP/2             Yes               No                    Yes
 TLS implementation ``cryptography``  ``cryptography``      Stdlib ``ssl``
 HTTP proxies       No                Yes                   Yes
 SOCKS proxies      No                No                    Yes
+Header name case   Lowercase         Capitalized           As written
 ================== ================= ===================== ====================
+
+Because HTTP/2 requires lowercase header names, handlers only keep the case of
+your header names over HTTP/1.1.
 
 You can find additional HTTP download handlers in the
 scrapy-download-handlers-incubator_ package. This package is made by the Scrapy
