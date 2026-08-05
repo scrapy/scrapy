@@ -125,6 +125,9 @@ class ExecutionEngine:
         ] = spider_closed_callback
         self.start_time: float | None = None
         self._start: AsyncIterator[Any] | None = None
+        # Whether Spider.start() raised, i.e. some start items or requests may
+        # never have reached the engine.
+        self._start_error: bool = False
         self._closewait: Deferred[None] | None = None
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None
@@ -277,12 +280,29 @@ class ExecutionEngine:
             item_or_request = await anext(self._start)
         except StopAsyncIteration:
             self._start = None
+        except CloseSpider as exception:
+            self._start = None
+            _schedule_coro(
+                self.close_spider_async(reason=exception.reason or "cancelled")
+            )
         except Exception as exception:
             self._start = None
+            self._start_error = True
             exception_traceback = format_exc()
             logger.error(
                 f"Error while reading start items and requests: {exception}.\n{exception_traceback}",
                 exc_info=True,
+            )
+            self.signals.send_catch_log(
+                signal=signals.spider_error,
+                failure=Failure(),
+                response=None,
+                spider=self.spider,
+            )
+            assert self.crawler.stats
+            self.crawler.stats.inc_value("spider_exceptions/count")
+            self.crawler.stats.inc_value(
+                f"spider_exceptions/{type(exception).__name__}"
             )
         else:
             if not self.spider:
@@ -579,7 +599,8 @@ class ExecutionEngine:
         if DontCloseSpider in detected_ex:
             return
         if self.spider_is_idle():
-            ex = detected_ex.get(CloseSpider, CloseSpider(reason="finished"))
+            default_reason = "start_error" if self._start_error else "finished"
+            ex = detected_ex.get(CloseSpider, CloseSpider(reason=default_reason))
             assert isinstance(ex, CloseSpider)  # typing
             _schedule_coro(self.close_spider_async(reason=ex.reason))
 
