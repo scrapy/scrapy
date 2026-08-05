@@ -155,7 +155,7 @@ class BaseSettings(MutableMapping[str, Any]):
             isinstance(self[name], int) and self[name] != 0
         ):
             warnings.warn(
-                "The CONCURRENT_REQUESTS_PER_IP setting is deprecated and no longer has any effect. To limit concurrency per IP address, define a throttling scope for it: https://docs.scrapy.org/en/latest/topics/throttling.html#throttling-per-ip",
+                "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead.",
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
