@@ -361,7 +361,7 @@ to:
 
         For example, if you request
         ``https://api.example/?url=https://example.com``, by default it
-        will get a ``api.example`` throttling scope, but it should also
+        will get an ``api.example`` throttling scope, but it should also
         get the ``example.com`` throttling scope:
 
         .. code-block:: python
