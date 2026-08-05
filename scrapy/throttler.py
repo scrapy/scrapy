@@ -331,13 +331,17 @@ class ThrottlerProtocol(Protocol):
         end on their own.
         """
 
-    def _get_scopes_key(self, request: Request) -> str:
+    def get_scopes_key(self, request: Request) -> str:
         """Return a single string key for *request*, derived from its scopes.
 
         For a single scope this is the scope ID itself; for multiple scopes the
         sorted scope IDs are JSON-encoded into an order-independent,
-        collision-free key. It is used wherever a plain string key is needed
-        (e.g. scheduler priority queues).
+        collision-free key. The scheduler uses it to group queued requests by
+        scope.
+
+        Resolve the scopes anew on every call, so that a request that inherited
+        ``request.meta`` from another one (e.g. a redirect) gets its own scopes
+        rather than the inherited ones.
         """
 
     def get_scope_load(self, scope_id: str) -> float:
@@ -512,7 +516,7 @@ class Throttler(ThrottlerProtocol):
         request.meta[_APPLIED_SCOPES_META_KEY] = scope_ids
         return scope_ids
 
-    def _get_scopes_key(self, request: Request) -> str:
+    def get_scopes_key(self, request: Request) -> str:
         scope_ids = sorted(self._resolve_scopes(request))
         if not scope_ids:
             return ""

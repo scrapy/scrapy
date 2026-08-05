@@ -275,7 +275,7 @@ def _decode_slot_scopes(slot: str) -> tuple[ScopeID, ...]:
     stands for.
 
     This reverses the three encodings of
-    ``ThrottlerProtocol._get_scopes_key()``: an empty string for no scope, the ID
+    ``ThrottlerProtocol.get_scopes_key()``: an empty string for no scope, the ID
     itself for a single one, a JSON array of sorted IDs for
     several. A single scope whose ID looks like such an array is indistinguishable
     from it, and is read as the array; the only cost is a load reading for a
@@ -446,7 +446,7 @@ class DownloaderAwarePriorityQueue:
         return request
 
     def push(self, request: Request) -> None:
-        slot = self._throttler._get_scopes_key(request)
+        slot = self._throttler.get_scopes_key(request)
         queue = self.pqueues.get(slot)
         if queue is None:
             queue = self._add_slot(slot)

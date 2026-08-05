@@ -150,12 +150,12 @@ class TestThrottler:
 
     def test_get_scopes_key_single(self):
         manager = _manager()
-        assert manager._get_scopes_key(Request("http://example.com/a")) == "example.com"
+        assert manager.get_scopes_key(Request("http://example.com/a")) == "example.com"
 
     def test_get_scopes_key_empty(self):
         manager = _manager()
         request = Request("http://example.com/a", meta={"throttling_scopes": []})
-        assert manager._get_scopes_key(request) == ""
+        assert manager.get_scopes_key(request) == ""
 
     def test_get_scopes_key_multiple(self):
         manager = _manager()
@@ -163,7 +163,7 @@ class TestThrottler:
             "http://example.com/a", meta={"throttling_scopes": ["b", "a"]}
         )
         # Multiple scopes yield a deterministic (sorted) JSON key.
-        assert manager._get_scopes_key(request) == '["a", "b"]'
+        assert manager.get_scopes_key(request) == '["a", "b"]'
 
     def test_get_scopes_override_reaches_every_reader(self):
         """Overriding the scoping hook is enough: everything that needs the
@@ -180,7 +180,7 @@ class TestThrottler:
         # A port, so that the result differs from the default host-name scoping.
         request = Request("https://example.com:8080/a")
 
-        assert throttler._get_scopes_key(request) == "example.com:8080"
+        assert throttler.get_scopes_key(request) == "example.com:8080"
         assert throttler.get_applied_scopes(request) == ["example.com:8080"]
 
     def test_get_scopes_yields_to_the_meta_key(self):
@@ -194,7 +194,7 @@ class TestThrottler:
         # A request that chooses its own scopes still gets them, so a custom
         # hook does not cost throttling_scopes support.
         request = Request("https://example.com/a", meta={"throttling_scopes": "chosen"})
-        assert throttler._get_scopes_key(request) == "chosen"
+        assert throttler.get_scopes_key(request) == "chosen"
 
     def test_release_frees_concurrency(self):
         manager = _manager({"THROTTLING_SCOPES": {"example.com": {"concurrency": 1}}})
