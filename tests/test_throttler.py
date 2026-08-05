@@ -25,11 +25,11 @@ from scrapy.throttler import (
     _default_jitter,
     _default_scope_concurrency,
     _default_scope_concurrency_setting,
+    _normalize_scopes,
     _warn_on_deprecated_concurrency,
     _warn_on_deprecated_randomization,
     _warn_on_ignored_per_ip,
     _warn_on_unachievable_concurrency,
-    iter_scopes,
 )
 from scrapy.utils.asyncio import _wait_for_first, call_later, sleep
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
@@ -94,7 +94,7 @@ class TestThrottler:
     def test_applied_scopes_meta_string(self):
         manager = _manager()
         request = Request("http://example.com/a", meta={"throttling_scopes": "api"})
-        assert manager.get_applied_scopes(request) == "api"
+        assert manager.get_applied_scopes(request) == ["api"]
 
     def test_applied_scopes_meta_iterable(self):
         manager = _manager()
@@ -119,10 +119,10 @@ class TestThrottler:
 
         manager = CountingThrottler(get_crawler())
         request = Request("http://example.com/a")
-        assert list(iter_scopes(manager.get_applied_scopes(request))) == ["example.com"]
+        assert manager.get_applied_scopes(request) == ["example.com"]
         assert calls == ["http://example.com/a"]
         # No second resolution.
-        assert list(iter_scopes(manager.get_applied_scopes(request))) == ["example.com"]
+        assert manager.get_applied_scopes(request) == ["example.com"]
         assert calls == ["http://example.com/a"]
 
     def test_applied_scopes_survive_a_disk_roundtrip(self):
@@ -144,9 +144,9 @@ class TestThrottler:
         # persisted value back), so it must not reuse the original host's scopes.
         manager = _manager()
         request = Request("http://example.com/a")
-        assert manager._resolve_scopes(request) == "example.com"
+        assert manager._resolve_scopes(request) == ["example.com"]
         redirected = request.replace(url="http://other.example/a")
-        assert manager._resolve_scopes(redirected) == "other.example"
+        assert manager._resolve_scopes(redirected) == ["other.example"]
 
     def test_get_scopes_key_single(self):
         manager = _manager()
@@ -181,7 +181,7 @@ class TestThrottler:
         request = Request("https://example.com:8080/a")
 
         assert throttler._get_scopes_key(request) == "example.com:8080"
-        assert throttler.get_applied_scopes(request) == "example.com:8080"
+        assert throttler.get_applied_scopes(request) == ["example.com:8080"]
 
     def test_get_scopes_yields_to_the_meta_key(self):
         class NetlocThrottler(Throttler):
@@ -264,8 +264,8 @@ class TestThrottler:
         manager = HostScopeThrottler.from_crawler(crawler)
         request = Request("http://example.com/1", meta={"dont_throttle": True})
         await maybe_deferred_to_future(deferred_from_coro(manager.acquire(request)))
-        assert manager.get_applied_scopes(request) == "host:example.com"
-        assert request.meta[_APPLIED_SCOPES_META_KEY] == "host:example.com"
+        assert manager.get_applied_scopes(request) == ["host:example.com"]
+        assert request.meta[_APPLIED_SCOPES_META_KEY] == ["host:example.com"]
 
     def test_scope_limit_keeps_a_pending_delay(self):
         manager = _manager(
@@ -891,10 +891,10 @@ class TestThrottlerScopeLoad:
 
 
 class TestScopeHelpers:
-    def test_iter_scopes(self):
-        assert list(iter_scopes(None)) == []
-        assert list(iter_scopes("a")) == ["a"]
-        assert list(iter_scopes(["a", "b"])) == ["a", "b"]
+    def test_normalize_scopes(self):
+        assert _normalize_scopes(None) == []
+        assert _normalize_scopes("a") == ["a"]
+        assert _normalize_scopes(["a", "b"]) == ["a", "b"]
 
     def test_one_shot_iterables_are_materialized(self):
         # The persisted scopes must stay re-iterable and serializable.

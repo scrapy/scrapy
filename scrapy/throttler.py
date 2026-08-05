@@ -52,21 +52,18 @@ if TYPE_CHECKING:
     ScopeSlot = tuple[ScopeID, "ThrottlingScopeManager"]
 
 
-def iter_scopes(scopes: RequestScopes) -> Iterable[ScopeID]:
-    """Iterate over the scope IDs of *scopes*, whatever its form.
+def _normalize_scopes(scopes: RequestScopes) -> list[ScopeID]:
+    """Return the scope IDs of *scopes*, whatever the form
+    :meth:`~ThrottlerProtocol.get_scopes` returned them in, as a list.
 
-    :meth:`~ThrottlerProtocol.get_scopes` and
-    :meth:`~ThrottlerProtocol.get_applied_scopes` may return a single scope ID,
-    an iterable of them, or ``None``; this helper normalizes any of those into an
-    iterable of scope IDs, e.g. to react to a request's scopes in a custom
-    middleware.
+    A one-shot iterable is materialized here, so that the result stays
+    re-iterable and serializable.
     """
     if scopes is None:
-        return
+        return []
     if isinstance(scopes, str):
-        yield scopes
-        return
-    yield from scopes
+        return [scopes]
+    return list(scopes)
 
 
 def _effective_priority(settings: BaseSettings, name: str) -> int:
@@ -282,7 +279,7 @@ class ThrottlerProtocol(Protocol):
         :ref:`custom-throttler`.
         """
 
-    def get_applied_scopes(self, request: Request) -> RequestScopes:
+    def get_applied_scopes(self, request: Request) -> list[ScopeID]:
         """Return the :ref:`throttling scopes <throttling-scopes>` under which
         *request* was (or will be) sent.
 
@@ -389,7 +386,7 @@ def _mark_request_delayed(request: Request) -> None:
     request.meta[_DELAY_DEADLINE_META_KEY] = None
 
 
-class Throttler:
+class Throttler(ThrottlerProtocol):
     """The default :setting:`THROTTLER` class.
 
     It assigns to each request its domain or subdomain as scope.
@@ -478,7 +475,7 @@ class Throttler:
         """
         return urlparse_cached(request).hostname or ""
 
-    def _resolve_scopes(self, request: Request) -> RequestScopes:
+    def _resolve_scopes(self, request: Request) -> list[ScopeID]:
         """Return the :ref:`throttling scopes <throttling-scopes>` of *request*
         and persist them on ``request.meta``, where :meth:`get_applied_scopes`
         reads them back, and whence they survive the request being serialized to
@@ -511,24 +508,21 @@ class Throttler:
                 scopes = download_slot
             else:
                 scopes = self.get_scopes(request)
-        # Materialize one-shot iterables so the persisted value stays
-        # re-iterable and serializable.
-        if not isinstance(scopes, str) and isinstance(scopes, Iterable):
-            scopes = list(scopes)
-        request.meta[_APPLIED_SCOPES_META_KEY] = scopes
-        return cast("RequestScopes", scopes)
+        scope_ids = _normalize_scopes(scopes)
+        request.meta[_APPLIED_SCOPES_META_KEY] = scope_ids
+        return scope_ids
 
     def _get_scopes_key(self, request: Request) -> str:
-        scope_ids = sorted(iter_scopes(self._resolve_scopes(request)))
+        scope_ids = sorted(self._resolve_scopes(request))
         if not scope_ids:
             return ""
         if len(scope_ids) == 1:
             return scope_ids[0]
         return json.dumps(scope_ids)
 
-    def get_applied_scopes(self, request: Request) -> RequestScopes:
+    def get_applied_scopes(self, request: Request) -> list[ScopeID]:
         if _APPLIED_SCOPES_META_KEY in request.meta:
-            return cast("RequestScopes", request.meta[_APPLIED_SCOPES_META_KEY])
+            return cast("list[ScopeID]", request.meta[_APPLIED_SCOPES_META_KEY])
         return self._resolve_scopes(request)
 
     # -- Scope-state coordination (called from the request lifecycle) --------
@@ -610,7 +604,7 @@ class Throttler:
         # The scopes are resolved (and persisted, see _resolve_scopes) even for a
         # request excluded from throttling, because its outcome still backs off
         # its scopes, and get_applied_scopes() is how a middleware finds them.
-        scope_ids = list(iter_scopes(self._resolve_scopes(request)))
+        scope_ids = self._resolve_scopes(request)
         if request.meta.get("dont_throttle"):
             return
         if not scope_ids:
@@ -823,7 +817,7 @@ class Throttler:
         now = time.monotonic()
         if self._request_delay_deadline(request, now) > now:
             return False
-        for scope_id in iter_scopes(self.get_applied_scopes(request)):
+        for scope_id in self.get_applied_scopes(request):
             if scope_id == skip:
                 continue
             manager = self._live_scope_manager(scope_id)
@@ -905,7 +899,10 @@ class Throttler:
 
 class ThrottlingScopeManager:
     r"""Manager of the run-time throttling state of a single :ref:`throttling
-    scope <throttling-scopes>`, reachable through
+    scope <throttling-scopes>`.
+
+    Instances are created by the throttler; do not instantiate this class
+    directly, get the manager of a scope through
     :meth:`~ThrottlerProtocol.get_scope_manager`.
 
     It implements a per-scope state machine covering delay and concurrency:

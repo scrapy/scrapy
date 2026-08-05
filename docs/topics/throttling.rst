@@ -472,5 +472,3 @@ API
     :members: get_base_delay, set_base_delay, get_concurrency, set_concurrency
 
 .. autoclass:: scrapy.throttler.ThrottlingScopeConfig
-
-.. autofunction:: scrapy.throttler.iter_scopes
