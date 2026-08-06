@@ -9,7 +9,7 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.8+, either the CPython implementation (default) or
+Scrapy requires Python 3.10+, either the CPython implementation (default) or
 the PyPy implementation (see :ref:`python:implementations`).
 
 .. _intro-install-scrapy:
@@ -37,7 +37,7 @@ Note that sometimes this may require solving compilation issues for some Scrapy
 dependencies depending on your operating system, so be sure to check the
 :ref:`intro-install-platform-notes`.
 
-For more detailed and platform specifics instructions, as well as
+For more detailed and platform-specific instructions, as well as
 troubleshooting information, read on.
 
 
@@ -89,6 +89,56 @@ just like any other Python package.
 (See :ref:`platform-specific guides <intro-install-platform-notes>`
 below for non-Python dependencies that you may need to install beforehand).
 
+.. _extras:
+
+Optional extras
+===============
+
+Scrapy provides optional :ref:`extras <pypug:dependency-specifiers-extras>`
+that install additional dependencies to enable specific features. To install
+Scrapy with one or more extras, list them in square brackets:
+
+.. code-block:: console
+
+    pip install scrapy[s3,images]
+
+The following extras are available:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Extra
+     - Provides
+   * - ``bpython``
+     - :ref:`bpython shell <shell-config>`
+   * - ``brotli``
+     - :ref:`Brotli response decompression <http-compression>`
+   * - ``gcs``
+     - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
+       :ref:`feed exports <topics-feed-exports>` and
+       :ref:`media pipelines <media-pipeline-gcs>`
+   * - ``httpx``
+     - :ref:`httpx-handler`, including its HTTP/2 and SOCKS proxy support
+   * - ``images``
+     - :ref:`Images pipeline <images-pipeline>`
+   * - ``ipython``
+     - :ref:`IPython shell <shell-config>`
+   * - ``ptpython``
+     - :ref:`ptpython shell <shell-config>`
+   * - ``robotparser``
+     - :ref:`Robotexclusionrulesparser robots.txt parsing <rerp-parser>`
+   * - ``s3``
+     - :ref:`Amazon S3 <topics-feed-storage-s3>` storage for
+       :ref:`feed exports <topics-feed-exports>`,
+       :ref:`media pipelines <media-pipelines-s3>`, and
+       :ref:`S3 downloads <s3-handler>`
+   * - ``twisted-http2``
+     - :ref:`twisted-http2-handler`
+   * - ``uvloop``
+     - `uvloop <https://github.com/MagicStack/uvloop>`_ event loop
+   * - ``zstd``
+     - :ref:`Zstandard response decompression <http-compression>`
+
 
 .. _intro-install-platform-notes:
 
@@ -101,7 +151,7 @@ Windows
 -------
 
 Though it's possible to install Scrapy on Windows using pip, we recommend you
-to install `Anaconda`_ or `Miniconda`_ and use the package from the
+install `Anaconda`_ or `Miniconda`_ and use the package from the
 `conda-forge`_ channel, which will avoid most installation issues.
 
 Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
@@ -111,7 +161,7 @@ Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
 To install Scrapy on Windows using ``pip``:
 
 .. warning::
-    This installation method requires “Microsoft Visual C++” for installing some 
+    This installation method requires “Microsoft Visual C++” for installing some
     Scrapy dependencies, which demands significantly more disk space than Anaconda.
 
 #. Download and execute `Microsoft C++ Build Tools`_ to install the Visual Studio Installer.
@@ -123,7 +173,7 @@ To install Scrapy on Windows using ``pip``:
 #. Check the installation details and make sure following packages are selected as optional components:
 
     * **MSVC**  (e.g MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.23) )
-    
+
     * **Windows SDK**  (e.g Windows 10 SDK (10.0.18362.0))
 
 #. Install the Visual Studio Build Tools.
@@ -141,7 +191,7 @@ But it should support older versions of Ubuntu too, like Ubuntu 14.04,
 albeit with potential issues with TLS connections.
 
 **Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
-typically too old and slow to catch up with latest Scrapy.
+typically too old and slow to catch up with the latest Scrapy release.
 
 
 To install Scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
@@ -170,7 +220,7 @@ macOS
 
 Building Scrapy's dependencies requires the presence of a C compiler and
 development headers. On macOS this is typically provided by Apple’s Xcode
-development tools. To install the Xcode command line tools open a terminal
+development tools. To install the Xcode command-line tools, open a terminal
 window and run::
 
     xcode-select --install
@@ -199,11 +249,6 @@ solutions:
   * Install python::
 
       brew install python
-
-  * Latest versions of python have ``pip`` bundled with them so you won't need
-    to install it separately. If this is not the case, upgrade python::
-
-      brew update; brew upgrade python
 
 *   *(Optional)* :ref:`Install Scrapy inside a Python virtual environment
     <intro-using-virtualenv>`.
@@ -235,8 +280,8 @@ Installing Scrapy with PyPy on Windows is not tested.
 You can check that Scrapy is installed correctly by running ``scrapy bench``.
 If this command gives errors such as
 ``TypeError: ... got 2 unexpected keyword arguments``, this means
-that setuptools was unable to pick up one PyPy-specific dependency.
-To fix this issue, run ``pip install 'PyPyDispatcher>=2.1.0'``.
+that the ``PyPyDispatcher`` dependency wasn't installed. To fix this issue, run
+``pip install 'PyPyDispatcher>=2.1.0'``.
 
 
 .. _intro-install-troubleshooting:
@@ -268,18 +313,16 @@ reinstall Twisted with the :code:`tls` extra option::
 For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 
 .. _Python: https://www.python.org/
-.. _pip: https://pip.pypa.io/en/latest/installing/
 .. _lxml: https://lxml.de/index.html
 .. _parsel: https://pypi.org/project/parsel/
 .. _w3lib: https://pypi.org/project/w3lib/
-.. _twisted: https://twistedmatrix.com/trac/
+.. _twisted: https://twisted.org/
 .. _cryptography: https://cryptography.io/en/latest/
 .. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
-.. _setuptools: https://pypi.python.org/pypi/setuptools
+.. _setuptools: https://pypi.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
-.. _Anaconda: https://docs.anaconda.com/anaconda/
+.. _Anaconda: https://www.anaconda.com/docs/main
 .. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
-.. _Visual Studio: https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio
 .. _Microsoft C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 .. _conda-forge: https://conda-forge.org/

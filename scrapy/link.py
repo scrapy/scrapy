@@ -4,13 +4,14 @@ This module defines the Link object used in Link extractors.
 For actual link extractors implementation see scrapy.linkextractors, or
 its documentation in: docs/topics/link-extractors.rst
 """
-from typing import Any
 
 
 class Link:
     """Link objects represent an extracted link by the LinkExtractor.
 
-    Using the anchor tag sample below to illustrate the parameters::
+    Using the anchor tag sample below to illustrate the parameters:
+
+    .. code-block:: html
 
             <a href="https://example.com/nofollow.html#foo" rel="nofollow">Dont follow this one</a>
 
@@ -25,7 +26,7 @@ class Link:
                     of the anchor tag.
     """
 
-    __slots__ = ["url", "text", "fragment", "nofollow"]
+    __slots__ = ["fragment", "nofollow", "text", "url"]
 
     def __init__(
         self, url: str, text: str = "", fragment: str = "", nofollow: bool = False
@@ -38,9 +39,9 @@ class Link:
         self.fragment: str = fragment
         self.nofollow: bool = nofollow
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Link):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self.url == other.url
             and self.text == other.text

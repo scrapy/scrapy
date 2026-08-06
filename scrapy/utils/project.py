@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import warnings
 from importlib import import_module
@@ -18,7 +20,8 @@ def inside_project() -> bool:
             import_module(scrapy_module)
         except ImportError as exc:
             warnings.warn(
-                f"Cannot import scrapy settings module {scrapy_module}: {exc}"
+                f"Cannot import scrapy settings module {scrapy_module}: {exc}",
+                stacklevel=2,
             )
         else:
             return True
@@ -44,7 +47,7 @@ def project_data_dir(project: str = "default") -> str:
     return str(d)
 
 
-def data_path(path: str, createdir: bool = False) -> str:
+def data_path(path: str | os.PathLike[str], createdir: bool = False) -> str:
     """
     Return the given path joined with the .scrapy data directory.
     If given an absolute path, return it unmodified.

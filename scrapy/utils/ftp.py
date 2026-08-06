@@ -1,4 +1,5 @@
 import posixpath
+from contextlib import closing
 from ftplib import FTP, error_perm
 from posixpath import dirname
 from typing import IO
@@ -21,7 +22,7 @@ def ftp_makedirs_cwd(ftp: FTP, path: str, first_call: bool = True) -> None:
 def ftp_store_file(
     *,
     path: str,
-    file: IO,
+    file: IO[bytes],
     host: str,
     port: int,
     username: str,
@@ -32,7 +33,7 @@ def ftp_store_file(
     """Opens a FTP connection with passed credentials,sets current directory
     to the directory extracted from given path, then uploads the file to server
     """
-    with FTP() as ftp:
+    with FTP() as ftp, closing(file):
         ftp.connect(host, port)
         ftp.login(username, password)
         if use_active_mode:
@@ -42,4 +43,3 @@ def ftp_store_file(
         ftp_makedirs_cwd(ftp, dirname)
         command = "STOR" if overwrite else "APPE"
         ftp.storbinary(f"{command} {filename}", file)
-        file.close()

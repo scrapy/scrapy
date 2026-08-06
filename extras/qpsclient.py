@@ -16,25 +16,22 @@ class QPSSpider(Spider):
     name = "qps"
     benchurl = "http://localhost:8880/"
 
-    # Max concurrency is limited by global CONCURRENT_REQUESTS setting
-    max_concurrent_requests = 8
     # Requests per second goal
-    qps = None  # same as: 1 / download_delay
-    download_delay = None
+    qps = None  # same as: 1 / DOWNLOAD_DELAY
     # time in seconds to delay server responses
     latency = None
     # number of slots to create
     slots = 1
 
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
-        if self.qps is not None:
-            self.qps = float(self.qps)
-            self.download_delay = 1 / self.qps
-        elif self.download_delay is not None:
-            self.download_delay = float(self.download_delay)
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        if spider.qps is not None:
+            spider.qps = float(spider.qps)
+            crawler.settings.set("DOWNLOAD_DELAY", 1 / spider.qps, priority="spider")
+        return spider
 
-    def start_requests(self):
+    async def start(self):
         url = self.benchurl
         if self.latency is not None:
             url += f"?latency={self.latency}"
