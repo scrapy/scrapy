@@ -939,8 +939,8 @@ every 10 seconds:
 
     DOWNLOAD_DELAY = 2.5
 
-This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting, which is enabled by default.
+This setting is also affected by the :setting:`DOWNLOAD_DELAY_JITTER` setting,
+which randomizes delays by ±50% by default.
 
 Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
 concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
@@ -952,6 +952,25 @@ and only increase :setting:`DOWNLOAD_DELAY` once
 desired.
 
 .. _spider-download_delay-attribute:
+
+It is possible to change this setting per domain by using
+:setting:`DOWNLOAD_SLOTS`.
+
+.. setting:: DOWNLOAD_DELAY_JITTER
+
+DOWNLOAD_DELAY_JITTER
+---------------------
+
+.. versionadded:: VERSION
+
+Default: ``0.5``
+
+Magnitude of the random variation applied to :setting:`DOWNLOAD_DELAY`, e.g.
+``0.2`` spreads delays between 80% and 120% of :setting:`DOWNLOAD_DELAY`. ``0``
+disables randomization.
+
+Randomizing delays makes the time between requests less uniform, resulting in a
+more natural crawling pattern.
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
@@ -1074,8 +1093,8 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     .. code-block:: python
 
         DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "jitter": 0},
+            "books.toscrape.com": {"delay": 3, "jitter": 0.2},
         }
 
 .. note::
@@ -1084,7 +1103,7 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
 
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
-    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+    -   :setting:`DOWNLOAD_DELAY_JITTER`: ``jitter``
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1758,29 +1777,6 @@ Example:
 .. code-block:: python
 
     NEWSPIDER_MODULE = "mybot.spiders_dev"
-
-.. setting:: RANDOMIZE_DOWNLOAD_DELAY
-
-RANDOMIZE_DOWNLOAD_DELAY
-------------------------
-
-Default: ``True``
-
-If enabled, Scrapy will wait a random amount of time (between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
-website.
-
-This randomization decreases the chance of the crawler being detected (and
-subsequently blocked) by sites which analyze requests looking for statistically
-significant similarities in the time between their requests.
-
-The randomization policy is the same used by `wget`_ ``--random-wait`` option.
-
-If :setting:`DOWNLOAD_DELAY` is zero this option has no effect.
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
-
-.. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 

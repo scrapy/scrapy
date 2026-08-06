@@ -88,7 +88,10 @@ class TestCrawl:
         }
         tolerance = 1 - (0.6 if randomize else 0.2)
 
-        settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
+        settings = {
+            "DOWNLOAD_DELAY": delay,
+            "DOWNLOAD_DELAY_JITTER": 0.5 if randomize else 0,
+        }
         crawler = get_crawler(FollowAllSpider, settings)
         await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
