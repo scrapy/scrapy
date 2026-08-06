@@ -71,6 +71,17 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         )
         assert "ReactorAlreadyInstalledError" not in log
 
+    def test_crawl_error(self) -> None:
+        log = self.run_script("crawl_error.py")
+        assert log.count("ValueError: boom") == 1
+        assert "Unhandled error in Deferred" not in log
+        assert "Task exception was never retrieved" not in log
+        assert re.search(
+            r"CRITICAL: Error running spider boom.+bootstrap_failed: True",
+            log,
+            re.DOTALL,
+        )
+
     def test_reactor_default(self) -> None:
         log = self.run_script("reactor_default.py")
         assert "Spider closed (finished)" not in log
