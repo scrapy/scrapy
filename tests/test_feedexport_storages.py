@@ -162,6 +162,13 @@ class TestFTPFeedStorage:
             await self._store(url, b"bar", settings=settings)
             self._assert_stored(ftp_server.path / filename, b"bar")
 
+    @coroutine_test
+    async def test_missing_parent_directories(self):
+        with MockFTPServer() as ftp_server:
+            path = "missing/parent/dirs/file"
+            await self._store(ftp_server.url(path), b"foo")
+            self._assert_stored(ftp_server.path / path, b"foo")
+
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
         pw_quoted = quote(string.punctuation, safe="")

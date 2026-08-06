@@ -44,6 +44,15 @@ def test_get_shell_embed_func():
     assert shell.__name__ == "_embed_standard_shell"
 
 
+def test_get_shell_embed_func_known_shells():
+    def embed(namespace: dict[str, object] | None = None, banner: str = "") -> None:
+        pass
+
+    known_shells = {"custom": lambda: embed}
+    assert get_shell_embed_func(["custom"], known_shells) is embed
+    assert get_shell_embed_func(["python"], known_shells) is None
+
+
 def test_get_shell_embed_func_python():
     # the standard shell is always available
     shell = get_shell_embed_func(["python"])
