@@ -68,3 +68,10 @@ class MySpider(scrapy.Spider):
             "fetch", "--spider", "myspider", mockserver.url("/echo"), cwd=proj_path
         )
         assert "myspider-user-agent" in out, err
+
+    def test_bootstrap_failure(self, proj_path: Path, mockserver: MockServer) -> None:
+        self._break_bootstrap(proj_path / self.project_name)
+        returncode, _, _ = proc(
+            "fetch", "--spider", "myspider", mockserver.url("/text"), cwd=proj_path
+        )
+        assert returncode == 1
