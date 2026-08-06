@@ -338,6 +338,35 @@ ItemFilter
    :members:
 
 
+.. _item-processor:
+
+Item processing
+===============
+
+.. versionadded:: VERSION
+
+The ``item_processor`` :ref:`feed option <feed-options>` takes a callable, or
+its import path, that receives an accepted item and returns an iterable of the
+items to export in its place:
+
+.. code-block:: python
+
+    def split_variants(item):
+        for variant in item["variants"]:
+            yield {**item, "variants": None, **variant}
+
+Returning an empty iterable drops the item from that feed, and returning more
+than one item writes one entry per returned item.
+
+Item processors run after :ref:`item filtering <item-filter>`, and only affect
+the feed that declares them. Items are exported as returned, so the
+:signal:`item_scraped` signal, :ref:`item pipelines <topics-item-pipeline>` and
+the ``item_scraped_count`` stat still see the item as scraped; use item
+processors for output formatting, and item pipelines for anything that should
+apply to the item itself. The number of exported entries per feed is reported
+as the ``feedexport/item_count/<storage class>`` stat.
+
+
 .. _post-processing:
 
 Post-Processing
@@ -489,6 +518,13 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
 
     :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
+
+-   ``item_processor``: an :ref:`item processor <item-processor>` to reshape
+    items before they are exported.
+
+    .. versionadded:: VERSION
+
+    If undefined, items are exported as scraped.
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 

@@ -384,6 +384,36 @@ class TestBatchDeliveries(TestFeedExportBase):
                 assert got_batch == expected_batch
 
     @coroutine_test
+    async def test_batch_item_count_with_item_processor(self):
+        def split_foo(item):
+            for value in item["foo"].split(","):
+                yield {"foo": value}
+
+        items = [{"foo": "FOO,FOO1"}, {"foo": "FOO2"}]
+        formats = {
+            "json": [
+                b'[{"foo": "FOO"}]',
+                b'[{"foo": "FOO1"}]',
+                b'[{"foo": "FOO2"}]',
+            ],
+        }
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename() / "json" / self._file_mark: {
+                    "format": "json",
+                    "indent": None,
+                    "encoding": "utf-8",
+                    "batch_item_count": 1,
+                    "item_processor": split_foo,
+                },
+            },
+        }
+        data = await self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=True):
+                assert got_batch == expected_batch
+
+    @coroutine_test
     async def test_batch_path_differ(self):
         """
         Test that the name of all batch files differ from each other.
