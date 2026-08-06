@@ -51,6 +51,11 @@ class Command(BaseRunSpiderCommand):
     def short_desc(self) -> str:
         return "Parse URL (using its spider) and print the results"
 
+    def complete_option(self, dest: str) -> Iterable[str]:
+        if dest == "spider":
+            return self._spider_names()
+        return super().complete_option(dest)
+
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         super().add_options(parser)
         parser.add_argument(
