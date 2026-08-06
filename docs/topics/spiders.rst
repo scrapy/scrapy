@@ -59,8 +59,15 @@ scrapy.Spider
        :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
        enabled.
 
+       .. versionchanged:: VERSION
+          Changes to this attribute during a crawl are now taken into account.
+
        Let's say your target url is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
+
+       You may modify this attribute while the spider runs, e.g. to allow
+       domains that you only learn about from an earlier response. The change
+       affects requests scheduled after it.
 
    .. autoattribute:: start_urls
 
