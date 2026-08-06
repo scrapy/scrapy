@@ -458,6 +458,18 @@ finishes before starting the next one:
     should not have a different value per spider, and :ref:`pre-crawler
     settings <pre-crawler-settings>` cannot be defined per spider.
 
+Every other setting applies to each crawler separately. This includes
+concurrency and politeness settings, such as :setting:`CONCURRENT_REQUESTS`,
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`, and
+:ref:`AutoThrottle <topics-autothrottle>` also throttles each crawler
+separately. When crawling simultaneously, divide those values by the number of
+crawlers to keep the combined load on your hardware and on target websites
+unchanged.
+
+Because of this, running the same spider several times in the same process
+multiplies those limits instead of increasing crawling capacity. To crawl
+faster, raise :setting:`CONCURRENT_REQUESTS` on a single crawler.
+
 .. seealso:: :ref:`run-from-script`.
 
 .. skip: end
