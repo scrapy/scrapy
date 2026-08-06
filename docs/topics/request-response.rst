@@ -1428,9 +1428,6 @@ TextResponse objects
 
     .. automethod:: TextResponse.json()
 
-        Returns a Python object from deserialized JSON document.
-        The result is cached after the first call.
-
     .. method:: TextResponse.urljoin(url)
 
         Constructs an absolute url by combining the Response's base url with
