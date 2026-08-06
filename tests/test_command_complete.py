@@ -31,6 +31,12 @@ class TestScripts:
         assert returncode == 2
         assert "scrapy complete <bash|fish|zsh>" in out
 
+    def test_shell_names(self) -> None:
+        assert candidates("complete", "") == ["bash", "fish", "zsh"]
+
+    def test_no_second_shell_name(self) -> None:
+        assert candidates("complete", "bash", "") == []
+
 
 class TestCommandNames:
     def test_all(self) -> None:
@@ -49,7 +55,7 @@ class TestCommandNames:
         assert candidates("nosuchcommand", "") == []
 
 
-class TestOptions:
+class TestOptions(TestProjectBase):
     def test_names(self) -> None:
         values = candidates("version", "-")
         assert "-v" in values
@@ -94,6 +100,12 @@ class TestOptions:
     def test_settings(self) -> None:
         assert candidates("settings", "--getbool", "COOKIES_EN") == ["COOKIES_ENABLED"]
 
+    @pytest.mark.parametrize(
+        "command", ["fetch", "genspider", "parse", "settings", "shell"]
+    )
+    def test_shared_value(self, command: str, proj_path: Path) -> None:
+        assert candidates(command, "-L", "DE", cwd=proj_path) == ["DEBUG"]
+
 
 class TestArguments(TestProjectBase):
     @pytest.fixture
@@ -111,11 +123,27 @@ class TestArguments(TestProjectBase):
     def test_spiders(self, command: str, spiders_path: Path) -> None:
         assert candidates(command, "", cwd=spiders_path) == ["alpha", "beta"]
 
+    def test_no_arguments(self) -> None:
+        assert candidates("version", "") == []
+
+    def test_spiders_after_inline_option_value(self, spiders_path: Path) -> None:
+        assert candidates("crawl", "--output=items.json", "", cwd=spiders_path) == [
+            "alpha",
+            "beta",
+        ]
+
+    def test_broken_spiders(self, spiders_path: Path) -> None:
+        (spiders_path / self.project_name / "spiders" / "broken.py").write_text(
+            "class Broken(", encoding="utf-8"
+        )
+        assert candidates("crawl", "", cwd=spiders_path) == []
+
     def test_spiders_prefix(self, spiders_path: Path) -> None:
         assert candidates("crawl", "al", cwd=spiders_path) == ["alpha"]
 
-    def test_spiders_as_option_value(self, spiders_path: Path) -> None:
-        assert candidates("parse", "--spider", "b", cwd=spiders_path) == ["beta"]
+    @pytest.mark.parametrize("command", ["fetch", "parse", "shell"])
+    def test_spiders_as_option_value(self, command: str, spiders_path: Path) -> None:
+        assert candidates(command, "--spider", "b", cwd=spiders_path) == ["beta"]
 
     def test_spiders_after_options(self, spiders_path: Path) -> None:
         assert candidates("crawl", "-L", "INFO", "", cwd=spiders_path) == [
