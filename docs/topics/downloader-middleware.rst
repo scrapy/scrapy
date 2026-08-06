@@ -507,6 +507,9 @@ Filesystem storage backend (default)
 
     *   ``response_headers`` - the response headers (in raw HTTP format)
 
+    *   ``response_data`` - the remaining data of the response, as returned by
+        :meth:`Response.to_dict() <scrapy.http.Response.to_dict>`, pickled
+
     *   ``meta`` - some metadata of this cache resource in Python ``repr()``
         format (grep-friendly format)
 
@@ -539,6 +542,11 @@ Writing your own storage backend
 
 You can implement a cache storage backend by creating a Python class that
 defines the methods described below.
+
+To store a response, use :meth:`Response.to_dict()
+<scrapy.http.Response.to_dict>`, and to read it back, use
+:func:`~scrapy.utils.response.response_from_dict`. That way responses of any
+class, including those of third-party plugins, are cached and restored intact.
 
 .. module:: scrapy.extensions.httpcache
 
