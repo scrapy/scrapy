@@ -44,6 +44,7 @@ from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
+    get_proxy_headers,
     get_warnsize_msg,
     make_response,
     normalize_bind_address,
@@ -181,12 +182,12 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         reactor: ReactorBase,
         host: str,
         port: int,
-        proxyConf: tuple[str, int, bytes | None],
+        proxyConf: tuple[str, int, tuple[tuple[str, str], ...]],
         contextFactory: IPolicyForHTTPS,
         timeout: float = 30,
         bindAddress: tuple[str, int] | None = None,
     ):
-        proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
+        proxyHost, proxyPort, self._proxyHeaders = proxyConf
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
         self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
         self._tunneledHost: str = host
@@ -198,7 +199,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         """Asks the proxy to open a tunnel."""
         assert protocol.transport
         tunnelReq = _tunnel_request_data(
-            self._tunneledHost, self._tunneledPort, self._proxyAuthHeader
+            self._tunneledHost, self._tunneledPort, self._proxyHeaders
         )
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
@@ -259,7 +260,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
 
 def _tunnel_request_data(
-    host: str, port: int, proxy_auth_header: bytes | None = None
+    host: str, port: int, proxy_headers: tuple[tuple[str, str], ...] = ()
 ) -> bytes:
     r"""
     Return binary content of a CONNECT request.
@@ -267,7 +268,7 @@ def _tunnel_request_data(
     >>> from scrapy.utils.python import to_unicode as s
     >>> s(_tunnel_request_data("example.com", 8080))
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
-    >>> s(_tunnel_request_data("example.com", 8080, b"123"))
+    >>> s(_tunnel_request_data("example.com", 8080, (("Proxy-Authorization", "123"),)))
     'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\nProxy-Authorization: 123\r\n\r\n'
     >>> s(_tunnel_request_data(b"example.com", "8090"))
     'CONNECT example.com:8090 HTTP/1.1\r\nHost: example.com:8090\r\n\r\n'
@@ -275,8 +276,8 @@ def _tunnel_request_data(
     host_value = to_bytes(host, encoding="ascii") + b":" + to_bytes(str(port))
     tunnel_req = b"CONNECT " + host_value + b" HTTP/1.1\r\n"
     tunnel_req += b"Host: " + host_value + b"\r\n"
-    if proxy_auth_header:
-        tunnel_req += b"Proxy-Authorization: " + proxy_auth_header + b"\r\n"
+    for name, value in proxy_headers:
+        tunnel_req += to_bytes(name) + b": " + to_bytes(value) + b"\r\n"
     tunnel_req += b"\r\n"
     return tunnel_req
 
@@ -293,14 +294,14 @@ class _TunnelingAgent(Agent):
         self,
         *,
         reactor: ReactorBase,
-        proxyConf: tuple[str, int, bytes | None],
+        proxyConf: tuple[str, int, tuple[tuple[str, str], ...]],
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
-        self._proxyConf: tuple[str, int, bytes | None] = proxyConf
+        self._proxyConf: tuple[str, int, tuple[tuple[str, str], ...]] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
     def _getEndpoint(self, uri: URI) -> _TunnelingTCP4ClientEndpoint:
@@ -324,9 +325,10 @@ class _TunnelingAgent(Agent):
         bodyProducer: IBodyProducer | None,
         requestPath: bytes,
     ) -> Deferred[IResponse]:
-        # proxy host and port are required for HTTP pool `key`
-        # otherwise, same remote host connection request could reuse
-        # a cached tunneled connection to a different proxy
+        # the proxy host and port and the headers sent to the proxy are part of
+        # the HTTP pool `key`, otherwise a request for the same remote host
+        # could reuse a tunnel that was opened through a different proxy or
+        # with different proxy headers
         key += self._proxyConf
         return super()._requestWithEndpoint(
             key=key,
@@ -425,8 +427,16 @@ class _ScrapyAgent:
                         "HTTPS proxies for HTTPS destinations are not supported"
                     )
                 assert proxy_host is not None
+                proxy_headers = get_proxy_headers(request)
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
-                proxyConf = (proxy_host, proxy_port, proxyAuth)
+                if proxyAuth and not any(
+                    name == "Proxy-Authorization" for name, _ in proxy_headers
+                ):
+                    proxy_headers = (
+                        ("Proxy-Authorization", to_unicode(proxyAuth)),
+                        *proxy_headers,
+                    )
+                proxyConf = (proxy_host, proxy_port, proxy_headers)
                 return _TunnelingAgent(
                     reactor=reactor,
                     proxyConf=proxyConf,
@@ -464,6 +474,12 @@ class _ScrapyAgent:
         headers = TxHeaders(request.headers)
         if isinstance(agent, _TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
+        elif isinstance(agent, _ScrapyProxyAgent):
+            # without a tunnel the proxy reads the request headers, so the
+            # headers meant for it travel among them, and it is up to the proxy
+            # not to pass them on to the target server
+            for name, value in get_proxy_headers(request):
+                headers.addRawHeader(name, value)
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
         start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
