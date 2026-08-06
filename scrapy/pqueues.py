@@ -263,7 +263,6 @@ class ScrapyPriorityQueue:
 
 class DownloaderInterface:
     def __init__(self, crawler: Crawler):
-        assert crawler.engine
         self.downloader: Downloader = crawler.engine.downloader
 
     def stats(self, possible_slots: Iterable[str]) -> list[tuple[int, str]]:

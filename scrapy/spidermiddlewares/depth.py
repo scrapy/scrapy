@@ -48,7 +48,6 @@ class DepthMiddleware(BaseSpiderMiddleware):
         maxdepth = settings.getint("DEPTH_LIMIT")
         verbose = settings.getbool("DEPTH_STATS_VERBOSE")
         prio = settings.getint("DEPTH_PRIORITY")
-        assert crawler.stats
         o = cls(maxdepth, crawler.stats, verbose, prio)
         o.crawler = crawler
         return o
