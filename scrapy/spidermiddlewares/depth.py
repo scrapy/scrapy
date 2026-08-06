@@ -28,6 +28,27 @@ logger = logging.getLogger(__name__)
 
 
 class DepthMiddleware(BaseSpiderMiddleware):
+    """Track the depth of each request within the site being scraped, setting
+    ``request.meta["depth"]`` to 0 when there is no value previously set
+    (usually just the first request) and incrementing it by 1 otherwise.
+
+    It can be used to limit the maximum depth to scrape, control request
+    priority based on their depth, and things like that, through the
+    :setting:`DEPTH_LIMIT`, :setting:`DEPTH_STATS_VERBOSE` and
+    :setting:`DEPTH_PRIORITY` settings.
+
+    .. reqmeta:: depth_reset
+
+    depth_reset
+    -----------
+
+    .. versionadded:: VERSION
+
+    :attr:`~scrapy.Request.meta` key that, set to ``True``, gives a request
+    depth 0 instead of the depth of its source response plus 1, e.g. to keep
+    :setting:`DEPTH_LIMIT` from applying across a domain change.
+    """
+
     crawler: Crawler
 
     def __init__(  # pylint: disable=super-init-not-called
@@ -86,10 +107,13 @@ class DepthMiddleware(BaseSpiderMiddleware):
     def get_processed_request(
         self, request: Request, response: Response | None
     ) -> Request | None:
+        # Consumed here so that it cannot reach response.meta and, from there,
+        # spread to further requests through a meta copy.
+        depth_reset = request.meta.pop("depth_reset", False)
         if response is None:
             # start requests
             return request
-        depth = response.meta["depth"] + 1
+        depth = 0 if depth_reset else response.meta["depth"] + 1
         request.meta["depth"] = depth
         if self.prio:
             request.priority -= depth * self.prio
