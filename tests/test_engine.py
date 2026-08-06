@@ -29,7 +29,9 @@ from tests.utils.engine import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Generator
+
+    from twisted.internet.defer import Deferred
 
     from tests.mockserver.http import MockServer
 
@@ -230,3 +232,55 @@ async def test_request_scheduled_signal():
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )
     crawler.signals.disconnect(signal_handler, signals.request_scheduled)
+
+
+class ClosingPipeline:
+    def open_spider(self):
+        raise CloseSpider("pipeline_reason")
+
+
+class TestCloseSpiderOnStartup:
+    @coroutine_test
+    async def test_pipeline(self, caplog: pytest.LogCaptureFixture) -> None:
+        closed: list[str] = []
+
+        def spider_closed(reason: str) -> None:
+            closed.append(reason)
+
+        crawler = get_crawler(DefaultSpider, {"ITEM_PIPELINES": {ClosingPipeline: 1}})
+        crawler.signals.connect(spider_closed, signals.spider_closed)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async()
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "pipeline_reason"
+        assert closed == ["pipeline_reason"]
+        assert "Traceback" not in caplog.text
+
+    @coroutine_test
+    async def test_spider_opened(self) -> None:
+        def spider_opened(spider: Spider) -> None:
+            raise CloseSpider("signal_reason")
+
+        crawler = get_crawler(DefaultSpider)
+        crawler.signals.connect(spider_opened, signals.spider_opened)
+        await crawler.crawl_async()
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "signal_reason"
+
+    @coroutine_test
+    async def test_startup_wins_over_spider_opened(self) -> None:
+        def spider_opened(spider: Spider) -> None:
+            raise CloseSpider("signal_reason")
+
+        crawler = get_crawler(DefaultSpider, {"ITEM_PIPELINES": {ClosingPipeline: 1}})
+        crawler.signals.connect(spider_opened, signals.spider_opened)
+        await crawler.crawl_async()
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "pipeline_reason"
+
+    @inline_callbacks_test
+    def test_deferred_crawl(self) -> Generator[Deferred[Any], Any, None]:
+        crawler = get_crawler(DefaultSpider, {"ITEM_PIPELINES": {ClosingPipeline: 1}})
+        yield crawler.crawl()
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "pipeline_reason"
