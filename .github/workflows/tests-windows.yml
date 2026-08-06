@@ -18,6 +18,7 @@ jobs:
   tests:
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: windows-latest
+    timeout-minutes: 60
     env:
       PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
       # Make uv use the interpreter that actions/setup-python installed instead

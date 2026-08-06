@@ -5,17 +5,24 @@ import logging
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from twisted.internet import defer
+from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.exceptions import CloseSpider, IgnoreRequest
+from scrapy.exceptions import CloseSpider, DownloadCancelledError, IgnoreRequest
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.defer import _schedule_coro, deferred_from_coro
+from scrapy.utils.asyncio import sleep
+from scrapy.utils.defer import (
+    _schedule_coro,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.engine import TestEngineBase
@@ -132,6 +139,71 @@ class TestEngine(TestEngineBase):
         with pytest.raises(RuntimeError, match="Engine already running"):
             yield deferred_from_coro(e.start_async())
         yield deferred_from_coro(e.stop_async())
+
+    @coroutine_test
+    async def test_stop_async_force_mode_not_supported(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+
+        with pytest.raises(ValueError, match="force stop mode is not supported"):
+            await engine.stop_async(mode="force")
+
+    @coroutine_test
+    async def test_stop_async_not_running_raises(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+
+        with pytest.raises(RuntimeError, match="Engine not running"):
+            await engine.stop_async()
+
+    @coroutine_test
+    async def test_stop_async_reentrant_fast_waits_for_closewait(self) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine.spider = Mock()
+        engine._stopping = True
+        engine._closewait = defer.Deferred()
+
+        with patch.object(
+            engine, "close_spider_async", new_callable=AsyncMock
+        ) as close:
+            stop_dfd = deferred_from_coro(engine.stop_async(mode="fast"))
+            await sleep(0)
+            close.assert_called_once_with(reason="shutdown", mode="fast")
+            assert not stop_dfd.called
+
+            assert engine._closewait
+            engine._closewait.callback(None)
+            await maybe_deferred_to_future(stop_dfd)
+
+    @coroutine_test
+    async def test_stop_async_reentrant_graceful_without_spider_or_closewait(
+        self,
+    ) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine._stopping = True
+
+        with patch.object(
+            engine, "close_spider_async", new_callable=AsyncMock
+        ) as close:
+            await engine.stop_async(mode="graceful")
+
+        close.assert_not_called()
+
+    @coroutine_test
+    async def test_handle_downloader_output_ignores_fast_cancelled_failures(
+        self,
+    ) -> None:
+        engine = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        engine.spider = Mock()
+        engine._stop_mode = "fast"
+
+        enqueue_scrape = Mock()
+        engine.scraper.enqueue_scrape = enqueue_scrape  # type: ignore[method-assign]
+
+        result = Failure(DownloadCancelledError("dropped during fast stop"))
+        await maybe_deferred_to_future(
+            engine._handle_downloader_output(result, Request("https://example.com"))
+        )
+
+        enqueue_scrape.assert_not_called()
 
     @pytest.mark.only_asyncio
     @coroutine_test
