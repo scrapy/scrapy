@@ -6,6 +6,7 @@ import pytest
 from scrapy import Request, Spider
 from scrapy.downloadermiddlewares.offsite import OffsiteMiddleware
 from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 
 UNSET = object()
@@ -235,6 +236,21 @@ def test_repeated_offsite_domain():
         mw.process_request(req2)
     assert crawler.stats.get_value("offsite/domains") == 1  # not incremented again
     assert crawler.stats.get_value("offsite/filtered") == 2
+
+
+def test_should_follow_override():
+    class RootOnlyOffsiteMiddleware(OffsiteMiddleware):
+        def should_follow(self, request: Request, spider: Spider) -> bool:
+            allowed_domains: list[str] = getattr(spider, "allowed_domains", [])
+            return urlparse_cached(request).hostname in allowed_domains
+
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", allowed_domains=["example.com"])
+    mw = RootOnlyOffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+    assert mw.process_request(Request("https://example.com/1")) is None
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(Request("https://www.example.com/1"))
 
 
 def test_ignore_request_reason():
