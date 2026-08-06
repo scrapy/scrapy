@@ -13,6 +13,7 @@ from scrapy.spiderloader import get_spider_loader
 
 if TYPE_CHECKING:
     import argparse
+    from collections.abc import Iterable
 
 
 def _edit_file(editor: str, file_path: str | os.PathLike[str]) -> int:
@@ -41,6 +42,9 @@ class Command(ScrapyCommand):
             "Edit a spider using the editor defined in the EDITOR environment"
             " variable or else the EDITOR setting"
         )
+
+    def complete_argument(self, args: list[str]) -> Iterable[str]:
+        return () if args else self._spider_names()
 
     def _err(self, msg: str) -> None:
         sys.stderr.write(msg + os.linesep)

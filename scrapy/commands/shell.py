@@ -20,6 +20,7 @@ from scrapy.utils.url import guess_scheme
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser, Namespace
+    from collections.abc import Iterable
 
     from scrapy import Spider
 
@@ -42,6 +43,11 @@ class Command(ScrapyCommand):
             "Interactive console for scraping the given url or file. "
             "Use ./file.html syntax or full path for local file."
         )
+
+    def complete_option(self, dest: str) -> Iterable[str]:
+        if dest == "spider":
+            return self._spider_names()
+        return super().complete_option(dest)
 
     def add_options(self, parser: ArgumentParser) -> None:
         super().add_options(parser)
