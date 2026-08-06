@@ -137,6 +137,23 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Spider closed (finished)" in log
         assert "The DNS_RESOLVER setting is deprecated" in log
 
+    def test_reactor_settings(self) -> None:
+        log = self.run_script("reactor_settings.py")
+        assert "Spider closed (finished)" in log
+        assert "DNS timeout: 11.0" in log
+        assert "DNS cache limit: 0" in log
+        assert "Thread pool size: 42" in log
+        assert "reactor settings" not in log
+
+    def test_reactor_settings_conflict(self) -> None:
+        log = self.run_script("reactor_settings.py", "conflict")
+        assert "Spider closed (finished)" in log
+        assert "DNS timeout: 11.0" in log
+        assert (
+            "Spider Spider2 defines a different value than spider Spider1 for "
+            "the following reactor settings: DNS_TIMEOUT" in log
+        )
+
     def test_twisted_reactor_asyncio(self) -> None:
         log = self.run_script("twisted_reactor_asyncio.py")
         assert "Spider closed (finished)" in log

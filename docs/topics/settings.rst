@@ -329,14 +329,20 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
+.. versionchanged:: VERSION
+   :setting:`TWISTED_DNS_RESOLVER`, the settings of the resolver and
+   :setting:`REACTOR_THREADPOOL_MAXSIZE` are now read from the first spider,
+   instead of being read from the project settings and ignored in
+   :ref:`per-spider settings <spider-settings>`.
+
 These settings can be defined from a spider. However, because only 1 reactor
 can be used per process, these settings cannot use a different value per spider
 when :ref:`running multiple spiders in the same process
 <run-multiple-spiders>`.
 
-In general, if different spiders define different values, the first defined
-value is used. However, if two spiders request a different reactor, an
-exception is raised.
+In general, if different spiders define different values, the value of the
+first spider is used and a warning is issued. However, if two spiders request
+a different reactor, an exception is raised.
 
 These settings are:
 

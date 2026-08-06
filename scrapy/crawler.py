@@ -57,6 +57,17 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 
+# Reactor settings that are applied when starting the reactor, i.e. once per
+# process, and so can only take the value of one of the crawlers.
+_REACTOR_SETTINGS = (
+    "DNSCACHE_ENABLED",
+    "DNSCACHE_SIZE",
+    "DNS_RESOLVER",
+    "DNS_TIMEOUT",
+    "REACTOR_THREADPOOL_MAXSIZE",
+    "TWISTED_DNS_RESOLVER",
+)
+
 
 class Crawler:
     def __init__(
@@ -658,6 +669,7 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         install_root_handler: bool = True,
     ):
         super().__init__(settings)
+        self._reactor_crawler: Crawler | None = None
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
 
@@ -666,6 +678,30 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
     ) -> None:
         raise NotImplementedError
+
+    def create_crawler(
+        self, crawler_or_spidercls: type[Spider] | str | Crawler
+    ) -> Crawler:
+        crawler = super().create_crawler(crawler_or_spidercls)
+        if self._reactor_crawler is None:
+            self._reactor_crawler = crawler
+        else:
+            ignored = [
+                setting
+                for setting in _REACTOR_SETTINGS
+                if self._reactor_crawler.settings[setting] != crawler.settings[setting]
+            ]
+            if ignored:
+                warnings.warn(
+                    f"Spider {crawler.spidercls.__name__} defines a different "
+                    f"value than spider "
+                    f"{self._reactor_crawler.spidercls.__name__} for the "
+                    f"following reactor settings: {', '.join(ignored)}. Only "
+                    f"the value of the first spider is used, since the "
+                    f"reactor is shared by every spider in a process.",
+                    stacklevel=2,
+                )
+        return crawler
 
     def _signal_shutdown(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
@@ -699,7 +735,13 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def _setup_reactor(self, install_signal_handlers: bool) -> None:
         from twisted.internet import reactor
 
-        dns_priority = self.settings.getpriority("DNS_RESOLVER") or 0
+        # Reactor settings are read from the first crawler, so that they can be
+        # defined from a spider, and fall back to the process settings when no
+        # crawler has been created yet.
+        crawler: Crawler | CrawlerProcessBase = self._reactor_crawler or self
+        settings = crawler.settings
+
+        dns_priority = settings.getpriority("DNS_RESOLVER") or 0
         default_priority = SETTINGS_PRIORITIES["default"]
 
         if dns_priority > default_priority:
@@ -710,24 +752,20 @@ class CrawlerProcessBase(CrawlerRunnerBase):
                 stacklevel=2,
             )
 
-            twisted_dns_priority = (
-                self.settings.getpriority("TWISTED_DNS_RESOLVER") or 0
-            )
+            twisted_dns_priority = settings.getpriority("TWISTED_DNS_RESOLVER") or 0
             if twisted_dns_priority > dns_priority:
-                resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+                resolver_cls_path = settings["TWISTED_DNS_RESOLVER"]
             else:
-                resolver_cls_path = self.settings["DNS_RESOLVER"]
+                resolver_cls_path = settings["DNS_RESOLVER"]
         else:
-            resolver_cls_path = self.settings["TWISTED_DNS_RESOLVER"]
+            resolver_cls_path = settings["TWISTED_DNS_RESOLVER"]
 
         resolver_class = load_object(resolver_cls_path)
 
-        # We pass self, which is CrawlerProcess, instead of Crawler here,
-        # which works because the default resolvers only use crawler.settings.
-        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[call-overload]
+        resolver = build_from_crawler(resolver_class, crawler, reactor=reactor)  # type: ignore[call-overload]
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
-        tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
+        tp.adjustPoolsize(maxthreads=settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
         reactor.addSystemEventTrigger("before", "shutdown", self._stop_dfd)
         if install_signal_handlers:
             reactor.addSystemEventTrigger(
