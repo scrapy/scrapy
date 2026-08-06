@@ -140,6 +140,15 @@ class ExceptionJsonItemExporter(JsonItemExporter):
         raise RuntimeError("foo")
 
 
+def split_foo(item):
+    for value in item["foo"].split(","):
+        yield {"foo": value}
+
+
+def drop_item(item):
+    return []
+
+
 class TestFeedExport(TestFeedExportBase):
     async def run_and_export(
         self, spider_cls: type[Spider], settings: dict[str, Any]
@@ -768,6 +777,72 @@ class TestFeedExport(TestFeedExportBase):
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
             assert data[fmt] == expected
+
+    @coroutine_test
+    async def test_export_based_on_item_processors(self):
+        items = [
+            MyItem({"foo": "bar1,bar2"}),
+            {"foo": "bar3"},
+        ]
+
+        formats = {
+            "jsonlines": b'{"foo": "bar1"}\n{"foo": "bar2"}\n{"foo": "bar3"}\n',
+            "json": b'[\n{"foo": "bar1"},\n{"foo": "bar2"},\n{"foo": "bar3"}\n]',
+            "xml": (
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n'
+                b"<item><foo>bar1</foo></item>\n<item><foo>bar2</foo></item>\n</items>"
+            ),
+            "csv": b"",
+        }
+
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename(): {
+                    "format": "jsonlines",
+                    "item_processor": split_foo,
+                },
+                self._random_temp_filename(): {
+                    "format": "json",
+                    "item_processor": "tests.test_feedexport.split_foo",
+                },
+                self._random_temp_filename(): {
+                    "format": "xml",
+                    "item_classes": [MyItem],
+                    "item_processor": split_foo,
+                },
+                self._random_temp_filename(): {
+                    "format": "csv",
+                    "item_processor": drop_item,
+                },
+            },
+        }
+
+        data = await self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            assert data[fmt] == expected
+
+    @coroutine_test
+    async def test_item_processor_stats(self):
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+            start_urls = [self.mockserver.url("/")]
+
+            def parse(self, response):
+                yield {"foo": "bar1,bar2"}
+
+        settings = {
+            "FEEDS": {
+                path_to_url(self._random_temp_filename()): {
+                    "format": "jsonlines",
+                    "item_processor": split_foo,
+                },
+            },
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        assert crawler.stats.get_value("item_scraped_count") == 1
+        assert crawler.stats.get_value("feedexport/item_count/FileFeedStorage") == 2
 
     @coroutine_test
     async def test_export_dicts(self):

@@ -13,7 +13,7 @@ import re
 import sys
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
@@ -78,6 +78,8 @@ def apply_uri_params(uri_template: str, uri_params: dict[str, Any]) -> str:
 UriParamsCallableT: TypeAlias = Callable[
     [dict[str, Any], Spider], dict[str, Any] | None
 ]
+
+_ItemProcessor: TypeAlias = Callable[[Any], Iterable[Any]]
 
 
 class ItemFilter:
@@ -486,6 +488,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
+        self.processors: dict[str, _ItemProcessor | None] = {}
         self._pending_close_tasks: list[asyncio.Task[None] | Deferred[None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
@@ -507,6 +510,7 @@ class FeedExporter:
                 feed_options, self.settings
             )
             self.filters[uri] = self._load_filter(feed_options)
+            self.processors[uri] = self._load_processor(feed_options)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
@@ -521,6 +525,7 @@ class FeedExporter:
                 feed_options, self.settings
             )
             self.filters[uri] = self._load_filter(feed_options)
+            self.processors[uri] = self._load_processor(feed_options)
 
         self.storages: dict[str, type[FeedStorageProtocol]] = self._load_components(
             "FEED_STORAGES"
@@ -612,6 +617,9 @@ class FeedExporter:
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         slot_type = type(slot.storage).__name__
         assert self.crawler.stats
+        self.crawler.stats.inc_value(
+            f"feedexport/item_count/{slot_type}", slot.itemcount
+        )
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:
@@ -672,30 +680,30 @@ class FeedExporter:
                 )  # if slot doesn't accept item, continue with next slot
                 continue
 
-            slot.start_exporting()
-            assert slot.exporter
-            slot.exporter.export_item(item)
-            slot.itemcount += 1
-            # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
-            if (
-                self.feeds[slot.uri_template]["batch_item_count"]
-                and slot.itemcount >= self.feeds[slot.uri_template]["batch_item_count"]
-            ):
-                uri_params = self._get_uri_params(
-                    spider, self.feeds[slot.uri_template]["uri_params"], slot
-                )
-                self._schedule_slot_close(slot, spider)
-                slots.append(
-                    self._start_new_batch(
+            processor = self.processors[slot.uri_template]
+            for exported_item in processor(item) if processor else (item,):
+                slot.start_exporting()
+                assert slot.exporter
+                slot.exporter.export_item(exported_item)
+                slot.itemcount += 1
+                # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
+                if (
+                    self.feeds[slot.uri_template]["batch_item_count"]
+                    and slot.itemcount
+                    >= self.feeds[slot.uri_template]["batch_item_count"]
+                ):
+                    uri_params = self._get_uri_params(
+                        spider, self.feeds[slot.uri_template]["uri_params"], slot
+                    )
+                    self._schedule_slot_close(slot, spider)
+                    slot = self._start_new_batch(  # noqa: PLW2901
                         batch_id=slot.batch_id + 1,
                         uri=apply_uri_params(slot.uri_template, uri_params),
                         feed_options=self.feeds[slot.uri_template],
                         spider=spider,
                         uri_template=slot.uri_template,
                     )
-                )
-            else:
-                slots.append(slot)
+            slots.append(slot)
         self.slots = slots
 
     def _load_components(self, setting_prefix: str) -> dict[str, Any]:
@@ -780,6 +788,10 @@ class FeedExporter:
             feed_options.get("item_filter", ItemFilter)
         )
         return item_filter_class(feed_options)
+
+    def _load_processor(self, feed_options: dict[str, Any]) -> _ItemProcessor | None:
+        item_processor = feed_options.get("item_processor")
+        return load_object(item_processor) if item_processor else None
 
 
 def __getattr__(name: str) -> Any:  # pragma: no cover
