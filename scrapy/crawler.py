@@ -22,6 +22,7 @@ from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
+    _configure_logger_levels,
     configure_logging,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
@@ -74,7 +75,7 @@ class Crawler:
         self.spidercls: type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
-        self._update_root_log_handler()
+        self._update_logging()
 
         self.addons: AddonManager = AddonManager(self)
         self.signals: SignalManager = SignalManager(self)
@@ -90,9 +91,10 @@ class Crawler:
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
-    def _update_root_log_handler(self) -> None:
+    def _update_logging(self) -> None:
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
+            _configure_logger_levels(self.settings)
             install_scrapy_root_handler(self.settings)
 
     def _apply_settings(self) -> None:
@@ -219,7 +221,7 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
-            self._update_root_log_handler()
+            self._update_logging()
             self.engine = self._create_engine()
             yield deferred_from_coro(self.engine.open_spider_async())
             yield deferred_from_coro(self.engine.start_async())
@@ -249,7 +251,7 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
-            self._update_root_log_handler()
+            self._update_logging()
             self.engine = self._create_engine()
             await self.engine.open_spider_async()
             await self.engine.start_async()

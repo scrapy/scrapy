@@ -528,6 +528,20 @@ class TestCrawlerLogging:
         get_crawler(MySpider)
         assert get_scrapy_root_handler() is None
 
+    def test_spider_custom_settings_log_levels(self) -> None:
+        class MySpider(scrapy.Spider):
+            name = "spider"
+            custom_settings = {"LOG_LEVELS": {"httpx": "DEBUG"}}
+
+        try:
+            configure_logging()
+            assert logging.getLogger("httpx").level == logging.WARNING
+            get_crawler(MySpider)
+            assert logging.getLogger("httpx").level == logging.DEBUG
+        finally:
+            _uninstall_scrapy_root_handler()
+            logging.getLogger("httpx").setLevel(logging.NOTSET)
+
     @coroutine_test
     async def test_spider_custom_settings_log_level(self, tmp_path: Path) -> None:
         log_file = Path(tmp_path, "log.txt")
