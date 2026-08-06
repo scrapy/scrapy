@@ -61,6 +61,12 @@ class CheckSpider(scrapy.Spider):
         assert "OK" in err
         assert ret == 0
 
+    def test_bootstrap_failure(self, proj_path: Path) -> None:
+        self._write_contract(proj_path, "", "pass")
+        self._break_bootstrap(proj_path / self.project_name)
+        ret, _, _ = proc("check", cwd=proj_path)
+        assert ret == 1
+
     def test_check_returns_requests_contract(self, proj_path: Path) -> None:
         contracts = """
         @returns requests 1
@@ -218,7 +224,9 @@ class CheckSpider(scrapy.Spider):
         )
         cm_cls_mock.return_value = cm_mock = Mock()
         spider_loader_mock = Mock()
-        cmd.crawler_process = Mock(spider_loader=spider_loader_mock)
+        cmd.crawler_process = Mock(
+            spider_loader=spider_loader_mock, bootstrap_failed=False
+        )
         spider_name = "FakeSpider"
         spider_cls_mock = Mock()
         spider_loader_mock.load.side_effect = lambda x: {spider_name: spider_cls_mock}[
