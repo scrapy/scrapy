@@ -68,6 +68,7 @@ __all__ = [
     "DOWNLOADER_STATS",
     "DOWNLOAD_BIND_ADDRESS",
     "DOWNLOAD_DELAY",
+    "DOWNLOAD_DELAY_JITTER",
     "DOWNLOAD_FAIL_ON_DATALOSS",
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
@@ -209,6 +210,11 @@ __all__ = [
     "TELNETCONSOLE_PORT",
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
+    "THROTTLER",
+    "THROTTLER_DEBUG",
+    "THROTTLING_SCOPES",
+    "THROTTLING_SCOPE_CONCURRENCY",
+    "THROTTLING_SCOPE_LIMIT",
     "TWISTED_DNS_RESOLVER",
     "TWISTED_REACTOR",
     "TWISTED_REACTOR_ENABLED",
@@ -280,6 +286,7 @@ DNS_TIMEOUT = 60
 DOWNLOAD_BIND_ADDRESS = None
 
 DOWNLOAD_DELAY = 0
+DOWNLOAD_DELAY_JITTER = 0.5
 
 DOWNLOAD_FAIL_ON_DATALOSS = True
 
@@ -575,6 +582,12 @@ TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
+THROTTLER = "scrapy.throttler.Throttler"
+THROTTLING_SCOPES = {}
+THROTTLING_SCOPE_CONCURRENCY = 1
+THROTTLING_SCOPE_LIMIT = 100000
+THROTTLER_DEBUG = False
+
 TWISTED_DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 
 TWISTED_REACTOR_ENABLED = True
@@ -594,7 +607,7 @@ def __getattr__(name: str) -> Any:
         from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
 
         warnings.warn(
-            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",
+            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.THROTTLING_SCOPE_CONCURRENCY instead.",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )

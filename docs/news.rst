@@ -1520,7 +1520,7 @@ Deprecations
     (:issue:`7005`, :issue:`7043`)
 
 -   The ``CONCURRENT_REQUESTS_PER_IP`` setting is deprecated, use
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` instead.
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` instead.
     (:issue:`6917`, :issue:`6921`)
 
 -   The ``scrapy.core.downloader.handlers.http`` module is deprecated. You
@@ -1703,7 +1703,7 @@ Bug fixes
     a relative URL.
     (:issue:`7042`, :issue:`7047`)
 
--   Passing ``None`` as a value of the :reqmeta:`download_slot` request meta
+-   Passing ``None`` as a value of the ``download_slot`` request meta
     key is now handled in the same way as not setting this meta key at all.
     (:issue:`7172`)
 
@@ -1852,7 +1852,7 @@ Scrapy 2.13.3 (2025-07-02)
 --------------------------
 
 -   Changed the values for :setting:`DOWNLOAD_DELAY` (from ``0`` to ``1``) and
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (from ``8`` to ``1``) in the
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` (from ``8`` to ``1``) in the
     default project template.
     (:issue:`6597`, :issue:`6918`, :issue:`6923`)
 
@@ -3614,9 +3614,9 @@ New features
 ~~~~~~~~~~~~
 
 -   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
-    :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
-    via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
+    ``CONCURRENT_REQUESTS_PER_DOMAIN`` and
+    ``RANDOMIZE_DOWNLOAD_DELAY`` can now be set on a per-domain basis
+    via the new ``DOWNLOAD_SLOTS`` setting. (:issue:`5328`)
 
 -   Added :meth:`.TextResponse.jmespath`, a shortcut for JMESPath selectors
     available since parsel_ 1.8.1. (:issue:`5894`, :issue:`5915`)
@@ -6830,8 +6830,7 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
 *   From :class:`~scrapy.spiders.Spider` (and subclasses):
 
-    *   ``DOWNLOAD_DELAY`` (use :ref:`download_delay
-        <spider-download_delay-attribute>`)
+    *   ``DOWNLOAD_DELAY`` (use ``download_delay``)
 
     *   ``set_crawler`` (use :meth:`~scrapy.spiders.Spider.from_crawler`)
 
@@ -7695,7 +7694,7 @@ Documentation
 - Download stats badge removed from README (:issue:`2160`).
 - New Scrapy :ref:`architecture diagram <topics-architecture>` (:issue:`2165`).
 - Updated ``Response`` parameters documentation (:issue:`2197`).
-- Reworded misleading :setting:`RANDOMIZE_DOWNLOAD_DELAY` description (:issue:`2190`).
+- Reworded misleading ``RANDOMIZE_DOWNLOAD_DELAY`` description (:issue:`2190`).
 - Add StackOverflow as a support channel (:issue:`2257`).
 
 .. _release-1.1.4:
@@ -9109,7 +9108,7 @@ New features and settings
 - In request errbacks, offending requests are now received in ``failure.request`` attribute (:rev:`2738`)
 - Big downloader refactoring to support per domain/ip concurrency limits (:rev:`2732`)
    - ``CONCURRENT_REQUESTS_PER_SPIDER`` setting has been deprecated and replaced by:
-      - :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, ``CONCURRENT_REQUESTS_PER_IP``
+      - :setting:`CONCURRENT_REQUESTS`, ``CONCURRENT_REQUESTS_PER_DOMAIN``, ``CONCURRENT_REQUESTS_PER_IP``
    - check the documentation for more details
 - Added builtin caching DNS resolver (:rev:`2728`)
 - Moved Amazon AWS-related components/extensions (SQS spider queue, SimpleDB stats collector) to a separate project: [scaws](https://github.com/scrapinghub/scaws) (:rev:`2706`, :rev:`2714`)

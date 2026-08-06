@@ -143,6 +143,9 @@ coverage_ignore_pyobjects = [
 
 # -- Options for the autodoc extension ----------------------------------------
 autodoc_member_order = "bysource"
+autodoc_type_aliases = {
+    "RequestScopes": "RequestScopes",
+}
 
 # -- Options for the InterSphinx extension -----------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration

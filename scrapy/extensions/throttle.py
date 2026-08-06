@@ -10,9 +10,9 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy.core.downloader import Slot
     from scrapy.crawler import Crawler
     from scrapy.http import Response
+    from scrapy.throttler import ThrottlingScopeManager
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class AutoThrottle:
                 f"AUTOTHROTTLE_TARGET_CONCURRENCY "
                 f"({self.target_concurrency!r}) must be higher than 0."
             )
+        self._started_scopes: set[str] = set()
         crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(
             self._response_downloaded, signal=signals.response_downloaded
@@ -45,8 +46,9 @@ class AutoThrottle:
     def _spider_opened(self, spider: Spider) -> None:
         self.mindelay = self._min_delay()
         self.maxdelay = self._max_delay()
-        assert self.crawler.engine
-        self.crawler.engine.downloader._delay = self._start_delay()
+        self._startdelay = max(
+            self.mindelay, self.crawler.settings.getfloat("AUTOTHROTTLE_START_DELAY")
+        )
 
     def _min_delay(self) -> float:
         return self.crawler.settings.getfloat("DOWNLOAD_DELAY")
@@ -54,55 +56,58 @@ class AutoThrottle:
     def _max_delay(self) -> float:
         return self.crawler.settings.getfloat("AUTOTHROTTLE_MAX_DELAY")
 
-    def _start_delay(self) -> float:
-        return max(
-            self.mindelay, self.crawler.settings.getfloat("AUTOTHROTTLE_START_DELAY")
-        )
-
     def _response_downloaded(
         self, response: Response, request: Request, spider: Spider
     ) -> None:
-        key, slot = self._get_slot(request, spider)
+        throttler = self.crawler.throttler
+        assert throttler is not None
         latency = request.meta.get("download_latency")
         if (
             latency is None
-            or slot is None
             or request.meta.get("autothrottle_dont_adjust_delay", False) is True
         ):
             return
 
-        olddelay = slot.delay
-        self._adjust_delay(slot, latency, response)
-        if self.debug:
-            diff = slot.delay - olddelay
-            size = len(response.body)
-            conc = len(slot.transferring)
-            logger.info(
-                "slot: %(slot)s | conc:%(concurrency)2d | "
-                "delay:%(delay)5d ms (%(delaydiff)+d) | "
-                "latency:%(latency)5d ms | size:%(size)6d bytes",
-                {
-                    "slot": key,
-                    "concurrency": conc,
-                    "delay": slot.delay * 1000,
-                    "delaydiff": diff * 1000,
-                    "latency": latency * 1000,
-                    "size": size,
-                },
-                extra={"spider": spider},
-            )
+        # Only the scopes the request was sent under: a request may be throttled
+        # under scopes of the user's choosing (see THROTTLING_SCOPES), and the
+        # delay of any scope it was not sent under had no effect on it.
+        for scope_id in throttler.get_applied_scopes(request):
+            scope = throttler.get_scope_manager(scope_id)
+            olddelay = self._scope_delay(scope, scope_id)
+            newdelay = self._adjust_delay(olddelay, latency, response)
+            scope.set_base_delay(newdelay, only_increase=False)
+            if self.debug:
+                logger.info(
+                    f"scope: {scope_id} | "
+                    f"delay:{newdelay * 1000:5.0f} ms "
+                    f"({(newdelay - olddelay) * 1000:+.0f}) | "
+                    f"latency:{latency * 1000:5.0f} ms | "
+                    f"size:{len(response.body):6d} bytes",
+                    extra={"spider": spider},
+                )
 
-    def _get_slot(
-        self, request: Request, spider: Spider
-    ) -> tuple[str | None, Slot | None]:
-        key: str | None = request.meta.get("download_slot")
-        if key is None:
-            return None, None
-        assert self.crawler.engine
-        return key, self.crawler.engine.downloader.slots.get(key)
+    def _scope_delay(self, scope: ThrottlingScopeManager, scope_id: str) -> float:
+        """Return the current delay of *scope_id*, applying AUTOTHROTTLE_START_DELAY
+        the first time the scope is seen.
 
-    def _adjust_delay(self, slot: Slot, latency: float, response: Response) -> None:
-        """Define delay adjustment policy"""
+        Adaptive tuning owns the scope delay from then on, bounded only by
+        AUTOTHROTTLE_MIN_DELAY and AUTOTHROTTLE_MAX_DELAY. So a
+        robots.txt ``Crawl-delay`` only shapes the delay this extension starts
+        from, and a lower AUTOTHROTTLE_MIN_DELAY lets it be undercut later; set
+        AUTOTHROTTLE_MIN_DELAY to the lowest delay every website in the crawl may
+        get.
+        """
+        delay = scope.get_base_delay()
+        if scope_id not in self._started_scopes:
+            self._started_scopes.add(scope_id)
+            delay = max(delay, self._startdelay)
+        return delay
+
+    def _adjust_delay(
+        self, olddelay: float, latency: float, response: Response
+    ) -> float:
+        """Return the new delay given the current *olddelay* and the observed
+        *latency*."""
 
         # If a server needs `latency` seconds to respond then
         # we should send a request each `latency/N` seconds
@@ -110,7 +115,7 @@ class AutoThrottle:
         target_delay = latency / self.target_concurrency
 
         # Adjust the delay to make it closer to target_delay
-        new_delay = (slot.delay + target_delay) / 2.0
+        new_delay = (olddelay + target_delay) / 2.0
 
         # If target delay is bigger than old delay, then use it instead of mean.
         # It works better with problematic sites.
@@ -123,7 +128,7 @@ class AutoThrottle:
         # than old one, as error pages (and redirections) are usually small and
         # so tend to reduce latency, thus provoking a positive feedback by
         # reducing delay instead of increase.
-        if response.status != 200 and new_delay <= slot.delay:
-            return
+        if response.status != 200 and new_delay <= olddelay:
+            return olddelay
 
-        slot.delay = new_delay
+        return new_delay

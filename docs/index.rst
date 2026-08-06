@@ -158,6 +158,7 @@ Solving specific problems
    topics/leaks
    topics/media-pipeline
    topics/deploy
+   topics/throttling
    topics/autothrottle
    topics/benchmarking
    topics/jobs
@@ -197,6 +198,10 @@ Solving specific problems
 
 :doc:`topics/deploy`
     Deploying your Scrapy spiders and run them in a remote server.
+
+:doc:`topics/throttling`
+    Control request throttling to avoid overloading websites and comply with
+    rate limits.
 
 :doc:`topics/autothrottle`
     Adjust crawl rate dynamically based on load.

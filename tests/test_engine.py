@@ -5,7 +5,7 @@ import logging
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -15,7 +15,11 @@ from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.defer import _schedule_coro, deferred_from_coro
+from scrapy.utils.defer import (
+    _schedule_coro,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.engine import TestEngineBase
@@ -230,3 +234,29 @@ async def test_request_scheduled_signal():
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )
     crawler.signals.disconnect(signal_handler, signals.request_scheduled)
+
+
+class TestEngineThrottler:
+    @pytest.fixture
+    def engine(self):
+        crawler = get_crawler(MySpider)
+        engine = ExecutionEngine(crawler, lambda _: None)
+        yield engine
+        engine.downloader.close()
+
+    @coroutine_test
+    async def test_acquire_throttler_reruns_the_loop_for_unscheduled(self, engine):
+        engine._slot = Mock()
+        engine.crawler.throttler = Mock()
+        engine.crawler.throttler.acquire = AsyncMock()
+        request = Request("http://a.example")
+
+        await maybe_deferred_to_future(engine._acquire_throttler(request, False))
+        # A request from the scheduler goes on to the downloader, whose own
+        # finally block re-runs the loop once it is done with it.
+        engine._slot.nextcall.schedule.assert_not_called()
+
+        await maybe_deferred_to_future(engine._acquire_throttler(request, True))
+        # An unscheduled request stops claiming the free slots of its scopes
+        # here, which can be what lets a request that shares them through.
+        engine._slot.nextcall.schedule.assert_called_once_with()

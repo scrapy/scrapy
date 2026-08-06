@@ -44,9 +44,17 @@ if TYPE_CHECKING:
 
 
 class TestSlot:
-    def test_repr(self):
-        slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
+    def test_deprecated(self):
+        with pytest.warns(ScrapyDeprecationWarning, match="Slot class is deprecated"):
+            Slot(concurrency=8, delay=0.1, randomize_delay=True)
+
+    def test_deprecated_subclass(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="inherits from the deprecated Slot"
+        ):
+
+            class MySlot(Slot):  # type: ignore[misc]
+                pass
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code

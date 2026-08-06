@@ -10,6 +10,7 @@ import warnings
 from asyncio import Future
 from collections import deque
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
+from contextlib import suppress
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -572,3 +573,44 @@ def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitab
         return o
 
     return coro()
+
+
+class _Event:
+    """A set of :class:`~twisted.internet.defer.Deferred` objects handed out to
+    waiters, all fired the next time the awaited thing happens.
+
+    Every waiter registers before giving up control, so an event firing in
+    between goes to it rather than unnoticed.
+    """
+
+    __slots__ = ("_waiters",)
+
+    def __init__(self) -> None:
+        self._waiters: list[Deferred[None]] = []
+
+    def wait(self) -> Deferred[None]:
+        waiter: Deferred[None] = Deferred()
+        self._waiters.append(waiter)
+        return waiter
+
+    def discard(self, waiter: Deferred[None]) -> None:
+        """Drop a pending *waiter*, for a wait that ended for another reason."""
+        with suppress(ValueError):
+            self._waiters.remove(waiter)
+
+    def fire(self, limit: int | None = None) -> None:
+        """Fire every waiter, or only the *limit* oldest ones.
+
+        A limit is for an event that hands out a countable resource, one waiter
+        per unit of it: waking the rest would only have them find it taken and
+        wait again, which on a busy event is most of the work they do.
+        """
+        if limit is None:
+            waiters, self._waiters = self._waiters, []
+        elif limit <= 0:
+            return
+        else:
+            waiters, self._waiters = self._waiters[:limit], self._waiters[limit:]
+        for waiter in waiters:
+            if not waiter.called:
+                waiter.callback(None)

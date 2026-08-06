@@ -574,24 +574,10 @@ CONCURRENT_REQUESTS
 
 Default: ``16``
 
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed by the Scrapy downloader. Use ``0`` for no limit.
-
-.. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
-
-CONCURRENT_REQUESTS_PER_DOMAIN
-------------------------------
-
-Default: ``1`` (:ref:`fallback <default-settings>`: ``8``)
-
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed to any single domain.
-
-See also: :ref:`topics-autothrottle` and its
-:setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` option.
+Maximum number of total concurrent requests allowed, ``0`` for no limit.
 
 It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
+:setting:`THROTTLING_SCOPES`.
 
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
@@ -920,42 +906,6 @@ Default: ``True``
 
 Whether to enable downloader stats collection.
 
-.. setting:: DOWNLOAD_DELAY
-
-DOWNLOAD_DELAY
---------------
-
-Default: ``1`` (:ref:`fallback <default-settings>`: ``0``)
-
-Minimum seconds to wait between 2 consecutive requests to the same domain.
-
-Use :setting:`DOWNLOAD_DELAY` to throttle your crawling speed, to avoid hitting
-servers too hard.
-
-Decimal numbers are supported. For example, to send a maximum of 4 requests
-every 10 seconds:
-
-.. code-block:: python
-
-    DOWNLOAD_DELAY = 2.5
-
-This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting, which is enabled by default.
-
-Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
-concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
-time of a domain is lower than :setting:`DOWNLOAD_DELAY`, the effective
-concurrency for that domain is 1. When testing throttling configurations, it
-usually makes sense to lower :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` first,
-and only increase :setting:`DOWNLOAD_DELAY` once
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is 1 but a higher throttling is
-desired.
-
-.. _spider-download_delay-attribute:
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
-
 .. setting:: DOWNLOAD_BIND_ADDRESS
 
 DOWNLOAD_BIND_ADDRESS
@@ -1061,30 +1011,6 @@ handler (without replacement), place this in your ``settings.py``:
 .. seealso:: :ref:`security-unencrypted-protocols` and
     :ref:`security-local-resources`
 
-
-.. setting:: DOWNLOAD_SLOTS
-
-DOWNLOAD_SLOTS
---------------
-
-Default: ``{}``
-
-Allows to define concurrency/delay parameters on per slot (domain) basis:
-
-    .. code-block:: python
-
-        DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
-        }
-
-.. note::
-
-    For other downloader slots default settings values will be used:
-
-    -   :setting:`DOWNLOAD_DELAY`: ``delay``
-    -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
-    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1758,29 +1684,6 @@ Example:
 .. code-block:: python
 
     NEWSPIDER_MODULE = "mybot.spiders_dev"
-
-.. setting:: RANDOMIZE_DOWNLOAD_DELAY
-
-RANDOMIZE_DOWNLOAD_DELAY
-------------------------
-
-Default: ``True``
-
-If enabled, Scrapy will wait a random amount of time (between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
-website.
-
-This randomization decreases the chance of the crawler being detected (and
-subsequently blocked) by sites which analyze requests looking for statistically
-significant similarities in the time between their requests.
-
-The randomization policy is the same used by `wget`_ ``--random-wait`` option.
-
-If :setting:`DOWNLOAD_DELAY` is zero this option has no effect.
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
-
-.. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 

@@ -129,6 +129,9 @@ class ExecutionEngine:
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None
         ) = None
+        # Requests currently held by the throttler, waiting for their
+        # scopes to allow them through to the downloader.
+        self._throttler_waiting: set[Request] = set()
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -351,6 +354,25 @@ class ExecutionEngine:
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
+            or self._throttler_needs_backout()
+        )
+
+    def _throttler_needs_backout(self) -> bool:
+        """Apply backpressure while requests are held by the throttler.
+
+        Requests waiting on throttling do not occupy a downloader concurrency
+        slot, so without this check the engine would keep draining the
+        scheduler into pending throttling waits. Count them together with the
+        in-flight requests against the global concurrency limit.
+        """
+        if not self._throttler_waiting:
+            return False
+        total_concurrency = self.downloader.total_concurrency
+        if not total_concurrency:  # no global limit to count them against
+            return False
+        return (
+            len(self._throttler_waiting) + len(self.downloader.active)
+            >= total_concurrency
         )
 
     def _remove_request(self, _: Any, request: Request) -> None:
@@ -426,6 +448,8 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
+        if self._throttler_waiting:  # requests held by the throttler
+            return False
         if self._start is not None:  # not all start requests are handled
             return False
         return not self._slot.scheduler.has_pending_requests()
@@ -473,7 +497,9 @@ class ExecutionEngine:
         while True:
             try:
                 response_or_request = await maybe_deferred_to_future(
-                    self._download(request)
+                    # This is the only way to download a request without going
+                    # through the scheduler.
+                    self._download(request, unscheduled=True)
                 )
             finally:
                 assert self._slot is not None
@@ -482,15 +508,50 @@ class ExecutionEngine:
                 return response_or_request
             request = response_or_request
 
+    def _acquire_throttler(self, request: Request, unscheduled: bool) -> Deferred[None]:
+        """Wait for the throttler to allow *request* to be sent, tracking it as
+        held meanwhile.
+
+        Under the asyncio reactor this costs a task hop per request even when
+        the throttler has nothing to wait for, because that is what turning a
+        coroutine into a :class:`~twisted.internet.defer.Deferred` takes. Skipping
+        it would mean a synchronous "would this block?" throttler API, which is
+        not worth its weight until a profile asks for it.
+        """
+        self._throttler_waiting.add(request)
+        throttler = self.crawler.throttler
+        assert throttler is not None
+
+        def released(result: Any) -> Any:
+            self._throttler_waiting.discard(request)
+            # While an unscheduled request waits, it claims a free slot of every
+            # one of its scopes, holding back every request that shares them
+            # (see Throttler._unscheduled_claims). Once it stops waiting it
+            # takes one slot per scope, which can leave others free for those
+            # requests, and nothing else would re-run the loop until this
+            # request is done downloading.
+            if unscheduled and self._slot is not None:
+                self._slot.nextcall.schedule()
+            return result
+
+        d: Deferred[None] = deferred_from_coro(
+            throttler.acquire(request, unscheduled=unscheduled)
+        )
+        d.addBoth(released)
+        return d
+
     @inlineCallbacks
     def _download(
-        self, request: Request
+        self, request: Request, unscheduled: bool = False
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         assert self._slot is not None  # typing
         assert self.spider is not None
 
+        throttler = self.crawler.throttler
+        assert throttler is not None
         self._slot.add_request(request)
         try:
+            yield self._acquire_throttler(request, unscheduled)
             result: Response | Request
             if self._downloader_fetch_needs_spider:
                 result = yield self.downloader.fetch(request, self.spider)
@@ -516,6 +577,7 @@ class ExecutionEngine:
                 )
             return result
         finally:
+            throttler.release(request)
             self._slot.nextcall.schedule()
 
     def open_spider(

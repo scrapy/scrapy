@@ -222,16 +222,19 @@ What does the response status code 999 mean?
 
 999 is a custom response status code used by some sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
-higher) for the affected domains, with the :setting:`DOWNLOAD_SLOTS` setting:
+higher) for the affected domains, with the :setting:`THROTTLING_SCOPES`
+setting:
 
 .. code-block:: python
 
-    DOWNLOAD_SLOTS = {
+    THROTTLING_SCOPES = {
         "example.com": {"delay": 2},
     }
 
 Or by setting a global download delay in your project with the
 :setting:`DOWNLOAD_DELAY` setting.
+
+See :ref:`throttling` for details.
 
 Can I call ``pdb.set_trace()`` from my spiders to debug them?
 -------------------------------------------------------------

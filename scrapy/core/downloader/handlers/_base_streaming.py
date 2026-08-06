@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import logging
 import time
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, NoReturn, TypedDict, TypeVar
 from urllib.parse import quote, urlsplit
@@ -14,6 +14,7 @@ from scrapy.exceptions import (
     NotConfigured,
     ResponseDataLossError,
 )
+from scrapy.throttler import _default_scope_concurrency
 from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
@@ -55,7 +56,7 @@ class _BaseResponseArgs(TypedDict):
     protocol: str | None
 
 
-class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_ResponseT]):
+class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, Generic[_ResponseT]):
     """A base class for HTTP download handlers that follow the streaming logic flow."""
 
     _DEFAULT_CONNECT_TIMEOUT: ClassVar[float] = 10
@@ -86,9 +87,7 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         self._proxy_auth_encoding: str = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
         # these are useful for many handlers but used in different ways by them
         self._pool_size_total: int = crawler.settings.getint("CONCURRENT_REQUESTS")
-        self._pool_size_per_host: int = crawler.settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
-        )
+        self._pool_size_per_host: int = _default_scope_concurrency(crawler.settings)
 
     @staticmethod
     @abstractmethod

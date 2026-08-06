@@ -93,6 +93,8 @@ how you :ref:`configure the downloader middlewares
         modify the downloader and scheduler behaviour, although this is an
         advanced use and this API is not yet stable.
 
+    .. autoattribute:: throttler
+
     .. attribute:: spider
 
         Spider currently being crawled. This is an instance of the spider class

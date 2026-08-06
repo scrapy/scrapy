@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
+from unittest.mock import Mock
 
 import pytest
 from twisted.internet import defer
@@ -66,7 +67,9 @@ async def test_exception_downloader(
     engine = ExecutionEngine(crawler, lambda _: None)
     crawler.engine = engine
     await engine.open_spider_async()
-    del engine.downloader.slots
+    engine.downloader.close = Mock(  # type: ignore[method-assign]
+        side_effect=Exception("close failed")
+    )
     await engine.close_spider_async()
     assert "Downloader close failure" in caplog.text
 

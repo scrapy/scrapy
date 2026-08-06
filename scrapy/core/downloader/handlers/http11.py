@@ -40,6 +40,7 @@ from scrapy.exceptions import (
     StopDownload,
 )
 from scrapy.http import Headers, Response
+from scrapy.throttler import _default_scope_concurrency
 from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
@@ -92,9 +93,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         from twisted.internet import reactor
 
         self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
-        self._pool.maxPersistentPerHost = crawler.settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
-        )
+        self._pool.maxPersistentPerHost = _default_scope_concurrency(crawler.settings)
         self._pool._factory.noisy = False
 
         self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
