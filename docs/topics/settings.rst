@@ -658,6 +658,11 @@ The default headers used for Scrapy HTTP Requests. They're populated in the
     :class:`Request.cookies <scrapy.Request>` parameter. This is a known
     current limitation that is being worked on.
 
+.. caution:: A ``Referer`` header defined here only reaches requests for which
+    :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` does not set
+    one, such as start requests. To send it on every request, set
+    :setting:`REFERRER_POLICY` to ``"no-referrer"``.
+
 .. setting:: DEPTH_LIMIT
 
 DEPTH_LIMIT
