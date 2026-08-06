@@ -4,7 +4,7 @@ import logging
 import re
 
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
-from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
+from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.http import Request, Response, XmlResponse
@@ -30,6 +30,7 @@ class SitemapSpider(Spider):
     ]
     sitemap_follow: Sequence[re.Pattern[str] | str] = [""]
     sitemap_alternate_links: bool = False
+    sitemap_meta: Mapping[str, str] | Iterable[str] = ()
     _max_size: int
     _warn_size: int
 
@@ -52,6 +53,11 @@ class SitemapSpider(Spider):
                 c = cast("CallbackT", getattr(self, c))  # noqa: PLW2901
             self._cbs.append((regex(r), c))
         self._follow: list[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
+        self._meta_keys: list[tuple[str, str]] = list(
+            self.sitemap_meta.items()
+            if isinstance(self.sitemap_meta, Mapping)
+            else ((key, key) for key in self.sitemap_meta)
+        )
 
     async def start(self) -> AsyncIterator[Any]:
         for url in self.sitemap_urls:
@@ -87,10 +93,13 @@ class SitemapSpider(Spider):
             return (Request(loc, callback=self._parse_sitemap) for loc in urls)
 
         if s.type == "urlset":
-            url_callback_pairs = list(
-                self._get_urls_and_callbacks_from_urlset(self.sitemap_filter(s))
+            url_callback_meta_triples = list(
+                self._get_urls_callbacks_and_meta_from_urlset(self.sitemap_filter(s))
             )
-            return (Request(loc, callback=c) for loc, c in url_callback_pairs)
+            return (
+                Request(loc, callback=c, meta=meta)
+                for loc, c, meta in url_callback_meta_triples
+            )
 
         logger.warning(
             "Ignoring invalid sitemap: %(response)s",
@@ -107,14 +116,20 @@ class SitemapSpider(Spider):
             if any(x.search(loc) for x in self._follow):
                 yield loc
 
-    def _get_urls_and_callbacks_from_urlset(
+    def _get_urls_callbacks_and_meta_from_urlset(
         self, it: Iterable[dict[str, Any]]
-    ) -> Iterable[tuple[str, CallbackT]]:
-        for loc in iterloc(it, self.sitemap_alternate_links):
-            for r, c in self._cbs:
-                if r.search(loc):
-                    yield loc, c
-                    break
+    ) -> Iterable[tuple[str, CallbackT, dict[str, Any] | None]]:
+        for entry in it:
+            meta = {
+                meta_key: entry[key]
+                for key, meta_key in self._meta_keys
+                if key in entry
+            } or None
+            for loc in iterloc((entry,), self.sitemap_alternate_links):
+                for r, c in self._cbs:
+                    if r.search(loc):
+                        yield loc, c, meta
+                        break
 
     def _get_sitemap_body(self, response: Response) -> bytes | None:
         """Return the sitemap body contained in the given response,
