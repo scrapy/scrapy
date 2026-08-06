@@ -1,4 +1,8 @@
 name: Publish
+
+permissions:
+  contents: read
+
 on:
   push:
     tags:
@@ -9,17 +13,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  publish:
+  build:
+    name: Build distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          python-version: 3.12
-      - run: | 
-          pip install --upgrade build twine
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - run: |
+          python -m pip install --upgrade build
           python -m build
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.6.4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          password: ${{ secrets.PYPI_TOKEN }}
+          name: python-package-distributions
+          path: dist/
+
+  publish:
+    name: Upload release to PyPI
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/Scrapy
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

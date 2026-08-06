@@ -1,37 +1,37 @@
-import logging
-import unittest
-import warnings
+from __future__ import annotations
 
-from testfixtures import LogCapture
-from twisted.internet import defer
-from twisted.internet.error import (
-    ConnectError,
-    ConnectionDone,
-    ConnectionLost,
-    DNSLookupError,
-    TCPTimedOutError,
-)
-from twisted.web.client import ResponseFailed
+import logging
+from typing import Any, cast
+
+import pytest
+from twisted.internet.error import ConnectError, ConnectionDone, ConnectionLost
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
-from scrapy.exceptions import IgnoreRequest
+from scrapy.exceptions import (
+    CannotResolveHostError,
+    DownloadConnectionRefusedError,
+    DownloadTimeoutError,
+    IgnoreRequest,
+)
 from scrapy.http import Request, Response
 from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 
-class RetryTest(unittest.TestCase):
-    def setUp(self):
-        self.crawler = get_crawler(Spider)
-        self.spider = self.crawler._create_spider("foo")
+class TestRetry:
+    def setup_method(self):
+        self.crawler = get_crawler(DefaultSpider)
+        self.crawler.spider = self.crawler._create_spider()
         self.mw = RetryMiddleware.from_crawler(self.crawler)
         self.mw.max_retry_times = 2
 
     def test_priority_adjust(self):
         req = Request("http://www.scrapytest.org/503")
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
-        req2 = self.mw.process_response(req, rsp, self.spider)
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
         assert req2.priority < req.priority
 
     def test_404(self):
@@ -39,28 +39,29 @@ class RetryTest(unittest.TestCase):
         rsp = Response("http://www.scrapytest.org/404", body=b"", status=404)
 
         # dont retry 404s
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        assert self.mw.process_response(req, rsp) is rsp
 
     def test_dont_retry(self):
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": True})
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
-        # first retry
-        r = self.mw.process_response(req, rsp, self.spider)
+        # no retry
+        r = self.mw.process_response(req, rsp)
         assert r is rsp
 
         # Test retry when dont_retry set to False
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": False})
-        rsp = Response("http://www.scrapytest.org/503")
+        rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
         # first retry
-        r = self.mw.process_response(req, rsp, self.spider)
-        assert r is rsp
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.meta["retry_times"] == 1
 
     def test_dont_retry_exc(self):
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": True})
 
-        r = self.mw.process_exception(req, DNSLookupError(), self.spider)
+        r = self.mw.process_exception(req, CannotResolveHostError())
         assert r is None
 
     def test_503(self):
@@ -68,18 +69,19 @@ class RetryTest(unittest.TestCase):
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
         # first retry
-        req = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req, Request)
-        self.assertEqual(req.meta["retry_times"], 1)
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.meta["retry_times"] == 1
 
         # second retry
-        req = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req, Request)
-        self.assertEqual(req.meta["retry_times"], 2)
+        req3 = self.mw.process_response(req2, rsp)
+        assert isinstance(req3, Request)
+        assert req3.meta["retry_times"] == 2
 
         # discard it
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        assert self.mw.process_response(req3, rsp) is rsp
 
+        assert self.crawler.stats
         assert self.crawler.stats.get_value("retry/max_reached") == 1
         assert (
             self.crawler.stats.get_value("retry/reason_count/503 Service Unavailable")
@@ -87,17 +89,43 @@ class RetryTest(unittest.TestCase):
         )
         assert self.crawler.stats.get_value("retry/count") == 2
 
+    def test_give_up_log_level_setting(self, caplog: pytest.LogCaptureFixture) -> None:
+        crawler = get_crawler(
+            DefaultSpider, settings_dict={"RETRY_GIVE_UP_LOG_LEVEL": "WARNING"}
+        )
+        crawler.spider = crawler._create_spider()
+        mw = RetryMiddleware.from_crawler(crawler)
+        mw.max_retry_times = 0
+        req = Request("http://example.com/503")
+        rsp = Response("http://example.com/503", body=b"", status=503)
+        with caplog.at_level(logging.WARNING):
+            assert mw.process_response(req, rsp) is rsp
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.WARNING,
+            f"Gave up retrying {req} (failed 1 times): 503 Service Unavailable",
+        ) in caplog.record_tuples
+
+    def test_give_up_log_level_meta(self, caplog: pytest.LogCaptureFixture) -> None:
+        self.mw.max_retry_times = 0
+        req = Request("http://example.com/503", meta={"give_up_log_level": "WARNING"})
+        rsp = Response("http://example.com/503", body=b"", status=503)
+        with caplog.at_level(logging.WARNING):
+            assert self.mw.process_response(req, rsp) is rsp
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.WARNING,
+            f"Gave up retrying {req} (failed 1 times): 503 Service Unavailable",
+        ) in caplog.record_tuples
+
     def test_twistederrors(self):
         exceptions = [
             ConnectError,
             ConnectionDone,
             ConnectionLost,
-            ConnectionRefusedError,
-            defer.TimeoutError,
-            DNSLookupError,
-            ResponseFailed,
-            TCPTimedOutError,
-            TimeoutError,
+            DownloadTimeoutError,
+            DownloadConnectionRefusedError,
+            CannotResolveHostError,
         ]
 
         for exc in exceptions:
@@ -105,118 +133,86 @@ class RetryTest(unittest.TestCase):
             self._test_retry_exception(req, exc("foo"))
 
         stats = self.crawler.stats
+        assert stats
         assert stats.get_value("retry/max_reached") == len(exceptions)
         assert stats.get_value("retry/count") == len(exceptions) * 2
         assert (
-            stats.get_value("retry/reason_count/twisted.internet.defer.TimeoutError")
+            stats.get_value("retry/reason_count/scrapy.exceptions.DownloadTimeoutError")
             == 2
         )
 
     def test_exception_to_retry_added(self):
         exc = ValueError
         settings_dict = {
-            "RETRY_EXCEPTIONS": list(RETRY_EXCEPTIONS) + [exc],
+            "RETRY_EXCEPTIONS": [*RETRY_EXCEPTIONS, exc],
         }
-        crawler = get_crawler(Spider, settings_dict=settings_dict)
+        crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
+        crawler.spider = crawler._create_spider()
         mw = RetryMiddleware.from_crawler(crawler)
         req = Request(f"http://www.scrapytest.org/{exc.__name__}")
         self._test_retry_exception(req, exc("foo"), mw)
 
-    def test_exception_to_retry_custom_middleware(self):
-        exc = ValueError
-
-        with warnings.catch_warnings(record=True) as warns:
-
-            class MyRetryMiddleware(RetryMiddleware):
-                EXCEPTIONS_TO_RETRY = RetryMiddleware.EXCEPTIONS_TO_RETRY + (exc,)
-
-            self.assertEqual(len(warns), 1)
-
-        mw2 = MyRetryMiddleware.from_crawler(self.crawler)
-        req = Request(f"http://www.scrapytest.org/{exc.__name__}")
-        req = mw2.process_exception(req, exc("foo"), self.spider)
-        assert isinstance(req, Request)
-        self.assertEqual(req.meta["retry_times"], 1)
-
-    def test_exception_to_retry_custom_middleware_self(self):
-        class MyRetryMiddleware(RetryMiddleware):
-            def process_exception(self, request, exception, spider):
-                if isinstance(exception, self.EXCEPTIONS_TO_RETRY):
-                    return self._retry(request, exception, spider)
-
-        exc = OSError
-        mw2 = MyRetryMiddleware.from_crawler(self.crawler)
-        req = Request(f"http://www.scrapytest.org/{exc.__name__}")
-        with warnings.catch_warnings(record=True) as warns:
-            req = mw2.process_exception(req, exc("foo"), self.spider)
-        assert isinstance(req, Request)
-        self.assertEqual(req.meta["retry_times"], 1)
-        self.assertEqual(len(warns), 1)
-
-    def _test_retry_exception(self, req, exception, mw=None):
+    def _test_retry_exception(
+        self, req: Request, exception: Exception, mw: RetryMiddleware | None = None
+    ) -> None:
         if mw is None:
             mw = self.mw
 
         # first retry
-        req = mw.process_exception(req, exception, self.spider)
-        assert isinstance(req, Request)
-        self.assertEqual(req.meta["retry_times"], 1)
+        req2 = mw.process_exception(req, exception)
+        assert isinstance(req2, Request)
+        assert req2.meta["retry_times"] == 1
 
         # second retry
-        req = mw.process_exception(req, exception, self.spider)
-        assert isinstance(req, Request)
-        self.assertEqual(req.meta["retry_times"], 2)
+        req3 = mw.process_exception(req2, exception)
+        assert isinstance(req3, Request)
+        assert req3.meta["retry_times"] == 2
 
         # discard it
-        req = mw.process_exception(req, exception, self.spider)
-        self.assertEqual(req, None)
+        assert mw.process_exception(req3, exception) is None
 
 
-class MaxRetryTimesTest(unittest.TestCase):
+class TestMaxRetryTimes:
     invalid_url = "http://www.scrapytest.org/invalid_url"
 
-    def get_spider_and_middleware(self, settings=None):
-        crawler = get_crawler(Spider, settings or {})
-        spider = crawler._create_spider("foo")
-        middleware = RetryMiddleware.from_crawler(crawler)
-        return spider, middleware
+    def get_middleware(self, settings: dict[str, Any] | None = None) -> RetryMiddleware:
+        crawler = get_crawler(DefaultSpider, settings or {})
+        crawler.spider = crawler._create_spider()
+        return RetryMiddleware.from_crawler(crawler)
 
     def test_with_settings_zero(self):
         max_retry_times = 0
         settings = {"RETRY_TIMES": max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        middleware = self.get_middleware(settings)
         req = Request(self.invalid_url)
         self._test_retry(
             req,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
     def test_with_metakey_zero(self):
         max_retry_times = 0
-        spider, middleware = self.get_spider_and_middleware()
+        middleware = self.get_middleware()
         meta = {"max_retry_times": max_retry_times}
         req = Request(self.invalid_url, meta=meta)
         self._test_retry(
             req,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
     def test_without_metakey(self):
         max_retry_times = 5
         settings = {"RETRY_TIMES": max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        middleware = self.get_middleware(settings)
         req = Request(self.invalid_url)
         self._test_retry(
             req,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
@@ -228,20 +224,18 @@ class MaxRetryTimesTest(unittest.TestCase):
         req2 = Request(self.invalid_url)
 
         settings = {"RETRY_TIMES": middleware_max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        middleware = self.get_middleware(settings)
 
         self._test_retry(
             req1,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             meta_max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
         self._test_retry(
             req2,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             middleware_max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
@@ -253,26 +247,24 @@ class MaxRetryTimesTest(unittest.TestCase):
         req2 = Request(self.invalid_url)
 
         settings = {"RETRY_TIMES": middleware_max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        middleware = self.get_middleware(settings)
 
         self._test_retry(
             req1,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             meta_max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
         self._test_retry(
             req2,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             middleware_max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
     def test_with_dont_retry(self):
         max_retry_times = 4
-        spider, middleware = self.get_spider_and_middleware()
+        middleware = self.get_middleware()
         meta = {
             "max_retry_times": max_retry_times,
             "dont_retry": True,
@@ -280,167 +272,165 @@ class MaxRetryTimesTest(unittest.TestCase):
         req = Request(self.invalid_url, meta=meta)
         self._test_retry(
             req,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             0,
-            spider=spider,
             middleware=middleware,
         )
 
     def _test_retry(
         self,
-        req,
-        exception,
-        max_retry_times,
-        spider=None,
-        middleware=None,
-    ):
-        spider = spider or self.spider
-        middleware = middleware or self.mw
-
-        for i in range(0, max_retry_times):
-            req = middleware.process_exception(req, exception, spider)
-            assert isinstance(req, Request)
+        req: Request,
+        exception: Exception,
+        max_retry_times: int,
+        middleware: RetryMiddleware,
+    ) -> None:
+        for _ in range(max_retry_times):
+            result = middleware.process_exception(req, exception)
+            assert isinstance(result, Request)
+            req = result
 
         # discard it
-        req = middleware.process_exception(req, exception, spider)
-        self.assertEqual(req, None)
+        assert middleware.process_exception(req, exception) is None
 
 
-class GetRetryRequestTest(unittest.TestCase):
-    def get_spider(self, settings=None):
+class TestGetRetryRequest:
+    @staticmethod
+    def get_spider(settings: dict[str, Any] | None = None) -> Spider:
         crawler = get_crawler(Spider, settings or {})
         return crawler._create_spider("foo")
 
-    def test_basic_usage(self):
+    def test_basic_usage(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             new_request = get_retry_request(
                 request,
                 spider=spider,
             )
-        self.assertIsInstance(new_request, Request)
-        self.assertNotEqual(new_request, request)
-        self.assertEqual(new_request.dont_filter, True)
+        assert isinstance(new_request, Request)
+        assert new_request != request
+        assert new_request.dont_filter
         expected_retry_times = 1
-        self.assertEqual(new_request.meta["retry_times"], expected_retry_times)
-        self.assertEqual(new_request.priority, -1)
+        assert new_request.meta["retry_times"] == expected_retry_times
+        assert new_request.priority == -1
         expected_reason = "unspecified"
+        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
-            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "DEBUG",
-                f"Retrying {request} (failed {expected_retry_times} times): "
-                f"{expected_reason}",
-            )
-        )
+            assert spider.crawler.stats.get_value(stat) == 1
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.DEBUG,
+            f"Retrying {request} (failed {expected_retry_times} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
-    def test_max_retries_reached(self):
+    def test_max_retries_reached(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
         max_retry_times = 0
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             new_request = get_retry_request(
                 request,
                 spider=spider,
                 max_retry_times=max_retry_times,
             )
-        self.assertEqual(new_request, None)
-        self.assertEqual(spider.crawler.stats.get_value("retry/max_reached"), 1)
+        assert new_request is None
+        assert spider.crawler.stats
+        assert spider.crawler.stats.get_value("retry/max_reached") == 1
         failure_count = max_retry_times + 1
         expected_reason = "unspecified"
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "ERROR",
-                f"Gave up retrying {request} (failed {failure_count} times): "
-                f"{expected_reason}",
-            )
-        )
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.ERROR,
+            f"Gave up retrying {request} (failed {failure_count} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
-    def test_one_retry(self):
+    def test_one_retry(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             new_request = get_retry_request(
                 request,
                 spider=spider,
                 max_retry_times=1,
             )
-        self.assertIsInstance(new_request, Request)
-        self.assertNotEqual(new_request, request)
-        self.assertEqual(new_request.dont_filter, True)
+        assert isinstance(new_request, Request)
+        assert new_request != request
+        assert new_request.dont_filter
         expected_retry_times = 1
-        self.assertEqual(new_request.meta["retry_times"], expected_retry_times)
-        self.assertEqual(new_request.priority, -1)
+        assert new_request.meta["retry_times"] == expected_retry_times
+        assert new_request.priority == -1
         expected_reason = "unspecified"
+        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
-            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "DEBUG",
-                f"Retrying {request} (failed {expected_retry_times} times): "
-                f"{expected_reason}",
-            )
-        )
+            assert spider.crawler.stats.get_value(stat) == 1
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.DEBUG,
+            f"Retrying {request} (failed {expected_retry_times} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
-    def test_two_retries(self):
+    def test_two_retries(self, caplog: pytest.LogCaptureFixture) -> None:
         spider = self.get_spider()
         request = Request("https://example.com")
         new_request = request
         max_retry_times = 2
         for index in range(max_retry_times):
-            with LogCapture() as log:
-                new_request = get_retry_request(
+            caplog.clear()
+            with caplog.at_level(logging.DEBUG):
+                new_request = cast(
+                    "Request",
+                    get_retry_request(
+                        new_request,
+                        spider=spider,
+                        max_retry_times=max_retry_times,
+                    ),
+                )
+            assert isinstance(new_request, Request)
+            assert new_request != request
+            assert new_request.dont_filter
+            expected_retry_times = index + 1
+            assert new_request.meta["retry_times"] == expected_retry_times
+            assert new_request.priority == -expected_retry_times
+            expected_reason = "unspecified"
+            assert spider.crawler.stats
+            for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
+                value = spider.crawler.stats.get_value(stat)
+                assert value == expected_retry_times
+            assert (
+                "scrapy.downloadermiddlewares.retry",
+                logging.DEBUG,
+                f"Retrying {request} (failed {expected_retry_times} times): "
+                f"{expected_reason}",
+            ) in caplog.record_tuples
+
+        caplog.clear()
+        with caplog.at_level(logging.DEBUG):
+            new_request = cast(
+                "Request",
+                get_retry_request(
                     new_request,
                     spider=spider,
                     max_retry_times=max_retry_times,
-                )
-            self.assertIsInstance(new_request, Request)
-            self.assertNotEqual(new_request, request)
-            self.assertEqual(new_request.dont_filter, True)
-            expected_retry_times = index + 1
-            self.assertEqual(new_request.meta["retry_times"], expected_retry_times)
-            self.assertEqual(new_request.priority, -expected_retry_times)
-            expected_reason = "unspecified"
-            for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
-                value = spider.crawler.stats.get_value(stat)
-                self.assertEqual(value, expected_retry_times)
-            log.check_present(
-                (
-                    "scrapy.downloadermiddlewares.retry",
-                    "DEBUG",
-                    f"Retrying {request} (failed {expected_retry_times} times): "
-                    f"{expected_reason}",
-                )
+                ),
             )
-
-        with LogCapture() as log:
-            new_request = get_retry_request(
-                new_request,
-                spider=spider,
-                max_retry_times=max_retry_times,
-            )
-        self.assertEqual(new_request, None)
-        self.assertEqual(spider.crawler.stats.get_value("retry/max_reached"), 1)
+        assert new_request is None
+        assert spider.crawler.stats.get_value("retry/max_reached") == 1
         failure_count = max_retry_times + 1
         expected_reason = "unspecified"
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "ERROR",
-                f"Gave up retrying {request} (failed {failure_count} times): "
-                f"{expected_reason}",
-            )
-        )
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.ERROR,
+            f"Gave up retrying {request} (failed {failure_count} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
     def test_no_spider(self):
         request = Request("https://example.com")
-        with self.assertRaises(TypeError):
-            get_retry_request(request)  # pylint: disable=missing-kwoa
+        with pytest.raises(TypeError):
+            get_retry_request(request)  # type: ignore[call-arg]  # pylint: disable=missing-kwoa
 
     def test_max_retry_times_setting(self):
         max_retry_times = 0
@@ -450,7 +440,7 @@ class GetRetryRequestTest(unittest.TestCase):
             request,
             spider=spider,
         )
-        self.assertEqual(new_request, None)
+        assert new_request is None
 
     def test_max_retry_times_meta(self):
         max_retry_times = 0
@@ -461,7 +451,7 @@ class GetRetryRequestTest(unittest.TestCase):
             request,
             spider=spider,
         )
-        self.assertEqual(new_request, None)
+        assert new_request is None
 
     def test_max_retry_times_argument(self):
         max_retry_times = 0
@@ -473,7 +463,7 @@ class GetRetryRequestTest(unittest.TestCase):
             spider=spider,
             max_retry_times=max_retry_times,
         )
-        self.assertEqual(new_request, None)
+        assert new_request is None
 
     def test_priority_adjust_setting(self):
         priority_adjust = 1
@@ -483,7 +473,8 @@ class GetRetryRequestTest(unittest.TestCase):
             request,
             spider=spider,
         )
-        self.assertEqual(new_request.priority, priority_adjust)
+        assert new_request
+        assert new_request.priority == priority_adjust
 
     def test_priority_adjust_argument(self):
         priority_adjust = 1
@@ -494,170 +485,245 @@ class GetRetryRequestTest(unittest.TestCase):
             spider=spider,
             priority_adjust=priority_adjust,
         )
-        self.assertEqual(new_request.priority, priority_adjust)
+        assert new_request
+        assert new_request.priority == priority_adjust
 
-    def test_log_extra_retry_success(self):
+    def test_log_extra_retry_success(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
-        with LogCapture(attributes=("spider",)) as log:
+        with caplog.at_level(logging.DEBUG):
             get_retry_request(
                 request,
                 spider=spider,
             )
-        log.check_present(spider)
+        assert any(getattr(r, "spider", None) is spider for r in caplog.records)
 
-    def test_log_extra_retries_exceeded(self):
+    def test_log_extra_retries_exceeded(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
-        with LogCapture(attributes=("spider",)) as log:
+        with caplog.at_level(logging.DEBUG):
             get_retry_request(
                 request,
                 spider=spider,
                 max_retry_times=0,
             )
-        log.check_present(spider)
+        assert any(getattr(r, "spider", None) is spider for r in caplog.records)
 
-    def test_reason_string(self):
+    def test_reason_string(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
         expected_reason = "because"
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
             )
         expected_retry_times = 1
+        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
-            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "DEBUG",
-                f"Retrying {request} (failed {expected_retry_times} times): "
-                f"{expected_reason}",
-            )
-        )
+            assert spider.crawler.stats.get_value(stat) == 1
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.DEBUG,
+            f"Retrying {request} (failed {expected_retry_times} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
-    def test_reason_builtin_exception(self):
+    def test_reason_builtin_exception(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
         expected_reason = NotImplementedError()
         expected_reason_string = "builtins.NotImplementedError"
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
             )
         expected_retry_times = 1
+        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
-        self.assertEqual(stat, 1)
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "DEBUG",
-                f"Retrying {request} (failed {expected_retry_times} times): "
-                f"{expected_reason}",
-            )
-        )
+        assert stat == 1
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.DEBUG,
+            f"Retrying {request} (failed {expected_retry_times} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
-    def test_reason_builtin_exception_class(self):
+    def test_reason_builtin_exception_class(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
         expected_reason = NotImplementedError
         expected_reason_string = "builtins.NotImplementedError"
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
             )
         expected_retry_times = 1
+        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
-        self.assertEqual(stat, 1)
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "DEBUG",
-                f"Retrying {request} (failed {expected_retry_times} times): "
-                f"{expected_reason}",
-            )
-        )
+        assert stat == 1
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.DEBUG,
+            f"Retrying {request} (failed {expected_retry_times} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
-    def test_reason_custom_exception(self):
+    def test_reason_custom_exception(self, caplog: pytest.LogCaptureFixture) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
         expected_reason = IgnoreRequest()
         expected_reason_string = "scrapy.exceptions.IgnoreRequest"
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
             )
         expected_retry_times = 1
+        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
-        self.assertEqual(stat, 1)
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "DEBUG",
-                f"Retrying {request} (failed {expected_retry_times} times): "
-                f"{expected_reason}",
-            )
-        )
+        assert stat == 1
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.DEBUG,
+            f"Retrying {request} (failed {expected_retry_times} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
-    def test_reason_custom_exception_class(self):
+    def test_reason_custom_exception_class(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         request = Request("https://example.com")
         spider = self.get_spider()
         expected_reason = IgnoreRequest
         expected_reason_string = "scrapy.exceptions.IgnoreRequest"
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
             )
         expected_retry_times = 1
+        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
-        self.assertEqual(stat, 1)
-        log.check_present(
-            (
-                "scrapy.downloadermiddlewares.retry",
-                "DEBUG",
-                f"Retrying {request} (failed {expected_retry_times} times): "
-                f"{expected_reason}",
-            )
-        )
+        assert stat == 1
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.DEBUG,
+            f"Retrying {request} (failed {expected_retry_times} times): "
+            f"{expected_reason}",
+        ) in caplog.record_tuples
 
-    def test_custom_logger(self):
+    def test_custom_logger(self, caplog: pytest.LogCaptureFixture) -> None:
         logger = logging.getLogger("custom-logger")
         request = Request("https://example.com")
         spider = self.get_spider()
         expected_reason = "because"
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
                 logger=logger,
             )
-        log.check_present(
-            (
-                "custom-logger",
-                "DEBUG",
-                f"Retrying {request} (failed 1 times): {expected_reason}",
+        assert (
+            "custom-logger",
+            logging.DEBUG,
+            f"Retrying {request} (failed 1 times): {expected_reason}",
+        ) in caplog.record_tuples
+
+    def test_give_up_log_level_default(self, caplog: pytest.LogCaptureFixture) -> None:
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        with caplog.at_level(logging.ERROR):
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
             )
-        )
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.ERROR,
+            f"Gave up retrying {request} (failed 1 times): unspecified",
+        ) in caplog.record_tuples
+
+    def test_give_up_log_level_argument_name(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        with caplog.at_level(logging.WARNING):
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+                give_up_log_level="WARNING",
+            )
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.WARNING,
+            f"Gave up retrying {request} (failed 1 times): unspecified",
+        ) in caplog.record_tuples
+
+    def test_give_up_log_level_argument_number(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        with caplog.at_level(logging.WARNING):
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+                give_up_log_level=logging.WARNING,
+            )
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.WARNING,
+            f"Gave up retrying {request} (failed 1 times): unspecified",
+        ) in caplog.record_tuples
+
+    def test_give_up_log_level_setting(self, caplog: pytest.LogCaptureFixture) -> None:
+        request = Request("https://example.com")
+        spider = self.get_spider({"RETRY_GIVE_UP_LOG_LEVEL": "WARNING"})
+        with caplog.at_level(logging.WARNING):
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+            )
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.WARNING,
+            f"Gave up retrying {request} (failed 1 times): unspecified",
+        ) in caplog.record_tuples
+
+    def test_give_up_log_level_invalid(self):
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        with pytest.raises(ValueError, match="Invalid give-up log level"):
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=0,
+                give_up_log_level="NOT_A_LEVEL",
+            )
 
     def test_custom_stats_key(self):
         request = Request("https://example.com")
@@ -670,12 +736,9 @@ class GetRetryRequestTest(unittest.TestCase):
             reason=expected_reason,
             stats_base_key=stats_key,
         )
+        assert spider.crawler.stats
         for stat in (
             f"{stats_key}/count",
             f"{stats_key}/reason_count/{expected_reason}",
         ):
-            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
-
-
-if __name__ == "__main__":
-    unittest.main()
+            assert spider.crawler.stats.get_value(stat) == 1

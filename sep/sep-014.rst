@@ -21,7 +21,7 @@ Current flaws and inconsistencies
 2. Link extractors are inflexible and hard to maintain, link
    processing/filtering is tightly coupled. (e.g. canonicalize)
 3. Isn't possible to crawl an url directly from command line because the Spider
-   does not know which callback use. 
+   does not know which callback use.
 
 These flaws will be corrected by the changes proposed in this SEP.
 
@@ -55,7 +55,7 @@ Request Extractors
 Request Extractors takes response object and determines which requests follow.
 
 This is an enhancement to ``LinkExtractors`` which returns urls (links),
-Request Extractors return Request objects. 
+Request Extractors return Request objects.
 
 Request Processors
 ------------------

@@ -1,3 +1,5 @@
+import sys
+
 from twisted.internet.defer import Deferred
 
 import scrapy
@@ -13,12 +15,12 @@ class SleepingSpider(scrapy.Spider):
     async def parse(self, response):
         from twisted.internet import reactor
 
-        d = Deferred()
-        reactor.callLater(int(self.sleep), d.callback, None)
+        d: Deferred[None] = Deferred()
+        reactor.callLater(int(sys.argv[1]), d.callback, None)
         await maybe_deferred_to_future(d)
 
 
 process = CrawlerProcess(settings={})
 
 process.crawl(SleepingSpider)
-process.start()
+process.start(stop_after_crawl="--no-stop" not in sys.argv)

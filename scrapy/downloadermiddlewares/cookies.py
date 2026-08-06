@@ -1,21 +1,39 @@
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
+from typing import TYPE_CHECKING, Any
 
 from tldextract import TLDExtract
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
+from scrapy.utils.request import _decode_cookie, _to_verbose_cookies
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+    from http.cookiejar import Cookie
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.http.request import VerboseCookie
+
 
 logger = logging.getLogger(__name__)
 
 
 _split_domain = TLDExtract(include_psl_private_domains=True)
+_UNSET = object()
 
 
-def _is_public_domain(domain):
+def _is_public_domain(domain: str) -> bool:
     parts = _split_domain(domain)
     return not parts.domain
 
@@ -23,23 +41,30 @@ def _is_public_domain(domain):
 class CookiesMiddleware:
     """This middleware enables working with sites that need cookies"""
 
-    def __init__(self, debug=False):
-        self.jars = defaultdict(CookieJar)
-        self.debug = debug
+    crawler: Crawler
+
+    def __init__(self, debug: bool = False):
+        self.jars: defaultdict[Any, CookieJar] = defaultdict(CookieJar)
+        self.debug: bool = debug
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("COOKIES_ENABLED"):
             raise NotConfigured
-        return cls(crawler.settings.getbool("COOKIES_DEBUG"))
+        o = cls(crawler.settings.getbool("COOKIES_DEBUG"))
+        o.crawler = crawler
+        return o
 
-    def _process_cookies(self, cookies, *, jar, request):
+    def _process_cookies(
+        self, cookies: Iterable[Cookie], *, jar: CookieJar, request: Request
+    ) -> None:
         for cookie in cookies:
             cookie_domain = cookie.domain
-            if cookie_domain.startswith("."):
-                cookie_domain = cookie_domain[1:]
+            cookie_domain = cookie_domain.removeprefix(".")
 
-            request_domain = urlparse_cached(request).hostname.lower()
+            hostname = urlparse_cached(request).hostname
+            assert hostname is not None
+            request_domain = hostname.lower()
 
             if cookie_domain and _is_public_domain(cookie_domain):
                 if cookie_domain != request_domain:
@@ -48,9 +73,12 @@ class CookiesMiddleware:
 
             jar.set_cookie_if_ok(cookie, request)
 
-    def process_request(self, request, spider):
+    @_warn_spider_arg
+    def process_request(
+        self, request: Request, spider: Spider | None = None
+    ) -> Request | Response | None:
         if request.meta.get("dont_merge_cookies", False):
-            return
+            return None
 
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
@@ -60,9 +88,13 @@ class CookiesMiddleware:
         # set Cookie header
         request.headers.pop("Cookie", None)
         jar.add_cookie_header(request)
-        self._debug_cookie(request, spider)
+        self._debug_cookie(request)
+        return None
 
-    def process_response(self, request, response, spider):
+    @_warn_spider_arg
+    def process_response(
+        self, request: Request, response: Response, spider: Spider | None = None
+    ) -> Request | Response:
         if request.meta.get("dont_merge_cookies", False):
             return response
 
@@ -72,11 +104,11 @@ class CookiesMiddleware:
         cookies = jar.make_cookies(response, request)
         self._process_cookies(cookies, jar=jar, request=request)
 
-        self._debug_set_cookie(response, spider)
+        self._debug_set_cookie(response)
 
         return response
 
-    def _debug_cookie(self, request, spider):
+    def _debug_cookie(self, request: Request) -> None:
         if self.debug:
             cl = [
                 to_unicode(c, errors="replace")
@@ -85,9 +117,9 @@ class CookiesMiddleware:
             if cl:
                 cookies = "\n".join(f"Cookie: {c}\n" for c in cl)
                 msg = f"Sending cookies to: {request}\n{cookies}"
-                logger.debug(msg, extra={"spider": spider})
+                logger.debug(msg, extra={"spider": self.crawler.spider})
 
-    def _debug_set_cookie(self, response, spider):
+    def _debug_set_cookie(self, response: Response) -> None:
         if self.debug:
             cl = [
                 to_unicode(c, errors="replace")
@@ -96,49 +128,40 @@ class CookiesMiddleware:
             if cl:
                 cookies = "\n".join(f"Set-Cookie: {c}\n" for c in cl)
                 msg = f"Received cookies from: {response}\n{cookies}"
-                logger.debug(msg, extra={"spider": spider})
+                logger.debug(msg, extra={"spider": self.crawler.spider})
 
-    def _format_cookie(self, cookie, request):
+    def _format_cookie(self, cookie: VerboseCookie, request: Request) -> str | None:
         """
         Given a dict consisting of cookie components, return its string representation.
         Decode from bytes if necessary.
         """
-        decoded = {}
-        for key in ("name", "value", "path", "domain"):
-            if cookie.get(key) is None:
-                if key in ("name", "value"):
-                    msg = f"Invalid cookie found in request {request}: {cookie} ('{key}' is missing)"
-                    logger.warning(msg)
-                    return
+        decoded = _decode_cookie(cookie, request)
+        if decoded is None:
+            return None
+        flags = set()
+        for flag in ("secure",):
+            value = cookie.get(flag, _UNSET)
+            if value is _UNSET or not value:
                 continue
-            if isinstance(cookie[key], (bool, float, int, str)):
-                decoded[key] = str(cookie[key])
-            else:
-                try:
-                    decoded[key] = cookie[key].decode("utf8")
-                except UnicodeDecodeError:
-                    logger.warning(
-                        "Non UTF-8 encoded cookie found in request %s: %s",
-                        request,
-                        cookie,
-                    )
-                    decoded[key] = cookie[key].decode("latin1", errors="replace")
-
+            flags.add(flag)
         cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
         for key, value in decoded.items():  # path, domain
             cookie_str += f"; {key.capitalize()}={value}"
+        for flag in flags:  # secure
+            cookie_str += f"; {flag.capitalize()}"
         return cookie_str
 
-    def _get_request_cookies(self, jar, request):
+    def _get_request_cookies(
+        self, jar: CookieJar, request: Request
+    ) -> Sequence[Cookie]:
         """
         Extract cookies from the Request.cookies attribute
         """
         if not request.cookies:
-            return []
-        if isinstance(request.cookies, dict):
-            cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
-        else:
-            cookies = request.cookies
+            return ()
+        cookies: Iterable[VerboseCookie] = _to_verbose_cookies(request.cookies)
+        for cookie in cookies:
+            cookie.setdefault("secure", urlparse_cached(request).scheme == "https")
         formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
         response = Response(request.url, headers={"Set-Cookie": formatted})
         return jar.make_cookies(response, request)
