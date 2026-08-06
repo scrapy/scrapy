@@ -1,6 +1,7 @@
 import base64
 import dataclasses
 import logging
+import mimetypes
 import random
 import re
 import time
@@ -95,8 +96,14 @@ class TestFilesPipeline:
     def teardown_method(self):
         rmtree(self.tempdir)
 
-    def _create_pipeline(self, pipeline_cls: type[FilesPipeline]) -> FilesPipeline:
-        crawler = get_crawler(DefaultSpider, {"FILES_STORE": self.tempdir})
+    def _create_pipeline(
+        self,
+        pipeline_cls: type[FilesPipeline],
+        settings: dict[str, Any] | None = None,
+    ) -> FilesPipeline:
+        crawler = get_crawler(
+            DefaultSpider, {"FILES_STORE": self.tempdir, **(settings or {})}
+        )
         crawler.spider = crawler._create_spider()
         crawler.engine = MagicMock(download_async=mocked_download_func)
         pipeline = pipeline_cls.from_crawler(crawler)
@@ -392,6 +399,47 @@ class TestFilesPipeline:
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         assert file_path(request, item=item) == "full/path-to-store-file"
+
+    @coroutine_test
+    async def test_file_path_from_response(self) -> None:
+        """file_path() may build the path out of the response, e.g. to get the
+        file extension from a response header, as long as FILES_EXPIRES is 0 to
+        disable the up-to-date check, which runs before the download and hence
+        cannot reach the same path."""
+
+        class ContentTypeFilesPipeline(FilesPipeline):
+            def file_path(self, request, response=None, info=None, *, item=None):
+                path = super().file_path(request, response, info, item=item)
+                if response is None:
+                    return path
+                content_type = response.headers["Content-Type"].decode()
+                return path + (mimetypes.guess_extension(content_type) or "")
+
+        item_url = "http://example.com/download?id=1"
+        item = _create_item_with_files(item_url)
+        pipeline = self._create_pipeline(ContentTypeFilesPipeline, {"FILES_EXPIRES": 0})
+        request = _prepare_request_object(
+            item_url, headers={"Content-Type": "application/pdf"}
+        )
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            # A fresh file at the response-less path is ignored thanks to
+            # FILES_EXPIRES being 0.
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={"checksum": "abc", "last_modified": time.time()},
+            ),
+            mock.patch.object(
+                FilesPipeline, "get_media_requests", return_value=[request]
+            ),
+        ):
+            result = await pipeline.process_item(item)
+
+        file_info = result["files"][0]
+        assert file_info["status"] == "downloaded"
+        assert file_info["path"].endswith(".pdf")
+        assert (Path(self.tempdir) / file_info["path"]).read_bytes() == b"data"
 
     def test_media_failed_filtered_request(
         self, caplog: pytest.LogCaptureFixture
@@ -1130,10 +1178,18 @@ def _create_item_with_files(*files: str) -> ItemWithFiles:
     return item
 
 
-def _prepare_request_object(item_url: str, flags: list[str] | None = None) -> Request:
+def _prepare_request_object(
+    item_url: str,
+    flags: list[str] | None = None,
+    headers: dict[str, str] | None = None,
+) -> Request:
     return Request(
         item_url,
-        meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},
+        meta={
+            "response": Response(
+                item_url, status=200, body=b"data", flags=flags, headers=headers
+            )
+        },
     )
 
 
