@@ -1033,7 +1033,13 @@ class TestInFlightTracking(TestBase):
                 await _defer_sleep_async()
             assert not waiting.called
 
+            fingerprint = mw._fingerprinter.fingerprint(request)
+            waiters = mw._downloading[fingerprint]
+
             assert mw.crawler.spider
             mw.spider_closed(mw.crawler.spider)
             assert await maybe_deferred_to_future(waiting) is None
-            assert not mw._downloading
+            # The woken request found no cache entry, so it took over as the
+            # in-flight download, with a fresh list of waiters.
+            assert not waiters
+            assert mw._downloading.get(fingerprint) is not waiters
