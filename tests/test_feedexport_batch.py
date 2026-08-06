@@ -37,7 +37,7 @@ def build_url(path: str | PathLike[str]) -> str:
 
 
 class TestBatchDeliveries(TestFeedExportBase):
-    _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
+    _file_mark = "_%(batch_time)s_%(batch_id)02d_"
 
     async def run_and_export(
         self, spider_cls: type[Spider], settings: dict[str, Any]
