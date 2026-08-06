@@ -272,6 +272,13 @@ spider_opened
     reserve per-spider resources, but can be used for any task that needs to be
     performed when a spider is opened.
 
+    .. versionchanged:: VERSION
+       Added support for :exc:`~scrapy.exceptions.CloseSpider`.
+
+    You may raise a :exc:`~scrapy.exceptions.CloseSpider` exception to close the
+    spider before it starts crawling, e.g. if a resource that the spider needs
+    is unavailable.
+
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
     :param spider: the spider which has been opened
