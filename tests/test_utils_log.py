@@ -15,6 +15,7 @@ from scrapy.utils.log import (
     SpiderLoggerAdapter,
     StreamLogger,
     TopLevelFormatter,
+    configure_logging,
     failure_to_exc_info,
 )
 from scrapy.utils.test import get_crawler
@@ -154,6 +155,29 @@ def test_spider_logger_adapter_process(
 
     assert result_message == log_message
     assert result_kwargs == expected_extra
+
+
+class TestLogLevels:
+    @pytest.fixture(autouse=True)
+    def restore_levels(self) -> Generator[None]:
+        yield
+        for name in ("httpx", "boto3"):
+            logging.getLogger(name).setLevel(logging.NOTSET)
+
+    def test_defaults(self) -> None:
+        configure_logging(install_root_handler=False)
+
+        assert logging.getLogger("httpx").level == logging.WARNING
+        assert logging.getLogger("boto3").level == logging.NOTSET
+
+    def test_override(self) -> None:
+        configure_logging(
+            {"LOG_LEVELS": {"httpx": "DEBUG", "boto3": "ERROR"}},
+            install_root_handler=False,
+        )
+
+        assert logging.getLogger("httpx").level == logging.DEBUG
+        assert logging.getLogger("boto3").level == logging.ERROR
 
 
 class TestLogging:
