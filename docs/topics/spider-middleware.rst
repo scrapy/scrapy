@@ -224,12 +224,15 @@ DepthMiddleware
 .. module:: scrapy.spidermiddlewares.depth
    :synopsis: Depth Spider Middleware
 
+.. reqmeta:: depth
+
 .. class:: DepthMiddleware
 
    DepthMiddleware is used for tracking the depth of each Request inside the
-   site being scraped. It works by setting ``request.meta['depth'] = 0`` whenever
-   there is no value previously set (usually just the first Request) and
-   incrementing it by 1 otherwise.
+   site being scraped. It works by setting the ``depth``
+   :attr:`Request.meta <scrapy.Request.meta>` key to ``0`` whenever there is no
+   value previously set (usually just the first Request) and incrementing it by
+   1 otherwise.
 
    It can be used to limit the maximum depth to scrape, control Request
    priority based on their depth, and things like that.
