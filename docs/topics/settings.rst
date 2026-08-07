@@ -1062,6 +1062,7 @@ handler (without replacement), place this in your ``settings.py``:
     :ref:`security-local-resources`
 
 
+.. reqmeta:: download_slot
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS
@@ -1085,6 +1086,14 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
     -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+
+Requests are assigned to a slot based on their URL domain. To assign a request
+to a specific slot instead, set the name of the slot as the ``download_slot``
+:attr:`Request.meta <scrapy.Request.meta>` key. Once a request is assigned to a
+slot, that key holds the name of the slot.
+
+Since that key is kept on redirects, a redirected request stays in the slot of
+the request it comes from, even when it points to a different domain.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1414,6 +1423,7 @@ non-default value in :ref:`per-spider settings <spider-settings>`.
 
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
+.. reqmeta:: ftp_passive
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -1421,7 +1431,8 @@ FTP_PASSIVE_MODE
 
 Default: ``True``
 
-Whether or not to use passive mode when initiating FTP transfers.
+Whether or not to use passive mode when initiating FTP transfers, unless there
+is an ``"ftp_passive"`` key in ``Request`` meta.
 
 .. note::
 

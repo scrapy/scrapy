@@ -154,14 +154,11 @@ class WrappedRequest:
         return urlparse_cached(self.request).scheme
 
     def is_unverifiable(self) -> bool:
-        """Unverifiable should indicate whether the request is unverifiable, as defined by RFC 2965.
-
-        It defaults to False. An unverifiable request is one whose URL the user did not have the
-        option to approve. For example, if the request is for an image in an
-        HTML document, and the user had no option to approve the automatic
-        fetching of the image, this should be true.
+        """Return ``False``, as Scrapy does not track whether the user had the
+        option to approve the URL of a request, which is what makes a request
+        unverifiable as defined by :rfc:`2965`.
         """
-        return cast("bool", self.request.meta.get("is_unverifiable", False))
+        return False
 
     @property
     def full_url(self) -> str:
