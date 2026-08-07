@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, cast
+from time import monotonic, time
+from typing import TYPE_CHECKING, Any, cast
 
 import OpenSSL.SSL
 import pytest
@@ -33,6 +34,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http_resources import PayloadResource, put_child
 from tests.mockserver.utils import ssl_context_factory
+from tests.spiders import MockServerSpider
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -41,12 +43,94 @@ if TYPE_CHECKING:
     from twisted.web.iweb import IBodyProducer
 
     from scrapy.http import Response
+    from tests.mockserver.http import MockServer
 
 
 class TestSlot:
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
         assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
+
+
+def _downloader() -> Downloader:
+    crawler = get_crawler(DefaultSpider, {"DOWNLOADER_MIDDLEWARES_BASE": {}})
+    crawler.spider = crawler._create_spider()
+    return Downloader(crawler)
+
+
+@coroutine_test
+async def test_delay_meta() -> None:
+    delay = 0.2
+    downloader = _downloader()
+    request = Request("data:,", meta={"delay": delay})
+    try:
+        start = monotonic()
+        await maybe_deferred_to_future(downloader.fetch(request))
+        delayed = monotonic() - start
+        await maybe_deferred_to_future(downloader.fetch(request))
+        held_again = monotonic() - start - delayed
+        request.meta["delay"] = delay
+        await maybe_deferred_to_future(downloader.fetch(request))
+        held_for_the_new_delay = monotonic() - start - delayed - held_again
+    finally:
+        downloader.close()
+    assert delayed >= delay
+    assert "delay" not in request.meta
+    # Downloading the same request again does not hold it again, but setting the
+    # key again does.
+    assert held_again < delay
+    assert held_for_the_new_delay >= delay
+    assert request.meta["delayed"] == [delay, delay]
+
+
+@coroutine_test
+async def test_delay_meta_stale_deadline() -> None:
+    delay = 0.2
+    downloader = _downloader()
+    # A deadline from a different run of the crawl, restored from a disk queue,
+    # is capped at the delay.
+    request = Request("data:,", meta={"_delay_deadline": (delay, time() + 10 * delay)})
+    try:
+        start = monotonic()
+        await maybe_deferred_to_future(downloader.fetch(request))
+        elapsed = monotonic() - start
+    finally:
+        downloader.close()
+    assert delay <= elapsed < 2 * delay
+
+
+class DelaySpider(MockServerSpider):
+    name = "delay_meta"
+    custom_settings = {"CONCURRENT_REQUESTS": 1}
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.times: list[float] = []
+        self.start_time: float = monotonic()
+
+    async def start(self):
+        assert self.mockserver
+        # The slow request keeps the delayed one waiting for its turn for longer
+        # than its delay.
+        yield Request(self.mockserver.url("/delay?n=1"))
+        yield Request(self.mockserver.url("/status?n=200"), meta={"delay": 0.9})
+
+    def parse(self, response):
+        self.times.append(monotonic() - self.start_time)
+
+
+@coroutine_test
+async def test_delay_meta_countdown_starts_when_scheduled(
+    mockserver: MockServer,
+) -> None:
+    crawler = get_crawler(DelaySpider)
+    await crawler.crawl_async(mockserver=mockserver)
+    spider = crawler.spider
+    assert isinstance(spider, DelaySpider)
+    assert len(spider.times) == 2
+    # The delay ran while the request waited for its turn, so it was sent as
+    # soon as it got one, rather than 0.9s later.
+    assert spider.times[1] < spider.times[0] + 0.5
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
