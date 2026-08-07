@@ -16,7 +16,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import Spider
+from scrapy.spiders import Spider, ignore_spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import global_object_name
@@ -95,6 +95,7 @@ class Rule:
         )
 
 
+@ignore_spider
 class CrawlSpider(Spider):
     rules: Sequence[Rule] = ()
     _rules: list[Rule]

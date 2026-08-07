@@ -53,10 +53,14 @@ class Command(BaseRunSpiderCommand):
             module = _import_file(filename)
         except (ImportError, ValueError) as e:
             raise UsageError(f"Unable to load {str(filename)!r}: {e}\n") from e
-        spclasses = list(iter_spider_classes(module))
+        # The spider is looked up by file name, so it does not need a name of
+        # its own. Named spiders still win over nameless ones, which in a file
+        # with both are usually base spiders.
+        spclasses = list(iter_spider_classes(module, require_name=False))
         if not spclasses:
             raise UsageError(f"No spider found in file: {filename}\n")
-        spidercls = spclasses.pop()
+        named = [spcls for spcls in spclasses if getattr(spcls, "name", None)]
+        spidercls = (named or spclasses).pop()
 
         assert self.crawler_process
         self.crawler_process.crawl(spidercls, **opts.spargs)
