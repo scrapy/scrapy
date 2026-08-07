@@ -175,6 +175,12 @@ __all__ = [
     "REFERER_ENABLED",
     "REFERRER_POLICIES",
     "REFERRER_POLICY",
+    "REMOTE_CONTROL_ENABLED",
+    "REMOTE_CONTROL_JOBS_DIR",
+    "REMOTE_CONTROL_OUTPUT_MAX_BYTES",
+    "REMOTE_CONTROL_TIMEOUT_DEFAULT",
+    "REMOTE_CONTROL_TIMEOUT_MAX",
+    "REMOTE_CONTROL_TRACEBACK_MAX_BYTES",
     "REQUEST_FINGERPRINTER_CLASS",
     "RETRY_ENABLED",
     "RETRY_EXCEPTIONS",
@@ -353,6 +359,7 @@ EXTENSIONS_BASE = {
     "scrapy.extensions.logstats.LogStats": 0,
     "scrapy.extensions.spiderstate.SpiderState": 0,
     "scrapy.extensions.throttle.AutoThrottle": 0,
+    "scrapy.extensions.remote_control.RemoteControl": 0,
 }
 
 FEEDS = {}
@@ -499,6 +506,13 @@ REDIRECT_PRIORITY_ADJUST = +2
 REFERER_ENABLED = True
 REFERRER_POLICY = "scrapy.spidermiddlewares.referer.DefaultReferrerPolicy"
 REFERRER_POLICIES = {}
+
+REMOTE_CONTROL_ENABLED = True
+REMOTE_CONTROL_JOBS_DIR = None
+REMOTE_CONTROL_TIMEOUT_DEFAULT = 30.0
+REMOTE_CONTROL_TIMEOUT_MAX = 600.0
+REMOTE_CONTROL_OUTPUT_MAX_BYTES = 64 * 1024
+REMOTE_CONTROL_TRACEBACK_MAX_BYTES = 16 * 1024
 
 REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 

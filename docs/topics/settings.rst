@@ -1357,6 +1357,7 @@ Default:
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
+        "scrapy.extensions.remote_control.RemoteControl": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
