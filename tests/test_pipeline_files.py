@@ -1154,11 +1154,15 @@ class TestFTPFileStore:
         meta = {"foo": "bar"}
         path = "full/filename"
         with MockFTPServer() as ftp_server:
-            # normally set via FilesPipeline.from_crawler()
-            FTPFilesStore.FTP_USERNAME = "anonymous"
-            FTPFilesStore.FTP_PASSWORD = "guest"
-
-            store = FTPFilesStore(ftp_server.url("/"))
+            crawler = get_crawler(
+                settings_dict={
+                    "FILES_STORE": ftp_server.url("/"),
+                    "FTP_USER": "anonymous",
+                    "FTP_PASSWORD": "guest",
+                }
+            )
+            store = FilesPipeline.from_crawler(crawler).store
+            assert isinstance(store, FTPFilesStore)
             empty_dict = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
             assert empty_dict == {}
             yield store.persist_file(
@@ -1180,14 +1184,21 @@ class TestFTPFileStore:
         assert data == content
 
     @inline_callbacks_test
-    def test_persist_active_mode(self, monkeypatch: pytest.MonkeyPatch):
+    def test_persist_active_mode(self):
         data = b"active mode"
         path = "full/filename"
-        monkeypatch.setattr(FTPFilesStore, "FTP_USERNAME", "anonymous")
-        monkeypatch.setattr(FTPFilesStore, "FTP_PASSWORD", "guest")
-        monkeypatch.setattr(FTPFilesStore, "USE_ACTIVE_MODE", True)
         with MockFTPServer() as ftp_server:
-            store = FTPFilesStore(ftp_server.url("/"))
+            crawler = get_crawler(
+                settings_dict={
+                    "FILES_STORE": ftp_server.url("/"),
+                    "FTP_USER": "anonymous",
+                    "FTP_PASSWORD": "guest",
+                    "FEED_STORAGE_FTP_ACTIVE": True,
+                }
+            )
+            store = FilesPipeline.from_crawler(crawler).store
+            assert isinstance(store, FTPFilesStore)
+            assert store.USE_ACTIVE_MODE
             yield store.persist_file(path, BytesIO(data), info=DUMMY_SPIDER_INFO)
             stat = yield store.stat_file(path, info=DUMMY_SPIDER_INFO)
         assert stat["checksum"] == "ff1575649a39a27c13faa0d37c84bab3"
