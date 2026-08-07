@@ -1,0 +1,53 @@
+name: VCS dependencies
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+  - cron: '0 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    env:
+      PYTEST_ADDOPTS: -n auto --no-cov
+      TOXENV: vcs-deps
+      UV_PYTHON_PREFERENCE: only-system
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: "3.14"
+
+    # Dependencies that ship wheels on PyPI are built from source here, so
+    # their build dependencies are needed: libxml2 and libxslt for lxml,
+    # libjpeg and zlib for Pillow, and autotools for the libuv bundled in
+    # uvloop.
+    - name: Install system libraries
+      run: |
+        sudo apt-get update
+        sudo apt-get install automake libjpeg-dev libtool libxml2-dev libxslt-dev zlib1g-dev
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      with:
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+
+    - name: Install mitmproxy
+      run: uv tool install --python cpython mitmproxy
+
+    - name: Run tests
+      run: uvx --with tox-uv tox
