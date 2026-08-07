@@ -14,8 +14,9 @@ from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.protocol import Factory, Protocol, connectionDone
+from twisted.internet.endpoints import TCP4ClientEndpoint, wrapClientTLS
+from twisted.internet.interfaces import IStreamClientEndpoint
+from twisted.internet.protocol import ClientFactory, Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import (
     URI,
@@ -60,7 +61,7 @@ from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
-    from twisted.internet.interfaces import IConsumer
+    from twisted.internet.interfaces import IAddress, IConsumer, IProtocol
 
     # typing.NotRequired requires Python 3.11
     from typing_extensions import NotRequired
@@ -161,13 +162,15 @@ class TunnelError(Exception):
     """An HTTP CONNECT tunnel could not be established by the proxy."""
 
 
-class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
-    """An endpoint that tunnels through proxies to allow HTTPS downloads. To
-    accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
-    The HTTP CONNECT is always sent when using this endpoint, I think this could
-    be improved as the CONNECT will be redundant if the connection associated
-    with this endpoint comes from the pool and a CONNECT has already been issued
-    for it.
+class _TunnelProtocol(Protocol):
+    """Sends an HTTP CONNECT request to a proxy and, once the tunnel is open,
+    hands the connection over to a wrapped protocol.
+
+    It plays the role of Twisted's ``_WrappingProtocol`` but performs a CONNECT
+    handshake before connecting the wrapped protocol. The wrapped protocol is
+    the destination TLS protocol, so its handshake is negotiated inside the
+    tunnel; when the proxy itself is reached over TLS this results in a
+    TLS-in-TLS connection.
     """
 
     _truncatedLength = 1000
@@ -178,40 +181,38 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def __init__(
         self,
-        reactor: ReactorBase,
-        host: str,
+        connectedDeferred: Deferred[IProtocol],
+        wrappedProtocol: IProtocol,
+        host: bytes,
         port: int,
-        proxyConf: tuple[str, int, bytes | None],
-        contextFactory: IPolicyForHTTPS,
-        timeout: float = 30,
-        bindAddress: tuple[str, int] | None = None,
+        proxyHost: str,
+        proxyPort: int,
+        proxyAuthHeader: bytes | None = None,
     ):
-        proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
-        super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
-        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
-        self._tunneledHost: str = host
-        self._tunneledPort: int = port
-        self._contextFactory: IPolicyForHTTPS = contextFactory
+        self._connectedDeferred = connectedDeferred
+        self._wrappedProtocol = wrappedProtocol
+        self._host = host
+        self._port = port
+        self._proxyHost = proxyHost
+        self._proxyPort = proxyPort
+        self._proxyAuthHeader = proxyAuthHeader
         self._connectBuffer: bytearray = bytearray()
+        self._tunnelReady = False
 
-    def requestTunnel(self, protocol: Protocol) -> Protocol:
+    def logPrefix(self) -> str:
+        return type(self._wrappedProtocol).__name__
+
+    def connectionMade(self) -> None:
         """Asks the proxy to open a tunnel."""
-        assert protocol.transport
-        tunnelReq = _tunnel_request_data(
-            self._tunneledHost, self._tunneledPort, self._proxyAuthHeader
+        assert self.transport
+        self.transport.write(
+            _tunnel_request_data(self._host, self._port, self._proxyAuthHeader)
         )
-        protocol.transport.write(tunnelReq)
-        self._protocolDataReceived = protocol.dataReceived
-        protocol.dataReceived = self.processProxyResponse  # type: ignore[method-assign]
-        self._protocol = protocol
-        return protocol
 
-    def processProxyResponse(self, data: bytes) -> None:
-        """Processes the response from the proxy. If the tunnel is successfully
-        created, notifies the client that we are ready to send requests. If not
-        raises a TunnelError.
-        """
-        assert self._protocol.transport
+    def dataReceived(self, data: bytes) -> None:
+        if self._tunnelReady:
+            self._wrappedProtocol.dataReceived(data)
+            return
         self._connectBuffer += data
         # make sure that enough (all) bytes are consumed
         # and that we've got all HTTP headers (ending with a blank line)
@@ -220,16 +221,17 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         # see https://github.com/scrapy/scrapy/issues/2491
         if b"\r\n\r\n" not in self._connectBuffer:
             return
-        self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
-        respm = _TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
+        header, _, remaining = bytes(self._connectBuffer).partition(b"\r\n\r\n")
+        respm = self._responseMatcher.match(header)
         if respm and int(respm.group("status")) == 200:
-            # set proper Server Name Indication extension
-            sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
-                self._tunneledHost,  # type: ignore[arg-type]
-                self._tunneledPort,
-            )
-            self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
-            self._tunnelReadyDeferred.callback(self._protocol)
+            self._tunnelReady = True
+            # Hand the connection over to the wrapped (destination TLS)
+            # protocol, which starts its handshake through the tunnel.
+            assert self.transport is not None
+            self._wrappedProtocol.makeConnection(self.transport)
+            self._connectedDeferred.callback(self._wrappedProtocol)
+            if remaining:
+                self._wrappedProtocol.dataReceived(remaining)
         else:
             extra: Any
             if respm:
@@ -238,28 +240,121 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
                     "reason": respm.group("reason").strip(),
                 }
             else:
-                extra = data[: self._truncatedLength]
-            self._tunnelReadyDeferred.errback(
+                extra = header[: self._truncatedLength]
+            self._connectedDeferred.errback(
                 TunnelError(
                     "Could not open CONNECT tunnel with proxy "
-                    f"{self._host}:{self._port} [{extra!r}]"
+                    f"{self._proxyHost}:{self._proxyPort} [{extra!r}]"
                 )
             )
 
-    def connectFailed(self, reason: Failure) -> None:
-        """Propagates the errback to the appropriate deferred."""
-        self._tunnelReadyDeferred.errback(reason)
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
+        if self._tunnelReady:
+            self._wrappedProtocol.connectionLost(reason)
+        elif not self._connectedDeferred.called:
+            # The connection was lost before the tunnel was established (e.g.
+            # the proxy closed the connection in response to CONNECT).
+            self._connectedDeferred.errback(reason)
 
-    def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
-        self._protocolFactory = protocolFactory
-        connectDeferred = super().connect(protocolFactory)
-        connectDeferred.addCallback(self.requestTunnel)
-        connectDeferred.addErrback(self.connectFailed)
-        return self._tunnelReadyDeferred
+
+class _TunnelFactory(ClientFactory):
+    """Builds :class:`_TunnelProtocol` instances wrapping the protocols built
+    by another factory."""
+
+    def __init__(
+        self,
+        connectedDeferred: Deferred[IProtocol],
+        wrappedFactory: Factory,
+        host: bytes,
+        port: int,
+        proxyHost: str,
+        proxyPort: int,
+        proxyAuthHeader: bytes | None = None,
+    ):
+        self._connectedDeferred = connectedDeferred
+        self._wrappedFactory = wrappedFactory
+        self._host = host
+        self._port = port
+        self._proxyHost = proxyHost
+        self._proxyPort = proxyPort
+        self._proxyAuthHeader = proxyAuthHeader
+
+    def doStart(self) -> None:
+        self._wrappedFactory.doStart()
+
+    def doStop(self) -> None:
+        self._wrappedFactory.doStop()
+
+    def buildProtocol(self, addr: IAddress) -> _TunnelProtocol:
+        wrappedProtocol = self._wrappedFactory.buildProtocol(addr)
+        # The wrapped factory is always the destination TLS factory built by
+        # wrapClientTLS, whose buildProtocol never returns None.
+        assert wrappedProtocol is not None
+        return _TunnelProtocol(
+            self._connectedDeferred,
+            wrappedProtocol,
+            self._host,
+            self._port,
+            self._proxyHost,
+            self._proxyPort,
+            self._proxyAuthHeader,
+        )
+
+
+@implementer(IStreamClientEndpoint)
+class _TunnelEndpoint:
+    """A wrapper endpoint that opens an HTTP CONNECT tunnel over the connection
+    established by the wrapped endpoint before delivering it to the protocol
+    factory.
+
+    The wrapped endpoint connects to the proxy (over plain TCP for ``http://``
+    proxies, or over TLS via :func:`~twisted.internet.endpoints.wrapClientTLS`
+    for ``https://`` proxies). Wrapping this endpoint in turn with
+    ``wrapClientTLS`` negotiates the destination TLS session inside the tunnel.
+    """
+
+    def __init__(
+        self,
+        wrappedEndpoint: IStreamClientEndpoint,
+        host: bytes,
+        port: int,
+        proxyHost: str,
+        proxyPort: int,
+        proxyAuthHeader: bytes | None = None,
+    ):
+        self._wrappedEndpoint = wrappedEndpoint
+        self._host = host
+        self._port = port
+        self._proxyHost = proxyHost
+        self._proxyPort = proxyPort
+        self._proxyAuthHeader = proxyAuthHeader
+
+    def connect(self, protocolFactory: Factory) -> Deferred[IProtocol]:
+        connectedDeferred: Deferred[IProtocol] = Deferred()
+        tunnelFactory = _TunnelFactory(
+            connectedDeferred,
+            protocolFactory,
+            self._host,
+            self._port,
+            self._proxyHost,
+            self._proxyPort,
+            self._proxyAuthHeader,
+        )
+        d = self._wrappedEndpoint.connect(tunnelFactory)
+        d.addErrback(self._connectFailed, connectedDeferred)
+        return connectedDeferred
+
+    @staticmethod
+    def _connectFailed(
+        failure: Failure, connectedDeferred: Deferred[IProtocol]
+    ) -> None:
+        # Reached only when connecting to the proxy fails, i.e. before the
+        # tunnel deferred has been fired.
+        connectedDeferred.errback(failure)
 
 
 def _tunnel_request_data(
-    host: str, port: int, proxy_auth_header: bytes | None = None
+    host: str | bytes, port: int | str, proxy_auth_header: bytes | None = None
 ) -> bytes:
     r"""
     Return binary content of a CONNECT request.
@@ -282,42 +377,63 @@ def _tunnel_request_data(
 
 
 class _TunnelingAgent(Agent):
-    """An agent that uses a ``_TunnelingTCP4ClientEndpoint`` to make HTTPS
-    downloads. It may look strange that we have chosen to subclass Agent and not
+    """An agent that tunnels HTTPS downloads through a proxy using HTTP
+    CONNECT. It may look strange that we have chosen to subclass Agent and not
     ProxyAgent but consider that after the tunnel is opened the proxy is
     transparent to the client; thus the agent should behave like there is no
     proxy involved.
+
+    ``proxyConf`` is a ``(host, port, auth_header, tls)`` tuple, where ``tls``
+    indicates whether the connection to the proxy itself must be made over TLS
+    (an ``https://`` proxy). When it is, the destination TLS session runs inside
+    the proxy TLS session (TLS-in-TLS).
     """
 
     def __init__(
         self,
         *,
         reactor: ReactorBase,
-        proxyConf: tuple[str, int, bytes | None],
+        proxyConf: tuple[str, int, bytes | None, bool],
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
-        self._proxyConf: tuple[str, int, bytes | None] = proxyConf
+        self._proxyConf: tuple[str, int, bytes | None, bool] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
-    def _getEndpoint(self, uri: URI) -> _TunnelingTCP4ClientEndpoint:
-        return _TunnelingTCP4ClientEndpoint(
-            reactor=self._reactor,
-            host=uri.host,
-            port=uri.port,
-            proxyConf=self._proxyConf,
-            contextFactory=self._contextFactory,
+    def _getEndpoint(self, uri: URI) -> IStreamClientEndpoint:
+        proxyHost, proxyPort, proxyAuthHeader, proxyTLS = self._proxyConf
+        endpoint: IStreamClientEndpoint = TCP4ClientEndpoint(
+            self._reactor,
+            proxyHost,
+            proxyPort,
             timeout=self._endpointFactory._connectTimeout,
             bindAddress=self._endpointFactory._bindAddress,
         )
+        if proxyTLS:
+            # Set up TLS with the proxy itself, so that the CONNECT request and
+            # the tunneled traffic are sent over it (TLS-in-TLS).
+            proxyCreator = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
+                to_bytes(proxyHost, encoding="ascii"),  # type: ignore[arg-type]
+                proxyPort,
+            )
+            endpoint = wrapClientTLS(proxyCreator, endpoint)
+        endpoint = _TunnelEndpoint(
+            endpoint, uri.host, uri.port, proxyHost, proxyPort, proxyAuthHeader
+        )
+        # Set proper Server Name Indication extension for the destination.
+        destCreator = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
+            uri.host,
+            uri.port,
+        )
+        return wrapClientTLS(destCreator, endpoint)
 
     def _requestWithEndpoint(
         self,
         key: Any,
-        endpoint: TCP4ClientEndpoint,
+        endpoint: IStreamClientEndpoint,
         method: bytes,
         parsedURI: URI,
         headers: TxHeaders | None,
@@ -420,13 +536,14 @@ class _ScrapyAgent:
             if not proxy_port:
                 proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
-                if proxy_parsed.scheme == "https":  # pragma: no cover
-                    raise NotImplementedError(
-                        "HTTPS proxies for HTTPS destinations are not supported"
-                    )
                 assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
-                proxyConf = (proxy_host, proxy_port, proxyAuth)
+                proxyConf = (
+                    proxy_host,
+                    proxy_port,
+                    proxyAuth,
+                    proxy_parsed.scheme == "https",
+                )
                 return _TunnelingAgent(
                     reactor=reactor,
                     proxyConf=proxyConf,
