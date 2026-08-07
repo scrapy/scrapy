@@ -15,7 +15,7 @@ from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.defer import _schedule_coro, deferred_from_coro
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.engine import TestEngineBase
@@ -128,10 +128,11 @@ class TestEngine(TestEngineBase):
         e = ExecutionEngine(crawler, lambda _: None)
         crawler.engine = e
         yield deferred_from_coro(e.open_spider_async())
-        _schedule_coro(e.start_async())
+        start_deferred = deferred_from_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
             yield deferred_from_coro(e.start_async())
         yield deferred_from_coro(e.stop_async())
+        yield start_deferred
 
     @pytest.mark.only_asyncio
     @coroutine_test

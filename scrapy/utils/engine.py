@@ -24,9 +24,8 @@ def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, Any]]:
         "len(engine._slot.scheduler.mqs)",
         "len(engine.scraper.slot.queue)",
         "len(engine.scraper.slot.active)",
-        "engine.scraper.slot.active_size",
+        "engine.downloader.middleware._total_active_size",
         "engine.scraper.slot.itemproc_size",
-        "engine.scraper.slot.needs_backout()",
     ]
 
     checks: list[tuple[str, Any]] = []
