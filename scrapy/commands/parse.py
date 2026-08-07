@@ -10,14 +10,16 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from w3lib.url import is_url
 
+from scrapy import signals
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
 from scrapy.utils import display
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.defer import _schedule_coro, aiter_errback, deferred_from_coro
+from scrapy.utils.defer import aiter_errback, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.python import _current_async_backend_tracker_factory
 from scrapy.utils.spider import spidercls_for_request
 
 if TYPE_CHECKING:
@@ -284,8 +286,16 @@ class Command(BaseRunSpiderCommand):
             assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
+                if not getattr(self, "_tracker", None):
+                    self._tracker = _current_async_backend_tracker_factory()
+                    self.pcrawler.signals.connect(
+                        self._tracker.drain, signal=signals.spider_closed
+                    )
+                    self.pcrawler.signals.connect(
+                        self._tracker.drain, signal=signals.engine_stopped
+                    )
                 for item in items:
-                    _schedule_coro(itemproc.process_item_async(item))
+                    self._tracker.schedule(itemproc.process_item_async(item))
             else:
                 for item in items:
                     itemproc.process_item(item, spider)

@@ -43,7 +43,11 @@ from scrapy.utils.defer import (
 from scrapy.utils.deprecate import argument_is_required
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.python import global_object_name
+from scrapy.utils.python import (
+    _BackgroundTaskTracker,
+    _current_async_backend_tracker_factory,
+    global_object_name,
+)
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
@@ -130,6 +134,7 @@ class ExecutionEngine:
             asyncio.Future[None] | Deferred[None] | None
         ) = None
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
+        self._tracker: _BackgroundTaskTracker | None = None
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
                 crawler.settings
@@ -151,6 +156,13 @@ class ExecutionEngine:
             if hasattr(self, "downloader"):
                 self.downloader.close()
             raise
+
+    def _init_tracker(self) -> None:
+        if self._tracker is None:
+            self._tracker = _current_async_backend_tracker_factory()
+            self.crawler.signals.connect(
+                self._tracker.drain, signal=signals.engine_stopped
+            )
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         scheduler_cls: type[BaseScheduler] = load_object(settings["SCHEDULER"])
@@ -178,6 +190,7 @@ class ExecutionEngine:
 
         .. versionadded:: 2.14
         """
+        self._init_tracker()
         if self._starting:
             raise RuntimeError("Engine already running")
         self.start_time = time()
@@ -219,6 +232,9 @@ class ExecutionEngine:
         if not self._starting:
             raise RuntimeError("Engine not running")
 
+        if self._tracker:
+            await self._tracker.drain()
+
         self.running = self._starting = False
         self._stopping = True
         if self._start_request_processing_awaitable is not None:
@@ -251,6 +267,9 @@ class ExecutionEngine:
         Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close the spider and the downloader.
         """
+        if self._tracker:
+            await self._tracker.drain()
+
         if self.running:
             await self.stop_async()  # will also close spider and downloader
         elif self.spider is not None:
@@ -291,7 +310,8 @@ class ExecutionEngine:
                 self.crawl(item_or_request)
             else:
                 assert self._slot is not None
-                _schedule_coro(
+                assert self._tracker
+                self._tracker.schedule(
                     self.scraper.start_itemproc_async(item_or_request, response=None)
                 )
                 self._slot.nextcall.schedule()
@@ -529,6 +549,7 @@ class ExecutionEngine:
         return deferred_from_coro(self.open_spider_async(close_if_idle=close_if_idle))
 
     async def open_spider_async(self, *, close_if_idle: bool = True) -> None:
+        self._init_tracker()
         assert self.crawler.spider
         if self._slot is not None:
             raise RuntimeError(
@@ -566,6 +587,7 @@ class ExecutionEngine:
         (at least) once again. A handler can raise CloseSpider to provide a custom closing reason.
         """
         assert self.spider is not None  # typing
+
         expected_ex = (DontCloseSpider, CloseSpider)
         res = self.signals.send_catch_log(
             signals.spider_idle, spider=self.spider, dont_log=expected_ex
