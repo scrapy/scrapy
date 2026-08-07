@@ -24,11 +24,66 @@ logger = logging.getLogger(__name__)
 
 
 class SitemapSpider(Spider):
+    """Spider that crawls a site by discovering its URLs using `sitemaps
+    <https://www.sitemaps.org/index.html>`_.
+
+    It supports nested sitemaps and discovering sitemap URLs from `robots.txt
+    <https://www.robotstxt.org/>`_.
+    """
+
+    #: URLs pointing to the sitemaps whose URLs you want to crawl.
+    #:
+    #: You can also point to a `robots.txt <https://www.robotstxt.org/>`_ and it
+    #: will be parsed to extract sitemap URLs from it.
     sitemap_urls: Sequence[str] = ()
+
+    #: ``(regex, callback)`` tuples where:
+    #:
+    #: -   ``regex`` is a regular expression to match URLs extracted from
+    #:     sitemaps. ``regex`` can be either a str or a compiled regex object.
+    #:
+    #: -   ``callback`` is the callback to use for processing the URLs that match
+    #:     the regular expression. ``callback`` can be a string (indicating the
+    #:     name of a spider method) or a callable.
+    #:
+    #: For example:
+    #:
+    #: .. code-block:: python
+    #:
+    #:     sitemap_rules = [("/product/", "parse_product")]
+    #:
+    #: Rules are applied in order, and only the first one that matches will be
+    #: used.
+    #:
+    #: The default value makes all URLs found in sitemaps be processed with the
+    #: :meth:`~scrapy.Spider.parse` callback.
     sitemap_rules: Sequence[tuple[re.Pattern[str] | str, str | CallbackT]] = [
         ("", "parse")
     ]
+
+    #: Regexes of sitemaps that should be followed. This is only for sites that
+    #: use `sitemap index files
+    #: <https://www.sitemaps.org/protocol.html#index>`_ that point to other
+    #: sitemap files.
+    #:
+    #: By default, all sitemaps are followed.
     sitemap_follow: Sequence[re.Pattern[str] | str] = [""]
+
+    #: Specifies if alternate links for one ``url`` should be followed. These are
+    #: links for the same website in another language passed within the same
+    #: ``url`` block.
+    #:
+    #: For example:
+    #:
+    #: .. code-block:: xml
+    #:
+    #:     <url>
+    #:         <loc>http://example.com/</loc>
+    #:         <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
+    #:     </url>
+    #:
+    #: When enabled, this would retrieve both URLs. When disabled, only
+    #: ``http://example.com/`` would be retrieved.
     sitemap_alternate_links: bool = False
     _max_size: int
     _warn_size: int
@@ -60,9 +115,54 @@ class SitemapSpider(Spider):
     def sitemap_filter(
         self, entries: Iterable[dict[str, Any]]
     ) -> Iterable[dict[str, Any]]:
-        """This method can be used to filter sitemap entries by their
-        attributes, for example, you can filter locs with lastmod greater
-        than a given date (see docs).
+        """Yield the sitemap entries from *entries* that should be processed.
+
+        Override it to select sitemap entries based on their attributes. For
+        example, given the following sitemap entry:
+
+        .. code-block:: xml
+
+            <url>
+                <loc>http://example.com/</loc>
+                <lastmod>2005-01-01</lastmod>
+            </url>
+
+        You can filter entries by date as follows:
+
+        .. code-block:: python
+
+            from datetime import datetime
+            from scrapy.spiders import SitemapSpider
+
+
+            class FilteredSitemapSpider(SitemapSpider):
+                name = "filtered_sitemap_spider"
+                allowed_domains = ["example.com"]
+                sitemap_urls = ["http://example.com/sitemap.xml"]
+
+                def sitemap_filter(self, entries):
+                    for entry in entries:
+                        date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
+                        if date_time.year >= 2005:
+                            yield entry
+
+        This would retrieve only entries modified on 2005 and the following
+        years.
+
+        Entries are dict objects extracted from the sitemap document. Usually,
+        the key is the tag name and the value is the text inside it.
+
+        It's important to notice that:
+
+        -   as the ``loc`` attribute is required, entries without this tag are
+            discarded
+        -   alternate links are stored in a list with the key ``alternate``
+            (see :attr:`sitemap_alternate_links`)
+        -   namespaces are removed, so lxml tags named as ``{namespace}tagname``
+            become only ``tagname``
+
+        The default implementation yields all entries, observing other
+        attributes and their settings.
         """
         yield from entries
 

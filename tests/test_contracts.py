@@ -275,6 +275,34 @@ class InheritsDemoSpider(DemoSpider):
     name = "inherits_demo_spider"
 
 
+class UnregisteredAtLineSpider(Spider):
+    """Spider whose docstrings contain ``@`` lines that are not contracts."""
+
+    name = "unregistered_at_line_spider"
+
+    @classmethod
+    def update_settings(cls, settings):
+        """Docstring with a decorator in a code example:
+
+        .. code-block:: python
+
+            @classmethod
+            def update_settings(cls, settings): ...
+        """
+        super().update_settings(settings)
+
+    def parse(self, response):
+        """
+        @url http://scrapy.org
+        @returns items 1 1
+
+        An unregistered line must not break the registered ones:
+
+            @classmethod
+        """
+        yield {"name": "test"}
+
+
 class TestContractsManager:
     contracts = [
         UrlContract,
@@ -548,6 +576,25 @@ class TestContractsManager:
             spider.invalid_regex_with_valid_contract, self.results
         )
         request.callback(response)
+        self.should_succeed()
+
+    def test_unregistered_at_line_is_not_a_tested_method(self):
+        # A docstring line starting with @ that does not name a registered
+        # contract, e.g. a decorator in a code example, must be ignored.
+        tested_methods = self.conman.tested_methods_from_spidercls(
+            UnregisteredAtLineSpider
+        )
+        assert tested_methods == ["parse"]
+
+    def test_unregistered_at_line_is_skipped(self):
+        contracts = self.conman.extract_contracts(UnregisteredAtLineSpider().parse)
+        assert [type(contract) for contract in contracts] == [
+            UrlContract,
+            ReturnsContract,
+        ]
+
+    def test_unregistered_at_line_does_not_break_checks(self):
+        self.conman.from_spider(UnregisteredAtLineSpider(), self.results)
         self.should_succeed()
 
     def test_custom_contracts(self):

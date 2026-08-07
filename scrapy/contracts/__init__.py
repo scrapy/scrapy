@@ -14,7 +14,7 @@ from scrapy.utils.python import get_spec
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
 
     from twisted.python.failure import Failure
 
@@ -116,31 +116,40 @@ class ContractsManager:
         for contract in contracts:
             self.contracts[contract.name] = contract
 
-    def tested_methods_from_spidercls(self, spidercls: type[Spider]) -> list[str]:
-        is_method = re.compile(r"^\s*@", re.MULTILINE).search
-        methods = []
-        for key, value in getmembers(spidercls):
-            if callable(value) and value.__doc__ and is_method(value.__doc__):
-                methods.append(key)
+    def _iter_contract_lines(self, docstring: str) -> Iterator[tuple[str, str]]:
+        """Yield the ``(name, args)`` pair of every line of *docstring* that
+        declares a registered contract.
 
-        return methods
+        Lines that start with ``@`` but do not name a registered contract are
+        ignored, so that docstrings may include unrelated content such as
+        decorators in code examples.
+        """
+        for line_ in docstring.split("\n"):
+            line = line_.strip()
+            if not line.startswith("@"):
+                continue
+            m = re.match(r"@(\w+)\s*(.*)", line)
+            if m is None:
+                continue
+            name, args = m.groups()
+            if name in self.contracts:
+                yield name, args
+
+    def tested_methods_from_spidercls(self, spidercls: type[Spider]) -> list[str]:
+        return [
+            key
+            for key, value in getmembers(spidercls)
+            if callable(value)
+            and value.__doc__
+            and any(self._iter_contract_lines(value.__doc__))
+        ]
 
     def extract_contracts(self, method: Callable[..., Any]) -> list[Contract]:
-        contracts: list[Contract] = []
         assert method.__doc__ is not None
-        for line_ in method.__doc__.split("\n"):
-            line = line_.strip()
-
-            if line.startswith("@"):
-                m = re.match(r"@(\w+)\s*(.*)", line)
-                if m is None:
-                    continue
-                name, args = m.groups()
-                args = re.split(r"\s+", args)
-
-                contracts.append(self.contracts[name](method, *args))
-
-        return contracts
+        return [
+            self.contracts[name](method, *re.split(r"\s+", args))
+            for name, args in self._iter_contract_lines(method.__doc__)
+        ]
 
     def from_spider(self, spider: Spider, results: TestResult) -> list[Request | None]:
         requests: list[Request | None] = []
