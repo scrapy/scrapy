@@ -59,7 +59,7 @@ scrapy.Spider
        :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
        enabled.
 
-       Let's say your target url is ``https://www.example.com/1.html``,
+       Let's say your target URL is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
 
    .. autoattribute:: start_urls
@@ -80,8 +80,8 @@ scrapy.Spider
       :class:`~scrapy.crawler.Crawler` object to which this spider instance is
       bound.
 
-      Crawlers encapsulate a lot of components in the project for their single
-      entry access (such as extensions, middlewares, signals managers, etc).
+      Crawlers encapsulate a lot of components in the project for single-entry
+      access (such as extensions, middlewares, signal managers, etc).
       See :ref:`topics-api-crawler` to know more about them.
 
    .. attribute:: settings
@@ -285,9 +285,8 @@ Spiders can access arguments in their `__init__` methods:
             self.start_urls = [f"http://www.example.com/categories/{category}"]
             # ...
 
-The default `__init__` method will take any spider arguments
-and copy them to the spider as attributes.
-The above example can also be written as follows:
+The default ``__init__`` method will take any spider arguments and copy them to
+the spider as attributes. The above example can also be written as follows:
 
 .. code-block:: python
 
@@ -311,15 +310,13 @@ specify spider arguments when calling
     process = CrawlerProcess()
     process.crawl(MySpider, category="electronics")
 
-Keep in mind that spider arguments are only strings.
-The spider will not do any parsing on its own.
-If you were to set the ``start_urls`` attribute from the command line,
-you would have to parse it on your own into a list
-using something like :func:`ast.literal_eval` or :func:`json.loads`
-and then set it as an attribute.
-Otherwise, you would cause iteration over a ``start_urls`` string
-(a very common python pitfall)
-resulting in each character being seen as a separate url.
+Keep in mind that spider arguments are only strings. The spider will not do any
+parsing on its own. If you were to set the ``start_urls`` attribute from the
+command line, you would have to parse it on your own into a list using
+something like :func:`ast.literal_eval` or :func:`json.loads` and then set it
+as an attribute. Otherwise, you would cause iteration over a ``start_urls``
+string (a very common Python pitfall) resulting in each character being seen as
+a separate url.
 
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
