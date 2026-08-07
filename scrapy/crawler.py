@@ -88,6 +88,8 @@ class Crawler:
         self.logformatter: LogFormatter | None = None
         self.request_fingerprinter: RequestFingerprinterProtocol | None = None
         self.spider: Spider | None = None
+
+        #: Running instance of :class:`~scrapy.core.engine.ExecutionEngine`.
         self.engine: ExecutionEngine | None = None
 
     def _update_root_log_handler(self) -> None:

@@ -291,6 +291,10 @@ one per actual value of the placeholder.
 
     -   ``memusage_exceeded``: see :setting:`MEMUSAGE_LIMIT_MB`.
 
+    -   ``robotstxt_denied``: no :ref:`start request <start-requests>` could be
+        crawled, and robots.txt rules denied at least one of them, see
+        :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`.
+
     -   ``shutdown``: the crawl was interrupted, e.g. by a system signal such
         as ``SIGINT`` (:kbd:`Ctrl-C`).
 

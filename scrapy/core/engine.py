@@ -100,6 +100,15 @@ class _Slot:
 
 
 class ExecutionEngine:
+    """The execution engine manages all the core :ref:`components
+    <topics-components>`, such as the :ref:`scheduler <topics-scheduler>`, the
+    downloader, or the :ref:`spider <topics-spiders>`, at run time.
+
+    Some components access the engine through :attr:`Crawler.engine
+    <scrapy.crawler.Crawler.engine>` to access or modify other components, or
+    use core functionality such as closing the running spider.
+    """
+
     _SLOT_HEARTBEAT_INTERVAL: float = 5.0
 
     def __init__(
@@ -594,9 +603,13 @@ class ExecutionEngine:
         return deferred_from_coro(self.close_spider_async(reason=reason))
 
     async def close_spider_async(self, *, reason: str = "cancelled") -> None:  # noqa: PLR0912
-        """Close (cancel) spider and clear all its outstanding requests.
+        """Stop the crawl with the specified *reason* and clear all its
+        outstanding requests.
 
         .. versionadded:: 2.14
+
+        *reason* is an arbitrary string; see :stat:`finish_reason` for the
+        reasons that built-in components use.
         """
         if self.spider is None:
             raise RuntimeError("Spider not opened")
