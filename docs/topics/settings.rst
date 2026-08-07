@@ -1480,6 +1480,56 @@ Default: ``None``
 
 The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
+.. setting:: HANDLE_HTTP_CODES
+
+HANDLE_HTTP_CODES
+-----------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Response status codes that your spider handles itself, instead of letting
+Scrapy handle them.
+
+Supported values are:
+
+-   ``None`` or ``False``, to handle no status code yourself. This is the
+    default.
+
+-   ``True``, to handle every status code yourself.
+
+-   An integer, or a container of integers, to handle only those status codes
+    yourself, e.g. ``404`` or ``[404, 410]``.
+
+Handling a status code yourself has 2 effects:
+
+-   :class:`~scrapy.spidermiddlewares.httperror.HttpErrorMiddleware` sends
+    responses with that status code to your callback, instead of to your
+    errback as an
+    :exc:`~scrapy.spidermiddlewares.httperror.HttpError` exception.
+
+-   :class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware` does not
+    follow responses with that status code, so that your callback gets the
+    redirect response itself. Note that
+    :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware` is
+    not affected, because ``meta`` refresh redirects come in successful
+    responses; use :reqmeta:`dont_redirect` to stop those.
+
+Retries are a separate matter: handling a status code yourself does not
+prevent :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` from
+retrying it. A retried request either succeeds, in which case you get the new
+response, or runs out of retries, in which case you get the response with the
+status code that you handle. To also stop retries, remove the status code from
+:setting:`RETRY_HTTP_CODES`, or set the :reqmeta:`dont_retry` request meta key.
+
+.. reqmeta:: handle_http_codes
+
+Use the ``handle_http_codes`` key of :attr:`Request.meta <scrapy.Request.meta>`
+to set this on a per-request basis. It supports the same values as the setting,
+and it takes precedence over the setting, e.g. ``False`` makes a request handle
+no status code even when the setting is ``True``.
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
