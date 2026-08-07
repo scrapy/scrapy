@@ -6,9 +6,10 @@ import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from twisted.internet.defer import Deferred
 
-from scrapy import Spider
-from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
+from scrapy import Request, Spider
+from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler, _ScrapyAgent
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from tests.utils.bases.download_handlers_http import (
@@ -52,6 +53,20 @@ def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         HTTP11DownloadHandler.from_crawler(crawler)
+
+
+def test_download_request_adds_root_path_before_query(mocker) -> None:
+    crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": True})
+    scrapy_agent = _ScrapyAgent(contextFactory=mocker.Mock(), crawler=crawler)
+    agent = mocker.Mock()
+    agent.request.return_value = Deferred()
+    mocker.patch.object(scrapy_agent, "_get_agent", return_value=agent)
+
+    scrapy_agent.download_request(Request("http://127.0.0.1:9000?url=www.example.com"))
+
+    assert agent.request.call_args.args[1] == (
+        b"http://127.0.0.1:9000/?url=www.example.com"
+    )
 
 
 class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):

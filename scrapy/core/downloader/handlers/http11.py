@@ -10,7 +10,7 @@ from functools import partial
 from io import BytesIO
 from time import monotonic
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
-from urllib.parse import urldefrag, urlparse
+from urllib.parse import urldefrag, urlparse, urlunparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred, succeed
@@ -71,6 +71,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
+
+
+def _url_with_root_path(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.netloc and not parsed.path:
+        return urlunparse(parsed._replace(path="/"))
+    return url
 
 
 class _ResultT(TypedDict):
@@ -468,7 +475,7 @@ class _ScrapyAgent:
         start_time = monotonic()
         d: Deferred[IResponse] = agent.request(
             method,
-            to_bytes(url, encoding="ascii"),
+            to_bytes(_url_with_root_path(url), encoding="ascii"),
             headers,
             cast("IBodyProducer", bodyproducer),
         )
