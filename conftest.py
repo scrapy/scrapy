@@ -129,6 +129,8 @@ def pytest_runtest_setup(item):
         "uvloop",
         "botocore",
         "boto3",
+        "keyring",
+        "dotenv",
     ]
 
     for module in optional_deps:
