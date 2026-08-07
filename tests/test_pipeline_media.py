@@ -422,7 +422,7 @@ class TestAsyncMediaDownloaded(TestMediaPipeline):
 
 
 class TestMediaPipelineAllowRedirectSettings:
-    def _assert_request_no3xx(self, pipeline_class, settings):
+    def _assert_redirect_statuses_not_handled(self, pipeline_class, settings):
         pipe = pipeline_class(crawler=get_crawler(None, settings))
         request = Request("http://url")
         pipe._modify_media_request(request)
@@ -430,6 +430,8 @@ class TestMediaPipelineAllowRedirectSettings:
         assert "handle_httpstatus_list" in request.meta
         for status, check in [
             (200, True),
+            # 201 is not in REDIRECT_HTTP_CODES by default
+            (201, True),
             # These are the status codes we want
             # the downloader to handle itself
             (301, False),
@@ -448,12 +450,31 @@ class TestMediaPipelineAllowRedirectSettings:
                 assert status not in request.meta["handle_httpstatus_list"]
 
     def test_subclass_standard_setting(self):
-        self._assert_request_no3xx(UserDefinedPipeline, {"MEDIA_ALLOW_REDIRECTS": True})
+        self._assert_redirect_statuses_not_handled(
+            UserDefinedPipeline, {"MEDIA_ALLOW_REDIRECTS": True}
+        )
 
     def test_subclass_specific_setting(self):
-        self._assert_request_no3xx(
+        self._assert_redirect_statuses_not_handled(
             UserDefinedPipeline, {"USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS": True}
         )
+
+    def test_custom_redirect_http_codes(self):
+        """Statuses added to REDIRECT_HTTP_CODES are also left to
+        RedirectMiddleware."""
+        crawler = get_crawler(
+            None,
+            {
+                "MEDIA_ALLOW_REDIRECTS": True,
+                "REDIRECT_HTTP_CODES": [201, 301, 302, 303, 307, 308],
+            },
+        )
+        request = Request("http://url")
+        UserDefinedPipeline(crawler=crawler)._modify_media_request(request)
+
+        assert 201 not in request.meta["handle_httpstatus_list"]
+        assert 302 not in request.meta["handle_httpstatus_list"]
+        assert 200 in request.meta["handle_httpstatus_list"]
 
 
 class TestBuildFromCrawler:

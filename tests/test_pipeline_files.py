@@ -377,6 +377,39 @@ class TestFilesPipeline:
         assert path.exists()
         assert path.read_bytes() == b"data"
 
+    @coroutine_test
+    async def test_file_created(self) -> None:
+        """A 201 response with the file in its body is a successful download."""
+        item_url = "http://example.com/created.pdf"
+        item = _create_item_with_files(item_url)
+        with mock.patch.object(
+            FilesPipeline,
+            "get_media_requests",
+            return_value=[_prepare_request_object(item_url, status=201)],
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        path = Path(self.tempdir) / result["files"][0]["path"]
+        assert path.read_bytes() == b"data"
+
+    @coroutine_test
+    async def test_file_created_empty(self, caplog: pytest.LogCaptureFixture) -> None:
+        """A 201 response without a body is an empty download, e.g. because its
+        Location header was not followed, 201 not being in REDIRECT_HTTP_CODES."""
+        item_url = "http://example.com/created-empty.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            caplog.at_level(logging.WARNING),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url, status=201, body=b"")],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"] == []
+        assert "File (empty-content)" in caplog.text
+
     def test_file_path_from_item(self):
         """
         Custom file path based on item data, overriding default implementation
@@ -1130,10 +1163,15 @@ def _create_item_with_files(*files: str) -> ItemWithFiles:
     return item
 
 
-def _prepare_request_object(item_url: str, flags: list[str] | None = None) -> Request:
+def _prepare_request_object(
+    item_url: str,
+    flags: list[str] | None = None,
+    status: int = 200,
+    body: bytes = b"data",
+) -> Request:
     return Request(
         item_url,
-        meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},
+        meta={"response": Response(item_url, status=status, body=body, flags=flags)},
     )
 
 

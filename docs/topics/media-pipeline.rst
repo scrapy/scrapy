@@ -500,6 +500,28 @@ To handle media redirections, set this setting to ``True``:
 
     MEDIA_ALLOW_REDIRECTS = True
 
+Media files created on the fly
+------------------------------
+
+.. versionchanged:: VERSION
+   Added support for HTTP 201 responses.
+
+Some servers create media files on the fly and report that with an HTTP 201
+(Created) response instead of an HTTP 200 (OK) one. Media pipelines treat both
+as successful downloads.
+
+If such a response has an empty body, the media file must be requested
+separately, from the URL in its ``Location`` header. To do that, add ``201`` to
+:setting:`REDIRECT_HTTP_CODES`, so that
+:class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware` follows that
+header, and enable :setting:`MEDIA_ALLOW_REDIRECTS`, so that media requests may
+be redirected:
+
+.. code-block:: python
+
+    REDIRECT_HTTP_CODES = [201, 301, 302, 303, 307, 308]
+    MEDIA_ALLOW_REDIRECTS = True
+
 .. _topics-media-pipeline-override:
 
 Extending the Media Pipelines

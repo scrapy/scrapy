@@ -57,6 +57,17 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
         )
 
 
+class CreatedMediaDownloadSpider(MediaDownloadSpider):
+    """Requests media files from a server that creates them on the fly, reports
+    that with an empty 201 response, and points at the created file through the
+    Location header."""
+
+    name = "createdmedia"
+
+    def _process_url(self, url):
+        return add_or_replace_parameter(self.mockserver.url("/created"), "goto", url)
+
+
 class TestFileDownloadCrawl:
     mockserver: MockServer
 
@@ -206,6 +217,59 @@ class TestFileDownloadCrawl:
         self._assert_files_downloaded(self.items, caplog.text)
         assert crawler.stats
         assert crawler.stats.get_value("downloader/response_status_count/302") == 3
+
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            {},
+            # Following the Location header of a 201 response requires both
+            # settings.
+            {"REDIRECT_HTTP_CODES": [201, 301, 302, 303, 307, 308]},
+            {"MEDIA_ALLOW_REDIRECTS": True},
+        ],
+    )
+    @coroutine_test
+    async def test_download_media_created_default_failure(
+        self, settings: dict[str, Any], caplog: pytest.LogCaptureFixture
+    ) -> None:
+        crawler = self._create_crawler(
+            CreatedMediaDownloadSpider, {**self.settings, **settings}
+        )
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                self.mockserver.url("/static/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+                mockserver=self.mockserver,
+            )
+        assert len(self.items) == 1
+        assert not self.items[0][self.media_key]
+        assert crawler.stats
+        assert crawler.stats.get_value("downloader/response_status_count/201") == 3
+        assert caplog.text.count("File (empty-content): Empty file from") == 3
+        assert not list(self.tmpmediastore.iterdir())
+
+    @coroutine_test
+    async def test_download_media_created_allowed(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        settings = {
+            **self.settings,
+            "REDIRECT_HTTP_CODES": [201, 301, 302, 303, 307, 308],
+            "MEDIA_ALLOW_REDIRECTS": True,
+        }
+        crawler = self._create_crawler(CreatedMediaDownloadSpider, settings)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(
+                self.mockserver.url("/static/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+                mockserver=self.mockserver,
+            )
+        self._assert_files_downloaded(self.items, caplog.text)
+        assert crawler.stats
+        assert crawler.stats.get_value("downloader/response_status_count/201") == 3
+        assert caplog.text.count("Redirecting (201)") == 3
 
     @coroutine_test
     async def test_download_media_file_path_error(

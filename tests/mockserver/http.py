@@ -18,6 +18,7 @@ from .http_resources import (
     ClientIPResource,
     Compress,
     ContentLengthHeaderResource,
+    Created,
     Delay,
     Drop,
     DuplicateHeaderResource,
@@ -57,6 +58,7 @@ class Root(BaseResource):
         put_child(self, b"alpayload", ArbitraryLengthPayloadResource())
         put_child(self, b"static", File(str(Path(tests_datadir, "test_site/"))))
         put_child(self, b"redirect-to", RedirectTo())
+        put_child(self, b"created", Created())
         put_child(self, b"text", Data(b"Works", "text/plain"))
         put_child(
             self,
