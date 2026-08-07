@@ -13,6 +13,7 @@ from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline, _MediaRequestFiltered
 from scrapy.utils.defer import _defer_sleep_async
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -45,7 +46,7 @@ class TestBaseMediaPipeline:
         crawler = get_crawler(DefaultSpider, self.settings)
         crawler.spider = crawler._create_spider()
         crawler.engine = MagicMock(download_async=mocked_download_func)
-        self.pipe = self.pipeline_class.from_crawler(crawler)
+        self.pipe = build_from_crawler(self.pipeline_class, crawler)
         self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
@@ -464,7 +465,7 @@ class TestBuildFromCrawler:
         class Pipeline(UserDefinedPipeline):
             pass
 
-        pipe = Pipeline.from_crawler(self.crawler)
+        pipe = build_from_crawler(Pipeline, self.crawler)
         assert pipe.crawler == self.crawler
         assert pipe._fingerprinter
 
@@ -484,7 +485,7 @@ class TestBuildFromCrawler:
                 o._from_crawler_called = True
                 return o
 
-        pipe = Pipeline.from_crawler(self.crawler)
+        pipe = build_from_crawler(Pipeline, self.crawler)
         assert pipe.crawler == self.crawler
         assert pipe._fingerprinter
         assert pipe._from_crawler_called
@@ -502,7 +503,7 @@ class TestBuildFromCrawler:
                 o.store_uri = settings["FILES_STORE"]
                 return o
 
-        pipe = Pipeline.from_crawler(self.crawler)
+        pipe = build_from_crawler(Pipeline, self.crawler)
         assert pipe.crawler == self.crawler
         assert pipe._fingerprinter
         assert pipe._from_crawler_called

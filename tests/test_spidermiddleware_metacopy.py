@@ -8,6 +8,7 @@ import pytest
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.metacopy import MetaCopyDetectionMiddleware
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ def crawler() -> Crawler:
 
 @pytest.fixture
 def mw(crawler: Crawler) -> MetaCopyDetectionMiddleware:
-    return MetaCopyDetectionMiddleware.from_crawler(crawler)
+    return build_from_crawler(MetaCopyDetectionMiddleware, crawler)
 
 
 def process(
@@ -94,7 +95,7 @@ class TestInternalKeysCheck:
     def test_skip_keys_setting(self, caplog: pytest.LogCaptureFixture) -> None:
         with caplog.at_level(WARNING):
             crawler = get_crawler(Spider, {"META_COPY_WARN_SKIP_KEYS": ["retry_times"]})
-            mw = MetaCopyDetectionMiddleware.from_crawler(crawler)
+            mw = build_from_crawler(MetaCopyDetectionMiddleware, crawler)
             req = Request("https://example.com/1", meta={"retry_times": 1})
             process(mw, [req])
         assert not caplog.records
@@ -102,7 +103,7 @@ class TestInternalKeysCheck:
     def test_skip_keys_setting_partial(self, caplog: pytest.LogCaptureFixture) -> None:
         with caplog.at_level(WARNING):
             crawler = get_crawler(Spider, {"META_COPY_WARN_SKIP_KEYS": ["retry_times"]})
-            mw = MetaCopyDetectionMiddleware.from_crawler(crawler)
+            mw = build_from_crawler(MetaCopyDetectionMiddleware, crawler)
             req = Request(
                 "https://example.com/1",
                 meta={"retry_times": 1, "redirect_times": 2},

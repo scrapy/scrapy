@@ -11,6 +11,7 @@ from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
@@ -256,7 +257,7 @@ class TestCustomPipelineManager:
 
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        itemproc = CustomPipelineManager.from_crawler(crawler)
+        itemproc = build_from_crawler(CustomPipelineManager, crawler)
         with pytest.warns(
             ScrapyDeprecationWarning,
             match=r"CustomPipelineManager.process_item\(\) is deprecated, use process_item_async\(\)",

@@ -365,7 +365,7 @@ class TestShell:
         crawler.engine = MagicMock()
         crawler.engine.open_spider_async = AsyncMock()
         shell = Shell(crawler)
-        spider = Spider("test")
+        spider = Spider.from_crawler(crawler, "test")
         await shell._open_spider(spider)
         assert shell.spider is spider
         assert crawler.spider is spider
