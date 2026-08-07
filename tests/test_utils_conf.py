@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
     arglist_to_dict,
@@ -98,10 +98,59 @@ class TestFeedExportConfig:
     def test_feed_export_config_overwrite(self):
         settings = Settings()
         assert {
-            "output.json": {"format": "json", "overwrite": True}
+            "output.json": {"format": "json", "mode": "overwrite"}
         } == feed_process_params_from_cli(
             settings, [], overwrite_output=["output.json"]
         )
+
+    def test_feed_complete_default_values_mode_from_settings(self):
+        settings = Settings({"FEED_MODE": "create"})
+        new_feed = feed_complete_default_values_from_settings({}, settings)
+        assert new_feed["mode"] == "create"
+        assert "overwrite" not in new_feed
+
+    @pytest.mark.parametrize(
+        ("mode", "overwrite"),
+        [
+            ("append", False),
+            ("overwrite", True),
+        ],
+    )
+    def test_feed_complete_default_values_mode_sets_overwrite(self, mode, overwrite):
+        """The deprecated overwrite feed option is kept in sync for the sake of
+        feed storages that predate the mode feed option."""
+        settings = Settings({"FEED_MODE": mode})
+        new_feed = feed_complete_default_values_from_settings({}, settings)
+        assert new_feed["mode"] == mode
+        assert new_feed["overwrite"] is overwrite
+
+    @pytest.mark.parametrize(
+        ("overwrite", "mode"),
+        [
+            (True, "overwrite"),
+            (False, "append"),
+        ],
+    )
+    def test_feed_complete_default_values_overwrite_deprecated(self, overwrite, mode):
+        settings = Settings()
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="overwrite feed option is deprecated"
+        ):
+            new_feed = feed_complete_default_values_from_settings(
+                {"overwrite": overwrite}, settings
+            )
+        assert new_feed["mode"] == mode
+        assert new_feed["overwrite"] is overwrite
+
+    def test_feed_complete_default_values_overwrite_and_mode(self):
+        settings = Settings()
+        with (
+            pytest.raises(ValueError, match="mutually exclusive"),
+            pytest.warns(ScrapyDeprecationWarning),
+        ):
+            feed_complete_default_values_from_settings(
+                {"overwrite": True, "mode": "create"}, settings
+            )
 
     def test_output_and_overwrite_output(self):
         with pytest.raises(UsageError):
@@ -123,6 +172,7 @@ class TestFeedExportConfig:
         )
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         assert new_feed == {
+            "mode": None,
             "encoding": "custom encoding",
             "fields": ["f1", "f2", "f3"],
             "indent": 42,
@@ -148,6 +198,7 @@ class TestFeedExportConfig:
         )
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         assert new_feed == {
+            "mode": None,
             "encoding": "other encoding",
             "fields": None,
             "indent": 42,

@@ -91,6 +91,15 @@ version that wrote them. A job must be resumed with the same Scrapy version
 that paused it; after upgrading or downgrading Scrapy, start a new job with a
 new job directory.
 
+Feed exports
+------------
+
+When a job is resumed, the :ref:`feeds <topics-feed-exports>` of the previous
+run already exist, so their :ref:`mode <feed-mode>` determines what happens to
+the items of the resumed run: ``"append"`` adds them to those feeds,
+``"overwrite"`` replaces the items of the previous run with them, and
+``"create"`` does not write them anywhere.
+
 Cookies expiration
 ------------------
 
