@@ -20,7 +20,7 @@ from h2.events import (
     UnknownFrameReceived,
     WindowUpdated,
 )
-from h2.exceptions import FrameTooLargeError, H2Error
+from h2.exceptions import DenialOfServiceError, FrameTooLargeError, H2Error
 from twisted.internet.interfaces import (
     IAddress,
     IHandshakeListener,
@@ -32,8 +32,9 @@ from twisted.protocols.policies import TimeoutMixin
 from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
-from scrapy.exceptions import DownloadTimeoutError
+from scrapy.exceptions import DownloadTimeoutError, ResponseHeadersTooLargeError
 from scrapy.http import Request, Response
+from scrapy.utils._download_handlers import get_headers_maxsize_msg
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.ssl import _log_ssl_conn_debug_info
 
@@ -110,6 +111,24 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
         config = H2Configuration(client_side=True, header_encoding="utf-8")
         self.conn = H2Connection(config=config)
+
+        # Unlike HTTP/1.1, where we count the bytes of the response head as
+        # they come from the wire, HTTP/2 uses the accounting that RFC 9113
+        # §6.5.2 defines for SETTINGS_MAX_HEADER_LIST_SIZE: the uncompressed
+        # size of every header field plus 32 bytes of overhead each. Web
+        # browsers use the same limit for both protocols despite that
+        # difference, so we do the same.
+        self._headers_maxsize: int = settings.getint("DOWNLOAD_HEADERS_MAXSIZE")
+        # SETTINGS values are 32-bit, so the maximum stands for "no limit".
+        max_header_list_size = self._headers_maxsize or 2**32 - 1
+        # local_settings is what we advertise to the remote peer, while the
+        # decoder is what enforces the limit on the headers we do receive.
+        self.conn.local_settings.max_header_list_size = max_header_list_size
+        # Setting a value only queues it; acknowledging it here, before the
+        # connection is initiated, makes the initial SETTINGS frame carry it.
+        self.conn.local_settings.acknowledge()
+        self.conn.decoder.max_header_list_size = max_header_list_size
+        self.headers_warnsize: int = settings.getint("DOWNLOAD_HEADERS_WARNSIZE")
 
         # ID of the next request stream
         # Following the convention - 'Streams initiated by a client MUST
@@ -306,6 +325,22 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             events = self.conn.receive_data(data)
             self._handle_events(events)
         except H2Error as e:
+            if isinstance(e, DenialOfServiceError):
+                # h2 only raises this when the remote peer disregards the
+                # SETTINGS_MAX_HEADER_LIST_SIZE that we advertised.
+                self._lose_connection_with_error(
+                    [
+                        ResponseHeadersTooLargeError(
+                            get_headers_maxsize_msg(
+                                None,
+                                self._headers_maxsize,
+                                self.metadata["uri"].toBytes().decode(),
+                            )
+                        )
+                    ]
+                )
+                return
+
             if isinstance(e, FrameTooLargeError):
                 # hyper-h2 does not drop the connection in this scenario, we
                 # need to abort the connection manually.

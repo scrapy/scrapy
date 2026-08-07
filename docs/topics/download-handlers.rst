@@ -112,6 +112,8 @@ these exceptions.
 
 .. autoexception:: scrapy.exceptions.ResponseDataLossError
 
+.. autoexception:: scrapy.exceptions.ResponseHeadersTooLargeError
+
 .. autoexception:: scrapy.exceptions.UnsupportedURLSchemeError
 
 .. _download-handlers-ref:
@@ -130,17 +132,46 @@ using different handlers.
 Here is a comparison of some features of the built-in HTTP handlers, see the
 individual handler docs for more differences:
 
-================== ================= ===================== ====================
-Feature            H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
-================== ================= ===================== ====================
-Requires asyncio   No                No                    Yes
-Requires a reactor Yes               Yes                   No
-HTTP/1.1           No                Yes                   Yes
-HTTP/2             Yes               No                    Yes
-TLS implementation ``cryptography``  ``cryptography``      Stdlib ``ssl``
-HTTP proxies       No                Yes                   Yes
-SOCKS proxies      No                No                    Yes
-================== ================= ===================== ====================
+.. list-table::
+    :header-rows: 1
+
+    * - Feature
+      - H2DownloadHandler
+      - HTTP11DownloadHandler
+      - HttpxDownloadHandler
+    * - Requires asyncio
+      - No
+      - No
+      - Yes
+    * - Requires a reactor
+      - Yes
+      - Yes
+      - No
+    * - HTTP/1.1
+      - No
+      - Yes
+      - Yes
+    * - HTTP/2
+      - Yes
+      - No
+      - Yes
+    * - TLS implementation
+      - ``cryptography``
+      - ``cryptography``
+      - Stdlib ``ssl``
+    * - HTTP proxies
+      - No
+      - Yes
+      - Yes
+    * - SOCKS proxies
+      - No
+      - No
+      - Yes
+    * - Response header size limit
+      - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
+      - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
+      - | HTTP/1.1: 100 KiB
+        | HTTP/2: 64 KiB
 
 You can find additional HTTP download handlers in the
 scrapy-download-handlers-incubator_ package. This package is made by the Scrapy
@@ -310,6 +341,12 @@ Other limitations:
 -   The handler creates a separate connection pool for each proxy URL (due to
     limitations of ``httpx``) which may lead to higher resource usage when
     using proxy rotation.
+
+-   ``httpx`` does not allow configuring the response header size limit of its
+    HTTP client, so :setting:`DOWNLOAD_HEADERS_MAXSIZE` and
+    :setting:`DOWNLOAD_HEADERS_WARNSIZE` have no effect. Over HTTP/1.1 the
+    limit is also approximate, as it only applies while the response head is
+    still incomplete, so a complete head slightly above it is accepted.
 
 .. setting:: HTTPX_HTTP2_ENABLED
 

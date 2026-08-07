@@ -15,6 +15,7 @@ from twisted.web.client import ResponseFailed
 from scrapy.exceptions import DownloadCancelledError
 from scrapy.http.headers import Headers
 from scrapy.utils._download_handlers import (
+    get_headers_warnsize_msg,
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
@@ -368,6 +369,22 @@ class Stream:
                 self._response["status"] = int(value)
             else:
                 self._response["headers"].appendlist(name, value)
+
+        # DOWNLOAD_HEADERS_MAXSIZE is enforced by the HPACK decoder, which has
+        # no equivalent hook for a warning, so the warning happens here instead,
+        # using the same accounting that RFC 9113 §6.5.2 defines. Headers are
+        # already decoded at this point, so character counts stand in for the
+        # octet counts of the specification, which only differ for non-ASCII
+        # values.
+        headers_warnsize = self._protocol.headers_warnsize
+        if headers_warnsize:
+            headers_size = sum(len(name) + len(value) + 32 for name, value in headers)
+            if headers_size > headers_warnsize:
+                logger.warning(
+                    get_headers_warnsize_msg(
+                        headers_size, headers_warnsize, self._request.url
+                    )
+                )
 
         # Check if we exceed the allowed max data size which can be received
         expected_size = int(self._response["headers"].get(b"Content-Length", -1))
