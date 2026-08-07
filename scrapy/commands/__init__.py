@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.http import Request
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import global_object_name
@@ -24,6 +25,27 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler, CrawlerProcessBase
     from scrapy.settings import Settings
+
+
+def _add_curl_option(parser: argparse.ArgumentParser) -> None:
+    """Register the ``--curl`` option on commands that accept a URL."""
+    parser.add_argument(
+        "--curl",
+        metavar="COMMAND",
+        default=None,
+        help="build the request from a curl command, e.g. "
+        "--curl 'curl -d a=1 https://example.com'; cannot be combined "
+        "with a URL argument",
+    )
+
+
+def _request_from_curl(curl_command: str, **kwargs: Any) -> Request:
+    """Build a :class:`~scrapy.Request` from a curl command, reporting parsing
+    errors as :exc:`~scrapy.exceptions.UsageError`."""
+    try:
+        return Request.from_curl(curl_command, **kwargs)
+    except ValueError as e:
+        raise UsageError(str(e), print_help=False) from e
 
 
 class ScrapyCommand(ABC):
