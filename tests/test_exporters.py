@@ -108,26 +108,26 @@ class TestBaseItemExporter(ABC):
 
     def test_fields_to_export(self):
         ie = self._get_exporter(fields_to_export=["name"])
-        assert list(ie._get_serialized_fields(self.i)) == [("name", "John\xa3")]
+        assert list(ie.get_serialized_fields(self.i)) == [("name", "John\xa3")]
 
         ie = self._get_exporter(fields_to_export=["name"], encoding="latin-1")
-        _, name = next(iter(ie._get_serialized_fields(self.i)))
+        _, name = next(iter(ie.get_serialized_fields(self.i)))
         assert isinstance(name, str)
         assert name == "John\xa3"
 
         ie = self._get_exporter(fields_to_export={"name": "名稱"})
-        assert list(ie._get_serialized_fields(self.i)) == [("名稱", "John\xa3")]
+        assert list(ie.get_serialized_fields(self.i)) == [("名稱", "John\xa3")]
 
     def test_field_order(self):
         item = self.item_class(age="22", name="John\xa3")
         ie = self._get_exporter()
-        assert [name for name, _ in ie._get_serialized_fields(item)] == ["name", "age"]
+        assert [name for name, _ in ie.get_serialized_fields(item)] == ["name", "age"]
 
     def test_field_order_dict_item(self):
         ie = self._get_exporter()
-        assert [name for name, _ in ie._get_serialized_fields({"age": "22"})] == ["age"]
+        assert [name for name, _ in ie.get_serialized_fields({"age": "22"})] == ["age"]
         assert [
-            name for name, _ in ie._get_serialized_fields({"age": "22", "name": "John"})
+            name for name, _ in ie.get_serialized_fields({"age": "22", "name": "John"})
         ] == ["age", "name"]
 
     def test_field_custom_serializer(self):
