@@ -6,17 +6,18 @@ import ctypes
 import platform
 import sys
 from pprint import pformat as pformat_
+from typing import Any
 
 from packaging.version import Version as parse_version
 
 
-def _enable_windows_terminal_processing():
+def _enable_windows_terminal_processing() -> bool:
     # https://stackoverflow.com/a/36760881
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
     return bool(kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7))
 
 
-def _tty_supports_color():
+def _tty_supports_color() -> bool:
     if sys.platform != "win32":
         return True
 
@@ -28,23 +29,23 @@ def _tty_supports_color():
     return _enable_windows_terminal_processing()
 
 
-def _colorize(text, colorize=True):
+def _colorize(text: str, colorize: bool = True) -> str:
+    # pylint: disable=no-name-in-module
     if not colorize or not sys.stdout.isatty() or not _tty_supports_color():
         return text
     try:
-        from pygments import highlight
+        from pygments import highlight  # noqa: PLC0415
     except ImportError:
         return text
-    else:
-        from pygments.formatters import TerminalFormatter
-        from pygments.lexers import PythonLexer
+    from pygments.formatters import TerminalFormatter  # noqa: PLC0415
+    from pygments.lexers import PythonLexer  # noqa: PLC0415
 
-        return highlight(text, PythonLexer(), TerminalFormatter())
+    return highlight(text, PythonLexer(), TerminalFormatter())
 
 
-def pformat(obj, *args, **kwargs):
+def pformat(obj: Any, *args: Any, **kwargs: Any) -> str:
     return _colorize(pformat_(obj), kwargs.pop("colorize", True))
 
 
-def pprint(obj, *args, **kwargs):
+def pprint(obj: Any, *args: Any, **kwargs: Any) -> None:
     print(pformat(obj, *args, **kwargs))

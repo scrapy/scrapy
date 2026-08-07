@@ -1,10 +1,22 @@
 """Boto/botocore helpers"""
 
+from __future__ import annotations
 
-def is_botocore_available():
-    try:
-        import botocore  # noqa: F401
+from importlib.util import find_spec
+from typing import TYPE_CHECKING
 
-        return True
-    except ImportError:
-        return False
+if TYPE_CHECKING:
+    from scrapy.settings import BaseSettings
+
+
+def is_botocore_available() -> bool:
+    return find_spec("botocore") is not None
+
+
+def _get_max_pool_connections(settings: BaseSettings) -> int:
+    """Return the maximum number of connections that AWS clients may keep in
+    their connection pool.
+    """
+    return settings.getint("AWS_MAX_POOL_CONNECTIONS") or settings.getint(
+        "REACTOR_THREADPOOL_MAXSIZE"
+    )

@@ -37,8 +37,8 @@ Modules and classes
 
 - ``scrapy.contrib.itemparser.ItemParser``
 - ``scrapy.contrib.itemparser.XPathItemParser``
-- ``scrapy.contrib.itemparser.parsers.``MapConcat`` *(ex. ``TreeExpander``)*
-- ``scrapy.contrib.itemparser.parsers.``TakeFirst``
+- ``scrapy.contrib.itemparser.parsers.MapConcat`` *(ex. ``TreeExpander``)*
+- ``scrapy.contrib.itemparser.parsers.TakeFirst``
 - ``scrapy.contrib.itemparser.parsers.Join``
 - ``scrapy.contrib.itemparser.parsers.Identity``
 
@@ -70,11 +70,11 @@ Alternative Public API Proposal
 - ``ItemLoader.replace_value()``
 - ``ItemLoader.load_item()`` *(returns loaded item)*
 
-- ``ItemLoader.get_stored_values()`` or ``ItemLoader.get_values()`` *(returns the ``ItemLoader values)*
+- ``ItemLoader.get_stored_values()`` or ``ItemLoader.get_values()`` *(returns the ``ItemLoader`` values)*
 - ``ItemLoader.get_output_value()``
 
-- ``ItemLoader.get_input_processor()`` or ``ItemLoader.get_in_processor()`` *(short version)* 
-- ``ItemLoader.get_output_processor()`` or ``ItemLoader.get_out_processor()`` *(short version)* 
+- ``ItemLoader.get_input_processor()`` or ``ItemLoader.get_in_processor()`` *(short version)*
+- ``ItemLoader.get_output_processor()`` or ``ItemLoader.get_out_processor()`` *(short version)*
 
 - ``ItemLoader.context``
 
@@ -87,10 +87,11 @@ Alternative Public API Proposal
 Usage example: declaring Item Parsers
 =====================================
 
-::
+.. code-block:: python
 
    #!python
    from scrapy.contrib.itemparser import XPathItemParser, parsers
+
 
    class ProductParser(XPathItemParser):
        name_in = parsers.MapConcat(removetags, filterx)
@@ -101,7 +102,7 @@ Usage example: declaring Item Parsers
 Usage example: declaring parsers in Fields
 ==========================================
 
-::
+.. code-block:: python
 
    #!python
    class Product(Item):

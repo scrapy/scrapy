@@ -1,8 +1,12 @@
 """
 Some spiders used for testing and benchmarking
 """
+
+from __future__ import annotations
+
 import asyncio
 import time
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 from twisted.internet import defer
@@ -15,29 +19,66 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
-from scrapy.utils.test import get_from_asyncio_queue, get_web_client_agent_req
+from scrapy.utils.test import get_from_asyncio_queue
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
 
 class MockServerSpider(Spider):
-    def __init__(self, mockserver=None, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        mockserver: MockServer | None = None,
+        is_secure: bool = False,
+        **kwargs: Any,
+    ):
         super().__init__(*args, **kwargs)
         self.mockserver = mockserver
+        self.is_secure = is_secure
+
+
+class RawResponseSpider(MockServerSpider):
+    """Base class for spiders that fetch a response built by the test itself.
+
+    Subclasses return the body from :meth:`raw_body` and request
+    :attr:`raw_url`, which the mock server answers with that body verbatim
+    under :attr:`content_type`. This lets tests reach parsing code that only
+    a specific kind of response triggers while still going through a regular
+    crawl, instead of calling internal parsing methods directly.
+    """
+
+    name = "raw_response"
+    content_type = "text/plain"
+
+    def raw_body(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def raw_url(self) -> str:
+        assert self.mockserver
+        raw = (
+            "HTTP/1.1 200 OK\r\n"
+            f"Content-Type: {self.content_type}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            f"{self.raw_body()}"
+        )
+        return self.mockserver.url("/raw?" + urlencode({"raw": raw}))
 
 
 class MetaSpider(MockServerSpider):
-
     name = "meta"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.meta = {}
+        self.meta: dict[str, Any] = {}
 
     def closed(self, reason):
         self.meta["close_reason"] = reason
 
 
 class FollowAllSpider(MetaSpider):
-
     name = "follow"
     link_extractor = LinkExtractor()
 
@@ -59,7 +100,6 @@ class FollowAllSpider(MetaSpider):
 
 
 class DelaySpider(MetaSpider):
-
     name = "delay"
 
     def __init__(self, n=1, b=0, *args, **kwargs):
@@ -68,7 +108,7 @@ class DelaySpider(MetaSpider):
         self.b = b
         self.t1 = self.t2 = self.t2_err = 0
 
-    def start_requests(self):
+    async def start(self):
         self.t1 = time.time()
         url = self.mockserver.url(f"/delay?n={self.n}&b={self.b}")
         yield Request(url, callback=self.parse, errback=self.errback)
@@ -80,8 +120,45 @@ class DelaySpider(MetaSpider):
         self.t2_err = time.time()
 
 
-class SimpleSpider(MetaSpider):
+class LogSpider(MetaSpider):
+    name = "log_spider"
 
+    def log_debug(self, message: str, extra: dict[str, Any] | None = None):
+        self.logger.debug(message, extra=extra)
+
+    def log_info(self, message: str, extra: dict[str, Any] | None = None):
+        self.logger.info(message, extra=extra)
+
+    def log_warning(self, message: str, extra: dict[str, Any] | None = None):
+        self.logger.warning(message, extra=extra)
+
+    def log_error(self, message: str, extra: dict[str, Any] | None = None):
+        self.logger.error(message, extra=extra)
+
+    def log_critical(self, message: str, extra: dict[str, Any] | None = None):
+        self.logger.critical(message, extra=extra)
+
+    def parse(self, response):
+        pass
+
+
+class SlowSpider(DelaySpider):
+    name = "slow"
+
+    async def start(self):
+        # 1st response is fast
+        url = self.mockserver.url("/delay?n=0&b=0")
+        yield Request(url, callback=self.parse, errback=self.errback)
+
+        # 2nd response is slow
+        url = self.mockserver.url(f"/delay?n={self.n}&b={self.b}")
+        yield Request(url, callback=self.parse, errback=self.errback)
+
+    def parse(self, response):
+        yield Item()
+
+
+class SimpleSpider(MetaSpider):
     name = "simple"
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):
@@ -93,7 +170,6 @@ class SimpleSpider(MetaSpider):
 
 
 class AsyncDefSpider(SimpleSpider):
-
     name = "asyncdef"
 
     async def parse(self, response):
@@ -102,7 +178,6 @@ class AsyncDefSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioSpider(SimpleSpider):
-
     name = "asyncdef_asyncio"
 
     async def parse(self, response):
@@ -112,7 +187,6 @@ class AsyncDefAsyncioSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioReturnSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_return"
 
     async def parse(self, response):
@@ -123,7 +197,6 @@ class AsyncDefAsyncioReturnSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioReturnSingleElementSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_return_single_element"
 
     async def parse(self, response):
@@ -134,7 +207,6 @@ class AsyncDefAsyncioReturnSingleElementSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_reqs_return"
 
     async def parse(self, response):
@@ -143,7 +215,7 @@ class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
         status = await get_from_asyncio_queue(response.status)
         self.logger.info(f"Got response {status}, req_id {req_id}")
         if req_id > 0:
-            return
+            return None
         reqs = []
         for i in range(1, 3):
             req = Request(self.start_urls[0], dont_filter=True, meta={"req_id": i})
@@ -166,32 +238,27 @@ class AsyncDefDeferredDirectSpider(SimpleSpider):
     name = "asyncdef_deferred_direct"
 
     async def parse(self, response):
-        resp = await get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        yield {"code": resp.code}
+        await defer.succeed(None)
+        yield {"code": 200}
 
 
 class AsyncDefDeferredWrappedSpider(SimpleSpider):
     name = "asyncdef_deferred_wrapped"
 
     async def parse(self, response):
-        resp = await deferred_to_future(
-            get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        )
-        yield {"code": resp.code}
+        await deferred_to_future(defer.succeed(None))
+        yield {"code": 200}
 
 
 class AsyncDefDeferredMaybeWrappedSpider(SimpleSpider):
-    name = "asyncdef_deferred_wrapped"
+    name = "asyncdef_deferred_maybe_wrapped"
 
     async def parse(self, response):
-        resp = await maybe_deferred_to_future(
-            get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        )
-        yield {"code": resp.code}
+        await maybe_deferred_to_future(defer.succeed(None))
+        yield {"code": 200}
 
 
 class AsyncDefAsyncioGenSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_gen"
 
     async def parse(self, response):
@@ -201,7 +268,6 @@ class AsyncDefAsyncioGenSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioGenLoopSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_gen_loop"
 
     async def parse(self, response):
@@ -212,7 +278,6 @@ class AsyncDefAsyncioGenLoopSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_gen_complex"
     initial_reqs = 4
     following_reqs = 3
@@ -226,7 +291,7 @@ class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
             callback=cb,
         )
 
-    def start_requests(self):
+    async def start(self):
         for i in range(1, self.initial_reqs + 1):
             yield self._get_req(i)
 
@@ -246,7 +311,6 @@ class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
 
 
 class ItemSpider(FollowAllSpider):
-
     name = "item"
 
     def parse(self, response):
@@ -256,12 +320,29 @@ class ItemSpider(FollowAllSpider):
             yield {}
 
 
+class MaxItemsAndRequestsSpider(FollowAllSpider):
+    def __init__(self, max_items=10, max_requests=10, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_items = max_items
+        self.max_requests = max_requests
+
+    def parse(self, response):
+        self.items_scraped = 0
+        self.pages_crawled = 1  # account for the start url
+        for request in super().parse(response):
+            if self.pages_crawled < self.max_requests:
+                yield request
+                self.pages_crawled += 1
+            if self.items_scraped < self.max_items:
+                yield Item()
+                self.items_scraped += 1
+
+
 class DefaultError(Exception):
     pass
 
 
 class ErrorSpider(FollowAllSpider):
-
     name = "error"
     exception_cls = DefaultError
 
@@ -274,8 +355,7 @@ class ErrorSpider(FollowAllSpider):
             self.raise_exception()
 
 
-class BrokenStartRequestsSpider(FollowAllSpider):
-
+class BrokenStartSpider(FollowAllSpider):
     fail_before_yield = False
     fail_yielding = False
 
@@ -283,7 +363,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
         super().__init__(*a, **kw)
         self.seedsseen = []
 
-    def start_requests(self):
+    async def start(self):
         if self.fail_before_yield:
             1 / 0
 
@@ -294,23 +374,32 @@ class BrokenStartRequestsSpider(FollowAllSpider):
             if self.fail_yielding:
                 2 / 0
 
-        assert (
-            self.seedsseen
-        ), "All start requests consumed before any download happened"
+        assert self.seedsseen, "All seeds consumed before any download happened"
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get("seed"))
-        for req in super().parse(response):
-            yield req
+        yield from super().parse(response)
+
+
+class StartItemSpider(FollowAllSpider):
+    async def start(self):
+        yield {"name": "test item"}
+
+
+class StartGoodAndBadOutput(FollowAllSpider):
+    async def start(self):
+        yield {"a": "a"}
+        yield Request("data:,a")
+        yield "data:,b"
+        yield object()
 
 
 class SingleRequestSpider(MetaSpider):
-
     seed = None
     callback_func = None
     errback_func = None
 
-    def start_requests(self):
+    async def start(self):
         if isinstance(self.seed, Request):
             yield self.seed.replace(callback=self.parse, errback=self.on_error)
         else:
@@ -322,22 +411,24 @@ class SingleRequestSpider(MetaSpider):
             return self.callback_func(response)
         if "next" in response.meta:
             return response.meta["next"]
+        return None
 
     def on_error(self, failure):
         self.meta["failure"] = failure
         if callable(self.errback_func):
             return self.errback_func(failure)
+        return None
 
 
-class DuplicateStartRequestsSpider(MockServerSpider):
+class DuplicateStartSpider(MockServerSpider):
     dont_filter = True
     name = "duplicatestartrequests"
     distinct_urls = 2
     dupe_factor = 3
 
-    def start_requests(self):
-        for i in range(0, self.distinct_urls):
-            for j in range(0, self.dupe_factor):
+    async def start(self):
+        for i in range(self.distinct_urls):
+            for _ in range(self.dupe_factor):
                 url = self.mockserver.url(f"/echo?headers=1&body=test{i}")
                 yield Request(url, dont_filter=self.dont_filter)
 
@@ -355,15 +446,15 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     """
 
     name = "crawl_spider_with_parse_method"
-    custom_settings: dict = {
+    custom_settings: dict[str, Any] = {
         "RETRY_HTTP_CODES": [],  # no need to retry
     }
     rules = (Rule(LinkExtractor(), callback="parse", follow=True),)
 
-    def start_requests(self):
+    async def start(self):
         test_body = b"""
         <html>
-            <head><title>Page title<title></head>
+            <head><title>Page title</title></head>
             <body>
                 <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
                 <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->
@@ -414,10 +505,10 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
     name = "crawl_spider_with_errback"
     rules = (Rule(LinkExtractor(), callback="parse", errback="errback", follow=True),)
 
-    def start_requests(self):
+    async def start(self):
         test_body = b"""
         <html>
-            <head><title>Page title<title></head>
+            <head><title>Page title</title></head>
             <body>
                 <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
                 <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->
@@ -432,6 +523,23 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
 
     def errback(self, failure):
         self.logger.info("[errback] status %i", failure.value.response.status)
+
+
+class CrawlSpiderWithoutErrback(CrawlSpiderWithParseMethod):
+    name = "crawl_spider_without_errback"
+
+    async def start(self):
+        test_body = b"""
+        <html>
+            <head><title>Page title</title></head>
+            <body>
+                <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
+                <p><a href="/status?n=404">Item 404</a></p>  <!-- failure, no errback -->
+            </body>
+        </html>
+        """
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=test_body)
 
 
 class CrawlSpiderWithProcessRequestCallbackKeywordArguments(CrawlSpiderWithParseMethod):
@@ -451,7 +559,6 @@ class CrawlSpiderWithProcessRequestCallbackKeywordArguments(CrawlSpiderWithParse
 
 
 class BytesReceivedCallbackSpider(MetaSpider):
-
     full_response_length = 2**18
 
     @classmethod
@@ -460,9 +567,9 @@ class BytesReceivedCallbackSpider(MetaSpider):
         crawler.signals.connect(spider.bytes_received, signals.bytes_received)
         return spider
 
-    def start_requests(self):
+    async def start(self):
         body = b"a" * self.full_response_length
-        url = self.mockserver.url("/alpayload")
+        url = self.mockserver.url("/alpayload", is_secure=self.is_secure)
         yield Request(url, method="POST", body=body, errback=self.errback)
 
     def parse(self, response):
@@ -489,8 +596,11 @@ class HeadersReceivedCallbackSpider(MetaSpider):
         crawler.signals.connect(spider.headers_received, signals.headers_received)
         return spider
 
-    def start_requests(self):
-        yield Request(self.mockserver.url("/status"), errback=self.errback)
+    async def start(self):
+        yield Request(
+            self.mockserver.url("/status", is_secure=self.is_secure),
+            errback=self.errback,
+        )
 
     def parse(self, response):
         self.meta["response"] = response
@@ -507,3 +617,19 @@ class HeadersReceivedErrbackSpider(HeadersReceivedCallbackSpider):
     def headers_received(self, headers, body_length, request, spider):
         self.meta["headers_received"] = headers
         raise StopDownload(fail=True)
+
+
+class ExceptionSpider(Spider):
+    name = "exception"
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        raise ValueError("Exception in from_crawler method")
+
+
+class NoRequestsSpider(Spider):
+    name = "no_request"
+
+    async def start(self):
+        return
+        yield

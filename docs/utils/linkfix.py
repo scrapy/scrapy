@@ -18,7 +18,6 @@ from pathlib import Path
 
 
 def main():
-
     # Used for remembering the file (and its contents)
     # so we don't have to open the same file again.
     _filename = None
@@ -31,7 +30,7 @@ def main():
     try:
         with Path("build/linkcheck/output.txt").open(encoding="utf-8") as out:
             output_lines = out.readlines()
-    except IOError:
+    except OSError:
         print("linkcheck output not found; please run linkcheck first.")
         sys.exit(1)
 
@@ -50,7 +49,6 @@ def main():
             else:
                 # If this is a new file
                 if newfilename != _filename:
-
                     # Update the previous file
                     if _filename:
                         Path(_filename).write_text(_contents, encoding="utf-8")

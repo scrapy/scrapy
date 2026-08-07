@@ -1,31 +1,56 @@
+from __future__ import annotations
+
 import inspect
 import logging
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Iterable
+    from types import CoroutineType, ModuleType
+
+    from twisted.internet.defer import Deferred
+
+    from scrapy import Request
+    from scrapy.spiderloader import SpiderLoaderProtocol
+
+
 logger = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
 
-def iterate_spider_output(result):
+
+# https://stackoverflow.com/questions/60222982
+@overload
+def iterate_spider_output(result: AsyncGenerator[_T]) -> AsyncGenerator[_T]: ...  # type: ignore[overload-overlap]
+
+
+@overload
+def iterate_spider_output(result: CoroutineType[Any, Any, _T]) -> Deferred[_T]: ...
+
+
+@overload
+def iterate_spider_output(result: _T) -> Iterable[Any]: ...
+
+
+def iterate_spider_output(
+    result: Any,
+) -> Iterable[Any] | AsyncGenerator[_T] | Deferred[_T]:
     if inspect.isasyncgen(result):
         return result
+    d: Deferred[_T] = deferred_from_coro(result)
     if inspect.iscoroutine(result):
-        d = deferred_from_coro(result)
-        d.addCallback(iterate_spider_output)
-        return d
-    return arg_to_iter(deferred_from_coro(result))
+        return d.addCallback(iterate_spider_output)
+    return arg_to_iter(d)
 
 
-def iter_spider_classes(module):
+def iter_spider_classes(module: ModuleType) -> Iterable[type[Spider]]:
     """Return an iterator over all spider classes defined in the given module
     that can be instantiated (i.e. which have name)
     """
-    # this needs to be imported here until get rid of the spider manager
-    # singleton in scrapy.spider.spiders
-    from scrapy.spiders import Spider
-
     for obj in vars(module).values():
         if (
             inspect.isclass(obj)
@@ -36,9 +61,43 @@ def iter_spider_classes(module):
             yield obj
 
 
+@overload
 def spidercls_for_request(
-    spider_loader, request, default_spidercls=None, log_none=False, log_multiple=False
-):
+    spider_loader: SpiderLoaderProtocol,
+    request: Request,
+    default_spidercls: type[Spider],
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> type[Spider]: ...
+
+
+@overload
+def spidercls_for_request(
+    spider_loader: SpiderLoaderProtocol,
+    request: Request,
+    default_spidercls: None,
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> type[Spider] | None: ...
+
+
+@overload
+def spidercls_for_request(
+    spider_loader: SpiderLoaderProtocol,
+    request: Request,
+    *,
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> type[Spider] | None: ...
+
+
+def spidercls_for_request(
+    spider_loader: SpiderLoaderProtocol,
+    request: Request,
+    default_spidercls: type[Spider] | None = None,
+    log_none: bool = False,
+    log_multiple: bool = False,
+) -> type[Spider] | None:
     """Return a spider class that handles the given Request.
 
     This will look for the spiders that can handle the given request (using

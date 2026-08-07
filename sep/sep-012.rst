@@ -83,10 +83,10 @@ example:
 
    $ cat project/spiders/google.py
 
-::
+.. code-block:: python
 
    class GooglecomSpider(BaseSpider):
-      name = 'google'
-      allowed_domains = ['google.com']
+       name = "google"
+       allowed_domains = ["google.com"]
 
 .. note:: ``spider_allowed_domains`` becomes optional as only ``OffsiteMiddleware`` uses it.
