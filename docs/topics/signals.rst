@@ -333,6 +333,39 @@ spider_error
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.Spider` object
 
+spider_state_loaded
+~~~~~~~~~~~~~~~~~~~
+
+.. signal:: spider_state_loaded
+.. function:: spider_state_loaded(state)
+
+    Sent by the :class:`~scrapy.extensions.spiderstate.SpiderState` extension
+    after spider state has been loaded at the start of a crawl. The state dict
+    is either empty (first run) or restored from the JOBDIR file (resumed run).
+
+    Handlers may read or modify the state dict before any items are scraped.
+
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+    :param state: the spider state dict
+    :type state: dict
+
+spider_state_saving
+~~~~~~~~~~~~~~~~~~~
+
+.. signal:: spider_state_saving
+.. function:: spider_state_saving(state)
+
+    Sent by the :class:`~scrapy.extensions.spiderstate.SpiderState` extension
+    just before spider state is written to disk at the end of a crawl. Handlers
+    may write values into the state dict to have them persisted for the next
+    run.
+
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+    :param state: the spider state dict
+    :type state: dict
+
 feed_slot_closed
 ~~~~~~~~~~~~~~~~
 
@@ -357,6 +390,26 @@ feed_exporter_closed
     after all feed exporting has been handled.
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+feed_slots_initialized
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. signal:: feed_slots_initialized
+.. function:: feed_slots_initialized(slots)
+
+    Sent by the :class:`~scrapy.extensions.feedexport.FeedExporter` extension
+    when its feed slots are finalized and ready for use.
+
+    When the :class:`~scrapy.extensions.spiderstate.SpiderState` extension is
+    active (i.e. :setting:`JOBDIR` is set), this signal is sent right after
+    :signal:`spider_state_loaded`, once any saved batch IDs have been applied to
+    the slots. Otherwise it is sent at :signal:`engine_started`, which is the
+    earliest point at which it is known that no state will be loaded.
+
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+    :param slots: the list of feed slots
+    :type slots: list[:class:`scrapy.extensions.feedexport.FeedSlot`]
 
 memusage_warning_reached
 ~~~~~~~~~~~~~~~~~~~~~~~~
