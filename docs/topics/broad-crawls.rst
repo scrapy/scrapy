@@ -68,6 +68,10 @@ should pick a concurrency where CPU usage is at 80-90%.
 Increasing concurrency also increases memory usage. If memory usage is a
 concern, you might need to lower your global concurrency limit accordingly.
 
+Concurrency also drives how many connections stay open, which is capped
+separately by :setting:`CONCURRENT_CONNECTIONS_PER_HANDLER`. See
+:ref:`faq-too-many-open-files` if a crawl runs out of file descriptors.
+
 
 Increase Twisted IO thread pool maximum size
 ============================================

@@ -557,6 +557,44 @@ project name). This name will be used for the logging too.
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
 
+.. setting:: CONCURRENT_CONNECTIONS_PER_HANDLER
+
+CONCURRENT_CONNECTIONS_PER_HANDLER
+----------------------------------
+
+Default: ``None``
+
+.. versionadded:: VERSION
+
+The maximum number of connections that a single :ref:`download handler
+<topics-download-handlers>` may keep open, whether they are being used for a
+request or kept around for reuse by a later request. Use ``0`` for no limit.
+
+``None`` lets Scrapy pick a limit that fits the system it runs on. How it is
+picked may change in any future Scrapy version, without a deprecation period,
+so set a number if you need it to stay the same.
+
+Scrapy currently picks half of the maximum number of open files allowed for the
+process, or 480 on Windows, where :func:`select.select` handles at most 512
+sockets.
+
+Each download handler applies this limit on its own, so a crawl of both
+``http://`` and ``https://`` URLs may open up to twice as many connections.
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
+additionally applies it once per proxy, since httpx `cannot use a different
+proxy per request <https://github.com/pydantic/httpx2/issues/818>`_.
+
+HTTP/2 multiplexes requests over a single connection per remote, so
+:class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` reaches this
+limit only after as many remotes, regardless of concurrency, and it keeps a
+connection that is serving requests even if that leaves it over the limit.
+
+How the limit is reached also depends on the handler: some close the connection
+that has been idle the longest to make room for a new one, others make requests
+wait for a connection to free up. Either way, a value below
+:setting:`CONCURRENT_REQUESTS` keeps the crawl from reaching the configured
+concurrency, and logs a warning.
+
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
@@ -592,6 +630,21 @@ See also: :ref:`topics-autothrottle` and its
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
+
+.. setting:: CONNECTION_KEEPALIVE_TIMEOUT
+
+CONNECTION_KEEPALIVE_TIMEOUT
+----------------------------
+
+Default: ``240.0``
+
+.. versionadded:: VERSION
+
+How long, in seconds, a connection is kept open for reuse after the response it
+was serving is complete. Use ``0`` to close connections as soon as they become
+idle.
+
+Servers usually close idle connections earlier than this on their own.
 
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 

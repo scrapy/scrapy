@@ -737,11 +737,9 @@ class TestHttps2ClientProtocol:
             yield make_request_dfd(client, request)
 
         for err in exc_info.value.reasons:
-            from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
-
             if isinstance(err, DownloadTimeoutError):
                 assert (
-                    f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s"
+                    f"Connection was IDLE for more than {client._idle_timeout}s"
                     in str(err)
                 )
                 break
