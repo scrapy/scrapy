@@ -133,15 +133,12 @@ and defines some attributes and methods:
 How to run our spider
 ---------------------
 
-To put our spider to work, go to the project's top level directory (the one with the file 'scrapy.cfg') already in it and run:
-
-   scrapy genspider quotes quotes.toscrape.com
-
-And then run
+To put our spider to work, go to the project's top level directory, the one
+that contains ``scrapy.cfg``, and run::
 
    scrapy crawl quotes
 
-This last command runs the spider named ``quotes`` that we've just added, that
+This command runs the spider named ``quotes`` that we've just added, that
 will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
 similar to this::
 
