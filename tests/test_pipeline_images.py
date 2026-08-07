@@ -10,6 +10,7 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from types import SimpleNamespace
 from typing import Any
+from unittest import mock
 
 import attr
 import pytest
@@ -18,9 +19,11 @@ from itemadapter import ItemAdapter
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.files import GCSFilesStore, S3FilesStore, _md5sum
+from scrapy.pipelines.files import FilesPipeline, GCSFilesStore, S3FilesStore, _md5sum
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.test import get_crawler
+from tests.test_pipeline_files import CrawlerAwareStore
+from tests.utils.cloud import mock_google_cloud_storage
 from tests.utils.decorators import coroutine_test
 from tests.utils.media_pipelines import DUMMY_SPIDER_INFO
 
@@ -590,43 +593,60 @@ class TestImagesPipelineCustomSettings:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
 
-    def test_images_store_s3_acl_setting_used(self, tmp_path):
-        old_policy = S3FilesStore.POLICY
-
-        try:
-            crawler = get_crawler(
-                None,
-                {
-                    "IMAGES_STORE": tmp_path,
-                    "IMAGES_STORE_S3_ACL": "public-read",
-                    "FILES_STORE_S3_ACL": "private",
+    def test_media_storages_resolve_setting(self):
+        crawler = get_crawler(
+            None,
+            {
+                "IMAGES_STORE": "mystore://example.com/",
+                "MEDIA_STORAGES": {
+                    "mystore": "tests.test_pipeline_files.CrawlerAwareStore"
                 },
+            },
+        )
+        store = ImagesPipeline.from_crawler(crawler).store
+        assert isinstance(store, CrawlerAwareStore)
+        assert store.acl_setting == "IMAGES_STORE_S3_ACL"
+
+    @pytest.mark.requires_botocore
+    def test_images_store_s3_acl_setting_used(self):
+        crawler = get_crawler(
+            None,
+            {
+                "FILES_STORE": "s3://bucket/files/",
+                "IMAGES_STORE": "s3://bucket/images/",
+                "FILES_STORE_S3_ACL": "private",
+                "IMAGES_STORE_S3_ACL": "public-read",
+            },
+        )
+
+        assert FilesPipeline.from_crawler(crawler).store.POLICY == "private"
+        assert ImagesPipeline.from_crawler(crawler).store.POLICY == "public-read"
+        assert S3FilesStore.POLICY == "private"
+
+    def test_images_store_gcs_acl_setting_used(self):
+        pytest.importorskip("google.cloud.storage")
+
+        client_mock, bucket_mock, _ = mock_google_cloud_storage()
+        bucket_mock.test_iam_permissions.return_value = [
+            "storage.objects.get",
+            "storage.objects.create",
+        ]
+        crawler = get_crawler(
+            None,
+            {
+                "FILES_STORE": "gs://bucket/files/",
+                "IMAGES_STORE": "gs://bucket/images/",
+                "FILES_STORE_GCS_ACL": "",
+                "IMAGES_STORE_GCS_ACL": "authenticatedRead",
+            },
+        )
+
+        with mock.patch("google.cloud.storage.Client", return_value=client_mock):
+            assert FilesPipeline.from_crawler(crawler).store.POLICY is None
+            assert (
+                ImagesPipeline.from_crawler(crawler).store.POLICY == "authenticatedRead"
             )
-
-            ImagesPipeline.from_crawler(crawler)
-
-            assert S3FilesStore.POLICY == "public-read"
-        finally:
-            S3FilesStore.POLICY = old_policy
-
-    def test_images_store_gcs_acl_setting_used(self, tmp_path):
-        old_policy = GCSFilesStore.POLICY
-
-        try:
-            crawler = get_crawler(
-                None,
-                {
-                    "IMAGES_STORE": tmp_path,
-                    "IMAGES_STORE_GCS_ACL": "authenticatedRead",
-                    "FILES_STORE_GCS_ACL": "",
-                },
-            )
-
-            ImagesPipeline.from_crawler(crawler)
-
-            assert GCSFilesStore.POLICY == "authenticatedRead"
-        finally:
-            GCSFilesStore.POLICY = old_policy
+        assert GCSFilesStore.POLICY is None
 
 
 def _create_image(format_: str, *a: Any, **kw: Any) -> tuple[Image.Image, io.BytesIO]:

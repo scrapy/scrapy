@@ -315,6 +315,50 @@ For more information, see `Predefined ACLs`_ in the Google Cloud Platform Develo
 
 .. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
 
+.. _media-pipeline-custom-storage:
+
+Custom storage
+--------------
+
+.. setting:: MEDIA_STORAGES
+
+.. versionadded:: VERSION
+
+The ``MEDIA_STORAGES`` setting maps URL schemes to storage classes, so that you
+can support additional schemes or replace a built-in storage:
+
+.. code-block:: python
+
+    MEDIA_STORAGES = {"myscheme": "myproject.storages.MyStorage"}
+    FILES_STORE = "myscheme://example.com/files/"
+
+It is merged into ``MEDIA_STORAGES_BASE``, which holds the built-in storages.
+
+A storage class receives the :setting:`FILES_STORE` or :setting:`IMAGES_STORE`
+value, and must define ``stat_file`` and ``persist_file``:
+
+.. code-block:: python
+
+    class MyStorage:
+        def __init__(self, uri, *, acl=None):
+            self.uri = uri
+            self.acl = acl
+
+        @classmethod
+        def from_crawler(cls, crawler, uri, *, resolve):
+            return cls(uri, acl=crawler.settings[resolve("FILES_STORE_ACL")])
+
+        def stat_file(self, path, info): ...
+
+        def persist_file(self, path, buf, info, meta=None, headers=None): ...
+
+*resolve* maps a setting name to the name that applies to the pipeline being
+built, so that a single storage class can be configured separately for files and
+for images: ``resolve("FILES_STORE_ACL")`` returns ``"FILES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.files.FilesPipeline` and ``"IMAGES_STORE_ACL"`` for
+:class:`~scrapy.pipelines.images.ImagesPipeline`, and takes :ref:`per-class
+setting names <media-pipeline-class-settings>` into account.
+
 Usage example
 =============
 
@@ -368,6 +412,8 @@ For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
 
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
+
+.. _media-pipeline-class-settings:
 
 If you have multiple image pipelines inheriting from :class:`ImagesPipeline`
 and you want to have different settings in different pipelines you can set
