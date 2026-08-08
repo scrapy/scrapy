@@ -33,14 +33,18 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http_resources import PayloadResource, put_child
 from tests.mockserver.utils import ssl_context_factory
+from tests.utils.cmdline import proc
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from twisted.internet.defer import Deferred
     from twisted.internet.interfaces import IListeningPort
     from twisted.web.iweb import IBodyProducer
 
     from scrapy.http import Response
+    from tests.mockserver.http import MockServer
 
 
 class TestSlot:
@@ -173,6 +177,39 @@ class TestContextFactory(TestContextFactoryBase):
                 message="Attempting to mutate a Context after a Connection was created",
             )
             factory.creatorForNetloc(b"website.tld", 443)
+
+    @pytest.mark.parametrize("verify_certs", [False, True])
+    def test_keylog(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        verify_certs: bool,
+    ) -> None:
+        """The key log callback should be set with and without verification."""
+        monkeypatch.setenv("SSLKEYLOGFILE", str(tmp_path / "keylog"))
+        crawler = get_crawler(
+            settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": verify_certs}
+        )
+        factory: _ScrapyClientContextFactory = _load_context_factory_from_settings(
+            crawler
+        )
+        creator = factory.creatorForNetloc(b"website.tld", 443)
+        conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
+        assert conn.get_context()._keylog_callback is not None
+
+    def test_keylog_ignore_environment(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mockserver: MockServer,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        _, out, err = proc(
+            "fetch", mockserver.url("/text", is_secure=True), python_args=("-E",)
+        )
+        assert out.strip() == "Works", err
+        assert not keylog_file.exists()
 
     def test_ctx_flags(self, factory: _ScrapyClientContextFactory) -> None:
         """The context should have the expected flags set."""

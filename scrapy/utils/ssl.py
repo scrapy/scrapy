@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import logging
+import os
 import ssl
+import sys
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
 
 import OpenSSL._util as pyOpenSSLutil
@@ -53,6 +56,13 @@ def _get_tls_version_limits(
     )
 
 
+def _get_keylog_filename() -> str | None:
+    """Return the path where TLS session keys should be logged, or ``None``."""
+    if sys.flags.ignore_environment:
+        return None
+    return os.environ.get("SSLKEYLOGFILE")
+
+
 # stdlib ssl module utils
 
 _STDLIB_VERSION_MAP: dict[str, ssl.TLSVersion] = {
@@ -89,6 +99,8 @@ def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
         ctx.maximum_version = tls_max_ver
     if ciphers_setting:
         ctx.set_ciphers(ciphers_setting)
+    if keylog_filename := _get_keylog_filename():
+        ctx.keylog_filename = keylog_filename
     return ctx
 
 
@@ -101,6 +113,8 @@ def _make_insecure_ssl_ctx() -> ssl.SSLContext:
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
+    if keylog_filename := _get_keylog_filename():
+        ctx.keylog_filename = keylog_filename
     return ctx
 
 
@@ -119,6 +133,20 @@ def _log_sslobj_debug_info(sslobj: ssl.SSLObject) -> None:
 
 
 # pyOpenSSL utils
+
+
+def _set_keylog_callback(ctx: OpenSSL.SSL.Context) -> None:
+    """Make *ctx* write TLS session keys to the key log file, if enabled."""
+    keylog_filename = _get_keylog_filename()
+    if not keylog_filename:
+        return
+    keylog_path = Path(keylog_filename)
+
+    def write_keylog_line(connection: OpenSSL.SSL.Connection, line: bytes) -> None:
+        with keylog_path.open("ab") as f:
+            f.write(line + b"\n")
+
+    ctx.set_keylog_callback(write_keylog_line)
 
 
 def _ffi_buf_to_string(buf: Any) -> str:
