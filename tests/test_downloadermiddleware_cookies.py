@@ -1,8 +1,10 @@
 import logging
 from collections.abc import Iterable
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, NamedTuple
 
 import pytest
+from _pytest.mark import ParameterSet
 
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
@@ -58,6 +60,300 @@ def _cookies_to_set_cookie_list(cookies: CookiesT) -> Iterable[str]:
             for cookie in _to_verbose_cookies(cookies)
         ),
     )
+
+
+@dataclass(frozen=True)
+class _DomainSet:
+    """Related domains used to build cookie domain scenarios."""
+
+    domain: str
+    sub: str
+    super_domain: str | None = None
+    sibling: str | None = None
+
+
+_DOMAIN_SETS = {
+    "private": _DomainSet(
+        domain="books.toscrape.com",
+        sub="a.books.toscrape.com",
+        super_domain="toscrape.com",
+        sibling="quotes.toscrape.com",
+    ),
+    # Every domain here is a public suffix, except for the subdomain.
+    "public": _DomainSet(
+        domain="cc.ak.us",
+        sub="a.cc.ak.us",
+        super_domain="ak.us",
+        sibling="lib.ak.us",
+    ),
+    "dotless": _DomainSet(domain="example-host", sub="a.example-host"),
+}
+
+_PUBLIC_SUFFIXES = frozenset({"ak.us", "cc.ak.us", "lib.ak.us"})
+
+_OTHER_DOMAIN = "example.com"
+
+
+class _Limitation(NamedTuple):
+    reason: str
+    dropped: bool
+
+
+_SUBDOMAIN_LEAK = _Limitation(
+    "Cookies that must be limited to a single host are sent to its subdomains",
+    dropped=False,
+)
+_EMPTY_DOMAIN_DROPPED = _Limitation(
+    "Cookies with an empty Domain attribute are dropped instead of being"
+    " limited to the host of the request",
+    dropped=True,
+)
+_DOTLESS_DOMAIN_DROPPED = _Limitation(
+    "Cookies with a Domain attribute without dots are dropped (#6410)",
+    dropped=True,
+)
+
+_KNOWN_LIMITATIONS: dict[tuple[str, str], _Limitation] = {
+    ("private", "unset"): _SUBDOMAIN_LEAK,
+    ("private", "none"): _SUBDOMAIN_LEAK,
+    ("public", "unset"): _SUBDOMAIN_LEAK,
+    ("public", "none"): _SUBDOMAIN_LEAK,
+    ("public", "self"): _SUBDOMAIN_LEAK,
+    ("public", "dot-self"): _SUBDOMAIN_LEAK,
+    ("private", "empty"): _EMPTY_DOMAIN_DROPPED,
+    ("private", "dot"): _EMPTY_DOMAIN_DROPPED,
+    ("public", "empty"): _EMPTY_DOMAIN_DROPPED,
+    ("public", "dot"): _EMPTY_DOMAIN_DROPPED,
+    ("dotless", "empty"): _EMPTY_DOMAIN_DROPPED,
+    ("dotless", "dot"): _EMPTY_DOMAIN_DROPPED,
+    ("dotless", "self"): _DOTLESS_DOMAIN_DROPPED,
+    ("dotless", "dot-self"): _DOTLESS_DOMAIN_DROPPED,
+}
+
+
+def _domain_match(host: str, domain: str) -> bool:
+    """Implement the domain matching algorithm of RFC 6265, section 5.1.3."""
+    return host == domain or host.endswith(f".{domain}")
+
+
+def _store(request_domain: str, cookie_domain: str | None) -> tuple[str, bool] | None:
+    """Implement the storage model of RFC 6265, section 5.3, steps 5 and 6.
+
+    Given the domain of the request that carried the cookie, and the value of
+    the ``Domain`` attribute of the cookie (`None` if unset), return the domain
+    the cookie is stored for and whether it is a host-only cookie, or `None` if
+    the cookie must be ignored.
+    """
+    if cookie_domain is None:
+        return request_domain, True
+    domain = cookie_domain.removeprefix(".").lower()
+    if not domain:
+        return request_domain, True
+    if domain in _PUBLIC_SUFFIXES:
+        return (request_domain, True) if domain == request_domain else None
+    if not _domain_match(request_domain, domain):
+        return None
+    return domain, False
+
+
+def _is_sent(stored: tuple[str, bool] | None, request_domain: str) -> bool:
+    if stored is None:
+        return False
+    domain, host_only = stored
+    if host_only:
+        return request_domain == domain
+    return _domain_match(request_domain, domain)
+
+
+def _cookie_domains(domains: _DomainSet) -> Iterable[tuple[str, str | None]]:
+    yield "unset", None
+    yield "none", None
+    yield "empty", ""
+    yield "dot", "."
+    for label, domain in (
+        ("self", domains.domain),
+        ("sub", domains.sub),
+        ("super", domains.super_domain),
+        ("other", _OTHER_DOMAIN),
+    ):
+        if domain is None:
+            continue
+        yield label, domain
+        yield f"dot-{label}", f".{domain}"
+
+
+def _targets(domains: _DomainSet) -> Iterable[tuple[str, str, tuple[str, ...]]]:
+    yield "same", domains.domain, ("followup", "redirect", "relative-redirect")
+    yield "other", _OTHER_DOMAIN, ("followup", "redirect")
+    yield "sub", domains.sub, ("followup", "redirect")
+    if domains.super_domain is not None:
+        assert domains.sibling is not None
+        yield "super", domains.super_domain, ("followup", "redirect")
+        yield "sibling", domains.sibling, ("followup", "redirect")
+
+
+def _actual_store(
+    domains: _DomainSet, stored: tuple[str, bool] | None, limitation: _Limitation | None
+) -> tuple[str, bool] | None:
+    """Return the storage that Scrapy applies, given the RFC 6265 one and the
+    known limitation that applies, if any."""
+    if limitation is None:
+        return stored
+    if limitation.dropped:
+        return None
+    return domains.domain, False
+
+
+def _cookie_domain_params() -> Iterable[ParameterSet]:
+    for source in ("request", "response"):
+        for domain_set_id, domains in _DOMAIN_SETS.items():
+            for cookie_domain_id, cookie_domain in _cookie_domains(domains):
+                if cookie_domain_id == "unset":
+                    # Only the cookies parameter of Request can leave the
+                    # domain out; a Set-Cookie header always has one.
+                    if source == "response":
+                        continue
+                    cookies: CookiesT = {"a": "b"}
+                else:
+                    # domain is None for the "none" scenario.
+                    cookies = [{"name": "a", "value": "b", "domain": cookie_domain}]  # type: ignore[typeddict-item]
+                stored = _store(domains.domain, cookie_domain)
+                limitation = _KNOWN_LIMITATIONS.get((domain_set_id, cookie_domain_id))
+                actual = _actual_store(domains, stored, limitation)
+                for target_id, target, transitions in _targets(domains):
+                    cookies2 = _is_sent(stored, target)
+                    known = limitation if _is_sent(actual, target) != cookies2 else None
+                    for transition in transitions:
+                        # The Cookie header of the request that carries the
+                        # cookies only depends on the cookie domain, so it is
+                        # only worth checking once.
+                        cookies1 = (
+                            cookies2
+                            if source == "request"
+                            and target_id == "same"
+                            and transition == "followup"
+                            else None
+                        )
+                        yield pytest.param(
+                            source,
+                            cookies,
+                            domains.domain,
+                            target,
+                            transition,
+                            cookies1,
+                            cookies2,
+                            id=(
+                                f"{source}-{domain_set_id}-{cookie_domain_id}"
+                                f"-{target_id}-{transition}"
+                            ),
+                            marks=(
+                                [pytest.mark.xfail(strict=True, reason=known.reason)]
+                                if known
+                                else []
+                            ),
+                        )
+
+
+_LOCAL_HOST_DROPPED = "Cookies for localhost and IP-address hosts are dropped (#6410)"
+
+
+def _local_host_params() -> Iterable[ParameterSet]:
+    for host_id, host, host_domain in (
+        ("localhost", "localhost", "localhost"),
+        ("ipv4", "127.0.0.1", "127.0.0.1"),
+        ("ipv6", "[::1]", "::1"),
+    ):
+        for cookie_domain in (None, host_domain):
+            # Only IPv6 hosts also lose cookies without a Domain attribute.
+            known = cookie_domain is not None or host_id == "ipv6"
+            for source in ("request", "response"):
+                yield pytest.param(
+                    source,
+                    host,
+                    cookie_domain,
+                    id=f"{source}-{host_id}-{'self' if cookie_domain else 'unset'}",
+                    marks=(
+                        [pytest.mark.xfail(strict=True, reason=_LOCAL_HOST_DROPPED)]
+                        if known
+                        else []
+                    ),
+                )
+
+
+class TestCookieDomains:
+    """Check which domains a cookie is sent to, based on the domain of the
+    request or response that carried it and on its ``Domain`` attribute."""
+
+    def setup_method(self):
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        self.mw = CookiesMiddleware.from_crawler(crawler)
+        self.redirect_middleware = RedirectMiddleware.from_crawler(crawler)
+
+    @pytest.mark.parametrize(
+        ("source", "cookies", "domain", "target", "transition", "cookies1", "cookies2"),
+        list(_cookie_domain_params()),
+    )
+    def test_domain(
+        self,
+        source: str,
+        cookies: CookiesT,
+        domain: str,
+        target: str,
+        transition: str,
+        cookies1: bool | None,
+        cookies2: bool,
+    ) -> None:
+        url1 = f"https://{domain}/a"
+        url2 = "/b" if transition == "relative-redirect" else f"https://{target}/b"
+        redirect = transition != "followup"
+
+        request1 = Request(url1, cookies=cookies if source == "request" else None)
+        self.mw.process_request(request1)
+        if cookies1 is not None:
+            assert request1.headers.get("Cookie") == (b"a=b" if cookies1 else None)
+
+        headers: dict[str, Any] = {}
+        if redirect:
+            headers["Location"] = url2
+        if source == "response":
+            headers["Set-Cookie"] = _cookies_to_set_cookie_list(cookies)
+        response = Response(url1, status=301 if redirect else 200, headers=headers)
+        assert self.mw.process_response(request1, response) is response
+
+        if redirect:
+            request2 = self.redirect_middleware.process_response(request1, response)
+            assert isinstance(request2, Request)
+        else:
+            request2 = Request(url2)
+        self.mw.process_request(request2)
+        assert request2.headers.get("Cookie") == (b"a=b" if cookies2 else None)
+
+    @pytest.mark.parametrize(
+        ("source", "host", "cookie_domain"), list(_local_host_params())
+    )
+    def test_local_host(
+        self, source: str, host: str, cookie_domain: str | None
+    ) -> None:
+        cookies: list[VerboseCookie] = [{"name": "a", "value": "b"}]
+        if cookie_domain is not None:
+            cookies[0]["domain"] = cookie_domain
+
+        url1 = f"http://{host}/a"
+        request1 = Request(url1, cookies=cookies if source == "request" else None)
+        self.mw.process_request(request1)
+
+        headers = (
+            {"Set-Cookie": _cookies_to_set_cookie_list(cookies)}
+            if source == "response"
+            else {}
+        )
+        response = Response(url1, headers=headers)
+        assert self.mw.process_response(request1, response) is response
+
+        request2 = Request(f"http://{host}/b")
+        self.mw.process_request(request2)
+        assert request2.headers.get("Cookie") == b"a=b"
 
 
 class TestCookiesMiddleware:
