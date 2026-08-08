@@ -203,6 +203,33 @@ This means you can use many useful Python libraries providing such code:
 .. note:: If you want to ``await`` on Deferreds while using the asyncio reactor,
           you need to :ref:`wrap them<asyncio-await-dfd>`.
 
+Sometimes you need to call code that is not async-friendly at all, such as a
+third-party client library with no asynchronous support. Calling such code
+directly from a coroutine would block the underlying event loop, preventing
+Scrapy from doing any other work while it runs. To avoid this, you can wrap
+the blocking call with :func:`~scrapy.utils.decorators.inthread`, which runs
+it in a separate thread and returns an awaitable with the result:
+
+.. code-block:: python
+
+    from scrapy.utils.decorators import inthread
+
+
+    @inthread
+    def blocking_call(value):
+        # e.g. a call into a library with no async support
+        return some_sync_client.get(value)
+
+
+    class MySpider(Spider):
+        async def parse(self, response):
+            result = await blocking_call(response.url)
+            # ... use result to yield items and requests
+
+:func:`~scrapy.utils.decorators.inthread` uses :func:`asyncio.to_thread` when
+asyncio support is enabled, and Twisted's thread pool otherwise, so it works
+regardless of which reactor your project uses.
+
 Common use cases for asynchronous code include:
 
 * requesting data from websites, databases and other services (in
