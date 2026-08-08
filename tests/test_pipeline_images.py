@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import io
 import random
 import sys
@@ -18,7 +19,7 @@ from itemadapter import ItemAdapter
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.files import GCSFilesStore, S3FilesStore, _md5sum
+from scrapy.pipelines.files import GCSFilesStore, S3FilesStore, _checksum
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -222,10 +223,24 @@ class TestImagesPipeline:
         )
 
         buf.seek(0)
-        assert checksum == _md5sum(buf)
+        assert checksum == _checksum(buf)
         name = "3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert Path(self.tempdir, "full", name).read_bytes() == buf.getvalue()
         assert Path(self.tempdir, "thumbs", "small", name).exists()
+
+    @coroutine_test
+    async def test_image_downloaded_checksum_algorithm(self) -> None:
+        crawler = get_crawler(settings_dict={"IMAGES_CHECKSUM_ALGORITHM": "sha256"})
+        pipeline = ImagesPipeline(self.tempdir, crawler=crawler)
+        _, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
+        url = "https://dev.mydeco.com/mydeco.gif"
+        response = Response(url=url, body=buf.getvalue())
+
+        checksum = await pipeline.image_downloaded(
+            response, Request(url=url), DUMMY_SPIDER_INFO
+        )
+
+        assert checksum == hashlib.sha256(buf.getvalue()).hexdigest()
 
     def test_convert_image(self):
         SIZE = (100, 100)

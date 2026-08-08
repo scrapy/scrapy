@@ -1,5 +1,6 @@
 import base64
 import dataclasses
+import hashlib
 import logging
 import random
 import re
@@ -95,8 +96,12 @@ class TestFilesPipeline:
     def teardown_method(self):
         rmtree(self.tempdir)
 
-    def _create_pipeline(self, pipeline_cls: type[FilesPipeline]) -> FilesPipeline:
-        crawler = get_crawler(DefaultSpider, {"FILES_STORE": self.tempdir})
+    def _create_pipeline(
+        self, pipeline_cls: type[FilesPipeline], settings: dict[str, Any] | None = None
+    ) -> FilesPipeline:
+        crawler = get_crawler(
+            DefaultSpider, {"FILES_STORE": self.tempdir, **(settings or {})}
+        )
         crawler.spider = crawler._create_spider()
         crawler.engine = MagicMock(download_async=mocked_download_func)
         pipeline = pipeline_cls.from_crawler(crawler)
@@ -202,6 +207,37 @@ class TestFilesPipeline:
             result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
+
+    @coroutine_test
+    async def test_file_not_expired_without_checksum(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Stores that do not report checksums, e.g. those that cannot report
+        them for the configured algorithm, trigger a single warning."""
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore, "stat_file", return_value={"last_modified": time.time()}
+            ),
+            caplog.at_level(logging.WARNING),
+        ):
+            for item_url in ("http://example.com/1.pdf", "http://example.com/2.pdf"):
+                with mock.patch.object(
+                    FilesPipeline,
+                    "get_media_requests",
+                    return_value=[_prepare_request_object(item_url)],
+                ):
+                    result = await self.pipeline.process_item(
+                        _create_item_with_files(item_url)
+                    )
+                assert result["files"][0]["checksum"] is None
+        records = [
+            r
+            for r in caplog.records
+            if "does not report md5 checksums" in r.getMessage()
+        ]
+        assert len(records) == 1
+        assert "FSFilesStore" in records[0].getMessage()
 
     @coroutine_test
     async def test_file_expired(self):
@@ -376,6 +412,28 @@ class TestFilesPipeline:
         path = Path(self.tempdir) / result["files"][0]["path"]
         assert path.exists()
         assert path.read_bytes() == b"data"
+
+    @coroutine_test
+    async def test_checksum_algorithm(self) -> None:
+        pipeline = self._create_pipeline(
+            FilesPipeline, {"FILES_CHECKSUM_ALGORITHM": "sha256"}
+        )
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await pipeline.process_item(item)
+        assert result["files"][0]["checksum"] == hashlib.sha256(b"data").hexdigest()
+
+    def test_checksum_algorithm_unsupported(self) -> None:
+        with pytest.raises(ValueError, match="unsupported hash type"):
+            self._create_pipeline(FilesPipeline, {"FILES_CHECKSUM_ALGORITHM": "sha257"})
 
     def test_file_path_from_item(self):
         """
@@ -763,6 +821,13 @@ class TestFSFilesStore:
         assert stat["checksum"] == "8d777f385d3dfec8815d20f7496026dc"
         assert stat["last_modified"] == pytest.approx(time.time(), abs=60)
 
+    def test_stat_file_checksum_algorithm(self, tmp_path: Path) -> None:
+        store = FSFilesStore(tmp_path)
+        store.checksum_algorithm = "sha256"
+        store.persist_file("full/filename", BytesIO(b"data"), DUMMY_SPIDER_INFO)
+        stat = store.stat_file("full/filename", DUMMY_SPIDER_INFO)
+        assert stat["checksum"] == hashlib.sha256(b"data").hexdigest()
+
     def test_stat_missing_file(self, tmp_path: Path) -> None:
         store = FSFilesStore(tmp_path)
         assert store.stat_file("full/filename", DUMMY_SPIDER_INFO) == {}
@@ -892,6 +957,31 @@ class TestS3FilesStore:
                 "checksum": checksum,
                 "last_modified": last_modified.timestamp(),
             }
+
+    @inline_callbacks_test
+    def test_stat_checksum_algorithm(self):
+        """Amazon S3 only reports MD5 checksums, so no checksum is reported
+        when a different algorithm is configured."""
+        bucket = "mybucket"
+        key = "export.csv"
+        last_modified = datetime(2019, 12, 1)
+
+        store = S3FilesStore(f"s3://{bucket}/{key}")
+        store.checksum_algorithm = "sha256"
+        from botocore.stub import Stubber  # noqa: PLC0415
+
+        with Stubber(store.s3_client) as stub:
+            stub.add_response(
+                "head_object",
+                expected_params={"Bucket": bucket, "Key": key},
+                service_response={
+                    "ETag": '"3187896a9657a28163abb31667df64c8"',
+                    "LastModified": last_modified,
+                },
+            )
+
+            file_stats = yield store.stat_file("", info=DUMMY_SPIDER_INFO)
+            assert file_stats == {"last_modified": last_modified.timestamp()}
 
             stub.assert_no_pending_responses()
 
@@ -1036,6 +1126,23 @@ class TestGCSFilesStore:
             "checksum": checksum,
             "last_modified": time.mktime(updated.timetuple()),
         }
+
+    @coroutine_test
+    async def test_stat_checksum_algorithm(self) -> None:
+        """Google Cloud Storage only reports MD5 checksums, so no checksum is
+        reported when a different algorithm is configured."""
+        store, bucket, blob = self.build_gcs_files_store()
+        store.checksum_algorithm = "sha256"
+        blob.md5_hash = base64.b64encode(
+            bytes.fromhex("cdcda85605e46d0af6110752770dce3c")
+        ).decode()
+        updated = datetime(2019, 12, 1)
+        blob.updated = updated
+        bucket.get_blob.return_value = blob
+        stat = await maybe_deferred_to_future(
+            store.stat_file("full/filename", info=DUMMY_SPIDER_INFO)
+        )
+        assert stat == {"last_modified": time.mktime(updated.timetuple())}
 
     @coroutine_test
     async def test_stat_missing_blob(self) -> None:
