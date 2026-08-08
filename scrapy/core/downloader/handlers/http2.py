@@ -1,60 +1,78 @@
-import warnings
-from time import time
-from typing import Optional, Type, TypeVar
+from __future__ import annotations
+
+from time import monotonic
+from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
-from twisted.internet.base import DelayedCall
-from twisted.internet.defer import Deferred
-from twisted.internet.error import TimeoutError
-from twisted.web.client import URI
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
+from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
+from scrapy.exceptions import (
+    DownloadTimeoutError,
+    NotConfigured,
+    UnsupportedURLSchemeError,
+)
+from scrapy.utils._download_handlers import (
+    normalize_bind_address,
+    wrap_twisted_exceptions,
+)
+from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.httpobj import urlparse_cached
 
-from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
-from scrapy.core.downloader.webclient import _parse
-from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
-from scrapy.crawler import Crawler
-from scrapy.http import Request, Response
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
-from scrapy.utils.python import to_bytes
+if TYPE_CHECKING:
+    from twisted.internet.base import DelayedCall
+    from twisted.internet.defer import Deferred
+    from twisted.web.iweb import IPolicyForHTTPS
+
+    from scrapy.crawler import Crawler
+    from scrapy.http import Request, Response
+    from scrapy.spiders import Spider
 
 
-H2DownloadHandlerOrSubclass = TypeVar("H2DownloadHandlerOrSubclass", bound="H2DownloadHandler")
+class H2DownloadHandler(BaseDownloadHandler):
+    lazy = True
 
-
-class H2DownloadHandler:
-    def __init__(self, settings: Settings, crawler: Optional[Crawler] = None):
+    def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
+        super().__init__(crawler)
         self._crawler = crawler
 
         from twisted.internet import reactor
-        self._pool = H2ConnectionPool(reactor, settings)
-        self._context_factory = load_context_factory_from_settings(settings, crawler)
 
-    @classmethod
-    def from_crawler(cls: Type[H2DownloadHandlerOrSubclass], crawler: Crawler) -> H2DownloadHandlerOrSubclass:
-        return cls(crawler.settings, crawler)
+        self._pool = H2ConnectionPool(reactor, crawler.settings)
+        self._context_factory = _load_context_factory_from_settings(crawler)
+        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
-        agent = ScrapyH2Agent(
+    async def download_request(self, request: Request) -> Response:
+        if urlparse_cached(request).scheme == "http":  # pragma: no cover
+            raise UnsupportedURLSchemeError(
+                f"{type(self).__name__} doesn't support plain HTTP."
+            )
+        agent = _ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
+            bind_address=self._bind_address,
             crawler=self._crawler,
         )
-        return agent.download_request(request, spider)
+        assert self._crawler.spider
+        with wrap_twisted_exceptions():
+            return await maybe_deferred_to_future(
+                agent.download_request(request, self._crawler.spider)
+            )
 
-    def close(self) -> None:
+    async def close(self) -> None:
         self._pool.close_connections()
 
 
-class ScrapyH2Agent:
-    _Agent = H2Agent
-    _ProxyAgent = ScrapyProxyH2Agent
-
+class _ScrapyH2Agent:
     def __init__(
-        self, context_factory,
+        self,
+        context_factory: IPolicyForHTTPS,
         pool: H2ConnectionPool,
         connect_timeout: int = 10,
-        bind_address: Optional[bytes] = None,
-        crawler: Optional[Crawler] = None,
+        bind_address: str | tuple[str, int] | None = None,
+        crawler: Crawler | None = None,
     ) -> None:
         self._context_factory = context_factory
         self._connect_timeout = connect_timeout
@@ -62,38 +80,14 @@ class ScrapyH2Agent:
         self._pool = pool
         self._crawler = crawler
 
-    def _get_agent(self, request: Request, timeout: Optional[float]) -> H2Agent:
+    def _get_agent(self, request: Request, timeout: float | None) -> H2Agent:
         from twisted.internet import reactor
-        bind_address = request.meta.get('bindaddress') or self._bind_address
-        proxy = request.meta.get('proxy')
-        if proxy:
-            _, _, proxy_host, proxy_port, proxy_params = _parse(proxy)
-            scheme = _parse(request.url)[0]
-            proxy_host = proxy_host.decode()
-            omit_connect_tunnel = b'noconnect' in proxy_params
-            if omit_connect_tunnel:
-                warnings.warn(
-                    "Using HTTPS proxies in the noconnect mode is not "
-                    "supported by the downloader handler. If you use Zyte "
-                    "Smart Proxy Manager, it doesn't require this mode "
-                    "anymore, so you should update scrapy-crawlera to "
-                    "scrapy-zyte-smartproxy and remove '?noconnect' from the "
-                    "Zyte Smart Proxy Manager URL."
-                )
 
-            if scheme == b'https' and not omit_connect_tunnel:
-                # ToDo
-                raise NotImplementedError('Tunneling via CONNECT method using HTTP/2.0 is not yet supported')
-            return self._ProxyAgent(
-                reactor=reactor,
-                context_factory=self._context_factory,
-                proxy_uri=URI.fromBytes(to_bytes(proxy, encoding='ascii')),
-                connect_timeout=timeout,
-                bind_address=bind_address,
-                pool=self._pool,
-            )
-
-        return self._Agent(
+        if request.meta.get("proxy"):  # pragma: no cover
+            raise NotImplementedError(f"{type(self).__name__} doesn't support proxies.")
+        bind_address = request.meta.get("bindaddress") or self._bind_address
+        bind_address = normalize_bind_address(bind_address)
+        return H2Agent(
             reactor=reactor,
             context_factory=self._context_factory,
             connect_timeout=timeout,
@@ -101,12 +95,13 @@ class ScrapyH2Agent:
             pool=self._pool,
         )
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         from twisted.internet import reactor
-        timeout = request.meta.get('download_timeout') or self._connect_timeout
+
+        timeout = request.meta.get("download_timeout") or self._connect_timeout
         agent = self._get_agent(request, timeout)
 
-        start_time = time()
+        start_time = monotonic()
         d = agent.request(request, spider)
         d.addCallback(self._cb_latency, request, start_time)
 
@@ -115,15 +110,19 @@ class ScrapyH2Agent:
         return d
 
     @staticmethod
-    def _cb_latency(response: Response, request: Request, start_time: float) -> Response:
-        request.meta['download_latency'] = time() - start_time
+    def _cb_latency(
+        response: Response, request: Request, start_time: float
+    ) -> Response:
+        request.meta["download_latency"] = monotonic() - start_time
         return response
 
     @staticmethod
-    def _cb_timeout(response: Response, request: Request, timeout: float, timeout_cl: DelayedCall) -> Response:
+    def _cb_timeout(
+        response: Response, request: Request, timeout: float, timeout_cl: DelayedCall
+    ) -> Response:
         if timeout_cl.active():
             timeout_cl.cancel()
             return response
 
         url = urldefrag(request.url)[0]
-        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
+        raise DownloadTimeoutError(f"Getting {url} took longer than {timeout} seconds.")

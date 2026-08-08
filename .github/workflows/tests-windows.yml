@@ -1,37 +1,89 @@
 name: Windows
-on: [push, pull_request]
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
+  pull_request:
+
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
+    name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: windows-latest
+    env:
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
+      # Make uv use the interpreter that actions/setup-python installed instead
+      # of downloading one of its own.
+      UV_PYTHON_PREFERENCE: only-system
     strategy:
       fail-fast: false
       matrix:
         include:
-        - python-version: 3.6
-          env:
-            TOXENV: windows-pinned
-        - python-version: 3.7
+        - python-version: "3.10"
           env:
             TOXENV: py
-        - python-version: 3.8
+        - python-version: "3.14"
           env:
             TOXENV: py
-        # https://twistedmatrix.com/trac/ticket/9990
-        #- python-version: 3.9
-          #env:
-            #TOXENV: py
+          coverage: true
+        - python-version: "3.14"
+          env:
+            TOXENV: no-reactor
+
+        # min deps
+        - python-version: "3.10.11"
+          env:
+            TOXENV: min
+        - python-version: "3.10.11"
+          env:
+            TOXENV: min-extra-deps
+
+        - python-version: "3.14"
+          env:
+            TOXENV: extra-deps
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Set up uv
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      with:
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+
+    - name: Install mitmproxy
+      env:
+        # mitmproxy needs a newer Python than the oldest matrix entries, so let
+        # uv download one where no system interpreter is new enough.
+        UV_PYTHON_PREFERENCE: system
+      run: uv tool install mitmproxy
+
     - name: Run tests
       env: ${{ matrix.env }}
-      run: |
-        pip install -U tox
-        tox
+      run: uvx --with tox-uv tox
+
+    - name: Upload coverage report
+      if: ${{ matrix.coverage }}
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      with:
+        report_type: test_results

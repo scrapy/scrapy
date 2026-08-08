@@ -4,9 +4,10 @@ from scrapy.crawler import CrawlerProcess
 
 class IPv6Spider(scrapy.Spider):
     """
-    Raises a twisted.internet.error.DNSLookupError:
+    Raises a scrapy.exceptions.CannotResolveHostError:
     the default name resolver does not handle IPv6 addresses.
     """
+
     name = "ipv6_spider"
     start_urls = ["http://[::1]"]
 
