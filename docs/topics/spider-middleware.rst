@@ -122,6 +122,9 @@ one or more of these methods:
         This method is an :term:`asynchronous generator` called with the
         results from the spider after the spider has processed the response.
 
+        *result* is lazy: a generator callback runs as *result* is iterated, so
+        code that runs before that iteration runs before the callback body.
+
         .. seealso:: :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
