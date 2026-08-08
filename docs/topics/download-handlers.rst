@@ -254,6 +254,9 @@ Other limitations:
 
 -   HTTPS proxies to HTTPS destinations are not supported.
 
+-   A ``Content-Length`` request header is sent in addition to the one built
+    from the request body, and most servers reject requests with two.
+
 .. _httpx-handler:
 
 HttpxDownloadHandler
