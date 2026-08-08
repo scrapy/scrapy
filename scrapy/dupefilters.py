@@ -215,7 +215,7 @@ class DiskDupeFilter(RFPDupeFilter):
         else:
             self._tempdir = path = mkdtemp()
         self._db = sqlite3.connect(Path(path, "requests.seen.db"))
-        self._db.execute("PRAGMA journal_mode=WAL")
+        self._db.execute("PRAGMA journal_mode=WAL").close()
         self._db.execute("PRAGMA synchronous=NORMAL")
         self._db.execute(
             "CREATE TABLE IF NOT EXISTS seen (fingerprint BLOB PRIMARY KEY)"
