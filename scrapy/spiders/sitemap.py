@@ -55,7 +55,7 @@ class SitemapSpider(Spider):
 
     async def start(self) -> AsyncIterator[Any]:
         for url in self.sitemap_urls:
-            yield Request(url, self._parse_sitemap)
+            yield Request(url, self._parse_sitemap, dont_filter=True)
 
     def sitemap_filter(
         self, entries: Iterable[dict[str, Any]]
@@ -69,7 +69,10 @@ class SitemapSpider(Spider):
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
-            return (Request(url, callback=self._parse_sitemap) for url in urls)
+            return (
+                Request(url, callback=self._parse_sitemap, dont_filter=True)
+                for url in urls
+            )
 
         body = self._get_sitemap_body(response)
         if not body:
@@ -84,7 +87,10 @@ class SitemapSpider(Spider):
 
         if s.type == "sitemapindex":
             urls = list(self._get_urls_from_sitemapindex(self.sitemap_filter(s)))
-            return (Request(loc, callback=self._parse_sitemap) for loc in urls)
+            return (
+                Request(loc, callback=self._parse_sitemap, dont_filter=True)
+                for loc in urls
+            )
 
         if s.type == "urlset":
             url_callback_pairs = list(

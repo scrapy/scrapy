@@ -102,12 +102,15 @@ Sitemap: /sitemap-relative-url.xml
 
         r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
         spider = self.spider_class("example.com")
-        assert [req.url for req in spider._parse_sitemap(r)] == [
+        requests = list(spider._parse_sitemap(r))
+
+        assert [req.url for req in requests] == [
             "http://example.com/sitemap.xml",
             "http://example.com/sitemap-product-index.xml",
             "http://example.com/sitemap-uppercase.xml",
             "http://www.example.com/sitemap-relative-url.xml",
         ]
+        assert all(req.dont_filter for req in requests)
 
     def test_get_sitemap_urls_from_robotstxt_skips_invalid_utf8_urls(self):
         robots = (
@@ -246,15 +249,18 @@ Sitemap: /sitemap-relative-url.xml
 
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
         spider = self.spider_class("example.com")
-        assert [req.url for req in spider._parse_sitemap(r)] == [
+        requests = list(spider._parse_sitemap(r))
+
+        assert [req.url for req in requests] == [
             "http://www.example.com/sitemap1.xml",
             "http://www.example.com/sitemap2.xml",
         ]
+        assert all(req.dont_filter for req in requests)
 
         spider = FilteredSitemapSpider("example.com")
-        assert [req.url for req in spider._parse_sitemap(r)] == [
-            "http://www.example.com/sitemap2.xml"
-        ]
+        requests = list(spider._parse_sitemap(r))
+        assert [req.url for req in requests] == ["http://www.example.com/sitemap2.xml"]
+        assert all(req.dont_filter for req in requests)
 
     @pytest.mark.parametrize(
         ("rule", "result"),
@@ -496,5 +502,5 @@ Sitemap: /sitemap-relative-url.xml
         assert len(requests) == 1
         request = requests[0]
         assert request.url == "https://toscrape.com/sitemap.xml"
-        assert request.dont_filter is False
+        assert request.dont_filter is True
         assert request.callback == spider._parse_sitemap
