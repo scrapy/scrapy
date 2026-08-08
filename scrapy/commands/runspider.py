@@ -1,57 +1,64 @@
+from __future__ import annotations
+
 import sys
-import os
 from importlib import import_module
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, ClassVar
 
-from scrapy.utils.spider import iter_spider_classes
-from scrapy.exceptions import UsageError
 from scrapy.commands import BaseRunSpiderCommand
+from scrapy.exceptions import UsageError
+from scrapy.spiderloader import DummySpiderLoader
+from scrapy.utils.spider import iter_spider_classes
+
+if TYPE_CHECKING:
+    import argparse
+    from os import PathLike
+    from types import ModuleType
 
 
-def _import_file(filepath):
-    abspath = os.path.abspath(filepath)
-    dirname, file = os.path.split(abspath)
-    fname, fext = os.path.splitext(file)
-    if fext != '.py':
-        raise ValueError("Not a Python source file: %s" % abspath)
-    if dirname:
-        sys.path = [dirname] + sys.path
+def _import_file(filepath: str | PathLike[str]) -> ModuleType:
+    abspath = Path(filepath).resolve()
+    if abspath.suffix not in {".py", ".pyw"}:
+        raise ValueError(f"Not a Python source file: {abspath}")
+    dirname = str(abspath.parent)
+    sys.path = [dirname, *sys.path]
     try:
-        module = import_module(fname)
+        module = import_module(abspath.stem)
     finally:
-        if dirname:
-            sys.path.pop(0)
+        sys.path.pop(0)
     return module
 
 
 class Command(BaseRunSpiderCommand):
+    default_settings: ClassVar[dict[str, Any]] = {
+        "SPIDER_LOADER_CLASS": DummySpiderLoader
+    }
 
-    requires_project = False
-    default_settings = {'SPIDER_LOADER_WARN_ONLY': True}
-
-    def syntax(self):
+    def syntax(self) -> str:
         return "[options] <spider_file>"
 
-    def short_desc(self):
-        return "Run a self-contained spider (without creating a project)"
+    def short_desc(self) -> str:
+        return "Run a spider from a Python file, no project required"
 
-    def long_desc(self):
+    def long_desc(self) -> str:
         return "Run the spider defined in the given file"
 
-    def run(self, args, opts):
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
-            raise UsageError()
-        filename = args[0]
-        if not os.path.exists(filename):
-            raise UsageError("File not found: %s\n" % filename)
+            raise UsageError
+        filename = Path(args[0])
+        if not filename.exists():
+            raise UsageError(f"File not found: {filename}\n")
         try:
             module = _import_file(filename)
         except (ImportError, ValueError) as e:
-            raise UsageError("Unable to load %r: %s\n" % (filename, e))
+            raise UsageError(f"Unable to load {str(filename)!r}: {e}\n") from e
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
-            raise UsageError("No spider found in file: %s\n" % filename)
+            raise UsageError(f"No spider found in file: {filename}\n")
         spidercls = spclasses.pop()
 
+        assert self.crawler_process
         self.crawler_process.crawl(spidercls, **opts.spargs)
         self.crawler_process.start()
 

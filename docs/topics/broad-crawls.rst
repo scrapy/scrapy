@@ -41,17 +41,6 @@ efficient broad crawl.
 
 .. _broad-crawls-scheduler-priority-queue:
 
-Use the right :setting:`SCHEDULER_PRIORITY_QUEUE`
-=================================================
-
-Scrapy’s default scheduler priority queue is ``'scrapy.pqueues.ScrapyPriorityQueue'``.
-It works best during single-domain crawl. It does not work well with crawling
-many different domains in parallel
-
-To apply the recommended priority queue use::
-
-    SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
-
 .. _broad-crawls-concurrency:
 
 Increase concurrency
@@ -59,19 +48,16 @@ Increase concurrency
 
 Concurrency is the number of requests that are processed in parallel. There is
 a global limit (:setting:`CONCURRENT_REQUESTS`) and an additional limit that
-can be set either per domain (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`) or per
-IP (:setting:`CONCURRENT_REQUESTS_PER_IP`).
-
-.. note:: The scheduler priority queue :ref:`recommended for broad crawls
-          <broad-crawls-scheduler-priority-queue>` does not support
-          :setting:`CONCURRENT_REQUESTS_PER_IP`.
+can be set per domain (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`).
 
 The default global concurrency limit in Scrapy is not suitable for crawling
 many different domains in parallel, so you will want to increase it. How much
-to increase it will depend on how much CPU and memory you crawler will have
+to increase it will depend on how much CPU and memory your crawler will have
 available.
 
-A good starting point is ``100``::
+A good starting point is ``100``:
+
+.. code-block:: python
 
     CONCURRENT_REQUESTS = 100
 
@@ -92,7 +78,9 @@ hitting DNS resolver timeouts. Possible solution to increase the number of
 threads handling DNS queries. The DNS queue will be processed faster speeding
 up establishing of connection and crawling overall.
 
-To increase maximum thread pool size use::
+To increase maximum thread pool size use:
+
+.. code-block:: python
 
     REACTOR_THREADPOOL_MAXSIZE = 20
 
@@ -110,13 +98,15 @@ Reduce log level
 When doing broad crawls you are often only interested in the crawl rates you
 get and any errors found. These stats are reported by Scrapy when using the
 ``INFO`` log level. In order to save CPU (and log storage requirements) you
-should not use ``DEBUG`` log level when preforming large broad crawls in
+should not use ``DEBUG`` log level when performing large broad crawls in
 production. Using ``DEBUG`` level when developing your (broad) crawler may be
 fine though.
 
-To set the log level use::
+To set the log level use:
 
-    LOG_LEVEL = 'INFO'
+.. code-block:: python
+
+    LOG_LEVEL = "INFO"
 
 Disable cookies
 ===============
@@ -126,19 +116,23 @@ doing broad crawls (search engine crawlers ignore them), and they improve
 performance by saving some CPU cycles and reducing the memory footprint of your
 Scrapy crawler.
 
-To disable cookies use::
+To disable cookies use:
+
+.. code-block:: python
 
     COOKIES_ENABLED = False
 
 Disable retries
 ===============
 
-Retrying failed HTTP requests can slow down the crawls substantially, specially
+Retrying failed HTTP requests can slow down the crawls substantially, especially
 when sites causes are very slow (or fail) to respond, thus causing a timeout
 error which gets retried many times, unnecessarily, preventing crawler capacity
 to be reused for other domains.
 
-To disable retries use::
+To disable retries use:
+
+.. code-block:: python
 
     RETRY_ENABLED = False
 
@@ -149,7 +143,9 @@ Unless you are crawling from a very slow connection (which shouldn't be the
 case for broad crawls) reduce the download timeout so that stuck requests are
 discarded quickly and free up capacity to process the next ones.
 
-To reduce the download timeout use::
+To reduce the download timeout use:
+
+.. code-block:: python
 
     DOWNLOAD_TIMEOUT = 15
 
@@ -162,33 +158,11 @@ revisiting the site at a later crawl. This also help to keep the number of
 request constant per crawl batch, otherwise redirect loops may cause the
 crawler to dedicate too many resources on any specific domain.
 
-To disable redirects use::
+To disable redirects use:
+
+.. code-block:: python
 
     REDIRECT_ENABLED = False
-
-Enable crawling of "Ajax Crawlable Pages"
-=========================================
-
-Some pages (up to 1%, based on empirical data from year 2013) declare
-themselves as `ajax crawlable`_. This means they provide plain HTML
-version of content that is usually available only via AJAX.
-Pages can indicate it in two ways:
-
-1) by using ``#!`` in URL - this is the default way;
-2) by using a special meta tag - this way is used on
-   "main", "index" website pages.
-
-Scrapy handles (1) automatically; to handle (2) enable
-:ref:`AjaxCrawlMiddleware <ajaxcrawl-middleware>`::
-
-    AJAXCRAWL_ENABLED = True
-
-When doing broad crawls it's common to crawl a lot of "index" web pages;
-AjaxCrawlMiddleware helps to crawl them correctly.
-It is turned OFF by default because it has some performance overhead,
-and enabling it for focused crawls doesn't make much sense.
-
-.. _ajax crawlable: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
 
 .. _broad-crawls-bfo:
 

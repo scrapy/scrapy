@@ -2,12 +2,10 @@ import scrapy
 
 
 class ExceptionSpider(scrapy.Spider):
-    name = 'exception'
+    name = "exception"
 
     custom_settings = {
-        'ITEM_PIPELINES': {
-            'test_spider.pipelines.TestSpiderExceptionPipeline': 300
-        }
+        "ITEM_PIPELINES": {"test_spider.pipelines.TestSpiderExceptionPipeline": 300}
     }
 
     def parse(self, response):

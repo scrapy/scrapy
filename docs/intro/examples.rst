@@ -7,7 +7,7 @@ Examples
 The best way to learn is with examples, and Scrapy is no exception. For this
 reason, there is an example Scrapy project named quotesbot_, that you can use to
 play and learn more about Scrapy. It contains two spiders for
-http://quotes.toscrape.com, one using CSS selectors and another one using XPath
+https://quotes.toscrape.com, one using CSS selectors and another one using XPath
 expressions.
 
 The quotesbot_ project is available at: https://github.com/scrapy/quotesbot.
