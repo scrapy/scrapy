@@ -256,7 +256,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             f" asynchronous generator, i.e. an async def method with yield"
             f" statements, got {type(start)}"
         )
-        yield  # unreachable, makes this method an asynchronous generator
+        yield  # pylint: disable=unreachable  # makes this method an asynchronous generator
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod
