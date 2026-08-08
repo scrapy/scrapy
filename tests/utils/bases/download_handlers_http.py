@@ -55,6 +55,7 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
+    from pathlib import Path
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
@@ -861,6 +862,28 @@ class TestHttpsBase(TestHttpBase):
                 response = await download_handler.download_request(request)
         assert response.body == b"Works"
         assert self.tls_log_message in caplog.text
+
+    @coroutine_test
+    async def test_keylog(
+        self,
+        mockserver: MockServer,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        # The stdlib writes a comment line at the top of the file.
+        lines = [
+            line
+            for line in keylog_file.read_text().splitlines()
+            if not line.startswith("#")
+        ]
+        assert lines
+        assert all(len(line.split()) == 3 for line in lines)
 
     @coroutine_test
     async def test_verify_certs_deprecated(self, mockserver: MockServer) -> None:

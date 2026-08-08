@@ -153,6 +153,26 @@ available in all future runs should they be necessary again:
 
 For more information, check the :ref:`topics-logging` section.
 
+.. _debug-tls:
+
+Decrypting TLS traffic
+======================
+
+Scrapy writes the session keys of its HTTPS connections to the file that the
+``SSLKEYLOGFILE`` environment variable points to, using the `NSS key log
+format`_ that traffic analysis tools such as Wireshark understand.
+
+.. versionadded:: VERSION
+
+.. code-block:: shell
+
+    SSLKEYLOGFILE=/tmp/sslkeylog scrapy crawl myspider
+
+.. _NSS key log format: https://firefox-source-docs.mozilla.org/security/nss/legacy/key_log_format/index.html
+
+.. warning:: Anyone who can read the key log file can decrypt the traffic of
+    the connections recorded in it, including any credentials that they carry.
+
 .. _debug-vscode:
 
 Visual Studio Code
