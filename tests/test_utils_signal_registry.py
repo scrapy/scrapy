@@ -11,6 +11,7 @@ import pytest
 from scrapy import signals
 from scrapy.signalmanager import SignalManager
 from scrapy.utils import _signal_registry as registry
+from scrapy.utils.signal import send_catch_log
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -66,6 +67,21 @@ class TestArgumentDelivery:
         sm.connect(bound, signal)
         sm.send_catch_log(signal, spider="SPIDER")
         assert received == {"spider": "p-SPIDER"}
+
+    def test_handler_that_cannot_be_introspected_gets_every_argument(self) -> None:
+        assert registry.apply(dict, spider="SPIDER") == {"spider": "SPIDER"}
+
+    def test_positional_arguments_are_not_repeated_as_keywords(self) -> None:
+        received: dict[str, Any] = {}
+
+        def handler(spider: Any, signal: Any = None) -> None:
+            received.update(spider=spider, signal=signal)
+
+        signal = object()
+        sender = object()
+        registry.connect(handler, signal, sender=sender)
+        send_catch_log(signal, sender, "SPIDER")
+        assert received == {"spider": "SPIDER", "signal": signal}
 
     def test_callable_object_handler(self) -> None:
         class Handler:
@@ -185,6 +201,10 @@ class TestUnknownArgumentWarning:
         with pytest.warns(UserWarning, match=r"scrapy\.signals\.spider_opened"):
             sm.connect(handler, signals.spider_opened)
 
+    def test_warning_falls_back_to_the_repr_of_the_signal(self) -> None:
+        signal = object()
+        assert registry._signal_name(signal) == repr(signal)
+
     def test_lists_every_unknown_argument(self) -> None:
         def handler(cheese: Any = None, ham: Any = None) -> None:
             pass
@@ -241,6 +261,24 @@ class TestReceiverCache:
         gc.collect()
         assert ref() is None
         assert registry.receivers(signal, sm.sender) == []
+
+
+class TestSignalStorage:
+    def test_signal_that_can_be_weakly_referenced_is_not_kept_alive(self) -> None:
+        class Signal:
+            pass
+
+        def handler(**kwargs: Any) -> None:
+            pass
+
+        signal = Signal()
+        ref = weakref.ref(signal)
+        sm = SignalManager(object())
+        sm.connect(handler, signal)
+        sm.send_catch_log(signal)
+        del signal
+        gc.collect()
+        assert ref() is None
 
 
 class TestMutationDuringDispatch:

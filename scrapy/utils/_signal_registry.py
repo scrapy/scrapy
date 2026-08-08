@@ -97,8 +97,6 @@ def _accepted(receiver: TypingAny) -> frozenset[str] | None:
         return _accepted_args[key]
     except KeyError:
         pass
-    except TypeError:
-        return _introspect(receiver)
     names = _introspect(receiver)
     _accepted_args[key] = names
     return names
@@ -192,10 +190,7 @@ def _positional_names(receiver: TypingAny, count: int) -> frozenset[str]:
     """Return the names of the first *count* parameters of *receiver*, which
     positional arguments bind and keyword arguments therefore must not repeat.
     """
-    try:
-        parameters = list(inspect.signature(receiver).parameters.values())
-    except (TypeError, ValueError):
-        return frozenset()
+    parameters = list(inspect.signature(receiver).parameters.values())
     return frozenset(
         p.name
         for p in parameters[:count]
