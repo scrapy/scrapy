@@ -8,6 +8,7 @@ dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
+    "blinker>=1.7.0",
     "cryptography>=37.0.0",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -23,9 +24,6 @@ dependencies = [
     "tldextract",
     "w3lib>=1.17.0",
     "zope.interface>=5.1.0",
-    # Platform-specific dependencies
-    'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
-    'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -187,7 +185,6 @@ module = [
     "brotli",
     "brotlicffi",
     "google.*",
-    "pydispatch.*",
     "pyftpdlib.*",
     "pytest_twisted",
     "robotexclusionrulesparser",

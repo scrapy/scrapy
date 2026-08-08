@@ -9,18 +9,11 @@ from collections.abc import Awaitable, Callable, Generator, Sequence
 from typing import Any as TypingAny
 from typing import cast
 
-from pydispatch.dispatcher import (
-    Anonymous,
-    Any,
-    disconnect,
-    getAllReceivers,
-    liveReceivers,
-)
-from pydispatch.robustapply import robustApply
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning, StopDownload
+from scrapy.utils._signal_registry import Anonymous, Any, apply, disconnect, receivers
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
     _maybeDeferred_coro,
@@ -39,18 +32,18 @@ def send_catch_log(
     *arguments: TypingAny,
     **named: TypingAny,
 ) -> list[tuple[TypingAny, TypingAny]]:
-    """Like ``pydispatch.robust.sendRobust()`` but it also logs errors and returns
-    Failures instead of exceptions.
+    """Send *signal*, logging any error raised by a handler and returning Failures
+    instead of raising.
     """
     dont_log = named.pop("dont_log", ())
     dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)
     dont_log += (StopDownload,)
     spider = named.get("spider")
     responses: list[tuple[TypingAny, TypingAny]] = []
-    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+    for receiver in receivers(signal, sender):
         result: TypingAny
         try:
-            response = robustApply(
+            response = apply(
                 receiver, *arguments, signal=signal, sender=sender, **named
             )
             if isinstance(response, Deferred):
@@ -114,9 +107,9 @@ def _send_catch_log_deferred(
     dont_log = named.pop("dont_log", None)
     spider = named.get("spider")
     dfds: list[Deferred[tuple[TypingAny, TypingAny]]] = []
-    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+    for receiver in receivers(signal, sender):
         d: Deferred[TypingAny] = _maybeDeferred_coro(
-            robustApply,
+            apply,
             True,
             receiver,
             *arguments,
@@ -181,17 +174,15 @@ async def _send_catch_log_asyncio(
     dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)
     spider = named.get("spider")
     handlers: list[Awaitable[TypingAny]] = []
-    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+    for receiver in receivers(signal, sender):
 
         async def handler(
-            receiver: Callable[..., Any],
-        ) -> tuple[Callable[..., Any], TypingAny]:
+            receiver: Callable[..., TypingAny],
+        ) -> tuple[Callable[..., TypingAny], TypingAny]:
             result: TypingAny
             try:
                 result = await ensure_awaitable(
-                    robustApply(
-                        receiver, *arguments, signal=signal, sender=sender, **named
-                    ),
+                    apply(receiver, *arguments, signal=signal, sender=sender, **named),
                     _warn=global_object_name(receiver),
                 )
             except dont_log as ex:  # pylint: disable=catching-non-exception
@@ -218,5 +209,5 @@ def disconnect_all(signal: TypingAny = Any, sender: TypingAny = Any) -> None:
     """Disconnect all signal handlers. Useful for cleaning up after running
     tests.
     """
-    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+    for receiver in receivers(signal, sender):
         disconnect(receiver, signal=signal, sender=sender)
