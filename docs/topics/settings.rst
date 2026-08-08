@@ -577,6 +577,11 @@ Default: ``16``
 The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed by the Scrapy downloader. Use ``0`` for no limit.
 
+High values may exceed the limit that your operating system sets on the number
+of open file descriptors per process, causing errors. Some systems allow that
+limit to be raised or removed, e.g. with the `ulimit`_ shell built-in or, for
+services, with systemd’s `LimitNOFILE`_; otherwise, lower this setting.
+
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
 CONCURRENT_REQUESTS_PER_DOMAIN
@@ -2354,3 +2359,5 @@ case to see how to enable and use them.
 
 .. _Amazon web services: https://aws.amazon.com/
 .. _Google Cloud Storage: https://cloud.google.com/storage/
+.. _LimitNOFILE: https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#LimitNOFILE=
+.. _ulimit: https://www.gnu.org/software/bash/manual/bash.html#index-ulimit
