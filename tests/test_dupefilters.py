@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from scrapy.core.scheduler import Scheduler
-from scrapy.dupefilters import BaseDupeFilter, RFPDupeFilter
+from scrapy.dupefilters import BaseDupeFilter, DiskDupeFilter, RFPDupeFilter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.python import to_bytes
@@ -48,7 +48,68 @@ class DirectDupeFilter:
     method = "n/a"
 
 
-class TestRFPDupeFilter:
+class DupeFilterTestMixin:
+    """Tests that every :setting:`DUPEFILTER_CLASS` based on request
+    fingerprints must pass, regardless of where it stores them."""
+
+    dupefilter_class: type[BaseDupeFilter]
+
+    def _get_dupefilter(self, **settings: Any) -> BaseDupeFilter:
+        return _get_dupefilter(
+            settings={"DUPEFILTER_CLASS": self.dupefilter_class, **settings}
+        )
+
+    def test_filter(self) -> None:
+        dupefilter = self._get_dupefilter()
+        r1 = Request("https://example.com/1")
+        r2 = Request("https://example.com/2")
+        r3 = Request("https://example.com/2")
+
+        assert not dupefilter.request_seen(r1)
+        assert dupefilter.request_seen(r1)
+
+        assert not dupefilter.request_seen(r2)
+        assert dupefilter.request_seen(r3)
+
+        dupefilter.close("finished")
+
+    def test_jobdir(self, tmp_path: Path) -> None:
+        r1 = Request("https://example.com/1")
+        r2 = Request("https://example.com/2")
+
+        dupefilter = self._get_dupefilter(JOBDIR=str(tmp_path))
+        assert not dupefilter.request_seen(r1)
+        dupefilter.close("finished")
+
+        resumed = self._get_dupefilter(JOBDIR=str(tmp_path))
+        assert resumed.request_seen(r1)
+        assert not resumed.request_seen(r2)
+        resumed.close("finished")
+
+    def test_fingerprinter(self) -> None:
+        r1 = Request("https://example.com/index.html")
+        r2 = Request("https://example.com/INDEX.html")
+
+        dupefilter = self._get_dupefilter()
+        assert not dupefilter.request_seen(r1)
+        assert not dupefilter.request_seen(r2)
+        dupefilter.close("finished")
+
+        class CaseInsensitiveRequestFingerprinter:
+            def fingerprint(self, request: Request) -> bytes:
+                return hashlib.sha1(to_bytes(request.url.lower())).digest()
+
+        case_insensitive_dupefilter = self._get_dupefilter(
+            REQUEST_FINGERPRINTER_CLASS=CaseInsensitiveRequestFingerprinter
+        )
+        assert not case_insensitive_dupefilter.request_seen(r1)
+        assert case_insensitive_dupefilter.request_seen(r2)
+        case_insensitive_dupefilter.close("finished")
+
+
+class TestRFPDupeFilter(DupeFilterTestMixin):
+    dupefilter_class = RFPDupeFilter
+
     def test_df_from_crawler_scheduler(self):
         settings = {
             "DUPEFILTER_DEBUG": True,
@@ -66,74 +127,6 @@ class TestRFPDupeFilter:
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         assert scheduler.df.method == "n/a"
-
-    def test_filter(self):
-        dupefilter = _get_dupefilter()
-        r1 = Request("http://scrapytest.org/1")
-        r2 = Request("http://scrapytest.org/2")
-        r3 = Request("http://scrapytest.org/2")
-
-        assert not dupefilter.request_seen(r1)
-        assert dupefilter.request_seen(r1)
-
-        assert not dupefilter.request_seen(r2)
-        assert dupefilter.request_seen(r3)
-
-        dupefilter.close("finished")
-
-    def test_dupefilter_path(self):
-        r1 = Request("http://scrapytest.org/1")
-        r2 = Request("http://scrapytest.org/2")
-
-        path = tempfile.mkdtemp()
-        try:
-            df = _get_dupefilter(settings={"JOBDIR": path}, open_=False)
-            try:
-                df.open()
-                assert not df.request_seen(r1)
-                assert df.request_seen(r1)
-            finally:
-                df.close("finished")
-
-            df2 = _get_dupefilter(settings={"JOBDIR": path}, open_=False)
-            assert df is not df2
-            try:
-                df2.open()
-                assert df2.request_seen(r1)
-                assert not df2.request_seen(r2)
-                assert df2.request_seen(r2)
-            finally:
-                df2.close("finished")
-        finally:
-            shutil.rmtree(path)
-
-    def test_request_fingerprint(self):
-        """Test if customization of request_fingerprint method will change
-        output of request_seen.
-
-        """
-        dupefilter = _get_dupefilter()
-        r1 = Request("http://scrapytest.org/index.html")
-        r2 = Request("http://scrapytest.org/INDEX.html")
-
-        assert not dupefilter.request_seen(r1)
-        assert not dupefilter.request_seen(r2)
-
-        dupefilter.close("finished")
-
-        class RequestFingerprinter:
-            def fingerprint(self, request):
-                fp = hashlib.sha1()
-                fp.update(to_bytes(request.url.lower()))
-                return fp.digest()
-
-        settings = {"REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter}
-        case_insensitive_dupefilter = _get_dupefilter(settings=settings)
-
-        assert not case_insensitive_dupefilter.request_seen(r1)
-        assert case_insensitive_dupefilter.request_seen(r2)
-
-        case_insensitive_dupefilter.close("finished")
 
     def test_seenreq_truncated(self):
         r1 = Request("http://scrapytest.org/1")
@@ -256,6 +249,20 @@ class TestRFPDupeFilter:
         assert not dupefilter.request_seen(Request("http://scrapytest.org/index.html"))
         assert dupefilter.request_seen(Request("http://scrapytest.org/INDEX.html"))
         dupefilter.close("finished")
+
+
+class TestDiskDupeFilter(DupeFilterTestMixin):
+    dupefilter_class = DiskDupeFilter
+
+    def test_temporary_database_removed(self) -> None:
+        dupefilter = self._get_dupefilter()
+        assert isinstance(dupefilter, DiskDupeFilter)
+        assert dupefilter._tempdir
+        tempdir = Path(dupefilter._tempdir)
+        assert tempdir.exists()
+
+        dupefilter.close("finished")
+        assert not tempdir.exists()
 
 
 class TestBaseDupeFilter:

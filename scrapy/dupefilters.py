@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import logging
+import sqlite3
 from pathlib import Path
+from shutil import rmtree
+from tempfile import mkdtemp
 from typing import TYPE_CHECKING
 from warnings import warn
 
@@ -176,3 +179,56 @@ class RFPDupeFilter(BaseDupeFilter):
 
         assert spider.crawler.stats
         spider.crawler.stats.inc_value("dupefilter/filtered")
+
+
+class DiskDupeFilter(RFPDupeFilter):
+    """Duplicate request filtering class (:setting:`DUPEFILTER_CLASS`) that
+    keeps seen request fingerprints on disk, in an SQLite database, instead of
+    in memory, trading some speed for a much lower memory usage on crawls that
+    send a large number of requests.
+
+    .. versionadded:: VERSION
+
+    Job directory contents
+    ======================
+
+    .. warning:: The files that this class generates in the :ref:`job directory
+        <job-dir>` are an implementation detail, and may change without a
+        warning in a future version of Scrapy. Do not rely on the following
+        information for anything other than debugging purposes.
+
+    When using :setting:`JOBDIR`, seen fingerprints are tracked in an SQLite
+    database named :file:`requests.seen.db` in the :ref:`job directory
+    <job-dir>`.
+    """
+
+    def __init__(
+        self,
+        path: str | None = None,
+        debug: bool = False,
+        *,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
+    ) -> None:
+        super().__init__(debug=debug, fingerprinter=fingerprinter)
+        if path:
+            self._tempdir: str | None = None
+        else:
+            self._tempdir = path = mkdtemp()
+        self._db = sqlite3.connect(Path(path, "requests.seen.db"))
+        self._db.execute("PRAGMA journal_mode=WAL")
+        self._db.execute("PRAGMA synchronous=NORMAL")
+        self._db.execute(
+            "CREATE TABLE IF NOT EXISTS seen (fingerprint BLOB PRIMARY KEY)"
+            " WITHOUT ROWID"
+        )
+
+    def request_seen(self, request: Request) -> bool:
+        fp = self._fingerprint(request)
+        cursor = self._db.execute("INSERT OR IGNORE INTO seen VALUES (?)", (fp,))
+        return not cursor.rowcount
+
+    def close(self, reason: str) -> None:
+        self._db.commit()
+        self._db.close()
+        if self._tempdir:
+            rmtree(self._tempdir)
