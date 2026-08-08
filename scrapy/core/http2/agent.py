@@ -6,12 +6,7 @@ from typing import TYPE_CHECKING
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
-from twisted.web.client import (
-    URI,
-    BrowserLikePolicyForHTTPS,
-    ResponseFailed,
-    _StandardEndpointFactory,
-)
+from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpointFactory
 from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFactory
@@ -82,9 +77,6 @@ class H2ConnectionPool:
         self._pending_requests[key] = pending_requests
 
         conn_lost_deferred: Deferred[list[BaseException]] = Deferred()
-        conn_lost_deferred.addCallback(
-            self._fail_pending_requests, key, pending_requests
-        )
 
         factory = H2ClientFactory(
             uri,
@@ -139,26 +131,10 @@ class H2ConnectionPool:
 
     def _remove_connection(
         self, errors: list[BaseException], key: ConnectionKeyT, conn: H2ClientProtocol
-    ) -> list[BaseException]:
+    ) -> None:
         # a newer connection may have taken over the key already
         if self._connections.get(key) is conn:
             del self._connections[key]
-        return errors
-
-    def _fail_pending_requests(
-        self,
-        errors: list[BaseException],
-        key: ConnectionKeyT,
-        pending_requests: deque[Deferred[H2ClientProtocol]],
-    ) -> list[BaseException]:
-        """Call the errback of the requests that were waiting for this
-        connection, unless a newer connection is expected to serve them."""
-        if self._pending_requests.get(key) is pending_requests:
-            del self._pending_requests[key]
-        while pending_requests:
-            d = pending_requests.popleft()
-            d.errback(ResponseFailed(errors))
-        return errors
 
     def close_connections(self) -> None:
         """Close all the HTTP/2 connections and remove them from pool."""
