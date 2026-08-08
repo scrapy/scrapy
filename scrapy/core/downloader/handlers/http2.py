@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
-from scrapy.core.downloader.handlers.base import BaseDownloadHandler
+from scrapy.core.downloader.handlers._base_http import BaseHttpDownloadHandler
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
 from scrapy.exceptions import (
     DownloadTimeoutError,
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
-class H2DownloadHandler(BaseDownloadHandler):
+class H2DownloadHandler(BaseHttpDownloadHandler):
     lazy = True
 
     def __init__(self, crawler: Crawler):
@@ -40,7 +40,7 @@ class H2DownloadHandler(BaseDownloadHandler):
 
         from twisted.internet import reactor
 
-        self._pool = H2ConnectionPool(reactor, crawler.settings)
+        self._pool = H2ConnectionPool(reactor, crawler.settings, self._pool_size_total)
         self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 

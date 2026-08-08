@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 import pytest
 from cryptography.x509 import load_der_x509_certificate
+from twisted.internet.defer import DeferredList
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
@@ -96,6 +97,69 @@ class TestHttpBase(ABC):
             yield dh
         finally:
             await dh.close()
+
+    async def _connection_ids(
+        self, urls: list[str], settings_dict: dict[str, Any]
+    ) -> set[str]:
+        """Request *urls* one after another and return the identifiers of the
+        connections that the server used to serve them."""
+        async with self.get_dh(settings_dict) as dh:
+            responses = [await dh.download_request(Request(url)) for url in urls]
+        return {response.text for response in responses}
+
+    @staticmethod
+    def _other_host(url: str) -> str:
+        """Return *url* pointing at the same server through a different name,
+        so that its connection cannot be reused."""
+        return url.replace("127.0.0.1", "localhost")
+
+    @coroutine_test
+    async def test_keepalive(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        assert len(await self._connection_ids([url, url], {})) == 1
+
+    @coroutine_test
+    async def test_no_keepalive(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        settings_dict = {"CONNECTION_KEEPALIVE_TIMEOUT": 0}
+        assert len(await self._connection_ids([url, url], settings_dict)) == 2
+
+    @coroutine_test
+    async def test_connection_limit(self, mockserver: MockServer) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        urls = [url, self._other_host(url)] * 2
+
+        assert len(await self._connection_ids(urls, {})) == 2
+
+        settings_dict = {"CONCURRENT_CONNECTIONS_PER_HANDLER": 1}
+        assert len(await self._connection_ids(urls, settings_dict)) == 4
+
+        settings_dict = {"CONCURRENT_CONNECTIONS_PER_HANDLER": 0}
+        assert len(await self._connection_ids(urls, settings_dict)) == 2
+
+    @coroutine_test
+    async def test_connection_limit_spares_connections_in_use(
+        self, mockserver: MockServer
+    ) -> None:
+        url = mockserver.url("/connection-id", is_secure=self.is_secure)
+        slow_url = mockserver.url("/connection-id?delay=0.5", is_secure=self.is_secure)
+        other_url = self._other_host(url)
+        async with self.get_dh({"CONCURRENT_CONNECTIONS_PER_HANDLER": 1}) as dh:
+            first = await dh.download_request(Request(url))
+            results = await maybe_deferred_to_future(
+                DeferredList(
+                    [
+                        deferred_from_coro(dh.download_request(Request(slow_url))),
+                        deferred_from_coro(dh.download_request(Request(other_url))),
+                    ],
+                    fireOnOneErrback=True,
+                )
+            )
+        ids = {response.text for _, response in results}
+        # the connection serving the slow request was kept even though the
+        # request to the other host had to exceed the limit to get one
+        assert first.text in ids
+        assert len(ids) == 2
 
     @coroutine_test
     async def test_unsupported_scheme(self) -> None:
