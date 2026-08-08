@@ -5,9 +5,9 @@ import pytest
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.signalmanager import SignalManager
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.spider import DefaultSpider
+from scrapy.utils.test import get_crawler
 
 with warnings.catch_warnings():
     warnings.filterwarnings(
@@ -46,11 +46,8 @@ def test_from_crawler_without_recipients_raises_notconfigured():
         statsmailer.StatsMailer.from_crawler(crawler)
 
 
-def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeypatch):
-    crawler = MagicMock()
-    crawler.settings.getlist.return_value = ["test@example.com"]
-    crawler.stats = dummy_stats
-    crawler.signals = SignalManager(crawler)
+def test_from_crawler_with_recipients_initializes_extension(monkeypatch):
+    crawler = get_crawler(settings_dict={"STATSMAILER_RCPTS": ["test@example.com"]})
 
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
@@ -62,21 +59,18 @@ def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeyp
     assert ext.mail is mailer
 
 
-def test_from_crawler_connects_spider_closed_signal(dummy_stats, monkeypatch):
-    crawler = MagicMock()
-    crawler.settings.getlist.return_value = ["test@example.com"]
-    crawler.stats = dummy_stats
-    crawler.signals = SignalManager(crawler)
+def test_from_crawler_connects_spider_closed_signal(monkeypatch):
+    crawler = get_crawler(settings_dict={"STATSMAILER_RCPTS": ["test@example.com"]})
 
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    statsmailer.StatsMailer.from_crawler(crawler)
+    ext = statsmailer.StatsMailer.from_crawler(crawler)
 
-    connected = crawler.signals.send_catch_log(
+    crawler.signals.send_catch_log(
         signals.spider_closed, spider=DefaultSpider(name="dummy")
     )
-    assert connected is not None
+    assert ext.mail.send.call_count == 1
 
 
 def test_spider_closed_sends_email(dummy_stats):
