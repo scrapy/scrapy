@@ -95,8 +95,14 @@ class TestFilesPipeline:
     def teardown_method(self):
         rmtree(self.tempdir)
 
-    def _create_pipeline(self, pipeline_cls: type[FilesPipeline]) -> FilesPipeline:
-        crawler = get_crawler(DefaultSpider, {"FILES_STORE": self.tempdir})
+    def _create_pipeline(
+        self,
+        pipeline_cls: type[FilesPipeline],
+        settings: dict[str, Any] | None = None,
+    ) -> FilesPipeline:
+        crawler = get_crawler(
+            DefaultSpider, {"FILES_STORE": self.tempdir, **(settings or {})}
+        )
         crawler.spider = crawler._create_spider()
         crawler.engine = MagicMock(download_async=mocked_download_func)
         pipeline = pipeline_cls.from_crawler(crawler)
@@ -227,6 +233,35 @@ class TestFilesPipeline:
             result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
+
+    @pytest.mark.parametrize(
+        ("age_hours", "expected_status"), [(6, "uptodate"), (18, "downloaded")]
+    )
+    @coroutine_test
+    async def test_file_expiration_below_one_day(
+        self, age_hours: int, expected_status: str
+    ) -> None:
+        pipeline = self._create_pipeline(FilesPipeline, {"FILES_EXPIRES": 0.5})
+        item_url = f"http://example.com/file-{age_hours}h.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={
+                    "checksum": "abc",
+                    "last_modified": time.time() - age_hours * 60 * 60,
+                },
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+        ):
+            result = await pipeline.process_item(item)
+        assert result["files"][0]["status"] == expected_status
 
     @coroutine_test
     async def test_file_cached(self):

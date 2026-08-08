@@ -93,7 +93,7 @@ class ImagesPipeline(FilesPipeline):
             base_class_name="ImagesPipeline",
             settings=settings,
         )
-        self.expires: int = settings.getint(resolve("IMAGES_EXPIRES"), self.EXPIRES)
+        self.expires: float = settings.getfloat(resolve("IMAGES_EXPIRES"), self.EXPIRES)
 
         if not hasattr(self, "IMAGES_RESULT_FIELD"):
             self.IMAGES_RESULT_FIELD: str = self.DEFAULT_IMAGES_RESULT_FIELD
