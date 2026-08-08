@@ -44,6 +44,15 @@ Here is a simple example showing how you can catch signals and perform some acti
         def parse(self, response):
             pass
 
+.. _signal-order:
+
+Handler order
+=============
+
+The order in which the handlers of a signal run is undefined, and
+:ref:`asynchronous handlers <signal-deferred>` run concurrently. If two actions
+must happen in a given order, run both from a single handler, in that order.
+
 .. _signal-deferred:
 
 Asynchronous signal handlers
