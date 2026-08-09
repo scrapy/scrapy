@@ -49,7 +49,8 @@ Additionally, they may also implement the following methods:
 
 .. method:: close_spider(self)
 
-   This method is called when the spider is closed.
+   This method is called when the spider is closed, before the
+   :signal:`spider_closed` signal is sent.
 
 Any of these methods may be defined as a coroutine function (``async def``).
 
