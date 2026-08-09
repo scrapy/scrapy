@@ -754,6 +754,11 @@ Default: ``60``
 
 Timeout for processing of DNS queries in seconds. Float is supported.
 
+The timeout starts when the query is queued into the Twisted reactor thread
+pool, not when it is sent. If that thread pool is saturated, queries can time
+out before being sent, in which case increasing
+:setting:`REACTOR_THREADPOOL_MAXSIZE` helps more than increasing this setting.
+
 .. note::
     This setting is only used by
     :class:`~scrapy.resolver.CachingThreadedResolver`. It has no effect when
