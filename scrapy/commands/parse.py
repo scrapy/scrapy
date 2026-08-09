@@ -41,7 +41,7 @@ class Command(BaseRunSpiderCommand):
     spider: Spider | None = None
     items: ClassVar[dict[int, list[Any]]] = {}
     requests: ClassVar[dict[int, list[Request]]] = {}
-    spidercls: type[Spider] | None
+    spidercls: type[Spider] | None = None
 
     first_response = None
 

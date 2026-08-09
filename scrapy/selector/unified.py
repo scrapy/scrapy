@@ -46,8 +46,10 @@ class Selector(_ParselSelector, object_ref):
     ``"json"``, ``"text"`` or ``None`` (default). It's passed to
     :class:`parsel.Selector` and its meaning is defined there. However, when
     ``type`` is ``None``, it is set to ``"xml"`` for an
-    :class:`~scrapy.http.XmlResponse` and to ``"html"`` otherwise before
-    passing it to :class:`parsel.Selector`.
+    :class:`~scrapy.http.XmlResponse` and to ``"html"`` for an
+    :class:`~scrapy.http.HtmlResponse` or for ``text`` before passing it to
+    :class:`parsel.Selector`, which for any other response is left to
+    determine the type from the response body.
 
     .. note:: JSON selector support requires ``parsel`` 1.8.0 or higher. With
        older versions setting ``type`` to ``"json"`` or ``"text"`` is not
@@ -70,8 +72,13 @@ class Selector(_ParselSelector, object_ref):
                 f"{self.__class__.__name__}.__init__() received both response and text"
             )
 
+        # A response that is neither HTML nor XML, e.g. a JSON one, keeps type
+        # unset, so that parsel determines it from the body.
         if type is None:
-            type = "xml" if isinstance(response, XmlResponse) else "html"  # noqa: A001
+            if isinstance(response, XmlResponse):
+                type = "xml"  # noqa: A001
+            elif response is None or isinstance(response, HtmlResponse):
+                type = "html"  # noqa: A001
 
         if text is not None:
             response = _response_from_text(text, type)
