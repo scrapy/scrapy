@@ -396,8 +396,12 @@ Start requests
 Delaying start request iteration
 --------------------------------
 
-You can override the :meth:`~scrapy.Spider.start` method as follows to pause
-its iteration whenever there are scheduled requests:
+Scrapy iterates :meth:`~scrapy.Spider.start` as fast as it yields, so all start
+requests reach the scheduler early in the crawl, however many they are. To
+minimize the number of requests in the scheduler at any given time, and with it
+resource usage (memory, or disk when using :setting:`JOBDIR`), override
+:meth:`~scrapy.Spider.start` to pause its iteration whenever there are
+scheduled requests:
 
 .. code-block:: python
 
@@ -406,10 +410,6 @@ its iteration whenever there are scheduled requests:
             if self.crawler.engine.needs_backout():
                 await self.crawler.signals.wait_for(signals.scheduler_empty)
             yield item_or_request
-
-This can help minimize the number of requests in the scheduler at any given
-time, to minimize resource usage (memory or disk, depending on
-:setting:`JOBDIR`).
 
 .. _builtin-spiders:
 
