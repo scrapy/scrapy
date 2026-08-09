@@ -799,40 +799,9 @@ OffsiteMiddleware
 .. module:: scrapy.downloadermiddlewares.offsite
    :synopsis: Offsite Middleware
 
-.. class:: OffsiteMiddleware
+.. autoclass:: OffsiteMiddleware
 
-   .. versionadded:: 2.11.2
-
-   Filters out Requests for URLs outside the domains covered by the spider.
-
-   This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.Spider.allowed_domains` attribute.
-   All subdomains of any domain in the list are also allowed.
-   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
-   but not ``www2.example.com`` nor ``example.com``.
-
-   When your spider returns a request for a domain not belonging to those
-   covered by the spider, this middleware will log a debug message similar to
-   this one::
-
-      DEBUG: Filtered offsite request to 'offsite.example': <GET http://offsite.example/some/page.html>
-
-   To avoid filling the log with too much noise, it will only print one of
-   these messages for each new domain filtered. So, for example, if another
-   request for ``offsite.example`` is filtered, no log message will be
-   printed. But if a request for ``other.example`` is filtered, a message
-   will be printed (but only for the first request filtered).
-
-   If the spider doesn't define an
-   :attr:`~scrapy.Spider.allowed_domains` attribute, or the
-   attribute is empty, the offsite middleware will allow all requests.
-
-   .. reqmeta:: allow_offsite
-
-   If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
-   ``True`` or :attr:`Request.meta <scrapy.Request.meta>` has ``allow_offsite``
-   set to ``True``, then the OffsiteMiddleware will allow the request even if
-   its domain is not listed in allowed domains.
+   .. automethod:: should_follow
 
 RedirectMiddleware
 ------------------
