@@ -122,6 +122,13 @@ one per actual value of the placeholder.
     :meth:`~scrapy.statscollectors.StatsCollector.get_stats` output is
     equivalent to a counter of 0.
 
+.. stat:: depth/request_ignored_count
+
+``depth/request_ignored_count``
+    Number of requests dropped for exceeding :setting:`DEPTH_LIMIT`.
+
+    Set by :class:`~scrapy.spidermiddlewares.depth.DepthMiddleware`.
+
 .. stat:: downloader/exception_count
 
 ``downloader/exception_count``

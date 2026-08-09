@@ -78,33 +78,15 @@ Writing your own download handler
 A download handler is a :ref:`component <topics-components>` that defines
 the following API:
 
-.. class:: SampleDownloadHandler
-
-    .. attribute:: lazy
-        :type: bool
-
-        If ``False``, the handler will be instantiated when Scrapy is
-        initialized.
-
-        If ``True``, the handler will only be instantiated when the first
-        request handled by it needs to be downloaded.
-
-    .. method:: download_request(request: Request) -> Response
-        :async:
-
-        Download the given request and return a response.
-
-    .. method:: close() -> None
-        :async:
-
-        Clean up any resources used by the handler.
+.. autoclass:: scrapy.core.downloader.handlers.DownloadHandlerProtocol
+    :members:
 
 An optional base class for custom handlers is provided:
 
 .. autoclass:: scrapy.core.downloader.handlers.base.BaseDownloadHandler
     :members:
     :undoc-members:
-    :member-order: bysource
+    :exclude-members: close, download_request, lazy
 
 .. _download-handlers-exceptions:
 
@@ -220,9 +202,6 @@ Other limitations:
 
 -   IPv6 support requires setting :setting:`TWISTED_DNS_RESOLVER`
     to ``scrapy.resolver.CachingHostnameResolver``.
-
--   No support for the :signal:`bytes_received` and :signal:`headers_received`
-    signals.
 
 Known limitations of the HTTP/2 support:
 

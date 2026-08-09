@@ -143,6 +143,32 @@ Those objects are:
 
 -   ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
 
+.. _shell-update-vars:
+
+Adding your own objects
+-----------------------
+
+To define additional objects, or to run code every time a response is fetched,
+write a :ref:`custom project command <topics-commands>` in a module called
+``shell``, which overrides the :command:`shell` command, and override its
+``update_vars`` method. It is called on start and after every ``fetch``, and it
+receives the mapping of variable names to objects:
+
+.. code-block:: python
+
+    from scrapy.commands.shell import Command as ShellCommand
+
+
+    class Command(ShellCommand):
+        def update_vars(self, vars):
+            from myproject.utils import parse_product
+
+            vars["parse_product"] = parse_product
+            if vars["response"] is not None:
+                vars["product"] = parse_product(vars["response"])
+
+``response`` is ``None`` when the shell is started without a URL.
+
 Example of shell session
 ========================
 

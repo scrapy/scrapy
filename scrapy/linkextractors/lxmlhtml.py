@@ -281,6 +281,12 @@ class LxmlLinkExtractor:
                 if m:
                     return m.group(1)
 
+        ``process_value`` is called before the filtering parameters, such as
+        ``allow`` and ``deny``, which match the value that it returns. To drop
+        links based on their final URL, use the ``process_links`` parameter of
+        :class:`~scrapy.spiders.Rule`, which only receives links that those
+        parameters kept.
+
     :type process_value: collections.abc.Callable
 
     :param strip: whether to strip whitespaces from extracted attributes.

@@ -122,6 +122,9 @@ one or more of these methods:
         This method is an :term:`asynchronous generator` called with the
         results from the spider after the spider has processed the response.
 
+        *result* is lazy: a generator callback runs as *result* is iterated, so
+        code that runs before that iteration runs before the callback body.
+
         .. seealso:: :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
@@ -142,8 +145,9 @@ one or more of these methods:
 
     .. method:: process_spider_exception(response, exception)
 
-        This method is called when a spider or :meth:`process_spider_output`
-        method (from a previous spider middleware) raises an exception.
+        This method is called when a spider callback or a
+        :meth:`process_spider_output` method (from a previous spider
+        middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
         iterable of :class:`~scrapy.Request` or :ref:`item <topics-items>`

@@ -183,8 +183,9 @@ Be mindful of memory leaks
 ==========================
 
 If your broad crawl shows a high memory usage, in addition to :ref:`crawling in
-BFO order <broad-crawls-bfo>` and :ref:`lowering concurrency
-<broad-crawls-concurrency>` you should :ref:`debug your memory leaks
+BFO order <broad-crawls-bfo>`, :ref:`lowering concurrency
+<broad-crawls-concurrency>` and :ref:`delaying start request iteration
+<start-requests-lazy>` you should :ref:`debug your memory leaks
 <topics-leaks>`.
 
 
