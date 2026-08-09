@@ -276,6 +276,9 @@ class TextResponse(Response):
         using the ``css`` or ``xpath`` parameters, this method will not produce requests for
         selectors from which links cannot be obtained (for instance, anchor tags without an
         ``href`` attribute)
+
+        .. seealso:: :meth:`.Response.follow_all`, for a caution about mutable
+            *meta* and *cb_kwargs* values.
         """
         arguments = [x for x in (urls, css, xpath) if x is not None]
         if len(arguments) != 1:
