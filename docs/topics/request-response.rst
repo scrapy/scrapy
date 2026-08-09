@@ -526,7 +526,9 @@ The following built-in Scrapy components have such restrictions:
     :setting:`HTTPCACHE_DIR` also apply. Inside :setting:`HTTPCACHE_DIR`,
     the following directory structure is created:
 
-    -   :attr:`.Spider.name`
+    -   the partition that :setting:`HTTPCACHE_SCOPE` selects, i.e.
+        :attr:`.Spider.name` or the request host, and no folder at all with
+        ``'none'``
 
         -   first byte of a request fingerprint as hexadecimal
 

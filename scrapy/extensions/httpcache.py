@@ -8,6 +8,7 @@ from importlib import import_module
 from pathlib import Path
 from time import time
 from typing import IO, TYPE_CHECKING, Any, Concatenate, cast
+from urllib.parse import quote
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
@@ -30,6 +31,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _get_scope(settings: BaseSettings, supported: tuple[str, ...]) -> str:
+    scope: str = settings["HTTPCACHE_SCOPE"]
+    if scope not in supported:
+        supported_repr = ", ".join(repr(value) for value in supported)
+        raise ValueError(
+            f"Unsupported HTTPCACHE_SCOPE value: {scope!r}. The cache storage "
+            f"in use supports the following values: {supported_repr}."
+        )
+    return scope
 
 
 class DummyPolicy:
@@ -250,9 +262,11 @@ class DbmCacheStorage:
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.dbmodule: ModuleType = import_module(settings["HTTPCACHE_DBM_MODULE"])
         self.db: Any = None  # the real type is private
+        self._scope = _get_scope(settings, ("spider", "none"))
 
     def open_spider(self, spider: Spider) -> None:
-        dbpath = Path(self.cachedir, f"{spider.name}.db")
+        name = spider.name if self._scope == "spider" else "httpcache"
+        dbpath = Path(self.cachedir, f"{name}.db")
         self.db = self.dbmodule.open(str(dbpath), "c")
 
         logger.debug(
@@ -312,6 +326,7 @@ class FilesystemCacheStorage:
         self.cachedir: str = data_path(settings["HTTPCACHE_DIR"])
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
+        self._scope = _get_scope(settings, ("spider", "none", "domain"))
         # https://github.com/python/mypy/issues/10740
         self._open: Callable[
             Concatenate[str | os.PathLike[str], str, ...], IO[bytes]
@@ -377,7 +392,17 @@ class FilesystemCacheStorage:
 
     def _get_request_path(self, spider: Spider, request: Request) -> str:
         key = self._fingerprinter.fingerprint(request).hex()
-        return str(Path(self.cachedir, spider.name, key[0:2], key))
+        scope_path = self._get_scope_path(spider, request)
+        return str(Path(self.cachedir, scope_path, key[0:2], key))
+
+    def _get_scope_path(self, spider: Spider, request: Request) -> str:
+        if self._scope == "spider":
+            return spider.name
+        if self._scope == "domain":
+            # quote() covers hostnames that are not valid path components,
+            # such as IPv6 addresses.
+            return quote(urlparse_cached(request).hostname or "_", safe="")
+        return ""
 
     def _read_meta(self, spider: Spider, request: Request) -> dict[str, Any] | None:
         rpath = Path(self._get_request_path(spider, request))
