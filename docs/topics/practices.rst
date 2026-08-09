@@ -530,32 +530,41 @@ modules by separating them with commas.
 Avoiding getting banned
 =======================
 
-Some websites implement certain measures to prevent bots from crawling them,
-with varying degrees of sophistication. Getting around those measures can be
-difficult and tricky, and may sometimes require special infrastructure. Please
-consider contacting `commercial support`_ if in doubt.
+Websites tell regular visitors and crawlers apart by how their traffic looks:
+the headers it carries, how fast it arrives, how many requests come from the
+same place. Traffic that stands out can be blocked even when the crawling
+itself would be welcome.
 
-Here are some tips to keep in mind when dealing with these kinds of sites:
+Where the website allows crawling, the most effective thing you can do is make
+yourself known: set :setting:`USER_AGENT` to a value that identifies you and
+lets its owners reach you, so that they can ask you to adjust your crawler
+rather than block it.
 
-* rotate your user agent from a pool of well-known ones from browsers (Google
-  around to get a list of them)
-* disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
-  cookies to spot bot behaviour
-* use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
-* if possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
-  directly
-* use a pool of rotating IPs. For example, the free `Tor project`_ or paid
+Where that is not enough, the following make your traffic resemble that of a
+regular visitor:
+
+* rotate your user agent among those of common browsers, so that your requests
+  do not all look alike (search the web for an up-to-date list)
+* disable cookies (see :setting:`COOKIES_ENABLED`), so that a session
+  identifier does not tie all your requests together
+* space out your requests, 2 seconds apart or more, with the
+  :setting:`DOWNLOAD_DELAY` setting, to keep your pace closer to that of a
+  person browsing
+* where possible, read pages from `Common Crawl`_, which sends no traffic to
+  the website at all
+* spread your requests over a pool of IP addresses, so that none of them
+  accounts for your whole crawl. For example, the free `Tor project`_ or paid
   services like `ProxyMesh`_.
-* for HTTPS websites, if blocking appears related to TLS behavior, consider
-  adjusting the :setting:`DOWNLOAD_TLS_MIN_VERSION` and
-  :setting:`DOWNLOAD_TLS_MAX_VERSION` settings, since some websites may respond
-  differently depending on the TLS method used by the client.
-* use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
-  plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
+* match the TLS behavior of a browser: some websites respond differently
+  depending on the TLS version of the client, which you can adjust with the
+  :setting:`DOWNLOAD_TLS_MIN_VERSION` and :setting:`DOWNLOAD_TLS_MAX_VERSION`
+  settings.
+* let a service take care of all of the above, such as `Zyte API`_, which
+  provides a `Scrapy plugin
+  <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
   features, like `AI web scraping <https://www.zyte.com/ai-web-scraping/>`__
 
-If you are still unable to prevent your bot getting banned, consider contacting
-`commercial support`_.
+If your crawler still gets blocked, consider contacting `commercial support`_.
 
 .. _static-analysis:
 
