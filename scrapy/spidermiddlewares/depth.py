@@ -41,6 +41,7 @@ class DepthMiddleware(BaseSpiderMiddleware):
         self.stats = stats
         self.verbose_stats = verbose_stats
         self.prio = prio
+        self._ignored_logged = False
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -94,11 +95,14 @@ class DepthMiddleware(BaseSpiderMiddleware):
         if self.prio:
             request.priority -= depth * self.prio
         if self.maxdepth and depth > self.maxdepth:
-            logger.debug(
-                "Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
-                {"maxdepth": self.maxdepth, "requrl": request.url},
-                extra={"spider": self.crawler.spider},
-            )
+            if not self._ignored_logged:
+                logger.debug(
+                    f"Ignoring link (depth > {self.maxdepth}): {request.url}"
+                    " - no more ignored links will be shown",
+                    extra={"spider": self.crawler.spider},
+                )
+                self._ignored_logged = True
+            self.stats.inc_value("depth/request_ignored_count")
             return None
         if self.verbose_stats:
             self.stats.inc_value(f"request_depth_count/{depth}")

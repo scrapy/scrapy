@@ -85,6 +85,23 @@ async def test_process_spider_output_async_no_response(
     assert stats.get_value("request_depth_count/0") is None
 
 
+def test_ignored_logged_once(
+    mw: DepthMiddleware, stats: StatsCollector, caplog: pytest.LogCaptureFixture
+) -> None:
+    resp = Response("http://example.com")
+    resp.request = Request("http://example.com")
+    resp.meta["depth"] = 1
+    result = [Request(f"http://example.com/{i}") for i in range(3)]
+
+    with caplog.at_level("DEBUG", logger="scrapy.spidermiddlewares.depth"):
+        assert not list(mw.process_spider_output(resp, result))
+
+    messages = [r.getMessage() for r in caplog.records]
+    assert len(messages) == 1
+    assert "http://example.com/0" in messages[0]
+    assert stats.get_value("depth/request_ignored_count") == 3
+
+
 def test_priority_and_non_verbose_stats() -> None:
     crawler = get_crawler(
         Spider,

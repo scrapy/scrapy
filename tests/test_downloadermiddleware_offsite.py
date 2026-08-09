@@ -263,3 +263,50 @@ def test_ignore_request_reason():
         IgnoreRequest, match=re.escape("Filtered offsite request to 'other.org'")
     ):
         mw.process_request(request)
+
+
+class DomainSpider(Spider):
+    name = "a"
+    allowed_domains: list[str]
+
+
+def test_dynamic_allowed_domains():
+    crawler = get_crawler(DomainSpider)
+    spider = DomainSpider.from_crawler(crawler, allowed_domains=["a.example"])
+    crawler.spider = spider
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(spider)
+
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(Request("https://b.example"))
+
+    spider.allowed_domains.append("b.example")
+    assert mw.process_request(Request("https://b.example")) is None
+
+    spider.allowed_domains.remove("a.example")
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(Request("https://a.example"))
+
+
+def test_dynamic_allowed_domains_caching():
+    calls = 0
+
+    class TrackingMiddleware(OffsiteMiddleware):
+        def get_host_regex(self, spider: Spider) -> re.Pattern[str]:
+            nonlocal calls
+            calls += 1
+            return super().get_host_regex(spider)
+
+    crawler = get_crawler(DomainSpider)
+    spider = DomainSpider.from_crawler(crawler, allowed_domains=["a.example"])
+    crawler.spider = spider
+    mw = TrackingMiddleware.from_crawler(crawler)
+    mw.spider_opened(spider)
+
+    for _ in range(3):
+        mw.process_request(Request("https://a.example"))
+    assert calls == 1
+
+    spider.allowed_domains.append("b.example")
+    assert mw.process_request(Request("https://b.example")) is None
+    assert calls == 2

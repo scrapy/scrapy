@@ -52,10 +52,12 @@ class OffsiteMiddleware:
     """
 
     crawler: Crawler
+    host_regex: re.Pattern[str]
 
     def __init__(self, stats: StatsCollector):
         self.stats = stats
         self.domains_seen: set[str] = set()
+        self._allowed_domains: list[str] | None = None
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -67,7 +69,13 @@ class OffsiteMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
+        self._update_host_regex(spider)
+
+    def _update_host_regex(self, spider: Spider) -> None:
+        allowed_domains = list(getattr(spider, "allowed_domains", None) or [])
+        if allowed_domains != self._allowed_domains:
+            self._allowed_domains = allowed_domains
+            self.host_regex = self.get_host_regex(spider)
 
     def request_scheduled(self, request: Request, spider: Spider) -> None:
         self.process_request(request)
@@ -111,6 +119,7 @@ class OffsiteMiddleware:
                 def should_follow(self, request, spider):
                     return urlparse_cached(request).hostname in spider.allowed_domains
         """
+        self._update_host_regex(spider)
         regex = self.host_regex
         # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ""
