@@ -117,7 +117,7 @@ class Scraper:
         ]:
             self._check_deprecated_itemproc_method(method)
 
-        self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
+        self.concurrent_items: int = max(1, crawler.settings.getint("CONCURRENT_ITEMS"))
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
         assert crawler.logformatter

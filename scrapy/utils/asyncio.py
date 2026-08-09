@@ -102,32 +102,30 @@ async def _parallel_asyncio(
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
 
+    Tasks are created on demand, one per item, so that a *count* much larger
+    than the amount of work does not cost anything.
+
     This function is only used in
     :meth:`scrapy.core.scraper.Scraper.handle_spider_output_async` and so it
     assumes that neither *callable* nor iterating *iterable* will raise an
     exception.
     """
-    queue: asyncio.Queue[_T | None] = asyncio.Queue(count * 2)
+    semaphore = asyncio.Semaphore(count)
+    tasks: set[asyncio.Task[None]] = set()
 
-    async def worker() -> None:
-        while True:
-            item = await queue.get()
-            if item is None:
-                break
-            try:
-                await callable_(item, *args, **kwargs)
-            finally:
-                queue.task_done()
+    async def work(item: _T) -> None:
+        try:
+            await callable_(item, *args, **kwargs)
+        finally:
+            semaphore.release()
 
-    async def fill_queue() -> None:
-        async for item in as_async_generator(iterable):
-            await queue.put(item)
-        for _ in range(count):
-            await queue.put(None)
-
-    fill_task = asyncio.create_task(fill_queue())
-    work_tasks = [asyncio.create_task(worker()) for _ in range(count)]
-    await asyncio.wait([fill_task, *work_tasks])
+    async for item in as_async_generator(iterable):
+        await semaphore.acquire()
+        task = asyncio.create_task(work(item))
+        tasks.add(task)
+        task.add_done_callback(tasks.discard)
+    if tasks:
+        await asyncio.wait(tasks)
 
 
 class AsyncioLoopingCall:
