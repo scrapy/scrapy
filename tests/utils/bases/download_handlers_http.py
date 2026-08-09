@@ -692,6 +692,7 @@ class TestHttpBase(ABC):
             "Expected to receive 5 bytes which is larger than download warn size (4)"
             in caplog.text
         )
+        assert caplog.text.count("download warn size (4)") == 1
 
     @coroutine_test
     async def test_download_with_warnsize_no_content_length(
