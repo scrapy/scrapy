@@ -745,7 +745,8 @@ HttpCompressionMiddleware
    sent/received from web sites.
 
    .. versionchanged:: VERSION
-      Decoding `brotli`_ responses no longer requires an extra.
+      Decoding `brotli`_ responses no longer requires installing an
+      additional package.
 
    This middleware also supports decoding `zstd-compressed`_ responses with
    the :ref:`zstd <extras>` extra.
