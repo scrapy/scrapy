@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import logging
+import sqlite3
 from pathlib import Path
+from shutil import rmtree
+from tempfile import mkdtemp
 from typing import TYPE_CHECKING
 from warnings import warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
     RequestFingerprinter,
@@ -14,6 +18,8 @@ from scrapy.utils.request import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from twisted.internet.defer import Deferred
 
     # typing.Self requires Python 3.11
@@ -22,6 +28,22 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.http.request import Request
     from scrapy.spiders import Spider
+
+
+_SIZE_BYTES = 2
+
+
+def _read_fingerprints(data: bytes) -> Iterator[bytes]:
+    pos = 0
+    while pos + _SIZE_BYTES <= len(data):
+        size = int.from_bytes(data[pos : pos + _SIZE_BYTES], "big")
+        pos += _SIZE_BYTES
+        fingerprint = data[pos : pos + size]
+        if len(fingerprint) < size:
+            # Truncated by an unclean shutdown.
+            return
+        yield fingerprint
+        pos += size
 
 
 class BaseDupeFilter:
@@ -64,9 +86,10 @@ class RFPDupeFilter(BaseDupeFilter):
         warning in a future version of Scrapy. Do not rely on the following
         information for anything other than debugging purposes.
 
-    When using :setting:`JOBDIR`, seen fingerprints are tracked in a file named
-    ``requests.seen`` in the :ref:`job directory <job-dir>`, which contains 1
-    request fingerprint per line.
+    When using :setting:`JOBDIR`, seen fingerprints are tracked in a binary
+    file named :file:`requests.seen` in the :ref:`job directory <job-dir>`,
+    where each fingerprint is stored as its big-endian, 2-byte length followed
+    by the fingerprint itself.
     """
 
     def __init__(
@@ -80,18 +103,33 @@ class RFPDupeFilter(BaseDupeFilter):
         self.fingerprinter: RequestFingerprinterProtocol = (
             fingerprinter or RequestFingerprinter()
         )
-        self.fingerprints: set[str] = set()
+        self._fingerprints: set[bytes] = set()
         self.logdupes = True
         self.debug = debug
         self.logger = logging.getLogger(__name__)
-        if path:
-            # line-by-line writing, see: https://github.com/scrapy/scrapy/issues/6019
-            self.file = Path(path, "requests.seen").open(
-                "a+", buffering=1, encoding="utf-8"
+        self._legacy_fingerprint = method_is_overridden(
+            type(self), RFPDupeFilter, "request_fingerprint"
+        )
+        if self._legacy_fingerprint:
+            warn(
+                "Overriding RFPDupeFilter.request_fingerprint() is deprecated,"
+                " set the REQUEST_FINGERPRINTER_CLASS setting instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
             )
-            self.file.reconfigure(write_through=True)
+        if path:
+            self.file = Path(path, "requests.seen").open("a+b")
             self.file.seek(0)
-            self.fingerprints.update(x.rstrip() for x in self.file)
+            self._fingerprints.update(_read_fingerprints(self.file.read()))
+
+    @property
+    def fingerprints(self) -> frozenset[str]:
+        warn(
+            "RFPDupeFilter.fingerprints is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return frozenset(fp.hex() for fp in self._fingerprints)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -104,13 +142,18 @@ class RFPDupeFilter(BaseDupeFilter):
         )
 
     def request_seen(self, request: Request) -> bool:
-        fp = self.request_fingerprint(request)
-        if fp in self.fingerprints:
+        fp = self._fingerprint(request)
+        if fp in self._fingerprints:
             return True
-        self.fingerprints.add(fp)
+        self._fingerprints.add(fp)
         if self.file:
-            self.file.write(fp + "\n")
+            self.file.write(len(fp).to_bytes(_SIZE_BYTES, "big") + fp)
         return False
+
+    def _fingerprint(self, request: Request) -> bytes:
+        if self._legacy_fingerprint:
+            return bytes.fromhex(self.request_fingerprint(request))
+        return self.fingerprinter.fingerprint(request)
 
     def request_fingerprint(self, request: Request) -> str:
         """Returns a string that uniquely identifies the specified request."""
@@ -136,3 +179,56 @@ class RFPDupeFilter(BaseDupeFilter):
 
         assert spider.crawler.stats
         spider.crawler.stats.inc_value("dupefilter/filtered")
+
+
+class DiskDupeFilter(RFPDupeFilter):
+    """Duplicate request filtering class (:setting:`DUPEFILTER_CLASS`) that
+    keeps seen request fingerprints on disk, in an SQLite database, instead of
+    in memory, trading some speed for a much lower memory usage on crawls that
+    send a large number of requests.
+
+    .. versionadded:: VERSION
+
+    Job directory contents
+    ======================
+
+    .. warning:: The files that this class generates in the :ref:`job directory
+        <job-dir>` are an implementation detail, and may change without a
+        warning in a future version of Scrapy. Do not rely on the following
+        information for anything other than debugging purposes.
+
+    When using :setting:`JOBDIR`, seen fingerprints are tracked in an SQLite
+    database named :file:`requests.seen.db` in the :ref:`job directory
+    <job-dir>`.
+    """
+
+    def __init__(
+        self,
+        path: str | None = None,
+        debug: bool = False,
+        *,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
+    ) -> None:
+        super().__init__(debug=debug, fingerprinter=fingerprinter)
+        if path:
+            self._tempdir: str | None = None
+        else:
+            self._tempdir = path = mkdtemp()
+        self._db = sqlite3.connect(Path(path, "requests.seen.db"))
+        self._db.execute("PRAGMA journal_mode=WAL").close()
+        self._db.execute("PRAGMA synchronous=NORMAL")
+        self._db.execute(
+            "CREATE TABLE IF NOT EXISTS seen (fingerprint BLOB PRIMARY KEY)"
+            " WITHOUT ROWID"
+        )
+
+    def request_seen(self, request: Request) -> bool:
+        fp = self._fingerprint(request)
+        cursor = self._db.execute("INSERT OR IGNORE INTO seen VALUES (?)", (fp,))
+        return not cursor.rowcount
+
+    def close(self, reason: str) -> None:
+        self._db.commit()
+        self._db.close()
+        if self._tempdir:
+            rmtree(self._tempdir)

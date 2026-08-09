@@ -1243,6 +1243,10 @@ The class used to detect and filter duplicate requests.
 The default, :class:`~scrapy.dupefilters.RFPDupeFilter`, filters based on the
 :setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
+On crawls large enough for the memory that
+:class:`~scrapy.dupefilters.RFPDupeFilter` uses to become a problem, set this
+setting to :class:`~scrapy.dupefilters.DiskDupeFilter` instead.
+
 To change how duplicates are checked, you can point :setting:`DUPEFILTER_CLASS`
 to a custom subclass of :class:`~scrapy.dupefilters.RFPDupeFilter` that
 overrides its ``__init__`` method to use a :ref:`different request
@@ -1314,6 +1318,8 @@ interface:
 .. autoclass:: scrapy.dupefilters.BaseDupeFilter
 
 .. autoclass:: scrapy.dupefilters.RFPDupeFilter
+
+.. autoclass:: scrapy.dupefilters.DiskDupeFilter
 
 
 .. setting:: DUPEFILTER_DEBUG

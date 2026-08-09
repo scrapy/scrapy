@@ -178,6 +178,17 @@ final depth is reached, which can significantly increase memory usage.
 :ref:`Crawl in BFO order <faq-bfo-dfo>` instead to save memory.
 
 
+Filter out duplicate requests on disk
+=====================================
+
+:class:`~scrapy.dupefilters.RFPDupeFilter`, the default
+:setting:`DUPEFILTER_CLASS`, keeps a fingerprint of every request sent in
+memory, which on a crawl of tens of millions of requests amounts to gigabytes.
+Set :setting:`DUPEFILTER_CLASS` to
+:class:`~scrapy.dupefilters.DiskDupeFilter` to keep those fingerprints on disk
+instead.
+
+
 Be mindful of memory leaks
 ==========================
 
