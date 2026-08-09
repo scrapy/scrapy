@@ -340,7 +340,7 @@ class GCSFeedStorage(BlockingFeedStorage):
             from google.cloud.storage import Client  # noqa: PLC0415
 
             client = Client(project=self.project_id)
-            bucket = client.get_bucket(self.bucket_name)
+            bucket = client.bucket(self.bucket_name)
             blob = bucket.blob(self.blob_name)
             blob.upload_from_file(file, predefined_acl=self.acl)
         finally:
