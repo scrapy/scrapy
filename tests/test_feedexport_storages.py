@@ -634,7 +634,7 @@ class TestGCSFeedStorage:
 
             f.seek.assert_called_once_with(0)
             m.assert_called_once_with(project=project_id)
-            client_mock.get_bucket.assert_called_once_with("mybucket")
+            client_mock.bucket.assert_called_once_with("mybucket")
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()
@@ -658,7 +658,7 @@ class TestGCSFeedStorage:
 
             f.seek.assert_called_once_with(0)
             m.assert_called_once_with(project=project_id)
-            client_mock.get_bucket.assert_called_once_with("mybucket")
+            client_mock.bucket.assert_called_once_with("mybucket")
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()

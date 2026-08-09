@@ -392,7 +392,7 @@ class GCSFeedStorage(BlockingFeedStorage):
         from google.cloud.storage import Client  # noqa: PLC0415
 
         client = Client(project=self.project_id)
-        bucket = client.get_bucket(self.bucket_name)
+        bucket = client.bucket(self.bucket_name)
         return bucket.blob(self.blob_name)
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
