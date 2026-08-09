@@ -26,6 +26,8 @@ dependencies = [
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    'brotli>=1.2.0; implementation_name != "pypy"',
+    'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -62,10 +64,6 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
-brotli = [
-    "brotli>=1.2.0; implementation_name != 'pypy'",
-    "brotlicffi>=1.2.0.0; implementation_name == 'pypy'",
-]
 gcs = ["google-cloud-storage>=1.29.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
