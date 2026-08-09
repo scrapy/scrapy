@@ -265,6 +265,11 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 
+-   Clarified that :func:`scrapy.utils.asyncio.is_asyncio_available` and
+    :func:`scrapy.utils.reactorless.is_reactorless` should not be called from a
+    component ``__init__()`` method, before the asyncio event loop is running.
+    (:issue:`7812`)
+
 -   Mentioned :doc:`scrapy-lint <scrapy-lint:index>` in the docs.
     (:issue:`4421`, :issue:`7627`)
 

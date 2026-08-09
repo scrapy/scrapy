@@ -119,7 +119,14 @@ Enforcing asyncio as a requirement
 If you are writing a :ref:`component <topics-components>` that requires asyncio
 to work, use :func:`scrapy.utils.asyncio.is_asyncio_available` to
 :ref:`enforce it as a requirement <enforce-component-requirements>`. For
-example:
+example, from a method that runs after the crawler has started:
+
+.. warning::
+    Do not call ``is_asyncio_available()`` or ``is_reactorless()`` from a
+    component ``__init__()`` method. Components are initialized before the
+    asyncio event loop is running, so the result may be incorrect. During
+    initialization, use the :class:`~scrapy.crawler.Crawler` instance and its
+    settings instead.
 
 .. code-block:: python
 
@@ -127,7 +134,7 @@ example:
 
 
     class MyComponent:
-        def __init__(self):
+        def process_item(self, item):
             if not is_asyncio_available():
                 raise ValueError(
                     f"{MyComponent.__qualname__} requires the asyncio support. "
