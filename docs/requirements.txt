@@ -134,6 +134,7 @@ sphinx==9.1.0
     #   sphinx-llms-txt
     #   sphinx-markdown-builder
     #   sphinx-notfound-page
+    #   sphinx-reredirects
     #   sphinx-rtd-theme
     #   sphinx-scrapy
     #   sphinxcontrib-jquery
@@ -146,6 +147,8 @@ sphinx-llms-txt @ git+https://github.com/zytedata/sphinx-llms-txt.git@5e8866cb0c
 sphinx-markdown-builder @ git+https://github.com/zytedata/sphinx-markdown-builder.git@cfe4c0bfd7b4542f7e6b65a58cdf9ec765829940
     # via sphinx-scrapy
 sphinx-notfound-page==1.1.0
+    # via -r docs/requirements.in
+sphinx-reredirects==1.1.0
     # via -r docs/requirements.in
 sphinx-rtd-dark-mode==1.3.0
     # via -r docs/requirements.in
