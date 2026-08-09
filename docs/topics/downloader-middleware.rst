@@ -744,10 +744,6 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate, `brotli`_) traffic to be
    sent/received from web sites.
 
-   .. versionchanged:: VERSION
-      Decoding `brotli`_ responses no longer requires installing an
-      additional package.
-
    This middleware also supports decoding `zstd-compressed`_ responses with
    the :ref:`zstd <extras>` extra.
 
