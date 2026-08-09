@@ -84,9 +84,21 @@ class TextResponse(Response):
         )
 
     def json(self) -> Any:
-        """Deserialize a JSON document to a Python object."""
+        """Deserialize a JSON document to a Python object.
+
+        .. versionchanged:: VERSION
+           Bodies that cannot be decoded as UTF-8, UTF-16 or UTF-32, as the
+           JSON specification requires, are now decoded using
+           :attr:`TextResponse.encoding` instead of raising
+           :exc:`UnicodeDecodeError`.
+
+        The result is cached after the first call.
+        """
         if self._cached_decoded_json is _NONE:
-            self._cached_decoded_json = json.loads(self.body)
+            try:
+                self._cached_decoded_json = json.loads(self.body)
+            except UnicodeDecodeError:
+                self._cached_decoded_json = json.loads(self.text)
         return self._cached_decoded_json
 
     @property

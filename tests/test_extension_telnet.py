@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import socket
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
@@ -89,6 +90,18 @@ def test_invalid_reversed_portrange() -> None:
     console = TelnetConsole(_get_crawler(settings_dict=settings))
     with pytest.raises(ValueError, match=r"invalid portrange: \[2, 1\]"):
         console.start_listening()
+
+
+@coroutine_test
+async def test_unavailable_port(caplog: pytest.LogCaptureFixture) -> None:
+    """Run a crawl where the console cannot bind any port."""
+    with socket.create_server(("127.0.0.1", 0)) as sock:
+        port = sock.getsockname()[1]
+        crawler = _get_crawler(settings_dict={"TELNETCONSOLE_PORT": [port]})
+        await crawler.crawl_async()
+
+    assert "CannotListenError" in caplog.text
+    assert "AttributeError" not in caplog.text
 
 
 @coroutine_test
