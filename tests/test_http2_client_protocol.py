@@ -23,13 +23,13 @@ from twisted.web.static import File
 
 from scrapy.exceptions import DownloadCancelledError, DownloadTimeoutError
 from scrapy.http import JsonRequest, Request, Response
-from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
+from scrapy.utils.test import get_crawler
 from tests.mockserver.http_resources import LeafResource, Status, put_child
 from tests.mockserver.utils import ssl_context_factory
 
@@ -250,7 +250,7 @@ class TestHttps2ClientProtocol:
             acceptableProtocols=[b"h2"],
         )
         uri = URI.fromBytes(bytes(self.get_url(server_port, "/"), "utf-8"))
-        h2_client_factory = H2ClientFactory(uri, Settings(), Deferred())
+        h2_client_factory = H2ClientFactory(uri, get_crawler(), Deferred())
         client_endpoint = SSL4ClientEndpoint(
             reactor, self.host, server_port, client_options
         )

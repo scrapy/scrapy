@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from twisted.python.failure import Failure
     from twisted.web.client import URI
 
-    from scrapy.settings import Settings
+    from scrapy.crawler import Crawler
     from scrapy.spiders import Spider
 
 
@@ -88,7 +88,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
     def __init__(
         self,
         uri: URI,
-        settings: Settings,
+        crawler: Crawler,
         conn_lost_deferred: Deferred[list[BaseException]],
         *,
         tls_verbose_logging: bool = False,
@@ -98,14 +98,17 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             uri -- URI of the base url to which HTTP/2 Connection will be made.
                 uri is used to verify that incoming client requests have correct
                 base URL.
-            settings -- Scrapy project settings
+            crawler -- The crawler the requests belong to
             conn_lost_deferred -- Deferred that fires with the list of underlying exceptions to notify
                 that connection was lost
             tls_verbose_logging -- Whether to log TLS details
         """
+        self._crawler: Crawler = crawler
         self._conn_lost_deferred: Deferred[list[BaseException]] = conn_lost_deferred
         self._tls_verbose_logging: bool = tls_verbose_logging
-        self._idle_timeout: float = settings.getfloat("CONNECTION_KEEPALIVE_TIMEOUT")
+        self._idle_timeout: float = crawler.settings.getfloat(
+            "CONNECTION_KEEPALIVE_TIMEOUT"
+        )
         self.closing: bool = False
 
         config = H2Configuration(client_side=True, header_encoding="utf-8")
@@ -140,8 +143,8 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             # Both ip_address and uri are used by the Stream before
             # initiating the request to verify that the base address
             # Variables taken from Project Settings
-            "default_download_maxsize": settings.getint("DOWNLOAD_MAXSIZE"),
-            "default_download_warnsize": settings.getint("DOWNLOAD_WARNSIZE"),
+            "default_download_maxsize": crawler.settings.getint("DOWNLOAD_MAXSIZE"),
+            "default_download_warnsize": crawler.settings.getint("DOWNLOAD_WARNSIZE"),
             # Counter to keep track of opened streams. This counter
             # is used to make sure that not more than MAX_CONCURRENT_STREAMS
             # streams are opened which leads to ProtocolError
@@ -210,6 +213,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             stream_id=next(self._stream_id_generator),
             request=request,
             protocol=self,
+            crawler=self._crawler,
             download_maxsize=getattr(
                 spider, "download_maxsize", self.metadata["default_download_maxsize"]
             ),
@@ -470,20 +474,20 @@ class H2ClientFactory(Factory):
     def __init__(
         self,
         uri: URI,
-        settings: Settings,
+        crawler: Crawler,
         conn_lost_deferred: Deferred[list[BaseException]],
         *,
         tls_verbose_logging: bool = False,
     ) -> None:
         self.uri = uri
-        self.settings = settings
+        self.crawler = crawler
         self.conn_lost_deferred = conn_lost_deferred
         self.tls_verbose_logging = tls_verbose_logging
 
     def buildProtocol(self, addr: IAddress) -> H2ClientProtocol:
         return H2ClientProtocol(
             self.uri,
-            self.settings,
+            self.crawler,
             self.conn_lost_deferred,
             tls_verbose_logging=self.tls_verbose_logging,
         )

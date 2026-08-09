@@ -40,7 +40,7 @@ class H2DownloadHandler(BaseHttpDownloadHandler):
 
         from twisted.internet import reactor
 
-        self._pool = H2ConnectionPool(reactor, crawler.settings, self._pool_size_total)
+        self._pool = H2ConnectionPool(reactor, crawler, self._pool_size_total)
         self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
