@@ -774,6 +774,10 @@ Scrapy sets the ``request`` attribute of that
 :exc:`~twisted.python.failure.Failure` object to the :class:`~scrapy.Request`
 object being processed.
 
+If an errback raises an exception, Scrapy logs it and sends the
+:signal:`spider_error` signal, unless the exception is the one that the errback
+received, which Scrapy logs as a download error instead.
+
 Here's an example spider logging all errors and catching some specific
 errors if needed:
 
@@ -1431,9 +1435,6 @@ TextResponse objects
     .. automethod:: TextResponse.follow_all
 
     .. automethod:: TextResponse.json()
-
-        Returns a Python object from deserialized JSON document.
-        The result is cached after the first call.
 
     .. method:: TextResponse.urljoin(url)
 
