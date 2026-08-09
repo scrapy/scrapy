@@ -658,6 +658,11 @@ The default headers used for Scrapy HTTP Requests. They're populated in the
     :class:`Request.cookies <scrapy.Request>` parameter. This is a known
     current limitation that is being worked on.
 
+.. caution:: A ``Referer`` header defined here only reaches requests for which
+    :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` does not set
+    one, such as start requests. To send it on every request, set
+    :setting:`REFERRER_POLICY` to ``"no-referrer"``.
+
 .. setting:: DEPTH_LIMIT
 
 DEPTH_LIMIT
@@ -748,6 +753,11 @@ DNS_TIMEOUT
 Default: ``60``
 
 Timeout for processing of DNS queries in seconds. Float is supported.
+
+The timeout starts when the query is queued into the Twisted reactor thread
+pool, not when it is sent. If that thread pool is saturated, queries can time
+out before being sent, in which case increasing
+:setting:`REACTOR_THREADPOOL_MAXSIZE` helps more than increasing this setting.
 
 .. note::
     This setting is only used by
@@ -2328,6 +2338,11 @@ The default User-Agent to use when crawling, unless overridden. This user agent 
 also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
+
+Set it to a value that identifies you, including a URL or an email address
+where website owners can reach you, e.g. ``"MyProject
+(+https://example.com/bot)"``, so that they can ask you to adjust your crawler
+rather than block it.
 
 .. setting:: WARN_ON_GENERATOR_RETURN_VALUE
 
