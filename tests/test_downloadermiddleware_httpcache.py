@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest import mock
+from urllib.parse import urlparse
 
 import pytest
 
@@ -781,7 +782,14 @@ class TestFilesystemStorageScope(ScopeTestMixin):
         ("url", "expected"),
         [
             ("http://user:pass@WWW.Example.com:8080/", "www.example.com"),
-            ("http://[::1]/", "%3A%3A1"),
+            pytest.param(
+                "http://[::1]/",
+                "%3A%3A1",
+                marks=pytest.mark.skipif(
+                    urlparse(Request("http://[::1]/").url).hostname != "::1",
+                    reason="w3lib strips the brackets of IPv6 hosts",
+                ),
+            ),
             ("file:///tmp/t.txt", "_"),
         ],
     )
