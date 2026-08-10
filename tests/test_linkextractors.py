@@ -9,6 +9,7 @@ from w3lib import __version__ as w3lib_version
 
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
+from scrapy.linkextractors import lxmlhtml
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor, LxmlParserLinkExtractor
 from tests import get_testdata
 
@@ -797,6 +798,25 @@ class Base:
 
 class TestLxmlLinkExtractor(Base.TestLinkExtractorBase):
     extractor_cls = LxmlLinkExtractor
+
+    def test_canonicalize_once_per_link(self, monkeypatch):
+        canonicalize_url = lxmlhtml.canonicalize_url
+        calls = []
+
+        def counting_canonicalize_url(url, *args, **kwargs):
+            calls.append(url)
+            return canonicalize_url(url, *args, **kwargs)
+
+        monkeypatch.setattr(lxmlhtml, "canonicalize_url", counting_canonicalize_url)
+        response = HtmlResponse(
+            "https://example.com",
+            body=b"".join(b'<a href="/p?b=2&a=1#f%d">x</a>' % i for i in range(10)),
+        )
+        lx = self.extractor_cls(canonicalize=True)
+        assert lx.extract_links(response) == [
+            Link(url="https://example.com/p?a=1&b=2", text="x")
+        ]
+        assert len(calls) == 10
 
     def test_link_restrict_text(self):
         html = b"""

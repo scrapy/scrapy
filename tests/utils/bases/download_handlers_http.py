@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from http import HTTPStatus
 from ipaddress import IPv4Address
 from socket import gethostbyname
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from urllib.parse import urlparse
 
 import pytest
@@ -65,6 +65,8 @@ if TYPE_CHECKING:
 # it, so that they do not depend on its default value and stay reasonably fast.
 CONFIGURED_HEADERS_MAXSIZE = 64 * 1024
 
+BadHeaderHandling = Literal["skip-bad", "skip-rest", "fail"]
+
 
 class TestHttpBase(ABC):
     is_secure: bool = False
@@ -78,6 +80,14 @@ class TestHttpBase(ABC):
     # h2.connection.H2Connection.receive_data()), thus closing all streams that
     # were using it, and we handle this as a normal exception.
     handler_supports_http2_dataloss: bool = True
+    # What the handler does with a bad response header line, e.g. one with no
+    # colon in it:
+    # "skip-bad": the bad line is skipped and the header lines that follow it
+    #         are still parsed, which is what web browsers do;
+    # "skip-rest": the bad line is skipped along with the header lines that
+    #         follow it;
+    # "fail": the response cannot be downloaded at all.
+    handler_bad_header_handling: BadHeaderHandling = "skip-bad"
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
     default_handler_settings: ClassVar[dict[str, Any]] = {}
@@ -757,6 +767,7 @@ class TestHttpBase(ABC):
             "Expected to receive 5 bytes which is larger than download warn size (4)"
             in caplog.text
         )
+        assert caplog.text.count("download warn size (4)") == 1
 
     @coroutine_test
     async def test_download_with_warnsize_no_content_length(
@@ -772,6 +783,32 @@ class TestHttpBase(ABC):
             "Received 35 bytes which is larger than download warn size (10)"
             in caplog.text
         )
+
+    @coroutine_test
+    async def test_download_bad_header(self, mockserver: MockServer) -> None:
+        if self.http2:
+            pytest.skip("Header lines are specific to HTTP/1.x")
+        request = Request(mockserver.url("/bad-header", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            if self.handler_bad_header_handling == "fail":
+                with pytest.raises(DownloadFailedError):
+                    await download_handler.download_request(request)
+                return
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert response.body == b"Works"
+        # the header line that precedes the bad one
+        assert response.headers.get(b"Content-Type") == b"text/html"
+        # the header split into two lines, also before the bad one
+        folded_header = response.headers.get(b"X-Folded-Header")
+        assert folded_header is not None
+        # the separator between both parts depends on the handler
+        assert folded_header.split() == [b"one", b"two"]
+        # the header line that follows the bad one
+        expected_value = (
+            b"works" if self.handler_bad_header_handling == "skip-bad" else None
+        )
+        assert response.headers.get(b"X-After-Bad-Header") == expected_value
 
     @coroutine_test
     async def test_download_chunked_content(self, mockserver: MockServer) -> None:
