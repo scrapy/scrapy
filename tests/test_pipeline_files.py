@@ -24,18 +24,18 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 
 from scrapy.crawler import Crawler
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
+from scrapy.pipelines import files
 from scrapy.pipelines.files import (
-    FileException,
     FilesPipeline,
     FSFilesStore,
     FTPFilesStore,
     GCSFilesStore,
     S3FilesStore,
 )
-from scrapy.pipelines.media import _MediaRequestFiltered
+from scrapy.pipelines.media import FileException, _MediaRequestFiltered
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -1242,3 +1242,11 @@ def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
 
     with pytest.raises(NotConfigured):
         FilesPipeline.from_crawler(crawler)
+
+
+def test_file_exception_deprecated_import():
+    with pytest.warns(ScrapyDeprecationWarning, match="FileException"):
+        assert files.FileException is FileException
+
+    with pytest.raises(AttributeError):
+        files.nonexistent
