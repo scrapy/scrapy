@@ -6,7 +6,7 @@ import queuelib
 
 from scrapy.core.downloader import Downloader
 from scrapy.http.request import Request
-from scrapy.pqueues import DownloaderAwarePriorityQueue, ScrapyPriorityQueue
+from scrapy.pqueues import DownloaderAwarePriorityQueue, ScrapyPriorityQueue, _path_safe
 from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -21,8 +21,8 @@ class TestPriorityQueue:
 
     def test_queue_push_pop_one(self):
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
-            self.crawler, FifoMemoryQueue, temp_dir
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
         )
         assert queue.pop() is None
         assert len(queue) == 0
@@ -39,8 +39,8 @@ class TestPriorityQueue:
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             pytest.skip("queuelib.queue.FifoMemoryQueue.peek is defined")
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
-            self.crawler, FifoMemoryQueue, temp_dir
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
         )
         queue.push(Request("https://example.org"))
         with pytest.raises(
@@ -54,8 +54,8 @@ class TestPriorityQueue:
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
-            self.crawler, FifoMemoryQueue, temp_dir
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
         )
         assert len(queue) == 0
         assert queue.peek() is None
@@ -78,7 +78,8 @@ class TestPriorityQueue:
 
     def test_init_prios_with_start_queue(self):
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
+        queue = build_from_crawler(
+            ScrapyPriorityQueue,
             self.crawler,
             PickleFifoDiskQueue,
             temp_dir,
@@ -88,7 +89,8 @@ class TestPriorityQueue:
         queue.push(req)
         startprios = queue.close()
 
-        queue2 = ScrapyPriorityQueue.from_crawler(
+        queue2 = build_from_crawler(
+            ScrapyPriorityQueue,
             self.crawler,
             PickleFifoDiskQueue,
             temp_dir,
@@ -101,8 +103,8 @@ class TestPriorityQueue:
 
     def test_queue_push_pop_priorities(self):
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(
-            self.crawler, FifoMemoryQueue, temp_dir, [-1, -2, -3]
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir, [-1, -2, -3]
         )
         assert queue.pop() is None
         assert len(queue) == 0
@@ -124,8 +126,9 @@ class TestDownloaderAwarePriorityQueue:
     def setup_method(self):
         crawler = get_crawler(Spider)
         crawler.engine = Mock(downloader=MockDownloader())
-        self.queue = DownloaderAwarePriorityQueue.from_crawler(
-            crawler=crawler,
+        self.queue = build_from_crawler(
+            DownloaderAwarePriorityQueue,
+            crawler,
             downstream_queue_cls=FifoMemoryQueue,
             key="foo/bar",
         )
@@ -256,6 +259,30 @@ class TestDownloaderAwarePriorityQueue:
         self.queue.push(req)
         assert "example-slot" in self.queue
         assert "other-slot" not in self.queue
+
+
+def test_slot_directory_removed_when_slot_drains(tmp_path):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider("foo")
+    crawler.engine = Mock(downloader=MockDownloader())
+    queue = build_from_crawler(
+        DownloaderAwarePriorityQueue,
+        crawler,
+        downstream_queue_cls=PickleFifoDiskQueue,
+        key=str(tmp_path),
+    )
+    request = Request("https://example.org/1")
+    slot_dir = tmp_path / _path_safe("example.org")
+
+    queue.push(request)
+    assert slot_dir.is_dir()
+
+    assert queue.pop().url == request.url
+    assert not slot_dir.exists()
+
+    queue.push(request)
+    assert slot_dir.is_dir()
+    queue.close()
 
 
 @pytest.mark.parametrize(

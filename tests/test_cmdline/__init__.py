@@ -1,3 +1,4 @@
+import ast
 import json
 import os
 import pstats
@@ -60,11 +61,8 @@ class TestCmdline:
             "-s",
             "EXTENSIONS=" + json.dumps(EXTENSIONS),
         )
-        # XXX: There's gotta be a smarter way to do this...
         assert "..." not in settingsstr
-        for char in ("'", "<", ">"):
-            settingsstr = settingsstr.replace(char, '"')
-        settingsdict = json.loads(settingsstr)
+        settingsdict = ast.literal_eval(settingsstr)
         assert set(settingsdict.keys()) == set(EXTENSIONS.keys())
         assert settingsdict[EXT_PATH] == 200
 

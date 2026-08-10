@@ -18,6 +18,7 @@ from scrapy import Spider
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.feedexport import FeedExporter, S3FeedStorage
 from scrapy.settings import Settings
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
@@ -261,7 +262,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter(crawler)
+            build_from_crawler(FeedExporter, crawler)
 
     @coroutine_test
     async def test_export_no_items_not_store_empty(self):
