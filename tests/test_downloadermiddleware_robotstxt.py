@@ -16,6 +16,7 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 from tests.utils.robotstxt import rerp_available
@@ -40,7 +41,7 @@ class TestRobotsTxtMiddleware:
         self.crawler.settings = Settings()
         self.crawler.settings.set("USER_AGENT", "CustomAgent")
         with pytest.raises(NotConfigured):
-            RobotsTxtMiddleware(self.crawler)
+            build_from_crawler(RobotsTxtMiddleware, self.crawler)
 
     def _get_successful_crawler(self) -> mock.MagicMock:
         crawler = self.crawler
@@ -67,7 +68,9 @@ Disallow: /some/randome/page.html
 
     @coroutine_test
     async def test_robotstxt(self):
-        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
         self.assertRobotsTxtRequested("http://site.local")
         await self.assertIgnored(Request("http://site.local/admin/main"), middleware)
@@ -96,7 +99,9 @@ Disallow: /some/randome/page.html
 
     @coroutine_test
     async def test_robotstxt_multiple_reqs(self) -> None:
-        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
         d1 = deferred_from_coro(
             middleware.process_request(Request("http://site.local/allowed1"))
         )
@@ -108,20 +113,26 @@ Disallow: /some/randome/page.html
     @pytest.mark.only_asyncio
     @coroutine_test
     async def test_robotstxt_multiple_reqs_asyncio(self) -> None:
-        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
         c1 = middleware.process_request(Request("http://site.local/allowed1"))
         c2 = middleware.process_request(Request("http://site.local/allowed2"))
         await asyncio.gather(c1, c2)
 
     @coroutine_test
     async def test_robotstxt_ready_parser(self):
-        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
 
     @coroutine_test
     async def test_robotstxt_meta(self):
-        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
         meta = {"dont_obey_robotstxt": True}
         await self.assertNotIgnored(
             Request("http://site.local/allowed", meta=meta), middleware
@@ -151,7 +162,9 @@ Disallow: /some/randome/page.html
     @coroutine_test
     async def test_robotstxt_garbage(self):
         # garbage response should be discarded, equal 'allow all'
-        middleware = RobotsTxtMiddleware(self._get_garbage_crawler())
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_garbage_crawler()
+        )
         await self.assertNotIgnored(Request("http://site.local"), middleware)
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
         await self.assertNotIgnored(Request("http://site.local/admin/main"), middleware)
@@ -173,7 +186,9 @@ Disallow: /some/randome/page.html
     @coroutine_test
     async def test_robotstxt_empty_response(self):
         # empty response should equal 'allow all'
-        middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_emptybody_crawler()
+        )
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
         await self.assertNotIgnored(Request("http://site.local/admin/main"), middleware)
         await self.assertNotIgnored(Request("http://site.local/static/"), middleware)
@@ -190,7 +205,7 @@ Disallow: /some/randome/page.html
 
         self.crawler.engine.download_async.side_effect = return_failure
 
-        middleware = RobotsTxtMiddleware(self.crawler)
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
         await middleware.process_request(Request("http://site.local"))
         assert "Robotstxt address not found" in caplog.text
 
@@ -204,7 +219,7 @@ Disallow: /some/randome/page.html
 
         self.crawler.engine.download_async.side_effect = immediate_failure
 
-        middleware = RobotsTxtMiddleware(self.crawler)
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
         await self.assertNotIgnored(Request("http://site.local"), middleware)
 
     @coroutine_test
@@ -218,7 +233,7 @@ Disallow: /some/randome/page.html
 
         self.crawler.engine.download_async.side_effect = ignore_request
 
-        middleware = RobotsTxtMiddleware(self.crawler)
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
         with mock.patch(
             "scrapy.downloadermiddlewares.robotstxt.logger"
         ) as mw_module_logger:
@@ -231,14 +246,16 @@ Disallow: /some/randome/page.html
         crawler = self._get_successful_crawler()
         crawler.settings.set("ROBOTSTXT_USER_AGENT", "Examplebot")
         crawler.settings.set("USER_AGENT", "Mozilla/5.0 (X11; Linux x86_64)")
-        middleware = RobotsTxtMiddleware(crawler)
+        middleware = build_from_crawler(RobotsTxtMiddleware, crawler)
         rp = mock.MagicMock(return_value=True)
         middleware.process_request_2(rp, Request("http://site.local/allowed"))
         rp.allowed.assert_called_once_with("http://site.local/allowed", "Examplebot")
 
     @coroutine_test
     async def test_robotstxt_local_file(self):
-        middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_emptybody_crawler()
+        )
         middleware.process_request_2 = mock.MagicMock()  # type: ignore[method-assign]
 
         await middleware.process_request(Request("data:text/plain,Hello World data"))

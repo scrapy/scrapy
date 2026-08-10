@@ -16,6 +16,7 @@ from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import _schedule_coro, deferred_from_coro
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.engine import TestEngineBase
@@ -215,7 +216,7 @@ async def test_request_scheduled_signal():
 
     crawler = get_crawler(MySpider)
     engine = ExecutionEngine(crawler, lambda _: None)
-    scheduler = TestScheduler()  # type: ignore[abstract]
+    scheduler = build_from_crawler(TestScheduler, crawler)
 
     async def start() -> AsyncIterator[Any]:
         return
