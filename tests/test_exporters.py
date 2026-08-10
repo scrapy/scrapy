@@ -578,7 +578,7 @@ class TestJsonLinesItemExporter(TestBaseItemExporter):
         self.ie.finish_exporting()
         del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
-        item["time"] = str(item["time"])
+        item["time"] = item["time"].isoformat()
         assert exported == item
 
 
@@ -661,7 +661,7 @@ class TestJsonItemExporter(TestJsonLinesItemExporter):
         self.ie.finish_exporting()
         del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
-        item["time"] = str(item["time"])
+        item["time"] = item["time"].isoformat()
         assert exported == [item]
 
 
