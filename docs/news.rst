@@ -58,13 +58,6 @@ Backward-incompatible changes
 
     (:issue:`6136`, :issue:`7882`)
 
--   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` now
-    uses `httpx2 <https://httpx2.pydantic.dev/>`__, the successor of ``httpx``,
-    which the new :ref:`httpx extra <extras>` installs together with its HTTP/2
-    and SOCKS proxy support. ``httpx`` is still used when ``httpx2`` is not
-    installed, but it is no longer tested.
-    (:issue:`7762`)
-
 -   ``brotli`` (``brotlicffi`` on PyPy) is now a required dependency, so ``br``
     is always included in the ``Accept-Encoding`` header of requests, and
     Brotli-compressed responses are always decoded. Websites may now serve
@@ -87,6 +80,27 @@ Backward-incompatible changes
     the key order of each item.
     (:issue:`6662`, :issue:`7824`)
 
+-   ``scrapy.utils.serialize.ScrapyJSONEncoder``, used by :ref:`JSON feed
+    exports <topics-feed-format-json>`, the :ref:`telnet console
+    <topics-telnetconsole>` and the
+    :class:`~scrapy.extensions.periodic_log.PeriodicLog` extension, now
+    serializes :class:`~datetime.datetime`, :class:`~datetime.date` and
+    :class:`~datetime.time` objects in ISO 8601 format, e.g.
+    ``2023-08-03T23:24:57.148903+00:00`` instead of ``2023-08-03 23:24:57``,
+    keeping microseconds and time zone information.
+
+    Its ``DATE_FORMAT`` and ``TIME_FORMAT`` attributes are removed.
+
+    (:issue:`2087`, :issue:`7918`)
+
+-   ``scrapy.utils.trackref.live_refs`` is now a
+    :class:`~weakref.WeakKeyDictionary` instead of a
+    :class:`collections.defaultdict`, so that classes defined at run time are
+    released once they are no longer used. Reading the entry of a class with no
+    tracked instances now raises :exc:`KeyError` instead of creating and
+    returning an empty mapping.
+    (:issue:`5995`, :issue:`7922`)
+
 -   The ``MEMDEBUG_NOTIFY`` setting is removed. It had no effect, but code
     reading it now gets ``None`` instead of its default value, an empty list.
     (:issue:`7737`)
@@ -105,28 +119,12 @@ Backward-incompatible changes
 
     (:issue:`5570`, :issue:`7936`)
 
--   ``scrapy.core.http2.agent.H2ConnectionPool``,
-    ``scrapy.core.http2.protocol.H2ClientProtocol`` and
-    ``scrapy.core.http2.protocol.H2ClientFactory`` now take a
-    :class:`~scrapy.crawler.Crawler` object where they used to take a
-    :class:`~scrapy.settings.Settings` object, and
-    ``scrapy.core.http2.stream.Stream`` takes an additional, required
-    ``crawler`` argument.
-    (:issue:`5046`, :issue:`5055`, :issue:`7896`)
-
 -   :setting:`FEEDS` keys and ``FEED_URI`` values that are
     :class:`pathlib.Path` objects are now used as paths, instead of being
     converted into ``file://`` URIs. This makes them keep working when they
     contain :ref:`URI parameters <topics-feed-uri-params>` or characters that
     URI conversion would percent-encode.
-    (:issue:`5794`, :issue:`6425`, :issue:`7674`)
-
--   :class:`~scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware` is
-    enabled by default, so crawls that copy internal
-    :attr:`~scrapy.Request.meta` keys from a response into a new request now
-    log a warning. See :setting:`META_COPY_WARN_SKIP_KEYS` to silence it for
-    specific keys.
-    (:issue:`7588`)
+    (:issue:`5794`, :issue:`6425`, :issue:`6611`, :issue:`7674`)
 
 -   :class:`~scrapy.Selector` and :attr:`TextResponse.selector
     <scrapy.http.TextResponse.selector>` no longer force the ``html`` selector
@@ -138,7 +136,7 @@ Backward-incompatible changes
 -   :ref:`AutoThrottle <topics-autothrottle>` no longer sets the
     ``download_delay`` attribute of the running spider to define the starting
     delay of download slots.
-    (:issue:`7167`, :issue:`7833`)
+    (:issue:`7167`, :issue:`7175`, :issue:`7833`)
 
 -   :class:`~scrapy.spiders.XMLFeedSpider` and
     :class:`~scrapy.spiders.CSVFeedSpider` no longer raise
@@ -178,7 +176,7 @@ Deprecations
     Both attributes are ignored, with a different warning, when the
     corresponding setting is already set at the ``spider`` priority or higher.
 
-    (:issue:`7167`, :issue:`7833`)
+    (:issue:`7167`, :issue:`7175`, :issue:`7833`)
 
 -   The ``Spider.log()`` method is deprecated. Use the methods of
     :attr:`Spider.logger <scrapy.Spider.logger>` instead.
@@ -211,6 +209,13 @@ New features
     ``zstd``. For example, ``pip install scrapy[s3,images]``.
     (:issue:`7596`)
 
+-   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` now
+    uses `httpx2 <https://httpx2.pydantic.dev/>`__, the successor of ``httpx``,
+    which the new :ref:`httpx extra <extras>` installs together with its HTTP/2
+    and SOCKS proxy support. ``httpx`` is still used when ``httpx2`` is not
+    installed, but it is no longer tested.
+    (:issue:`7762`)
+
 -   Added a :signal:`robots_parsed` signal, sent by
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after
     it parses a :file:`robots.txt` file. It supports :ref:`asynchronous
@@ -224,7 +229,7 @@ New features
 
 -   Added a :meth:`Request.to_curl() <scrapy.Request.to_curl>` method, the
     inverse of :meth:`~scrapy.Request.from_curl`.
-    (:issue:`7743`, :issue:`7802`)
+    (:issue:`7743`, :issue:`7746`, :issue:`7802`)
 
 -   Added a :reqmeta:`depth_reset` request meta key that gives a request depth
     0 instead of the depth of its source response plus 1.
@@ -271,6 +276,19 @@ New features
     of being reported as a start error.
 
     (:issue:`3463`, :issue:`4182`, :issue:`7884`)
+
+-   :exc:`~scrapy.exceptions.CloseSpider` can now also be raised while the
+    spider is starting, e.g. from a :signal:`spider_opened` signal handler or
+    from the ``open_spider()`` method of an :ref:`item pipeline
+    <topics-item-pipeline>`, to close the spider before it starts crawling.
+    Every component still gets started, and stopped, before the spider is
+    closed with the given reason.
+    (:issue:`3435`, :issue:`7905`)
+
+-   Added an :ref:`FTPS feed storage backend <feed-storage-ftps>`, i.e. support
+    for the ``ftps`` URI scheme in :setting:`FEEDS`, which uploads the feed over
+    a TLS connection, verifying the certificate of the server.
+    (:issue:`4180`, :issue:`7953`)
 
 -   Changes to :attr:`Spider.allowed_domains <scrapy.Spider.allowed_domains>`
     during a crawl are now taken into account by
@@ -333,7 +351,7 @@ Bug fixes
 -   :class:`~scrapy.exporters.CsvItemExporter` now warns when the fields that
     it took from the first item do not cover the fields of a later item, i.e.
     when it silently drops data.
-    (:issue:`4002`, :issue:`7651`)
+    (:issue:`4002`, :issue:`4053`, :issue:`7613`, :issue:`7651`)
 
 -   ``GCSFeedStorage`` no longer requires the ``storage.buckets.get``
     permission.
@@ -343,6 +361,12 @@ Bug fixes
     were filtered out, e.g. as offsite requests, at the ``DEBUG`` level and
     without a traceback, instead of reporting them as download errors.
     (:issue:`7544`, :issue:`7673`)
+
+-   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` now
+    skips response header lines that have no colon, logging them at the
+    ``DEBUG`` level, as web browsers do, instead of being unable to download
+    such a response at all.
+    (:issue:`210`, :issue:`7806`)
 
 -   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` now sends
     domain cookies to hosts without a dot in their name and to hosts given as
@@ -597,7 +621,8 @@ Quality assurance
     :issue:`7895`,
     :issue:`7906`,
     :issue:`7928`,
-    :issue:`7935`)
+    :issue:`7935`,
+    :issue:`7966`)
 
 .. _release-2.17.0:
 
