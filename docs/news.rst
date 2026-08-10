@@ -41,6 +41,10 @@ Backward-incompatible changes
       :class:`~scrapy.extensions.feedexport.StdoutFeedStorage` are no longer
       marked as implementing the ``IFeedStorage`` interface.
 
+    - :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` no
+      longer checks that the ``DOWNLOADER_CLIENTCONTEXTFACTORY`` class
+      implements the ``IPolicyForHTTPS`` interface.
+
     (:issue:`6585`, :issue:`7731`)
 
 -   The :attr:`~scrapy.crawler.Crawler.engine`,
@@ -325,6 +329,12 @@ New features
     ``_get_serialized_fields()``, is now public and documented, for
     :ref:`custom item exporters <custom-exporters>` to use.
     (:issue:`5706`, :issue:`7931`)
+
+-   Log formatters (:setting:`LOG_FORMATTER`), item processors
+    (``ITEM_PROCESSOR``) and :ref:`robots.txt parsers <topics-dlmw-robots>`
+    (:setting:`ROBOTSTXT_PARSER`) are now built as :ref:`components
+    <topics-components>`, so they no longer need a ``from_crawler()`` method.
+    (:issue:`7808`)
 
 Bug fixes
 ~~~~~~~~~
