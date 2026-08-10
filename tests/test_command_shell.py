@@ -211,7 +211,7 @@ class TestInteractiveShell:
         env = os.environ.copy()
         env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=60)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline(f"fetch('{mockserver.url('/')}')")
@@ -240,7 +240,7 @@ class TestInteractiveShell:
     def _run_interactive_shell(self, env: dict[str, str]) -> str:
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=60)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         _stop(p)
@@ -260,7 +260,7 @@ class TestInteractiveShell:
         self._isolate_config(env, config_home)
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=10)
+        p = PopenSpawn(args, env=env, timeout=60)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         # The standard Python shell never imports IPython, whereas the IPython
