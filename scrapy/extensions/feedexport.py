@@ -611,7 +611,6 @@ class FeedExporter:
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         slot_type = type(slot.storage).__name__
-        assert self.crawler.stats
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:
