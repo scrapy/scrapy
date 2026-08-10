@@ -111,11 +111,10 @@ Backward-incompatible changes
 
 -   ``scrapy.utils.log.logformatter_adapter()`` no longer passes the whole
     :class:`dict` returned by a :ref:`log formatter <custom-log-formats>`
-    method as logging arguments when that ``dict`` has no ``args`` key or its
-    ``args`` are empty. Such messages are now logged verbatim, so a literal
-    ``%`` in them no longer breaks logging, and placeholders that referenced
-    other keys of the returned ``dict``, such as ``%(msg)s``, are no longer
-    interpolated.
+    method as logging arguments when that ``dict`` has no ``args`` key, or its
+    ``args`` are empty, and its ``msg`` has no ``%(name)s`` placeholders. Such
+    messages are now logged verbatim, so a literal ``%`` in them no longer
+    breaks logging.
 
     An ``args`` :class:`tuple` is now expanded into one logging argument per
     item, so that ``%``-style placeholders work with it as they do with a
@@ -203,6 +202,13 @@ Deprecations
     request over plaintext HTTP is deprecated. The flag will be ignored in a
     future Scrapy version.
     (:issue:`7738`)
+
+-   Returning, from a :ref:`log formatter <custom-log-formats>` method, a
+    ``msg`` with ``%(name)s`` placeholders and no ``args`` is deprecated. Those
+    placeholders are still interpolated with the returned :class:`dict`, but in
+    a future Scrapy version the message will be logged verbatim. Return those
+    values under ``args`` instead.
+    (:issue:`5570`, :issue:`7971`)
 
 New features
 ~~~~~~~~~~~~
