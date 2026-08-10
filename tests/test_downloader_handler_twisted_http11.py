@@ -11,6 +11,7 @@ from scrapy import Spider
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.misc import build_from_crawler
 from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
@@ -53,7 +54,7 @@ class HTTP11DownloadHandlerMixin:
 def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
-        HTTP11DownloadHandler.from_crawler(crawler)
+        build_from_crawler(HTTP11DownloadHandler, crawler)
 
 
 class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):
