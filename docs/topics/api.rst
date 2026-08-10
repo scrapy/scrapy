@@ -35,6 +35,13 @@ to how you :ref:`configure the downloader middlewares
     :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
 
+    The :attr:`engine`, :attr:`extensions`, :attr:`logformatter`,
+    :attr:`request_fingerprinter` and :attr:`stats` attributes get their value
+    when the crawl starts, and raise :exc:`RuntimeError` when read before that.
+
+    .. versionchanged:: VERSION
+        Those attributes used to be ``None`` before getting their value.
+
     .. attribute:: request_fingerprinter
 
         The request fingerprint builder of this crawler.

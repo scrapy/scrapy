@@ -5,7 +5,7 @@ Downloader Middleware
 =====================
 
 The downloader middleware is a framework of hooks into Scrapy's
-request/response processing. It's a light, low-level system for globally
+request/response processing.  It's a light, low-level system for globally
 altering Scrapy's requests and responses.
 
 .. _topics-downloader-middleware-setting:
@@ -42,10 +42,9 @@ middleware performs a different action and your middleware could depend on some
 previous (or subsequent) middleware being applied.
 
 If you want to disable a built-in middleware (the ones defined in
-:setting:`DOWNLOADER_MIDDLEWARES_BASE` and enabled by default) you must define
-it in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign
-``None`` as its value. For example, if you want to disable the user-agent
-middleware:
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` and enabled by default) you must define it
+in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign ``None``
+as its value.  For example, if you want to disable the user-agent middleware:
 
 .. code-block:: python
 
@@ -55,7 +54,7 @@ middleware:
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
-particular setting. See each middleware's documentation for more info.
+particular setting. See each middleware documentation for more info.
 
 .. _topics-downloader-middleware-custom:
 
@@ -81,16 +80,14 @@ defines one or more of these methods:
       :class:`~scrapy.http.Response` object, return a :class:`~scrapy.Request`
       object, or raise :exc:`~scrapy.exceptions.IgnoreRequest`.
 
-      If it returns ``None``, Scrapy will continue processing this request,
-      executing all other middlewares until, finally, the appropriate
-      downloader handler is called and the request is performed (and its
-      response downloaded).
+      If it returns ``None``, Scrapy will continue processing this request, executing all
+      other middlewares until, finally, the appropriate downloader handler is called
+      the request performed (and its response downloaded).
 
-      If it returns a :class:`~scrapy.http.Response` object, Scrapy won't
-      bother calling *any* other :meth:`process_request` or
-      :meth:`process_exception` methods, or the appropriate download function;
-      it'll return that response. The :meth:`process_response` methods of
-      installed middleware are always called on every response.
+      If it returns a :class:`~scrapy.http.Response` object, Scrapy won't bother
+      calling *any* other :meth:`process_request` or :meth:`process_exception` methods,
+      or the appropriate download function; it'll return that response. The :meth:`process_response`
+      methods of installed middleware is always called on every response.
 
       If it returns a :class:`~scrapy.Request` object, Scrapy will stop calling
       :meth:`process_request` methods and reschedule the returned request. Once the newly returned
@@ -159,6 +156,61 @@ defines one or more of these methods:
       :param exception: the raised exception
       :type exception: an ``Exception`` object
 
+.. _mw-download:
+
+Downloading a request from a downloader middleware
+==================================================
+
+A downloader middleware can download a request of its own while it processes
+another one, e.g. to fetch something that the request it is processing needs.
+The built-in :ref:`robots.txt middleware <topics-dlmw-robots>` does that: it
+holds each request while it downloads the ``robots.txt`` file of its website.
+
+Use :meth:`crawler.engine.download_async()
+<scrapy.core.engine.ExecutionEngine.download_async>` for that:
+
+.. code-block:: python
+
+    from scrapy import Request
+    from scrapy.http.request import NO_CALLBACK
+
+
+    class TokenMiddleware:
+        def __init__(self, crawler):
+            self.crawler = crawler
+            self.token = None
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            return cls(crawler)
+
+        async def process_request(self, request):
+            if request.meta.get("dont_obey_robotstxt"):
+                return
+            if self.token is None:
+                response = await self.crawler.engine.download_async(
+                    Request(
+                        "https://example.com/token",
+                        callback=NO_CALLBACK,
+                        meta={"dont_obey_robotstxt": True},
+                    )
+                )
+                self.token = response.text
+            request.headers["Authorization"] = self.token
+
+Requests that you download this way go through the downloader middleware chain
+as well, including your own middleware and the :ref:`robots.txt middleware
+<topics-dlmw-robots>`, which holds a request until the ``robots.txt`` file of
+its website arrives. Be careful not to introduce deadlocks: a request that you
+download must not end up waiting for the request that is waiting for it. Hence
+:reqmeta:`dont_obey_robotstxt` above, which makes both middlewares let the token
+request through.
+
+While the first token response is in transit, ``process_request`` runs for other
+requests as well, and the middleware above downloads a token for each of them.
+Cache the task that downloads the token, and not only its result, to download
+the token only once.
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
@@ -172,106 +224,10 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
-.. _cookies-mw:
-
 CookiesMiddleware
 -----------------
 
-.. module:: scrapy.downloadermiddlewares.cookies
-   :synopsis: Cookies Downloader Middleware
-
-.. class:: CookiesMiddleware
-
-   This middleware enables working with sites that require cookies, such as
-   those that use sessions. It keeps track of cookies sent by web servers, and
-   sends them back on subsequent requests (from that spider), just like web
-   browsers do.
-
-   .. caution:: When non-UTF-8 encoded byte sequences are passed to a
-      :class:`~scrapy.Request`, the ``CookiesMiddleware`` will log a warning.
-      Refer to :ref:`topics-logging-advanced-customization`
-      to customize the logging behavior.
-
-   .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-      :ref:`cookies-mw`. If you need to set cookies for a request, use the
-      :class:`Request.cookies <scrapy.Request>` parameter. This is a known
-      current limitation that is being worked on.
-
-The following settings can be used to configure the cookie middleware:
-
-* :setting:`COOKIES_ENABLED`
-* :setting:`COOKIES_DEBUG`
-
-.. reqmeta:: cookiejar
-
-Multiple cookie sessions per spider
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There is support for keeping multiple cookie sessions per spider by using the
-:reqmeta:`cookiejar` Request meta key. By default it uses a single cookie jar
-(session), but you can pass an identifier to use different ones.
-
-For example:
-
-.. skip: next
-.. code-block:: python
-
-    for i, url in enumerate(urls):
-        yield scrapy.Request(url, meta={"cookiejar": i}, callback=self.parse_page)
-
-Keep in mind that the :reqmeta:`cookiejar` meta key is not "sticky". You need to keep
-passing it along on subsequent requests. For example:
-
-.. code-block:: python
-
-    def parse_page(self, response):
-        # do some processing
-        return scrapy.Request(
-            "http://www.example.com/otherpage",
-            meta={"cookiejar": response.meta["cookiejar"]},
-            callback=self.parse_other_page,
-        )
-
-.. setting:: COOKIES_ENABLED
-
-COOKIES_ENABLED
-~~~~~~~~~~~~~~~
-
-Default: ``True``
-
-Whether to enable the cookies middleware. If disabled, no cookies will be sent
-to web servers.
-
-Notice that despite the value of :setting:`COOKIES_ENABLED` setting if
-``Request.``:reqmeta:`meta['dont_merge_cookies'] <dont_merge_cookies>`
-evaluates to ``True`` the request cookies will **not** be sent to the
-web server and received cookies in :class:`~scrapy.http.Response` will
-**not** be merged with the existing cookies.
-
-For more detailed information see the ``cookies`` parameter in
-:class:`~scrapy.Request`.
-
-.. setting:: COOKIES_DEBUG
-
-COOKIES_DEBUG
-~~~~~~~~~~~~~
-
-Default: ``False``
-
-If enabled, Scrapy will log all cookies sent in requests (i.e. ``Cookie``
-header) and all cookies received in responses (i.e. ``Set-Cookie`` header).
-
-Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
-
-    2011-04-06 14:35:10-0300 [scrapy.core.engine] INFO: Spider opened
-    2011-04-06 14:35:10-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Sending cookies to: <GET http://www.diningcity.com/netherlands/index.html>
-            Cookie: clientlanguage_nl=en_EN
-    2011-04-06 14:35:14-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Received cookies from: <200 http://www.diningcity.com/netherlands/index.html>
-            Set-Cookie: JSESSIONID=B~FA4DC0C496C8762AE4F1A620EAB34F38; Path=/
-            Set-Cookie: ip_isocode=US
-            Set-Cookie: clientlanguage_nl=en_EN; Expires=Thu, 07-Apr-2011 21:21:34 GMT; Path=/
-    2011-04-06 14:49:50-0300 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
-    [...]
+See :ref:`cookies`.
 
 
 DefaultHeadersMiddleware
@@ -311,7 +267,7 @@ HttpAuthMiddleware
 .. class:: HttpAuthMiddleware
 
     This middleware authenticates requests using `Basic access authentication`_
-    (aka HTTP auth).
+    (aka. HTTP auth).
 
     Use the :setting:`HTTPAUTH_USER`, :setting:`HTTPAUTH_PASS`, and
     :setting:`HTTPAUTH_DOMAIN` settings to configure it. You can also override
@@ -401,9 +357,8 @@ HttpCacheMiddleware
 
 .. class:: HttpCacheMiddleware
 
-    This middleware provides a low-level cache to all HTTP requests and
-    responses. It has to be combined with a cache storage backend as well as a
-    cache policy.
+    This middleware provides low-level cache to all HTTP requests and responses.
+    It has to be combined with a cache storage backend as well as a cache policy.
 
     Scrapy ships with the following HTTP cache storage backends:
 
@@ -423,8 +378,7 @@ HttpCacheMiddleware
 
     .. reqmeta:: dont_cache
 
-    You can also avoid caching a response, regardless of the policy, by setting
-    the :reqmeta:`dont_cache` meta key to ``True``.
+    You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals ``True``.
 
 .. module:: scrapy.extensions.httpcache
    :noindex:
@@ -436,10 +390,10 @@ Dummy policy (default)
 
 .. class:: DummyPolicy
 
-    This policy has no awareness of any HTTP Cache-Control directives. Every
-    request and its corresponding response are cached. When the same request is
-    seen again, the response is returned without transferring anything from the
-    Internet.
+    This policy has no awareness of any HTTP Cache-Control directives.
+    Every request and its corresponding response are cached.  When the same
+    request is seen again, the response is returned without transferring
+    anything from the Internet.
 
     The Dummy policy is useful for testing spiders faster (without having
     to wait for downloads every time) and for trying your spider offline,
@@ -632,8 +586,8 @@ HTTPCACHE_DIR
 Default: ``'httpcache'``
 
 The directory to use for storing the (low-level) HTTP cache. If empty, the HTTP
-cache will be disabled. If a relative path is given, it is taken relative to
-the project data dir. For more info see: :ref:`topics-project-structure`.
+cache will be disabled. If a relative path is given, is taken relative to the
+project data dir. For more info see: :ref:`topics-project-structure`.
 
 .. setting:: HTTPCACHE_IGNORE_HTTP_CODES
 
@@ -642,7 +596,7 @@ HTTPCACHE_IGNORE_HTTP_CODES
 
 Default: ``[]``
 
-Don't cache responses with these HTTP codes.
+Don't cache response with these HTTP codes.
 
 .. setting:: HTTPCACHE_IGNORE_MISSING
 
@@ -727,10 +681,10 @@ Default: ``[]``
 
 List of Cache-Control directives in responses to be ignored.
 
-Sites often set "no-store", "no-cache", "must-revalidate", etc., but get upset
-at the traffic a spider can generate if it actually respects those directives.
-This allows you to selectively ignore Cache-Control directives that are known
-to be unimportant for the sites being crawled.
+Sites often set "no-store", "no-cache", "must-revalidate", etc., but get
+upset at the traffic a spider can generate if it actually respects those
+directives. This allows to selectively ignore Cache-Control directives
+that are known to be unimportant for the sites being crawled.
 
 We assume that the spider will not issue Cache-Control directives
 in requests unless it actually needs them, so directives in requests are
@@ -746,14 +700,13 @@ HttpCompressionMiddleware
 
 .. class:: HttpCompressionMiddleware
 
-   This middleware allows compressed (gzip, deflate) traffic to be
+   This middleware allows compressed (gzip, deflate, `brotli`_) traffic to be
    sent/received from web sites.
 
-   This middleware also supports decoding `brotli-compressed`_ responses with
-   the :ref:`brotli <extras>` extra, and `zstd-compressed`_
-   responses with the :ref:`zstd <extras>` extra.
+   This middleware also supports decoding `zstd-compressed`_ responses with
+   the :ref:`zstd <extras>` extra.
 
-.. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
+.. _brotli: https://www.ietf.org/rfc/rfc7932.txt
 .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
 
 
@@ -791,11 +744,9 @@ HttpProxyMiddleware
    * ``no_proxy``
 
    You can also set the meta key :reqmeta:`proxy` per-request, to a value like
-   ``http://some_proxy_server:port`` or
-   ``http://username:password@some_proxy_server:port``. Keep in mind that this
-   value will take precedence over the ``http_proxy``/``https_proxy``
-   environment variables, and that it will also ignore the ``no_proxy``
-   environment variable.
+   ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
+   Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
+   environment variables, and it will also ignore ``no_proxy`` environment variable.
 
 .. note::
 
@@ -848,40 +799,9 @@ OffsiteMiddleware
 .. module:: scrapy.downloadermiddlewares.offsite
    :synopsis: Offsite Middleware
 
-.. class:: OffsiteMiddleware
+.. autoclass:: OffsiteMiddleware
 
-   .. versionadded:: 2.11.2
-
-   Filters out Requests for URLs outside the domains covered by the spider.
-
-   This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.Spider.allowed_domains` attribute.
-   All subdomains of any domain in the list are also allowed.
-   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
-   but not ``www2.example.com`` nor ``example.com``.
-
-   When your spider returns a request for a domain not belonging to those
-   covered by the spider, this middleware will log a debug message similar to
-   this one::
-
-      DEBUG: Filtered offsite request to 'offsite.example': <GET http://offsite.example/some/page.html>
-
-   To avoid filling the log with too much noise, it will only print one of
-   these messages for each new domain filtered. So, for example, if another
-   request for ``offsite.example`` is filtered, no log message will be
-   printed. But if a request for ``other.example`` is filtered, a message
-   will be printed (but only for the first request filtered).
-
-   If the spider doesn't define an
-   :attr:`~scrapy.Spider.allowed_domains` attribute, or the
-   attribute is empty, the offsite middleware will allow all requests.
-
-   .. reqmeta:: allow_offsite
-
-   If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
-   ``True`` or :attr:`Request.meta <scrapy.Request.meta>` has ``allow_offsite``
-   set to ``True``, then the OffsiteMiddleware will allow the request even if
-   its domain is not listed in allowed domains.
+   .. automethod:: should_follow
 
 RedirectMiddleware
 ------------------
@@ -965,8 +885,7 @@ MetaRefreshMiddleware
 
 .. class:: MetaRefreshMiddleware
 
-   This middleware handles redirection of requests based on the HTML
-   meta-refresh tag.
+   This middleware handles redirection of requests based on meta-refresh html tag.
 
 The :class:`MetaRefreshMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
@@ -975,10 +894,9 @@ settings (see the settings documentation for more info):
 * :setting:`METAREFRESH_IGNORE_TAGS`
 * :setting:`METAREFRESH_MAXDELAY`
 
-This middleware obeys the :setting:`REDIRECT_MAX_TIMES` setting,
-:reqmeta:`dont_redirect`, :reqmeta:`redirect_urls` and
-:reqmeta:`redirect_reasons` request meta keys as described for
-:class:`RedirectMiddleware`
+This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`,
+:reqmeta:`redirect_urls` and :reqmeta:`redirect_reasons` request meta keys as described
+for :class:`RedirectMiddleware`
 
 
 MetaRefreshMiddleware settings
@@ -1072,7 +990,7 @@ RETRY_HTTP_CODES
 Default: ``[500, 502, 503, 504, 522, 524, 408, 429]``
 
 Which HTTP response codes to retry. Other errors (DNS lookup issues,
-connections lost, etc.) are always retried.
+connections lost, etc) are always retried.
 
 In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by

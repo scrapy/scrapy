@@ -53,65 +53,13 @@ Request objects
        ``None`` is passed as value, the HTTP header will not be sent at all.
 
        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-           :ref:`cookies-mw`. If you need to set cookies for a request, use the
-           ``cookies`` argument. This is a known current limitation that is being
-           worked on.
+           :ref:`cookie middleware <cookies>`. If you need to set cookies for a
+           request, use the ``cookies`` argument.
 
     :type headers: dict
 
-    :param cookies: the request cookies. These can be sent in two forms.
-
-        .. invisible-code-block: python
-
-            from scrapy import Request
-
-        1. Using a dict:
-
-        .. code-block:: python
-
-            request_with_cookies = Request(
-                url="http://www.example.com",
-                cookies={"currency": "USD", "country": "UY"},
-            )
-
-        2. Using a list of dicts:
-
-        .. code-block:: python
-
-            request_with_cookies = Request(
-                url="https://www.example.com",
-                cookies=[
-                    {
-                        "name": "currency",
-                        "value": "USD",
-                        "domain": "example.com",
-                        "path": "/currency",
-                        "secure": True,
-                    },
-                ],
-            )
-
-        The latter form allows for customizing the ``domain`` and ``path``
-        attributes of the cookie. This is only useful if the cookies are saved
-        for later requests.
-
-        .. reqmeta:: dont_merge_cookies
-
-        When some site returns cookies (in a response) those are stored in the
-        cookies for that domain and will be sent again in future requests.
-        That's the typical behaviour of any regular web browser.
-
-        Note that setting the :reqmeta:`dont_merge_cookies` key to ``True`` in
-        :attr:`request.meta <scrapy.Request.meta>` causes custom cookies to be
-        ignored.
-
-        For more info see :ref:`cookies-mw`.
-
-        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-            :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`scrapy.Request.cookies <scrapy.Request>` parameter. This is a known
-            current limitation that is being worked on.
-
+    :param cookies: the request cookies, as a dict of cookie names and values
+        or as a list of dicts with a cookie each. See :ref:`cookies`.
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).

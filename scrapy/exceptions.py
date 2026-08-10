@@ -56,8 +56,12 @@ class DontCloseSpider(Exception):
 
 
 class CloseSpider(Exception):
-    """Raised from a :ref:`spider callback <topics-spiders>` to request the
-    spider to be closed/stopped.
+    """Raised from a :ref:`spider callback <topics-spiders>` or from
+    :meth:`~scrapy.Spider.start` to request the spider to be closed/stopped.
+
+    .. versionchanged:: VERSION
+       Raising it from :meth:`~scrapy.Spider.start` closes the spider, instead
+       of being reported as a start error.
 
     *reason* is a string with the reason for closing.
 

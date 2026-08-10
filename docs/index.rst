@@ -78,6 +78,7 @@ Basic concepts
    topics/item-pipeline
    topics/feed-exports
    topics/request-response
+   topics/cookies
    topics/link-extractors
    topics/settings
    topics/exceptions
@@ -108,6 +109,9 @@ Basic concepts
 
 :doc:`topics/request-response`
     Understand the classes used to represent HTTP requests and responses.
+
+:doc:`topics/cookies`
+    Send and receive cookies.
 
 :doc:`topics/link-extractors`
     Convenient classes to extract links to follow from pages.
