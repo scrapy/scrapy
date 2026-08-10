@@ -104,7 +104,8 @@ storage backend types which are defined by the URI scheme.
 The storages backends supported out of the box are:
 
 -   :ref:`topics-feed-storage-fs`
--   :ref:`topics-feed-storage-ftp`
+-   :ref:`feed-storage-ftp`
+-   :ref:`feed-storage-ftps`
 -   :ref:`topics-feed-storage-s3` (requires the :ref:`s3 <extras>` extra)
 -   :ref:`topics-feed-storage-gcs` (requires the :ref:`gcs <extras>` extra)
 -   :ref:`topics-feed-storage-stdout`
@@ -171,6 +172,7 @@ Supported :ref:`modes <feed-mode>`: ``"append"``, ``"create"`` and
 ``"overwrite"``. If :setting:`FEED_MODE` is ``None``, ``"append"`` is used.
 
 .. _topics-feed-storage-ftp:
+.. _feed-storage-ftp:
 
 FTP
 ---
@@ -180,6 +182,9 @@ The feeds are stored in a FTP server.
 -   URI scheme: ``ftp``
 -   Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
 -   Required external libraries: none
+
+FTP sends credentials and data in cleartext. Use :ref:`feed-storage-ftps`
+instead where possible.
 
 FTP supports two different connection modes: `active or passive
 <https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
@@ -198,6 +203,28 @@ Supported :ref:`modes <feed-mode>`: ``"append"``, ``"create"`` and
           reported as not having the target.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
+
+.. _feed-storage-ftps:
+
+FTPS
+----
+
+The feeds are stored in a FTP server, over a TLS connection, with the
+certificate of the server verified.
+
+.. versionadded:: VERSION
+
+-   URI scheme: ``ftps``
+-   Example URI: ``ftps://user:pass@ftp.example.com/path/to/export.csv``
+-   Required external libraries: none
+
+See :ref:`feed-storage-ftp` for connection modes, supported :ref:`modes
+<feed-mode>` and file delivery.
+
+.. note:: For SFTP, an unrelated protocol built on SSH, use
+          `scrapy-feedexporter-sftp
+          <https://github.com/scrapy-plugins/scrapy-feedexporter-sftp>`_.
 
 
 .. _topics-feed-storage-s3:
@@ -678,6 +705,7 @@ Default:
         "s3": "scrapy.extensions.feedexport.S3FeedStorage",
         "gs": "scrapy.extensions.feedexport.GCSFeedStorage",
         "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
+        "ftps": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 
 A dict containing the built-in feed storage backends supported by Scrapy. You

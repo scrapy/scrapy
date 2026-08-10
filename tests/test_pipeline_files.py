@@ -39,6 +39,7 @@ from scrapy.pipelines.media import _MediaRequestFiltered
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
@@ -107,7 +108,7 @@ class TestFilesPipeline:
         )
         crawler.spider = crawler._create_spider()
         crawler.engine = MagicMock(download_async=mocked_download_func)
-        pipeline = pipeline_cls.from_crawler(crawler)
+        pipeline = build_from_crawler(pipeline_cls, crawler)
         pipeline.open_spider()
         return pipeline
 
@@ -394,8 +395,8 @@ class TestFilesPipeline:
             def file_path(self, request, response=None, info=None, item=None) -> str:
                 return f"full/{item.get('path')}"
 
-        file_path = CustomFilesPipeline.from_crawler(
-            get_crawler(None, {"FILES_STORE": self.tempdir})
+        file_path = build_from_crawler(
+            CustomFilesPipeline, get_crawler(None, {"FILES_STORE": self.tempdir})
         ).file_path
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
@@ -518,8 +519,8 @@ class TestFilesPipeline:
         ],
     )
     def test_rejects_non_list_file_urls(self, tmp_path, bad_type):
-        pipeline = FilesPipeline.from_crawler(
-            get_crawler(None, {"FILES_STORE": str(tmp_path)})
+        pipeline = build_from_crawler(
+            FilesPipeline, get_crawler(None, {"FILES_STORE": str(tmp_path)})
         )
         item = ItemWithFiles()
         item["file_urls"] = bad_type
@@ -537,8 +538,8 @@ class TestFilesPipelineFieldsMixin(ABC):
     def test_item_fields_default(self, tmp_path):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", file_urls=[url])
-        pipeline = FilesPipeline.from_crawler(
-            get_crawler(None, {"FILES_STORE": tmp_path})
+        pipeline = build_from_crawler(
+            FilesPipeline, get_crawler(None, {"FILES_STORE": tmp_path})
         )
         requests = list(pipeline.get_media_requests(item, None))  # type: ignore[arg-type]
         assert requests[0].url == url
@@ -551,7 +552,8 @@ class TestFilesPipelineFieldsMixin(ABC):
     def test_item_fields_override_settings(self, tmp_path):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", custom_file_urls=[url])
-        pipeline = FilesPipeline.from_crawler(
+        pipeline = build_from_crawler(
+            FilesPipeline,
             get_crawler(
                 None,
                 {
@@ -559,7 +561,7 @@ class TestFilesPipelineFieldsMixin(ABC):
                     "FILES_URLS_FIELD": "custom_file_urls",
                     "FILES_RESULT_FIELD": "custom_files",
                 },
-            )
+            ),
         )
         requests = list(pipeline.get_media_requests(item, None))  # type: ignore[arg-type]
         assert requests[0].url == url
@@ -664,10 +666,12 @@ class TestFilesPipelineCustomSettings:
         different settings.
         """
         custom_settings = self._generate_fake_settings(tmp_path)
-        another_pipeline = FilesPipeline.from_crawler(
-            get_crawler(None, custom_settings)
+        another_pipeline = build_from_crawler(
+            FilesPipeline, get_crawler(None, custom_settings)
         )
-        one_pipeline = FilesPipeline(tmp_path, crawler=get_crawler(None))
+        one_pipeline = build_from_crawler(
+            FilesPipeline, get_crawler(None, {"FILES_STORE": tmp_path})
+        )
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             default_value = self.default_cls_settings[pipe_attr]
             assert getattr(one_pipeline, pipe_attr) == default_value
@@ -680,7 +684,9 @@ class TestFilesPipelineCustomSettings:
         If subclasses override class attributes and there are no special settings those values should be kept.
         """
         pipe_cls = self._generate_fake_pipeline()
-        pipe = pipe_cls.from_crawler(get_crawler(None, {"FILES_STORE": tmp_path}))
+        pipe = build_from_crawler(
+            pipe_cls, get_crawler(None, {"FILES_STORE": tmp_path})
+        )
         for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             custom_value = getattr(pipe, pipe_ins_attr)
             assert custom_value != self.default_cls_settings[pipe_attr]
@@ -693,7 +699,7 @@ class TestFilesPipelineCustomSettings:
         """
         pipeline_cls = self._generate_fake_pipeline()
         settings = self._generate_fake_settings(tmp_path)
-        pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
+        pipeline = build_from_crawler(pipeline_cls, get_crawler(None, settings))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             value = getattr(pipeline, pipe_ins_attr)
             setting_value = settings.get(settings_attr)
@@ -709,8 +715,8 @@ class TestFilesPipelineCustomSettings:
         class UserDefinedFilesPipeline(FilesPipeline):
             pass
 
-        user_pipeline = UserDefinedFilesPipeline.from_crawler(
-            get_crawler(None, {"FILES_STORE": tmp_path})
+        user_pipeline = build_from_crawler(
+            UserDefinedFilesPipeline, get_crawler(None, {"FILES_STORE": tmp_path})
         )
         for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -728,8 +734,8 @@ class TestFilesPipelineCustomSettings:
 
         prefix = UserDefinedFilesPipeline.__name__.upper()
         settings = self._generate_fake_settings(tmp_path, prefix=prefix)
-        user_pipeline = UserDefinedFilesPipeline.from_crawler(
-            get_crawler(None, settings)
+        user_pipeline = build_from_crawler(
+            UserDefinedFilesPipeline, get_crawler(None, settings)
         )
         for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -745,7 +751,7 @@ class TestFilesPipelineCustomSettings:
         pipeline_cls = self._generate_fake_pipeline()
         prefix = pipeline_cls.__name__.upper()
         settings = self._generate_fake_settings(tmp_path, prefix=prefix)
-        user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
+        user_pipeline = build_from_crawler(pipeline_cls, get_crawler(None, settings))
         for (
             pipe_cls_attr,
             settings_attr,
@@ -760,8 +766,8 @@ class TestFilesPipelineCustomSettings:
             DEFAULT_FILES_RESULT_FIELD = "this"
             DEFAULT_FILES_URLS_FIELD = "that"
 
-        pipeline = UserDefinedFilesPipeline.from_crawler(
-            get_crawler(None, {"FILES_STORE": tmp_path})
+        pipeline = build_from_crawler(
+            UserDefinedFilesPipeline, get_crawler(None, {"FILES_STORE": tmp_path})
         )
         assert (
             pipeline.files_result_field
@@ -782,7 +788,7 @@ class TestFilesPipelineCustomSettings:
         class UserPipe(FilesPipeline):
             pass
 
-        pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
+        pipeline_cls = build_from_crawler(UserPipe, get_crawler(None, settings))
 
         for _, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             expected_value = settings.get(settings_attr)
@@ -793,8 +799,9 @@ class TestFilesPipelineCustomSettings:
             def file_path(self, request, response=None, info=None, *, item=None) -> str:
                 return str(Path("subdir") / Path(request.url).name)
 
-        pipeline = CustomFilesPipelineWithPathLikeDir.from_crawler(
-            get_crawler(None, {"FILES_STORE": tmp_path})
+        pipeline = build_from_crawler(
+            CustomFilesPipelineWithPathLikeDir,
+            get_crawler(None, {"FILES_STORE": tmp_path}),
         )
         request = Request("http://example.com/image01.jpg")
         assert pipeline.file_path(request) == str(Path("subdir/image01.jpg"))
@@ -968,7 +975,7 @@ class TestS3FilesStore:
         crawler = get_crawler(
             settings_dict={"FILES_STORE": "s3://mybucket/prefix/", **settings}
         )
-        store = FilesPipeline.from_crawler(crawler).store
+        store = build_from_crawler(FilesPipeline, crawler).store
         assert isinstance(store, S3FilesStore)
         config: Any = store.s3_client.meta.config
         assert config.max_pool_connections == expected
@@ -1209,7 +1216,7 @@ class TestBuildFromCrawler:
         class Pipeline(FilesPipeline):
             pass
 
-        pipe = Pipeline.from_crawler(self.crawler)
+        pipe = build_from_crawler(Pipeline, self.crawler)
         assert pipe.crawler == self.crawler
         assert pipe._fingerprinter
         assert pipe.store
@@ -1226,7 +1233,7 @@ class TestBuildFromCrawler:
                 o._from_crawler_called = True
                 return o
 
-        pipe = Pipeline.from_crawler(self.crawler)
+        pipe = build_from_crawler(Pipeline, self.crawler)
         assert pipe.crawler == self.crawler
         assert pipe._fingerprinter
         assert pipe.store
@@ -1241,4 +1248,4 @@ def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
     crawler = get_crawler(settings_dict=dict(settings))
 
     with pytest.raises(NotConfigured):
-        FilesPipeline.from_crawler(crawler)
+        build_from_crawler(FilesPipeline, crawler)

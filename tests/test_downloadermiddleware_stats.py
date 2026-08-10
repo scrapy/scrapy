@@ -6,6 +6,7 @@ from scrapy.downloadermiddlewares.stats import DownloaderStats, get_header_size
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
@@ -17,7 +18,7 @@ class TestDownloaderStats:
     def setup_method(self) -> None:
         self.crawler = get_crawler(Spider)
         assert self.crawler.stats is not None
-        self.mw = DownloaderStats(self.crawler.stats)
+        self.mw = build_from_crawler(DownloaderStats, self.crawler)
 
         self.crawler.stats.open_spider()
 
@@ -49,7 +50,7 @@ class TestDownloaderStats:
     def test_from_crawler_not_configured(self) -> None:
         crawler = get_crawler(Spider, {"DOWNLOADER_STATS": False})
         with pytest.raises(NotConfigured):
-            DownloaderStats.from_crawler(crawler)
+            build_from_crawler(DownloaderStats, crawler)
 
     def teardown_method(self) -> None:
         assert self.crawler.stats is not None
