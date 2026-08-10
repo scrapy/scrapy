@@ -87,7 +87,6 @@ class PeriodicLog:
         )
         if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured
-        assert crawler.stats
         assert ext_stats is not None
         assert ext_delta is not None
         o = cls(

@@ -281,7 +281,6 @@ class Command(BaseRunSpiderCommand):
     ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
-            assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
                 for item in items:

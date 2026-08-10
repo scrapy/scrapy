@@ -149,7 +149,7 @@ class BlockingFeedStorage(ABC):
 
         return NamedTemporaryFile(prefix="feed-", dir=path)
 
-    def store(self, file: IO[bytes]) -> Deferred[None] | None:
+    def store(self, file: IO[bytes]) -> Deferred[None]:
         return deferred_from_coro(run_in_thread(self._store_in_thread, file))
 
     @abstractmethod
@@ -340,7 +340,7 @@ class GCSFeedStorage(BlockingFeedStorage):
             from google.cloud.storage import Client  # noqa: PLC0415
 
             client = Client(project=self.project_id)
-            bucket = client.get_bucket(self.bucket_name)
+            bucket = client.bucket(self.bucket_name)
             blob = bucket.blob(self.blob_name)
             blob.upload_from_file(file, predefined_acl=self.acl)
         finally:
@@ -613,7 +613,6 @@ class FeedExporter:
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         slot_type = type(slot.storage).__name__
-        assert self.crawler.stats
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:

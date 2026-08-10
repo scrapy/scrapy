@@ -124,3 +124,13 @@ def test_iter_all():
     o2 = Bar()  # noqa: F841
     o3 = Foo()
     assert set(trackref.iter_all("Foo")) == {o1, o3}
+
+
+def test_run_time_classes() -> None:
+    for _ in range(10):
+        base = type("Baz", (trackref.object_ref,), {})
+        base()
+    del base
+    garbage_collect()
+    assert not list(trackref.iter_all("Baz"))
+    assert sum(1 for cls in trackref.live_refs if cls.__name__ == "Baz") == 0

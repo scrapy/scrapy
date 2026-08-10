@@ -31,11 +31,12 @@ class MockFTPServer:
     from :file:`tests/keys`.
     """
 
+    proc: Popen[str]
+    port: int
+    path: Path
+
     def __init__(self, tls: bool = False) -> None:
-        self.proc: Popen[str] | None = None
         self.host: str = "127.0.0.1"
-        self.port: int | None = None
-        self.path: Path | None = None
         self.tls: bool = tls
 
     def __enter__(self) -> Self:
@@ -67,7 +68,6 @@ class MockFTPServer:
         traceback: TracebackType | None,
     ) -> None:
         rmtree(str(self.path))
-        assert self.proc is not None
         self.proc.kill()
         self.proc.communicate()
 
