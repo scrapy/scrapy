@@ -41,7 +41,7 @@ class TestXMLFeedSpider(TestSpiderBase):
         </urlset>"""
         response = XmlResponse(url="http://example.com/sitemap.xml", body=body)
 
-        class _XMLSpider(self.spider_class):
+        class _XMLSpider(self.spider_class):  # type: ignore[name-defined,misc]
             itertag = "url"
             namespaces = (
                 ("a", "http://www.google.com/schemas/sitemap/0.84"),
@@ -166,7 +166,7 @@ class TestCSVFeedSpider(TestSpiderBase):
         body = get_testdata("feeds", "feed-sample6.csv")
         response = Response("http://example.org/dummy.csv", body=body)
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             delimiter = ","
             quotechar = "'"

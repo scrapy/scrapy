@@ -116,13 +116,9 @@ allow_incomplete_defs = true # 59 errors
 # TODO
 [[tool.mypy.overrides]]
 module = [
-    "tests.spiders",
-    "tests.test_closespider",
     "tests.test_cmdline",
-    "tests.test_contracts",
     "tests.test_downloaderslotssettings",
     "tests.test_dupefilters",
-    "tests.test_engine_loop",
     "tests.test_extension_statsmailer",
     "tests.test_extension_throttle",
     "tests.test_linkextractors",
@@ -131,15 +127,9 @@ module = [
     "tests.test_pqueues",
     "tests.test_scheduler_base",
     "tests.test_settings",
-    "tests.test_spider",
-    "tests.test_spider_crawl",
-    "tests.test_spidermiddleware_output_chain",
-    "tests.test_spidermiddleware_process_start",
-    "tests.test_spider_sitemap",
     "tests.test_squeues",
     "tests.test_squeues_request",
     "tests.test_stats",
-    "tests.utils.bases.spider",
 ]
 check_untyped_defs = false
 
