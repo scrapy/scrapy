@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from twisted.internet.defer import Deferred
 
+from scrapy import signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
     from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.robotstxt import RobotParser
+    from scrapy.statscollectors import StatsCollector
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ class RobotsTxtMiddleware:
         self._default_useragent: str = crawler.settings["USER_AGENT"]
         self._robotstxt_useragent: str | None = crawler.settings["ROBOTSTXT_USER_AGENT"]
         self.crawler: Crawler = crawler
+        self._stats: StatsCollector = crawler.stats
         self._parsers: dict[str, RobotParser | Deferred[RobotParser | None] | None] = {}
         self._parserimpl: RobotParser = load_object(
             crawler.settings.get("ROBOTSTXT_PARSER")
@@ -77,8 +80,7 @@ class RobotsTxtMiddleware:
                 {"request": request},
                 extra={"spider": self.crawler.spider},
             )
-            assert self.crawler.stats
-            self.crawler.stats.inc_value("robotstxt/forbidden")
+            self._stats.inc_value("robotstxt/forbidden")
             raise IgnoreRequest("Forbidden by robots.txt")
 
     async def robot_parser(self, request: Request) -> RobotParser | None:
@@ -94,11 +96,9 @@ class RobotsTxtMiddleware:
                 meta={"dont_obey_robotstxt": True},
                 callback=NO_CALLBACK,
             )
-            assert self.crawler.engine
-            assert self.crawler.stats
             try:
                 resp = await self.crawler.engine.download_async(robotsreq)
-                self._parse_robots(resp, netloc)
+                await self._parse_robots(resp, netloc, request)
             except Exception as e:
                 if not isinstance(e, IgnoreRequest):
                     logger.error(
@@ -108,20 +108,24 @@ class RobotsTxtMiddleware:
                         extra={"spider": self.crawler.spider},
                     )
                 self._robots_error(e, netloc)
-            self.crawler.stats.inc_value("robotstxt/request_count")
+            self._stats.inc_value("robotstxt/request_count")
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
             return await maybe_deferred_to_future(parser)
         return parser
 
-    def _parse_robots(self, response: Response, netloc: str) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.inc_value("robotstxt/response_count")
-        self.crawler.stats.inc_value(
-            f"robotstxt/response_status_count/{response.status}"
-        )
+    async def _parse_robots(
+        self, response: Response, netloc: str, request: Request
+    ) -> None:
+        self._stats.inc_value("robotstxt/response_count")
+        self._stats.inc_value(f"robotstxt/response_status_count/{response.status}")
         rp = self._parserimpl.from_crawler(self.crawler, response.body)
+        await self.crawler.signals.send_catch_log_async(
+            signal=signals.robots_parsed,
+            robotparser=rp,
+            request=request,
+        )
         rp_dfd = self._parsers[netloc]
         assert isinstance(rp_dfd, Deferred)
         self._parsers[netloc] = rp
@@ -130,8 +134,7 @@ class RobotsTxtMiddleware:
     def _robots_error(self, exc: Exception, netloc: str) -> None:
         if not isinstance(exc, IgnoreRequest):
             key = f"robotstxt/exception_count/{type(exc)}"
-            assert self.crawler.stats
-            self.crawler.stats.inc_value(key)
+            self._stats.inc_value(key)
         rp_dfd = self._parsers[netloc]
         assert isinstance(rp_dfd, Deferred)
         self._parsers[netloc] = None

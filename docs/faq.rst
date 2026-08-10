@@ -220,21 +220,15 @@ the :ref:`topics-signals-ref` to know which ones.
 What does the response status code 999 mean?
 --------------------------------------------
 
-999 is a custom response status code used by Yahoo sites to throttle requests.
+999 is a custom response status code used by some sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
-higher) in your spider:
+higher) for the affected domains, with the :setting:`DOWNLOAD_SLOTS` setting:
 
 .. code-block:: python
 
-    from scrapy.spiders import CrawlSpider
-
-
-    class MySpider(CrawlSpider):
-        name = "myspider"
-
-        download_delay = 2
-
-        # [ ... rest of the spider code ... ]
+    DOWNLOAD_SLOTS = {
+        "example.com": {"delay": 2},
+    }
 
 Or by setting a global download delay in your project with the
 :setting:`DOWNLOAD_DELAY` setting.
@@ -298,7 +292,7 @@ Does Scrapy manage cookies automatically?
 Yes, Scrapy receives and keeps track of cookies sent by servers, and sends them
 back on subsequent requests, like any regular web browser does.
 
-For more info see :ref:`topics-request-response` and :ref:`cookies-mw`.
+For more info see :ref:`cookies`.
 
 How can I see the cookies being sent and received from Scrapy?
 --------------------------------------------------------------
