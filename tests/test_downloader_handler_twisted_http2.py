@@ -15,6 +15,7 @@ from scrapy.crawler import Crawler
 from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import Request
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
     TestHttpsBase,
@@ -68,7 +69,7 @@ def test_not_configured_without_reactor() -> None:
 
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
-        H2DownloadHandler.from_crawler(crawler)
+        build_from_crawler(H2DownloadHandler, crawler)
 
 
 class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):

@@ -4,12 +4,14 @@ import json
 import logging
 import re
 import sys
+import warnings
 from io import StringIO
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from twisted.python.failure import Failure
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.log import (
     LogCounterHandler,
     SpiderLoggerAdapter,
@@ -332,7 +334,9 @@ class TestLogformatterAdapter:
             "LogFormatterResult",
             {"level": logging.INFO, "msg": "90% done", "args": args},
         )
-        assert self._log(caplog, logkws) == "90% done"
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            assert self._log(caplog, logkws) == "90% done"
 
     @pytest.mark.parametrize(
         ("msg", "args"),
@@ -345,4 +349,16 @@ class TestLogformatterAdapter:
         args: dict[str, Any] | tuple[Any, ...],
     ) -> None:
         logkws: LogFormatterResult = {"level": logging.INFO, "msg": msg, "args": args}
-        assert self._log(caplog, logkws) == "90% done"
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            assert self._log(caplog, logkws) == "90% done"
+
+    def test_msg_mapping_placeholders_without_args(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        logkws = cast(
+            "LogFormatterResult",
+            {"level": logging.INFO, "msg": "%(pct)d%% done", "pct": 90},
+        )
+        with pytest.warns(ScrapyDeprecationWarning, match="no args"):
+            assert self._log(caplog, logkws) == "90% done"
