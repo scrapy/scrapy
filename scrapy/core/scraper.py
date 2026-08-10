@@ -37,7 +37,11 @@ from scrapy.utils.defer import (
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
-from scrapy.utils.python import global_object_name
+from scrapy.utils.python import (
+    _BackgroundTaskTracker,
+    _current_async_backend_tracker_factory,
+    global_object_name,
+)
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
@@ -122,6 +126,7 @@ class Scraper:
         self.signals: SignalManager = crawler.signals
         assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
+        self._tracker: _BackgroundTaskTracker | None = None
 
     def _check_deprecated_itemproc_method(self, method: str) -> None:
         itemproc_cls = type(self.itemproc)
@@ -165,6 +170,15 @@ class Scraper:
 
         .. versionadded:: 2.14
         """
+        if not self._tracker:
+            self._tracker = _current_async_backend_tracker_factory()
+            self.crawler.signals.connect(
+                self._tracker.drain, signal=signals.spider_closed
+            )
+            self.crawler.signals.connect(
+                self._tracker.drain, signal=signals.engine_stopped
+            )
+
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
         if not self.crawler.spider:
             raise RuntimeError(
@@ -194,6 +208,8 @@ class Scraper:
             raise RuntimeError("Scraper slot not assigned")
         self.slot.closing = Deferred()
         self._check_if_closing()
+        if self._tracker:
+            await self._tracker.drain()
         await maybe_deferred_to_future(self.slot.closing)
         if self._itemproc_has_async["close_spider"]:
             await self.itemproc.close_spider_async()
@@ -237,9 +253,12 @@ class Scraper:
 
     def _scrape_next(self) -> None:
         assert self.slot is not None  # typing
+        assert self._tracker
         while self.slot.queue:
             result, request, queue_dfd = self.slot.next_response_request_deferred()
-            _schedule_coro(self._wait_for_processing(result, request, queue_dfd))
+            self._tracker.schedule(
+                self._wait_for_processing(result, request, queue_dfd)
+            )
 
     async def _scrape(self, result: Response | Failure, request: Request) -> None:
         """Handle the downloaded response or failure through the spider callback/errback."""

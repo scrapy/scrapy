@@ -10,10 +10,18 @@ import re
 import sys
 import warnings
 import weakref
-from collections.abc import AsyncIterator, Iterable, Mapping
+from collections.abc import AsyncIterator, Coroutine, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    overload,
+)
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
@@ -394,3 +402,21 @@ def _iter_exc_causes(exc: BaseException) -> Iterable[BaseException]:
         seen.add(id(cur))
         yield cur
         cur = cur.__cause__ or cur.__context__
+
+
+class _BackgroundTaskTracker(Protocol):
+    def schedule(self, coro: Coroutine[Any, Any, Any]) -> None: ...
+    async def drain(self) -> None: ...
+
+
+def _current_async_backend_tracker_factory() -> _BackgroundTaskTracker:
+    from scrapy.utils.asyncio import (  # noqa: PLC0415
+        _AsyncioTaskTracker,
+        is_asyncio_available,
+    )
+
+    if is_asyncio_available():
+        return _AsyncioTaskTracker()
+    from scrapy.utils.defer import _DeferredTracker  # noqa: PLC0415
+
+    return _DeferredTracker()
