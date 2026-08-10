@@ -8,6 +8,7 @@ import pytest
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.spiderstate import SpiderState
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -49,4 +50,4 @@ def test_state_attribute() -> None:
 def test_not_configured() -> None:
     crawler = get_crawler(Spider)
     with pytest.raises(NotConfigured):
-        SpiderState.from_crawler(crawler)
+        build_from_crawler(SpiderState, crawler)

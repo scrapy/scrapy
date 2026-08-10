@@ -31,8 +31,13 @@ extensions = [
     "sphinx_scrapy",
     "scrapyfixautodoc",  # Must be after "sphinx.ext.autodoc"
     "sphinx.ext.coverage",
+    "sphinx_reredirects",
     "sphinx_rtd_dark_mode",
 ]
+
+redirects = {
+    "topics/broad-crawls": "optimize.html#broad-crawls",
+}
 
 templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]

@@ -108,7 +108,6 @@ class TelnetConsole(protocol.ServerFactory):
 
     def _get_telnet_vars(self) -> dict[str, Any]:
         # Note: if you add entries here also update topics/telnetconsole.rst
-        assert self.crawler.engine
         telnet_vars: dict[str, Any] = {
             "engine": self.crawler.engine,
             "spider": self.crawler.engine.spider,
