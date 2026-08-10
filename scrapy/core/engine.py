@@ -298,7 +298,6 @@ class ExecutionEngine:
                 response=None,
                 spider=self.spider,
             )
-            assert self.crawler.stats
             self.crawler.stats.inc_value("spider_exceptions/count")
             self.crawler.stats.inc_value(
                 f"spider_exceptions/{type(exception).__name__}"
