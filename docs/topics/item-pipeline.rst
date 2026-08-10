@@ -47,9 +47,17 @@ Additionally, they may also implement the following methods:
 
    This method is called when the spider is opened.
 
+   .. versionchanged:: VERSION
+      Added support for :exc:`~scrapy.exceptions.CloseSpider`.
+
+   It may raise :exc:`~scrapy.exceptions.CloseSpider` to close the spider before
+   it starts crawling, e.g. if a resource that the pipeline needs is
+   unavailable.
+
 .. method:: close_spider(self)
 
-   This method is called when the spider is closed.
+   This method is called when the spider is closed, before the
+   :signal:`spider_closed` signal is sent.
 
 Any of these methods may be defined as a coroutine function (``async def``).
 

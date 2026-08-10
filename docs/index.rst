@@ -78,6 +78,7 @@ Basic concepts
    topics/item-pipeline
    topics/feed-exports
    topics/request-response
+   topics/cookies
    topics/link-extractors
    topics/settings
    topics/exceptions
@@ -108,6 +109,9 @@ Basic concepts
 
 :doc:`topics/request-response`
     Understand the classes used to represent HTTP requests and responses.
+
+:doc:`topics/cookies`
+    Send and receive cookies.
 
 :doc:`topics/link-extractors`
     Convenient classes to extract links to follow from pages.
@@ -152,7 +156,7 @@ Solving specific problems
    topics/contracts
    topics/practices
    topics/security
-   topics/broad-crawls
+   topics/optimize
    topics/developer-tools
    topics/dynamic-content
    topics/leaks
@@ -180,8 +184,8 @@ Solving specific problems
     Understand the security implications of Scrapy defaults and how to harden
     them.
 
-:doc:`topics/broad-crawls`
-    Tune Scrapy for crawling a lot domains in parallel.
+:doc:`topics/optimize`
+    Find the bottleneck of your crawls and learn how to address it.
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.
