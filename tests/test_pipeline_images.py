@@ -21,6 +21,7 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import FilesPipeline, GCSFilesStore, S3FilesStore, _md5sum
 from scrapy.pipelines.images import ImageException, ImagesPipeline
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.test_pipeline_files import CrawlerAwareStore
 from tests.utils.cloud import mock_google_cloud_storage
@@ -43,8 +44,8 @@ else:
 class TestImagesPipeline:
     def setup_method(self):
         self.tempdir = mkdtemp()
-        crawler = get_crawler()
-        self.pipeline = ImagesPipeline(self.tempdir, crawler=crawler)
+        crawler = get_crawler(None, {"IMAGES_STORE": self.tempdir})
+        self.pipeline = build_from_crawler(ImagesPipeline, crawler)
 
     def teardown_method(self):
         rmtree(self.tempdir)
@@ -139,8 +140,8 @@ class TestImagesPipeline:
             ) -> str:
                 return f"thumb/{thumb_id}/{item.get('path')}"
 
-        thumb_path = CustomImagesPipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+        thumb_path = build_from_crawler(
+            CustomImagesPipeline, get_crawler(None, {"IMAGES_STORE": self.tempdir})
         ).thumb_path
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
@@ -304,8 +305,8 @@ class TestImagesPipeline:
         ],
     )
     def test_rejects_non_list_image_urls(self, tmp_path, bad_type):
-        pipeline = ImagesPipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
+        pipeline = build_from_crawler(
+            ImagesPipeline, get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
         )
         item = ImagesPipelineTestItem()
         item["image_urls"] = bad_type
@@ -323,8 +324,8 @@ class TestImagesPipelineFieldsMixin(ABC):
     def test_item_fields_default(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", image_urls=[url])
-        pipeline = ImagesPipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": "s3://example/images/"})
+        pipeline = build_from_crawler(
+            ImagesPipeline, get_crawler(None, {"IMAGES_STORE": "s3://example/images/"})
         )
         requests = list(pipeline.get_media_requests(item, DUMMY_SPIDER_INFO))
         assert requests[0].url == url
@@ -337,7 +338,8 @@ class TestImagesPipelineFieldsMixin(ABC):
     def test_item_fields_override_settings(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", custom_image_urls=[url])
-        pipeline = ImagesPipeline.from_crawler(
+        pipeline = build_from_crawler(
+            ImagesPipeline,
             get_crawler(
                 None,
                 {
@@ -345,7 +347,7 @@ class TestImagesPipelineFieldsMixin(ABC):
                     "IMAGES_URLS_FIELD": "custom_image_urls",
                     "IMAGES_RESULT_FIELD": "custom_images",
                 },
-            )
+            ),
         )
         requests = list(pipeline.get_media_requests(item, DUMMY_SPIDER_INFO))
         assert requests[0].url == url
@@ -481,8 +483,12 @@ class TestImagesPipelineCustomSettings:
         have different settings.
         """
         custom_settings = self._generate_fake_settings(tmp_path)
-        default_sts_pipe = ImagesPipeline(tmp_path, crawler=get_crawler(None))
-        user_sts_pipe = ImagesPipeline.from_crawler(get_crawler(None, custom_settings))
+        default_sts_pipe = build_from_crawler(
+            ImagesPipeline, get_crawler(None, {"IMAGES_STORE": tmp_path})
+        )
+        user_sts_pipe = build_from_crawler(
+            ImagesPipeline, get_crawler(None, custom_settings)
+        )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_default_value = self.default_pipeline_settings.get(pipe_attr)
             custom_value = custom_settings.get(settings_attr)
@@ -498,8 +504,8 @@ class TestImagesPipelineCustomSettings:
         from class attributes.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
-        pipeline = pipeline_cls.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": tmp_path})
+        pipeline = build_from_crawler(
+            pipeline_cls, get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         for pipe_attr, _ in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
@@ -514,7 +520,7 @@ class TestImagesPipelineCustomSettings:
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         settings = self._generate_fake_settings(tmp_path)
-        pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
+        pipeline = build_from_crawler(pipeline_cls, get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to
             # value defined in settings.
@@ -532,8 +538,8 @@ class TestImagesPipelineCustomSettings:
         class UserDefinedImagePipeline(ImagesPipeline):
             pass
 
-        user_pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": tmp_path})
+        user_pipeline = build_from_crawler(
+            UserDefinedImagePipeline, get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         for pipe_attr, _ in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -551,8 +557,8 @@ class TestImagesPipelineCustomSettings:
 
         prefix = UserDefinedImagePipeline.__name__.upper()
         settings = self._generate_fake_settings(tmp_path, prefix=prefix)
-        user_pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, settings)
+        user_pipeline = build_from_crawler(
+            UserDefinedImagePipeline, get_crawler(None, settings)
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -568,7 +574,7 @@ class TestImagesPipelineCustomSettings:
         pipeline_cls = self._generate_fake_pipeline_subclass()
         prefix = pipeline_cls.__name__.upper()
         settings = self._generate_fake_settings(tmp_path, prefix=prefix)
-        user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
+        user_pipeline = build_from_crawler(pipeline_cls, get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             custom_value = settings.get(prefix + "_" + settings_attr)
             assert custom_value != self.default_pipeline_settings[pipe_attr]
@@ -579,8 +585,8 @@ class TestImagesPipelineCustomSettings:
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
 
-        pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": tmp_path})
+        pipeline = build_from_crawler(
+            UserDefinedImagePipeline, get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         assert (
             pipeline.images_result_field
@@ -601,7 +607,7 @@ class TestImagesPipelineCustomSettings:
         class UserPipe(ImagesPipeline):
             pass
 
-        pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
+        pipeline_cls = build_from_crawler(UserPipe, get_crawler(None, settings))
 
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)
@@ -617,7 +623,7 @@ class TestImagesPipelineCustomSettings:
                 },
             },
         )
-        store = ImagesPipeline.from_crawler(crawler).store
+        store = build_from_crawler(ImagesPipeline, crawler).store
         assert isinstance(store, CrawlerAwareStore)
         assert store.acl_setting == "IMAGES_STORE_S3_ACL"
 
@@ -633,8 +639,8 @@ class TestImagesPipelineCustomSettings:
             },
         )
 
-        files_store = FilesPipeline.from_crawler(crawler).store
-        images_store = ImagesPipeline.from_crawler(crawler).store
+        files_store = build_from_crawler(FilesPipeline, crawler).store
+        images_store = build_from_crawler(ImagesPipeline, crawler).store
         assert isinstance(files_store, S3FilesStore)
         assert isinstance(images_store, S3FilesStore)
         assert files_store.POLICY == "private"
@@ -660,8 +666,8 @@ class TestImagesPipelineCustomSettings:
         )
 
         with mock.patch("google.cloud.storage.Client", return_value=client_mock):
-            files_store = FilesPipeline.from_crawler(crawler).store
-            images_store = ImagesPipeline.from_crawler(crawler).store
+            files_store = build_from_crawler(FilesPipeline, crawler).store
+            images_store = build_from_crawler(ImagesPipeline, crawler).store
         assert isinstance(files_store, GCSFilesStore)
         assert isinstance(images_store, GCSFilesStore)
         assert files_store.POLICY is None
