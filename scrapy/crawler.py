@@ -15,7 +15,7 @@ from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from scrapy import Spider
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
@@ -277,8 +277,12 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            yield deferred_from_coro(self.engine.open_spider_async())
-            yield deferred_from_coro(self.engine.start_async())
+            try:
+                yield deferred_from_coro(self.engine.open_spider_async())
+            except CloseSpider as exc:
+                yield deferred_from_coro(self.engine.close_async(reason=exc.reason))
+            else:
+                yield deferred_from_coro(self.engine.start_async())
         except Exception:
             self.crawling = False
             if self._engine is not None:
@@ -307,8 +311,12 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            await self.engine.open_spider_async()
-            await self.engine.start_async()
+            try:
+                await self.engine.open_spider_async()
+            except CloseSpider as exc:
+                await self.engine.close_async(reason=exc.reason)
+            else:
+                await self.engine.start_async()
         except Exception:
             self.crawling = False
             if self._engine is not None:

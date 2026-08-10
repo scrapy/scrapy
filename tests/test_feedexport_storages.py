@@ -7,6 +7,7 @@ import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
+from ssl import SSLCertVerificationError
 from typing import IO, Any
 from unittest import mock
 from urllib.parse import quote
@@ -168,6 +169,24 @@ class TestFTPFeedStorage:
             await self._store(url, b"foo", settings=settings)
             await self._store(url, b"bar", settings=settings)
             self._assert_stored(ftp_server.path / filename, b"bar")
+
+    @coroutine_test
+    async def test_tls(self, monkeypatch):
+        monkeypatch.setenv(
+            "SSL_CERT_FILE", str(Path(__file__).parent / "keys" / "localhost.crt")
+        )
+        with MockFTPServer(tls=True) as ftp_server:
+            filename = "file"
+            await self._store(ftp_server.url(filename), b"foo")
+            self._assert_stored(ftp_server.path / filename, b"foo")
+
+    @coroutine_test
+    async def test_tls_untrusted_certificate(self):
+        with (
+            MockFTPServer(tls=True) as ftp_server,
+            pytest.raises(SSLCertVerificationError),
+        ):
+            await self._store(ftp_server.url("file"), b"foo")
 
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
