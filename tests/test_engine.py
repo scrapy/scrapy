@@ -251,7 +251,6 @@ class TestCloseSpiderOnStartup:
         crawler.signals.connect(spider_closed, signals.spider_closed)
         with caplog.at_level(logging.INFO):
             await crawler.crawl_async()
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "pipeline_reason"
         assert closed == ["pipeline_reason"]
         assert "Traceback" not in caplog.text
@@ -264,7 +263,6 @@ class TestCloseSpiderOnStartup:
         crawler = get_crawler(DefaultSpider)
         crawler.signals.connect(spider_opened, signals.spider_opened)
         await crawler.crawl_async()
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "signal_reason"
 
     @coroutine_test
@@ -275,12 +273,10 @@ class TestCloseSpiderOnStartup:
         crawler = get_crawler(DefaultSpider, {"ITEM_PIPELINES": {ClosingPipeline: 1}})
         crawler.signals.connect(spider_opened, signals.spider_opened)
         await crawler.crawl_async()
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "pipeline_reason"
 
     @inline_callbacks_test
     def test_deferred_crawl(self) -> Generator[Deferred[Any], Any, None]:
         crawler = get_crawler(DefaultSpider, {"ITEM_PIPELINES": {ClosingPipeline: 1}})
         yield crawler.crawl()
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "pipeline_reason"
