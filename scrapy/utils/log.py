@@ -239,13 +239,12 @@ class LogCounterHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         sname = f"log_count/{record.levelname}"
-        assert self.crawler.stats
         self.crawler.stats.inc_value(sname)
 
 
 def logformatter_adapter(
     logkws: LogFormatterResult,
-) -> tuple[int, str, dict[str, Any] | tuple[Any, ...]]:
+) -> tuple[Any, ...]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
     and adapts it into a tuple of positional arguments for logger.log calls.
@@ -253,10 +252,14 @@ def logformatter_adapter(
 
     level = logkws.get("level", logging.INFO)
     message = logkws.get("msg") or ""
-    # NOTE: This also handles 'args' being an empty dict, that case doesn't
-    # play well in logger.log calls
-    args = cast("dict[str, Any]", logkws) if not logkws.get("args") else logkws["args"]
-
+    args = logkws.get("args")
+    # logging interpolates the message whenever it receives any positional
+    # argument, so empty args are left out. Tuple args become one positional
+    # argument each, while a dict is a single positional argument.
+    if not args:
+        return (level, message)
+    if isinstance(args, tuple):
+        return (level, message, *args)
     return (level, message, args)
 
 

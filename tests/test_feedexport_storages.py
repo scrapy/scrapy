@@ -7,6 +7,7 @@ import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
+from ssl import SSLCertVerificationError
 from typing import IO, Any
 from unittest import mock
 from urllib.parse import quote
@@ -95,27 +96,34 @@ class TestFileFeedStorage:
         assert storage.path == path
 
 
+def get_test_spider(settings: dict[str, Any] | None = None) -> scrapy.Spider:
+    class TestSpider(scrapy.Spider):
+        name = "test_spider"
+
+    crawler = get_crawler(settings_dict=settings)
+    return TestSpider.from_crawler(crawler)
+
+
 class TestFTPFeedStorage:
-    def get_test_spider(self, settings=None):
-        class TestSpider(scrapy.Spider):
-            name = "test_spider"
-
-        crawler = get_crawler(settings_dict=settings)
-        return TestSpider.from_crawler(crawler)
-
-    async def _store(self, uri, content, feed_options=None, settings=None):
+    async def _store(
+        self,
+        uri: str,
+        content: bytes,
+        feed_options: dict[str, Any] | None = None,
+        settings: dict[str, Any] | None = None,
+    ) -> None:
         crawler = get_crawler(settings_dict=settings or {})
         storage = FTPFeedStorage.from_crawler(
             crawler,
             uri,
             feed_options=feed_options,
         )
-        spider = self.get_test_spider()
+        spider = get_test_spider()
         file = storage.open(spider)
         file.write(content)
         await maybe_deferred_to_future(storage.store(file))
 
-    def _assert_stored(self, path: Path, content):
+    def _assert_stored(self, path: Path, content: bytes) -> None:
         assert path.exists()
         try:
             assert path.read_bytes() == content
@@ -169,10 +177,28 @@ class TestFTPFeedStorage:
             await self._store(ftp_server.url(path), b"foo")
             self._assert_stored(ftp_server.path / path, b"foo")
 
+    @coroutine_test
+    async def test_tls(self, monkeypatch):
+        monkeypatch.setenv(
+            "SSL_CERT_FILE", str(Path(__file__).parent / "keys" / "localhost.crt")
+        )
+        with MockFTPServer(tls=True) as ftp_server:
+            filename = "file"
+            await self._store(ftp_server.url(filename), b"foo")
+            self._assert_stored(ftp_server.path / filename, b"foo")
+
+    @coroutine_test
+    async def test_tls_untrusted_certificate(self):
+        with (
+            MockFTPServer(tls=True) as ftp_server,
+            pytest.raises(SSLCertVerificationError),
+        ):
+            await self._store(ftp_server.url("file"), b"foo")
+
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
         pw_quoted = quote(string.punctuation, safe="")
-        st = FTPFeedStorage(f"ftp://foo:{pw_quoted}@example.com/some_path", {})
+        st = FTPFeedStorage(f"ftp://foo:{pw_quoted}@example.com/some_path")
         assert st.password == string.punctuation
 
     def test_uri_without_hostname(self):
@@ -188,24 +214,17 @@ class MyBlockingFeedStorage(BlockingFeedStorage):
 
 
 class TestBlockingFeedStorage:
-    def get_test_spider(self, settings=None):
-        class TestSpider(scrapy.Spider):
-            name = "test_spider"
-
-        crawler = get_crawler(settings_dict=settings)
-        return TestSpider.from_crawler(crawler)
-
     def test_default_temp_dir(self):
         b = MyBlockingFeedStorage()
 
-        storage_file = b.open(self.get_test_spider())
+        storage_file = b.open(get_test_spider())
         storage_dir = Path(storage_file.name).parent
         assert str(storage_dir) == tempfile.gettempdir()
 
     def test_temp_file(self, tmp_path):
         b = MyBlockingFeedStorage()
 
-        spider = self.get_test_spider({"FEED_TEMPDIR": str(tmp_path)})
+        spider = get_test_spider({"FEED_TEMPDIR": str(tmp_path)})
         storage_file = b.open(spider)
         storage_dir = Path(storage_file.name).parent
         assert storage_dir == tmp_path
@@ -214,7 +233,7 @@ class TestBlockingFeedStorage:
         b = MyBlockingFeedStorage()
 
         invalid_path = tmp_path / "invalid_path"
-        spider = self.get_test_spider({"FEED_TEMPDIR": str(invalid_path)})
+        spider = get_test_spider({"FEED_TEMPDIR": str(invalid_path)})
 
         with pytest.raises(OSError, match="Not a Directory:"):
             b.open(spider=spider)
@@ -318,7 +337,7 @@ class TestS3FeedStorage:
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
         assert storage.region_name == region_name
-        assert storage.s3_client._client_config.region_name == region_name
+        assert storage.s3_client._client_config.region_name == region_name  # type: ignore[attr-defined]
 
     def test_from_crawler_without_acl(self):
         settings = {
@@ -360,7 +379,7 @@ class TestS3FeedStorage:
         )
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
-        assert storage.s3_client._client_config.region_name == "us-east-1"
+        assert storage.s3_client._client_config.region_name == "us-east-1"  # type: ignore[attr-defined]
 
     def test_from_crawler_with_acl(self):
         settings = {
@@ -401,7 +420,7 @@ class TestS3FeedStorage:
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
         assert storage.region_name == region_name
-        assert storage.s3_client._client_config.region_name == region_name
+        assert storage.s3_client._client_config.region_name == region_name  # type: ignore[attr-defined]
 
     def test_init_without_max_pool_connections(self) -> None:
         storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
@@ -504,7 +523,7 @@ class TestGCSFeedStorage:
     def test_parse_empty_acl(self):
         pytest.importorskip("google.cloud.storage")
 
-        settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": ""}
+        settings: dict[str, Any] = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": ""}
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
         assert storage.acl is None
@@ -531,7 +550,7 @@ class TestGCSFeedStorage:
 
             f.seek.assert_called_once_with(0)
             m.assert_called_once_with(project=project_id)
-            client_mock.get_bucket.assert_called_once_with("mybucket")
+            client_mock.bucket.assert_called_once_with("mybucket")
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()
@@ -555,7 +574,7 @@ class TestGCSFeedStorage:
 
             f.seek.assert_called_once_with(0)
             m.assert_called_once_with(project=project_id)
-            client_mock.get_bucket.assert_called_once_with("mybucket")
+            client_mock.bucket.assert_called_once_with("mybucket")
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()

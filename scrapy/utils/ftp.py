@@ -1,7 +1,8 @@
 import posixpath
 from contextlib import closing
-from ftplib import FTP, error_perm
+from ftplib import FTP, FTP_TLS, error_perm
 from posixpath import dirname
+from ssl import create_default_context
 from typing import IO
 
 
@@ -29,13 +30,20 @@ def ftp_store_file(
     password: str,
     use_active_mode: bool = False,
     overwrite: bool = True,
+    tls: bool = False,
 ) -> None:
-    """Opens a FTP connection with passed credentials,sets current directory
-    to the directory extracted from given path, then uploads the file to server
+    """Opens a FTP connection with passed credentials, sets current directory
+    to the directory extracted from given path, then uploads the file to server.
+
+    If *tls* is ``True``, the connection is secured with TLS (FTPS), and the
+    certificate of the server is verified.
     """
-    with FTP() as ftp, closing(file):
+    ftp = FTP_TLS(context=create_default_context()) if tls else FTP()
+    with ftp, closing(file):
         ftp.connect(host, port)
         ftp.login(username, password)
+        if isinstance(ftp, FTP_TLS):
+            ftp.prot_p()
         if use_active_mode:
             ftp.set_pasv(False)
         file.seek(0)

@@ -131,6 +131,11 @@ class TestIPythonShell:
     @pytest.mark.skipif(
         sys.platform == "win32", reason="requires a POSIX pseudo-terminal"
     )
+    # The child of the pseudo-terminal fork execs right away, so the deadlocks
+    # that Python warns about cannot happen.
+    @pytest.mark.filterwarnings(
+        "ignore:.*is multi-threaded, use of forkpty:DeprecationWarning"
+    )
     @pytest.mark.parametrize(
         "script",
         [CONSOLE, CONSOLE_IN_RUNNING_LOOP],
