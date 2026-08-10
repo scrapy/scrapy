@@ -7,6 +7,7 @@ import pytest
 
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.httperror import HttpError, HttpErrorMiddleware
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.spiders import MockServerSpider
@@ -79,7 +80,7 @@ class TestHttpErrorMiddleware:
     def mw(self) -> HttpErrorMiddleware:
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        return HttpErrorMiddleware.from_crawler(crawler)
+        return build_from_crawler(HttpErrorMiddleware, crawler)
 
     def test_process_spider_input(
         self, mw: HttpErrorMiddleware, res200: Response, res404: Response
@@ -115,7 +116,7 @@ class TestHttpErrorMiddlewareSettings:
     def mw(self) -> HttpErrorMiddleware:
         crawler = get_crawler(DefaultSpider, {"HTTPERROR_ALLOWED_CODES": (402,)})
         crawler.spider = crawler._create_spider()
-        return HttpErrorMiddleware.from_crawler(crawler)
+        return build_from_crawler(HttpErrorMiddleware, crawler)
 
     def test_process_spider_input(
         self,
@@ -155,7 +156,7 @@ class TestHttpErrorMiddlewareHandleAll:
     def mw(self) -> HttpErrorMiddleware:
         crawler = get_crawler(DefaultSpider, {"HTTPERROR_ALLOW_ALL": True})
         crawler.spider = crawler._create_spider()
-        return HttpErrorMiddleware.from_crawler(crawler)
+        return build_from_crawler(HttpErrorMiddleware, crawler)
 
     def test_process_spider_input(
         self,
@@ -179,7 +180,7 @@ class TestHttpErrorMiddlewareHandleAll:
 
     def test_httperror_allow_all_false(self) -> None:
         crawler = get_crawler(_HttpErrorSpider)
-        mw = HttpErrorMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpErrorMiddleware, crawler)
         request_httpstatus_false = Request(
             "http://scrapytest.org", meta={"handle_httpstatus_all": False}
         )

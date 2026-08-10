@@ -14,6 +14,7 @@ from scrapy.core.scheduler import Scheduler
 from scrapy.dupefilters import BaseDupeFilter, RFPDupeFilter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
@@ -30,7 +31,7 @@ def _get_dupefilter(
 ) -> BaseDupeFilter:
     if crawler is None:
         crawler = get_crawler(settings_dict=settings)
-    scheduler = Scheduler.from_crawler(crawler)
+    scheduler = build_from_crawler(Scheduler, crawler)
     dupefilter = scheduler.df
     if open_:
         dupefilter.open()
@@ -56,7 +57,7 @@ class TestRFPDupeFilter:
             "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
         }
         crawler = get_crawler(settings_dict=settings)
-        scheduler = Scheduler.from_crawler(crawler)
+        scheduler = build_from_crawler(Scheduler, crawler)
         assert scheduler.df.debug
         assert scheduler.df.method == "from_crawler"
 
@@ -65,7 +66,7 @@ class TestRFPDupeFilter:
             "DUPEFILTER_CLASS": DirectDupeFilter,
         }
         crawler = get_crawler(settings_dict=settings)
-        scheduler = Scheduler.from_crawler(crawler)
+        scheduler = build_from_crawler(Scheduler, crawler)
         assert scheduler.df.method == "n/a"
 
     def test_filter(self):
@@ -145,7 +146,7 @@ class TestRFPDupeFilter:
         path = tempfile.mkdtemp()
         crawler = get_crawler(settings_dict={"JOBDIR": path})
         try:
-            scheduler = Scheduler.from_crawler(crawler)
+            scheduler = build_from_crawler(Scheduler, crawler)
             df = scheduler.df
             df.open()
             df.request_seen(r1)

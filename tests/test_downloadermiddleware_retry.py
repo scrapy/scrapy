@@ -16,6 +16,7 @@ from scrapy.exceptions import (
 from scrapy.http import Request, Response
 from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
@@ -24,7 +25,7 @@ class TestRetry:
     def setup_method(self):
         self.crawler = get_crawler(DefaultSpider)
         self.crawler.spider = self.crawler._create_spider()
-        self.mw = RetryMiddleware.from_crawler(self.crawler)
+        self.mw = build_from_crawler(RetryMiddleware, self.crawler)
         self.mw.max_retry_times = 2
 
     def test_priority_adjust(self):
@@ -93,7 +94,7 @@ class TestRetry:
             DefaultSpider, settings_dict={"RETRY_GIVE_UP_LOG_LEVEL": "WARNING"}
         )
         crawler.spider = crawler._create_spider()
-        mw = RetryMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(RetryMiddleware, crawler)
         mw.max_retry_times = 0
         req = Request("http://example.com/503")
         rsp = Response("http://example.com/503", body=b"", status=503)
@@ -146,7 +147,7 @@ class TestRetry:
         }
         crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
         crawler.spider = crawler._create_spider()
-        mw = RetryMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(RetryMiddleware, crawler)
         req = Request(f"http://www.scrapytest.org/{exc.__name__}")
         self._test_retry_exception(req, exc("foo"), mw)
 
@@ -176,7 +177,7 @@ class TestMaxRetryTimes:
     def get_middleware(self, settings: dict[str, Any] | None = None) -> RetryMiddleware:
         crawler = get_crawler(DefaultSpider, settings or {})
         crawler.spider = crawler._create_spider()
-        return RetryMiddleware.from_crawler(crawler)
+        return build_from_crawler(RetryMiddleware, crawler)
 
     def test_with_settings_zero(self):
         max_retry_times = 0

@@ -9,6 +9,7 @@ import pytest
 
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.periodic_log import PeriodicLog
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 from .spiders import MetaSpider
@@ -72,7 +73,7 @@ class CustomPeriodicLog(PeriodicLog):
 
 def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
     crawler = get_crawler(MetaSpider, settings)
-    return CustomPeriodicLog.from_crawler(crawler)
+    return build_from_crawler(CustomPeriodicLog, crawler)
 
 
 class TestPeriodicLog:

@@ -11,6 +11,7 @@ from twisted.cred import credentials
 from scrapy import Spider
 from scrapy.extensions.telnet import TelnetConsole, update_telnet_vars
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -39,7 +40,7 @@ def _get_console_and_portal(
     settings: dict[str, Any] | None = None,
 ) -> Generator[tuple[TelnetConsole, Any]]:
     crawler = _get_crawler(settings_dict=settings)
-    console = TelnetConsole(crawler)
+    console = build_from_crawler(TelnetConsole, crawler)
 
     # This function has some side effects we don't need for this test
     console._get_telnet_vars = dict  # type: ignore[method-assign]
@@ -87,7 +88,7 @@ async def test_custom_credentials() -> None:
 
 def test_invalid_reversed_portrange() -> None:
     settings = {"TELNETCONSOLE_PORT": [2, 1]}
-    console = TelnetConsole(_get_crawler(settings_dict=settings))
+    console = build_from_crawler(TelnetConsole, _get_crawler(settings_dict=settings))
     with pytest.raises(ValueError, match=r"invalid portrange: \[2, 1\]"):
         console.start_listening()
 

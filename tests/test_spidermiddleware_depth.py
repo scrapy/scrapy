@@ -35,7 +35,7 @@ def stats(crawler: Crawler) -> Generator[StatsCollector]:
 
 @pytest.fixture
 def mw(crawler: Crawler) -> DepthMiddleware:
-    return DepthMiddleware.from_crawler(crawler)
+    return build_from_crawler(DepthMiddleware, crawler)
 
 
 def test_process_spider_output(mw: DepthMiddleware, stats: StatsCollector) -> None:
