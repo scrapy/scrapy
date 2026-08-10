@@ -210,6 +210,7 @@ Scrapy from doing any other work while it runs. To avoid this, you can wrap
 the blocking call with :func:`~scrapy.utils.decorators.inthread`, which runs
 it in a separate thread and returns an awaitable with the result:
 
+.. skip: next
 .. code-block:: python
 
     from scrapy.utils.decorators import inthread
@@ -226,9 +227,7 @@ it in a separate thread and returns an awaitable with the result:
             result = await blocking_call(response.url)
             # ... use result to yield items and requests
 
-:func:`~scrapy.utils.decorators.inthread` uses :func:`asyncio.to_thread` when
-asyncio support is enabled, and Twisted's thread pool otherwise, so it works
-regardless of which reactor your project uses.
+.. autofunction:: scrapy.utils.decorators.inthread
 
 Common use cases for asynchronous code include:
 
