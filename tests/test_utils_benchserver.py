@@ -1,21 +1,25 @@
 from __future__ import annotations
 
 import re
-from typing import Any
-
-from twisted.web.test.requesthelper import DummyRequest
+from typing import TYPE_CHECKING, cast
 
 from scrapy.utils.benchserver import Root, _getarg
 
+if TYPE_CHECKING:
+    from twisted.web.server import Request
 
-def _request(**args: bytes) -> Any:
-    request = DummyRequest([b""])
-    request.args = {name.encode(): [value] for name, value in args.items()}
-    return request
+
+class _Request:
+    def __init__(self, **args: bytes) -> None:
+        self.args = {name.encode(): [value] for name, value in args.items()}
+        self.written: list[bytes] = []
+
+    def write(self, data: bytes) -> None:
+        self.written.append(data)
 
 
 def test_getarg() -> None:
-    request = _request(total=b"5")
+    request = cast("Request", _Request(total=b"5"))
     assert _getarg(request, b"total", 100, int) == 5
     assert _getarg(request, b"show", 100, int) == 100
     assert _getarg(request, b"missing") is None
@@ -23,9 +27,9 @@ def test_getarg() -> None:
 
 def test_render() -> None:
     root = Root()  # type: ignore[no-untyped-call]
-    request = _request(total=b"5", show=b"2")
-    assert root.getChild("follow", request) is root
-    assert root.render(request) == b""
+    request = _Request(total=b"5", show=b"2")
+    assert root.getChild("follow", cast("Request", request)) is root
+    assert root.render(cast("Request", request)) == b""
     body = b"".join(request.written).decode()
     assert body.startswith("<html><head></head><body>")
     assert body.endswith("</body></html>")
