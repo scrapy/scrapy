@@ -86,6 +86,7 @@ jobs:
         - python-version: pypy3.11-7.3.20
           env:
             TOXENV: pypy3-extra-deps
+          coverage: true
         - python-version: "3.14"
           env:
             TOXENV: botocore
