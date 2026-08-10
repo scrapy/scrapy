@@ -15,7 +15,7 @@ from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from scrapy import Spider
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
@@ -156,7 +156,7 @@ class Crawler:
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
-        self.logformatter = lf_cls.from_crawler(self)
+        self.logformatter = build_from_crawler(lf_cls, self)
 
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
@@ -200,7 +200,7 @@ class Crawler:
             logger.debug("Not using a Twisted reactor")
             self._apply_reactorless_default_settings()
 
-        self.extensions = ExtensionManager.from_crawler(self)
+        self.extensions = build_from_crawler(ExtensionManager, self)
         self.settings.freeze()
 
         d = dict(overridden_settings(self.settings))
@@ -270,8 +270,12 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            yield deferred_from_coro(self.engine.open_spider_async())
-            yield deferred_from_coro(self.engine.start_async())
+            try:
+                yield deferred_from_coro(self.engine.open_spider_async())
+            except CloseSpider as exc:
+                yield deferred_from_coro(self.engine.close_async(reason=exc.reason))
+            else:
+                yield deferred_from_coro(self.engine.start_async())
         except Exception:
             self.crawling = False
             if self._engine is not None:
@@ -300,8 +304,12 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            await self.engine.open_spider_async()
-            await self.engine.start_async()
+            try:
+                await self.engine.open_spider_async()
+            except CloseSpider as exc:
+                await self.engine.close_async(reason=exc.reason)
+            else:
+                await self.engine.start_async()
         except Exception:
             self.crawling = False
             if self._engine is not None:

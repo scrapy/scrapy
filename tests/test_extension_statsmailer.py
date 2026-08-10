@@ -6,6 +6,7 @@ import pytest
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.statscollectors import StatsCollector
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
@@ -43,7 +44,7 @@ def test_from_crawler_without_recipients_raises_notconfigured():
     crawler.stats = MagicMock()
 
     with pytest.raises(NotConfigured):
-        statsmailer.StatsMailer.from_crawler(crawler)
+        build_from_crawler(statsmailer.StatsMailer, crawler)
 
 
 def test_from_crawler_with_recipients_initializes_extension(monkeypatch):
@@ -52,7 +53,7 @@ def test_from_crawler_with_recipients_initializes_extension(monkeypatch):
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    ext = statsmailer.StatsMailer.from_crawler(crawler)
+    ext = build_from_crawler(statsmailer.StatsMailer, crawler)
 
     assert isinstance(ext, statsmailer.StatsMailer)
     assert ext.recipients == ["test@example.com"]
@@ -65,7 +66,7 @@ def test_from_crawler_connects_spider_closed_signal(monkeypatch):
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    ext = statsmailer.StatsMailer.from_crawler(crawler)
+    ext = build_from_crawler(statsmailer.StatsMailer, crawler)
 
     crawler.signals.send_catch_log(
         signals.spider_closed, spider=DefaultSpider(name="dummy")

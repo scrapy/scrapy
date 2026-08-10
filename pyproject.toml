@@ -317,6 +317,9 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",
+    # Jobs that do not report coverage disable it with --no-cov, which pytest-cov
+    # warns about because the coverage options below stay in place.
+    "ignore::pytest_cov.CovDisabledWarning",
     # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
     "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
 ]
