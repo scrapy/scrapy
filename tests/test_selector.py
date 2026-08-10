@@ -4,7 +4,7 @@ import parsel
 import pytest
 from packaging import version
 
-from scrapy.http import HtmlResponse, TextResponse, XmlResponse
+from scrapy.http import HtmlResponse, JsonResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
 
 PARSEL_VERSION = version.parse(getattr(parsel, "__version__", "0.0"))
@@ -59,6 +59,30 @@ class TestSelector:
         assert sel.xpath("//div").getall() == [
             '<div><img src="a.jpg"><p>Hello</p></div>'
         ]
+
+    @pytest.mark.skipif(not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support json")
+    def test_flavor_detection_json(self) -> None:
+        response = JsonResponse(
+            "http://example.com", body=b'{"a": "b"}', encoding="utf-8"
+        )
+        assert Selector(response).type == "json"
+        assert response.jmespath("a").get() == "b"
+
+    @pytest.mark.skipif(not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support json")
+    def test_flavor_detection_json_with_html_body(self) -> None:
+        body = b"<div><p>Hello</p></div>"
+        response = JsonResponse("http://example.com", body=body, encoding="utf-8")
+        assert Selector(response).type == "json"
+
+        html_response = response.replace(cls=HtmlResponse)
+        assert Selector(html_response).type == "html"
+        assert html_response.css("p::text").get() == "Hello"
+
+    def test_flavor_detection_text(self) -> None:
+        response = TextResponse(
+            "http://example.com", body=b"<div><p>Hello</p></div>", encoding="utf-8"
+        )
+        assert Selector(response).type == "html"
 
     def test_http_header_encoding_precedence(self):
         # '\xa3'     = pound symbol in unicode
