@@ -481,6 +481,22 @@ class TestTextResponse(TestResponseBase):
         ):
             text_response.json()
 
+    def test_json_response_non_utf8(self):
+        response = self.response_class(
+            "http://www.example.com",
+            body='{"message": "café"}'.encode("cp1252"),
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.json() == {"message": "café"}
+
+    def test_json_response_wrong_charset(self):
+        response = self.response_class(
+            "http://www.example.com",
+            body='{"message": "café"}'.encode(),
+            headers={"Content-Type": "application/json; charset=iso-8859-1"},
+        )
+        assert response.json() == {"message": "café"}
+
     def test_cache_json_response(self):
         json_valid_bodies = [b"""{"ip": "109.187.217.200"}""", b"""null"""]
         for json_body in json_valid_bodies:
