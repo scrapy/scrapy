@@ -61,6 +61,7 @@ class HttpxDownloadHandlerMixin:
 
 class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
     handler_supports_bindaddress_meta = False
+    handler_bad_header_handling = "fail"
 
     @pytest.mark.skipif(
         sys.platform == "darwin",
@@ -82,6 +83,7 @@ class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
 
 class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
     handler_supports_bindaddress_meta = False
+    handler_bad_header_handling = "fail"
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
     @pytest.mark.skip(reason="The check is Twisted-specific")

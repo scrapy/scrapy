@@ -130,17 +130,23 @@ using different handlers.
 Here is a comparison of some features of the built-in HTTP handlers, see the
 individual handler docs for more differences:
 
-================== ================= ===================== ====================
-Feature            H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
-================== ================= ===================== ====================
-Requires asyncio   No                No                    Yes
-Requires a reactor Yes               Yes                   No
-HTTP/1.1           No                Yes                   Yes
-HTTP/2             Yes               No                    Yes
-TLS implementation ``cryptography``  ``cryptography``      Stdlib ``ssl``
-HTTP proxies       No                Yes                   Yes
-SOCKS proxies      No                No                    Yes
-================== ================= ===================== ====================
+=================== ================= ===================== ====================
+Feature             H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
+=================== ================= ===================== ====================
+Requires asyncio    No                No                    Yes
+Requires a reactor  Yes               Yes                   No
+HTTP/1.1            No                Yes                   Yes
+HTTP/2              Yes               No                    Yes
+TLS implementation  ``cryptography``  ``cryptography``      Stdlib ``ssl``
+HTTP proxies        No                Yes                   Yes
+SOCKS proxies       No                No                    Yes
+Bad header handling Not applicable    Skip bad              Fail
+=================== ================= ===================== ====================
+
+Bad header handling is what a handler does when a response has a bad header
+line, e.g. one with no colon in it, which some servers send. Handlers that skip
+bad header lines, like web browsers do, still parse the header lines that follow
+them; other handlers also lose those, or cannot download such responses at all.
 
 You can find additional HTTP download handlers in the
 scrapy-download-handlers-incubator_ package. This package is made by the Scrapy
@@ -191,6 +197,7 @@ Features and limitations
 HTTP proxies                No (not implemented)
 SOCKS proxies               No (not supported by the library)
 HTTP/2                      Yes
+Bad header handling         Not applicable (HTTP/2 only)
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
@@ -239,10 +246,15 @@ Features and limitations
 HTTP proxies                Yes
 SOCKS proxies               No (not supported by the library)
 HTTP/2                      No (implemented as a separate handler)
+Bad header handling         Skip bad, like web browsers do
 ``response.certificate``    :class:`twisted.internet.ssl.Certificate` object
 Per-request ``bindaddress`` Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
+
+.. versionchanged:: VERSION
+   Bad header lines with no colon in them are now skipped, instead of making
+   the whole response impossible to download.
 
 Other limitations:
 
@@ -297,6 +309,7 @@ Features and limitations
 HTTP proxies                Yes
 SOCKS proxies               Yes (SOCKS5)
 HTTP/2                      Yes
+Bad header handling         Fail (not supported by the library)
 ``response.certificate``    DER bytes
 Per-request ``bindaddress`` No (not supported by the library)
 TLS implementation          Standard library ``ssl``
