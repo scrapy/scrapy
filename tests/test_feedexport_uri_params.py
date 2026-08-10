@@ -49,8 +49,7 @@ class TestURIParams(ABC):
             uri="file:///tmp/%(name)s",
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
@@ -67,8 +66,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
 
         feed_exporter.open_spider(spider)
 
@@ -83,8 +81,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
@@ -100,8 +97,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
@@ -117,8 +113,7 @@ class TestURIParams(ABC):
             uri_params=uri_params,
         )
         crawler, feed_exporter = self._crawler_feed_exporter(settings)
-        spider = scrapy.Spider(self.spider_name)
-        spider.crawler = crawler
+        spider = scrapy.Spider.from_crawler(crawler, self.spider_name)
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
