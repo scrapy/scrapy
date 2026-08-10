@@ -149,7 +149,6 @@ async def test_none_slot_with_priority_queue(
     assert crawler.spider.default_slot in crawler.spider.times
     assert len(crawler.spider.times[crawler.spider.default_slot]) == 2
 
-    assert crawler.stats
     stats = crawler.stats
     assert stats.get_value("spider_exceptions", 0) == 0
     assert stats.get_value("downloader/exception_count", 0) == 0

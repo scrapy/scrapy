@@ -16,7 +16,6 @@ class MyException(Exception):
 class TestDownloaderStats:
     def setup_method(self) -> None:
         self.crawler = get_crawler(Spider)
-        assert self.crawler.stats is not None
         self.mw = DownloaderStats(self.crawler.stats)
 
         self.crawler.stats.open_spider()
@@ -25,7 +24,6 @@ class TestDownloaderStats:
         self.res = Response("http://scrapytest.org", status=400)
 
     def assertStatsEqual(self, key: str, value: object) -> None:
-        assert self.crawler.stats is not None
         assert self.crawler.stats.get_value(key) == value, str(
             self.crawler.stats.get_stats()
         )
@@ -52,7 +50,6 @@ class TestDownloaderStats:
             DownloaderStats.from_crawler(crawler)
 
     def teardown_method(self) -> None:
-        assert self.crawler.stats is not None
         self.crawler.stats.close_spider()
 
 

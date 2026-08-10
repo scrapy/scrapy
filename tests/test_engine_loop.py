@@ -65,7 +65,6 @@ class TestMain:
             name = "test"
 
             async def start(self) -> AsyncIterator[Any]:
-                assert self.crawler.engine
                 assert self.crawler.engine._slot
                 scheduler = self.crawler.engine._slot.scheduler
                 assert isinstance(scheduler, MemoryScheduler)
@@ -111,7 +110,6 @@ class TestMain:
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await crawler.crawl_async()
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_urls = ["data:,a", "data:,b", "data:,c", "data:,d"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
@@ -124,7 +122,6 @@ class TestMain:
             name = "test"
 
             async def start(self) -> AsyncIterator[Any]:
-                assert self.crawler.engine is not None
                 await self.crawler.engine.close_async()
                 yield Request("data:,a")
 
@@ -145,7 +142,6 @@ class TestMain:
             await crawler.crawl_async()
 
         assert not caplog.records
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "shutdown"
         assert not actual_urls
 
@@ -186,7 +182,6 @@ class TestMain:
         failure, response = errors[0]
         assert isinstance(failure.value, ValueError)
         assert response is None
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "start_error"
         assert crawler.stats.get_value("spider_exceptions/count") == 1
         assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
@@ -213,7 +208,6 @@ class TestMain:
             await crawler.crawl_async()
 
         assert not caplog.records
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "my_reason"
         assert crawler.stats.get_value("spider_exceptions/count") is None
 
@@ -296,7 +290,6 @@ class TestRequestSendOrder:
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_num, signals.request_reached_downloader)
         await crawler.crawl_async()
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_nums = sorted(start_nums + cb_nums)
         assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"
@@ -316,7 +309,6 @@ class TestRequestSendOrder:
             )
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
-            assert spider.crawler.engine
             assert spider.crawler.engine._slot
             # The first CONCURRENT_REQUESTS start requests are sent
             # immediately.
@@ -358,7 +350,6 @@ class TestRequestSendOrder:
             )
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
-            assert spider.crawler.engine
             assert spider.crawler.engine._slot
             # The first CONCURRENT_REQUESTS start requests are sent
             # immediately.
@@ -403,7 +394,6 @@ class TestRequestSendOrder:
             )
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
-            assert spider.crawler.engine
             assert spider.crawler.engine._slot
             # The first CONCURRENT_REQUESTS start requests are sent
             # immediately.
@@ -460,7 +450,6 @@ class TestRequestSendOrder:
 
         async def start(spider: Spider) -> AsyncIterator[Any]:
             for num in start_nums:
-                assert spider.crawler.engine
                 if spider.crawler.engine.needs_backout():
                     await spider.crawler.signals.wait_for(signals.scheduler_empty)
                 request = self.request(num, response_seconds, download_slots)

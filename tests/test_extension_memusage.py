@@ -98,7 +98,6 @@ async def test_memusage_below_thresholds_logs_peak(
     with caplog.at_level(logging.INFO, logger="scrapy.extensions.memusage"):
         await crawler.crawl_async(url="data:,", loops=1)
 
-    assert crawler.stats
     assert crawler.stats.get_value("memusage/limit_reached") is None
     assert crawler.stats.get_value("memusage/warning_reached") is None
     assert crawler.stats.get_value("memusage/max") == 25 * MB
@@ -128,7 +127,6 @@ async def test_memusage_limit_closes_spider_with_reason_and_error_log(
     with caplog.at_level(logging.ERROR, logger="scrapy.extensions.memusage"):
         await crawler.crawl_async(url="data:,", loops=100)
 
-    assert crawler.stats
     assert crawler.stats.get_value("memusage/limit_reached") == 1
     assert crawler.stats.get_value("finish_reason") == "memusage_exceeded"
     assert any(
@@ -166,7 +164,6 @@ async def test_memusage_warning_logs_but_allows_normal_finish(
         await crawler.crawl_async(url="data:,", loops=60)
 
     assert warning_signals == [1]
-    assert crawler.stats
     assert crawler.stats.get_value("memusage/warning_reached") == 1
     assert crawler.stats.get_value("finish_reason") == "finished"
     warnings_logged = [

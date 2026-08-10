@@ -71,7 +71,6 @@ class TestBase:
         settings = self._get_settings(**new_settings)
         crawler = get_crawler(Spider, settings)
         crawler.spider = crawler._create_spider("example.com")
-        assert crawler.stats
         crawler.stats.open_spider()
         try:
             yield crawler
@@ -136,7 +135,6 @@ class StorageTestMixin(TestBase):
         with self._middleware() as mw:
             spider = mw.crawler.spider
             assert spider
-            assert mw.crawler.stats
             mw.storage.store_response(spider, self.request, self.response)
             self._corrupt_cache_entry(mw.storage, spider, self.request)
 
@@ -158,7 +156,6 @@ class StorageTestMixin(TestBase):
         with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
             spider = mw.crawler.spider
             assert spider
-            assert mw.crawler.stats
             mw.storage.store_response(spider, self.request, self.response)
             self._corrupt_cache_entry(mw.storage, spider, self.request)
 

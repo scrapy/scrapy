@@ -80,7 +80,6 @@ class TestMain:
         crawler = get_crawler(spider_cls, settings_dict=settings)
         crawler.signals.connect(track_item, signals.item_scraped)
         await crawler.crawl_async()
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "finished"
         assert actual_items == expected_items, f"{actual_items=} != {expected_items=}"
 

@@ -229,7 +229,6 @@ def test_repeated_offsite_domain():
     with pytest.raises(IgnoreRequest):
         mw.process_request(req1)
     assert "other.org" in mw.domains_seen
-    assert crawler.stats
     assert crawler.stats.get_value("offsite/domains") == 1
     assert crawler.stats.get_value("offsite/filtered") == 1
     with pytest.raises(IgnoreRequest):

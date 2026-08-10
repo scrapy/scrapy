@@ -81,7 +81,6 @@ class TestRetry:
         # discard it
         assert self.mw.process_response(req3, rsp) is rsp
 
-        assert self.crawler.stats
         assert self.crawler.stats.get_value("retry/max_reached") == 1
         assert (
             self.crawler.stats.get_value("retry/reason_count/503 Service Unavailable")
@@ -133,7 +132,6 @@ class TestRetry:
             self._test_retry_exception(req, exc("foo"))
 
         stats = self.crawler.stats
-        assert stats
         assert stats.get_value("retry/max_reached") == len(exceptions)
         assert stats.get_value("retry/count") == len(exceptions) * 2
         assert (
@@ -314,7 +312,6 @@ class TestGetRetryRequest:
         assert new_request.meta["retry_times"] == expected_retry_times
         assert new_request.priority == -1
         expected_reason = "unspecified"
-        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
             assert spider.crawler.stats.get_value(stat) == 1
         assert (
@@ -335,7 +332,6 @@ class TestGetRetryRequest:
                 max_retry_times=max_retry_times,
             )
         assert new_request is None
-        assert spider.crawler.stats
         assert spider.crawler.stats.get_value("retry/max_reached") == 1
         failure_count = max_retry_times + 1
         expected_reason = "unspecified"
@@ -362,7 +358,6 @@ class TestGetRetryRequest:
         assert new_request.meta["retry_times"] == expected_retry_times
         assert new_request.priority == -1
         expected_reason = "unspecified"
-        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
             assert spider.crawler.stats.get_value(stat) == 1
         assert (
@@ -395,7 +390,6 @@ class TestGetRetryRequest:
             assert new_request.meta["retry_times"] == expected_retry_times
             assert new_request.priority == -expected_retry_times
             expected_reason = "unspecified"
-            assert spider.crawler.stats
             for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
                 value = spider.crawler.stats.get_value(stat)
                 assert value == expected_retry_times
@@ -520,7 +514,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
             assert spider.crawler.stats.get_value(stat) == 1
         assert (
@@ -542,7 +535,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
@@ -568,7 +560,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
@@ -592,7 +583,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
@@ -618,7 +608,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
@@ -736,7 +725,6 @@ class TestGetRetryRequest:
             reason=expected_reason,
             stats_base_key=stats_key,
         )
-        assert spider.crawler.stats
         for stat in (
             f"{stats_key}/count",
             f"{stats_key}/reason_count/{expected_reason}",

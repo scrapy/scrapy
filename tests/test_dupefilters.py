@@ -178,7 +178,6 @@ class TestRFPDupeFilter:
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-        assert crawler.stats
         assert crawler.stats.get_value("dupefilter/filtered") == 2
         assert (
             "scrapy.dupefilters",
@@ -212,7 +211,6 @@ class TestRFPDupeFilter:
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-        assert crawler.stats
         assert crawler.stats.get_value("dupefilter/filtered") == 2
         assert (
             "scrapy.dupefilters",

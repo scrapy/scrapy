@@ -100,7 +100,6 @@ class TestXMLFeedSpider(TestSpiderBase):
 
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
-        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
 
     @coroutine_test
@@ -135,7 +134,6 @@ class TestXMLFeedSpider(TestSpiderBase):
 
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
-        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotSupported") == 1
 
     @pytest.mark.parametrize("feed_iterator", ["xml", "html"])
@@ -155,7 +153,6 @@ class TestXMLFeedSpider(TestSpiderBase):
 
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
-        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
 
 
@@ -206,7 +203,6 @@ class TestCSVFeedSpider(TestSpiderBase):
 
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
-        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
 
 
