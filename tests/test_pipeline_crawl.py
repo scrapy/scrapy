@@ -68,7 +68,8 @@ class CreatedMediaDownloadSpider(MediaDownloadSpider):
 
     name = "createdmedia"
 
-    def _process_url(self, url):
+    def _process_url(self, url: str) -> str:
+        assert self.mockserver
         return add_or_replace_parameter(self.mockserver.url("/created"), "goto", url)
 
 
