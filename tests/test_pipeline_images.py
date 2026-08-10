@@ -633,8 +633,12 @@ class TestImagesPipelineCustomSettings:
             },
         )
 
-        assert FilesPipeline.from_crawler(crawler).store.POLICY == "private"
-        assert ImagesPipeline.from_crawler(crawler).store.POLICY == "public-read"
+        files_store = FilesPipeline.from_crawler(crawler).store
+        images_store = ImagesPipeline.from_crawler(crawler).store
+        assert isinstance(files_store, S3FilesStore)
+        assert isinstance(images_store, S3FilesStore)
+        assert files_store.POLICY == "private"
+        assert images_store.POLICY == "public-read"
         assert S3FilesStore.POLICY == "private"
 
     def test_images_store_gcs_acl_setting_used(self):
@@ -656,10 +660,12 @@ class TestImagesPipelineCustomSettings:
         )
 
         with mock.patch("google.cloud.storage.Client", return_value=client_mock):
-            assert FilesPipeline.from_crawler(crawler).store.POLICY is None
-            assert (
-                ImagesPipeline.from_crawler(crawler).store.POLICY == "authenticatedRead"
-            )
+            files_store = FilesPipeline.from_crawler(crawler).store
+            images_store = ImagesPipeline.from_crawler(crawler).store
+        assert isinstance(files_store, GCSFilesStore)
+        assert isinstance(images_store, GCSFilesStore)
+        assert files_store.POLICY is None
+        assert images_store.POLICY == "authenticatedRead"
         assert GCSFilesStore.POLICY is None
 
 
