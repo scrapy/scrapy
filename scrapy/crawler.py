@@ -166,7 +166,7 @@ class Crawler:
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
-        self.logformatter = lf_cls.from_crawler(self)
+        self.logformatter = build_from_crawler(lf_cls, self)
 
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
@@ -210,7 +210,7 @@ class Crawler:
             logger.debug("Not using a Twisted reactor")
             self._apply_reactorless_default_settings()
 
-        self.extensions = ExtensionManager.from_crawler(self)
+        self.extensions = build_from_crawler(ExtensionManager, self)
         self.settings.freeze()
 
         d = dict(overridden_settings(self.settings))
