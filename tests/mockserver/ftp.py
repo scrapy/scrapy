@@ -27,11 +27,12 @@ class MockFTPServer:
     (anonymous) and a temporary root path that you can read from the
     :attr:`path` attribute."""
 
+    proc: Popen[str]
+    port: int
+    path: Path
+
     def __init__(self) -> None:
-        self.proc: Popen[str] | None = None
         self.host: str = "127.0.0.1"
-        self.port: int | None = None
-        self.path: Path | None = None
 
     def __enter__(self) -> Self:
         self.path = Path(mkdtemp())
@@ -63,7 +64,6 @@ class MockFTPServer:
         traceback: TracebackType | None,
     ) -> None:
         rmtree(str(self.path))
-        assert self.proc is not None
         self.proc.kill()
         self.proc.communicate()
 

@@ -23,7 +23,10 @@ if TYPE_CHECKING:
 class MediaDownloadSpider(SimpleSpider):
     name = "mediadownload"
 
-    def _process_url(self, url):
+    media_key: str
+    media_urls_key: str
+
+    def _process_url(self, url: str) -> str:
         return url
 
     def parse(self, response):
@@ -44,14 +47,15 @@ class MediaDownloadSpider(SimpleSpider):
 class BrokenLinksMediaDownloadSpider(MediaDownloadSpider):
     name = "brokenmedia"
 
-    def _process_url(self, url):
+    def _process_url(self, url: str) -> str:
         return url + ".foo"
 
 
 class RedirectedMediaDownloadSpider(MediaDownloadSpider):
     name = "redirectedmedia"
 
-    def _process_url(self, url):
+    def _process_url(self, url: str) -> str:
+        assert self.mockserver
         return add_or_replace_parameter(
             self.mockserver.url("/redirect-to"), "goto", url
         )
