@@ -20,6 +20,12 @@ name: Flag PRs for triage
 #   lists, em dash density or stock acknowledgement phrases.
 # - Agent branch: the branch name carries an agent prefix.
 #
+# Authors that the organisations behind this repository already trust are left
+# alone before any of that runs: public members of those organisations, and
+# authors with a track record of pull requests merged into their repositories.
+# Trust from a merge record rather than from a list of names keeps the exemption
+# in step with who is actually contributing.
+#
 # Deliberately not used: account age, fork age, follower count, total pull
 # request count and cross-repository merge ratio. All of them were measured
 # against hand-labelled pull requests and either failed to separate or, in the
@@ -56,6 +62,8 @@ jobs:
             const MAX_REPOS_PER_WEEK = 2;
             const VOICE = { structure: 0.10, emDashPerKChar: 0.30, acknowledgement: 0.40 };
             const EVENT_PAGES = 3;
+            const TRUSTED_ORGS = ['scrapy', 'scrapy-plugins', 'scrapinghub', 'zytedata'];
+            const MIN_TRUSTED_MERGES = 10;
             const AGENT_BRANCH = /^(agent|codex|claude|cursor|devin|copilot|jules|bot)[\/_-]/i;
 
             const { owner, repo } = context.repo;
@@ -92,6 +100,33 @@ jobs:
               if ([404, 410, 422].includes(error.status)) return null;
               throw error;
             });
+
+            // author_association only reports membership of the organisation
+            // that owns this repository, and only when it is public, so trust
+            // in the author is established here instead.
+            const trustedOrg = (await Promise.all(TRUSTED_ORGS.map(org =>
+              orNull(withRetries(`Checking public membership of ${org}`, () =>
+                github.rest.orgs.checkPublicMembershipForUser({ org, username: author }),
+              )).then(response => response && org),
+            ))).find(Boolean);
+            if (trustedOrg) {
+              core.info(`Skipping PR #${pr.number} by ${author} (public member of ${trustedOrg}).`);
+              return;
+            }
+            // Repeating a qualifier narrows the search instead of widening it,
+            // hence the explicit disjunction.
+            const trustedMerges = await orNull(withRetries('Counting merged PRs in trusted organisations', () =>
+              github.rest.search.issuesAndPullRequests({
+                q: `author:${author} type:pr is:merged`
+                  + ` (${TRUSTED_ORGS.map(org => `org:${org}`).join(' OR ')})`,
+                advanced_search: 'true', per_page: 1,
+              }).then(response => response.data.total_count),
+            ));
+            if (trustedMerges >= MIN_TRUSTED_MERGES) {
+              core.info(`Skipping PR #${pr.number} by ${author}`
+                + ` (${trustedMerges} PR(s) merged into ${TRUSTED_ORGS.join(', ')}).`);
+              return;
+            }
 
             const opened = new Date(pr.created_at);
             const daysBefore = date => (opened - new Date(date)) / 86400000;
