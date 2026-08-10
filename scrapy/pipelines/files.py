@@ -27,9 +27,7 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.media import (
-    FileException as FileException,  # noqa: PLC0414  # re-exported for backward compatibility
-)
+from scrapy.pipelines.media import FileException as _FileException
 from scrapy.pipelines.media import (
     FileInfo,
     FileInfoOrError,
@@ -652,7 +650,7 @@ class FilesPipeline(MediaPipeline):
             f"{request} referred in <{referer}>: {failure.value}",
             extra={"spider": info.spider},
         )
-        raise FileException
+        raise _FileException
 
     async def media_downloaded(
         self,
@@ -671,7 +669,7 @@ class FilesPipeline(MediaPipeline):
                 {"status": response.status, "request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
-            raise FileException("download-error")
+            raise _FileException("download-error")
 
         if not response.body:
             logger.warning(
@@ -680,7 +678,7 @@ class FilesPipeline(MediaPipeline):
                 {"request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
-            raise FileException("empty-content")
+            raise _FileException("empty-content")
 
         status = "cached" if "cached" in response.flags else "downloaded"
         logger.debug(
@@ -696,7 +694,7 @@ class FilesPipeline(MediaPipeline):
             checksum: str = await ensure_awaitable(
                 self.file_downloaded(response, request, info, item=item)
             )
-        except FileException as exc:
+        except _FileException as exc:
             logger.warning(
                 "File (error): Error processing file from %(request)s "
                 "referred in <%(referer)s>: %(errormsg)s",
@@ -713,7 +711,7 @@ class FilesPipeline(MediaPipeline):
                 exc_info=True,
                 extra={"spider": info.spider},
             )
-            raise FileException(str(exc)) from exc
+            raise _FileException(str(exc)) from exc
 
         return {
             "url": request.url,
@@ -796,3 +794,15 @@ class FilesPipeline(MediaPipeline):
             if media_type:
                 media_ext = cast("str", mimetypes.guess_extension(media_type))
         return f"full/{media_guid}{media_ext}"
+
+
+def __getattr__(name: str) -> Any:
+    if name == "FileException":
+        warnings.warn(
+            "scrapy.pipelines.files.FileException is deprecated, use "
+            "scrapy.pipelines.media.FileException instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return _FileException
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

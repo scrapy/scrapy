@@ -18,7 +18,8 @@ from itemadapter import ItemAdapter
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
+from scrapy.pipelines.files import FilesPipeline, _md5sum
+from scrapy.pipelines.media import FileException
 from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
 
