@@ -99,6 +99,13 @@ class _LateAttribute(Generic[_T]):
 
 
 class Crawler:
+    asyncio_enabled: _LateAttribute[bool] = _LateAttribute()
+    """Whether asyncio support is enabled for this crawler.
+
+    This attribute is available during component initialization.
+
+    .. versionadded:: VERSION
+    """
     engine: _LateAttribute[ExecutionEngine] = _LateAttribute()
     extensions: _LateAttribute[ExtensionManager] = _LateAttribute()
     logformatter: _LateAttribute[LogFormatter] = _LateAttribute()
@@ -133,6 +140,7 @@ class Crawler:
 
         self.spider: Spider | None = None
 
+        self._asyncio_enabled: bool | None = None
         self._engine: ExecutionEngine | None = None
         self._extensions: ExtensionManager | None = None
         self._logformatter: LogFormatter | None = None
@@ -200,6 +208,7 @@ class Crawler:
             logger.debug("Not using a Twisted reactor")
             self._apply_reactorless_default_settings()
 
+        self.asyncio_enabled = not use_reactor or is_asyncio_reactor_installed()
         self.extensions = build_from_crawler(ExtensionManager, self)
         self.settings.freeze()
 

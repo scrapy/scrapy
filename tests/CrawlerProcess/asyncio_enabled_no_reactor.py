@@ -4,9 +4,13 @@ from scrapy.utils.reactor import is_asyncio_reactor_installed
 
 
 class ReactorCheckExtension:
-    def __init__(self):
+    @classmethod
+    def from_crawler(cls, crawler):
         if not is_asyncio_reactor_installed():
             raise RuntimeError("ReactorCheckExtension requires the asyncio reactor.")
+        if not crawler.asyncio_enabled:
+            raise RuntimeError("Crawler did not report asyncio support.")
+        return cls()
 
 
 class NoRequestsSpider(scrapy.Spider):

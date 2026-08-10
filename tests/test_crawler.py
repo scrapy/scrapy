@@ -76,7 +76,13 @@ class TestCrawler:
 
     @pytest.mark.parametrize(
         "attr",
-        ["extensions", "logformatter", "request_fingerprinter", "stats"],
+        [
+            "asyncio_enabled",
+            "extensions",
+            "logformatter",
+            "request_fingerprinter",
+            "stats",
+        ],
     )
     def test_late_attr_before_apply_settings(self, attr: str) -> None:
         crawler = get_raw_crawler(DefaultSpider)
