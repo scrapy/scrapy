@@ -363,6 +363,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.username: str = u.username or ""
         self.password: str = unquote(u.password or "")
         self.path: str = u.path
+        self.tls: bool = u.scheme == "ftps"
         self.use_active_mode: bool = use_active_mode
         self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
@@ -390,6 +391,7 @@ class FTPFeedStorage(BlockingFeedStorage):
             password=self.password,
             use_active_mode=self.use_active_mode,
             overwrite=self.overwrite,
+            tls=self.tls,
         )
 
 

@@ -1393,7 +1393,7 @@ FEED_TEMPDIR
 Default: ``None``
 
 The Feed Temp dir allows you to set a custom folder to save crawler
-temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
+temporary files before uploading with :ref:`FTP feed storage <feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
 .. setting:: FEED_STORAGE_GCS_ACL
