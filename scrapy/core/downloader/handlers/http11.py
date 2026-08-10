@@ -548,7 +548,8 @@ class _ScrapyAgent:
             txresponse._transport._producer.abortConnection()
             raise DownloadCancelledError(warning_msg)
 
-        if warnsize and expected_size > warnsize:
+        reached_warnsize = bool(warnsize and expected_size > warnsize)
+        if reached_warnsize:
             logger.warning(
                 get_warnsize_msg(expected_size, warnsize, request, expected=True)
             )
@@ -561,6 +562,7 @@ class _ScrapyAgent:
                 request=request,
                 maxsize=maxsize,
                 warnsize=warnsize,
+                reached_warnsize=reached_warnsize,
                 fail_on_dataloss=fail_on_dataloss,
                 crawler=self._crawler,
                 tls_verbose_logging=self._tls_verbose_logging,
@@ -625,6 +627,7 @@ class _ResponseReader(Protocol):
         fail_on_dataloss: bool,
         crawler: Crawler,
         *,
+        reached_warnsize: bool = False,
         tls_verbose_logging: bool = False,
     ):
         self._finished: Deferred[_ResultT] = finished
@@ -634,7 +637,7 @@ class _ResponseReader(Protocol):
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
         self._fail_on_dataloss: bool = fail_on_dataloss
-        self._reached_warnsize: bool = False
+        self._reached_warnsize: bool = reached_warnsize
         self._bytes_received: int = 0
         self._certificate: ssl.Certificate | None = None
         self._ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None = None

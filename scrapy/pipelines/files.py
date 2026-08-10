@@ -739,9 +739,9 @@ class FilesPipeline(MediaPipeline):
         }
 
     def inc_stats(self, status: str) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.inc_value("file_count")
-        self.crawler.stats.inc_value(f"file_status_count/{status}")
+        stats = self.crawler.stats
+        stats.inc_value("file_count")
+        stats.inc_value(f"file_status_count/{status}")
 
     async def _file_downloaded(
         self,
