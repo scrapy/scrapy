@@ -82,22 +82,6 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
             response = await download_handler.download_request(request)
         assert response.protocol == "h2"
 
-    def test_download_conn_failed(self) -> None:  # type: ignore[override]
-        # Unlike HTTP11DownloadHandler which raises it from download_request()
-        # (without any special handling), here ConnectionRefusedError (raised in
-        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
-        # an unhandled exception in a Deferred and the handler waits until
-        # DOWNLOAD_TIMEOUT.
-        pytest.skip("The handler doesn't properly reraise ConnectionRefusedError")
-
-    def test_download_dns_error(self) -> None:  # type: ignore[override]
-        # Unlike HTTP11DownloadHandler which raises it from download_request()
-        # (without any special handling), here DNSLookupError (raised in
-        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
-        # an unhandled exception in a Deferred and the handler waits until
-        # DOWNLOAD_TIMEOUT.
-        pytest.skip("The handler doesn't properly reraise DNSLookupError")
-
     @coroutine_test
     async def test_concurrent_requests_same_domain(
         self, mockserver: MockServer

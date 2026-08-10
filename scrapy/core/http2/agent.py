@@ -48,11 +48,7 @@ class H2ConnectionPool:
     ) -> Deferred[H2ClientProtocol]:
         if key in self._pending_requests:
             # Received a request while connecting to remote
-            # Create a deferred which will fire with the H2ClientProtocol
-            # instance
-            d: Deferred[H2ClientProtocol] = Deferred()
-            self._pending_requests[key].append(d)
-            return d
+            return self._pending_request(key)
 
         # Check if we already have a usable connection to the remote, moving
         # it to the end so that the pool stays ordered from least to most
@@ -71,8 +67,7 @@ class H2ConnectionPool:
         self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
     ) -> Deferred[H2ClientProtocol]:
         self._enforce_limit()
-        pending_requests: deque[Deferred[H2ClientProtocol]] = deque()
-        self._pending_requests[key] = pending_requests
+        self._pending_requests[key] = deque()
 
         conn_lost_deferred: Deferred[list[BaseException]] = Deferred()
 
@@ -83,9 +78,25 @@ class H2ConnectionPool:
             tls_verbose_logging=self._tls_verbose_logging,
         )
         conn_d = endpoint.connect(factory)
-        conn_d.addCallback(self.put_connection, key, conn_lost_deferred)
+        d = self._pending_request(key)
+        conn_d.addCallbacks(
+            self.put_connection,
+            self._connection_failed,
+            callbackArgs=(key, conn_lost_deferred),
+            errbackArgs=(key,),
+        )
+        return d
 
-        d: Deferred[H2ClientProtocol] = Deferred()
+    def _pending_request(self, key: ConnectionKeyT) -> Deferred[H2ClientProtocol]:
+        """Return a deferred that fires with the connection being established
+        for *key*.
+
+        Cancelling it takes it out of the queue, so that the connection, once
+        established or found unreachable, only fires the deferreds of the
+        requests that are still waiting for it.
+        """
+        pending_requests = self._pending_requests[key]
+        d: Deferred[H2ClientProtocol] = Deferred(pending_requests.remove)
         pending_requests.append(d)
         return d
 
@@ -126,6 +137,14 @@ class H2ConnectionPool:
             d.callback(conn)
 
         return conn
+
+    def _connection_failed(self, failure: Failure, key: ConnectionKeyT) -> None:
+        """Fail the requests waiting for a connection that could not be
+        established, and let a later request try to connect again."""
+        pending_requests = self._pending_requests.pop(key)
+        while pending_requests:
+            d = pending_requests.popleft()
+            d.errback(failure)
 
     def _remove_connection(
         self, errors: list[BaseException], key: ConnectionKeyT, conn: H2ClientProtocol
