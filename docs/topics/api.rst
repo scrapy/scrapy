@@ -82,6 +82,8 @@ how you :ref:`configure the downloader middlewares
 
         For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
 
+    .. autoattribute:: logformatter
+
     .. attribute:: extensions
 
         The extension manager that keeps track of enabled extensions.
