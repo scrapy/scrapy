@@ -135,7 +135,8 @@ Backward-incompatible changes
 
 -   :ref:`AutoThrottle <topics-autothrottle>` no longer sets the
     ``download_delay`` attribute of the running spider to define the starting
-    delay of download slots.
+    delay of download slots. The starting delay is still applied, but code
+    that reads that attribute at run time no longer sees it.
     (:issue:`7167`, :issue:`7175`, :issue:`7833`)
 
 -   :class:`~scrapy.spiders.XMLFeedSpider` and
