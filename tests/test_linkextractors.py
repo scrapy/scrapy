@@ -908,6 +908,19 @@ class TestLxmlParserLinkExtractor:
             Link(url="http://example.com/page.html", text="Link", nofollow=False),
         ]
 
+    def test_deduplicates_by_canonical_url(self):
+        # With canonicalized=False, the default, URLs are canonicalized to
+        # decide whether two extracted links are the same one.
+        html = (
+            b'<a href="http://example.com/page.html?b=2&amp;a=1">1</a>'
+            b'<a href="http://example.com/page.html?a=1&amp;b=2">2</a>'
+        )
+        response = HtmlResponse("http://example.com/", body=html)
+        lx = LxmlParserLinkExtractor(unique=True)
+        assert lx.extract_links(response) == [
+            Link(url="http://example.com/page.html?b=2&a=1", text="1", nofollow=False),
+        ]
+
     def test_strip_false(self):
         # With strip=False, trailing whitespace on a relative href survives urljoin
         # and is visible to process_value (safe_url_string cleans it up afterward).
