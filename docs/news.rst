@@ -150,9 +150,8 @@ Backward-incompatible changes
     ``scrapy.pipelines.media``. It is still importable from its old location.
     (:issue:`7544`, :issue:`7673`)
 
--   The :ref:`ipython extra <extras>` requires IPython 8.15.0 or higher, as
-    support for the ``IPython.frontend`` module layout of IPython older than
-    1.0 is removed.
+-   The IPython :ref:`shell <topics-shell>` requires IPython 8.15.0 or higher.
+    Install the :ref:`ipython extra <extras>` to get a compatible version.
     (:issue:`5447`, :issue:`7596`, :issue:`7816`)
 
 Deprecation removals
