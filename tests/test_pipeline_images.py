@@ -91,7 +91,7 @@ class TestImagesPipeline:
             file_path(
                 Request("http://www.dorma.co.uk/images/product_details/2532"),
                 response=Response("http://www.dorma.co.uk/images/product_details/2532"),
-                info=object(),
+                info=DUMMY_SPIDER_INFO,
             )
             == "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg"
         )
@@ -120,7 +120,7 @@ class TestImagesPipeline:
                 Request("file:///tmp/some.name/foo"),
                 name,
                 response=Response("file:///tmp/some.name/foo"),
-                info=object(),
+                info=DUMMY_SPIDER_INFO,
             )
             == "thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg"
         )
@@ -133,7 +133,7 @@ class TestImagesPipeline:
         class CustomImagesPipeline(ImagesPipeline):
             def thumb_path(
                 self, request, thumb_id, response=None, info=None, item=None
-            ):
+            ) -> str:
                 return f"thumb/{thumb_id}/{item.get('path')}"
 
         thumb_path = CustomImagesPipeline.from_crawler(
@@ -159,11 +159,23 @@ class TestImagesPipeline:
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
         with pytest.raises(ImageException):
-            next(self.pipeline.get_images(response=resp1, request=req, info=object()))
+            next(
+                self.pipeline.get_images(
+                    response=resp1, request=req, info=DUMMY_SPIDER_INFO
+                )
+            )
         with pytest.raises(ImageException):
-            next(self.pipeline.get_images(response=resp2, request=req, info=object()))
+            next(
+                self.pipeline.get_images(
+                    response=resp2, request=req, info=DUMMY_SPIDER_INFO
+                )
+            )
         with pytest.raises(ImageException):
-            next(self.pipeline.get_images(response=resp3, request=req, info=object()))
+            next(
+                self.pipeline.get_images(
+                    response=resp3, request=req, info=DUMMY_SPIDER_INFO
+                )
+            )
 
     def test_get_images(self):
         self.pipeline.min_width = 0
@@ -176,7 +188,7 @@ class TestImagesPipeline:
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
         get_images_gen = self.pipeline.get_images(
-            response=resp, request=req, info=object()
+            response=resp, request=req, info=DUMMY_SPIDER_INFO
         )
 
         path, new_im, new_buf = next(get_images_gen)
@@ -201,7 +213,7 @@ class TestImagesPipeline:
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
         get_images_gen = self.pipeline.get_images(
-            response=resp, request=req, info=object()
+            response=resp, request=req, info=DUMMY_SPIDER_INFO
         )
 
         path, new_im, _ = next(get_images_gen)
@@ -230,7 +242,7 @@ class TestImagesPipeline:
     def test_convert_image(self):
         SIZE = (100, 100)
         # straight forward case: RGB and JPEG
-        COLOUR = (0, 127, 255)
+        COLOUR: tuple[int, ...] = (0, 127, 255)
         im, buf = _create_image("JPEG", "RGB", SIZE, COLOUR)
         converted, converted_buf = self.pipeline.convert_image(im, response_body=buf)
         assert converted.mode == "RGB"
@@ -296,7 +308,7 @@ class TestImagesPipeline:
         item["image_urls"] = bad_type
 
         with pytest.raises(TypeError, match="image_urls must be a list of URLs"):
-            list(pipeline.get_media_requests(item, None))
+            list(pipeline.get_media_requests(item, DUMMY_SPIDER_INFO))
 
 
 class TestImagesPipelineFieldsMixin(ABC):
@@ -311,10 +323,10 @@ class TestImagesPipelineFieldsMixin(ABC):
         pipeline = ImagesPipeline.from_crawler(
             get_crawler(None, {"IMAGES_STORE": "s3://example/images/"})
         )
-        requests = list(pipeline.get_media_requests(item, None))
+        requests = list(pipeline.get_media_requests(item, DUMMY_SPIDER_INFO))
         assert requests[0].url == url
-        results = [(True, {"url": url})]
-        item = pipeline.item_completed(results, item, None)
+        results: Any = [(True, {"url": url})]
+        item = pipeline.item_completed(results, item, DUMMY_SPIDER_INFO)
         images = ItemAdapter(item).get("images")
         assert images == [results[0][1]]
         assert isinstance(item, self.item_class)
@@ -332,10 +344,10 @@ class TestImagesPipelineFieldsMixin(ABC):
                 },
             )
         )
-        requests = list(pipeline.get_media_requests(item, None))
+        requests = list(pipeline.get_media_requests(item, DUMMY_SPIDER_INFO))
         assert requests[0].url == url
-        results = [(True, {"url": url})]
-        item = pipeline.item_completed(results, item, None)
+        results: Any = [(True, {"url": url})]
+        item = pipeline.item_completed(results, item, DUMMY_SPIDER_INFO)
         custom_images = ItemAdapter(item).get("custom_images")
         assert custom_images == [results[0][1]]
         assert isinstance(item, self.item_class)
@@ -410,13 +422,15 @@ class TestImagesPipelineCustomSettings:
         "IMAGES_RESULT_FIELD": "images",
     }
 
-    def _generate_fake_settings(self, tmp_path, prefix=None):
+    def _generate_fake_settings(
+        self, tmp_path: Path, prefix: str | None = None
+    ) -> dict[str, Any]:
         """
         :param prefix: string for setting keys
         :return: dictionary of image pipeline settings
         """
 
-        def random_string():
+        def random_string() -> str:
             return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
         settings = {
@@ -439,7 +453,7 @@ class TestImagesPipelineCustomSettings:
             for k, v in settings.items()
         }
 
-    def _generate_fake_pipeline_subclass(self):
+    def _generate_fake_pipeline_subclass(self) -> type[ImagesPipeline]:
         """
         :return: ImagePipeline class will all uppercase attributes set.
         """

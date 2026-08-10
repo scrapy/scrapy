@@ -29,7 +29,7 @@ from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterator
     from os import PathLike
 
     from PIL import Image
@@ -180,7 +180,7 @@ class ImagesPipeline(FilesPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> Iterable[tuple[str, Image.Image, BytesIO]]:
+    ) -> Iterator[tuple[str, Image.Image, BytesIO]]:
         path = self.file_path(request, response=response, info=info, item=item)
         orig_image = self._Image.open(BytesIO(response.body))
         transposed_image = self._ImageOps.exif_transpose(orig_image)
