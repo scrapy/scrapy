@@ -36,7 +36,11 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
-from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
+from scrapy.utils.misc import (
+    build_from_crawler,
+    load_object,
+    warn_on_generator_with_return_value,
+)
 from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iterate_spider_output
 
@@ -102,13 +106,13 @@ class Slot:
 class Scraper:
     def __init__(self, crawler: Crawler) -> None:
         self.slot: Slot | None = None
-        self.spidermw: SpiderMiddlewareManager = SpiderMiddlewareManager.from_crawler(
-            crawler
+        self.spidermw: SpiderMiddlewareManager = build_from_crawler(
+            SpiderMiddlewareManager, crawler
         )
         itemproc_cls: type[ItemPipelineManager] = load_object(
             crawler.settings["ITEM_PROCESSOR"]
         )
-        self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
+        self.itemproc: ItemPipelineManager = build_from_crawler(itemproc_cls, crawler)
         self._itemproc_has_async: dict[str, bool] = {}
         for method in [
             "open_spider",

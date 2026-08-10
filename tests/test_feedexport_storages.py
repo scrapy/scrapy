@@ -26,6 +26,7 @@ from scrapy.extensions.feedexport import (
     StdoutFeedStorage,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
 from tests.utils.cloud import mock_google_cloud_storage
@@ -113,7 +114,8 @@ class TestFTPFeedStorage:
         settings: dict[str, Any] | None = None,
     ) -> None:
         crawler = get_crawler(settings_dict=settings or {})
-        storage = FTPFeedStorage.from_crawler(
+        storage = build_from_crawler(
+            FTPFeedStorage,
             crawler,
             uri,
             feed_options=feed_options,
@@ -249,7 +251,8 @@ class TestS3FeedStorage:
         }
         crawler = get_crawler(settings_dict=aws_credentials)
         # Instantiate with crawler
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -284,7 +287,7 @@ class TestS3FeedStorage:
         crawler = get_crawler(settings_dict=settings)
         bucket = "mybucket"
         key = "export.csv"
-        storage = S3FeedStorage.from_crawler(crawler, f"s3://{bucket}/{key}")
+        storage = build_from_crawler(S3FeedStorage, crawler, f"s3://{bucket}/{key}")
 
         file = mock.MagicMock()
 
@@ -338,7 +341,8 @@ class TestS3FeedStorage:
             "AWS_SECRET_ACCESS_KEY": "secret_key",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -352,7 +356,8 @@ class TestS3FeedStorage:
             "AWS_SECRET_ACCESS_KEY": "secret_key",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -366,7 +371,8 @@ class TestS3FeedStorage:
             "AWS_SECRET_ACCESS_KEY": "secret_key",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -381,7 +387,8 @@ class TestS3FeedStorage:
             "FEED_STORAGE_S3_ACL": "custom-acl",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(
+        storage = build_from_crawler(
+            S3FeedStorage,
             crawler,
             "s3://mybucket/export.csv",
         )
@@ -396,7 +403,7 @@ class TestS3FeedStorage:
             "AWS_ENDPOINT_URL": "https://example.com",
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
         assert storage.endpoint_url == "https://example.com"
@@ -409,7 +416,7 @@ class TestS3FeedStorage:
             "AWS_REGION_NAME": region_name,
         }
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
         assert storage.access_key == "access_key"
         assert storage.secret_key == "secret_key"
         assert storage.region_name == region_name
@@ -445,7 +452,7 @@ class TestS3FeedStorage:
         self, settings: dict[str, Any], expected: int
     ) -> None:
         crawler = get_crawler(settings_dict=settings)
-        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
         assert storage.max_pool_connections == expected
         config: Any = storage.s3_client.meta.config
         assert config.max_pool_connections == expected
@@ -507,7 +514,9 @@ class TestGCSFeedStorage:
 
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": "publicRead"}
         crawler = get_crawler(settings_dict=settings)
-        storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
+        storage = build_from_crawler(
+            GCSFeedStorage, crawler, "gs://mybucket/export.csv"
+        )
         assert storage.project_id == "123"
         assert storage.acl == "publicRead"
         assert storage.bucket_name == "mybucket"
@@ -518,12 +527,16 @@ class TestGCSFeedStorage:
 
         settings: dict[str, Any] = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": ""}
         crawler = get_crawler(settings_dict=settings)
-        storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
+        storage = build_from_crawler(
+            GCSFeedStorage, crawler, "gs://mybucket/export.csv"
+        )
         assert storage.acl is None
 
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": None}
         crawler = get_crawler(settings_dict=settings)
-        storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
+        storage = build_from_crawler(
+            GCSFeedStorage, crawler, "gs://mybucket/export.csv"
+        )
         assert storage.acl is None
 
     @coroutine_test
