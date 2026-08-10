@@ -120,7 +120,6 @@ class Scraper:
         self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
-        assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
 
     def _check_deprecated_itemproc_method(self, method: str) -> None:
@@ -355,7 +354,6 @@ class Scraper:
         assert self.crawler.spider
         exc = _failure.value
         if isinstance(exc, CloseSpider):
-            assert self.crawler.engine is not None  # typing
             _schedule_coro(
                 self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
             )
@@ -374,11 +372,9 @@ class Scraper:
             response=response,
             spider=self.crawler.spider,
         )
-        assert self.crawler.stats
-        self.crawler.stats.inc_value("spider_exceptions/count")
-        self.crawler.stats.inc_value(
-            f"spider_exceptions/{_failure.value.__class__.__name__}"
-        )
+        stats = self.crawler.stats
+        stats.inc_value("spider_exceptions/count")
+        stats.inc_value(f"spider_exceptions/{_failure.value.__class__.__name__}")
 
     def handle_spider_output(
         self,
@@ -456,7 +452,6 @@ class Scraper:
         Items are sent to the item pipelines, requests are scheduled.
         """
         if isinstance(output, Request):
-            assert self.crawler.engine is not None  # typing
             self.crawler.engine.crawl(request=output)
             return
         if output is not None:

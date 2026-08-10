@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -10,16 +11,27 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.feedexport import FeedExporter
 from scrapy.utils.test import get_crawler
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from scrapy.crawler import Crawler
+
 
 class TestURIParams(ABC):
     spider_name = "uri_params_spider"
     deprecated_options = False
 
     @abstractmethod
-    def build_settings(self, uri="file:///tmp/foobar", uri_params=None):
+    def build_settings(
+        self,
+        uri: str = "file:///tmp/foobar",
+        uri_params: Callable[..., dict[str, Any] | None] | None = None,
+    ) -> dict[str, Any]:
         raise NotImplementedError
 
-    def _crawler_feed_exporter(self, settings):
+    def _crawler_feed_exporter(
+        self, settings: dict[str, Any]
+    ) -> tuple[Crawler, FeedExporter]:
         if self.deprecated_options:
             with pytest.warns(
                 ScrapyDeprecationWarning,
@@ -29,6 +41,7 @@ class TestURIParams(ABC):
         else:
             crawler = get_crawler(settings_dict=settings)
         feed_exporter = crawler.get_extension(FeedExporter)
+        assert feed_exporter is not None
         return crawler, feed_exporter
 
     def test_default(self):
@@ -116,8 +129,12 @@ class TestURIParams(ABC):
 class TestURIParamsSetting(TestURIParams):
     deprecated_options = True
 
-    def build_settings(self, uri="file:///tmp/foobar", uri_params=None):
-        extra_settings = {}
+    def build_settings(
+        self,
+        uri: str = "file:///tmp/foobar",
+        uri_params: Callable[..., dict[str, Any] | None] | None = None,
+    ) -> dict[str, Any]:
+        extra_settings: dict[str, Any] = {}
         if uri_params:
             extra_settings["FEED_URI_PARAMS"] = uri_params
         return {
@@ -129,8 +146,12 @@ class TestURIParamsSetting(TestURIParams):
 class TestURIParamsFeedOption(TestURIParams):
     deprecated_options = False
 
-    def build_settings(self, uri="file:///tmp/foobar", uri_params=None):
-        options = {
+    def build_settings(
+        self,
+        uri: str = "file:///tmp/foobar",
+        uri_params: Callable[..., dict[str, Any] | None] | None = None,
+    ) -> dict[str, Any]:
+        options: dict[str, Any] = {
             "format": "jl",
         }
         if uri_params:

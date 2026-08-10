@@ -75,6 +75,31 @@ class TestCrawler:
         assert crawler.settings.frozen
 
     @pytest.mark.parametrize(
+        "attr",
+        ["extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_before_apply_settings(self, attr: str) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        with pytest.raises(RuntimeError, match=rf"Crawler\.{attr} is not set yet"):
+            getattr(crawler, attr)
+        crawler._apply_settings()
+        assert getattr(crawler, attr) is not None
+
+    @pytest.mark.parametrize(
+        "attr",
+        ["engine", "extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_on_class(self, attr: str) -> None:
+        # Introspection tools such as help() read these off the class.
+        assert getattr(Crawler, attr) is getattr(Crawler, attr)
+
+    def test_late_attr_engine_before_crawl(self) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        crawler._apply_settings()
+        with pytest.raises(RuntimeError, match=r"Crawler\.engine is not set yet"):
+            _ = crawler.engine
+
+    @pytest.mark.parametrize(
         ("attr", "setting"),
         [
             ("download_delay", "DOWNLOAD_DELAY"),

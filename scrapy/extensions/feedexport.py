@@ -149,7 +149,7 @@ class BlockingFeedStorage(ABC):
 
         return NamedTemporaryFile(prefix="feed-", dir=path)
 
-    def store(self, file: IO[bytes]) -> Deferred[None] | None:
+    def store(self, file: IO[bytes]) -> Deferred[None]:
         return deferred_from_coro(run_in_thread(self._store_in_thread, file))
 
     @abstractmethod
@@ -611,7 +611,6 @@ class FeedExporter:
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         slot_type = type(slot.storage).__name__
-        assert self.crawler.stats
         try:
             await ensure_awaitable(slot.storage.store(self._get_file(slot)))
         except Exception:

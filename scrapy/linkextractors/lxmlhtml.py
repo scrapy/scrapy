@@ -332,7 +332,7 @@ class LxmlLinkExtractor:
             unique=unique,
             process=process_value,
             strip=strip,
-            canonicalized=not canonicalize,
+            canonicalized=True,
         )
         self.allow_res: list[re.Pattern[str]] = self._compile_regexes(allow)
         self.deny_res: list[re.Pattern[str]] = self._compile_regexes(deny)
