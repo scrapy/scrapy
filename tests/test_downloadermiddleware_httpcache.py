@@ -26,6 +26,7 @@ from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
 )
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -97,7 +98,7 @@ class TestBase:
     def _middleware(self, **new_settings: Any) -> Generator[HttpCacheMiddleware]:
         with self._get_crawler(**new_settings) as crawler:
             assert crawler.spider
-            mw = HttpCacheMiddleware.from_crawler(crawler)
+            mw = build_from_crawler(HttpCacheMiddleware, crawler)
             mw.spider_opened(crawler.spider)
             try:
                 yield mw

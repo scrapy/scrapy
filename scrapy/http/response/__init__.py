@@ -305,6 +305,11 @@ class Response(object_ref):
         :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow_all`
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
+
+        .. caution:: Every returned request gets its own *meta* and
+            *cb_kwargs* dictionaries, but the values within them are shared.
+            Mutating one of those values, e.g. appending to a list, affects
+            all the returned requests.
         """
         if not hasattr(urls, "__iter__"):
             raise TypeError("'urls' argument must be an iterable")

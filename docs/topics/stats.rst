@@ -121,6 +121,13 @@ one per actual value of the placeholder.
     :meth:`~scrapy.statscollectors.StatsCollector.get_stats` output is
     equivalent to a counter of 0.
 
+.. stat:: depth/request_ignored_count
+
+``depth/request_ignored_count``
+    Number of requests dropped for exceeding :setting:`DEPTH_LIMIT`.
+
+    Set by :class:`~scrapy.spidermiddlewares.depth.DepthMiddleware`.
+
 .. stat:: downloader/exception_count
 
 ``downloader/exception_count``
@@ -293,6 +300,10 @@ one per actual value of the placeholder.
 
     -   ``shutdown``: the crawl was interrupted, e.g. by a system signal such
         as ``SIGINT`` (:kbd:`Ctrl-C`).
+
+    -   ``start_error``: :meth:`~scrapy.Spider.start` raised an exception, so
+        some :ref:`start requests <start-requests>` may never have been sent,
+        see :ref:`start-error`.
 
     Third-party components and your own code may use any other reason, e.g. by
     raising :exc:`~scrapy.exceptions.CloseSpider` with it.
@@ -724,18 +735,21 @@ one per actual value of the placeholder.
 .. stat:: spider_exceptions/count
 
 ``spider_exceptions/count``
-    Number of unhandled exceptions raised by spider callbacks.
+    Number of unhandled exceptions raised by spider callbacks or by
+    :meth:`~scrapy.Spider.start`.
 
-    Set by the :ref:`scraper <topics-architecture>`.
+    Set by the :ref:`engine <topics-architecture>` and the :ref:`scraper
+    <topics-architecture>`.
 
 .. stat:: spider_exceptions/{exception}
 
 ``spider_exceptions/{exception}``
-    Number of unhandled exceptions raised by spider callbacks, per exception,
-    where ``{exception}`` is the class name of the exception, e.g.
+    Same as :stat:`spider_exceptions/count`, per exception, where
+    ``{exception}`` is the class name of the exception, e.g.
     ``spider_exceptions/ValueError``.
 
-    Set by the :ref:`scraper <topics-architecture>`.
+    Set by the :ref:`engine <topics-architecture>` and the :ref:`scraper
+    <topics-architecture>`.
 
 .. stat:: start_time
 
