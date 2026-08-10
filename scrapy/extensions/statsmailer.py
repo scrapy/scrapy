@@ -42,7 +42,6 @@ class StatsMailer:
         if not recipients:
             raise NotConfigured
         mail: MailSender = MailSender.from_crawler(crawler)
-        assert crawler.stats
         o = cls(crawler.stats, recipients, mail)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
