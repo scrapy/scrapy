@@ -122,6 +122,9 @@ one or more of these methods:
         This method is an :term:`asynchronous generator` called with the
         results from the spider after the spider has processed the response.
 
+        *result* is lazy: a generator callback runs as *result* is iterated, so
+        code that runs before that iteration runs before the callback body.
+
         .. seealso:: :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
@@ -142,8 +145,9 @@ one or more of these methods:
 
     .. method:: process_spider_exception(response, exception)
 
-        This method is called when a spider or :meth:`process_spider_output`
-        method (from a previous spider middleware) raises an exception.
+        This method is called when a spider callback or a
+        :meth:`process_spider_output` method (from a previous spider
+        middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
         iterable of :class:`~scrapy.Request` or :ref:`item <topics-items>`
@@ -226,26 +230,7 @@ DepthMiddleware
 
 .. reqmeta:: depth
 
-.. class:: DepthMiddleware
-
-   DepthMiddleware is used for tracking the depth of each Request inside the
-   site being scraped. It works by setting the ``depth``
-   :attr:`Request.meta <scrapy.Request.meta>` key to ``0`` whenever there is no
-   value previously set (usually just the first Request) and incrementing it by
-   1 otherwise.
-
-   It can be used to limit the maximum depth to scrape, control Request
-   priority based on their depth, and things like that.
-
-   The :class:`DepthMiddleware` can be configured through the following
-   settings (see the settings documentation for more info):
-
-      * :setting:`DEPTH_LIMIT` - The maximum depth that will be allowed to
-        crawl for any site. If zero, no limit will be imposed.
-      * :setting:`DEPTH_STATS_VERBOSE` - Whether to collect the number of
-        requests for each depth.
-      * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
-        their depth.
+.. autoclass:: DepthMiddleware
 
 HttpErrorMiddleware
 -------------------

@@ -54,9 +54,9 @@ class CookieJar:
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
             if "." not in req_host:
-                hosts.append(req_host + ".local")
+                hosts += potential_domain_matches(req_host + ".local")
         else:
-            hosts = [req_host]
+            hosts = [req_host, "." + req_host]
 
         cookies = []
         for host in hosts:
