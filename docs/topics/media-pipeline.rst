@@ -178,6 +178,37 @@ By overriding ``file_path`` like this:
 
 For more information about the ``file_path`` method, see :ref:`topics-media-pipeline-override`.
 
+.. _file-naming-response:
+
+Naming files after the response
+-------------------------------
+
+``file_path`` also receives the ``response``, which allows naming files after
+response data. For example, to determine the file extension from the
+``Content-Type`` header, for URLs that do not end in a file name:
+
+.. code-block:: python
+
+    import mimetypes
+
+    from scrapy.pipelines.files import FilesPipeline
+
+
+    class ContentTypeFilesPipeline(FilesPipeline):
+        def file_path(self, request, response=None, info=None, *, item=None):
+            path = super().file_path(request, response, info, item=item)
+            if response is None:
+                return path
+            content_type = response.headers["Content-Type"].decode()
+            return path + (mimetypes.guess_extension(content_type) or "")
+
+This requires setting :setting:`FILES_EXPIRES` to ``0``. To find out whether a
+file has already been downloaded, Scrapy calls ``file_path`` before the
+download, with ``response`` set to ``None``, and checks the age of the file at
+the resulting path. A path that depends on the response can never match that
+check, and :setting:`FILES_EXPIRES` set to ``0`` disables it, at the cost of
+downloading every file on every run.
+
 .. _topics-supported-storage:
 
 Supported Storage
@@ -543,7 +574,7 @@ See here the methods that you can override in your custom Files Pipeline:
                 return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item
-      property.
+      property, or the ``response``, see :ref:`file-naming-response`.
 
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
@@ -709,7 +740,7 @@ See here the methods that you can override in your custom Images Pipeline:
                 return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item
-      property.
+      property, or the ``response``, see :ref:`file-naming-response`.
 
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
