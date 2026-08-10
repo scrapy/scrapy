@@ -210,6 +210,39 @@ class Raw(LeafResource):
         request.finish()
 
 
+class BadHeader(LeafResource):
+    """Sends a response with a bad header line, one with no colon in it, like
+    some servers do, between two good ones.
+
+    One of the good header lines is split into two lines, so that handling of
+    such headers is also covered.
+    """
+
+    response = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Content-Length: 5\r\n"
+        b"Content-Type: text/html\r\n"
+        b"X-Folded-Header: one\r\n"
+        b"\ttwo\r\n"
+        b'<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\r\n'
+        b"X-After-Bad-Header: works\r\n"
+        b"\r\n"
+        b"Works"
+    )
+
+    def render_GET(self, request: Request) -> int:
+        request.startedWriting = 1
+        self.deferRequest(request, 0, self._delayedRender, request)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, request: Request) -> None:
+        request.write(self.response)
+        # Clients that stop parsing headers at the bad one don't get
+        # Content-Length, so they need the connection to be closed to know that
+        # the response body is over.
+        close_connection(request)
+
+
 class Echo(LeafResource):
     def render_GET(self, request: Request) -> bytes:
         assert request.content
