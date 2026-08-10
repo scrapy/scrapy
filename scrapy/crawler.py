@@ -8,14 +8,14 @@ import signal
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Spider
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
@@ -59,7 +59,55 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
+class _LateAttribute(Generic[_T]):
+    """Descriptor for a :class:`Crawler` attribute that only gets a value once
+    the crawl starts.
+
+    The value is kept in an attribute of the same name prefixed with an
+    underscore, and reading it before it is set raises :exc:`RuntimeError`.
+    This way the public attribute can be annotated as always set, and its
+    users, both in Scrapy and in third-party code, do not need to narrow its
+    type on every use. Code that runs before the crawl starts reads the
+    underscore-prefixed attribute instead.
+    """
+
+    def __set_name__(self, owner: type[Crawler], name: str) -> None:
+        self._name = name
+        self._private_name = f"_{name}"
+
+    @overload
+    def __get__(self, instance: None, owner: type[Crawler]) -> _LateAttribute[_T]: ...
+
+    @overload
+    def __get__(self, instance: Crawler, owner: type[Crawler]) -> _T: ...
+
+    def __get__(
+        self, instance: Crawler | None, owner: type[Crawler]
+    ) -> _LateAttribute[_T] | _T:
+        if instance is None:
+            return self
+        value: _T | None = getattr(instance, self._private_name)
+        if value is None:
+            raise RuntimeError(
+                f"Crawler.{self._name} is not set yet. It is set when the "
+                "crawl starts, so it can only be used from then on, e.g. "
+                "from the spider_opened signal handler onwards."
+            )
+        return value
+
+    def __set__(self, instance: Crawler, value: _T) -> None:
+        setattr(instance, self._private_name, value)
+
+
 class Crawler:
+    engine: _LateAttribute[ExecutionEngine] = _LateAttribute()
+    extensions: _LateAttribute[ExtensionManager] = _LateAttribute()
+    logformatter: _LateAttribute[LogFormatter] = _LateAttribute()
+    request_fingerprinter: _LateAttribute[RequestFingerprinterProtocol] = (
+        _LateAttribute()
+    )
+    stats: _LateAttribute[StatsCollector] = _LateAttribute()
+
     def __init__(
         self,
         spidercls: type[Spider],
@@ -84,15 +132,16 @@ class Crawler:
         self.crawling: bool = False
         self._started: bool = False
 
-        self.extensions: ExtensionManager | None = None
-        self.stats: StatsCollector | None = None
-        self.logformatter: LogFormatter | None = None
-        self.request_fingerprinter: RequestFingerprinterProtocol | None = None
         self.spider: Spider | None = None
-        self.engine: ExecutionEngine | None = None
         self._force_stop_callback: (
             Callable[[], Awaitable[None] | Deferred[None] | None] | None
         ) = None
+
+        self._engine: ExecutionEngine | None = None
+        self._extensions: ExtensionManager | None = None
+        self._logformatter: LogFormatter | None = None
+        self._request_fingerprinter: RequestFingerprinterProtocol | None = None
+        self._stats: StatsCollector | None = None
 
     def _set_force_stop_callback(
         self,
@@ -231,12 +280,16 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            yield deferred_from_coro(self.engine.open_spider_async())
-            yield deferred_from_coro(self.engine.start_async())
+            try:
+                yield deferred_from_coro(self.engine.open_spider_async())
+            except CloseSpider as exc:
+                yield deferred_from_coro(self.engine.close_async(reason=exc.reason))
+            else:
+                yield deferred_from_coro(self.engine.start_async())
         except Exception:
             self.crawling = False
-            if self.engine is not None:
-                yield deferred_from_coro(self.engine.close_async())
+            if self._engine is not None:
+                yield deferred_from_coro(self._engine.close_async())
             raise
 
     async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
@@ -261,12 +314,16 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            await self.engine.open_spider_async()
-            await self.engine.start_async()
+            try:
+                await self.engine.open_spider_async()
+            except CloseSpider as exc:
+                await self.engine.close_async(reason=exc.reason)
+            else:
+                await self.engine.start_async()
         except Exception:
             self.crawling = False
-            if self.engine is not None:
-                await self.engine.close_async()
+            if self._engine is not None:
+                await self._engine.close_async()
             raise
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
@@ -306,16 +363,16 @@ class Crawler:
             )
             mode = "fast"
 
-        if self.engine is None:
+        if self._engine is None:
             return
 
         # During shutdown callbacks, graceful stop may be re-entered after
         # the engine has already switched to non-running state.
-        if mode == "graceful" and not self.engine.running:
+        if mode == "graceful" and not self._engine.running:
             return
 
         try:
-            await self.engine.stop_async(mode=mode)
+            await self._engine.stop_async(mode=mode)
         except RuntimeError as exc:
             if str(exc) != "Engine not running":
                 raise
@@ -347,7 +404,7 @@ class Crawler:
         This method can only be called after the crawl engine has been created,
         e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
         """
-        if not self.engine:
+        if self._engine is None:
             raise RuntimeError(
                 "Crawler.get_downloader_middleware() can only be called after "
                 "the crawl engine has been created."
@@ -365,7 +422,7 @@ class Crawler:
         created, e.g. at signals :signal:`engine_started` or
         :signal:`spider_opened`.
         """
-        if not self.extensions:
+        if self._extensions is None:
             raise RuntimeError(
                 "Crawler.get_extension() can only be called after the "
                 "extension manager has been created."
@@ -382,7 +439,7 @@ class Crawler:
         This method can only be called after the crawl engine has been created,
         e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
         """
-        if not self.engine:
+        if self._engine is None:
             raise RuntimeError(
                 "Crawler.get_item_pipeline() can only be called after the "
                 "crawl engine has been created."
@@ -399,7 +456,7 @@ class Crawler:
         This method can only be called after the crawl engine has been created,
         e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
         """
-        if not self.engine:
+        if self._engine is None:
             raise RuntimeError(
                 "Crawler.get_spider_middleware() can only be called after the "
                 "crawl engine has been created."

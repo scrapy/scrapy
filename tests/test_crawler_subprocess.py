@@ -10,9 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
-from w3lib import __version__ as w3lib_version
 
 from scrapy.utils.asyncio import sleep
 from tests.utils import get_script_run_env
@@ -97,10 +95,6 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         )
         assert "RuntimeError" not in log
 
-    @pytest.mark.skipif(
-        parse_version(w3lib_version) >= parse_version("2.0.0"),
-        reason="w3lib 2.0.0 and later do not allow invalid domains.",
-    )
     def test_ipv6_default_name_resolver(self) -> None:
         log = self.run_script("default_name_resolver.py")
         assert "Spider closed (finished)" in log
@@ -116,6 +110,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     def test_caching_hostname_resolver_ipv6(self) -> None:
         log = self.run_script("caching_hostname_resolver_ipv6.py")
         assert "Spider closed (finished)" in log
+        assert "http://::1" not in log
         assert "scrapy.exceptions.CannotResolveHostError" not in log
 
     def test_caching_hostname_resolver_finite_execution(
@@ -408,7 +403,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def test_reactorless_import_hook(self) -> None:
         log = self.run_script("reactorless_import_hook.py")
         assert "Not using a Twisted reactor" in log
-        assert "Spider closed (finished)" in log
+        assert "Spider closed (start_error)" in log
         assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
 
     def test_reactorless_import_hook_uninstall(self) -> None:
