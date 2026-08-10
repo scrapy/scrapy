@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class MemoryUsage:
             raise NotConfigured from exc
 
         self.crawler: Crawler = crawler
+        self._stats: StatsCollector = crawler.stats
         self.warned: bool = False
         self.notify_mails: list[str] = crawler.settings.getlist("MEMUSAGE_NOTIFY_MAIL")
         if self.notify_mails:  # pragma: no cover
@@ -78,8 +80,7 @@ class MemoryUsage:
         return size
 
     def engine_started(self) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.set_value("memusage/startup", self.get_virtual_size())
+        self._stats.set_value("memusage/startup", self.get_virtual_size())
         self.tasks: list[AsyncioLoopingCall | LoopingCall] = []
         tsk = create_looping_call(self.update)
         self.tasks.append(tsk)
@@ -99,15 +100,12 @@ class MemoryUsage:
                 tsk.stop()
 
     def update(self) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.max_value("memusage/max", self.get_virtual_size())
+        self._stats.max_value("memusage/max", self.get_virtual_size())
 
     def _check_limit(self) -> None:
-        assert self.crawler.engine
-        assert self.crawler.stats
         peak_mem_usage = self.get_virtual_size()
         if peak_mem_usage > self.limit:
-            self.crawler.stats.set_value("memusage/limit_reached", 1)
+            self._stats.set_value("memusage/limit_reached", 1)
             mem = self.limit / 1024 / 1024
             logger.error(
                 "Memory usage exceeded %(memusage)dMiB. Shutting down Scrapy...",
@@ -120,7 +118,7 @@ class MemoryUsage:
                     f"memory usage exceeded {mem}MiB at {socket.gethostname()}"
                 )
                 self._send_report(self.notify_mails, subj)
-                self.crawler.stats.set_value("memusage/limit_notified", 1)
+                self._stats.set_value("memusage/limit_notified", 1)
 
             if self.crawler.engine.spider is not None:
                 _schedule_coro(
@@ -137,9 +135,8 @@ class MemoryUsage:
     def _check_warning(self) -> None:
         if self.warned:  # warn only once
             return
-        assert self.crawler.stats
         if self.get_virtual_size() > self.warning:
-            self.crawler.stats.set_value("memusage/warning_reached", 1)
+            self._stats.set_value("memusage/warning_reached", 1)
             self.crawler.signals.send_catch_log(signal=signals.memusage_warning_reached)
             mem = self.warning / 1024 / 1024
             logger.warning(
@@ -153,16 +150,13 @@ class MemoryUsage:
                     f"memory usage reached {mem}MiB at {socket.gethostname()}"
                 )
                 self._send_report(self.notify_mails, subj)
-                self.crawler.stats.set_value("memusage/warning_notified", 1)
+                self._stats.set_value("memusage/warning_notified", 1)
             self.warned = True
 
     def _send_report(self, rcpts: list[str], subject: str) -> None:  # pragma: no cover
         """send notification mail with some additional useful info"""
-        assert self.crawler.engine
-        assert self.crawler.stats
-        stats = self.crawler.stats
-        s = f"Memory usage at engine startup : {stats.get_value('memusage/startup') / 1024 / 1024}M\r\n"
-        s += f"Maximum memory usage          : {stats.get_value('memusage/max') / 1024 / 1024}M\r\n"
+        s = f"Memory usage at engine startup : {self._stats.get_value('memusage/startup') / 1024 / 1024}M\r\n"
+        s += f"Maximum memory usage          : {self._stats.get_value('memusage/max') / 1024 / 1024}M\r\n"
         s += f"Current memory usage          : {self.get_virtual_size() / 1024 / 1024}M\r\n"
 
         s += (

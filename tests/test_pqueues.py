@@ -6,7 +6,7 @@ import queuelib
 
 from scrapy.core.downloader import Downloader
 from scrapy.http.request import Request
-from scrapy.pqueues import DownloaderAwarePriorityQueue, ScrapyPriorityQueue
+from scrapy.pqueues import DownloaderAwarePriorityQueue, ScrapyPriorityQueue, _path_safe
 from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue, PickleFifoDiskQueue
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -259,6 +259,30 @@ class TestDownloaderAwarePriorityQueue:
         self.queue.push(req)
         assert "example-slot" in self.queue
         assert "other-slot" not in self.queue
+
+
+def test_slot_directory_removed_when_slot_drains(tmp_path):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider("foo")
+    crawler.engine = Mock(downloader=MockDownloader())
+    queue = build_from_crawler(
+        DownloaderAwarePriorityQueue,
+        crawler,
+        downstream_queue_cls=PickleFifoDiskQueue,
+        key=str(tmp_path),
+    )
+    request = Request("https://example.org/1")
+    slot_dir = tmp_path / _path_safe("example.org")
+
+    queue.push(request)
+    assert slot_dir.is_dir()
+
+    assert queue.pop().url == request.url
+    assert not slot_dir.exists()
+
+    queue.push(request)
+    assert slot_dir.is_dir()
+    queue.close()
 
 
 @pytest.mark.parametrize(

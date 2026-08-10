@@ -346,6 +346,30 @@ class TestCookiesMiddleware:
         assert "Cookie" in request.headers
         assert request.headers["Cookie"] == b"currencyCookie=USD"
 
+    @pytest.mark.parametrize(
+        ("url", "domain"),
+        [
+            ("http://example-host/", "example-host.local"),
+            ("http://127.0.0.1/", "127.0.0.1"),
+            pytest.param(
+                "http://example-host/",
+                "example-host",
+                marks=pytest.mark.xfail(
+                    reason=(
+                        "http.cookiejar accepts a dotless domain for a dotless "
+                        "host but never returns the resulting cookie"
+                    )
+                ),
+            ),
+        ],
+    )
+    def test_explicit_local_domain(self, url: str, domain: str) -> None:
+        request = Request(
+            url, cookies=[{"name": "currencyCookie", "value": "USD", "domain": domain}]
+        )
+        assert self.mw.process_request(request) is None
+        assert request.headers.get("Cookie") == b"currencyCookie=USD"
+
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_keep_cookie_from_default_request_headers_middleware(self):
         DEFAULT_REQUEST_HEADERS = {"Cookie": "default=value; asdf=qwerty"}

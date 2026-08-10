@@ -48,7 +48,7 @@ class DeferredPipeline:
         return succeed(None)
 
     def process_item(self, item):
-        d = Deferred()
+        d: Deferred[Any] = Deferred()
         d.addCallback(self.cb)
         d.callback(item)
         return d
@@ -56,7 +56,7 @@ class DeferredPipeline:
 
 class AsyncDefPipeline:
     async def process_item(self, item):
-        d = Deferred()
+        d: Deferred[Any] = Deferred()
         call_later(0, d.callback, None)
         await maybe_deferred_to_future(d)
         item["pipeline_passed"] = True
@@ -65,7 +65,7 @@ class AsyncDefPipeline:
 
 class AsyncDefAsyncioPipeline:
     async def process_item(self, item):
-        d = Deferred()
+        d: Deferred[Any] = Deferred()
         loop = asyncio.get_event_loop()
         loop.call_later(0, d.callback, None)
         await deferred_to_future(d)
@@ -76,12 +76,12 @@ class AsyncDefAsyncioPipeline:
 
 class AsyncDefNotAsyncioPipeline:
     async def process_item(self, item):
-        d1 = Deferred()
+        d1: Deferred[Any] = Deferred()
         from twisted.internet import reactor
 
         reactor.callLater(0, d1.callback, None)
         await d1
-        d2 = Deferred()
+        d2: Deferred[Any] = Deferred()
         reactor.callLater(0, d2.callback, None)
         await maybe_deferred_to_future(d2)
         item["pipeline_passed"] = True
@@ -120,6 +120,8 @@ class OpenSpiderExceptionAsyncPipeline:
 
 class ItemSpider(Spider):
     name = "itemspider"
+
+    mockserver: MockServer
 
     async def start(self):
         yield Request(self.mockserver.url("/status?n=200"))

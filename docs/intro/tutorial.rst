@@ -72,6 +72,11 @@ This will create a ``tutorial`` directory with the following contents::
             spiders/          # a directory where you'll later put your spiders
                 __init__.py
 
+Before crawling anything, open ``settings.py`` and uncomment the
+:setting:`USER_AGENT` line to identify yourself, e.g. a project name plus a URL
+or an email address. Website owners who take issue with your crawler can then
+ask you to adjust it, rather than block it.
+
 
 Our first Spider
 ================

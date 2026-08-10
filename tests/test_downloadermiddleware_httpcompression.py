@@ -53,20 +53,6 @@ FORMAT = {
 }
 
 
-def _skip_if_no_br() -> None:
-    try:
-        try:
-            import brotli  # noqa: PLC0415
-
-            brotli.Decompressor.can_accept_more_data
-        except (ImportError, AttributeError):
-            import brotlicffi  # noqa: PLC0415
-
-            brotlicffi.Decompressor.can_accept_more_data
-    except (ImportError, AttributeError):
-        pytest.skip("no brotli support")
-
-
 def _skip_if_no_zstd() -> None:
     pytest.importorskip("zstandard")
 
@@ -164,8 +150,6 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
     def test_process_response_br(self):
-        _skip_if_no_br()
-
         response = self._getresponse("br")
         assert response.request
         request = response.request
@@ -176,32 +160,6 @@ class TestHttpCompression:
         assert "Content-Encoding" not in newresponse.headers
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
-
-    def test_process_response_br_unsupported(self, caplog: pytest.LogCaptureFixture):
-        if find_spec("brotli") is not None or find_spec("brotlicffi") is not None:
-            pytest.skip("Requires not having brotli support")
-        response = self._getresponse("br")
-        assert response.request
-        request = response.request
-        assert response.headers["Content-Encoding"] == b"br"
-        caplog.clear()
-        with caplog.at_level(
-            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
-        ):
-            newresponse = self.mw.process_response(request, response)
-        assert caplog.record_tuples == [
-            (
-                "scrapy.downloadermiddlewares.httpcompression",
-                WARNING,
-                (
-                    "HttpCompressionMiddleware cannot decode the response for "
-                    "http://scrapytest.org/ from unsupported encoding(s) 'br'. "
-                    "You need to install brotli or brotlicffi >= 1.2.0 to decode 'br'."
-                ),
-            ),
-        ]
-        assert newresponse is not response
-        assert newresponse.headers.getlist("Content-Encoding") == [b"br"]
 
     def test_process_response_zstd(self):
         _skip_if_no_zstd()
@@ -553,8 +511,6 @@ class TestHttpCompression:
         assert cause.decompressed_size < 1_100_000
 
     def test_compression_bomb_setting_br(self):
-        _skip_if_no_br()
-
         self._test_compression_bomb_setting("br")
 
     def test_compression_bomb_setting_deflate(self):
@@ -612,8 +568,6 @@ class TestHttpCompression:
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_br(self):
-        _skip_if_no_br()
-
         self._test_compression_bomb_spider_attr("br")
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
@@ -646,8 +600,6 @@ class TestHttpCompression:
         assert cause.decompressed_size < 1_100_000
 
     def test_compression_bomb_request_meta_br(self):
-        _skip_if_no_br()
-
         self._test_compression_bomb_request_meta("br")
 
     def test_compression_bomb_request_meta_deflate(self):
@@ -692,8 +644,6 @@ class TestHttpCompression:
     def test_download_warnsize_setting_br(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        _skip_if_no_br()
-
         self._test_download_warnsize_setting(caplog, "br")
 
     def test_download_warnsize_setting_deflate(
@@ -747,8 +697,6 @@ class TestHttpCompression:
     def test_download_warnsize_spider_attr_br(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        _skip_if_no_br()
-
         self._test_download_warnsize_spider_attr(caplog, "br")
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
@@ -802,8 +750,6 @@ class TestHttpCompression:
     def test_download_warnsize_request_meta_br(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        _skip_if_no_br()
-
         self._test_download_warnsize_request_meta(caplog, "br")
 
     def test_download_warnsize_request_meta_deflate(
@@ -837,7 +783,6 @@ class TestHttpCompression:
         return new_response
 
     def test_process_truncated_response_br(self):
-        _skip_if_no_br()
         resp = self._get_truncated_response("br")
         assert resp.body.startswith(b"<!DOCTYPE")
 
