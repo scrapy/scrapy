@@ -84,6 +84,13 @@ Backward-incompatible changes
     the key order of each item.
     (:gh:`6662`, :gh:`7824`)
 
+-   The ``_get_serialized_fields()`` method of :ref:`item exporters
+    <topics-exporters>` is renamed to
+    :meth:`~scrapy.exporters.BaseItemExporter.get_serialized_fields`, and the
+    old name is gone, so :ref:`custom item exporters <custom-exporters>` that
+    call or override it must be updated.
+    (:gh:`5706`, :gh:`7931`)
+
 -   ``scrapy.utils.serialize.ScrapyJSONEncoder``, used by :ref:`JSON feed
     exports <topics-feed-format-json>`, the :ref:`telnet console
     <topics-telnetconsole>` and the
@@ -152,6 +159,23 @@ Backward-incompatible changes
 -   ``scrapy.pipelines.files.FileException`` moved to
     ``scrapy.pipelines.media``. It is still importable from its old location.
     (:gh:`7544`, :gh:`7673`)
+
+-   ``H2ConnectionPool``, ``H2ClientFactory`` and ``H2ClientProtocol``, from
+    ``scrapy.core.http2``, now take a :class:`~scrapy.crawler.Crawler` object
+    where they used to take a :class:`~scrapy.settings.Settings` object, and
+    ``scrapy.core.http2.stream.Stream`` takes an additional ``crawler``
+    parameter, after ``protocol``.
+    (:gh:`7896`)
+
+-   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` now raises
+    :exc:`~scrapy.exceptions.IgnoreRequest` with a message, e.g. ``Filtered
+    offsite request to 'offsite.example'``, which errbacks and log messages that
+    report that exception now include.
+    (:gh:`7544`, :gh:`7673`)
+
+-   The unused ``multiplier`` attribute of
+    :class:`~scrapy.extensions.periodic_log.PeriodicLog` is removed.
+    (:gh:`7809`)
 
 -   The IPython :ref:`shell <topics-shell>` requires IPython 8.15.0 or higher.
     Install the :ref:`ipython extra <extras>` to get a compatible version.
