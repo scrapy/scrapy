@@ -100,7 +100,6 @@ class MediaPipeline(ABC):
                 stacklevel=2,
             )
         self.crawler: Crawler = crawler
-        assert crawler.request_fingerprinter
         self._fingerprinter: RequestFingerprinterProtocol = (
             crawler.request_fingerprinter
         )
@@ -226,7 +225,6 @@ class MediaPipeline(ABC):
     ) -> FileInfo:
         try:
             self._modify_media_request(request)
-            assert self.crawler.engine
             response = await self.crawler.engine.download_async(request)
             return await ensure_awaitable(
                 self.media_downloaded(response, request, info, item=item)

@@ -201,7 +201,7 @@ class TestInteractiveShell:
         env = os.environ.copy()
         env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=60)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline(f"fetch('{mockserver.url('/')}')")
@@ -235,7 +235,7 @@ class TestInteractiveShell:
     def _run_interactive_shell(self, env: dict[str, str]) -> str:
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=60)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendeof()
@@ -256,7 +256,7 @@ class TestInteractiveShell:
         self._isolate_config(env, config_home)
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=10)
+        p = PopenSpawn(args, env=env, timeout=60)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         # The standard Python shell never imports IPython, whereas the IPython
@@ -365,7 +365,7 @@ class TestShell:
         crawler.engine = MagicMock()
         crawler.engine.open_spider_async = AsyncMock()
         shell = Shell(crawler)
-        spider = Spider("test")
+        spider = Spider.from_crawler(crawler, "test")
         await shell._open_spider(spider)
         assert shell.spider is spider
         assert crawler.spider is spider

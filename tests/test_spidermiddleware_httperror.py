@@ -10,6 +10,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.httperror import HttpError, HttpErrorMiddleware
 from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.spiders import MockServerSpider
@@ -83,7 +84,7 @@ def _mw(
 ) -> HttpErrorMiddleware:
     crawler = get_crawler(spidercls, settings)
     crawler.spider = crawler._create_spider()
-    mw = HttpErrorMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(HttpErrorMiddleware, crawler)
     mw.spider_opened(crawler.spider)
     return mw
 
