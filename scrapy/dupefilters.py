@@ -95,7 +95,6 @@ class RFPDupeFilter(BaseDupeFilter):
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        assert crawler.request_fingerprinter
         debug = crawler.settings.getbool("DUPEFILTER_DEBUG")
         return cls(
             job_dir(crawler.settings),
@@ -135,5 +134,4 @@ class RFPDupeFilter(BaseDupeFilter):
             self.logger.debug(msg, {"request": request}, extra={"spider": spider})
             self.logdupes = False
 
-        assert spider.crawler.stats
         spider.crawler.stats.inc_value("dupefilter/filtered")
