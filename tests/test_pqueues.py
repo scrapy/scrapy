@@ -101,6 +101,43 @@ class TestPriorityQueue:
         assert queue2.pop().url == req.url
         queue2.close()
 
+    def test_state_matches_close(self):
+        temp_dir = tempfile.mkdtemp()
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
+        )
+        assert queue.state() == []
+        queue.push(Request("https://example.org/1", priority=1))
+        queue.push(Request("https://example.org/2", priority=2))
+        state = queue.state()
+        assert state == [-2, -1]
+        assert len(queue) == 2
+        assert queue.close() == state
+
+    def test_state_version(self):
+        temp_dir = tempfile.mkdtemp()
+        queue = build_from_crawler(
+            ScrapyPriorityQueue, self.crawler, FifoMemoryQueue, temp_dir
+        )
+        version = queue.state_version
+
+        queue.push(Request("https://example.org/1", priority=1))
+        assert queue.state_version != version
+        version = queue.state_version
+
+        # Same priority, so no new internal queue and no state change.
+        queue.push(Request("https://example.org/2", priority=1))
+        assert queue.state_version == version
+
+        queue.pop()
+        assert queue.state_version == version
+
+        # The last request of the internal queue, which is then discarded.
+        queue.pop()
+        assert queue.state_version != version
+        assert queue.state() == []
+        queue.close()
+
     def test_queue_push_pop_priorities(self):
         temp_dir = tempfile.mkdtemp()
         queue = build_from_crawler(
@@ -251,6 +288,46 @@ class TestDownloaderAwarePriorityQueue:
 
         popped = self.queue.pop()
         assert popped.url == req_b.url
+
+    def test_state_matches_close(self):
+        assert self.queue.state() == {}
+        req = Request("https://example.org/")
+        req.meta[Downloader.DOWNLOAD_SLOT] = "example-slot"
+        self.queue.push(req)
+        state = self.queue.state()
+        assert state == {"example-slot": [0]}
+        assert len(self.queue) == 1
+        assert self.queue.close() == state
+
+    def test_state_version(self):
+        def request(url, slot, priority=0):
+            req = Request(url, priority=priority)
+            req.meta[Downloader.DOWNLOAD_SLOT] = slot
+            return req
+
+        version = self.queue.state_version
+
+        self.queue.push(request("https://example.org/1", "slot-a"))
+        assert self.queue.state_version != version
+        version = self.queue.state_version
+
+        # Same slot and priority, so no state change.
+        self.queue.push(request("https://example.org/2", "slot-a"))
+        assert self.queue.state_version == version
+
+        # A new priority within a known slot is a state change too.
+        self.queue.push(request("https://example.org/3", "slot-a", priority=1))
+        assert self.queue.state_version != version
+        version = self.queue.state_version
+
+        self.queue.push(request("https://example.org/4", "slot-b"))
+        assert self.queue.state_version != version
+        version = self.queue.state_version
+
+        while self.queue.pop() is not None:
+            pass
+        assert self.queue.state_version != version
+        assert self.queue.state() == {}
 
     def test_contains(self):
         req = Request("https://example.org/")

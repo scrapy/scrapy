@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import json
 import warnings
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import TYPE_CHECKING
-from unittest.mock import Mock
+from typing import TYPE_CHECKING, Any
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -211,6 +212,73 @@ class TestMigration:
                 "scrapy.pqueues.DownloaderAwarePriorityQueue", tmp_path
             ):
                 pass
+
+
+class TestActiveJson:
+    """The scheduler keeps ``active.json`` up to date while the job runs,
+    rather than only writing it when the job stops, so that a job that stops
+    abruptly does not lose track of its disk queues.
+    """
+
+    @staticmethod
+    def read(jobdir: Path) -> Any:
+        path = jobdir / "requests.queue" / "active.json"
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    @coroutine_test
+    async def test_written_before_close(self, tmp_path: Path) -> None:
+        async with create_scheduler(
+            "scrapy.pqueues.ScrapyPriorityQueue", tmp_path
+        ) as scheduler:
+            for url, priority in _PRIORITIES:
+                scheduler.enqueue_request(Request(url, priority=priority))
+            assert self.read(tmp_path) == sorted(-p for _, p in _PRIORITIES)
+
+    @coroutine_test
+    async def test_written_before_close_downloader_aware(self, tmp_path: Path) -> None:
+        async with create_scheduler(
+            "scrapy.pqueues.DownloaderAwarePriorityQueue", tmp_path
+        ) as scheduler:
+            for url, slot in _URLS_WITH_SLOTS:
+                request = Request(url)
+                request.meta[Downloader.DOWNLOAD_SLOT] = slot
+                scheduler.enqueue_request(request)
+            assert self.read(tmp_path) == {"a": [0], "b": [0], "c": [0]}
+
+    @coroutine_test
+    async def test_updated_as_queues_drain(self, tmp_path: Path) -> None:
+        async with create_scheduler(
+            "scrapy.pqueues.ScrapyPriorityQueue", tmp_path
+        ) as scheduler:
+            for url in _URLS:
+                scheduler.enqueue_request(Request(url))
+            assert self.read(tmp_path) == [0]
+
+            while scheduler.has_pending_requests():
+                scheduler.next_request()
+            assert self.read(tmp_path) == []
+
+    @coroutine_test
+    async def test_written_only_when_the_state_changes(self, tmp_path: Path) -> None:
+        async with create_scheduler(
+            "scrapy.pqueues.ScrapyPriorityQueue", tmp_path
+        ) as scheduler:
+            with patch.object(
+                scheduler, "_write_dqs_state", wraps=scheduler._write_dqs_state
+            ) as write_dqs_state:
+                for url in _URLS:
+                    scheduler.enqueue_request(Request(url))
+                # All these requests share a priority, so they all land in the
+                # same internal queue, and only its creation is a state change.
+                assert write_dqs_state.call_count == 1
+
+    @coroutine_test
+    async def test_no_temporary_file_left_behind(self, tmp_path: Path) -> None:
+        async with create_scheduler(
+            "scrapy.pqueues.ScrapyPriorityQueue", tmp_path
+        ) as scheduler:
+            scheduler.enqueue_request(Request("http://foo.com/a"))
+            assert not list((tmp_path / "requests.queue").glob("*.tmp"))
 
 
 def _is_scheduling_fair(enqueued_slots: list[str], dequeued_slots: list[str]) -> bool:

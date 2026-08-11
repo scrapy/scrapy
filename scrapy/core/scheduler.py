@@ -236,8 +236,10 @@ class Scheduler(BaseScheduler):
         representation of the state (``startprios``) of
         :setting:`SCHEDULER_PRIORITY_QUEUE`.
 
-        The file is generated whenever the job stops (cleanly) and is loaded
-        when resuming the job.
+        The file is rewritten whenever that state changes, and when the job
+        stops, and is loaded when resuming the job. Rewriting it as the job
+        runs means that a job that stops abruptly can still be resumed from
+        whatever its queues managed to write to disk.
 
     -   Instantiates the configured :setting:`SCHEDULER_PRIORITY_QUEUE` with
         ``requests.queue/`` as persistence directory (*key*) and
@@ -348,6 +350,9 @@ class Scheduler(BaseScheduler):
         self.spider: Spider = spider
         self.mqs: ScrapyPriorityQueue = self._mq()
         self.dqs: ScrapyPriorityQueue | None = self._dq() if self.dqdir else None
+        self._dqs_state_version: int | None = (
+            self.dqs.state_version if self.dqs is not None else None
+        )
         return self.df.open()
 
     def close(self, reason: str) -> Deferred[None] | None:
@@ -359,6 +364,7 @@ class Scheduler(BaseScheduler):
             state = self.dqs.close()
             assert isinstance(self.dqdir, str)
             self._write_dqs_state(self.dqdir, state)
+            self._dqs_state_version = self.dqs.state_version
         return self.df.close(reason)
 
     def enqueue_request(self, request: Request) -> bool:
@@ -433,6 +439,7 @@ class Scheduler(BaseScheduler):
             assert self.stats is not None
             self.stats.inc_value("scheduler/unserializable")
             return False
+        self._sync_dqs_state()
         return True
 
     def _mqpush(self, request: Request) -> None:
@@ -440,8 +447,26 @@ class Scheduler(BaseScheduler):
 
     def _dqpop(self) -> Request | None:
         if self.dqs is not None:
-            return self.dqs.pop()
+            request = self.dqs.pop()
+            self._sync_dqs_state()
+            return request
         return None
+
+    def _sync_dqs_state(self) -> None:
+        """Persist the state of the disk queue if it changed since last time.
+
+        The state only changes when an internal queue is created or drained, so
+        most requests do not trigger a write. Checking
+        ``ScrapyPriorityQueue.state_version`` keeps the common case, where
+        nothing changed, out of the (linear) cost of building the state.
+        """
+        assert self.dqs is not None
+        assert self.dqdir is not None
+        version = self.dqs.state_version
+        if version == self._dqs_state_version:
+            return
+        self._write_dqs_state(self.dqdir, self.dqs.state())
+        self._dqs_state_version = version
 
     def _mq(self) -> ScrapyPriorityQueue:
         """Create a new priority queue instance, with in-memory storage"""
@@ -494,5 +519,11 @@ class Scheduler(BaseScheduler):
             return json.load(f)
 
     def _write_dqs_state(self, dqdir: str, state: Any) -> None:
-        with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
+        # Write to a temporary file in the same directory and rename it over
+        # the old one, so that a crash mid-write cannot leave a truncated
+        # active.json behind.
+        path = Path(dqdir, "active.json")
+        tmp_path = path.with_suffix(".json.tmp")
+        with tmp_path.open("w", encoding="utf-8") as f:
             json.dump(state, f)
+        tmp_path.replace(path)

@@ -25,6 +25,29 @@ Backward-incompatible changes
 
     (:gh:`6585`, :gh:`7731`)
 
+New features
+~~~~~~~~~~~~
+
+-   :class:`~scrapy.pqueues.ScrapyPriorityQueue` and
+    :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` have a new ``state()``
+    method, which returns the same value as ``close()`` without closing the
+    queue, and a new ``state_version`` property, which changes whenever
+    ``state()`` starts returning a different value.
+    (:gh:`7978`)
+
+Bug fixes
+~~~~~~~~~
+
+-   :class:`~scrapy.core.scheduler.Scheduler` now keeps the ``active.json``
+    file of the :ref:`job directory <topics-jobs>` up to date as the job runs,
+    instead of only writing it when the job stops. Previously, a job that
+    stopped abruptly left that file missing or stale, and resuming it silently
+    ignored every request that its disk queues had written to disk.
+
+    The file is also written through a temporary file now, so that a crash
+    while writing it cannot leave a truncated file behind.
+    (:gh:`4106`, :gh:`7978`)
+
 .. _release-2.17.0:
 
 Scrapy 2.17.0 (2026-07-07)

@@ -134,6 +134,7 @@ class ScrapyPriorityQueue:
         self.queues: dict[int, QueueProtocol] = {}
         self._start_queues: dict[int, QueueProtocol] = {}
         self.curprio: int | None = None
+        self._state_version: int = 0
         self.init_prios(startprios)
 
     def init_prios(self, startprios: Iterable[int]) -> None:
@@ -179,10 +180,12 @@ class ScrapyPriorityQueue:
         if is_start_request and self._start_queue_cls:
             if priority not in self._start_queues:
                 self._start_queues[priority] = self._sqfactory(priority)
+                self._state_version += 1
             q = self._start_queues[priority]
         else:
             if priority not in self.queues:
                 self.queues[priority] = self.qfactory(priority)
+                self._state_version += 1
             q = self.queues[priority]
         q.push(request)  # this may fail (eg. serialization error)
         if self.curprio is None or priority < self.curprio:
@@ -198,6 +201,7 @@ class ScrapyPriorityQueue:
                 m = q.pop()
                 if not q:
                     del self.queues[self.curprio]
+                    self._state_version += 1
                     q.close()
                     if not self._start_queues:
                         self._update_curprio()
@@ -211,6 +215,7 @@ class ScrapyPriorityQueue:
                     m = q.pop()
                     if not q:
                         del self._start_queues[self.curprio]
+                        self._state_version += 1
                         q.close()
                         self._update_curprio()
                     return m
@@ -243,13 +248,32 @@ class ScrapyPriorityQueue:
         # Protocols can't declare optional members
         return cast("Request", queue.peek())  # type: ignore[attr-defined]
 
+    @property
+    def state_version(self) -> int:
+        """A number that changes whenever :meth:`state` starts returning a
+        different value.
+
+        Callers that persist :meth:`state` can compare this against the value
+        they saw last to find out whether they need to persist it again,
+        without having to build the state itself, which is *O(priorities)*.
+        """
+        return self._state_version
+
+    def state(self) -> list[int]:
+        """Return the priorities with a non-discarded internal queue, sorted.
+
+        This is the same value that :meth:`close` returns, but the queue stays
+        usable, so that callers that persist this value can keep it up to date
+        while the queue is still in use.
+        """
+        return sorted({*self.queues, *self._start_queues})
+
     def close(self) -> list[int]:
-        active: set[int] = set()
+        active = self.state()
         for queues in (self.queues, self._start_queues):
-            for p, q in queues.items():
-                active.add(p)
+            for q in queues.values():
                 q.close()
-        return list(active)
+        return active
 
     def __len__(self) -> int:
         return (
@@ -357,6 +381,7 @@ class DownloaderAwarePriorityQueue:
 
         self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
         self._last_selected_slot: str | None = None
+        self._state_version: int = 0
         if slot_startprios:
             for slot, startprios in slot_startprios.items():
                 self.pqueues[slot] = self.pqfactory(slot, startprios)
@@ -407,9 +432,13 @@ class DownloaderAwarePriorityQueue:
 
         slot = self._next_slot(stats, update_state=True)
         queue = self.pqueues[slot]
+        queue_version = queue.state_version
         request = queue.pop()
+        if queue.state_version != queue_version:
+            self._state_version += 1
         if len(queue) == 0:
             del self.pqueues[slot]
+            self._state_version += 1
             if self.key:
                 # Reclaim the slot directory; rmdir leaves it alone if the
                 # downstream queues did not remove all their files.
@@ -421,8 +450,12 @@ class DownloaderAwarePriorityQueue:
         slot = self._downloader_interface.get_slot_key(request)
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
+            self._state_version += 1
         queue = self.pqueues[slot]
+        queue_version = queue.state_version
         queue.push(request)
+        if queue.state_version != queue_version:
+            self._state_version += 1
 
     def peek(self) -> Request | None:
         """Returns the next object to be returned by :meth:`pop`,
@@ -438,9 +471,32 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         return queue.peek()
 
+    @property
+    def state_version(self) -> int:
+        """A number that changes whenever :meth:`state` starts returning a
+        different value.
+
+        Callers that persist :meth:`state` can compare this against the value
+        they saw last to find out whether they need to persist it again,
+        without having to build the state itself, which is *O(slots)*.
+        """
+        return self._state_version
+
+    def state(self) -> dict[str, list[int]]:
+        """Return the state of the priority queue of every active slot.
+
+        This is the same value that :meth:`close` returns, but the queue stays
+        usable, so that callers that persist this value can keep it up to date
+        while the queue is still in use.
+        """
+        return {slot: queue.state() for slot, queue in self.pqueues.items()}
+
     def close(self) -> dict[str, list[int]]:
-        active = {slot: queue.close() for slot, queue in self.pqueues.items()}
+        active = self.state()
+        for queue in self.pqueues.values():
+            queue.close()
         self.pqueues.clear()
+        self._state_version += 1
         return active
 
     def __len__(self) -> int:
