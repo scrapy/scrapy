@@ -14,6 +14,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.utils.decorators import coroutine_test
@@ -30,7 +31,7 @@ class TestManagerBase:
     async def get_mwman(self) -> AsyncGenerator[DownloaderMiddlewareManager]:
         crawler = get_crawler(Spider, self.settings_dict)
         crawler.spider = crawler._create_spider("foo")
-        mwman = DownloaderMiddlewareManager.from_crawler(crawler)
+        mwman = build_from_crawler(DownloaderMiddlewareManager, crawler)
         crawler.engine = crawler._create_engine()
         await crawler.engine.open_spider_async()
         try:

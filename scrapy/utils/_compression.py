@@ -2,11 +2,10 @@ import contextlib
 import zlib
 from io import BytesIO
 
-with contextlib.suppress(ImportError):
-    try:
-        import brotli
-    except ImportError:
-        import brotlicffi as brotli
+try:
+    import brotli
+except ImportError:
+    import brotlicffi as brotli
 
 with contextlib.suppress(ImportError):
     import zstandard

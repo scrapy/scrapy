@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from typing import Any
 
 import pytest
 
@@ -9,6 +10,7 @@ from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import CookiesT, VerboseCookie
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import _to_verbose_cookies
 from scrapy.utils.spider import DefaultSpider
@@ -71,8 +73,8 @@ class TestCookiesMiddleware:
     def setup_method(self):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        self.mw = CookiesMiddleware.from_crawler(crawler)
-        self.redirect_middleware = RedirectMiddleware.from_crawler(crawler)
+        self.mw = build_from_crawler(CookiesMiddleware, crawler)
+        self.redirect_middleware = build_from_crawler(RedirectMiddleware, crawler)
 
     def teardown_method(self):
         del self.mw
@@ -93,19 +95,19 @@ class TestCookiesMiddleware:
 
     def test_setting_false_cookies_enabled(self):
         with pytest.raises(NotConfigured):
-            CookiesMiddleware.from_crawler(
-                get_crawler(settings_dict={"COOKIES_ENABLED": False})
+            build_from_crawler(
+                CookiesMiddleware, get_crawler(settings_dict={"COOKIES_ENABLED": False})
             )
 
     def test_setting_default_cookies_enabled(self):
         assert isinstance(
-            CookiesMiddleware.from_crawler(get_crawler()), CookiesMiddleware
+            build_from_crawler(CookiesMiddleware, get_crawler()), CookiesMiddleware
         )
 
     def test_setting_true_cookies_enabled(self):
         assert isinstance(
-            CookiesMiddleware.from_crawler(
-                get_crawler(settings_dict={"COOKIES_ENABLED": True})
+            build_from_crawler(
+                CookiesMiddleware, get_crawler(settings_dict={"COOKIES_ENABLED": True})
             ),
             CookiesMiddleware,
         )
@@ -114,7 +116,7 @@ class TestCookiesMiddleware:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         crawler = get_crawler(settings_dict={"COOKIES_DEBUG": True})
-        mw = CookiesMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(CookiesMiddleware, crawler)
         caplog.clear()
         with caplog.at_level(
             logging.DEBUG, logger="scrapy.downloadermiddlewares.cookies"
@@ -144,7 +146,7 @@ class TestCookiesMiddleware:
 
     def test_debug_no_cookies(self, caplog: pytest.LogCaptureFixture) -> None:
         crawler = get_crawler(settings_dict={"COOKIES_DEBUG": True})
-        mw = CookiesMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(CookiesMiddleware, crawler)
         caplog.clear()
         with caplog.at_level(
             logging.DEBUG, logger="scrapy.downloadermiddlewares.cookies"
@@ -160,7 +162,7 @@ class TestCookiesMiddleware:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         crawler = get_crawler(settings_dict={"COOKIES_DEBUG": False})
-        mw = CookiesMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(CookiesMiddleware, crawler)
         caplog.clear()
         with caplog.at_level(
             logging.DEBUG, logger="scrapy.downloadermiddlewares.cookies"
@@ -219,7 +221,7 @@ class TestCookiesMiddleware:
 
     def test_complex_cookies(self):
         # merge some cookies into jar
-        cookies = [
+        cookies: list[VerboseCookie] = [
             {
                 "name": "C1",
                 "value": "value1",
@@ -343,6 +345,30 @@ class TestCookiesMiddleware:
         assert self.mw.process_request(request) is None
         assert "Cookie" in request.headers
         assert request.headers["Cookie"] == b"currencyCookie=USD"
+
+    @pytest.mark.parametrize(
+        ("url", "domain"),
+        [
+            ("http://example-host/", "example-host.local"),
+            ("http://127.0.0.1/", "127.0.0.1"),
+            pytest.param(
+                "http://example-host/",
+                "example-host",
+                marks=pytest.mark.xfail(
+                    reason=(
+                        "http.cookiejar accepts a dotless domain for a dotless "
+                        "host but never returns the resulting cookie"
+                    )
+                ),
+            ),
+        ],
+    )
+    def test_explicit_local_domain(self, url: str, domain: str) -> None:
+        request = Request(
+            url, cookies=[{"name": "currencyCookie", "value": "USD", "domain": domain}]
+        )
+        assert self.mw.process_request(request) is None
+        assert request.headers.get("Cookie") == b"currencyCookie=USD"
 
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_keep_cookie_from_default_request_headers_middleware(self):
@@ -483,13 +509,13 @@ class TestCookiesMiddleware:
 
     def _test_cookie_redirect(
         self,
-        source,
-        target,
+        source: str | dict[str, Any],
+        target: str | dict[str, Any],
         *,
-        cookies1,
-        cookies2,
-    ):
-        input_cookies = {"a": "b"}
+        cookies1: bool,
+        cookies2: bool,
+    ) -> None:
+        input_cookies: CookiesT = {"a": "b"}
 
         if not isinstance(source, dict):
             source = {"url": source}
@@ -551,11 +577,11 @@ class TestCookiesMiddleware:
 
     def _test_cookie_header_redirect(
         self,
-        source,
-        target,
+        source: str | dict[str, Any],
+        target: str | dict[str, Any],
         *,
-        cookies2,
-    ):
+        cookies2: bool,
+    ) -> None:
         """Test the handling of a user-defined Cookie header when building a
         redirect follow-up request.
 
@@ -623,14 +649,14 @@ class TestCookiesMiddleware:
 
     def _test_user_set_cookie_domain_followup(
         self,
-        url1,
-        url2,
-        domain,
+        url1: str,
+        url2: str,
+        domain: str,
         *,
-        cookies1,
-        cookies2,
-    ):
-        input_cookies = [
+        cookies1: bool,
+        cookies2: bool,
+    ) -> None:
+        input_cookies: list[VerboseCookie] = [
             {
                 "name": "a",
                 "value": "b",
@@ -686,16 +712,16 @@ class TestCookiesMiddleware:
 
     def _test_server_set_cookie_domain_followup(
         self,
-        url1,
-        url2,
-        domain,
+        url1: str,
+        url2: str,
+        domain: str,
         *,
-        cookies,
-    ):
+        cookies: bool,
+    ) -> None:
         request1 = Request(url1)
         self.mw.process_request(request1)
 
-        input_cookies = [
+        input_cookies: list[VerboseCookie] = [
             {
                 "name": "a",
                 "value": "b",
@@ -747,8 +773,14 @@ class TestCookiesMiddleware:
         )
 
     def _test_cookie_redirect_scheme_change(
-        self, secure, from_scheme, to_scheme, cookies1, cookies2, cookies3
-    ):
+        self,
+        secure: bool | object,
+        from_scheme: str,
+        to_scheme: str,
+        cookies1: bool,
+        cookies2: bool,
+        cookies3: bool,
+    ) -> None:
         """When a redirect causes the URL scheme to change from *from_scheme*
         to *to_scheme*, while domain and port remain the same, and given a
         cookie on the initial request with its secure attribute set to
@@ -756,10 +788,11 @@ class TestCookiesMiddleware:
         initial request (*cookies1*), if it should be kept by the redirect
         middleware (*cookies2*), and if it should be present on the Cookie
         header in the redirected request (*cookie3*)."""
-        cookie_kwargs = {}
+        cookie: VerboseCookie = {"name": "a", "value": "b"}
         if secure is not UNSET:
-            cookie_kwargs["secure"] = secure
-        input_cookies = [{"name": "a", "value": "b", **cookie_kwargs}]
+            assert isinstance(secure, bool)
+            cookie["secure"] = secure
+        input_cookies = [cookie]
 
         request1 = Request(f"{from_scheme}://a.example", cookies=input_cookies)
         self.mw.process_request(request1)

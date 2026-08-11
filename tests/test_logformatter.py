@@ -11,6 +11,7 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.logformatter import LogFormatter
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
 from tests.utils.decorators import coroutine_test
@@ -28,9 +29,9 @@ class CustomItem(Item):
 
 class TestLogFormatter:
     def setup_method(self):
-        self.formatter = LogFormatter()
-        self.spider = Spider("default")
-        self.spider.crawler = get_crawler()
+        crawler = get_crawler()
+        self.formatter = build_from_crawler(LogFormatter, crawler)
+        self.spider = Spider.from_crawler(crawler, "default")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
@@ -75,8 +76,7 @@ class TestLogFormatter:
         item = {}
         exception = DropItem("Test drop")
         response = Response("http://www.example.com")
-        spider = Spider("foo")
-        spider.crawler = get_crawler(Spider)
+        spider = Spider.from_crawler(get_crawler(Spider), "foo")
 
         logkws = self.formatter.dropped(item, exception, response, spider)
         assert logkws["level"] == logging.WARNING
@@ -198,9 +198,9 @@ class LogFormatterSubclass(LogFormatter):
 
 class TestLogformatterSubclass(TestLogFormatter):
     def setup_method(self):
-        self.formatter = LogFormatterSubclass()
-        self.spider = Spider("default")
-        self.spider.crawler = get_crawler(Spider)
+        crawler = get_crawler(Spider)
+        self.formatter = build_from_crawler(LogFormatterSubclass, crawler)
+        self.spider = Spider.from_crawler(crawler, "default")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com")

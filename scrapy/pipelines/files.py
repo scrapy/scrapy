@@ -27,9 +27,7 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.media import (
-    FileException as FileException,  # noqa: PLC0414  # re-exported for backward compatibility
-)
+from scrapy.pipelines.media import FileException as _FileException
 from scrapy.pipelines.media import (
     FileInfo,
     FileInfoOrError,
@@ -37,7 +35,7 @@ from scrapy.pipelines.media import (
     _MediaRequestFiltered,
 )
 from scrapy.utils.asyncio import run_in_thread
-from scrapy.utils.boto import is_botocore_available
+from scrapy.utils.boto import _get_max_pool_connections, is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
@@ -164,6 +162,9 @@ class S3FilesStore:
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
     AWS_VERIFY = None
+    # Overridden from settings.AWS_MAX_POOL_CONNECTIONS in
+    # FilesPipeline.from_crawler(); None means the botocore default
+    AWS_MAX_POOL_CONNECTIONS: int | None = None
 
     POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
     HEADERS: ClassVar[dict[str, str]] = {
@@ -174,7 +175,13 @@ class S3FilesStore:
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
         import botocore.session  # noqa: PLC0415
+        from botocore.config import Config  # noqa: PLC0415
 
+        config = (
+            Config(max_pool_connections=self.AWS_MAX_POOL_CONNECTIONS)
+            if self.AWS_MAX_POOL_CONNECTIONS is not None
+            else None
+        )
         session = botocore.session.get_session()
         self.s3_client = session.create_client(
             "s3",
@@ -185,6 +192,7 @@ class S3FilesStore:
             region_name=self.AWS_REGION_NAME,
             use_ssl=self.AWS_USE_SSL,
             verify=self.AWS_VERIFY,
+            config=config,
         )
         if not uri.startswith("s3://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
@@ -522,6 +530,7 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_REGION_NAME = settings["AWS_REGION_NAME"]
         s3store.AWS_USE_SSL = settings["AWS_USE_SSL"]
         s3store.AWS_VERIFY = settings["AWS_VERIFY"]
+        s3store.AWS_MAX_POOL_CONNECTIONS = _get_max_pool_connections(settings)
         s3store.POLICY = settings["FILES_STORE_S3_ACL"]
 
         gcs_store: type[GCSFilesStore] = cast(
@@ -615,7 +624,7 @@ class FilesPipeline(MediaPipeline):
             f"{request} referred in <{referer}>: {failure.value}",
             extra={"spider": info.spider},
         )
-        raise FileException
+        raise _FileException
 
     async def media_downloaded(
         self,
@@ -634,7 +643,7 @@ class FilesPipeline(MediaPipeline):
                 {"status": response.status, "request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
-            raise FileException("download-error")
+            raise _FileException("download-error")
 
         if not response.body:
             logger.warning(
@@ -643,7 +652,7 @@ class FilesPipeline(MediaPipeline):
                 {"request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
-            raise FileException("empty-content")
+            raise _FileException("empty-content")
 
         status = "cached" if "cached" in response.flags else "downloaded"
         logger.debug(
@@ -659,7 +668,7 @@ class FilesPipeline(MediaPipeline):
             checksum: str = await ensure_awaitable(
                 self.file_downloaded(response, request, info, item=item)
             )
-        except FileException as exc:
+        except _FileException as exc:
             logger.warning(
                 "File (error): Error processing file from %(request)s "
                 "referred in <%(referer)s>: %(errormsg)s",
@@ -676,7 +685,7 @@ class FilesPipeline(MediaPipeline):
                 exc_info=True,
                 extra={"spider": info.spider},
             )
-            raise FileException(str(exc)) from exc
+            raise _FileException(str(exc)) from exc
 
         return {
             "url": request.url,
@@ -686,9 +695,9 @@ class FilesPipeline(MediaPipeline):
         }
 
     def inc_stats(self, status: str) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.inc_value("file_count")
-        self.crawler.stats.inc_value(f"file_status_count/{status}")
+        stats = self.crawler.stats
+        stats.inc_value("file_count")
+        stats.inc_value(f"file_status_count/{status}")
 
     async def _file_downloaded(
         self,
@@ -759,3 +768,15 @@ class FilesPipeline(MediaPipeline):
             if media_type:
                 media_ext = cast("str", mimetypes.guess_extension(media_type))
         return f"full/{media_guid}{media_ext}"
+
+
+def __getattr__(name: str) -> Any:
+    if name == "FileException":
+        warnings.warn(
+            "scrapy.pipelines.files.FileException is deprecated, use "
+            "scrapy.pipelines.media.FileException instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return _FileException
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

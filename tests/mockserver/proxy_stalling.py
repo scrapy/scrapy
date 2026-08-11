@@ -6,7 +6,7 @@ import socket
 import threading
 from typing import TYPE_CHECKING
 
-from tests.utils import async_sleep
+from scrapy.utils.asyncio import sleep
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -43,7 +43,7 @@ class StallingProxyConnection:
         for _ in range(int(timeout / 0.05)):
             if self.closed:
                 return True
-            await async_sleep(0.05)
+            await sleep(0.05)
         return self.closed
 
 
@@ -106,5 +106,5 @@ class StallingProxy:
         for _ in range(int(timeout / 0.05)):
             if self.connections and b"\r\n\r\n" in self.connections[0].request:
                 return self.connections[0]
-            await async_sleep(0.05)
+            await sleep(0.05)
         raise AssertionError(f"No request reached the proxy in {timeout} seconds")
