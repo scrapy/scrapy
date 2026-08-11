@@ -25,6 +25,15 @@ Backward-incompatible changes
 
     (:gh:`6585`, :gh:`7731`)
 
+Bug fixes
+~~~~~~~~~
+
+-   Overwriting an existing key in the internal ``LocalCache`` class no longer
+    evicts a different entry. Among other things, this made the DNS cache
+    shrink below :setting:`DNSCACHE_SIZE` whenever the same host name was
+    resolved concurrently.
+    (:gh:`7981`)
+
 .. _release-2.17.0:
 
 Scrapy 2.17.0 (2026-07-07)

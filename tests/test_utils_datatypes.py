@@ -334,6 +334,31 @@ class TestLocalCache:
         assert cache["b"] == 2
         assert cache["c"] == 3
 
+    def test_overwrite_does_not_evict(self):
+        cache: LocalCache[str, int] = LocalCache(limit=3)
+        cache["a"] = 1
+        cache["b"] = 2
+        cache["c"] = 3
+
+        cache["c"] = 30
+        cache["a"] = 10
+
+        assert len(cache) == 3
+        assert list(cache) == ["a", "b", "c"]
+        assert cache["a"] == 10
+        assert cache["b"] == 2
+        assert cache["c"] == 30
+
+    def test_overwrite_keeps_expiry_order(self):
+        cache: LocalCache[str, int] = LocalCache(limit=2)
+        cache["a"] = 1
+        cache["b"] = 2
+        cache["a"] = 10
+        # "a" was written last but added first, so it still expires first.
+        cache["c"] = 3
+        assert "a" not in cache
+        assert list(cache) == ["b", "c"]
+
     def test_cache_without_limit(self):
         maximum = 10**4
         cache: LocalCache[str, int] = LocalCache()

@@ -177,8 +177,11 @@ class LocalCache(OrderedDict[_KT, _VT]):
         if self.limit is not None:
             if self.limit == 0:
                 return
-            while len(self) >= self.limit:
-                self.popitem(last=False)
+            # Overwriting an existing key does not add an entry, so it must not
+            # evict one either.
+            if key not in self:
+                while len(self) >= self.limit:
+                    self.popitem(last=False)
         super().__setitem__(key, value)
 
 
