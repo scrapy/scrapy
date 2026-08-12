@@ -304,8 +304,8 @@ New features
     (:gh:`3435`, :gh:`7905`)
 
 -   Added an :ref:`FTPS feed storage backend <feed-storage-ftps>`, i.e. support
-    for the ``ftps`` URI scheme in :setting:`FEEDS`, which uploads the feed over
-    a TLS connection, verifying the certificate of the server.
+    for the ``ftps`` URI scheme in :setting:`FEEDS`, which uploads the feed
+    over a TLS connection, verifying the certificate of the server.
     (:gh:`4180`, :gh:`7953`)
 
 -   Changes to :attr:`Spider.allowed_domains <scrapy.Spider.allowed_domains>`
