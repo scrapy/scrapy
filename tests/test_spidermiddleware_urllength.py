@@ -37,7 +37,7 @@ def stats(crawler: Crawler) -> StatsCollector:
 
 @pytest.fixture
 def mw(crawler: Crawler) -> UrlLengthMiddleware:
-    return UrlLengthMiddleware.from_crawler(crawler)
+    return build_from_crawler(UrlLengthMiddleware, crawler)
 
 
 def process_spider_output(mw: UrlLengthMiddleware) -> list[Request]:

@@ -14,15 +14,15 @@ from twisted.web.client import (
 )
 from twisted.web.error import SchemeNotSupported
 
+from scrapy.core._http2.protocol import H2ClientFactory, H2ClientProtocol
 from scrapy.core.downloader.contextfactory import _AcceptableProtocolsContextFactory
-from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
     from twisted.internet.endpoints import HostnameEndpoint
 
+    from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
-    from scrapy.settings import Settings
     from scrapy.spiders import Spider
 
 
@@ -30,9 +30,9 @@ ConnectionKeyT = tuple[bytes, bytes, int]
 
 
 class H2ConnectionPool:
-    def __init__(self, reactor: ReactorBase, settings: Settings) -> None:
+    def __init__(self, reactor: ReactorBase, crawler: Crawler) -> None:
         self._reactor = reactor
-        self.settings = settings
+        self._crawler = crawler
 
         # Store a dictionary which is used to get the respective
         # H2ClientProtocolInstance using the  key as Tuple(scheme, hostname, port)
@@ -43,7 +43,7 @@ class H2ConnectionPool:
             ConnectionKeyT, deque[Deferred[H2ClientProtocol]]
         ] = {}
 
-        self._tls_verbose_logging: bool = settings.getbool(
+        self._tls_verbose_logging: bool = crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
 
@@ -77,7 +77,7 @@ class H2ConnectionPool:
 
         factory = H2ClientFactory(
             uri,
-            self.settings,
+            self._crawler,
             conn_lost_deferred,
             tls_verbose_logging=self._tls_verbose_logging,
         )

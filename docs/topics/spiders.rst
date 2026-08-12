@@ -396,8 +396,12 @@ Start requests
 Delaying start request iteration
 --------------------------------
 
-You can override the :meth:`~scrapy.Spider.start` method as follows to pause
-its iteration whenever there are scheduled requests:
+Scrapy iterates :meth:`~scrapy.Spider.start` as fast as it yields, so all start
+requests reach the scheduler early in the crawl, however many they are. To
+minimize the number of requests in the scheduler at any given time, and with it
+resource usage (memory, or disk when using :setting:`JOBDIR`), override
+:meth:`~scrapy.Spider.start` to pause its iteration whenever there are
+scheduled requests:
 
 .. code-block:: python
 
@@ -407,9 +411,37 @@ its iteration whenever there are scheduled requests:
                 await self.crawler.signals.wait_for(signals.scheduler_empty)
             yield item_or_request
 
-This can help minimize the number of requests in the scheduler at any given
-time, to minimize resource usage (memory or disk, depending on
-:setting:`JOBDIR`).
+.. _start-error:
+
+Handling start errors
+---------------------
+
+An exception raised by :meth:`~scrapy.Spider.start` ends its iteration, so any
+remaining start items and requests are never sent. Scrapy logs the exception,
+sends the :signal:`spider_error` signal, and, once the already scheduled
+requests are done, closes the spider with the ``start_error``
+:stat:`finish_reason`.
+
+.. versionchanged:: VERSION
+   The close reason used to be ``finished``, and neither the
+   :signal:`spider_error` signal nor the :stat:`spider_exceptions/count` stat
+   reported the exception.
+
+To keep the iteration going, catch the exception yourself:
+
+.. code-block:: python
+
+    async def start(self):
+        for url in self.start_urls:
+            try:
+                request = Request(url)
+            except ValueError:
+                self.logger.exception(f"Skipping start URL {url}")
+            else:
+                yield request
+
+To stop the crawl instead, and choose your own :stat:`finish_reason`, raise
+:exc:`~scrapy.exceptions.CloseSpider`.
 
 .. _builtin-spiders:
 

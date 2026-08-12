@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
 from scrapy.core.scheduler import BaseScheduler
+from scrapy.exceptions import CloseSpider
 from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
@@ -139,6 +140,74 @@ class TestMain:
         assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "shutdown"
         assert not actual_urls
+
+    @coroutine_test
+    async def test_start_error(self, caplog: pytest.LogCaptureFixture) -> None:
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                yield Request("data:,a")
+                raise ValueError
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+        errors = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        def track_error(failure, response, spider):
+            errors.append((failure, response))
+
+        settings = {"SCHEDULER": MemoryScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        crawler.signals.connect(track_error, signals.spider_error)
+
+        caplog.clear()
+        with caplog.at_level(ERROR):
+            await crawler.crawl_async()
+
+        # The requests yielded before the exception are still crawled.
+        assert actual_urls == ["data:,a"]
+        assert len(caplog.records) == 1
+        assert len(errors) == 1
+        failure, response = errors[0]
+        assert isinstance(failure.value, ValueError)
+        assert response is None
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "start_error"
+        assert crawler.stats.get_value("spider_exceptions/count") == 1
+        assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
+
+    @coroutine_test
+    async def test_close_spider_from_start(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                yield Request("data:,a")
+                raise CloseSpider("my_reason")
+
+            def parse(self, response):
+                pass
+
+        settings = {"SCHEDULER": MemoryScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+
+        caplog.clear()
+        with caplog.at_level(ERROR):
+            await crawler.crawl_async()
+
+        assert not caplog.records
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "my_reason"
+        assert crawler.stats.get_value("spider_exceptions/count") is None
 
 
 class TestRequestSendOrder:
