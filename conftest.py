@@ -47,7 +47,7 @@ if not H2_ENABLED:
     collect_ignore.extend(
         (
             "scrapy/core/downloader/handlers/http2.py",
-            *_py_files("scrapy/core/http2"),
+            *_py_files("scrapy/core/_http2"),
         )
     )
 

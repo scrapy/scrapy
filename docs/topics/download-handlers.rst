@@ -191,12 +191,6 @@ If you want to use this handler you need to replace the default one for the
 Features and limitations
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. warning::
-
-    This handler is experimental, and not yet recommended for production
-    environments. Future Scrapy versions may introduce related changes without
-    a deprecation period or warning.
-
 =========================== ================================================
 HTTP proxies                No (not implemented)
 SOCKS proxies               No (not supported by the library)
