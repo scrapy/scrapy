@@ -81,17 +81,22 @@ class CheckSpider(scrapy.Spider):
         """
         self._test_contract(proj_path, contracts, parse_def, use_reactor=False)
 
-    @pytest.mark.parametrize("use_reactor", [True, False])
-    def test_check_crawl_error(self, proj_path: Path, use_reactor: bool) -> None:
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            "",
+            "TWISTED_REACTOR_ENABLED = False\n",
+            "FORCE_CRAWLER_PROCESS = True\n",
+        ],
+        ids=["async", "no_reactor", "crawler_process"],
+    )
+    def test_check_crawl_error(self, proj_path: Path, settings: str) -> None:
         self._write_contract(proj_path, "@returns requests 0", "pass")
         self._append_settings(
             proj_path / self.project_name,
-            "\nITEM_PIPELINES = {'nonexistent.module.Pipeline': 300}\n",
+            f"\nITEM_PIPELINES = {{'nonexistent.module.Pipeline': 300}}\n{settings}",
         )
-        args = ["check"]
-        if not use_reactor:
-            args += ["-s", "TWISTED_REACTOR_ENABLED=False"]
-        ret, _, err = proc(*args, cwd=proj_path)
+        ret, _, err = proc("check", cwd=proj_path)
         assert f"[{self.spider_name}] crawl" in err
         assert "ModuleNotFoundError" in err
         assert "FAILED (errors=1)" in err

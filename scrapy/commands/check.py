@@ -53,8 +53,8 @@ def _report_crawl_errors(
     up as an error in *result*, instead of being silently discarded."""
 
     class CrawlTestCase(TestCase):
-        def runTest(self) -> None:
-            pass
+        # unittest requires a test method, but this one is only reported, never run.
+        runTest = staticmethod(lambda: None)
 
         def __str__(self) -> str:
             return f"[{spidername}] crawl"
@@ -72,7 +72,8 @@ def _report_crawl_errors(
             report(failure.value)
 
         crawl.addErrback(on_failure)
-    elif isinstance(crawl, asyncio.Task):
+    else:
+        assert isinstance(crawl, asyncio.Task)
 
         def on_done(task: asyncio.Task[None]) -> None:
             if not task.cancelled() and (exception := task.exception()) is not None:
