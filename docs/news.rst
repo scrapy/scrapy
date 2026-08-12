@@ -3260,7 +3260,7 @@ Documentation
 -   Extended documentation for :attr:`.Request.meta`.
     (:issue:`5565`)
 
--   Fixed the :reqmeta:`dont_merge_cookies` documentation. (:issue:`5936`,
+-   Fixed the ``dont_merge_cookies`` documentation. (:issue:`5936`,
     :issue:`6077`)
 
 -   Added a link to Zyte's export guides to the :ref:`feed exports
@@ -9019,7 +9019,7 @@ Scrapy changes:
 - SitemapSpider: added support for sitemap urls ending in .xml and .xml.gz, even if they advertise a wrong content type (:commit:`10ed28b`)
 - StackTraceDump extension: also dump trackref live references (:commit:`fe2ce93`)
 - nested items now fully supported in JSON and JSONLines exporters
-- added :reqmeta:`cookiejar` Request meta key to support multiple cookie sessions per spider
+- added ``cookiejar`` Request meta key to support multiple cookie sessions per spider
 - decoupled encoding detection code to `w3lib.encoding`_, and ported Scrapy code to use that module
 - dropped support for Python 2.5. See https://www.zyte.com/blog/scrapy-0-15-dropping-support-for-python-2-5/
 - dropped support for Twisted 2.5

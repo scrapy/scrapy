@@ -2083,6 +2083,7 @@ Default:
     {
         "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 25,
         "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
+        "scrapy.spidermiddlewares.sessions.SessionsSpiderMiddleware": 375,
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,

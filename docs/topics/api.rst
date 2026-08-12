@@ -36,8 +36,9 @@ how you :ref:`configure the downloader middlewares
     :class:`scrapy.settings.Settings` object.
 
     The :attr:`engine`, :attr:`extensions`, :attr:`logformatter`,
-    :attr:`request_fingerprinter` and :attr:`stats` attributes get their value
-    when the crawl starts, and raise :exc:`RuntimeError` when read before that.
+    :attr:`request_fingerprinter`, :attr:`sessions` and :attr:`stats` attributes
+    get their value when the crawl starts, and raise :exc:`RuntimeError` when
+    read before that.
 
     .. versionchanged:: VERSION
         Those attributes used to be ``None`` before getting their value.
@@ -70,6 +71,8 @@ how you :ref:`configure the downloader middlewares
         For an introduction on signals see :ref:`topics-signals`.
 
         For the API see :class:`~scrapy.signalmanager.SignalManager` class.
+
+    .. autoattribute:: sessions
 
     .. attribute:: stats
 

@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+import warnings
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from tldextract import TLDExtract
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
+from scrapy.sessions import _MAIN_ID
+from scrapy.utils.datatypes import LocalCache
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
@@ -24,6 +26,7 @@ if TYPE_CHECKING:
     from scrapy import Request, Spider
     from scrapy.crawler import Crawler
     from scrapy.http.request import VerboseCookie
+    from scrapy.sessions import Session
 
 
 logger = logging.getLogger(__name__)
@@ -43,9 +46,15 @@ class CookiesMiddleware:
 
     crawler: Crawler
 
+    _DEPRECATED_KEYS: ClassVar[dict[str, str]] = {
+        "cookiejar": "Use the session request meta key instead.",
+        "dont_merge_cookies": "Set the session request meta key to None instead.",
+    }
+
     def __init__(self, debug: bool = False):
-        self.jars: defaultdict[Any, CookieJar] = defaultdict(CookieJar)
         self.debug: bool = debug
+        # Session ID of every cookiejar meta key seen so far, for self.jars.
+        self._session_ids: LocalCache[Any, str] = LocalCache()
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -53,7 +62,52 @@ class CookiesMiddleware:
             raise NotConfigured
         o = cls(crawler.settings.getbool("COOKIES_DEBUG"))
         o.crawler = crawler
+        o._session_ids.limit = crawler.settings.getint("SESSIONS_MAX")
         return o
+
+    @property
+    def jars(self) -> dict[Any, CookieJar]:
+        """Cookie jars of the :reqmeta:`cookiejar` request meta keys seen so
+        far."""
+        warnings.warn(
+            "CookiesMiddleware.jars is deprecated, use Crawler.sessions instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        sessions = self.crawler.sessions
+        return {key: sessions[id_].cookies for key, id_ in self._session_ids.items()}
+
+    def _session(self, request: Request) -> Session | None:
+        """Return the session of *request*, or ``None`` if it has none."""
+        has_session = "session" in request.meta
+        for key in self._DEPRECATED_KEYS:
+            if key in request.meta:
+                self._warn_deprecated_key(key, ignored=has_session)
+        if has_session:
+            session_id = request.meta["session"]
+            return None if session_id is None else self.crawler.sessions[session_id]
+        if request.meta.get("dont_merge_cookies", False):
+            return None
+        jar_key = request.meta.get("cookiejar")
+        jar_id = _MAIN_ID if jar_key is None else f"cookiejar:{jar_key!r}"
+        self._session_ids[jar_key] = jar_id
+        return self.crawler.sessions[jar_id]
+
+    def _warn_deprecated_key(self, key: str, *, ignored: bool) -> None:
+        if ignored:
+            message = (
+                f"The {key} request meta key is deprecated, and it is being "
+                f"ignored because the session request meta key is set on the "
+                f"same request. Remove {key}."
+            )
+        else:
+            message = (
+                f"The {key} request meta key is deprecated. "
+                f"{self._DEPRECATED_KEYS[key]} Note that, unlike {key}, session "
+                f"is inherited by the follow-up requests that a spider callback "
+                f"yields."
+            )
+        warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=3)
 
     def _process_cookies(
         self, cookies: Iterable[Cookie], *, jar: CookieJar, request: Request
@@ -77,30 +131,34 @@ class CookiesMiddleware:
     def process_request(
         self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
-        if request.meta.get("dont_merge_cookies", False):
+        session = self._session(request)
+        if session is None:
+            # The cookies of the request are its own, so they are sent even with
+            # no session to merge them into; a jar that no one keeps turns them
+            # into a Cookie header. dont_merge_cookies drops them instead.
+            if request.cookies and not request.meta.get("dont_merge_cookies", False):
+                self._set_cookie_header(CookieJar(), request)
             return None
+        self._set_cookie_header(session.cookies, request)
+        return None
 
-        cookiejarkey = request.meta.get("cookiejar")
-        jar = self.jars[cookiejarkey]
+    def _set_cookie_header(self, jar: CookieJar, request: Request) -> None:
         cookies = self._get_request_cookies(jar, request)
         self._process_cookies(cookies, jar=jar, request=request)
-
-        # set Cookie header
         request.headers.pop("Cookie", None)
         jar.add_cookie_header(request)
         self._debug_cookie(request)
-        return None
 
     @_warn_spider_arg
     def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
-        if request.meta.get("dont_merge_cookies", False):
+        session = self._session(request)
+        if session is None:
             return response
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
-        cookiejarkey = request.meta.get("cookiejar")
-        jar = self.jars[cookiejarkey]
+        jar = session.cookies
         cookies = jar.make_cookies(response, request)
         self._process_cookies(cookies, jar=jar, request=request)
 

@@ -722,6 +722,22 @@ one per actual value of the placeholder.
     :ref:`serialized <request-serialization>`, and hence were stored into the
     memory queue instead.
 
+.. stat:: sessions/created
+
+``sessions/created``
+    Number of :ref:`sessions <sessions>` created.
+
+.. stat:: sessions/dropped
+
+``sessions/dropped``
+    Number of sessions dropped to stay within :setting:`SESSIONS_MAX`.
+
+.. stat:: sessions/retired
+
+``sessions/retired``
+    Number of sessions deleted with
+    :meth:`~scrapy.sessions.Sessions.retire`.
+
 .. stat:: spider_exceptions/count
 
 ``spider_exceptions/count``
