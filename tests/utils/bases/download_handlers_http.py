@@ -1577,6 +1577,12 @@ class TestMitmProxyBase(ABC):
         assert "Proxy Authentication Required" in log or "407" in log
 
 
+# Tests below are rerun on failure (see pytest_collection_modifyitems() in the
+# root conftest.py), so an attempt must give up soon enough for a rerun to be
+# cheap.
+REAL_WEBSITE_SETTINGS = {"DOWNLOAD_TIMEOUT": 30}
+
+
 class TestRealWebsiteBase(ABC):
     @property
     @abstractmethod
@@ -1601,7 +1607,9 @@ class TestRealWebsiteBase(ABC):
     async def get_dh(
         self, settings_dict: dict[str, Any] | None = None
     ) -> AsyncGenerator[DownloadHandlerProtocol]:
-        crawler = get_crawler(DefaultSpider, settings_dict)
+        crawler = get_crawler(
+            DefaultSpider, {**REAL_WEBSITE_SETTINGS, **(settings_dict or {})}
+        )
         crawler.spider = crawler._create_spider()
         dh = build_from_crawler(self.download_handler_cls, crawler)
         try:
@@ -1619,7 +1627,9 @@ class TestRealWebsiteBase(ABC):
 
     @coroutine_test
     async def test_download_with_spider(self) -> None:
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        crawler = get_crawler(
+            SingleRequestSpider, {**REAL_WEBSITE_SETTINGS, **(self.settings_dict or {})}
+        )
         await maybe_deferred_to_future(
             crawler.crawl(seed=Request("https://books.toscrape.com/"))
         )
