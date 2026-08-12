@@ -136,6 +136,11 @@ class TestHttpCompression:
         self.mw.process_request(request)
         assert request.headers.get("Accept-Encoding") == b", ".join(ACCEPTED_ENCODINGS)
 
+    def test_process_request_body_file(self):
+        request = Request("https://example.com", meta={"body_file": "body"})
+        self.mw.process_request(request)
+        assert "Accept-Encoding" not in request.headers
+
     def test_process_response_gzip(self):
         response = self._getresponse("gzip")
         assert response.request

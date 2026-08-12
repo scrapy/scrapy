@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from contextlib import suppress
 from enum import Enum
-from io import BytesIO
 from typing import TYPE_CHECKING, Any
 
 from h2.errors import ErrorCodes
@@ -17,6 +16,7 @@ from scrapy import signals
 from scrapy.exceptions import DownloadCancelledError, StopDownload
 from scrapy.http.headers import Headers
 from scrapy.utils._download_handlers import (
+    _BodySink,
     check_stop_download,
     get_maxsize_msg,
     get_warnsize_msg,
@@ -156,7 +156,7 @@ class Stream:
         self._response: dict[str, Any] = {
             # Data received frame by frame from the server is appended
             # and passed to the response Deferred when completely received.
-            "body": BytesIO(),
+            "body": _BodySink(request),
             # The amount of data received that counts against the
             # flow control window
             "flow_controlled_size": 0,
@@ -418,10 +418,9 @@ class Stream:
             raise StreamClosedError(self.stream_id)
 
         # The data received so far is the body of the response built for a
-        # stopped download, otherwise the buffer is cleared early to avoid
-        # keeping data in memory for a long time
+        # stopped download, otherwise it is discarded
         if reason is not StreamCloseReason.STOP_DOWNLOAD:
-            self._response["body"].truncate(0)
+            self._response["body"].truncate()
 
         self.metadata["stream_closed_local"] = True
         # The remote peer may have ended the stream already, e.g. because the
@@ -526,6 +525,8 @@ class Stream:
                     f"{self._protocol.metadata['ip_address']}:{self._protocol.metadata['uri'].port}",
                 )
             )
+
+        self._response["body"].close()
 
     def _fire_response_deferred(self) -> None:
         """Builds response from the self._response dict

@@ -55,6 +55,7 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
+    from pathlib import Path
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
@@ -864,6 +865,48 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.body == path.encode()
+
+    @coroutine_test
+    async def test_body_file_path(self, mockserver: MockServer, tmp_path: Path) -> None:
+        body_file = tmp_path / "body"
+        request = Request(
+            mockserver.url("/text", is_secure=self.is_secure),
+            meta={"body_file": str(body_file)},
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b""
+        assert body_file.read_bytes() == b"Works"
+
+    @coroutine_test
+    async def test_body_file_object(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        body_file = tmp_path / "body"
+        with body_file.open("wb") as f:
+            request = Request(
+                mockserver.url("/text", is_secure=self.is_secure),
+                meta={"body_file": f},
+            )
+            async with self.get_dh() as download_handler:
+                response = await download_handler.download_request(request)
+            assert not f.closed
+        assert response.body == b""
+        assert body_file.read_bytes() == b"Works"
+
+    @coroutine_test
+    async def test_body_file_empty_response(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        body_file = tmp_path / "body"
+        request = Request(
+            mockserver.url("/text", is_secure=self.is_secure),
+            method="HEAD",
+            meta={"body_file": str(body_file)},
+        )
+        async with self.get_dh() as download_handler:
+            await download_handler.download_request(request)
+        assert body_file.read_bytes() == b""
 
 
 class TestHttpsBase(TestHttpBase):

@@ -82,6 +82,10 @@ class HttpCompressionMiddleware:
     def process_request(
         self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
+        if "body_file" in request.meta:
+            # The body of these responses is written to a file as it is
+            # received, so there is nothing that could decompress it later.
+            return None
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
