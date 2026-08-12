@@ -99,7 +99,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     async def _evaluate_iterable(
         self,
-        response: Response,
+        response: Response | None,
         iterable: AsyncIterator[_T],
         exception_processor_index: int,
         recover_to: MutableAsyncChain[_T],
@@ -115,7 +115,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def _process_spider_exception(
         self,
-        response: Response,
+        response: Response | None,
         exception: Exception,
         start_index: int = 0,
     ) -> MutableAsyncChain[_T]:
@@ -151,7 +151,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def _process_spider_output(
         self,
-        response: Response,
+        response: Response | None,
         result: AsyncIterator[_T],
         start_index: int = 0,
     ) -> MutableAsyncChain[_T]:
@@ -172,7 +172,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return MutableAsyncChain(result, recovered)
 
     async def _process_callback_output(
-        self, response: Response, result: AsyncIterator[_T]
+        self, response: Response | None, result: AsyncIterator[_T]
     ) -> MutableAsyncChain[_T]:
         recovered: MutableAsyncChain[_T] = MutableAsyncChain()
         result = self._evaluate_iterable(response, result, 0, recovered)
@@ -226,6 +226,20 @@ class SpiderMiddlewareManager(MiddlewareManager):
         except Exception as ex:
             await _defer_sleep_async()
             return self._process_spider_exception(response, ex)
+
+    async def _scrape_failure_async(
+        self,
+        scrape_func: ScrapeFunc[_T],
+        failure: Failure,
+        request: Request,
+    ) -> MutableAsyncChain[_T]:
+        # There is no response to run the process_spider_input chain on, so the
+        # errback output enters the process_spider_output chain with None as the
+        # response. Exceptions from the errback itself are left to the caller,
+        # which tells apart the download error from a different one.
+        it: Iterable[_T] | AsyncIterator[_T] = await scrape_func(failure, request)
+        ait = it if isinstance(it, AsyncIterator) else as_async_generator(it)
+        return await self._process_callback_output(None, ait)
 
     async def process_start(
         self, spider: Spider | None = None
