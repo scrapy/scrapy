@@ -40,6 +40,47 @@ STOP_TIMEOUT = 2.0
 
 
 class RemoteControl:
+    """Provides an HTTP server that can run Python code passed to it in HTTP requests
+    and return the output in responses.
+
+    The code runs inside the Scrapy process and has access to the
+    :class:`~scrapy.crawler.Crawler` instance in the ``crawler`` variable and
+    to a persistent dictionary in the ``stash`` variable.
+
+    This extension can be disabled by setting the
+    :setting:`REMOTE_CONTROL_ENABLED` setting to ``False``. It requires
+    :ref:`asyncio support <using-asyncio>` and will be disabled without it.
+
+    The HTTP server listens on a random port on ``localhost`` and requires a
+    ``Bearer`` token for authentication. The token and port are written to a
+    job file in the user's profile directory so that other processes can
+    discover and use them to connect to the server.
+
+    Available endpoints:
+
+    - ``/execute``: expects a ``POST`` request with a JSON object containing
+      the following keys:
+
+        - ``code`` (string): Python code to execute.
+        - ``timeout_sec`` (number, optional): the maximum number of seconds
+          to allow the code to run.
+
+        The response is a JSON object with the following keys:
+
+        - ``status`` (string): one of ``"ok"``, ``"compile_error"``,
+          ``"error"``, or ``"timeout"``.
+        - ``output`` (string): the output of the code.
+        - ``traceback`` (string or null): the traceback if an exception was
+          raised.
+        - ``elapsed_sec`` (number): the number of seconds the code took to run.
+        - ``output_truncated`` (boolean, optional): whether the output was
+          truncated.
+        - ``traceback_truncated`` (boolean, optional): whether the traceback
+          was truncated.
+
+    .. versionadded:: VERSION
+    """
+
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("REMOTE_CONTROL_ENABLED"):
             raise NotConfigured

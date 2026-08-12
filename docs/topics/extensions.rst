@@ -502,10 +502,4 @@ Remote control extension
 .. module:: scrapy.extensions.remote_control
    :synopsis: Remote control extension
 
-.. class:: RemoteControl
-
-Provides an HTTP server
-
-The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
-setting, and the server will listen in the port specified in
-:setting:`TELNETCONSOLE_PORT`.
+.. autoclass:: RemoteControl
