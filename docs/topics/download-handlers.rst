@@ -215,12 +215,8 @@ Known limitations of the HTTP/2 support:
 -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
     HTTP/2 unencrypted (refer `http2 faq`_).
 
--   No setting to specify a maximum `frame size`_ larger than the default
-    value, 16384. Connections to servers that send a larger frame will fail.
-
 -   No support for `server pushes`_, which are ignored.
 
-.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
