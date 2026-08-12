@@ -39,7 +39,7 @@ how you :ref:`configure the downloader middlewares
     :attr:`request_fingerprinter` and :attr:`stats` attributes get their value
     when the crawl starts, and raise :exc:`RuntimeError` when read before that.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
         Those attributes used to be ``None`` before getting their value.
 
     .. attribute:: request_fingerprinter

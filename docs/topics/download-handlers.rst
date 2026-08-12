@@ -252,7 +252,7 @@ Per-request ``bindaddress`` Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.18.0
    Bad header lines with no colon in them are now skipped, instead of making
    the whole response impossible to download.
 

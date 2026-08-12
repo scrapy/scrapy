@@ -3,8 +3,8 @@
 Release notes
 =============
 
-Scrapy VERSION (unreleased)
----------------------------
+Scrapy 2.18.0 (unreleased)
+--------------------------
 
 Highlights:
 
