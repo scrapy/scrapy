@@ -908,6 +908,20 @@ class TestHttpBase(ABC):
             await download_handler.download_request(request)
         assert body_file.read_bytes() == b""
 
+    @coroutine_test
+    async def test_body_file_maxsize(
+        self, mockserver: MockServer, tmp_path: Path
+    ) -> None:
+        body_file = tmp_path / "body"
+        request = Request(
+            mockserver.url("/largechunkedfile", is_secure=self.is_secure),
+            meta={"body_file": str(body_file)},
+        )
+        async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
+            with pytest.raises(DownloadCancelledError):
+                await download_handler.download_request(request)
+        assert body_file.stat().st_size > 1_500
+
 
 class TestHttpsBase(TestHttpBase):
     is_secure = True
