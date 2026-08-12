@@ -186,6 +186,8 @@ class BlockingFeedStorage(ABC):
 
 
 class StdoutFeedStorage:
+    """:ref:`Standard output <topics-feed-storage-stdout>` storage backend."""
+
     def __init__(
         self,
         uri: str,
@@ -212,6 +214,12 @@ class StdoutFeedStorage:
 
 
 class FileFeedStorage:
+    """:ref:`Local filesystem <topics-feed-storage-fs>` storage backend.
+
+    *uri* may be a ``file://`` URI or a plain path. Missing parent directories
+    are created when the feed is opened.
+    """
+
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         self.path: str = file_uri_to_path(uri) if uri.startswith("file:") else uri
         feed_options = feed_options or {}
@@ -231,6 +239,8 @@ class FileFeedStorage:
 
 
 class S3FeedStorage(BlockingFeedStorage):
+    """:ref:`Amazon S3 <topics-feed-storage-s3>` storage backend."""
+
     def __init__(
         self,
         uri: str,
@@ -325,6 +335,8 @@ class S3FeedStorage(BlockingFeedStorage):
 
 
 class GCSFeedStorage(BlockingFeedStorage):
+    """:ref:`GCS <topics-feed-storage-gcs>` storage backend."""
+
     def __init__(
         self,
         uri: str,
@@ -376,6 +388,9 @@ class GCSFeedStorage(BlockingFeedStorage):
 
 
 class FTPFeedStorage(BlockingFeedStorage):
+    """:ref:`FTP <feed-storage-ftp>` storage backend, which also handles
+    :ref:`FTPS <feed-storage-ftps>` when *uri* uses the ``ftps`` scheme."""
+
     def __init__(
         self,
         uri: str,
