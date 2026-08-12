@@ -41,22 +41,22 @@ class InactiveStreamClosed(ConnectionClosed):
     streams to close and connection is lost."""
 
     def __init__(self, request: Request) -> None:
+        super().__init__(
+            f"Connection was closed without sending the request {request!r}"
+        )
         self.request = request
-
-    def __str__(self) -> str:
-        return f"InactiveStreamClosed: Connection was closed without sending the request {self.request!r}"
 
 
 class InvalidHostname(H2Error):
     def __init__(
         self, request: Request, expected_hostname: str, expected_netloc: str
     ) -> None:
+        super().__init__(
+            f"Expected {expected_hostname} or {expected_netloc} in {request}"
+        )
         self.request = request
         self.expected_hostname = expected_hostname
         self.expected_netloc = expected_netloc
-
-    def __str__(self) -> str:
-        return f"InvalidHostname: Expected {self.expected_hostname} or {self.expected_netloc} in {self.request}"
 
 
 class StreamCloseReason(Enum):
@@ -177,9 +177,6 @@ class Stream:
         else:
             self.close(StreamCloseReason.CANCELLED)
 
-    def __repr__(self) -> str:
-        return f"Stream(id={self.stream_id!r})"
-
     @property
     def _log_warnsize(self) -> bool:
         """Checks if we have received data which exceeds the download warnsize
@@ -285,14 +282,7 @@ class Stream:
 
         If the content length is 0 initially then we end the stream immediately and
         wait for response data.
-
-        Warning: Only call this method when stream not closed from client side
-           and has initiated request already by sending HEADER frame. If not then
-           stream will raise ProtocolError (raise by h2 state machine).
         """
-        if self.metadata["stream_closed_local"]:
-            raise StreamClosedError(self.stream_id)
-
         # Firstly, check what the flow control window is for current stream.
         window_size = self._protocol.conn.local_flow_control_window(
             stream_id=self.stream_id
@@ -414,9 +404,6 @@ class Stream:
 
     def reset_stream(self, reason: StreamCloseReason = StreamCloseReason.RESET) -> None:
         """Close this stream by sending a RST_FRAME to the remote peer"""
-        if self.metadata["stream_closed_local"]:
-            raise StreamClosedError(self.stream_id)
-
         # The data received so far is the body of the response built for a
         # stopped download, otherwise the buffer is cleared early to avoid
         # keeping data in memory for a long time
@@ -438,14 +425,6 @@ class Stream:
         from_protocol: bool = False,
     ) -> None:
         """Based on the reason sent we will handle each case."""
-        if self.metadata["stream_closed_server"]:
-            raise StreamClosedError(self.stream_id)
-
-        if not isinstance(reason, StreamCloseReason):
-            raise TypeError(
-                f"Expected StreamCloseReason, received {reason.__class__.__qualname__}"
-            )
-
         # Have default value of errors as an empty list as
         # some cases can add a list of exceptions
         errors = errors or ()
