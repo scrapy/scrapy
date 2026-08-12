@@ -142,7 +142,7 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
                 response = await download_handler.download_request(request)
         assert response.text == actual_content_length
         assert (
-            "scrapy.core.http2.stream",
+            "scrapy.core._http2.stream",
             logging.WARNING,
             f"Ignoring bad Content-Length header "
             f"{bad_content_length!r} of request {request}, sending "

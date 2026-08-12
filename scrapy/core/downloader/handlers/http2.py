@@ -5,9 +5,9 @@ from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
+from scrapy.core._http2.agent import H2Agent, H2ConnectionPool
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
 from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,

@@ -40,7 +40,7 @@ from tests.mockserver.utils import ssl_context_factory
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine, Generator
 
-    from scrapy.core.http2.protocol import H2ClientProtocol
+    from scrapy.core._http2.protocol import H2ClientProtocol
 
 
 pytestmark = [
@@ -246,7 +246,7 @@ class TestHttps2ClientProtocol:
     ) -> AsyncGenerator[H2ClientProtocol]:
         from twisted.internet import reactor
 
-        from scrapy.core.http2.protocol import H2ClientFactory  # noqa: PLC0415
+        from scrapy.core._http2.protocol import H2ClientFactory  # noqa: PLC0415
 
         client_options = optionsForClientTLS(
             hostname=self.host,
@@ -466,7 +466,7 @@ class TestHttps2ClientProtocol:
     def test_invalid_negotiated_protocol(
         self, server_port: int, client: H2ClientProtocol
     ) -> Generator[Deferred[Any], Any, None]:
-        with mock.patch("scrapy.core.http2.protocol.PROTOCOL_NAME", new=b"not-h2"):
+        with mock.patch("scrapy.core._http2.protocol.PROTOCOL_NAME", new=b"not-h2"):
             request = Request(url=self.get_url(server_port, "/status?n=200"))
             with pytest.raises(ResponseFailed):
                 yield make_request_dfd(client, request)
@@ -536,7 +536,7 @@ class TestHttps2ClientProtocol:
         expected_body: bytes,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        with caplog.at_level("WARNING", "scrapy.core.http2.stream"):
+        with caplog.at_level("WARNING", "scrapy.core._http2.stream"):
             response = await make_request(client, request)
         assert response.status == 200
         assert response.body == expected_body
@@ -614,7 +614,7 @@ class TestHttps2ClientProtocol:
         def assert_inactive_stream(failure):
             assert failure.check(ResponseFailed) is not None
 
-            from scrapy.core.http2.stream import InactiveStreamClosed  # noqa: PLC0415
+            from scrapy.core._http2.stream import InactiveStreamClosed  # noqa: PLC0415
 
             assert any(
                 isinstance(e, InactiveStreamClosed) for e in failure.value.reasons
@@ -701,7 +701,7 @@ class TestHttps2ClientProtocol:
 
     @staticmethod
     async def _check_invalid_netloc(client: H2ClientProtocol, url: str) -> None:
-        from scrapy.core.http2.stream import InvalidHostname  # noqa: PLC0415
+        from scrapy.core._http2.stream import InvalidHostname  # noqa: PLC0415
 
         request = Request(url)
         with pytest.raises(InvalidHostname) as exc_info:
@@ -746,7 +746,7 @@ class TestHttps2ClientProtocol:
             yield make_request_dfd(client, request)
 
         for err in exc_info.value.reasons:
-            from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
+            from scrapy.core._http2.protocol import H2ClientProtocol  # noqa: PLC0415
 
             if isinstance(err, DownloadTimeoutError):
                 assert (
