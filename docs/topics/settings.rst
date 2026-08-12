@@ -1529,6 +1529,20 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+.. setting:: ITEM_PROCESSOR
+
+ITEM_PROCESSOR
+--------------
+
+Default: ``"scrapy.pipelines.ItemPipelineManager"``
+
+The :ref:`component <topics-components>` that builds the :ref:`item pipeline
+<topics-item-pipeline>` from :setting:`ITEM_PIPELINES` and runs scraped items
+through it. It must implement :class:`~scrapy.pipelines.ItemProcessorProtocol`.
+
+.. autoclass:: scrapy.pipelines.ItemProcessorProtocol
+    :members:
+
 
 .. setting:: JOBDIR
 
