@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 from io import StringIO
 from unittest import mock
@@ -46,13 +48,13 @@ Bar                                 1   oldest: 0s ago
 
 
 @mock.patch("sys.stdout", new_callable=StringIO)
-def test_print_live_refs_empty(stdout):
+def test_print_live_refs_empty(stdout: StringIO) -> None:
     trackref.print_live_refs()
     assert stdout.getvalue() == "Live References\n\n\n"
 
 
 @mock.patch("sys.stdout", new_callable=StringIO)
-def test_print_live_refs_with_objects(stdout):
+def test_print_live_refs_with_objects(stdout: StringIO) -> None:
     o1 = Foo()  # noqa: F841
     trackref.print_live_refs()
     assert (
@@ -122,3 +124,13 @@ def test_iter_all():
     o2 = Bar()  # noqa: F841
     o3 = Foo()
     assert set(trackref.iter_all("Foo")) == {o1, o3}
+
+
+def test_run_time_classes() -> None:
+    for _ in range(10):
+        base = type("Baz", (trackref.object_ref,), {})
+        base()
+    del base
+    garbage_collect()
+    assert not list(trackref.iter_all("Baz"))
+    assert sum(1 for cls in trackref.live_refs if cls.__name__ == "Baz") == 0

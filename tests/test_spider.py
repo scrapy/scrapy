@@ -1,11 +1,26 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
-from scrapy.http import Response, TextResponse, XmlResponse
+from scrapy.http import Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import CSVFeedSpider, Spider, XMLFeedSpider
 from tests import get_testdata
+from tests.spiders import RawResponseSpider
 from tests.utils.bases.spider import TestSpiderBase
+from tests.utils.crawl import crawl_items
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
+
+
+class RawFeedSpider(RawResponseSpider):
+    content_type = "text/xml"
+
+    async def start(self):
+        yield Request(self.raw_url)
 
 
 class TestSpider(TestSpiderBase):
@@ -60,6 +75,89 @@ class TestXMLFeedSpider(TestSpiderBase):
                 },
             ], iterator
 
+    @coroutine_test
+    async def test_parse_node_uses_parse_item(self, mockserver: MockServer):
+        # parse_node falls back to parse_item for backward compatibility.
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            itertag = "item"
+
+            def raw_body(self):
+                return "<items><item><id>1</id></item></items>"
+
+            def parse_item(self, response, selector):
+                return {"id": selector.xpath("id/text()").get()}
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"id": "1"}]
+
+    @coroutine_test
+    async def test_parse_node_not_defined(self, mockserver: MockServer):
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            itertag = "item"
+
+            def raw_body(self):
+                return "<items><item><id>1</id></item></items>"
+
+        items, crawler = await crawl_items(_Spider, mockserver)
+        assert items == []
+        assert crawler.stats
+        assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
+
+    @coroutine_test
+    async def test_html_iterator(self, mockserver: MockServer):
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            iterator = "html"
+            itertag = "item"
+            content_type = "text/html"
+
+            def raw_body(self):
+                return (
+                    "<html><body><item><id>1</id></item>"
+                    "<item><id>2</id></item></body></html>"
+                )
+
+            def parse_node(self, response, selector):
+                return {"id": selector.xpath("id/text()").get()}
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"id": "1"}, {"id": "2"}]
+
+    @coroutine_test
+    async def test_unsupported_iterator(self, mockserver: MockServer):
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            iterator = "unsupported"
+
+            def raw_body(self):
+                return "<items><item/></items>"
+
+            def parse_node(self, response, selector):
+                return {}
+
+        items, crawler = await crawl_items(_Spider, mockserver)
+        assert items == []
+        assert crawler.stats
+        assert crawler.stats.get_value("spider_exceptions/NotSupported") == 1
+
+    @pytest.mark.parametrize("feed_iterator", ["xml", "html"])
+    @coroutine_test
+    async def test_non_text_response(self, feed_iterator: str, mockserver: MockServer):
+        # The xml and html iterators require a text response.
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            content_type = "application/octet-stream"
+            iterator = feed_iterator
+
+            def raw_body(self):
+                # A binary (non-text) body, so the response is a plain Response.
+                return "\x00\x01\x02\x03"
+
+            def parse_node(self, response, selector):
+                return {}
+
+        items, crawler = await crawl_items(_Spider, mockserver)
+        assert items == []
+        assert crawler.stats
+        assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
+
 
 class TestCSVFeedSpider(TestSpiderBase):
     spider_class = CSVFeedSpider
@@ -80,6 +178,36 @@ class TestCSVFeedSpider(TestSpiderBase):
         rows = list(spider.parse_rows(response))
         assert rows[0] == {"id": "1", "name": "alpha", "value": "foobar"}
         assert len(rows) == 4
+
+    @coroutine_test
+    async def test_parse(self, mockserver: MockServer):
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            content_type = "text/csv"
+            delimiter = ","
+            quotechar = "'"
+
+            def raw_body(self):
+                return get_testdata("feeds", "feed-sample6.csv").decode()
+
+            def parse_row(self, response, row):
+                return row
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items[0] == {"id": "1", "name": "alpha", "value": "foobar"}
+        assert len(items) == 4
+
+    @coroutine_test
+    async def test_parse_row_not_defined(self, mockserver: MockServer):
+        class _Spider(RawFeedSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            content_type = "text/csv"
+
+            def raw_body(self):
+                return "id\n1\n"
+
+        items, crawler = await crawl_items(_Spider, mockserver)
+        assert items == []
+        assert crawler.stats
+        assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
 
 
 class TestNoParseMethodSpider:

@@ -20,6 +20,7 @@ from scrapy.squeues import (
     PickleFifoDiskQueue,
     PickleLifoDiskQueue,
 )
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -114,8 +115,8 @@ class TestPickleFifoDiskQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        queue = PickleFifoDiskQueue.from_crawler(
-            crawler=crawler, key=str(tmp_path / "pickle" / "fifo")
+        queue = build_from_crawler(
+            PickleFifoDiskQueue, crawler, key=str(tmp_path / "pickle" / "fifo")
         )
         try:
             yield queue
@@ -128,8 +129,8 @@ class TestPickleLifoDiskQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        queue = PickleLifoDiskQueue.from_crawler(
-            crawler=crawler, key=str(tmp_path / "pickle" / "lifo")
+        queue = build_from_crawler(
+            PickleLifoDiskQueue, crawler, key=str(tmp_path / "pickle" / "lifo")
         )
         try:
             yield queue
@@ -142,8 +143,8 @@ class TestMarshalFifoDiskQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        queue = MarshalFifoDiskQueue.from_crawler(
-            crawler=crawler, key=str(tmp_path / "marshal" / "fifo")
+        queue = build_from_crawler(
+            MarshalFifoDiskQueue, crawler, key=str(tmp_path / "marshal" / "fifo")
         )
         try:
             yield queue
@@ -156,8 +157,8 @@ class TestMarshalLifoDiskQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        queue = MarshalLifoDiskQueue.from_crawler(
-            crawler=crawler, key=str(tmp_path / "marshal" / "lifo")
+        queue = build_from_crawler(
+            MarshalLifoDiskQueue, crawler, key=str(tmp_path / "marshal" / "lifo")
         )
         try:
             yield queue
@@ -170,7 +171,7 @@ class TestFifoMemoryQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler):
-        return FifoMemoryQueue.from_crawler(crawler=crawler)
+        return build_from_crawler(FifoMemoryQueue, crawler)
 
 
 class TestLifoMemoryQueueRequest(TestRequestQueueBase):
@@ -178,4 +179,4 @@ class TestLifoMemoryQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler):
-        return LifoMemoryQueue.from_crawler(crawler=crawler)
+        return build_from_crawler(LifoMemoryQueue, crawler)

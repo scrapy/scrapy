@@ -31,13 +31,13 @@ plain_string = "{'a': 1}"
 
 @mock.patch("sys.platform", "linux")
 @mock.patch("sys.stdout.isatty")
-def test_pformat(isatty):
+def test_pformat(isatty: mock.Mock) -> None:
     isatty.return_value = True
     assert pformat(value) in colorized_strings
 
 
 @mock.patch("sys.stdout.isatty")
-def test_pformat_dont_colorize(isatty):
+def test_pformat_dont_colorize(isatty: mock.Mock) -> None:
     isatty.return_value = True
     assert pformat(value, colorize=False) == plain_string
 
@@ -49,7 +49,7 @@ def test_pformat_not_tty():
 @mock.patch("sys.platform", "win32")
 @mock.patch("platform.version")
 @mock.patch("sys.stdout.isatty")
-def test_pformat_old_windows(isatty, version):
+def test_pformat_old_windows(isatty: mock.Mock, version: mock.Mock) -> None:
     isatty.return_value = True
     version.return_value = "10.0.14392"
     assert pformat(value) in colorized_strings
@@ -59,7 +59,9 @@ def test_pformat_old_windows(isatty, version):
 @mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
 @mock.patch("platform.version")
 @mock.patch("sys.stdout.isatty")
-def test_pformat_windows_no_terminal_processing(isatty, version, terminal_processing):
+def test_pformat_windows_no_terminal_processing(
+    isatty: mock.Mock, version: mock.Mock, terminal_processing: mock.Mock
+) -> None:
     isatty.return_value = True
     version.return_value = "10.0.14393"
     terminal_processing.return_value = False
@@ -70,7 +72,9 @@ def test_pformat_windows_no_terminal_processing(isatty, version, terminal_proces
 @mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
 @mock.patch("platform.version")
 @mock.patch("sys.stdout.isatty")
-def test_pformat_windows(isatty, version, terminal_processing):
+def test_pformat_windows(
+    isatty: mock.Mock, version: mock.Mock, terminal_processing: mock.Mock
+) -> None:
     isatty.return_value = True
     version.return_value = "10.0.14393"
     terminal_processing.return_value = True
@@ -79,7 +83,7 @@ def test_pformat_windows(isatty, version, terminal_processing):
 
 @mock.patch("sys.platform", "linux")
 @mock.patch("sys.stdout.isatty")
-def test_pformat_no_pygments(isatty):
+def test_pformat_no_pygments(isatty: mock.Mock) -> None:
     isatty.return_value = True
 
     real_import = builtins.__import__

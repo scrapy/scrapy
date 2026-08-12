@@ -69,9 +69,10 @@ Example::
 precedence and override the project ones.
 
 .. note:: :ref:`Pre-crawler settings <pre-crawler-settings>` cannot be defined
-    per spider, and :ref:`reactor settings <reactor-settings>` should not have
-    a different value per spider when :ref:`running multiple spiders in the
-    same process <run-multiple-spiders>`.
+    per spider, and :ref:`reactor settings <reactor-settings>` and
+    :ref:`logging settings <logging-settings>` are subject to restrictions when
+    :ref:`running multiple spiders in the same process
+    <run-multiple-spiders>`.
 
 One way to do so is by setting their :attr:`~scrapy.Spider.custom_settings`
 attribute:
@@ -305,10 +306,21 @@ These settings cannot be :ref:`set from a spider <spider-settings>`.
 
 These settings are:
 
--   :setting:`TWISTED_REACTOR_ENABLED`
+-   :setting:`ADDONS`
+-   :setting:`COMMANDS_MODULE`
+-   :setting:`FORCE_CRAWLER_PROCESS`
 -   :setting:`SPIDER_LOADER_CLASS` and settings used by the corresponding
     spider loader class, e.g. :setting:`SPIDER_MODULES` and
     :setting:`SPIDER_LOADER_WARN_ONLY` for the default spider loader class.
+-   :setting:`TWISTED_REACTOR_ENABLED`
+
+:setting:`ADDONS` is a special case: it can be set from a spider, but the
+``update_pre_crawler_settings()`` method of :ref:`add-ons <topics-addons>`
+enabled that way is not called.
+
+:setting:`TWISTED_REACTOR` also acts as a pre-crawler setting when running a
+:ref:`command that needs a CrawlerProcess <topics-commands-crawlerprocess>`,
+since its project-level value determines the crawler process class.
 
 .. _reactor-settings:
 
@@ -318,19 +330,28 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
-These settings can be defined from a spider. However, because only 1 reactor
-can be used per process, these settings cannot use a different value per spider
-when :ref:`running multiple spiders in the same process
-<run-multiple-spiders>`.
+Because only 1 reactor can be used per process, these settings cannot use a
+different value per spider when :ref:`running multiple spiders in the same
+process <run-multiple-spiders>`.
 
-In general, if different spiders define different values, the first defined
-value is used. However, if two spiders request a different reactor, an
-exception is raised.
-
-These settings are:
+These settings are used upon installing the reactor:
 
 -   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
     :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
+
+-   :setting:`TWISTED_REACTOR` (ignored when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
+
+They can be :ref:`set from a spider <spider-settings>`, but only the values
+from the first spider that runs are used, since that is when the reactor is
+installed. If a later spider asks for a different reactor or a different event
+loop, an exception is raised. With
+:class:`~scrapy.crawler.CrawlerRunner` and
+:class:`~scrapy.crawler.AsyncCrawlerRunner` the reactor must be installed
+beforehand, so these settings are only used to check that the installed reactor
+and event loop match them.
+
+These settings are applied when starting the reactor:
 
 -   :setting:`TWISTED_DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
@@ -338,12 +359,12 @@ These settings are:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
--   :setting:`TWISTED_REACTOR` (ignored when using
-    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
-
-:setting:`ASYNCIO_EVENT_LOOP` and :setting:`TWISTED_REACTOR` are used upon
-installing the reactor. The rest of the settings are applied when starting
-the reactor.
+They are read from the settings of the
+:class:`~scrapy.crawler.CrawlerProcess` or
+:class:`~scrapy.crawler.AsyncCrawlerProcess` object, so setting them from a
+spider or an :ref:`add-on <topics-addons>` has no effect. They are ignored
+altogether when using :class:`~scrapy.crawler.CrawlerRunner` or
+:class:`~scrapy.crawler.AsyncCrawlerRunner`, which do not start the reactor.
 
 There is an additional restriction for :setting:`TWISTED_REACTOR` and
 :setting:`ASYNCIO_EVENT_LOOP` when using
@@ -409,6 +430,9 @@ Default: ``{}``
 A dict containing paths to the add-ons enabled in your project and their
 priorities. For more information, see :ref:`topics-addons`.
 
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`, with a
+    caveat described in that section.
+
 .. setting:: ASYNCIO_EVENT_LOOP
 
 ASYNCIO_EVENT_LOOP
@@ -457,6 +481,26 @@ AWS_ENDPOINT_URL
 Default: ``None``
 
 Endpoint URL used for S3-like storage, for example Minio or s3.scality.
+
+.. setting:: AWS_MAX_POOL_CONNECTIONS
+
+AWS_MAX_POOL_CONNECTIONS
+------------------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Maximum number of connections that AWS clients, such as those of the
+:ref:`S3 feed storage backend <topics-feed-storage-s3>` and of the
+:ref:`S3 media pipeline storage backend <media-pipelines-s3>`, keep in their
+connection pool.
+
+If ``None``, the value of :setting:`REACTOR_THREADPOOL_MAXSIZE` is used.
+
+Values lower than the number of parallel AWS calls do not limit those calls, but
+their connections are closed instead of reused, which hurts performance, and
+``Connection pool is full, discarding connection`` warnings are logged.
 
 .. setting:: AWS_REGION_NAME
 
@@ -541,7 +585,7 @@ CONCURRENT_REQUESTS
 Default: ``16``
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed by the Scrapy downloader.
+performed by the Scrapy downloader. Use ``0`` for no limit.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
@@ -620,9 +664,13 @@ The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
 
 .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-    :ref:`cookies-mw`. If you need to set cookies for a request, use the
-    :class:`Request.cookies <scrapy.Request>` parameter. This is a known
-    current limitation that is being worked on.
+    :ref:`cookie middleware <cookies>`. If you need to set cookies for a
+    request, use the :class:`Request.cookies <scrapy.Request>` parameter.
+
+.. caution:: A ``Referer`` header defined here only reaches requests for which
+    :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` does not set
+    one, such as start requests. To send it on every request, set
+    :setting:`REFERRER_POLICY` to ``"no-referrer"``.
 
 .. setting:: DEPTH_LIMIT
 
@@ -714,6 +762,11 @@ DNS_TIMEOUT
 Default: ``60``
 
 Timeout for processing of DNS queries in seconds. Float is supported.
+
+The timeout starts when the query is queued into the Twisted reactor thread
+pool, not when it is sent. If that thread pool is saturated, queries can time
+out before being sent, in which case increasing
+:setting:`REACTOR_THREADPOOL_MAXSIZE` helps more than increasing this setting.
 
 .. note::
     This setting is only used by
@@ -918,10 +971,6 @@ and only increase :setting:`DOWNLOAD_DELAY` once
 desired.
 
 .. _spider-download_delay-attribute:
-
-.. note::
-
-    This delay can be set per spider using :attr:`download_delay` spider attribute.
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
@@ -1344,7 +1393,7 @@ FEED_TEMPDIR
 Default: ``None``
 
 The Feed Temp dir allows you to set a custom folder to save crawler
-temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
+temporary files before uploading with :ref:`FTP feed storage <feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
 .. setting:: FEED_STORAGE_GCS_ACL
@@ -1381,6 +1430,8 @@ When :setting:`TWISTED_REACTOR_ENABLED` is set to ``False``,
 
 Set this to ``True`` if you want to set :setting:`TWISTED_REACTOR` to a
 non-default value in :ref:`per-spider settings <spider-settings>`.
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. setting:: FTP_PASSIVE_MODE
 
@@ -1835,7 +1886,8 @@ Default: ``False``
 
 Setting to ``True`` will log debug information about the requests scheduler.
 This currently logs (only once) if the requests cannot be serialized to disk.
-Stats counter (``scheduler/unserializable``) tracks the number of times this happens.
+The :stat:`scheduler/unserializable` stat tracks the number of times this
+happens.
 
 Example entry in logs::
 
@@ -1870,6 +1922,7 @@ Type of in-memory queue used by the scheduler. Other available type is:
 
 
 .. setting:: SCHEDULER_PRIORITY_QUEUE
+.. _broad-crawls-scheduler-priority-queue:
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
@@ -2294,6 +2347,11 @@ The default User-Agent to use when crawling, unless overridden. This user agent 
 also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
+
+Set it to a value that identifies you, including a URL or an email address
+where website owners can reach you, e.g. ``"MyProject
+(+https://example.com/bot)"``, so that they can ask you to adjust your crawler
+rather than block it.
 
 .. setting:: WARN_ON_GENERATOR_RETURN_VALUE
 

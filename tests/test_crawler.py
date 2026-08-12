@@ -74,6 +74,64 @@ class TestCrawler:
         assert not settings.frozen
         assert crawler.settings.frozen
 
+    @pytest.mark.parametrize(
+        "attr",
+        ["extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_before_apply_settings(self, attr: str) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        with pytest.raises(RuntimeError, match=rf"Crawler\.{attr} is not set yet"):
+            getattr(crawler, attr)
+        crawler._apply_settings()
+        assert getattr(crawler, attr) is not None
+
+    @pytest.mark.parametrize(
+        "attr",
+        ["engine", "extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_on_class(self, attr: str) -> None:
+        # Introspection tools such as help() read these off the class.
+        assert getattr(Crawler, attr) is getattr(Crawler, attr)
+
+    def test_late_attr_engine_before_crawl(self) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        crawler._apply_settings()
+        with pytest.raises(RuntimeError, match=r"Crawler\.engine is not set yet"):
+            _ = crawler.engine
+
+    @pytest.mark.parametrize(
+        ("attr", "setting"),
+        [
+            ("download_delay", "DOWNLOAD_DELAY"),
+            ("max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"),
+        ],
+    )
+    def test_deprecated_spider_attr(self, attr: str, setting: str) -> None:
+        crawler = get_raw_crawler(type("_Spider", (DefaultSpider,), {attr: 2}))
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=f"The {attr!r} spider attribute is deprecated. Use the {setting} ",
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getint(setting) == 2
+
+    @pytest.mark.parametrize(
+        ("attr", "setting"),
+        [
+            ("download_delay", "DOWNLOAD_DELAY"),
+            ("max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"),
+        ],
+    )
+    def test_deprecated_spider_attr_ignored(self, attr: str, setting: str) -> None:
+        crawler = get_raw_crawler(type("_Spider", (DefaultSpider,), {attr: 2}))
+        crawler.settings.set(setting, 3, priority="spider")
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=f"The {attr!r} spider attribute is deprecated. It is also being ",
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getint(setting) == 3
+
     def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         assert crawler.settings["foo"] == "bar"

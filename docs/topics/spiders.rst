@@ -4,43 +4,31 @@
 Spiders
 =======
 
-Spiders are classes which define how a certain site (or a group of sites) will be
-scraped, including how to perform the crawl (i.e. follow links) and how to
-extract structured data from their pages (i.e. scraping items). In other words,
-Spiders are the place where you define the custom behaviour for crawling and
-parsing pages for a particular site (or, in some cases, a group of sites).
+Spiders are classes that define how a site, or a group of sites, is scraped:
+which requests to send, and how to parse their responses to extract data and to
+send additional requests.
 
-For spiders, the scraping cycle goes through something like this:
+A crawl goes as follows:
 
-1. You start by generating the initial requests to crawl the first URLs, and
-   specify a callback function to be called with the response downloaded from
-   those requests.
+1.  Scrapy iterates the :meth:`~scrapy.Spider.start` method of the spider to
+    get the initial requests. By default, that method yields a
+    :class:`~scrapy.Request` object for each URL in
+    :attr:`~scrapy.Spider.start_urls`, with :meth:`~scrapy.Spider.parse` as
+    :ref:`callback <callbacks>`.
 
-   The first requests to perform are obtained by iterating the
-   :meth:`~scrapy.Spider.start` method, which by default yields a
-   :class:`~scrapy.Request` object for each URL in the
-   :attr:`~scrapy.Spider.start_urls` spider attribute, with the
-   :attr:`~scrapy.Spider.parse` method set as :attr:`~scrapy.Request.callback`
-   function to handle each :class:`~scrapy.http.Response`.
+2.  Scrapy downloads each request and calls its callback with the resulting
+    :class:`~scrapy.http.Response`.
 
-2. In the callback function, you parse the response (web page) and return
-   :ref:`item objects <topics-items>`,
-   :class:`~scrapy.Request` objects, or an iterable of these objects.
-   Those Requests will also contain a callback (maybe
-   the same) and will then be downloaded by Scrapy and then their
-   response handled by the specified callback.
+3.  Callbacks parse the response, typically using :ref:`topics-selectors`, and
+    return or yield :ref:`item objects <topics-items>` with the extracted data
+    and :class:`~scrapy.Request` objects to continue the crawl, which go back
+    to step 2. See :ref:`callback-output`.
 
-3. In callback functions, you parse the page contents, typically using
-   :ref:`topics-selectors` (but you can also use BeautifulSoup, lxml or whatever
-   mechanism you prefer) and generate items with the parsed data.
+4.  Items go through :ref:`item pipelines <topics-item-pipeline>`, and are
+    usually stored through :ref:`topics-feed-exports`.
 
-4. Finally, the items returned from the spider will be typically persisted to a
-   database (in some :ref:`Item Pipeline <topics-item-pipeline>`) or written to
-   a file using :ref:`topics-feed-exports`.
-
-Even though this cycle applies (more or less) to any kind of spider, there are
-different kinds of default spiders bundled into Scrapy for different purposes.
-We will talk about those types here.
+Scrapy includes different spider classes for different purposes, described
+below.
 
 .. _topics-spiders-ref:
 
@@ -71,8 +59,15 @@ scrapy.Spider
        :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
        enabled.
 
+       .. versionchanged:: VERSION
+          Changes to this attribute during a crawl are now taken into account.
+
        Let's say your target url is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
+
+       You may modify this attribute while the spider runs, e.g. to allow
+       domains that you only learn about from an earlier response. The change
+       affects requests scheduled after it.
 
    .. autoattribute:: start_urls
 
@@ -191,22 +186,7 @@ scrapy.Spider
 
    .. automethod:: start
 
-   .. method:: parse(response)
-
-       This is the default callback used by Scrapy to process downloaded
-       responses, when their requests don't specify a callback.
-
-       The ``parse`` method is in charge of processing the response and returning
-       scraped data and/or more URLs to follow. Other Requests callbacks have
-       the same requirements as the :class:`~scrapy.Spider` class.
-
-       This method, as well as any other Request callback, must return a
-       :class:`~scrapy.Request` object, an :ref:`item object <topics-items>`, an
-       iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects
-       <topics-items>`, or ``None``.
-
-       :param response: the response to parse
-       :type response: :class:`~scrapy.http.Response`
+   .. automethod:: parse
 
    .. method:: closed(reason)
 
@@ -416,8 +396,12 @@ Start requests
 Delaying start request iteration
 --------------------------------
 
-You can override the :meth:`~scrapy.Spider.start` method as follows to pause
-its iteration whenever there are scheduled requests:
+Scrapy iterates :meth:`~scrapy.Spider.start` as fast as it yields, so all start
+requests reach the scheduler early in the crawl, however many they are. To
+minimize the number of requests in the scheduler at any given time, and with it
+resource usage (memory, or disk when using :setting:`JOBDIR`), override
+:meth:`~scrapy.Spider.start` to pause its iteration whenever there are
+scheduled requests:
 
 .. code-block:: python
 
@@ -427,9 +411,37 @@ its iteration whenever there are scheduled requests:
                 await self.crawler.signals.wait_for(signals.scheduler_empty)
             yield item_or_request
 
-This can help minimize the number of requests in the scheduler at any given
-time, to minimize resource usage (memory or disk, depending on
-:setting:`JOBDIR`).
+.. _start-error:
+
+Handling start errors
+---------------------
+
+An exception raised by :meth:`~scrapy.Spider.start` ends its iteration, so any
+remaining start items and requests are never sent. Scrapy logs the exception,
+sends the :signal:`spider_error` signal, and, once the already scheduled
+requests are done, closes the spider with the ``start_error``
+:stat:`finish_reason`.
+
+.. versionchanged:: VERSION
+   The close reason used to be ``finished``, and neither the
+   :signal:`spider_error` signal nor the :stat:`spider_exceptions/count` stat
+   reported the exception.
+
+To keep the iteration going, catch the exception yourself:
+
+.. code-block:: python
+
+    async def start(self):
+        for url in self.start_urls:
+            try:
+                request = Request(url)
+            except ValueError:
+                self.logger.exception(f"Skipping start URL {url}")
+            else:
+                yield request
+
+To stop the crawl instead, and choose your own :stat:`finish_reason`, raise
+:exc:`~scrapy.exceptions.CloseSpider`.
 
 .. _builtin-spiders:
 
