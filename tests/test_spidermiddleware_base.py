@@ -8,6 +8,7 @@ from scrapy import Request, Spider
 from scrapy.http import Response
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -25,7 +26,7 @@ async def test_trivial(crawler: Crawler) -> None:
     class TrivialSpiderMiddleware(BaseSpiderMiddleware):
         pass
 
-    mw = TrivialSpiderMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(TrivialSpiderMiddleware, crawler)
     assert hasattr(mw, "crawler")
     assert mw.crawler is crawler
     test_req = Request("data:,")
@@ -49,7 +50,7 @@ async def test_processed_request(crawler: Crawler) -> None:
                 return Request("data:30,")
             return request
 
-    mw = ProcessReqSpiderMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(ProcessReqSpiderMiddleware, crawler)
     test_req1 = Request("data:1,")
     test_req2 = Request("data:2,")
     test_req3 = Request("data:3,")
@@ -81,7 +82,7 @@ async def test_processed_item(crawler: Crawler) -> None:
                 item["foo"] = 30
             return item
 
-    mw = ProcessItemSpiderMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(ProcessItemSpiderMiddleware, crawler)
     test_req = Request("data:,")
     spider_output = [{"foo": 1}, {"foo": 2}, test_req, {"foo": 3}]
     for processed in [
@@ -110,7 +111,7 @@ async def test_processed_both(crawler: Crawler) -> None:
                 item["foo"] = 30
             return item
 
-    mw = ProcessBothSpiderMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(ProcessBothSpiderMiddleware, crawler)
     test_req1 = Request("data:1,")
     test_req2 = Request("data:2,")
     test_req3 = Request("data:3,")
