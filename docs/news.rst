@@ -157,10 +157,6 @@ Backward-incompatible changes
     reported instead.
     (:gh:`7768`)
 
--   The unused ``multiplier`` attribute of
-    :class:`~scrapy.extensions.periodic_log.PeriodicLog` is removed.
-    (:gh:`7809`)
-
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -210,6 +206,10 @@ Deprecations
     request over plaintext HTTP is deprecated. The flag will be ignored in a
     future Scrapy version.
     (:gh:`7738`)
+
+-   The unused ``multiplier`` attribute of
+    :class:`~scrapy.extensions.periodic_log.PeriodicLog` is deprecated.
+    (:gh:`7809`, :gh:`7982`)
 
 -   Returning, from a :ref:`log formatter <custom-log-formats>` method, a
     ``msg`` with ``%(name)s`` placeholders and no ``args`` is deprecated. Those
@@ -652,7 +652,9 @@ Quality assurance
     :gh:`7906`,
     :gh:`7928`,
     :gh:`7935`,
-    :gh:`7966`)
+    :gh:`7966`,
+    :gh:`7974`,
+    :gh:`7979`)
 
 .. _release-2.17.0:
 
