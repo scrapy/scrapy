@@ -345,9 +345,10 @@ New features
     (:gh:`5706`, :gh:`7931`)
 
 -   Log formatters (:setting:`LOG_FORMATTER`), item processors
-    (``ITEM_PROCESSOR``) and :ref:`robots.txt parsers <topics-dlmw-robots>`
-    (:setting:`ROBOTSTXT_PARSER`) are now built as :ref:`components
-    <topics-components>`, so they no longer need a ``from_crawler()`` method.
+    (:setting:`ITEM_PROCESSOR`) and :ref:`robots.txt parsers
+    <topics-dlmw-robots>` (:setting:`ROBOTSTXT_PARSER`) are now built as
+    :ref:`components <topics-components>`, so they no longer need a
+    ``from_crawler()`` method.
     (:gh:`7808`)
 
 Bug fixes
@@ -501,9 +502,10 @@ Documentation
     and :ref:`supported callback output <callback-output>`.
     (:gh:`5054`, :gh:`6437`, :gh:`7821`, :gh:`7898`)
 
--   Documented the :ref:`optional extras <extras>` of Scrapy, and which feature
-    each of them enables.
-    (:gh:`7596`)
+-   Documented the :setting:`ITEM_PROCESSOR` setting and the
+    :class:`~scrapy.pipelines.ItemProcessorProtocol` protocol that its value
+    must implement.
+    (:gh:`7983`)
 
 -   Documented :ref:`how to write an item exporter <custom-exporters>`,
     :ref:`how to test an item pipeline <test-item-pipeline>`, :ref:`how to
@@ -543,17 +545,6 @@ Documentation
     :gh:`7907`,
     :gh:`7941`)
 
--   Switched several API references to autodoc, so that they are generated from
-    the docstrings: contracts, download handlers, exceptions, spider loaders,
-    stats collectors, ``trackref``, and the depth and offsite middlewares.
-    (:gh:`7767`,
-    :gh:`7769`,
-    :gh:`7771`,
-    :gh:`7775`,
-    :gh:`7871`,
-    :gh:`7903`,
-    :gh:`7913`)
-
 -   Many other corrections and improvements.
     (:gh:`4589`,
     :gh:`4796`,
@@ -568,7 +559,11 @@ Documentation
     :gh:`7710`,
     :gh:`7725`,
     :gh:`7737`,
+    :gh:`7767`,
+    :gh:`7769`,
+    :gh:`7771`,
     :gh:`7774`,
+    :gh:`7775`,
     :gh:`7777`,
     :gh:`7779`,
     :gh:`7780`,
@@ -576,9 +571,12 @@ Documentation
     :gh:`7832`,
     :gh:`7835`,
     :gh:`7862`,
+    :gh:`7871`,
     :gh:`7875`,
     :gh:`7880`,
     :gh:`7890`,
+    :gh:`7903`,
+    :gh:`7913`,
     :gh:`7917`,
     :gh:`7939`,
     :gh:`7940`,
@@ -588,8 +586,16 @@ Documentation
 Quality assurance
 ~~~~~~~~~~~~~~~~~
 
--   Added CPU benchmarks, tracked on CodSpeed, and a ``benchmark`` tox
-    environment to run them.
+-   Improved and fixed type hints.
+    (:gh:`7712`,
+    :gh:`7785`,
+    :gh:`7858`,
+    :gh:`7864`,
+    :gh:`7865`,
+    :gh:`7867`)
+
+-   Added CPU benchmarks, tracked on CodSpeed, so that performance regressions
+    are caught before they are merged and performance work can be measured.
     (:gh:`7831`,
     :gh:`7839`,
     :gh:`7870`,
@@ -598,32 +604,17 @@ Quality assurance
     :gh:`7954`)
 
 -   Added a nightly job that runs the test suite against the development
-    branches of dependencies, and a ``vcs-deps`` tox environment for it.
+    branches of dependencies, so that incompatibilities are found before those
+    dependencies are released.
     (:gh:`5291`, :gh:`6025`, :gh:`7924`, :gh:`7960`)
-
--   Tests that need a proxy server now look for a ``mitmdump`` executable, from
-    the ``PATH``, from `uv <https://docs.astral.sh/uv/>`__ or from the
-    ``MITMDUMP`` environment variable, instead of requiring mitmproxy to be
-    installed in the test environment. The ``mitmproxy`` tox environment is
-    gone as a result.
-    (:gh:`7437`, :gh:`7720`)
-
--   Dropped the ``testfixtures`` test dependency.
-    (:gh:`6478`, :gh:`7793`)
-
--   Type hints improvements and fixes.
-    (:gh:`7712`,
-    :gh:`7785`,
-    :gh:`7858`,
-    :gh:`7864`,
-    :gh:`7865`,
-    :gh:`7867`)
 
 -   CI and test improvements and fixes.
     (:gh:`5620`,
     :gh:`5837`,
     :gh:`6478`,
     :gh:`6794`,
+    :gh:`7437`,
+    :gh:`7720`,
     :gh:`7724`,
     :gh:`7727`,
     :gh:`7736`,
@@ -635,6 +626,7 @@ Quality assurance
     :gh:`7778`,
     :gh:`7782`,
     :gh:`7792`,
+    :gh:`7793`,
     :gh:`7795`,
     :gh:`7797`,
     :gh:`7798`,
