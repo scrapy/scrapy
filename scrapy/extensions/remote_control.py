@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import builtins
 import contextlib
 import hmac
 import inspect
@@ -83,9 +82,8 @@ class RemoteControl:
     def _make_namespace(self, buf: io.StringIO) -> dict[str, Any]:
         def _print(*args: Any, **kwargs: Any) -> None:
             kwargs.setdefault("file", buf)
-            builtins.print(*args, **kwargs)
+            print(*args, **kwargs)
 
-        # Fresh each call except `stash` (same object, persists across calls)
         return {"crawler": self.crawler, "stash": self._stash, "print": _print}
 
     async def start(self) -> None:
