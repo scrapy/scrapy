@@ -76,20 +76,13 @@ Backward-incompatible changes
 -   The minimum required ``queuelib`` version is now 1.6.1.
     (:gh:`7874`)
 
--   :ref:`Item exporters <topics-exporters>` other than
-    :class:`~scrapy.exporters.CsvItemExporter` now export the fields of an item
+-   :ref:`Item exporters <topics-exporters>` now export the fields of an item
     in declaration order, i.e. the order in which they are defined in the
     :ref:`item class <item-types>`, instead of the order in which they were
-    populated. :class:`dict` items, which have no declared fields, keep using
-    the key order of each item.
+    populated, as :class:`~scrapy.exporters.CsvItemExporter` already did.
+    :class:`dict` items, which have no declared fields, keep using the key
+    order of each item.
     (:gh:`6662`, :gh:`7824`)
-
--   The ``_get_serialized_fields()`` method of :ref:`item exporters
-    <topics-exporters>` is renamed to
-    :meth:`~scrapy.exporters.BaseItemExporter.get_serialized_fields`, and the
-    old name is gone, so :ref:`custom item exporters <custom-exporters>` that
-    call or override it must be updated.
-    (:gh:`5706`, :gh:`7931`)
 
 -   ``scrapy.utils.serialize.ScrapyJSONEncoder``, used by :ref:`JSON feed
     exports <topics-feed-format-json>`, the :ref:`telnet console
@@ -113,7 +106,8 @@ Backward-incompatible changes
     (:gh:`5995`, :gh:`7922`)
 
 -   The ``MEMDEBUG_NOTIFY`` setting is removed. It had no effect, but code
-    reading it now gets ``None`` instead of its default value, an empty list.
+    reading it now gets ``None`` instead of its default value, which was an
+    empty list.
     (:gh:`7737`)
 
 -   ``scrapy.utils.log.logformatter_adapter()`` no longer passes the whole
@@ -155,23 +149,6 @@ Backward-incompatible changes
     ``parse_row()`` is not defined; the resulting :exc:`AttributeError` is
     reported instead.
     (:gh:`7768`)
-
--   ``scrapy.pipelines.files.FileException`` moved to
-    ``scrapy.pipelines.media``. It is still importable from its old location.
-    (:gh:`7544`, :gh:`7673`)
-
--   ``H2ConnectionPool``, ``H2ClientFactory`` and ``H2ClientProtocol``, from
-    ``scrapy.core.http2``, now take a :class:`~scrapy.crawler.Crawler` object
-    where they used to take a :class:`~scrapy.settings.Settings` object, and
-    ``scrapy.core.http2.stream.Stream`` takes an additional ``crawler``
-    parameter, after ``protocol``.
-    (:gh:`7896`)
-
--   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` now raises
-    :exc:`~scrapy.exceptions.IgnoreRequest` with a message, e.g. ``Filtered
-    offsite request to 'offsite.example'``, which errbacks and log messages that
-    report that exception now include.
-    (:gh:`7544`, :gh:`7673`)
 
 -   The unused ``multiplier`` attribute of
     :class:`~scrapy.extensions.periodic_log.PeriodicLog` is removed.
@@ -221,6 +198,10 @@ Deprecations
 
 -   ``scrapy.utils.python.re_rsearch()`` is deprecated.
     (:gh:`7765`)
+
+-   Importing ``FileException`` from ``scrapy.pipelines.files`` is deprecated.
+    Import it from ``scrapy.pipelines.media`` instead.
+    (:gh:`7544`, :gh:`7673`, :gh:`7973`)
 
 -   Setting ``request.meta["is_secure"]`` to ``False`` to send an ``s3://``
     request over plaintext HTTP is deprecated. The flag will be ignored in a
@@ -400,6 +381,12 @@ Bug fixes
 -   :ref:`Media pipelines <topics-media-pipeline>` now log media requests that
     were filtered out, e.g. as offsite requests, at the ``DEBUG`` level and
     without a traceback, instead of reporting them as download errors.
+    (:gh:`7544`, :gh:`7673`)
+
+-   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` now raises
+    :exc:`~scrapy.exceptions.IgnoreRequest` with a message, e.g. ``Filtered
+    offsite request to 'offsite.example'``, which errbacks and log messages
+    that report that exception now include.
     (:gh:`7544`, :gh:`7673`)
 
 -   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` now
