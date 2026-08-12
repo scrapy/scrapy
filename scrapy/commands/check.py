@@ -1,10 +1,14 @@
 import argparse
+import asyncio
 import time
 from collections import defaultdict
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable
 from typing import Any, ClassVar
+from unittest import TestCase, TextTestRunner
 from unittest import TextTestResult as _TextTestResult
-from unittest import TextTestRunner
+
+from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
@@ -40,6 +44,41 @@ class TextTestResult(_TextTestResult):
             writeln(f" ({', '.join(infos)})")
         else:
             write("\n")
+
+
+def _report_crawl_errors(
+    crawl: Awaitable[None], spidername: str, result: TextTestResult
+) -> None:
+    """Make an exception that stops *crawl* before its contracts can run show
+    up as an error in *result*, instead of being silently discarded."""
+
+    class CrawlTestCase(TestCase):
+        def runTest(self) -> None:
+            pass
+
+        def __str__(self) -> str:
+            return f"[{spidername}] crawl"
+
+    def report(exception: BaseException) -> None:
+        result.addError(
+            CrawlTestCase(),
+            (type(exception), exception, exception.__traceback__),  # type: ignore[arg-type]
+        )
+
+    if isinstance(crawl, Deferred):
+
+        def on_failure(failure: Failure) -> None:
+            assert failure.value is not None
+            report(failure.value)
+
+        crawl.addErrback(on_failure)
+    elif isinstance(crawl, asyncio.Task):
+
+        def on_done(task: asyncio.Task[None]) -> None:
+            if not task.cancelled() and (exception := task.exception()) is not None:
+                report(exception)
+
+        crawl.add_done_callback(on_done)
 
 
 class Command(ScrapyCommand):
@@ -100,7 +139,8 @@ class Command(ScrapyCommand):
                     for method in tested_methods:
                         contract_reqs[spidercls.name].append(method)
                 elif tested_methods:
-                    self.crawler_process.crawl(spidercls)
+                    crawl = self.crawler_process.crawl(spidercls)
+                    _report_crawl_errors(crawl, spidercls.name, result)
 
             # start checks
             if opts.list:
