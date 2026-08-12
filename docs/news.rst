@@ -24,6 +24,27 @@ Highlights:
 -   New :ref:`optimization <optimize>` page and :ref:`built-in stats reference
     <topics-stats-reference>`
 
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   ``brotli`` (``brotlicffi`` on PyPy) is now a required dependency, so ``br``
+    is always included in the ``Accept-Encoding`` header of requests, and
+    Brotli-compressed responses are always decoded. Websites may now serve
+    Brotli-compressed responses to crawls that previously did not advertise
+    support for them.
+
+    The minimum required versions are ``brotli`` 1.2.0 and ``brotlicffi``
+    1.2.0.0.
+
+    (:gh:`4698`, :gh:`7929`)
+
+-   The minimum required ``queuelib`` version is now 1.6.1.
+    (:gh:`7874`)
+
+-   The IPython :ref:`shell <topics-shell>` requires IPython 8.15.0 or higher.
+    Install the :ref:`ipython extra <extras>` to get a compatible version.
+    (:gh:`5447`, :gh:`7596`, :gh:`7816`)
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -61,20 +82,6 @@ Backward-incompatible changes
     since reading them now raises instead of returning ``None``.
 
     (:gh:`6136`, :gh:`7882`)
-
--   ``brotli`` (``brotlicffi`` on PyPy) is now a required dependency, so ``br``
-    is always included in the ``Accept-Encoding`` header of requests, and
-    Brotli-compressed responses are always decoded. Websites may now serve
-    Brotli-compressed responses to crawls that previously did not advertise
-    support for them.
-
-    The minimum required versions are ``brotli`` 1.2.0 and ``brotlicffi``
-    1.2.0.0.
-
-    (:gh:`4698`, :gh:`7929`)
-
--   The minimum required ``queuelib`` version is now 1.6.1.
-    (:gh:`7874`)
 
 -   :ref:`Item exporters <topics-exporters>` now export the fields of an item
     in declaration order, i.e. the order in which they are defined in the
@@ -153,10 +160,6 @@ Backward-incompatible changes
 -   The unused ``multiplier`` attribute of
     :class:`~scrapy.extensions.periodic_log.PeriodicLog` is removed.
     (:gh:`7809`)
-
--   The IPython :ref:`shell <topics-shell>` requires IPython 8.15.0 or higher.
-    Install the :ref:`ipython extra <extras>` to get a compatible version.
-    (:gh:`5447`, :gh:`7596`, :gh:`7816`)
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
