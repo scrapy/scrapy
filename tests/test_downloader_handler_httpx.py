@@ -14,7 +14,6 @@ from scrapy.core.downloader.handlers._httpx import (
     HAS_SOCKS,
     HttpxDownloadHandler,
 )
-from scrapy.exceptions import DownloadFailedError
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.download_handlers_http import (
@@ -94,7 +93,6 @@ class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
 @pytest.mark.skipif(not HAS_HTTP2, reason="No HTTP/2 support in HttpxDownloadHandler")
 class TestHttp2(TestHttps):
     http2 = True
-    handler_supports_http2_dataloss = False
 
     default_handler_settings: ClassVar[dict[str, Any]] = {
         "HTTPX_HTTP2_ENABLED": True,
@@ -106,13 +104,6 @@ class TestHttp2(TestHttps):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.protocol == "HTTP/2"
-
-    @coroutine_test
-    async def test_data_loss_handling(self, mockserver: MockServer) -> None:
-        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
-        async with self.get_dh() as download_handler:
-            with pytest.raises(DownloadFailedError):
-                await download_handler.download_request(request)
 
 
 class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):

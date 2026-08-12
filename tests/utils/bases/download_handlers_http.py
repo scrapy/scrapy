@@ -68,13 +68,6 @@ class TestHttpBase(ABC):
     http2: bool = False
     # whether the handler supports per-request bindaddress
     handler_supports_bindaddress_meta: bool = True
-    # RFC 9113 §8.1.1 explicitly says that a Content-Length mismatch is a
-    # stream error (of type PROTOCOL_ERROR) so the client will send
-    # RST_STREAM. Some libraries do only this while e.g. h2 also closes the
-    # connection (see handling of ProtocolError in
-    # h2.connection.H2Connection.receive_data()), thus closing all streams that
-    # were using it, and we handle this as a normal exception.
-    handler_supports_http2_dataloss: bool = True
     # What the handler does with a bad response header line, e.g. one with no
     # colon in it:
     # "skip-bad": the bad line is skipped and the header lines that follow it
@@ -691,8 +684,6 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_download_cause_data_loss(self, mockserver: MockServer) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -702,8 +693,6 @@ class TestHttpBase(ABC):
     async def test_download_cause_data_loss_double_warning(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
             with pytest.raises(ResponseDataLossError):
@@ -719,8 +708,6 @@ class TestHttpBase(ABC):
     async def test_download_allow_data_loss_broken(
         self, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(
             mockserver.url("/broken", is_secure=self.is_secure),
             meta={"download_fail_on_dataloss": False},
@@ -749,8 +736,6 @@ class TestHttpBase(ABC):
     async def test_download_allow_data_loss_via_setting(
         self, mockserver: MockServer
     ) -> None:
-        if self.http2 and not self.handler_supports_http2_dataloss:
-            pytest.skip("This handler doesn't support dataloss on HTTP/2")
         request = Request(mockserver.url("/broken", is_secure=self.is_secure))
         async with self.get_dh(
             {"DOWNLOAD_FAIL_ON_DATALOSS": False}

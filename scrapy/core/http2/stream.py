@@ -14,7 +14,11 @@ from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
 from scrapy import signals
-from scrapy.exceptions import DownloadCancelledError, StopDownload
+from scrapy.exceptions import (
+    DownloadCancelledError,
+    ResponseDataLossError,
+    StopDownload,
+)
 from scrapy.http.headers import Headers
 from scrapy.utils._download_handlers import (
     check_stop_download,
@@ -128,6 +132,10 @@ class Stream:
         )
         self._download_warnsize = self._request.meta.get(
             "download_warnsize", download_warnsize
+        )
+        self._fail_on_dataloss: bool = self._request.meta.get(
+            "download_fail_on_dataloss",
+            crawler.settings.getbool("DOWNLOAD_FAIL_ON_DATALOSS"),
         )
 
         # Metadata of an HTTP/2 connection stream
@@ -511,7 +519,7 @@ class Stream:
             )
 
         elif reason is StreamCloseReason.CONNECTION_LOST:
-            self._deferred_response.errback(ResponseFailed(errors))
+            self._handle_connection_lost(errors)
 
         elif reason is StreamCloseReason.INACTIVE:
             errors = (InactiveStreamClosed(self._request), *errors)
@@ -527,7 +535,17 @@ class Stream:
                 )
             )
 
-    def _fire_response_deferred(self) -> None:
+    def _handle_connection_lost(self, errors: Sequence[BaseException]) -> None:
+        # A response body is only complete once the stream ends, so having
+        # received the response headers means that the body was cut short.
+        if self._response["status"] is None:
+            self._deferred_response.errback(ResponseFailed(errors))
+        elif self._fail_on_dataloss:
+            self._deferred_response.errback(ResponseDataLossError(str(list(errors))))
+        else:
+            self._fire_response_deferred(flags=["dataloss"])
+
+    def _fire_response_deferred(self, flags: list[str] | None = None) -> None:
         """Builds response from the self._response dict
         and fires the response deferred callback with the
         generated response instance"""
@@ -538,6 +556,7 @@ class Stream:
                 status=self._response["status"],
                 headers=self._response["headers"],
                 body=self._response["body"].getvalue(),
+                flags=flags,
                 certificate=self._protocol.metadata["certificate"],
                 ip_address=self._protocol.metadata["ip_address"],
                 protocol="h2",

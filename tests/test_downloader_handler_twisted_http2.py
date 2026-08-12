@@ -11,7 +11,7 @@ from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
-from scrapy.exceptions import DownloadFailedError, NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from scrapy.utils.misc import build_from_crawler
 from tests.utils.bases.download_handlers_http import (
@@ -72,7 +72,6 @@ def test_not_configured_without_reactor() -> None:
 
 class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
     http2 = True
-    handler_supports_http2_dataloss = False
 
     @coroutine_test
     async def test_protocol(self, mockserver: MockServer) -> None:
@@ -149,13 +148,6 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
             f"{bad_content_length!r} of request {request}, sending "
             f"{actual_content_length!r} instead",
         ) in caplog.record_tuples
-
-    @coroutine_test
-    async def test_data_loss_handling(self, mockserver: MockServer) -> None:
-        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
-        async with self.get_dh() as download_handler:
-            with pytest.raises(DownloadFailedError):
-                await download_handler.download_request(request)
 
 
 class TestSimpleHttp2(H2DownloadHandlerMixin, TestSimpleHttpsBase):

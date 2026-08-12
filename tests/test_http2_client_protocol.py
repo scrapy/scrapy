@@ -21,7 +21,11 @@ from twisted.web.http import Request as TxRequest
 from twisted.web.server import NOT_DONE_YET, Site
 from twisted.web.static import File
 
-from scrapy.exceptions import DownloadCancelledError, DownloadTimeoutError
+from scrapy.exceptions import (
+    DownloadCancelledError,
+    DownloadTimeoutError,
+    ResponseDataLossError,
+)
 from scrapy.http import JsonRequest, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import (
@@ -258,7 +262,9 @@ class TestHttps2ClientProtocol:
 
         yield client
 
-        if client.connected:
+        # H2ClientProtocol.connected stays set once the connection is made, so
+        # the underlying transport is what tells whether it is still open.
+        if client.transport.connected:
             client.transport.loseConnection()
             client.transport.abortConnection()
 
@@ -492,22 +498,25 @@ class TestHttps2ClientProtocol:
         ):
             await make_request(client, request)
 
-    @inlineCallbacks
-    def test_received_dataloss_response(
+    @deferred_f_from_coro_f
+    async def test_received_dataloss_response(
         self, server_port: int, client: H2ClientProtocol
-    ) -> Generator[Deferred[Any], Any, None]:
-        """In case when value of Header Content-Length != len(Received Data)
-        ProtocolError is raised"""
-        from h2.exceptions import InvalidBodyLengthError  # noqa: PLC0415
-
+    ) -> None:
         request = Request(url=self.get_url(server_port, "/dataloss"))
-        with pytest.raises(ResponseFailed) as exc_info:
-            yield make_request_dfd(client, request)
-        assert len(exc_info.value.reasons) > 0
-        assert any(
-            isinstance(error, InvalidBodyLengthError)
-            for error in exc_info.value.reasons
+        with pytest.raises(ResponseDataLossError, match=r"InvalidBodyLengthError"):
+            await make_request(client, request)
+
+    @deferred_f_from_coro_f
+    async def test_allow_dataloss_response(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        request = Request(
+            url=self.get_url(server_port, "/dataloss"),
+            meta={"download_fail_on_dataloss": False},
         )
+        response = await make_request(client, request)
+        assert response.flags == ["dataloss"]
+        assert response.body == Data.DATALOSS
 
     @deferred_f_from_coro_f
     async def test_missing_content_length_header(

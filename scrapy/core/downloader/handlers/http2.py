@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
@@ -10,9 +11,11 @@ from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
 from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
+    ResponseDataLossError,
     UnsupportedURLSchemeError,
 )
 from scrapy.utils._download_handlers import (
+    get_dataloss_msg,
     normalize_bind_address,
     wrap_twisted_exceptions,
 )
@@ -29,6 +32,9 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
+logger = logging.getLogger(__name__)
+
+
 class H2DownloadHandler(BaseDownloadHandler):
     lazy = True
 
@@ -43,6 +49,7 @@ class H2DownloadHandler(BaseDownloadHandler):
         self._pool = H2ConnectionPool(reactor, crawler)
         self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
+        self._fail_on_dataloss_warned = False
 
     async def download_request(self, request: Request) -> Response:
         if urlparse_cached(request).scheme == "http":  # pragma: no cover
@@ -56,10 +63,16 @@ class H2DownloadHandler(BaseDownloadHandler):
             crawler=self._crawler,
         )
         assert self._crawler.spider
-        with wrap_twisted_exceptions():
-            return await maybe_deferred_to_future(
-                agent.download_request(request, self._crawler.spider)
-            )
+        try:
+            with wrap_twisted_exceptions():
+                return await maybe_deferred_to_future(
+                    agent.download_request(request, self._crawler.spider)
+                )
+        except ResponseDataLossError:
+            if not self._fail_on_dataloss_warned:
+                logger.warning(get_dataloss_msg(request.url))
+                self._fail_on_dataloss_warned = True
+            raise
 
     async def close(self) -> None:
         self._pool.close_connections()
