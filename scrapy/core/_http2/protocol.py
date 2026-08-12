@@ -31,7 +31,7 @@ from twisted.internet.ssl import Certificate
 from twisted.protocols.policies import TimeoutMixin
 from zope.interface import implementer
 
-from scrapy.core.http2.stream import Stream, StreamCloseReason
+from scrapy.core._http2.stream import Stream, StreamCloseReason
 from scrapy.exceptions import DownloadTimeoutError, ResponseHeadersTooLargeError
 from scrapy.http import Request, Response
 from scrapy.utils._download_handlers import get_headers_maxsize_msg

@@ -28,7 +28,7 @@ from scrapy.utils.httpobj import urlparse_cached
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from scrapy.core.http2.protocol import H2ClientProtocol
+    from scrapy.core._http2.protocol import H2ClientProtocol
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
 
