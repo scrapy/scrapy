@@ -10,8 +10,8 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import (
+    FileException,
     FileInfo,
     FileInfoOrError,
     MediaPipeline,
