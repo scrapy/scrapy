@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from testfixtures import LogCapture
 from twisted.web.http import H2_ENABLED
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
 from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import Request
-from tests.test_downloader_handlers_http_base import (
+from scrapy.utils.misc import build_from_crawler
+from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
     TestHttpsBase,
     TestHttpsCustomCiphersBase,
@@ -66,7 +67,7 @@ def test_not_configured_without_reactor() -> None:
 
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
-        H2DownloadHandler.from_crawler(crawler)
+        build_from_crawler(H2DownloadHandler, crawler)
 
 
 class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
@@ -130,24 +131,24 @@ class TestHttp2(H2DownloadHandlerMixin, TestHttpsBase):
         assert response.text == custom_content_length
 
     @coroutine_test
-    async def test_custom_content_length_bad(self, mockserver: MockServer) -> None:
+    async def test_custom_content_length_bad(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
         actual_content_length = str(len(request.body))
         bad_content_length = str(len(request.body) + 1)
         request.headers["Content-Length"] = bad_content_length
         async with self.get_dh() as download_handler:
-            with LogCapture() as log:
+            with caplog.at_level(logging.DEBUG):
                 response = await download_handler.download_request(request)
         assert response.text == actual_content_length
-        log.check_present(
-            (
-                "scrapy.core.http2.stream",
-                "WARNING",
-                f"Ignoring bad Content-Length header "
-                f"{bad_content_length!r} of request {request}, sending "
-                f"{actual_content_length!r} instead",
-            )
-        )
+        assert (
+            "scrapy.core.http2.stream",
+            logging.WARNING,
+            f"Ignoring bad Content-Length header "
+            f"{bad_content_length!r} of request {request}, sending "
+            f"{actual_content_length!r} instead",
+        ) in caplog.record_tuples
 
     @coroutine_test
     async def test_data_loss_handling(self, mockserver: MockServer) -> None:
@@ -185,18 +186,6 @@ class TestHttp2TLSVersion(H2DownloadHandlerMixin, TestHttpsTLSVersionBase):
 
 class TestHttp2WithCrawler(H2DownloadHandlerMixin, TestHttpWithCrawlerBase):
     is_secure = True
-
-    def test_bytes_received_stop_download_callback(self) -> None:  # type: ignore[override]
-        pytest.skip("bytes_received support is not implemented")
-
-    def test_bytes_received_stop_download_errback(self) -> None:  # type: ignore[override]
-        pytest.skip("bytes_received support is not implemented")
-
-    def test_headers_received_stop_download_callback(self) -> None:  # type: ignore[override]
-        pytest.skip("headers_received support is not implemented")
-
-    def test_headers_received_stop_download_errback(self) -> None:  # type: ignore[override]
-        pytest.skip("headers_received support is not implemented")
 
 
 @pytest.mark.skip(reason="Proxy support is not implemented yet")

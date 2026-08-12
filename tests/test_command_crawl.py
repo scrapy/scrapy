@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tests.utils.base_commands import TestProjectBase
+from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import proc
 
 if TYPE_CHECKING:
@@ -22,6 +22,18 @@ class TestCrawlCommand(TestProjectBase):
     def get_log(self, code: str, proj_path: Path, args: Iterable[str] = ()) -> str:
         _, _, stderr = self.crawl(code, proj_path, args=args)
         return stderr
+
+    def test_no_spider(self, proj_path: Path) -> None:
+        returncode, out, _ = proc("crawl", cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
+
+    def test_multiple_spiders(self, proj_path: Path) -> None:
+        returncode, _, err = proc("crawl", "myspider", "myspider2", cwd=proj_path)
+        assert returncode == 2
+        assert (
+            "running 'scrapy crawl' with more than one spider is not supported" in err
+        )
 
     def test_no_output(self, proj_path: Path) -> None:
         spider_code = """

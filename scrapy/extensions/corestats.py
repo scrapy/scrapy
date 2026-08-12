@@ -26,7 +26,6 @@ class CoreStats:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        assert crawler.stats
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 import pytest
-from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
 from scrapy.exceptions import DropItem
@@ -9,10 +11,13 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.logformatter import LogFormatter
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
 
 class CustomItem(Item):
@@ -24,9 +29,9 @@ class CustomItem(Item):
 
 class TestLogFormatter:
     def setup_method(self):
-        self.formatter = LogFormatter()
-        self.spider = Spider("default")
-        self.spider.crawler = get_crawler()
+        crawler = get_crawler()
+        self.formatter = build_from_crawler(LogFormatter, crawler)
+        self.spider = Spider.from_crawler(crawler, "default")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
@@ -71,8 +76,7 @@ class TestLogFormatter:
         item = {}
         exception = DropItem("Test drop")
         response = Response("http://www.example.com")
-        spider = Spider("foo")
-        spider.crawler = get_crawler(Spider)
+        spider = Spider.from_crawler(get_crawler(Spider), "foo")
 
         logkws = self.formatter.dropped(item, exception, response, spider)
         assert logkws["level"] == logging.WARNING
@@ -194,9 +198,9 @@ class LogFormatterSubclass(LogFormatter):
 
 class TestLogformatterSubclass(TestLogFormatter):
     def setup_method(self):
-        self.formatter = LogFormatterSubclass()
-        self.spider = Spider("default")
-        self.spider.crawler = get_crawler(Spider)
+        crawler = get_crawler(Spider)
+        self.formatter = build_from_crawler(LogFormatterSubclass, crawler)
+        self.spider = Spider.from_crawler(crawler, "default")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
@@ -254,15 +258,6 @@ class DropSomeItemsPipeline:
 
 
 class TestShowOrSkipMessages:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     def setup_method(self):
         self.base_settings = {
             "LOG_LEVEL": "DEBUG",
@@ -271,22 +266,26 @@ class TestShowOrSkipMessages:
             },
         }
 
-    @inline_callbacks_test
-    def test_show_messages(self):
+    @coroutine_test
+    async def test_show_messages(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         crawler = get_crawler(ItemSpider, self.base_settings)
-        with LogCapture() as lc:
-            yield crawler.crawl(mockserver=self.mockserver)
-        assert "Scraped from <200 http://127.0.0.1:" in str(lc)
-        assert "Crawled (200) <GET http://127.0.0.1:" in str(lc)
-        assert "Dropped: Ignoring item" in str(lc)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(mockserver=mockserver)
+        assert "Scraped from <200 http://127.0.0.1:" in caplog.text
+        assert "Crawled (200) <GET http://127.0.0.1:" in caplog.text
+        assert "Dropped: Ignoring item" in caplog.text
 
-    @inline_callbacks_test
-    def test_skip_messages(self):
+    @coroutine_test
+    async def test_skip_messages(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         settings = self.base_settings.copy()
         settings["LOG_FORMATTER"] = SkipMessagesLogFormatter
         crawler = get_crawler(ItemSpider, settings)
-        with LogCapture() as lc:
-            yield crawler.crawl(mockserver=self.mockserver)
-        assert "Scraped from <200 http://127.0.0.1:" not in str(lc)
-        assert "Crawled (200) <GET http://127.0.0.1:" not in str(lc)
-        assert "Dropped: Ignoring item" not in str(lc)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(mockserver=mockserver)
+        assert "Scraped from <200 http://127.0.0.1:" not in caplog.text
+        assert "Crawled (200) <GET http://127.0.0.1:" not in caplog.text
+        assert "Dropped: Ignoring item" not in caplog.text

@@ -7,7 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, AnyStr, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
@@ -72,7 +72,10 @@ class Response(object_ref):
         self,
         url: str,
         status: int = 200,
-        headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        headers: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         body: bytes = b"",
         flags: list[str] | None = None,
         request: Request | None = None,
@@ -145,7 +148,11 @@ class Response(object_ref):
 
     @headers.setter
     def headers(
-        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None
+        self,
+        value: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None,
     ) -> None:
         if isinstance(value, Headers):
             self._headers = value
@@ -222,7 +229,10 @@ class Response(object_ref):
         url: str | Link,
         callback: CallbackT | None = None,
         method: str = "GET",
-        headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        headers: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         body: bytes | str | None = None,
         cookies: CookiesT | None = None,
         meta: dict[str, Any] | None = None,
@@ -272,7 +282,10 @@ class Response(object_ref):
         urls: Iterable[str | Link],
         callback: CallbackT | None = None,
         method: str = "GET",
-        headers: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        headers: Mapping[str, Any]
+        | Mapping[bytes, Any]
+        | Iterable[tuple[str | bytes, Any]]
+        | None = None,
         body: bytes | str | None = None,
         cookies: CookiesT | None = None,
         meta: dict[str, Any] | None = None,
@@ -292,6 +305,11 @@ class Response(object_ref):
         :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow_all`
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
+
+        .. caution:: Every returned request gets its own *meta* and
+            *cb_kwargs* dictionaries, but the values within them are shared.
+            Mutating one of those values, e.g. appending to a list, affects
+            all the returned requests.
         """
         if not hasattr(urls, "__iter__"):
             raise TypeError("'urls' argument must be an iterable")

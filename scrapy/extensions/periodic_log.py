@@ -38,7 +38,6 @@ class PeriodicLog:
     ):
         self.stats: StatsCollector = stats
         self.interval: float = interval
-        self.multiplier: float = 60.0 / self.interval
         self.task: AsyncioLoopingCall | LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
@@ -88,7 +87,6 @@ class PeriodicLog:
         )
         if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured
-        assert crawler.stats
         assert ext_stats is not None
         assert ext_delta is not None
         o = cls(
@@ -165,5 +163,5 @@ class PeriodicLog:
 
     def spider_closed(self, spider: Spider, reason: str) -> None:
         self.log()
-        if self.task and self.task.running:
+        if self.task and self.task.running:  # pragma: no branch
             self.task.stop()

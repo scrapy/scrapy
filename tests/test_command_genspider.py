@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.utils.base_commands import TestProjectBase
+from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import call, proc, write_recording_editor
 
 
@@ -64,6 +64,24 @@ class TestGenspiderCommand(TestProjectBase):
         assert call("genspider", "--dump=basic", cwd=proj_path) == 0
         assert call("genspider", "-d", "basic", cwd=proj_path) == 0
 
+    @pytest.mark.parametrize(
+        "args",
+        [("--dump=nonexistent",), ("-t", "nonexistent", "test_name", "test.com")],
+    )
+    def test_unknown_template(self, args: tuple[str, ...], proj_path: Path) -> None:
+        returncode, out, err = proc("genspider", *args, cwd=proj_path)
+        assert returncode == 0, err
+        assert "Unable to find template: nonexistent" in out
+        assert not (proj_path / self.project_name / "spiders" / "test_name.py").exists()
+
+    def test_name_not_starting_with_a_letter(self, proj_path: Path) -> None:
+        """The module name, unlike the spider name, is prefixed with a letter."""
+        _, out, err = proc("genspider", "1st_spider", "test.com", cwd=proj_path)
+        assert "Created spider '1st_spider'" in out, err
+        spider = proj_path / self.project_name / "spiders" / "a1st_spider.py"
+        assert spider.exists()
+        assert find_in_file(spider, r'name\s*=\s*"1st_spider"') is not None
+
     @pytest.mark.skipif(
         sys.platform == "win32", reason="requires a POSIX shell editor script"
     )
@@ -87,7 +105,8 @@ class TestGenspiderCommand(TestProjectBase):
         )
 
     def test_same_name_as_project(self, proj_path: Path) -> None:
-        assert call("genspider", self.project_name, cwd=proj_path) == 2
+        _, out, err = proc("genspider", self.project_name, "test.com", cwd=proj_path)
+        assert "Cannot create a spider with the same name as your project" in out, err
         assert not (
             proj_path / self.project_name / "spiders" / f"{self.project_name}.py"
         ).exists()

@@ -4,19 +4,21 @@ import json
 import logging
 import re
 import sys
+import warnings
 from io import StringIO
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
-from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.log import (
     LogCounterHandler,
     SpiderLoggerAdapter,
     StreamLogger,
     TopLevelFormatter,
     failure_to_exc_info,
+    logformatter_adapter,
 )
 from scrapy.utils.test import get_crawler
 from tests.spiders import LogSpider
@@ -25,6 +27,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Mapping, MutableMapping
 
     from scrapy.crawler import Crawler
+    from scrapy.logformatter import LogFormatterResult
 
 
 class TestFailureToExcInfo:
@@ -107,15 +110,15 @@ class TestLogCounterHandler:
 
 
 class TestStreamLogger:
-    def test_redirect(self):
+    def test_redirect(self, caplog: pytest.LogCaptureFixture) -> None:
         logger = logging.getLogger("test")
         logger.setLevel(logging.WARNING)
         old_stdout = sys.stdout
         sys.stdout = StreamLogger(logger, logging.ERROR)
 
-        with LogCapture() as log:
-            print("test log msg")
-        log.check(("test", "ERROR", "test log msg"))
+        caplog.clear()
+        print("test log msg")
+        assert caplog.record_tuples == [("test", logging.ERROR, "test log msg")]
 
         sys.stdout = old_stdout
 
@@ -312,3 +315,50 @@ class TestLoggingWithExtra:
         assert log_contents["message"] == log_message
         assert self.regex_pattern.match(log_contents["spider"])
         assert log_contents["important_info"] == extra["important_info"]
+
+
+class TestLogformatterAdapter:
+    @staticmethod
+    def _log(caplog: pytest.LogCaptureFixture, logkws: LogFormatterResult) -> str:
+        with caplog.at_level(logging.INFO):
+            logging.getLogger(__name__).log(*logformatter_adapter(logkws))
+        return caplog.records[-1].getMessage()
+
+    @pytest.mark.parametrize("args", [None, {}, ()])
+    def test_empty_args(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        args: dict[str, Any] | tuple[Any, ...] | None,
+    ) -> None:
+        logkws = cast(
+            "LogFormatterResult",
+            {"level": logging.INFO, "msg": "90% done", "args": args},
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            assert self._log(caplog, logkws) == "90% done"
+
+    @pytest.mark.parametrize(
+        ("msg", "args"),
+        [("%(pct)d%% done", {"pct": 90}), ("%d%% done", (90,))],
+    )
+    def test_args(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        msg: str,
+        args: dict[str, Any] | tuple[Any, ...],
+    ) -> None:
+        logkws: LogFormatterResult = {"level": logging.INFO, "msg": msg, "args": args}
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            assert self._log(caplog, logkws) == "90% done"
+
+    def test_msg_mapping_placeholders_without_args(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        logkws = cast(
+            "LogFormatterResult",
+            {"level": logging.INFO, "msg": "%(pct)d%% done", "pct": 90},
+        )
+        with pytest.warns(ScrapyDeprecationWarning, match="no args"):
+            assert self._log(caplog, logkws) == "90% done"

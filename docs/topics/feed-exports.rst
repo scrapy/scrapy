@@ -104,7 +104,8 @@ storage backend types which are defined by the URI scheme.
 The storages backends supported out of the box are:
 
 -   :ref:`topics-feed-storage-fs`
--   :ref:`topics-feed-storage-ftp`
+-   :ref:`feed-storage-ftp`
+-   :ref:`feed-storage-ftps`
 -   :ref:`topics-feed-storage-s3` (requires the :ref:`s3 <extras>` extra)
 -   :ref:`topics-feed-storage-gcs` (requires the :ref:`gcs <extras>` extra)
 -   :ref:`topics-feed-storage-stdout`
@@ -168,6 +169,7 @@ you specify a path (e.g. ``/tmp/export.csv``).
 Alternatively you can also use a :class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
+.. _feed-storage-ftp:
 
 FTP
 ---
@@ -177,6 +179,9 @@ The feeds are stored in a FTP server.
 -   URI scheme: ``ftp``
 -   Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
 -   Required external libraries: none
+
+FTP sends credentials and data in cleartext. Use :ref:`feed-storage-ftps`
+instead where possible.
 
 FTP supports two different connection modes: `active or passive
 <https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
@@ -190,6 +195,28 @@ storage backend is: ``True``.
      previous version of your data.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
+
+.. _feed-storage-ftps:
+
+FTPS
+----
+
+The feeds are stored in a FTP server, over a TLS connection, with the
+certificate of the server verified.
+
+.. versionadded:: VERSION
+
+-   URI scheme: ``ftps``
+-   Example URI: ``ftps://user:pass@ftp.example.com/path/to/export.csv``
+-   Required external libraries: none
+
+See :ref:`feed-storage-ftp` for connection modes, the ``overwrite`` default and
+file delivery.
+
+.. note:: For SFTP, an unrelated protocol built on SSH, use
+          `scrapy-feedexporter-sftp
+          <https://github.com/scrapy-plugins/scrapy-feedexporter-sftp>`_.
 
 
 .. _topics-feed-storage-s3:
@@ -218,12 +245,13 @@ passed through the following settings:
 
 .. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
-You can also define a custom ACL, custom endpoint, and region name for exported
-feeds using these settings:
+You can also define a custom ACL, custom endpoint, region name and connection
+pool size for exported feeds using these settings:
 
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`AWS_ENDPOINT_URL`
 -   :setting:`AWS_REGION_NAME`
+-   :setting:`AWS_MAX_POOL_CONNECTIONS`
 
 The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
@@ -501,7 +529,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-fs`: ``False``
 
-    -   :ref:`topics-feed-storage-ftp`: ``True``
+    -   :ref:`feed-storage-ftp` and :ref:`feed-storage-ftps`: ``True``
 
         .. note:: Some FTP servers may not support appending to files (the
                   ``APPE`` FTP command).
@@ -623,6 +651,7 @@ Default:
         "s3": "scrapy.extensions.feedexport.S3FeedStorage",
         "gs": "scrapy.extensions.feedexport.GCSFeedStorage",
         "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
+        "ftps": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 
 A dict containing the built-in feed storage backends supported by Scrapy. You

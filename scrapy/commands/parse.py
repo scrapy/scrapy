@@ -41,7 +41,7 @@ class Command(BaseRunSpiderCommand):
     spider: Spider | None = None
     items: ClassVar[dict[int, list[Any]]] = {}
     requests: ClassVar[dict[int, list[Request]]] = {}
-    spidercls: type[Spider] | None
+    spidercls: type[Spider] | None = None
 
     first_response = None
 
@@ -281,7 +281,6 @@ class Command(BaseRunSpiderCommand):
     ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
-            assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
                 for item in items:
@@ -346,6 +345,8 @@ class Command(BaseRunSpiderCommand):
                 self.first_response = response
 
             cb = self._get_callback(spider=spider, opts=opts, response=response)
+            assert response.request
+            response.request.callback = cb
 
             # parse items and requests
             depth: int = response.meta["_depth"]

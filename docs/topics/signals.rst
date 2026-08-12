@@ -44,6 +44,15 @@ Here is a simple example showing how you can catch signals and perform some acti
         def parse(self, response):
             pass
 
+.. _signal-order:
+
+Handler order
+=============
+
+The order in which the handlers of a signal run is undefined, and
+:ref:`asynchronous handlers <signal-deferred>` run concurrently. If two actions
+must happen in a given order, run both from a single handler, in that order.
+
 .. _signal-deferred:
 
 Asynchronous signal handlers
@@ -148,6 +157,15 @@ scheduler_empty
     scheduler returns none.
 
     See :ref:`start-requests-lazy` for an example.
+
+    .. warning:: Only wait for this signal from
+        :meth:`~scrapy.Spider.start`. While no request can be sent, e.g. while
+        the responses being parsed exceed
+        :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`, the engine does not ask the
+        scheduler for requests, and hence this signal is not sent. So waiting
+        for it from a :ref:`callback <callbacks>` can hang the crawl,
+        because the response being parsed is itself one of the responses that
+        may be blocking requests.
 
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
@@ -272,6 +290,13 @@ spider_opened
     reserve per-spider resources, but can be used for any task that needs to be
     performed when a spider is opened.
 
+    .. versionchanged:: VERSION
+       Added support for :exc:`~scrapy.exceptions.CloseSpider`.
+
+    You may raise a :exc:`~scrapy.exceptions.CloseSpider` exception to close the
+    spider before it starts crawling, e.g. if a resource that the spider needs
+    is unavailable.
+
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
     :param spider: the spider which has been opened
@@ -320,15 +345,22 @@ spider_error
 .. signal:: spider_error
 .. function:: spider_error(failure, response, spider)
 
-    Sent when a spider callback generates an error (i.e. raises an exception).
+    Sent when a spider callback or the :meth:`~scrapy.Spider.start` method of a
+    spider generates an error (i.e. raises an exception).
+
+    .. versionchanged:: VERSION
+       Exceptions from :meth:`~scrapy.Spider.start` are also reported, see
+       :ref:`start-error`.
 
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
     :param failure: the exception raised
     :type failure: twisted.python.failure.Failure
 
-    :param response: the response being processed when the exception was raised
-    :type response: :class:`~scrapy.http.Response` object
+    :param response: the response being processed when the exception was
+        raised, or ``None`` if the exception came from
+        :meth:`~scrapy.Spider.start`.
+    :type response: :class:`~scrapy.http.Response` | ``None``
 
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.Spider` object
@@ -556,6 +588,27 @@ headers_received
 
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.Spider` object
+
+robots_parsed
+~~~~~~~~~~~~~
+
+.. signal:: robots_parsed
+.. function:: robots_parsed(robotparser, request)
+
+    .. versionadded:: VERSION
+
+    Sent by
+    :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after it
+    downloads and parses a :file:`robots.txt` file, for the host that *request*
+    targets.
+
+    This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+    :param robotparser: the parser holding the parsed :file:`robots.txt` contents
+    :type robotparser: :class:`~scrapy.robotstxt.RobotParser` object
+
+    :param request: the request that triggered the :file:`robots.txt` download
+    :type request: :class:`~scrapy.Request` object
 
 
 Response signals

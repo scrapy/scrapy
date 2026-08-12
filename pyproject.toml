@@ -18,7 +18,7 @@ dependencies = [
     "parsel>=1.5.0",
     "protego>=0.1.15",
     "pyOpenSSL>=22.0.0",
-    "queuelib>=1.4.2",
+    "queuelib>=1.6.1",
     "service_identity>=23.1.0",
     "tldextract",
     "w3lib>=1.17.0",
@@ -26,6 +26,8 @@ dependencies = [
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    'brotli>=1.2.0; implementation_name != "pypy"',
+    'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -62,15 +64,11 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
-brotli = [
-    "brotli>=1.2.0; implementation_name != 'pypy'",
-    "brotlicffi>=1.2.0.0; implementation_name == 'pypy'",
-]
 gcs = ["google-cloud-storage>=1.29.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
-ipython = ["ipython>=7.1.0"]
-ptpython = ["ptpython>=2.0.1"]
+ipython = ["ipython>=8.15.0"]
+ptpython = ["ptpython>=3.0.23"]
 robotparser = ["robotexclusionrulesparser>=1.6.2"]
 s3 = ["boto3>=1.20.0"]
 twisted-http2 = ["Twisted[http2]>=21.7.0"]
@@ -118,59 +116,19 @@ allow_incomplete_defs = true # 59 errors
 # TODO
 [[tool.mypy.overrides]]
 module = [
-    "tests.mockserver.*",
     "tests.spiders",
     "tests.test_closespider",
     "tests.test_cmdline",
     "tests.test_contracts",
-    "tests.test_core_downloader",
-    "tests.test_downloader_handler_twisted_ftp",
-    "tests.test_downloadermiddleware_cookies",
-    "tests.test_downloadermiddleware_httpauth",
-    "tests.test_downloadermiddleware_httpcache",
-    "tests.test_downloadermiddleware_httpcompression",
-    "tests.test_downloadermiddleware_httpproxy",
-    "tests.test_downloadermiddleware_offsite",
-    "tests.test_downloadermiddleware_redirect",
-    "tests.test_downloadermiddleware_redirect_base",
-    "tests.test_downloadermiddleware_redirect_metarefresh",
-    "tests.test_downloadermiddleware_retry",
-    "tests.test_downloadermiddleware_robotstxt",
-    "tests.test_downloadermiddleware_stats",
     "tests.test_downloaderslotssettings",
     "tests.test_dupefilters",
     "tests.test_engine_loop",
-    "tests.test_exporters",
     "tests.test_extension_statsmailer",
     "tests.test_extension_throttle",
-    "tests.test_feedexport",
-    "tests.test_feedexport_postprocess",
-    "tests.test_feedexport_storages",
-    "tests.test_feedexport_uri_params",
-    "tests.test_http2_client_protocol",
-    "tests.test_http_headers",
-    "tests.test_http_request",
-    "tests.test_http_request_form",
-    "tests.test_http_response",
-    "tests.test_http_response_text",
-    "tests.test_item",
-    "tests.test_link",
     "tests.test_linkextractors",
-    "tests.test_loader",
     "tests.test_logformatter",
-    "tests.test_logstats",
     "tests.test_mail",
-    "tests.test_pipeline_crawl",
-    "tests.test_pipeline_files",
-    "tests.test_pipeline_images",
-    "tests.test_pipeline_media",
-    "tests.test_pipelines",
     "tests.test_pqueues",
-    "tests.test_request_attribute_binding",
-    "tests.test_request_cb_kwargs",
-    "tests.test_request_dict",
-    "tests.test_request_left",
-    "tests.test_robotstxt_interface",
     "tests.test_scheduler_base",
     "tests.test_settings",
     "tests.test_spider",
@@ -181,13 +139,7 @@ module = [
     "tests.test_squeues",
     "tests.test_squeues_request",
     "tests.test_stats",
-    "tests.test_utils_datatypes",
-    "tests.test_utils_decorators",
-    "tests.test_utils_defer",
-    "tests.test_utils_deprecate",
-    "tests.test_utils_misc.test_return_with_argument_inside_generator",
-    "tests.test_utils_python",
-    "tests.test_utils_request",
+    "tests.utils.bases.spider",
 ]
 check_untyped_defs = false
 
@@ -225,7 +177,6 @@ module = [
     "pyftpdlib.*",
     "pytest_twisted",
     "robotexclusionrulesparser",
-    "testfixtures",
     "zope.interface.*",
 ]
 ignore_missing_imports = true
@@ -368,6 +319,9 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",
+    # Jobs that do not report coverage disable it with --no-cov, which pytest-cov
+    # warns about because the coverage options below stay in place.
+    "ignore::pytest_cov.CovDisabledWarning",
     # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
     "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
 ]

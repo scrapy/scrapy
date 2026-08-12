@@ -10,6 +10,7 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.python import _signature
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine
@@ -19,9 +20,19 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
+@overload
+def deprecated(use_instead: Callable[_P, _T]) -> Callable[_P, _T]: ...
+
+
+@overload
 def deprecated(
-    use_instead: Any = None,
-) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]:
+    use_instead: str | None = None,
+) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]: ...
+
+
+def deprecated(
+    use_instead: Callable[_P, _T] | str | None = None,
+) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
     when the function is used."""
@@ -38,8 +49,9 @@ def deprecated(
         return wrapped
 
     if callable(use_instead):
-        deco = deco(use_instead)
+        func = use_instead
         use_instead = None
+        return deco(func)
     return deco
 
 
@@ -98,7 +110,7 @@ def _warn_spider_arg(
 ):
     """Decorator to warn if a ``spider`` argument is passed to a function."""
 
-    sig = inspect.signature(func)
+    sig = _signature(func)
 
     def check_args(*args: _P.args, **kwargs: _P.kwargs) -> None:
         bound = sig.bind(*args, **kwargs)

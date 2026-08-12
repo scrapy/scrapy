@@ -6,19 +6,40 @@ from datetime import datetime
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-from testfixtures import LogCapture
 
 from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.spiders import SitemapSpider
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
-from tests.test_spider import TestSpider
+from tests.spiders import RawResponseSpider
+from tests.utils.bases.spider import TestSpiderBase
+from tests.utils.crawl import crawl_items
 from tests.utils.decorators import coroutine_test
 
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
-class TestSitemapSpider(TestSpider):
+
+class RawSitemapSpider(RawResponseSpider):
+    """Feeds :meth:`raw_body` to :class:`~scrapy.spiders.SitemapSpider` as a
+    sitemap, so that it is fetched and followed through a regular crawl.
+
+    Subclasses build the document in :meth:`raw_body`, typically using
+    :attr:`mockserver` to point ``<loc>`` entries at real endpoints.
+    """
+
+    content_type = "application/xml"
+
+    async def start(self):
+        self.sitemap_urls = [self.raw_url]
+        async for request in super().start():
+            yield request
+
+
+class TestSitemapSpider(TestSpiderBase):
     spider_class = SitemapSpider
 
     BODY = b"SITEMAP"
@@ -254,22 +275,63 @@ Sitemap: /sitemap-relative-url.xml
         urls = [req.url for req in spider._parse_sitemap(r)]
         assert urls == result
 
-    def test_parse_sitemap_empty_body(self):
+    @coroutine_test
+    async def test_sitemap_rules_with_callable(self, mockserver: MockServer):
+        # A sitemap_rules entry may hold a callable instead of a method name.
+        def parse_item(response):
+            yield {"url": response.url}
+
+        class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_rules = [("", parse_item)]
+
+            def raw_body(self):
+                loc = self.mockserver.url("/text")
+                return (
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    f"<url><loc>{loc}</loc></url>"
+                    "</urlset>"
+                )
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"url": mockserver.url("/text")}]
+
+    @coroutine_test
+    async def test_sitemap_empty_loc(self, mockserver: MockServer):
+        class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            def parse(self, response):
+                yield {"url": response.url}
+
+            def raw_body(self):
+                loc = self.mockserver.url("/text")
+                return (
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    "<url><loc></loc></url>"
+                    f"<url><loc>{loc}</loc></url>"
+                    "</urlset>"
+                )
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [{"url": mockserver.url("/text")}]
+
+    def test_parse_sitemap_empty_body(self, caplog: pytest.LogCaptureFixture) -> None:
         r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
         spider = self.spider_class("example.com")
 
-        with LogCapture() as lc:
+        caplog.clear()
+        with caplog.at_level(WARNING):
             results = list(spider._parse_sitemap(r))
 
         assert not results
 
-        lc.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.spiders.sitemap",
-                "WARNING",
+                WARNING,
                 "Ignoring invalid sitemap: <200 http://www.example.com/sitemap.xml>",
             )
-        )
+        ]
 
     def test_parse_sitemap_not_sitemap(self):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -342,7 +404,7 @@ Sitemap: /sitemap-relative-url.xml
         response = Response(url="https://example.com", body=body, request=request)
         assert spider._get_sitemap_body(response) is None
 
-    def test_download_warnsize_setting(self):
+    def test_download_warnsize_setting(self, caplog: pytest.LogCaptureFixture) -> None:
         settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
         crawler = get_crawler(settings_dict=settings)
         spider = self.spider_class.from_crawler(crawler, "example.com")
@@ -350,25 +412,26 @@ Sitemap: /sitemap-relative-url.xml
         body = body_path.read_bytes()
         request = Request(url="https://example.com")
         response = Response(url="https://example.com", body=body, request=request)
-        with LogCapture(
-            "scrapy.spiders.sitemap", propagate=False, level=WARNING
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(WARNING, logger="scrapy.spiders.sitemap"):
             spider._get_sitemap_body(response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.spiders.sitemap",
-                "WARNING",
+                WARNING,
                 (
                     "<200 https://example.com> body size after decompression "
                     "(11511612 B) is larger than the download warning size "
                     "(10000000 B)."
                 ),
             ),
-        )
+        ]
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-    def test_download_warnsize_spider_attr(self):
-        class DownloadWarnSizeSpider(self.spider_class):
+    def test_download_warnsize_spider_attr(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        class DownloadWarnSizeSpider(self.spider_class):  # type: ignore[name-defined,misc]
             download_warnsize = 10_000_000
 
         crawler = get_crawler()
@@ -379,23 +442,24 @@ Sitemap: /sitemap-relative-url.xml
             url="https://example.com", meta={"download_warnsize": 10_000_000}
         )
         response = Response(url="https://example.com", body=body, request=request)
-        with LogCapture(
-            "scrapy.spiders.sitemap", propagate=False, level=WARNING
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(WARNING, logger="scrapy.spiders.sitemap"):
             spider._get_sitemap_body(response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.spiders.sitemap",
-                "WARNING",
+                WARNING,
                 (
                     "<200 https://example.com> body size after decompression "
                     "(11511612 B) is larger than the download warning size "
                     "(10000000 B)."
                 ),
             ),
-        )
+        ]
 
-    def test_download_warnsize_request_meta(self):
+    def test_download_warnsize_request_meta(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         crawler = get_crawler()
         spider = self.spider_class.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
@@ -404,21 +468,20 @@ Sitemap: /sitemap-relative-url.xml
             url="https://example.com", meta={"download_warnsize": 10_000_000}
         )
         response = Response(url="https://example.com", body=body, request=request)
-        with LogCapture(
-            "scrapy.spiders.sitemap", propagate=False, level=WARNING
-        ) as log:
+        caplog.clear()
+        with caplog.at_level(WARNING, logger="scrapy.spiders.sitemap"):
             spider._get_sitemap_body(response)
-        log.check(
+        assert caplog.record_tuples == [
             (
                 "scrapy.spiders.sitemap",
-                "WARNING",
+                WARNING,
                 (
                     "<200 https://example.com> body size after decompression "
                     "(11511612 B) is larger than the download warning size "
                     "(10000000 B)."
                 ),
             ),
-        )
+        ]
 
     @coroutine_test
     async def test_sitemap_urls(self):

@@ -2,21 +2,17 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import marshal
 import pickle
-import random
-import shutil
 import tempfile
-from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from string import ascii_letters, digits
 from typing import IO, TYPE_CHECKING, Any
 from unittest import mock
 
 import lxml.etree
 import pytest
-from testfixtures import LogCapture
 from w3lib.url import file_uri_to_path
 
 import scrapy
@@ -28,12 +24,14 @@ from scrapy.extensions.feedexport import (
     FeedExporter,
     FeedSlot,
     FileFeedStorage,
+    ItemFilter,
     apply_uri_params,
 )
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
+from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
 from tests.utils.feedexport import MyItem, MyItem2, path_to_url, printf_escape
 
@@ -99,144 +97,11 @@ class LogOnStoreFileStorage:
         file.close()
 
 
-class TestFeedExportBase(ABC):
-    mockserver: MockServer
-
-    def _random_temp_filename(self, inter_dir="") -> Path:
-        chars = [random.choice(ascii_letters + digits) for _ in range(15)]
-        filename = "".join(chars)
-        return Path(self.temp_dir, inter_dir, filename)
-
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    def setup_method(self):
-        self.temp_dir = tempfile.mkdtemp()
-
-    def teardown_method(self):
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-    async def exported_data(
-        self, items: Iterable[Any], settings: dict[str, Any]
-    ) -> dict[str, Any]:
-        """
-        Return exported data which a spider yielding ``items`` would return.
-        """
-
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                yield from items
-
-        return await self.run_and_export(TestSpider, settings)
-
-    async def exported_no_data(self, settings: dict[str, Any]) -> dict[str, Any]:
-        """
-        Return exported data which a spider yielding no ``items`` would return.
-        """
-
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                pass
-
-        return await self.run_and_export(TestSpider, settings)
-
-    async def assertExported(
-        self,
-        items: Iterable[Any],
-        header: Iterable[str],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        await self.assertExportedCsv(items, header, rows, settings)
-        await self.assertExportedJsonLines(items, rows, settings)
-        await self.assertExportedXml(items, rows, settings)
-        await self.assertExportedPickle(items, rows, settings)
-        await self.assertExportedMarshal(items, rows, settings)
-        await self.assertExportedMultiple(items, rows, settings)
-
-    async def assertExportedCsv(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        header: Iterable[str],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedJsonLines(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedXml(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedMultiple(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedPickle(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedMarshal(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    @abstractmethod
-    async def run_and_export(
-        self, spider_cls: type[Spider], settings: dict[str, Any]
-    ) -> dict[str, Any]:
-        pass
-
-    def _load_until_eof(
-        self, data: bytes, load_func: Callable[[IO[bytes]], Any]
-    ) -> list[Any]:
-        result: list[Any] = []
-        with tempfile.TemporaryFile() as temp:
-            temp.write(data)
-            temp.seek(0)
-            while True:
-                try:
-                    result.append(load_func(temp))
-                except EOFError:
-                    break
-        return result
-
-
 class InstrumentedFeedSlot(FeedSlot):
     """Instrumented FeedSlot subclass for keeping track of calls to
     start_exporting and finish_exporting."""
+
+    update_listener: Callable[[str], None]
 
     def start_exporting(self):
         self.update_listener("start")
@@ -247,7 +112,7 @@ class InstrumentedFeedSlot(FeedSlot):
         super().finish_exporting()
 
     @classmethod
-    def subscribe__listener(cls, listener):
+    def subscribe__listener(cls, listener: IsExportingListener) -> None:
         cls.update_listener = listener.update
 
 
@@ -257,7 +122,7 @@ class IsExportingListener:
     finish_exporting and when a call to finish_exporting has been made
     before a call to start_exporting."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.start_without_finish = False
         self.finish_without_start = False
 
@@ -445,6 +310,7 @@ class TestFeedExport(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
+        assert crawler.stats is not None
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
 
@@ -468,6 +334,7 @@ class TestFeedExport(TestFeedExportBase):
             side_effect=store,
         ):
             yield crawler.crawl(mockserver=self.mockserver)
+        assert crawler.stats is not None
         assert "feedexport/failed_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/failed_count/FileFeedStorage") == 1
 
@@ -485,6 +352,7 @@ class TestFeedExport(TestFeedExportBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
+        assert crawler.stats is not None
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert "feedexport/success_count/StdoutFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
@@ -625,7 +493,7 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_start_finish_exporting_no_items(self):
-        items = []
+        items: list[Any] = []
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -664,7 +532,7 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_start_finish_exporting_no_items_exception(self):
-        items = []
+        items: list[Any] = []
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -702,7 +570,9 @@ class TestFeedExport(TestFeedExportBase):
             assert expctd == data[fmt]
 
     @coroutine_test
-    async def test_export_no_items_multiple_feeds(self):
+    async def test_export_no_items_multiple_feeds(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Make sure that `storage.store` is not called."""
         settings = {
             "FEEDS": {
@@ -714,10 +584,10 @@ class TestFeedExport(TestFeedExportBase):
             "FEED_STORE_EMPTY": False,
         }
 
-        with LogCapture() as log:
+        with caplog.at_level(logging.INFO):
             await self.exported_no_data(settings)
 
-        assert str(log).count("Storage.store is called") == 0
+        assert caplog.text.count("Storage.store is called") == 0
 
     @coroutine_test
     async def test_export_multiple_item_classes(self):
@@ -747,7 +617,7 @@ class TestFeedExport(TestFeedExportBase):
         items = [{"foo": "bar"}]
         header = ["foo"]
         rows = [{"foo": "bar"}]
-        settings = {"FEED_EXPORT_FIELDS": []}
+        settings: dict[str, Any] = {"FEED_EXPORT_FIELDS": []}
         await self.assertExportedCsv(items, header, rows)
         await self.assertExportedJsonLines(items, rows, settings)
 
@@ -812,14 +682,14 @@ class TestFeedExport(TestFeedExportBase):
 
         formats = {
             "csv": b"foo,egg,baz\r\nbar1,spam1,\r\n",
-            "json": b'[\n{"hello": "world2", "foo": "bar2"}\n]',
+            "json": b'[\n{"foo": "bar2", "hello": "world2"}\n]',
             "jsonlines": (
-                b'{"foo": "bar1", "egg": "spam1"}\n{"hello": "world2", "foo": "bar2"}\n'
+                b'{"foo": "bar1", "egg": "spam1"}\n{"foo": "bar2", "hello": "world2"}\n'
             ),
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
-                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>"
-                b"world2</hello><foo>bar2</foo></item>\n<item><hello>world3"
+                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><foo>"
+                b"bar2</foo><hello>world2</hello></item>\n<item><hello>world3"
                 b"</hello><egg>spam3</egg></item>\n</items>"
             ),
         }
@@ -863,22 +733,22 @@ class TestFeedExport(TestFeedExportBase):
             def accepts(self, item):
                 return isinstance(item, MyItem)
 
-        class CustomFilter2(scrapy.extensions.feedexport.ItemFilter):
+        class CustomFilter2(ItemFilter):
             def accepts(self, item):
                 return "foo" in item.fields
 
-        class CustomFilter3(scrapy.extensions.feedexport.ItemFilter):
+        class CustomFilter3(ItemFilter):
             def accepts(self, item):
                 return (
-                    isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1"
+                    isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1"  # type: ignore[index]
                 )
 
         formats = {
             "json": b'[\n{"foo": "bar1", "egg": "spam1"}\n]',
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
-                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>"
-                b"world2</hello><foo>bar2</foo></item>\n</items>"
+                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><foo>"
+                b"bar2</foo><hello>world2</hello></item>\n</items>"
             ),
             "jsonlines": b'{"foo": "bar1", "egg": "spam1"}\n',
         }
@@ -970,7 +840,7 @@ class TestFeedExport(TestFeedExportBase):
         }
 
         for fmt, expected in formats.items():
-            settings = {
+            settings: dict[str, Any] = {
                 "FEEDS": {
                     self._random_temp_filename(): {"format": fmt},
                 },
@@ -1047,7 +917,7 @@ class TestFeedExport(TestFeedExportBase):
             {"key": "value"},
         ]
 
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             # JSON
             {
                 "format": "json",
@@ -1219,7 +1089,9 @@ class TestFeedExport(TestFeedExportBase):
         assert data["csv"] == b""
 
     @coroutine_test
-    async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
+    async def test_multiple_feeds_success_logs_blocking_feed_storage(
+        self, caplog: pytest.LogCaptureFixture
+    ):
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1232,14 +1104,16 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar1", "baz": ""},
             {"foo": "bar2", "baz": "quux"},
         ]
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             await self.exported_data(items, settings)
 
         for fmt in ["json", "xml", "csv"]:
-            assert f"Stored {fmt} feed (2 items)" in str(log)
+            assert f"Stored {fmt} feed (2 items)" in caplog.text
 
     @coroutine_test
-    async def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
+    async def test_multiple_feeds_failing_logs_blocking_feed_storage(
+        self, caplog: pytest.LogCaptureFixture
+    ):
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1252,11 +1126,11 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar1", "baz": ""},
             {"foo": "bar2", "baz": "quux"},
         ]
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             await self.exported_data(items, settings)
 
         for fmt in ["json", "xml", "csv"]:
-            assert f"Error storing {fmt} feed (2 items)" in str(log)
+            assert f"Error storing {fmt} feed (2 items)" in caplog.text
 
     @coroutine_test
     async def test_extend_kwargs(self):
@@ -1264,7 +1138,7 @@ class TestFeedExport(TestFeedExportBase):
 
         expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
         expected_without_title_csv = b"FOO,BAR\r\n"
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             # with title
             {
                 "options": {
@@ -1298,6 +1172,9 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_storage_file_no_postprocessing(self):
         class Storage:
+            open_file: IO[bytes]
+            store_file: IO[bytes]
+
             def __init__(self, uri, *, feed_options=None):
                 pass
 
@@ -1319,6 +1196,10 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_storage_file_postprocessing(self):
         class Storage:
+            open_file: IO[bytes]
+            store_file: IO[bytes]
+            file_was_closed: bool
+
             def __init__(self, uri, *, feed_options=None):
                 pass
 
@@ -1382,9 +1263,8 @@ class TestFeedExporterSignals:
         feed_slot_signal_handler: Callable[[Any], Awaitable[None] | None],
     ) -> None:
         crawler = get_crawler(settings_dict=self.settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
+        feed_exporter = build_from_crawler(FeedExporter, crawler)
+        spider = scrapy.Spider.from_crawler(crawler, "default")
         crawler.signals.connect(
             feed_exporter_signal_handler,
             signal=signals.feed_exporter_closed,
@@ -1422,16 +1302,41 @@ class TestFeedExporterSignals:
         assert self.feed_exporter_closed_received
 
 
+class TestItemFilter:
+    def test_no_feed_options(self):
+        item_filter = ItemFilter(None)
+        assert item_filter.item_classes == ()
+        assert item_filter.accepts(MyItem({"foo": "bar"}))
+
+
 class TestFeedExportInit:
     def test_unsupported_storage(self):
-        settings = {
+        settings: dict[str, Any] = {
             "FEEDS": {
                 "unsupported://uri": {},
             },
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
+
+    def test_disabled_storage(self, caplog: pytest.LogCaptureFixture):
+        class DisabledFeedStorage:
+            def __init__(self, uri, *, feed_options=None):
+                raise NotConfigured("not today")
+
+        settings = {
+            "FEED_STORAGES": {"disabled": DisabledFeedStorage},
+            "FEEDS": {
+                "disabled://uri": {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        with caplog.at_level(logging.ERROR), pytest.raises(NotConfigured):
+            build_from_crawler(FeedExporter, crawler)
+        assert (
+            "Disabled feed storage scheme: disabled. Reason: not today" in caplog.text
+        )
 
     def test_unsupported_format(self):
         settings = {
@@ -1443,7 +1348,7 @@ class TestFeedExportInit:
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
 
     def test_absolute_pathlib_as_uri(self):
         with tempfile.NamedTemporaryFile(suffix="json") as tmp:
@@ -1455,7 +1360,7 @@ class TestFeedExportInit:
                 },
             }
             crawler = get_crawler(settings_dict=settings)
-            exporter = FeedExporter.from_crawler(crawler)
+            exporter = build_from_crawler(FeedExporter, crawler)
             assert isinstance(exporter, FeedExporter)
 
     def test_relative_pathlib_as_uri(self):
@@ -1467,7 +1372,7 @@ class TestFeedExportInit:
             },
         }
         crawler = get_crawler(settings_dict=settings)
-        exporter = FeedExporter.from_crawler(crawler)
+        exporter = build_from_crawler(FeedExporter, crawler)
         assert isinstance(exporter, FeedExporter)
 
 
@@ -1476,7 +1381,9 @@ class TestFeedExporterBatchIdState:
 
     items = [{"foo": "bar"}, {"foo": "baz"}]
 
-    def _make_exporter(self, uri_template, batch_item_count=1):
+    def _make_exporter(
+        self, uri_template: str, batch_item_count: int = 1
+    ) -> FeedExporter:
         settings = {
             "FEEDS": {
                 uri_template: {
@@ -1485,10 +1392,10 @@ class TestFeedExporterBatchIdState:
                 },
             },
         }
-        return FeedExporter.from_crawler(get_crawler(settings_dict=settings))
+        return build_from_crawler(FeedExporter, get_crawler(settings_dict=settings))
 
     @coroutine_test
-    async def test_fresh_crawl_starts_at_one(self):
+    async def test_fresh_crawl_starts_at_one(self) -> None:
         """Without saved state, batch_id starts at 1."""
         with tempfile.TemporaryDirectory() as tmpdir:
             uri = f"{path_to_url(tmpdir)}/feed-%(batch_id)d.jl"
@@ -1499,7 +1406,7 @@ class TestFeedExporterBatchIdState:
             assert exporter.slots[0].batch_id == 1
 
     @coroutine_test
-    async def test_multiple_feeds_tracked_independently(self):
+    async def test_multiple_feeds_tracked_independently(self) -> None:
         """Each feed URI is tracked independently in spider.state."""
         with tempfile.TemporaryDirectory() as tmpdir:
             uri_a = f"{path_to_url(tmpdir)}/a-%(batch_id)d.jl"
@@ -1510,19 +1417,21 @@ class TestFeedExporterBatchIdState:
                     uri_b: {"format": "jl", "batch_item_count": 1},
                 },
             }
-            exporter = FeedExporter.from_crawler(get_crawler(settings_dict=settings))
+            exporter = build_from_crawler(
+                FeedExporter, get_crawler(settings_dict=settings)
+            )
             spider = scrapy.Spider("testspider")
-            spider.state = {"feed_batch_ids": {uri_a: 3, uri_b: 7}}
+            spider.state = {"feed_batch_ids": {uri_a: 3, uri_b: 7}}  # type: ignore[attr-defined]
 
             exporter.open_spider(spider)
             exporter.crawler.spider = spider
-            await exporter._on_state_loaded(spider.state)
+            await exporter._on_state_loaded(spider.state)  # type: ignore[attr-defined]
             batch_ids = {slot.uri_template: slot.batch_id for slot in exporter.slots}
             assert batch_ids[uri_a] == 3
             assert batch_ids[uri_b] == 7
 
     @coroutine_test
-    async def test_no_jobdir_no_error(self):
+    async def test_no_jobdir_no_error(self) -> None:
         """open_spider and close_spider work when JOBDIR is not configured.
 
         Without JOBDIR, SpiderState is not active, so spider_state_loaded and
@@ -1542,7 +1451,7 @@ class TestFeedExporterBatchIdState:
             await exporter.close_spider(spider)
 
     @coroutine_test
-    async def test_batch_id_persists_across_jobdir_runs(self):
+    async def test_batch_id_persists_across_jobdir_runs(self) -> None:
         """Resuming with JOBDIR continues batch numbering instead of overwriting files.
 
         Uses the full Scrapy machinery (real crawl_async()) so that any internal
@@ -1585,7 +1494,7 @@ class TestFeedExporterBatchIdState:
             assert Path(f"{tmpdir}/feed-4.jl").exists()
 
     @coroutine_test
-    async def test_feed_added_on_resume_starts_at_one(self):
+    async def test_feed_added_on_resume_starts_at_one(self) -> None:
         """A feed added on a resume run starts fresh instead of resuming.
 
         The first run only knows feed A, so its saved state records a batch ID
@@ -1631,17 +1540,17 @@ class TestFeedExporterBatchIdState:
             assert Path(f"{tmpdir}/b-2.jl").exists()
 
     @coroutine_test
-    async def test_feed_slots_initialized_fires_after_state_loaded(self):
+    async def test_feed_slots_initialized_fires_after_state_loaded(self) -> None:
         """feed_slots_initialized fires with correct slots when state is restored."""
         with tempfile.TemporaryDirectory() as tmpdir:
             uri = f"{path_to_url(tmpdir)}/feed-%(batch_id)d.jl"
             exporter = self._make_exporter(uri)
             spider = scrapy.Spider("testspider")
-            spider.state = {"feed_batch_ids": {uri: 5}}
+            spider.state = {"feed_batch_ids": {uri: 5}}  # type: ignore[attr-defined]
 
-            received: list[list] = []
+            received: list[list[FeedSlot]] = []
 
-            def on_initialized(slots):
+            def on_initialized(slots: Iterable[FeedSlot]) -> None:
                 received.append(list(slots))
 
             exporter.crawler.signals.connect(
@@ -1649,22 +1558,24 @@ class TestFeedExporterBatchIdState:
             )
             exporter.open_spider(spider)
             exporter.crawler.spider = spider
-            await exporter._on_state_loaded(spider.state)
+            await exporter._on_state_loaded(spider.state)  # type: ignore[attr-defined]
 
             assert len(received) == 1
             assert received[0][0].batch_id == 5
 
     @coroutine_test
-    async def test_feed_slots_initialized_fires_from_engine_started_without_state(self):
+    async def test_feed_slots_initialized_fires_from_engine_started_without_state(
+        self,
+    ) -> None:
         """feed_slots_initialized fires via engine_started when no state is loaded."""
         with tempfile.TemporaryDirectory() as tmpdir:
             uri = f"{path_to_url(tmpdir)}/feed-%(batch_id)d.jl"
             exporter = self._make_exporter(uri)
             spider = scrapy.Spider("testspider")
 
-            received: list[list] = []
+            received: list[list[FeedSlot]] = []
 
-            def on_initialized(slots):
+            def on_initialized(slots: Iterable[FeedSlot]) -> None:
                 received.append(list(slots))
 
             exporter.crawler.signals.connect(

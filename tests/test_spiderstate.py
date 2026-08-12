@@ -9,6 +9,7 @@ from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.spiderstate import SpiderState
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 
 def test_deprecated_methods(tmp_path: Path) -> None:
     crawler = get_crawler(Spider, {"JOBDIR": str(tmp_path)})
-    ss = SpiderState.from_crawler(crawler)
+    ss = build_from_crawler(SpiderState, crawler)
     spider = Spider(name="default")
     with pytest.warns(ScrapyDeprecationWarning, match="spider_opened"):
         ss.spider_opened(spider)
@@ -29,7 +30,7 @@ def test_deprecated_methods(tmp_path: Path) -> None:
 def test_not_configured() -> None:
     crawler = get_crawler(Spider)
     with pytest.raises(NotConfigured):
-        SpiderState.from_crawler(crawler)
+        build_from_crawler(SpiderState, crawler)
 
 
 @coroutine_test
@@ -39,7 +40,7 @@ async def test_store_load(tmp_path: Path) -> None:
     dt = datetime.now(tz=timezone.utc)
 
     crawler = get_crawler(Spider, {"JOBDIR": jobdir})
-    ss = SpiderState.from_crawler(crawler)
+    ss = build_from_crawler(SpiderState, crawler)
     await ss._spider_opened(spider)
     assert hasattr(spider, "state")
     spider.state["one"] = 1
@@ -48,7 +49,7 @@ async def test_store_load(tmp_path: Path) -> None:
 
     spider2 = Spider(name="default")
     crawler2 = get_crawler(Spider, {"JOBDIR": jobdir})
-    ss2 = SpiderState.from_crawler(crawler2)
+    ss2 = build_from_crawler(SpiderState, crawler2)
     await ss2._spider_opened(spider2)
     assert hasattr(spider2, "state")
     assert spider2.state == {"one": 1, "dt": dt}
@@ -58,7 +59,7 @@ async def test_store_load(tmp_path: Path) -> None:
 @coroutine_test
 async def test_spider_state_loaded_signal_fires(tmp_path: Path) -> None:
     crawler = get_crawler(Spider, {"JOBDIR": str(tmp_path)})
-    ss = SpiderState.from_crawler(crawler)
+    ss = build_from_crawler(SpiderState, crawler)
 
     received: list[dict[str, Any]] = []
 
@@ -77,7 +78,7 @@ async def test_spider_state_loaded_signal_fires(tmp_path: Path) -> None:
 @coroutine_test
 async def test_spider_state_saving_signal_fires(tmp_path: Path) -> None:
     crawler = get_crawler(Spider, {"JOBDIR": str(tmp_path)})
-    ss = SpiderState.from_crawler(crawler)
+    ss = build_from_crawler(SpiderState, crawler)
 
     spider = Spider(name="default")
     await ss._spider_opened(spider)
