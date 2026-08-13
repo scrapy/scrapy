@@ -691,6 +691,33 @@ class Base:
                 ),
             ]
 
+        def test_schemes(self):
+            body = b"""
+            <html><body>
+            <a href="page.html">Page</a>
+            <a href="data:text/plain,Data">Data</a>
+            <a href="mailto:someone@example.com">Mail</a>
+            </body></html>"""
+            response = HtmlResponse("http://www.example.com/index.html", body=body)
+
+            lx = self.extractor_cls()
+            assert lx.extract_links(response) == [
+                Link(url="http://www.example.com/page.html", text="Page"),
+                Link(url="data:text/plain,Data", text="Data"),
+            ]
+
+            lx = self.extractor_cls(schemes="mailto")
+            assert lx.extract_links(response) == [
+                Link(url="mailto:someone@example.com", text="Mail"),
+            ]
+
+            lx = self.extractor_cls(schemes=())
+            assert lx.extract_links(response) == [
+                Link(url="http://www.example.com/page.html", text="Page"),
+                Link(url="data:text/plain,Data", text="Data"),
+                Link(url="mailto:someone@example.com", text="Mail"),
+            ]
+
         def test_pickle_extractor(self):
             lx = self.extractor_cls()
             assert isinstance(pickle.loads(pickle.dumps(lx)), self.extractor_cls)
