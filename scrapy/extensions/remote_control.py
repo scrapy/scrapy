@@ -202,16 +202,12 @@ class RemoteControl:
 
     async def _handle_status(self, request: web.Request) -> web.Response:
         """An aiohttp request handler for the ``/status`` endpoint."""
-        if request.method != "GET":
-            return web.json_response({"error": "method not allowed"}, status=405)
         if not self._is_authenticated(request):
             return web.json_response({"error": "unauthorized"}, status=401)
         return web.json_response(self._get_status())
 
     async def _handle_execute(self, request: web.Request) -> web.Response:
         """An aiohttp request handler for the ``/execute`` endpoint."""
-        if request.method != "POST":
-            return web.json_response({"error": "method not allowed"}, status=405)
         if not self._is_authenticated(request):
             return web.json_response({"error": "unauthorized"}, status=401)
 
