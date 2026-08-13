@@ -244,6 +244,39 @@ class GeneratorOutputChainSpider(Spider):
 
 
 # ================================================================================
+# (5) an exception from a spider callback (generator) that no process_spider_exception
+# method handles, with middlewares that define a process_spider_output method
+class FirstUnhandledMiddleware(_GeneratorDoNothingMiddleware):
+    pass
+
+
+class SecondUnhandledMiddleware(_GeneratorDoNothingMiddleware):
+    pass
+
+
+class ThirdUnhandledMiddleware(_GeneratorDoNothingMiddleware):
+    pass
+
+
+class UnhandledExceptionSpider(Spider):
+    name = "UnhandledExceptionSpider"
+    custom_settings = {
+        "SPIDER_MIDDLEWARES": {
+            FirstUnhandledMiddleware: 30,
+            SecondUnhandledMiddleware: 20,
+            ThirdUnhandledMiddleware: 10,
+        },
+    }
+
+    async def start(self):
+        yield Request(self.mockserver.url("/status?n=200"))
+
+    def parse(self, response):
+        yield {"processed": ["parse-first-item"]}
+        raise ImportError
+
+
+# ================================================================================
 class TestSpiderMiddleware:
     mockserver: MockServer
 
@@ -426,3 +459,20 @@ class TestSpiderMiddleware:
         assert str(item_from_callback) in log4
         assert str(item_recovered) in log4
         assert "parse-second-item" not in log4
+
+    @coroutine_test
+    async def test_unhandled_exception(self, caplog: pytest.LogCaptureFixture) -> None:
+        """
+        (5) An exception that no process_spider_exception method handles should be
+        offered to each of them only once, and then reach the spider error log.
+        """
+        log5 = await self.crawl_log(UnhandledExceptionSpider, caplog)
+        for middleware in (
+            FirstUnhandledMiddleware,
+            SecondUnhandledMiddleware,
+            ThirdUnhandledMiddleware,
+        ):
+            method = f"{middleware.__name__}.process_spider_exception"
+            assert log5.count(f"{method}: ImportError caught") == 1
+        assert "Spider error processing" in log5
+        assert "'item_scraped_count': 1" in log5
