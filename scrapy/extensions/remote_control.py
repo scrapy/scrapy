@@ -7,6 +7,7 @@ import hmac
 import inspect
 import io
 import logging
+import os
 import secrets
 import time
 import traceback
@@ -19,7 +20,8 @@ import scrapy
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.utils._remote_control import (
-    Envelope,
+    ExecuteResult,
+    StatusResult,
     job_files_dir,
     new_job_file_name,
     write_job_file,
@@ -27,6 +29,7 @@ from scrapy.utils._remote_control import (
 from scrapy.utils.asyncio import is_asyncio_available
 
 if TYPE_CHECKING:
+    from datetime import datetime
     from pathlib import Path
 
     # typing.Self requires Python 3.11
@@ -58,6 +61,16 @@ class RemoteControl:
 
     Available endpoints:
 
+    - ``/status``: expects a ``GET`` request and returns a JSON object with the
+      following keys:
+
+        - ``pid`` (number): the process ID of the Scrapy process.
+        - ``spider`` (string): the name of the currently running spider.
+        - ``project`` (string): the name of the Scrapy project.
+        - ``scrapy_version`` (string): the version of Scrapy.
+        - ``start_time`` (number or null): the start time of the Scrapy process
+          as a UNIX timestamp.
+
     - ``/execute``: expects a ``POST`` request with a JSON object containing
       the following keys:
 
@@ -74,9 +87,9 @@ class RemoteControl:
           raised.
         - ``elapsed_sec`` (number): the number of seconds the code took to run.
         - ``output_truncated`` (boolean, optional): whether the output was
-          truncated.
+          truncated (omitted if ``false``).
         - ``traceback_truncated`` (boolean, optional): whether the traceback
-          was truncated.
+          was truncated (omitted if ``false``).
 
     .. versionadded:: VERSION
     """
@@ -132,6 +145,7 @@ class RemoteControl:
         try:
             self._auth_token = secrets.token_urlsafe(32)
             app = web.Application()
+            app.router.add_get("/status", self._handle_status, allow_head=False)
             app.router.add_post("/execute", self._handle_execute)
             self._runner = web.AppRunner(
                 app, access_log=None, shutdown_timeout=STOP_TIMEOUT
@@ -186,14 +200,19 @@ class RemoteControl:
             self._runner = None
             self._auth_token = None
 
+    async def _handle_status(self, request: web.Request) -> web.Response:
+        """An aiohttp request handler for the ``/status`` endpoint."""
+        if request.method != "GET":
+            return web.json_response({"error": "method not allowed"}, status=405)
+        if not self._is_authenticated(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+        return web.json_response(self._get_status())
+
     async def _handle_execute(self, request: web.Request) -> web.Response:
         """An aiohttp request handler for the ``/execute`` endpoint."""
-        token = request.headers.get("Authorization", "").removeprefix("Bearer ")
-        if (
-            not self._auth_token
-            or not token.isascii()
-            or not hmac.compare_digest(token, self._auth_token)
-        ):
+        if request.method != "POST":
+            return web.json_response({"error": "method not allowed"}, status=405)
+        if not self._is_authenticated(request):
             return web.json_response({"error": "unauthorized"}, status=401)
 
         try:
@@ -215,7 +234,7 @@ class RemoteControl:
             requested_timeout, self._default_timeout, self._max_timeout
         )
         compiled = _compile(body["code"])
-        result: Envelope
+        result: ExecuteResult
         if isinstance(compiled, CodeType):
             result = await self._run_code(compiled, timeout)
         else:
@@ -227,7 +246,16 @@ class RemoteControl:
             }
         return web.json_response(result)
 
-    async def _run_code(self, code_obj: CodeType, timeout: float) -> Envelope:
+    def _is_authenticated(self, request: web.Request) -> bool:
+        """Check if the request is authenticated with the correct Bearer token."""
+        token = request.headers.get("Authorization", "").removeprefix("Bearer ")
+        return (
+            self._auth_token is not None
+            and token.isascii()
+            and hmac.compare_digest(token, self._auth_token)
+        )
+
+    async def _run_code(self, code_obj: CodeType, timeout: float) -> ExecuteResult:
         """Run a compiled code object with a timeout and capture its output."""
         buf = io.StringIO()
         ns = self._make_namespace(buf)
@@ -254,7 +282,7 @@ class RemoteControl:
             tb, tb_was_truncated = _cap(tb, self._traceback_max_bytes)
         else:
             tb_was_truncated = False
-        result: Envelope = {
+        result: ExecuteResult = {
             "status": status,
             "output": output,
             "traceback": tb,
@@ -265,6 +293,18 @@ class RemoteControl:
         if tb_was_truncated:
             result["traceback_truncated"] = True
         return result
+
+    def _get_status(self) -> StatusResult:
+        """Return the data for the ``/status`` response."""
+        assert self.crawler.spider
+        start_time: datetime | None = self.crawler.stats.get_value("start_time")
+        return {
+            "pid": os.getpid(),
+            "spider": self.crawler.spider.name,
+            "project": self.crawler.settings.get("BOT_NAME"),
+            "scrapy_version": scrapy.__version__,
+            "start_time": start_time.timestamp() if start_time is not None else None,
+        }
 
 
 def _cap(s: str, limit: int) -> tuple[str, bool]:

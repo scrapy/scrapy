@@ -4,7 +4,9 @@ import asyncio
 import contextlib
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -12,6 +14,7 @@ import aiohttp
 import pytest
 from aiohttp import web
 
+import scrapy
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions import remote_control
 from scrapy.extensions.remote_control import (
@@ -60,19 +63,40 @@ async def _started_extension(
         await extension.stop()
 
 
-async def _post(extension: RemoteControl, **kwargs: Any) -> tuple[int, Any]:
+async def _request(
+    extension: RemoteControl, method: str, path: str, **kwargs: Any
+) -> tuple[int, Any]:
     assert extension._runner
     host, port = extension._runner.addresses[0]
-    url = f"http://{host}:{port}/execute"
+    url = f"http://{host}:{port}{path}"
     async with (
         aiohttp.ClientSession() as session,
-        session.post(url, **kwargs) as response,
+        session.request(method, url, **kwargs) as response,
     ):
-        return response.status, await response.json(content_type=None)
+        try:
+            return response.status, await response.json(content_type=None)
+        except json.JSONDecodeError:
+            return response.status, await response.text()
+
+
+async def _request_execute(extension: RemoteControl, **kwargs: Any) -> tuple[int, Any]:
+    return await _request(extension, "POST", "/execute", **kwargs)
+
+
+async def _request_status(extension: RemoteControl, **kwargs: Any) -> tuple[int, Any]:
+    return await _request(extension, "GET", "/status", **kwargs)
 
 
 def _auth(extension: RemoteControl) -> dict[str, str]:
     return {"Authorization": f"Bearer {extension._auth_token}"}
+
+
+BAD_AUTH_HEADERS = [
+    {},
+    {"Authorization": "Bearer nope"},
+    {"Authorization": "Bearer ünicode"},
+    {"Authorization": "Basic nope"},
+]
 
 
 @coroutine_test
@@ -277,71 +301,72 @@ def test_settings_are_applied() -> None:
 
 
 @coroutine_test
-async def test_ok_envelope(tmp_path: Path) -> None:
+async def test_status_ok(tmp_path: Path) -> None:
     async with _started_extension(tmp_path) as extension:
-        status, envelope = await _post(
+        status, result = await _request_execute(
             extension, json={"code": "print(6 * 7)"}, headers=_auth(extension)
         )
     assert status == 200
-    assert envelope["status"] == "ok"
-    assert envelope["output"] == "42\n"
+    assert result["status"] == "ok"
+    assert result["output"] == "42\n"
 
 
 @coroutine_test
-async def test_compile_error_envelope(tmp_path: Path) -> None:
+async def test_status_compile_error(tmp_path: Path) -> None:
     async with _started_extension(tmp_path) as extension:
-        status, envelope = await _post(
+        status, result = await _request_execute(
             extension, json={"code": "def (:"}, headers=_auth(extension)
         )
     assert status == 200
-    assert envelope["status"] == "compile_error"
-    assert "SyntaxError" in envelope["traceback"]
+    assert result["status"] == "compile_error"
+    assert "SyntaxError" in result["traceback"]
 
 
 @coroutine_test
-async def test_runtime_error_envelope(tmp_path: Path) -> None:
+async def test_status_error(tmp_path: Path) -> None:
     async with _started_extension(tmp_path) as extension:
-        status, envelope = await _post(
+        status, result = await _request_execute(
             extension,
             json={"code": "raise ValueError('boom')"},
             headers=_auth(extension),
         )
     assert status == 200
-    assert envelope["status"] == "error"
-    assert "boom" in envelope["traceback"]
+    assert result["status"] == "error"
+    assert "boom" in result["traceback"]
 
 
 @coroutine_test
-async def test_live_crawler_is_reachable(tmp_path: Path) -> None:
-    # Using the real token covers the auth path end to end as well.
+async def test_crawler_var(tmp_path: Path) -> None:
     async with _started_extension(tmp_path) as extension:
-        status, envelope = await _post(
+        status, result = await _request_execute(
             extension,
-            json={"code": "print(type(crawler).__name__)"},
+            json={"code": "print(type(crawler).__name__, crawler.crawling)"},
             headers=_auth(extension),
         )
     assert status == 200
-    assert envelope["status"] == "ok"
-    assert "Crawler" in envelope["output"]
+    assert result["status"] == "ok"
+    assert result["output"] == "Crawler False\n"
 
 
-@pytest.mark.parametrize(
-    "headers",
-    [
-        {},
-        {"Authorization": "Bearer nope"},
-        {"Authorization": "Bearer ünicode"},
-        {"Authorization": "Basic nope"},
-    ],
-)
+@pytest.mark.parametrize("headers", BAD_AUTH_HEADERS)
 @coroutine_test
-async def test_unauthorized(tmp_path: Path, headers: dict[str, str]) -> None:
+async def test_execute_unauthorized(tmp_path: Path, headers: dict[str, str]) -> None:
     async with _started_extension(tmp_path) as extension:
-        status, body = await _post(
+        status, body = await _request_execute(
             extension, json={"code": "print(1)"}, headers=headers
         )
     assert status == 401
     assert body == {"error": "unauthorized"}
+
+
+@coroutine_test
+async def test_execute_rejects_other_methods(tmp_path: Path) -> None:
+    async with _started_extension(tmp_path) as extension:
+        results = [
+            await _request(extension, method, "/execute", headers=_auth(extension))
+            for method in ("HEAD", "GET", "PUT", "DELETE")
+        ]
+    assert [status for status, _ in results] == [405] * 4
 
 
 @pytest.mark.parametrize(
@@ -354,18 +379,22 @@ async def test_unauthorized(tmp_path: Path, headers: dict[str, str]) -> None:
     ],
 )
 @coroutine_test
-async def test_bad_requests(tmp_path: Path, kwargs: dict[str, Any], error: str) -> None:
+async def test_execute_bad_requests(
+    tmp_path: Path, kwargs: dict[str, Any], error: str
+) -> None:
     async with _started_extension(tmp_path) as extension:
-        status, body = await _post(extension, headers=_auth(extension), **kwargs)
+        status, body = await _request_execute(
+            extension, headers=_auth(extension), **kwargs
+        )
     assert status == 400
     assert body == {"error": error}
 
 
 @pytest.mark.parametrize("timeout_sec", ["abc", [1]])
 @coroutine_test
-async def test_bad_timeout_type(tmp_path: Path, timeout_sec: Any) -> None:
+async def test_execute_bad_timeout_type(tmp_path: Path, timeout_sec: Any) -> None:
     async with _started_extension(tmp_path) as extension:
-        status, body = await _post(
+        status, body = await _request_execute(
             extension,
             json={"code": "print(1)", "timeout_sec": timeout_sec},
             headers=_auth(extension),
@@ -376,15 +405,113 @@ async def test_bad_timeout_type(tmp_path: Path, timeout_sec: Any) -> None:
 
 @pytest.mark.parametrize("timeout_sec", [None, 0, -1])
 @coroutine_test
-async def test_unset_timeout_is_accepted(tmp_path: Path, timeout_sec: Any) -> None:
+async def test_execute_unset_timeout_is_accepted(
+    tmp_path: Path, timeout_sec: Any
+) -> None:
     async with _started_extension(tmp_path) as extension:
-        status, envelope = await _post(
+        status, envelope = await _request_execute(
             extension,
             json={"code": "print(1)", "timeout_sec": timeout_sec},
             headers=_auth(extension),
         )
     assert status == 200
     assert envelope["status"] == "ok"
+
+
+def test_get_status_fields() -> None:
+    extension = _get_extension()
+    assert extension._get_status() == {
+        "pid": os.getpid(),
+        "spider": extension.crawler.spidercls.name,
+        "project": "scrapybot",
+        "scrapy_version": scrapy.__version__,
+        "start_time": None,
+    }
+
+
+def test_get_status_project() -> None:
+    extension = _get_extension({"BOT_NAME": "my_project"})
+    assert extension._get_status()["project"] == "my_project"
+
+
+def test_get_status_project_unset() -> None:
+    extension = _get_extension({"BOT_NAME": None})
+    assert extension._get_status()["project"] is None
+
+
+def test_get_status_start_time() -> None:
+    extension = _get_extension()
+    start_time = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+    extension.crawler.stats.set_value("start_time", start_time)
+    assert extension._get_status()["start_time"] == start_time.timestamp()
+
+
+@coroutine_test
+async def test_status(tmp_path: Path) -> None:
+    async with _started_extension(tmp_path) as extension:
+        extension.crawler.stats.set_value(
+            "start_time", datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+        )
+        status, body = await _request_status(extension, headers=_auth(extension))
+    assert status == 200
+    assert body == {
+        "pid": os.getpid(),
+        "spider": extension.crawler.spidercls.name,
+        "project": "scrapybot",
+        "scrapy_version": scrapy.__version__,
+        "start_time": datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc).timestamp(),
+    }
+
+
+@coroutine_test
+async def test_compare_status_with_job_file(tmp_path: Path) -> None:
+    async with _started_extension(tmp_path) as extension:
+        status, body = await _request_status(extension, headers=_auth(extension))
+        (job_file,) = tmp_path.glob("*.json")
+        record = json.loads(job_file.read_text(encoding="utf-8"))
+    assert status == 200
+    for key in ("pid", "spider", "project", "scrapy_version"):
+        assert body[key] == record[key]
+
+
+@pytest.mark.parametrize("headers", BAD_AUTH_HEADERS)
+@coroutine_test
+async def test_status_unauthorized(tmp_path: Path, headers: dict[str, str]) -> None:
+    async with _started_extension(tmp_path) as extension:
+        status, body = await _request_status(extension, headers=headers)
+    assert status == 401
+    assert body == {"error": "unauthorized"}
+
+
+@coroutine_test
+async def test_status_rejects_other_methods(tmp_path: Path) -> None:
+    async with _started_extension(tmp_path) as extension:
+        results = [
+            await _request(extension, method, "/status", headers=_auth(extension))
+            for method in ("HEAD", "POST", "PUT", "DELETE")
+        ]
+    assert [status for status, _ in results] == [405] * 4
+
+
+@coroutine_test
+async def test_status_answers_while_code_is_running(tmp_path: Path) -> None:
+    async with _started_extension(tmp_path) as extension:
+        request = asyncio.ensure_future(
+            _request_execute(
+                extension,
+                json={"code": "import asyncio\nawait asyncio.sleep(30)"},
+                headers=_auth(extension),
+            )
+        )
+        await asyncio.sleep(0.1)  # let the request reach the handler
+        status, body = await asyncio.wait_for(
+            _request_status(extension, headers=_auth(extension)), 10
+        )
+        request.cancel()
+        with contextlib.suppress(asyncio.CancelledError, aiohttp.ClientError):
+            await request
+    assert status == 200
+    assert body["pid"] == os.getpid()
 
 
 @coroutine_test
@@ -492,7 +619,7 @@ async def test_stop_does_not_wait_for_a_running_snippet(
     extension.crawler.spider = extension.crawler.spidercls()
     await extension.start()
     request = asyncio.ensure_future(
-        _post(
+        _request_execute(
             extension,
             json={"code": "import asyncio\nawait asyncio.sleep(30)"},
             headers=_auth(extension),

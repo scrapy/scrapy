@@ -23,8 +23,18 @@ logger = logging.getLogger(__name__)
 JOB_FILE_VERSION = 1
 
 
-class Envelope(TypedDict):
-    """The result of one ``/execute`` call."""
+class StatusResult(TypedDict):
+    """The result of a ``/status`` call."""
+
+    pid: int
+    spider: str
+    project: str | None
+    scrapy_version: str
+    start_time: float | None
+
+
+class ExecuteResult(TypedDict):
+    """The result of an ``/execute`` call."""
 
     status: Literal["ok", "compile_error", "error", "timeout"]
     output: str
@@ -50,7 +60,7 @@ def new_job_file_name() -> str:
 def write_job_file(
     path: Path,
     *,
-    spider: str | None,
+    spider: str,
     project: str | None,
     scrapy_version: str,
     port: int,
