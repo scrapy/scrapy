@@ -184,32 +184,31 @@ def test_inject_base_url(body: bytes) -> None:
     assert open_in_browser(resp, _openfunc=check_base_url)
 
 
-def test_open_in_browser_redos_comment():
-    MAX_CPU_TIME = 0.02
+def _assert_open_in_browser_is_fast(body: bytes) -> None:
+    # The exploit inputs are large enough that a vulnerable implementation
+    # needs seconds to go through them, while a safe one stays in the low
+    # milliseconds even on a slow interpreter.
+    max_cpu_time = 0.2
 
+    response = HtmlResponse("https://example.com", body=body)
+    start_time = process_time()
+    open_in_browser(response, lambda url: True)
+    end_time = process_time()
+    assert end_time - start_time < max_cpu_time
+
+
+def test_open_in_browser_redos_comment():
     # Exploit input from
     # https://makenowjust-labs.github.io/recheck/playground/
     # for /<!--.*?-->/ (old pattern to remove comments).
-    body = b"-><!--\x00" * 25_000 + b"->\n<!---->"
-    response = HtmlResponse("https://example.com", body=body)
-    start_time = process_time()
-    open_in_browser(response, lambda url: True)
-    end_time = process_time()
-    assert end_time - start_time < MAX_CPU_TIME
+    _assert_open_in_browser_is_fast(b"-><!--\x00" * 250_000 + b"->\n<!---->")
 
 
 def test_open_in_browser_redos_head():
-    MAX_CPU_TIME = 0.02
-
     # Exploit input from
     # https://makenowjust-labs.github.io/recheck/playground/
     # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
-    body = b"<head\t" * 8_000
-    response = HtmlResponse("https://example.com", body=body)
-    start_time = process_time()
-    open_in_browser(response, lambda url: True)
-    end_time = process_time()
-    assert end_time - start_time < MAX_CPU_TIME
+    _assert_open_in_browser_is_fast(b"<head\t" * 80_000)
 
 
 @pytest.mark.parametrize(
