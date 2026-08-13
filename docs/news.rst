@@ -10,6 +10,8 @@ Highlights:
 
 -   ``HttpxDownloadHandler`` now uses `httpx2 <https://httpx2.pydantic.dev/>`__
 
+-   The Twisted-based HTTP/2 download handler is no longer experimental
+
 -   ``brotli`` is now a required dependency, and :ref:`optional extras
     <extras>` cover the rest of the optional features
 
@@ -89,7 +91,7 @@ Backward-incompatible changes
     populated, as :class:`~scrapy.exporters.CsvItemExporter` already did.
     :class:`dict` items, which have no declared fields, keep using the key
     order of each item.
-    (:gh:`6662`, :gh:`7824`)
+    (:gh:`6662`, :gh:`6854`, :gh:`7824`)
 
 -   ``scrapy.utils.serialize.ScrapyJSONEncoder``, used by :ref:`JSON feed
     exports <topics-feed-format-json>`, the :ref:`telnet console
@@ -128,7 +130,7 @@ Backward-incompatible changes
     item, so that ``%``-style placeholders work with it as they do with a
     ``dict``.
 
-    (:gh:`5570`, :gh:`7936`)
+    (:gh:`5570`, :gh:`5572`, :gh:`7936`)
 
 -   :setting:`FEEDS` keys and ``FEED_URI`` values that are
     :class:`pathlib.Path` objects are now used as paths, instead of being
@@ -278,10 +280,11 @@ New features
 -   :setting:`CONCURRENT_REQUESTS` can now be set to ``0`` for no limit.
     (:gh:`7840`)
 
--   :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` now sends
-    the :signal:`bytes_received` and :signal:`headers_received` signals, and
-    supports :exc:`~scrapy.exceptions.StopDownload`.
-    (:gh:`5046`, :gh:`5055`, :gh:`7896`)
+-   :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` is no
+    longer experimental, and it now sends the :signal:`bytes_received` and
+    :signal:`headers_received` signals and supports
+    :exc:`~scrapy.exceptions.StopDownload`.
+    (:gh:`5046`, :gh:`5047`, :gh:`5055`, :gh:`7896`, :gh:`7986`)
 
 -   An exception raised by :meth:`Spider.start() <scrapy.Spider.start>` is now
     reported through the :signal:`spider_error` signal and the
@@ -293,7 +296,7 @@ New features
     <scrapy.Spider.start>` now closes the spider with the given reason, instead
     of being reported as a start error.
 
-    (:gh:`3463`, :gh:`4182`, :gh:`7884`)
+    (:gh:`3463`, :gh:`4058`, :gh:`4182`, :gh:`6148`, :gh:`7884`)
 
 -   :exc:`~scrapy.exceptions.CloseSpider` can now also be raised while the
     spider is starting, e.g. from a :signal:`spider_opened` signal handler or
@@ -442,7 +445,7 @@ Bug fixes
 
 -   :command:`parse` now sets the callback it uses on the request of the
     response it passes to that callback.
-    (:gh:`3095`, :gh:`7803`)
+    (:gh:`3095`, :gh:`3124`, :gh:`7803`)
 
 -   The IPython :ref:`shell <topics-shell>` now works when an asyncio event
     loop is already running in the same thread, e.g. when calling
@@ -514,7 +517,8 @@ Documentation
     to add objects to the shell <shell-update-vars>` and :ref:`how to run
     spiders inside an existing application <run-spiders-in-apps>` or :ref:`in a
     Jupyter notebook <run-in-notebook>`.
-    (:gh:`1199`,
+    (:gh:`915`,
+    :gh:`1199`,
     :gh:`2594`,
     :gh:`5706`,
     :gh:`6554`,
@@ -646,7 +650,8 @@ Quality assurance
     :gh:`7935`,
     :gh:`7966`,
     :gh:`7974`,
-    :gh:`7979`)
+    :gh:`7979`,
+    :gh:`7985`)
 
 .. _release-2.17.0:
 
