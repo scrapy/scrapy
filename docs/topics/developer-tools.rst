@@ -246,7 +246,6 @@ also request each page to get every quote on the site:
 .. code-block:: python
 
     import scrapy
-    import json
 
 
     class QuoteSpider(scrapy.Spider):
@@ -256,7 +255,7 @@ also request each page to get every quote on the site:
         start_urls = ["https://quotes.toscrape.com/api/quotes?page=1"]
 
         def parse(self, response):
-            data = json.loads(response.text)
+            data = response.json()
             for quote in data["quotes"]:
                 yield {"quote": quote["text"]}
             if data["has_next"]:
@@ -317,4 +316,3 @@ to identifying the correct request and replicating it in your spider.
 .. _quotes.toscrape.com/scroll: https://quotes.toscrape.com/scroll
 .. _quotes.toscrape.com/api/quotes?page=10: https://quotes.toscrape.com/api/quotes?page=10
 .. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
-

@@ -88,8 +88,12 @@ def open_in_browser(
 
 
         def parse_details(self, response):
-            if "item name" not in response.body:
+            if "item name" not in response.text:
                 open_in_browser(response)
+
+    On the Windows Subsystem for Linux, set the ``BROWSER`` environment
+    variable to `wslview <https://github.com/wslutilities/wslu>`_ to open the
+    response in a Windows browser, which cannot read Linux paths otherwise.
     """
     # circular imports
     from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
@@ -97,9 +101,8 @@ def open_in_browser(
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
-        if b"<base" not in body:
-            _remove_html_comments(body)
-            repl = rf'\0<base href="{response.url}">'
+        if b"<base" not in _remove_html_comments(body):
+            repl = rf'\g<0><base href="{response.url}">'
             body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
         ext = ".html"
     elif isinstance(response, TextResponse):

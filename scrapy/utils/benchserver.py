@@ -9,7 +9,7 @@ from twisted.web.server import Request, Site
 class Root(Resource):
     isLeaf = True
 
-    def getChild(self, name: str, request: Request) -> Resource:
+    def getChild(self, path: str, request: Request) -> Resource:
         return self
 
     def render(self, request: Request) -> bytes:
@@ -27,14 +27,16 @@ class Root(Resource):
         return b""
 
 
-def _getarg(request, name: bytes, default: Any = None, type_=str):
+def _getarg(
+    request: Request, name: bytes, default: Any = None, type_: type = str
+) -> Any:
     return type_(request.args[name][0]) if name in request.args else default
 
 
 if __name__ == "__main__":
     from twisted.internet import reactor
 
-    root = Root()
+    root = Root()  # type: ignore[no-untyped-call]
     factory = Site(root)
     httpPort = reactor.listenTCP(8998, Site(root))
 

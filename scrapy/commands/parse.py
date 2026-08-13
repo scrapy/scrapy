@@ -4,7 +4,7 @@ import functools
 import inspect
 import json
 import logging
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, overload
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -39,9 +39,9 @@ class Command(BaseRunSpiderCommand):
     requires_project = True
 
     spider: Spider | None = None
-    items: dict[int, list[Any]] = {}
-    requests: dict[int, list[Request]] = {}
-    spidercls: type[Spider] | None
+    items: ClassVar[dict[int, list[Any]]] = {}
+    requests: ClassVar[dict[int, list[Request]]] = {}
+    spidercls: type[Spider] | None = None
 
     first_response = None
 
@@ -144,17 +144,16 @@ class Command(BaseRunSpiderCommand):
     def iterate_spider_output(self, result: _T) -> Iterable[Any]: ...
 
     def iterate_spider_output(self, result: Any) -> Iterable[Any] | Deferred[Any]:
+        d: Deferred[Any]
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
                 collect_asyncgen(aiter_errback(result, self.handle_exception))
             )
-            d.addCallback(self.iterate_spider_output)
-            return d
+            return d.addCallback(self.iterate_spider_output)
+        d = deferred_from_coro(result)
         if inspect.iscoroutine(result):
-            d = deferred_from_coro(result)
-            d.addCallback(self.iterate_spider_output)
-            return d
-        return arg_to_iter(deferred_from_coro(result))
+            return d.addCallback(self.iterate_spider_output)
+        return arg_to_iter(d)
 
     def add_items(self, lvl: int, new_items: list[Any]) -> None:
         old_items = self.items.get(lvl, [])
@@ -282,7 +281,6 @@ class Command(BaseRunSpiderCommand):
     ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
-            assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
                 for item in items:
@@ -347,6 +345,8 @@ class Command(BaseRunSpiderCommand):
                 self.first_response = response
 
             cb = self._get_callback(spider=spider, opts=opts, response=response)
+            assert response.request
+            response.request.callback = cb
 
             # parse items and requests
             depth: int = response.meta["_depth"]
@@ -387,7 +387,7 @@ class Command(BaseRunSpiderCommand):
                     "Invalid -m/--meta value, pass a valid json string to -m or --meta. "
                     'Example: --meta=\'{"foo" : "bar"}\'',
                     print_help=False,
-                )
+                ) from None
 
     def process_request_cb_kwargs(self, opts: argparse.Namespace) -> None:
         if opts.cbkwargs:
@@ -398,7 +398,7 @@ class Command(BaseRunSpiderCommand):
                     "Invalid --cbkwargs value, pass a valid json string to --cbkwargs. "
                     'Example: --cbkwargs=\'{"foo" : "bar"}\'',
                     print_help=False,
-                )
+                ) from None
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # parse arguments

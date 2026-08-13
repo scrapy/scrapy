@@ -39,7 +39,7 @@ class AttrsNameItem:
 
 @dataclasses.dataclass
 class NameDataClass:
-    name: list = dataclasses.field(default_factory=list)
+    name: list[str] = dataclasses.field(default_factory=list)
 
 
 # test item loaders
@@ -53,17 +53,6 @@ class NestedItemLoader(ItemLoader):
 
 class ProcessorItemLoader(NameItemLoader):
     name_in = MapCompose(lambda v: v.title())
-
-
-class DefaultedItemLoader(NameItemLoader):
-    default_input_processor = MapCompose(lambda v: v[:-1])
-
-
-# test processors
-def processor_with_args(value, other=None, loader_context=None):
-    if "key" in loader_context:
-        return loader_context["key"]
-    return value
 
 
 class TestBasicItemLoader:
@@ -90,7 +79,7 @@ class TestBasicItemLoader:
 
 
 class InitializationTestMixin:
-    item_class: type | None = None
+    item_class: type
 
     def test_keep_single_value(self):
         """Loaded item should contain values from the initial item"""
@@ -322,7 +311,7 @@ class TestSelectortemLoader:
     def test_init_method_with_base_response(self):
         """Selector should be None after initialization"""
         response = Response("https://scrapy.org")
-        l = ProcessorItemLoader(response=response)
+        l = ProcessorItemLoader(response=response)  # type: ignore[arg-type]
         assert l.selector is None
 
     def test_init_method_with_response(self):
@@ -472,6 +461,7 @@ class TestSubselectorLoader:
         l = NestedItemLoader(response=self.response)
 
         nl = l.nested_xpath("//header")
+        assert nl.selector is not None
         nl.add_xpath("name", "div/text()")
         nl.add_css("name_div", "#id")
         nl.add_value("name_value", nl.selector.xpath('div[@id = "id"]/text()').getall())
@@ -487,6 +477,7 @@ class TestSubselectorLoader:
     def test_nested_css(self):
         l = NestedItemLoader(response=self.response)
         nl = l.nested_css("header")
+        assert nl.selector is not None
         nl.add_xpath("name", "div/text()")
         nl.add_css("name_div", "#id")
         nl.add_value("name_value", nl.selector.xpath('div[@id = "id"]/text()').getall())

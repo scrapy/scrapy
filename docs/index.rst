@@ -24,7 +24,7 @@ Having trouble? We'd like to help!
 * Ask or search questions in `StackOverflow using the scrapy tag`_.
 * Ask or search questions in the `Scrapy subreddit`_.
 * Search for questions on the archives of the `scrapy-users mailing list`_.
-* Ask a question in the `#scrapy IRC channel`_,
+* Ask a question in the `#scrapy IRC channel`_.
 * Report bugs with Scrapy in our `issue tracker`_.
 * Join the Discord community `Scrapy Discord`_.
 
@@ -78,6 +78,7 @@ Basic concepts
    topics/item-pipeline
    topics/feed-exports
    topics/request-response
+   topics/cookies
    topics/link-extractors
    topics/settings
    topics/exceptions
@@ -91,14 +92,14 @@ Basic concepts
 :doc:`topics/selectors`
     Extract the data from web pages using XPath.
 
-:doc:`topics/shell`
-    Test your extraction code in an interactive environment.
-
 :doc:`topics/items`
     Define the data you want to scrape.
 
 :doc:`topics/loaders`
     Populate your items with the extracted data.
+
+:doc:`topics/shell`
+    Test your extraction code in an interactive environment.
 
 :doc:`topics/item-pipeline`
     Post-process and store your scraped data.
@@ -108,6 +109,9 @@ Basic concepts
 
 :doc:`topics/request-response`
     Understand the classes used to represent HTTP requests and responses.
+
+:doc:`topics/cookies`
+    Send and receive cookies.
 
 :doc:`topics/link-extractors`
     Convenient classes to extract links to follow from pages.
@@ -128,7 +132,6 @@ Built-in services
 
    topics/logging
    topics/stats
-   topics/email
    topics/telnetconsole
 
 :doc:`topics/logging`
@@ -136,9 +139,6 @@ Built-in services
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
-
-:doc:`topics/email`
-    Send email notifications when certain events occur.
 
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
@@ -155,7 +155,8 @@ Solving specific problems
    topics/debug
    topics/contracts
    topics/practices
-   topics/broad-crawls
+   topics/security
+   topics/optimize
    topics/developer-tools
    topics/dynamic-content
    topics/leaks
@@ -179,8 +180,12 @@ Solving specific problems
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
 
-:doc:`topics/broad-crawls`
-    Tune Scrapy for crawling a lot domains in parallel.
+:doc:`topics/security`
+    Understand the security implications of Scrapy defaults and how to harden
+    them.
+
+:doc:`topics/optimize`
+    Find the bottleneck of your crawls and learn how to address it.
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.
@@ -229,6 +234,7 @@ Extending Scrapy
    topics/signals
    topics/scheduler
    topics/exporters
+   topics/download-handlers
    topics/components
    topics/api
 
@@ -256,6 +262,9 @@ Extending Scrapy
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
+
+:doc:`topics/download-handlers`
+    Customize how requests are downloaded or add support for new URL schemes.
 
 :doc:`topics/components`
     Learn the common API and some good practices when building custom Scrapy

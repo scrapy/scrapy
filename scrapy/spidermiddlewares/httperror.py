@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class HttpError(IgnoreRequest):
-    """A non-200 response was filtered"""
+    """A non-2xx response was filtered"""
 
     def __init__(self, response: Response, *args: Any, **kwargs: Any):
         self.response = response
@@ -78,9 +78,9 @@ class HttpErrorMiddleware:
         self, response: Response, exception: Exception, spider: Spider | None = None
     ) -> Iterable[Any] | None:
         if isinstance(exception, HttpError):
-            assert self.crawler.stats
-            self.crawler.stats.inc_value("httperror/response_ignored_count")
-            self.crawler.stats.inc_value(
+            stats = self.crawler.stats
+            stats.inc_value("httperror/response_ignored_count")
+            stats.inc_value(
                 f"httperror/response_ignored_status_count/{response.status}"
             )
             logger.info(
@@ -88,5 +88,5 @@ class HttpErrorMiddleware:
                 {"response": response},
                 extra={"spider": self.crawler.spider},
             )
-            return []
+            return ()
         return None

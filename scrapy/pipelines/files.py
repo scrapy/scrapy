@@ -18,28 +18,34 @@ from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
+from typing import IO, TYPE_CHECKING, Any, ClassVar, NoReturn, Protocol, TypedDict, cast
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
-from twisted.internet.threads import deferToThread
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
-from scrapy.settings import BaseSettings, Settings
-from scrapy.utils.boto import is_botocore_available
+from scrapy.pipelines.media import FileException as _FileException
+from scrapy.pipelines.media import (
+    FileInfo,
+    FileInfoOrError,
+    MediaPipeline,
+    _MediaRequestFiltered,
+)
+from scrapy.utils.asyncio import run_in_thread
+from scrapy.utils.boto import _get_max_pool_connections, is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
-from scrapy.utils.deprecate import method_is_overridden
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import get_func_args, global_object_name, to_bytes
+from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable
     from os import PathLike
 
     from twisted.python.failure import Failure
@@ -47,8 +53,8 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
     from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -73,10 +79,6 @@ def _md5sum(file: IO[bytes]) -> str:
             break
         m.update(d)
     return m.hexdigest()
-
-
-class FileException(Exception):
-    """General media error exception"""
 
 
 class StatInfo(TypedDict, total=False):
@@ -160,9 +162,12 @@ class S3FilesStore:
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
     AWS_VERIFY = None
+    # Overridden from settings.AWS_MAX_POOL_CONNECTIONS in
+    # FilesPipeline.from_crawler(); None means the botocore default
+    AWS_MAX_POOL_CONNECTIONS: int | None = None
 
-    POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
-    HEADERS = {
+    POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
+    HEADERS: ClassVar[dict[str, str]] = {
         "Cache-Control": "max-age=172800",
     }
 
@@ -170,7 +175,13 @@ class S3FilesStore:
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
         import botocore.session  # noqa: PLC0415
+        from botocore.config import Config  # noqa: PLC0415
 
+        config = (
+            Config(max_pool_connections=self.AWS_MAX_POOL_CONNECTIONS)
+            if self.AWS_MAX_POOL_CONNECTIONS is not None
+            else None
+        )
         session = botocore.session.get_session()
         self.s3_client = session.create_client(
             "s3",
@@ -181,31 +192,33 @@ class S3FilesStore:
             region_name=self.AWS_REGION_NAME,
             use_ssl=self.AWS_USE_SSL,
             verify=self.AWS_VERIFY,
+            config=config,
         )
         if not uri.startswith("s3://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split("/", 1)
 
+    @staticmethod
+    def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
+        checksum = boto_key["ETag"].strip('"')
+        last_modified = boto_key["LastModified"]
+        modified_stamp = time.mktime(last_modified.timetuple())
+        return {"checksum": checksum, "last_modified": modified_stamp}
+
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
-        def _onsuccess(boto_key: dict[str, Any]) -> StatInfo:
-            checksum = boto_key["ETag"].strip('"')
-            last_modified = boto_key["LastModified"]
-            modified_stamp = time.mktime(last_modified.timetuple())
-            return {"checksum": checksum, "last_modified": modified_stamp}
 
-        return self._get_boto_key(path).addCallback(_onsuccess)
+        return self._get_boto_key(path).addCallback(self._onsuccess)
 
     def _get_boto_key(self, path: str) -> Deferred[dict[str, Any]]:
         key_name = f"{self.prefix}{path}"
-        return cast(
-            "Deferred[dict[str, Any]]",
-            deferToThread(
+        return deferred_from_coro(
+            run_in_thread(
                 self.s3_client.head_object,  # type: ignore[attr-defined]
                 Bucket=self.bucket,
                 Key=key_name,
-            ),
+            )
         )
 
     def persist_file(
@@ -222,14 +235,16 @@ class S3FilesStore:
         extra = self._headers_to_botocore_kwargs(self.HEADERS)
         if headers:
             extra.update(self._headers_to_botocore_kwargs(headers))
-        return deferToThread(
-            self.s3_client.put_object,  # type: ignore[attr-defined]
-            Bucket=self.bucket,
-            Key=key_name,
-            Body=buf,
-            Metadata={k: str(v) for k, v in (meta or {}).items()},
-            ACL=self.POLICY,
-            **extra,
+        return deferred_from_coro(
+            run_in_thread(
+                self.s3_client.put_object,  # type: ignore[attr-defined]
+                Bucket=self.bucket,
+                Key=key_name,
+                Body=buf,
+                Metadata={k: str(v) for k, v in meta.items()} if meta else {},
+                ACL=self.POLICY,
+                **extra,
+            )
         )
 
     def _headers_to_botocore_kwargs(self, headers: dict[str, Any]) -> dict[str, Any]:
@@ -269,7 +284,9 @@ class S3FilesStore:
             try:
                 kwarg = mapping[key]
             except KeyError:
-                raise TypeError(f'Header "{key}" is not supported by botocore')
+                raise TypeError(
+                    f'Header "{key}" is not supported by botocore'
+                ) from None
             extra[kwarg] = value
         return extra
 
@@ -280,7 +297,7 @@ class GCSFilesStore:
     CACHE_CONTROL = "max-age=172800"
 
     # The bucket's default object ACL will be applied to the object.
-    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_crawler().
     POLICY = None
 
     def __init__(self, uri: str):
@@ -295,31 +312,33 @@ class GCSFilesStore:
         )
         if "storage.objects.get" not in permissions:
             logger.warning(
-                "No 'storage.objects.get' permission for GSC bucket %(bucket)s. "
+                "No 'storage.objects.get' permission for GCS bucket %(bucket)s. "
                 "Checking if files are up to date will be impossible. Files will be downloaded every time.",
                 {"bucket": bucket},
             )
         if "storage.objects.create" not in permissions:
             logger.error(
-                "No 'storage.objects.create' permission for GSC bucket %(bucket)s. Saving files will be impossible!",
+                "No 'storage.objects.create' permission for GCS bucket %(bucket)s. Saving files will be impossible!",
                 {"bucket": bucket},
             )
+
+    @staticmethod
+    def _onsuccess(blob: Any) -> StatInfo:
+        if blob:
+            checksum = base64.b64decode(blob.md5_hash).hex()
+            last_modified = time.mktime(blob.updated.timetuple())
+            return {"checksum": checksum, "last_modified": last_modified}
+        return {}
 
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
-        def _onsuccess(blob) -> StatInfo:
-            if blob:
-                checksum = base64.b64decode(blob.md5_hash).hex()
-                last_modified = time.mktime(blob.updated.timetuple())
-                return {"checksum": checksum, "last_modified": last_modified}
-            return {}
 
         blob_path = self._get_blob_path(path)
-        return cast(
-            "Deferred[StatInfo]",
-            deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess),
+        d: Deferred[Any] = deferred_from_coro(
+            run_in_thread(self.bucket.get_blob, blob_path)
         )
+        return d.addCallback(self._onsuccess)
 
     def _get_content_type(self, headers: dict[str, str] | None) -> str:
         if headers and "Content-Type" in headers:
@@ -340,12 +359,14 @@ class GCSFilesStore:
         blob_path = self._get_blob_path(path)
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
-        blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
-        return deferToThread(
-            blob.upload_from_string,
-            data=buf.getvalue(),
-            content_type=self._get_content_type(headers),
-            predefined_acl=self.POLICY,
+        blob.metadata = {k: str(v) for k, v in meta.items()} if meta else {}
+        return deferred_from_coro(
+            run_in_thread(
+                blob.upload_from_string,
+                data=buf.getvalue(),
+                content_type=self._get_content_type(headers),
+                predefined_acl=self.POLICY,
+            )
         )
 
 
@@ -378,23 +399,22 @@ class FTPFilesStore:
         headers: dict[str, str] | None = None,
     ) -> Deferred[Any]:
         path = f"{self.basedir}/{path}"
-        return deferToThread(
-            ftp_store_file,
-            path=path,
-            file=buf,
-            host=self.host,
-            port=self.port,
-            username=self.username,
-            password=self.password,
-            use_active_mode=self.USE_ACTIVE_MODE,
+        return deferred_from_coro(
+            run_in_thread(
+                ftp_store_file,
+                path=path,
+                file=buf,
+                host=self.host,
+                port=self.port,
+                username=self.username,
+                password=self.password,
+                use_active_mode=bool(self.USE_ACTIVE_MODE),
+            )
         )
 
-    def stat_file(
-        self, path: str, info: MediaPipeline.SpiderInfo
-    ) -> Deferred[StatInfo]:
-        def _stat_file(path: str) -> StatInfo:
-            try:
-                ftp = FTP()
+    def _stat_file(self, path: str) -> StatInfo:
+        try:
+            with FTP() as ftp:
                 ftp.connect(self.host, self.port)
                 ftp.login(self.username, self.password)
                 if self.USE_ACTIVE_MODE:
@@ -403,16 +423,19 @@ class FTPFilesStore:
                 last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
                 m = hashlib.md5()  # noqa: S324
                 ftp.retrbinary(f"RETR {file_path}", m.update)
-                return {"last_modified": last_modified, "checksum": m.hexdigest()}
-            # The file doesn't exist
-            except Exception:
-                return {}
+            return {"last_modified": last_modified, "checksum": m.hexdigest()}
+        # The file doesn't exist
+        except Exception:
+            return {}
 
-        return cast("Deferred[StatInfo]", deferToThread(_stat_file, path))
+    def stat_file(
+        self, path: str, info: MediaPipeline.SpiderInfo
+    ) -> Deferred[StatInfo]:
+        return deferred_from_coro(run_in_thread(self._stat_file, path))
 
 
 class FilesPipeline(MediaPipeline):
-    """Abstract pipeline that implement the file downloading
+    """Pipeline that implements file downloading.
 
     This pipeline tries to minimize network transfers and file processing,
     doing stat of the files and determining if file is new, up-to-date or
@@ -432,7 +455,7 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME: str = "file"
     EXPIRES: int = 90
-    STORE_SCHEMES: dict[str, type[FilesStoreProtocol]] = {
+    STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]] = {
         "": FSFilesStore,
         "file": FSFilesStore,
         "s3": S3FilesStore,
@@ -445,11 +468,18 @@ class FilesPipeline(MediaPipeline):
     def __init__(
         self,
         store_uri: str | PathLike[str],
-        download_func: Callable[[Request, Spider], Response] | None = None,
-        settings: Settings | dict[str, Any] | None = None,
+        download_func: None = None,
         *,
-        crawler: Crawler | None = None,
+        crawler: Crawler,
     ):
+        if download_func is not None:  # pragma: no cover
+            warnings.warn(
+                "The download_func argument of FilesPipeline.__init__() is ignored"
+                " and will be removed in a future Scrapy version.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         if not (store_uri and (store_uri := _to_string(store_uri))):
             from scrapy.pipelines.images import ImagesPipeline  # noqa: PLC0415
 
@@ -461,18 +491,7 @@ class FilesPipeline(MediaPipeline):
                 f"to enable {self.__class__.__name__}."
             )
 
-        if crawler is not None:
-            if settings is not None:
-                warnings.warn(
-                    f"FilesPipeline.__init__() was called with a crawler instance and a settings instance"
-                    f" when creating {global_object_name(self.__class__)}. The settings instance will be ignored"
-                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-            settings = crawler.settings
-        elif isinstance(settings, dict) or settings is None:
-            settings = Settings(settings)
+        settings = crawler.settings
         cls_name = "FilesPipeline"
         self.store: FilesStoreProtocol = self._get_store(store_uri)
         resolve = functools.partial(
@@ -490,51 +509,14 @@ class FilesPipeline(MediaPipeline):
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
 
-        super().__init__(
-            download_func=download_func,
-            settings=settings if not crawler else None,
-            crawler=crawler,
-        )
-
-    @classmethod
-    def from_settings(cls, settings: Settings) -> Self:
-        warnings.warn(
-            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return cls._from_settings(settings, None)
+        super().__init__(crawler=crawler)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        if method_is_overridden(cls, FilesPipeline, "from_settings"):
-            warnings.warn(
-                f"{global_object_name(cls)} overrides FilesPipeline.from_settings()."
-                f" This method is deprecated and won't be called in future Scrapy versions,"
-                f" please update your code so that it overrides from_crawler() instead.",
-                category=ScrapyDeprecationWarning,
-            )
-            o = cls.from_settings(crawler.settings)
-            o._finish_init(crawler)
-            return o
-        return cls._from_settings(crawler.settings, crawler)
-
-    @classmethod
-    def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
+        settings = crawler.settings
         cls._update_stores(settings)
         store_uri = settings["FILES_STORE"]
-        if "crawler" in get_func_args(cls.__init__):
-            o = cls(store_uri, crawler=crawler)
-        else:
-            o = cls(store_uri, settings=settings)
-            if crawler:
-                o._finish_init(crawler)
-            warnings.warn(
-                f"{global_object_name(cls)}.__init__() doesn't take a crawler argument."
-                " This is deprecated and the argument will be required in future Scrapy versions.",
-                category=ScrapyDeprecationWarning,
-            )
-        return o
+        return cls(store_uri, crawler=crawler)
 
     @classmethod
     def _update_stores(cls, settings: BaseSettings) -> None:
@@ -548,6 +530,7 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_REGION_NAME = settings["AWS_REGION_NAME"]
         s3store.AWS_USE_SSL = settings["AWS_USE_SSL"]
         s3store.AWS_VERIFY = settings["AWS_VERIFY"]
+        s3store.AWS_MAX_POOL_CONNECTIONS = _get_max_pool_connections(settings)
         s3store.POLICY = settings["FILES_STORE_S3_ACL"]
 
         gcs_store: type[GCSFilesStore] = cast(
@@ -569,43 +552,51 @@ class FilesPipeline(MediaPipeline):
         store_cls = self.STORE_SCHEMES[scheme]
         return store_cls(uri)
 
+    def _onsuccess(
+        self,
+        result: StatInfo,
+        request: Request,
+        info: MediaPipeline.SpiderInfo,
+        path: str,
+    ) -> FileInfo | None:
+        if not result:
+            return None  # returning None force download
+
+        last_modified = result.get("last_modified", None)
+        if not last_modified:
+            return None  # returning None force download
+
+        age_seconds = time.time() - last_modified
+        age_days = age_seconds / 60 / 60 / 24
+        if age_days > self.expires:
+            return None  # returning None force download
+
+        referer = referer_str(request)
+        logger.debug(
+            "File (uptodate): Downloaded %(medianame)s from %(request)s "
+            "referred in <%(referer)s>",
+            {"medianame": self.MEDIA_NAME, "request": request, "referer": referer},
+            extra={"spider": info.spider},
+        )
+        self.inc_stats("uptodate")
+
+        checksum = result.get("checksum", None)
+        return {
+            "url": request.url,
+            "path": path,
+            "checksum": checksum,
+            "status": "uptodate",
+        }
+
     def media_to_download(
         self, request: Request, info: MediaPipeline.SpiderInfo, *, item: Any = None
     ) -> Deferred[FileInfo | None] | None:
-        def _onsuccess(result: StatInfo) -> FileInfo | None:
-            if not result:
-                return None  # returning None force download
-
-            last_modified = result.get("last_modified", None)
-            if not last_modified:
-                return None  # returning None force download
-
-            age_seconds = time.time() - last_modified
-            age_days = age_seconds / 60 / 60 / 24
-            if age_days > self.expires:
-                return None  # returning None force download
-
-            referer = referer_str(request)
-            logger.debug(
-                "File (uptodate): Downloaded %(medianame)s from %(request)s "
-                "referred in <%(referer)s>",
-                {"medianame": self.MEDIA_NAME, "request": request, "referer": referer},
-                extra={"spider": info.spider},
-            )
-            self.inc_stats("uptodate")
-
-            checksum = result.get("checksum", None)
-            return {
-                "url": request.url,
-                "path": path,
-                "checksum": checksum,
-                "status": "uptodate",
-            }
-
         path = self.file_path(request, info=info, item=item)
         # maybeDeferred() overloads don't seem to support a Union[_T, Deferred[_T]] return type
         dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[call-overload]
-        dfd2: Deferred[FileInfo | None] = dfd.addCallback(_onsuccess)
+        dfd2: Deferred[FileInfo | None] = dfd.addCallback(
+            functools.partial(self._onsuccess, request=request, info=info, path=path)
+        )
         dfd2.addErrback(lambda _: None)
         dfd2.addErrback(
             lambda f: logger.error(
@@ -619,23 +610,23 @@ class FilesPipeline(MediaPipeline):
     def media_failed(
         self, failure: Failure, request: Request, info: MediaPipeline.SpiderInfo
     ) -> NoReturn:
-        if not isinstance(failure.value, IgnoreRequest):
-            referer = referer_str(request)
-            logger.warning(
-                "File (unknown-error): Error downloading %(medianame)s from "
-                "%(request)s referred in <%(referer)s>: %(exception)s",
-                {
-                    "medianame": self.MEDIA_NAME,
-                    "request": request,
-                    "referer": referer,
-                    "exception": failure.value,
-                },
+        referer = referer_str(request)
+        if isinstance(failure.value, IgnoreRequest):
+            logger.debug(
+                f"File (filtered): Not downloading {self.MEDIA_NAME} from "
+                f"{request} referred in <{referer}>: {failure.value}",
                 extra={"spider": info.spider},
             )
+            raise _MediaRequestFiltered(str(failure.value)) from failure.value
 
-        raise FileException
+        logger.warning(
+            f"File (unknown-error): Error downloading {self.MEDIA_NAME} from "
+            f"{request} referred in <{referer}>: {failure.value}",
+            extra={"spider": info.spider},
+        )
+        raise _FileException
 
-    def media_downloaded(
+    async def media_downloaded(
         self,
         response: Response,
         request: Request,
@@ -652,7 +643,7 @@ class FilesPipeline(MediaPipeline):
                 {"status": response.status, "request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
-            raise FileException("download-error")
+            raise _FileException("download-error")
 
         if not response.body:
             logger.warning(
@@ -661,7 +652,7 @@ class FilesPipeline(MediaPipeline):
                 {"request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
-            raise FileException("empty-content")
+            raise _FileException("empty-content")
 
         status = "cached" if "cached" in response.flags else "downloaded"
         logger.debug(
@@ -674,8 +665,10 @@ class FilesPipeline(MediaPipeline):
 
         try:
             path = self.file_path(request, response=response, info=info, item=item)
-            checksum = self.file_downloaded(response, request, info, item=item)
-        except FileException as exc:
+            checksum: str = await ensure_awaitable(
+                self.file_downloaded(response, request, info, item=item)
+            )
+        except _FileException as exc:
             logger.warning(
                 "File (error): Error processing file from %(request)s "
                 "referred in <%(referer)s>: %(errormsg)s",
@@ -692,7 +685,7 @@ class FilesPipeline(MediaPipeline):
                 exc_info=True,
                 extra={"spider": info.spider},
             )
-            raise FileException(str(exc))
+            raise _FileException(str(exc)) from exc
 
         return {
             "url": request.url,
@@ -702,9 +695,24 @@ class FilesPipeline(MediaPipeline):
         }
 
     def inc_stats(self, status: str) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.inc_value("file_count")
-        self.crawler.stats.inc_value(f"file_status_count/{status}")
+        stats = self.crawler.stats
+        stats.inc_value("file_count")
+        stats.inc_value(f"file_status_count/{status}")
+
+    async def _file_downloaded(
+        self,
+        response: Response,
+        request: Request,
+        info: MediaPipeline.SpiderInfo,
+        *,
+        item: Any = None,
+    ) -> str:
+        path = self.file_path(request, response=response, info=info, item=item)
+        buf = BytesIO(response.body)
+        checksum = _md5sum(buf)
+        buf.seek(0)
+        await ensure_awaitable(self.store.persist_file(path, buf, info))
+        return checksum
 
     # Overridable Interface
     def get_media_requests(
@@ -724,13 +732,8 @@ class FilesPipeline(MediaPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> str:
-        path = self.file_path(request, response=response, info=info, item=item)
-        buf = BytesIO(response.body)
-        checksum = _md5sum(buf)
-        buf.seek(0)
-        self.store.persist_file(path, buf, info)
-        return checksum
+    ) -> str | Awaitable[str]:
+        return self._file_downloaded(response, request, info, item=item)
 
     def item_completed(
         self, results: list[FileInfoOrError], item: Any, info: MediaPipeline.SpiderInfo
@@ -748,7 +751,15 @@ class FilesPipeline(MediaPipeline):
         item: Any = None,
     ) -> str:
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
-        media_ext = Path(request.url).suffix
+
+        # clean it up and look at the path first
+        parsed_url = urlparse_cached(request)
+        media_ext = Path(parsed_url.path).suffix
+
+        # if path has no extension look at the raw  URL
+        if media_ext not in mimetypes.types_map:
+            media_ext = Path(request.url).suffix
+
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise
         if media_ext not in mimetypes.types_map:
@@ -757,3 +768,15 @@ class FilesPipeline(MediaPipeline):
             if media_type:
                 media_ext = cast("str", mimetypes.guess_extension(media_type))
         return f"full/{media_guid}{media_ext}"
+
+
+def __getattr__(name: str) -> Any:
+    if name == "FileException":
+        warnings.warn(
+            "scrapy.pipelines.files.FileException is deprecated, use "
+            "scrapy.pipelines.media.FileException instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return _FileException
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

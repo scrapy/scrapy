@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from collections import deque
 from logging import ERROR
-from typing import TYPE_CHECKING
-
-from twisted.internet.defer import Deferred
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.core.scheduler import BaseScheduler
+from scrapy.exceptions import CloseSpider
+from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
-from tests.test_scheduler import MemoryScheduler
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     import pytest
@@ -18,16 +18,40 @@ if TYPE_CHECKING:
     from scrapy.http import Response
 
 
-async def sleep(seconds: float = 0.001) -> None:
-    from twisted.internet import reactor
+class MemoryScheduler(BaseScheduler):
+    paused = False
 
-    deferred: Deferred[None] = Deferred()
-    reactor.callLater(seconds, deferred.callback, None)
-    await maybe_deferred_to_future(deferred)
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.queue: deque[Request] = deque(
+            Request(value) if isinstance(value, str) else value
+            for value in getattr(self, "queue", [])
+        )
+
+    def enqueue_request(self, request: Request) -> bool:
+        self.queue.append(request)
+        return True
+
+    def has_pending_requests(self) -> bool:
+        return self.paused or bool(self.queue)
+
+    def next_request(self) -> Request | None:
+        if self.paused:
+            return None
+        try:
+            return self.queue.pop()
+        except IndexError:
+            return None
+
+    def pause(self) -> None:
+        self.paused = True
+
+    def unpause(self) -> None:
+        self.paused = False
 
 
 class TestMain:
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_sleep(self):
         """Neither asynchronous sleeps on Spider.start() nor the equivalent on
         the scheduler (returning no requests while also returning True from
@@ -39,8 +63,6 @@ class TestMain:
             name = "test"
 
             async def start(self):
-                from twisted.internet import reactor
-
                 yield Request("data:,a")
 
                 await sleep(seconds)
@@ -68,7 +90,7 @@ class TestMain:
                 # delayed call below, proving that the start iteration can
                 # finish before a scheduler “sleep” without causing the
                 # scheduler to finish.
-                reactor.callLater(seconds, self.crawler.engine._slot.scheduler.unpause)
+                call_later(seconds, self.crawler.engine._slot.scheduler.unpause)
 
             def parse(self, response):
                 pass
@@ -81,12 +103,12 @@ class TestMain:
         settings = {"SCHEDULER": MemoryScheduler}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_urls = ["data:,a", "data:,b", "data:,c", "data:,d"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_close_during_start_iteration(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -112,12 +134,80 @@ class TestMain:
 
         caplog.clear()
         with caplog.at_level(ERROR):
-            await maybe_deferred_to_future(crawler.crawl())
+            await crawler.crawl_async()
 
         assert not caplog.records
         assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "shutdown"
         assert not actual_urls
+
+    @coroutine_test
+    async def test_start_error(self, caplog: pytest.LogCaptureFixture) -> None:
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                yield Request("data:,a")
+                raise ValueError
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+        errors = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        def track_error(failure, response, spider):
+            errors.append((failure, response))
+
+        settings = {"SCHEDULER": MemoryScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        crawler.signals.connect(track_error, signals.spider_error)
+
+        caplog.clear()
+        with caplog.at_level(ERROR):
+            await crawler.crawl_async()
+
+        # The requests yielded before the exception are still crawled.
+        assert actual_urls == ["data:,a"]
+        assert len(caplog.records) == 1
+        assert len(errors) == 1
+        failure, response = errors[0]
+        assert isinstance(failure.value, ValueError)
+        assert response is None
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "start_error"
+        assert crawler.stats.get_value("spider_exceptions/count") == 1
+        assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
+
+    @coroutine_test
+    async def test_close_spider_from_start(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                yield Request("data:,a")
+                raise CloseSpider("my_reason")
+
+            def parse(self, response):
+                pass
+
+        settings = {"SCHEDULER": MemoryScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+
+        caplog.clear()
+        with caplog.at_level(ERROR):
+            await crawler.crawl_async()
+
+        assert not caplog.records
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "my_reason"
+        assert crawler.stats.get_value("spider_exceptions/count") is None
 
 
 class TestRequestSendOrder:
@@ -130,7 +220,7 @@ class TestRequestSendOrder:
 
     @classmethod
     def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)  # increase if flaky
+        cls.mockserver.__exit__(None, None, None)
 
     def request(self, num, response_seconds, download_slots, priority=0):
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
@@ -182,12 +272,12 @@ class TestRequestSendOrder:
 
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_num, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_nums = sorted(start_nums + cb_nums)
         assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_default(self):
         """By default, callback requests take priority over start requests and
         are sent in order. Priority matters, but given the same priority, a
@@ -227,7 +317,7 @@ class TestRequestSendOrder:
             parse_fn=parse,
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lifo_start(self):
         """Changing the queues of start requests to LIFO, matching the queues
         of non-start requests, does not cause all requests to be stored in the
@@ -270,10 +360,10 @@ class TestRequestSendOrder:
             parse_fn=parse,
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_shared_queues(self):
         """If SCHEDULER_START_*_QUEUE is falsy, start requests and other
-        requests share the same queue, i.e. start requests are not priorized
+        requests share the same queue, i.e. start requests are not prioritized
         over other requests if their priority matches."""
         nums = list(range(1, 14))
         response_seconds = 0
@@ -331,7 +421,7 @@ class TestRequestSendOrder:
     # Examples from the “Start requests” section of the documentation about
     # spiders.
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lazy(self):
         start_nums = [1, 2, 4]
         cb_nums = [3]

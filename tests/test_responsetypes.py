@@ -1,3 +1,5 @@
+from typing import Any
+
 from scrapy.http import (
     Headers,
     HtmlResponse,
@@ -38,10 +40,13 @@ class TestResponseTypes:
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_disposition(source)
-            assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+            assert retcls is cls, f"{source!r} ==> {retcls} != {cls}"
+
+    def test_from_content_disposition_no_filename(self):
+        assert responsetypes.from_content_disposition(b"attachment") is Response
 
     def test_from_content_type(self):
-        mappings = [
+        mappings: list[tuple[str | bytes, type[Response]]] = [
             ("text/html; charset=UTF-8", HtmlResponse),
             ("text/xml; charset=UTF-8", XmlResponse),
             ("application/xhtml+xml; charset=UTF-8", HtmlResponse),
@@ -55,7 +60,7 @@ class TestResponseTypes:
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_type(source)
-            assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+            assert retcls is cls, f"{source!r} ==> {retcls} != {cls}"
 
     def test_from_body(self):
         mappings = [
@@ -68,7 +73,7 @@ class TestResponseTypes:
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_body(source)
-            assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+            assert retcls is cls, f"{source!r} ==> {retcls} != {cls}"
 
     def test_from_headers(self):
         mappings = [
@@ -95,7 +100,7 @@ class TestResponseTypes:
 
     def test_from_args(self):
         # TODO: add more tests that check precedence between the different arguments
-        mappings = [
+        mappings: list[tuple[dict[str, Any], type[Response]]] = [
             ({"url": "http://www.example.com/data.csv"}, TextResponse),
             # headers takes precedence over url
             (

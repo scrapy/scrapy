@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -7,8 +9,10 @@ import pytest
 from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import set_asyncio_event_loop_policy
+from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
+from tests.mockserver.mitm_proxy import MitmProxy, mitmdump_cmd
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -21,20 +25,13 @@ def _py_files(folder):
 collect_ignore = [
     # may need extra deps
     "docs/_ext",
-    # not a test, but looks like a test
-    "scrapy/utils/testproc.py",
-    "scrapy/utils/testsite.py",
-    "tests/ftpserver.py",
-    "tests/mockserver.py",
-    "tests/pipelines.py",
-    "tests/spiders.py",
-    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerProcessSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::AsyncCrawlerProcessSubprocess
     *_py_files("tests/AsyncCrawlerProcess"),
-    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerRunnerSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::AsyncCrawlerRunnerSubprocess
     *_py_files("tests/AsyncCrawlerRunner"),
-    # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::CrawlerProcessSubprocess
     *_py_files("tests/CrawlerProcess"),
-    # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
+    # contains scripts to be run by tests/test_crawler_subprocess.py::CrawlerRunnerSubprocess
     *_py_files("tests/CrawlerRunner"),
 ]
 
@@ -50,8 +47,25 @@ if not H2_ENABLED:
     collect_ignore.extend(
         (
             "scrapy/core/downloader/handlers/http2.py",
-            *_py_files("scrapy/core/http2"),
+            *_py_files("scrapy/core/_http2"),
         )
+    )
+
+if find_spec("httpx2") is None and find_spec("httpx") is None:
+    collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
+
+if find_spec("pytest_codspeed") is None:
+    collect_ignore.append("tests/benchmarks")
+
+
+def pytest_addoption(parser, pluginmanager):
+    if pluginmanager.hasplugin("twisted"):
+        return
+    # add the full choice set so that pytest doesn't complain about invalid choices in some cases
+    parser.addoption(
+        "--reactor",
+        default="none",
+        choices=["asyncio", "default", "none"],
     )
 
 
@@ -61,60 +75,27 @@ def mockserver() -> Generator[MockServer]:
         yield mockserver
 
 
+@pytest.fixture  # function scope because it modifies os.environ
+def proxy_server(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Generator[str]:
+    kind = request.param
+    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
+    url = proxy.start()
+    if kind == "https":
+        url = url.replace("http://", "https://")
+    monkeypatch.setenv("http_proxy", url)
+    monkeypatch.setenv("https_proxy", url)
+
+    try:
+        yield kind
+    finally:
+        proxy.stop()
+
+
 @pytest.fixture(scope="session")
 def reactor_pytest(request) -> str:
     return request.config.getoption("--reactor")
-
-
-@pytest.fixture(autouse=True)
-def only_asyncio(request, reactor_pytest):
-    if request.node.get_closest_marker("only_asyncio") and reactor_pytest != "asyncio":
-        pytest.skip("This test is only run with --reactor=asyncio")
-
-
-@pytest.fixture(autouse=True)
-def only_not_asyncio(request, reactor_pytest):
-    if (
-        request.node.get_closest_marker("only_not_asyncio")
-        and reactor_pytest == "asyncio"
-    ):
-        pytest.skip("This test is only run without --reactor=asyncio")
-
-
-@pytest.fixture(autouse=True)
-def requires_uvloop(request):
-    if not request.node.get_closest_marker("requires_uvloop"):
-        return
-    try:
-        import uvloop  # noqa: PLC0415
-
-        del uvloop
-    except ImportError:
-        pytest.skip("uvloop is not installed")
-
-
-@pytest.fixture(autouse=True)
-def requires_botocore(request):
-    if not request.node.get_closest_marker("requires_botocore"):
-        return
-    try:
-        import botocore  # noqa: PLC0415
-
-        del botocore
-    except ImportError:
-        pytest.skip("botocore is not installed")
-
-
-@pytest.fixture(autouse=True)
-def requires_boto3(request):
-    if not request.node.get_closest_marker("requires_boto3"):
-        return
-    try:
-        import boto3  # noqa: PLC0415
-
-        del boto3
-    except ImportError:
-        pytest.skip("boto3 is not installed")
 
 
 def pytest_configure(config):
@@ -122,7 +103,50 @@ def pytest_configure(config):
         # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
         # If we decide to run tests with both, we will need to add a new option and check it here.
         set_asyncio_event_loop_policy()
+    elif config.getoption("--reactor") == "none":
+        install_reactor_import_hook()
 
 
-# Generate localhost certificate files, needed by some tests
-generate_keys()
+def pytest_collection_modifyitems(items):
+    for item in items:
+        if item.get_closest_marker("requires_internet"):
+            # Requests to real websites fail every now and then in CI for
+            # reasons unrelated to the code under test.
+            item.add_marker(pytest.mark.flaky(reruns=2, reruns_delay=5))
+
+
+def pytest_runtest_setup(item):
+    # Skip tests based on reactor markers
+    reactor = item.config.getoption("--reactor")
+
+    if item.get_closest_marker("requires_reactor") and reactor == "none":
+        pytest.skip('This test is only run when the --reactor value is not "none"')
+
+    if item.get_closest_marker("only_asyncio") and reactor not in {"asyncio", "none"}:
+        pytest.skip(
+            'This test is only run when the --reactor value is "asyncio" (default) or "none"'
+        )
+
+    if item.get_closest_marker("only_not_asyncio") and reactor in {"asyncio", "none"}:
+        pytest.skip(
+            'This test is only run when the --reactor value is not "asyncio" (default) or "none"'
+        )
+
+    # Skip tests requiring optional dependencies
+    optional_deps = [
+        "uvloop",
+        "botocore",
+        "boto3",
+    ]
+
+    for module in optional_deps:
+        if item.get_closest_marker(f"requires_{module}") and find_spec(module) is None:
+            pytest.skip(f"{module} is not installed")
+
+    if item.get_closest_marker("requires_mitmproxy") and mitmdump_cmd() is None:
+        pytest.skip("mitmdump is not available")
+
+
+# Generate localhost certificate files, needed by some tests (but only once if xdist is used)
+if "PYTEST_XDIST_WORKER" not in os.environ:
+    generate_keys()

@@ -1,18 +1,20 @@
+from __future__ import annotations
+
 import pytest
 
 from scrapy.link import Link
 
 
 class TestLink:
-    def _assert_same_links(self, link1, link2):
+    def _assert_same_links(self, link1: Link, link2: Link) -> None:
         assert link1 == link2
         assert hash(link1) == hash(link2)
 
-    def _assert_different_links(self, link1, link2):
+    def _assert_different_links(self, link1: Link, link2: Link) -> None:
         assert link1 != link2
         assert hash(link1) != hash(link2)
 
-    def test_eq_and_hash(self):
+    def test_eq_and_hash(self) -> None:
         l1 = Link("http://www.example.com")
         l2 = Link("http://www.example.com/other")
         l3 = Link("http://www.example.com")
@@ -45,13 +47,17 @@ class TestLink:
         self._assert_different_links(l7, l9)
         self._assert_different_links(l7, l10)
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         l1 = Link(
             "http://www.example.com", text="test", fragment="something", nofollow=True
         )
-        l2 = eval(repr(l1))  # pylint: disable=eval-used
+        l2 = eval(repr(l1))
         self._assert_same_links(l1, l2)
 
-    def test_bytes_url(self):
+    def test_bytes_url(self) -> None:
         with pytest.raises(TypeError):
-            Link(b"http://www.example.com/\xc2\xa3")
+            Link(b"http://www.example.com/\xc2\xa3")  # type: ignore[arg-type]
+
+    def test_eq_non_link(self) -> None:
+        url = "http://example.com"
+        assert Link(url) != url

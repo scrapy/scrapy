@@ -1,10 +1,13 @@
-import warnings
+import re
+from typing import Any
 
 import pytest
 
 from scrapy import Request, Spider
 from scrapy.downloadermiddlewares.offsite import OffsiteMiddleware
 from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 UNSET = object()
@@ -29,7 +32,7 @@ UNSET = object()
 def test_process_request_domain_filtering(allowed_domain, url, allowed):
     crawler = get_crawler(Spider)
     crawler.spider = crawler._create_spider(name="a", allowed_domains=[allowed_domain])
-    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
     mw.spider_opened(crawler.spider)
     request = Request(url)
     if allowed:
@@ -51,9 +54,9 @@ def test_process_request_domain_filtering(allowed_domain, url, allowed):
 def test_process_request_dont_filter(value, filtered):
     crawler = get_crawler(Spider)
     crawler.spider = crawler._create_spider(name="a", allowed_domains=["a.example"])
-    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
     mw.spider_opened(crawler.spider)
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
     if value is not UNSET:
         kwargs["dont_filter"] = value
     request = Request("https://b.example", **kwargs)
@@ -80,9 +83,9 @@ def test_process_request_dont_filter(value, filtered):
 def test_process_request_allow_offsite(allow_offsite, dont_filter, filtered):
     crawler = get_crawler(Spider)
     crawler.spider = crawler._create_spider(name="a", allowed_domains=["a.example"])
-    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
     mw.spider_opened(crawler.spider)
-    kwargs = {"meta": {}}
+    kwargs: dict[str, Any] = {"meta": {}}
     if allow_offsite is not UNSET:
         kwargs["meta"]["allow_offsite"] = allow_offsite
     if dont_filter is not UNSET:
@@ -105,11 +108,11 @@ def test_process_request_allow_offsite(allow_offsite, dont_filter, filtered):
 )
 def test_process_request_no_allowed_domains(value):
     crawler = get_crawler(Spider)
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
     if value is not UNSET:
         kwargs["allowed_domains"] = value
     crawler.spider = crawler._create_spider(name="a", **kwargs)
-    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
     mw.spider_opened(crawler.spider)
     request = Request("https://example.com")
     assert mw.process_request(request) is None
@@ -119,10 +122,8 @@ def test_process_request_invalid_domains():
     crawler = get_crawler(Spider)
     allowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     crawler.spider = crawler._create_spider(name="a", allowed_domains=allowed_domains)
-    mw = OffsiteMiddleware.from_crawler(crawler)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        mw.spider_opened(crawler.spider)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
+    mw.spider_opened(crawler.spider)
     request = Request("https://a.example")
     assert mw.process_request(request) is None
     for letter in ("b", "c"):
@@ -150,11 +151,11 @@ def test_process_request_invalid_domains():
 def test_request_scheduled_domain_filtering(allowed_domain, url, allowed):
     crawler = get_crawler(Spider)
     crawler.spider = crawler._create_spider(name="a", allowed_domains=[allowed_domain])
-    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
     mw.spider_opened(crawler.spider)
     request = Request(url)
     if allowed:
-        assert mw.request_scheduled(request, crawler.spider) is None
+        mw.request_scheduled(request, crawler.spider)
     else:
         with pytest.raises(IgnoreRequest):
             mw.request_scheduled(request, crawler.spider)
@@ -172,9 +173,9 @@ def test_request_scheduled_domain_filtering(allowed_domain, url, allowed):
 def test_request_scheduled_dont_filter(value, filtered):
     crawler = get_crawler(Spider)
     crawler.spider = crawler._create_spider(name="a", allowed_domains=["a.example"])
-    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
     mw.spider_opened(crawler.spider)
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
     if value is not UNSET:
         kwargs["dont_filter"] = value
     request = Request("https://b.example", **kwargs)
@@ -182,7 +183,7 @@ def test_request_scheduled_dont_filter(value, filtered):
         with pytest.raises(IgnoreRequest):
             mw.request_scheduled(request, crawler.spider)
     else:
-        assert mw.request_scheduled(request, crawler.spider) is None
+        mw.request_scheduled(request, crawler.spider)
 
 
 @pytest.mark.parametrize(
@@ -195,27 +196,118 @@ def test_request_scheduled_dont_filter(value, filtered):
 )
 def test_request_scheduled_no_allowed_domains(value):
     crawler = get_crawler(Spider)
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
     if value is not UNSET:
         kwargs["allowed_domains"] = value
     crawler.spider = crawler._create_spider(name="a", **kwargs)
-    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
     mw.spider_opened(crawler.spider)
     request = Request("https://example.com")
-    assert mw.request_scheduled(request, crawler.spider) is None
+    mw.request_scheduled(request, crawler.spider)
 
 
 def test_request_scheduled_invalid_domains():
     crawler = get_crawler(Spider)
     allowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     crawler.spider = crawler._create_spider(name="a", allowed_domains=allowed_domains)
-    mw = OffsiteMiddleware.from_crawler(crawler)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        mw.spider_opened(crawler.spider)
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
+    mw.spider_opened(crawler.spider)
     request = Request("https://a.example")
-    assert mw.request_scheduled(request, crawler.spider) is None
+    mw.request_scheduled(request, crawler.spider)
     for letter in ("b", "c"):
         request = Request(f"https://{letter}.example")
         with pytest.raises(IgnoreRequest):
             mw.request_scheduled(request, crawler.spider)
+
+
+def test_repeated_offsite_domain():
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", allowed_domains=["example.com"])
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
+    mw.spider_opened(crawler.spider)
+    req1 = Request("http://other.org/1")
+    req2 = Request("http://other.org/2")
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(req1)
+    assert "other.org" in mw.domains_seen
+    assert crawler.stats
+    assert crawler.stats.get_value("offsite/domains") == 1
+    assert crawler.stats.get_value("offsite/filtered") == 1
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(req2)
+    assert crawler.stats.get_value("offsite/domains") == 1  # not incremented again
+    assert crawler.stats.get_value("offsite/filtered") == 2
+
+
+def test_should_follow_override():
+    class RootOnlyOffsiteMiddleware(OffsiteMiddleware):
+        def should_follow(self, request: Request, spider: Spider) -> bool:
+            allowed_domains: list[str] = getattr(spider, "allowed_domains", [])
+            return urlparse_cached(request).hostname in allowed_domains
+
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", allowed_domains=["example.com"])
+    mw = build_from_crawler(RootOnlyOffsiteMiddleware, crawler)
+    mw.spider_opened(crawler.spider)
+    assert mw.process_request(Request("https://example.com/1")) is None
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(Request("https://www.example.com/1"))
+
+
+def test_ignore_request_reason():
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", allowed_domains=["example.com"])
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
+    mw.spider_opened(crawler.spider)
+    request = Request("http://other.org/1")
+    with pytest.raises(
+        IgnoreRequest, match=re.escape("Filtered offsite request to 'other.org'")
+    ):
+        mw.process_request(request)
+
+
+class DomainSpider(Spider):
+    name = "a"
+    allowed_domains: list[str]
+
+
+def test_dynamic_allowed_domains():
+    crawler = get_crawler(DomainSpider)
+    spider = DomainSpider.from_crawler(crawler, allowed_domains=["a.example"])
+    crawler.spider = spider
+    mw = build_from_crawler(OffsiteMiddleware, crawler)
+    mw.spider_opened(spider)
+
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(Request("https://b.example"))
+
+    spider.allowed_domains.append("b.example")
+    assert mw.process_request(Request("https://b.example")) is None
+
+    spider.allowed_domains.remove("a.example")
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(Request("https://a.example"))
+
+
+def test_dynamic_allowed_domains_caching():
+    calls = 0
+
+    class TrackingMiddleware(OffsiteMiddleware):
+        def get_host_regex(self, spider: Spider) -> re.Pattern[str]:
+            nonlocal calls
+            calls += 1
+            return super().get_host_regex(spider)
+
+    crawler = get_crawler(DomainSpider)
+    spider = DomainSpider.from_crawler(crawler, allowed_domains=["a.example"])
+    crawler.spider = spider
+    mw = build_from_crawler(TrackingMiddleware, crawler)
+    mw.spider_opened(spider)
+
+    for _ in range(3):
+        mw.process_request(Request("https://a.example"))
+    assert calls == 1
+
+    spider.allowed_domains.append("b.example")
+    assert mw.process_request(Request("https://b.example")) is None
+    assert calls == 2

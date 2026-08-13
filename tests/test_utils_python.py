@@ -4,67 +4,55 @@ import functools
 import operator
 import platform
 import sys
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pytest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
-from scrapy.utils.defer import aiter_errback, deferred_f_from_coro_f
+from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
     MutableAsyncChain,
-    MutableChain,
     binary_is_text,
-    equal_attributes,
     get_func_args,
     memoizemethod_noargs,
     to_bytes,
     to_unicode,
     without_none_values,
 )
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
-
+    from collections.abc import AsyncIterator, Iterable, Mapping
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 
 
-def test_mutablechain():
-    m = MutableChain(range(2), [2, 3], (4, 5))
-    m.extend(range(6, 7))
-    m.extend([7, 8])
-    m.extend([9, 10], (11, 12))
-    assert next(m) == 0
-    assert m.__next__() == 1
-    assert list(m) == list(range(2, 13))
-
-
 class TestMutableAsyncChain:
     @staticmethod
-    async def g1():
+    async def g1() -> AsyncIterator[int]:
         for i in range(3):
             yield i
 
     @staticmethod
-    async def g2():
+    async def g2() -> AsyncIterator[int]:
         return
         yield
 
     @staticmethod
-    async def g3():
+    async def g3() -> AsyncIterator[int]:
         for i in range(7, 10):
             yield i
 
     @staticmethod
-    async def g4():
+    async def g4() -> AsyncIterator[int]:
         for i in range(3, 5):
             yield i
         1 / 0
         for i in range(5, 7):
             yield i
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_mutableasyncchain(self):
         m = MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
         m.extend(self.g2())
@@ -74,7 +62,7 @@ class TestMutableAsyncChain:
         results = await collect_asyncgen(m)
         assert results == list(range(1, 10))
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_mutableasyncchain_exc(self):
         m = MutableAsyncChain(self.g1())
         m.extend(self.g4())
@@ -96,7 +84,7 @@ class TestToUnicode:
 
     def test_converting_a_strange_object_should_raise_type_error(self):
         with pytest.raises(TypeError):
-            to_unicode(423)
+            to_unicode(423)  # type: ignore[arg-type]
 
     def test_errors_argument(self):
         assert to_unicode(b"a\xedb", "utf-8", errors="replace") == "a\ufffdb"
@@ -114,7 +102,7 @@ class TestToBytes:
 
     def test_converting_a_strange_object_should_raise_type_error(self):
         with pytest.raises(TypeError):
-            to_bytes(pytest)
+            to_bytes(pytest)  # type: ignore[arg-type]
 
     def test_errors_argument(self):
         assert to_bytes("a\ufffdb", "latin-1", errors="replace") == b"a?b"
@@ -123,10 +111,10 @@ class TestToBytes:
 def test_memoizemethod_noargs():
     class A:
         @memoizemethod_noargs
-        def cached(self):
+        def cached(self) -> object:
             return object()
 
-        def noncached(self):
+        def noncached(self) -> object:
             return object()
 
     a = A()
@@ -150,56 +138,6 @@ def test_binaryistext(value: bytes, expected: bool) -> None:
     assert binary_is_text(value) is expected
 
 
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-def test_equal_attributes():
-    class Obj:
-        pass
-
-    a = Obj()
-    b = Obj()
-    # no attributes given return False
-    assert not equal_attributes(a, b, [])
-    # nonexistent attributes
-    assert not equal_attributes(a, b, ["x", "y"])
-
-    a.x = 1
-    b.x = 1
-    # equal attribute
-    assert equal_attributes(a, b, ["x"])
-
-    b.y = 2
-    # obj1 has no attribute y
-    assert not equal_attributes(a, b, ["x", "y"])
-
-    a.y = 2
-    # equal attributes
-    assert equal_attributes(a, b, ["x", "y"])
-
-    a.y = 1
-    # different attributes
-    assert not equal_attributes(a, b, ["x", "y"])
-
-    # test callable
-    a.meta = {}
-    b.meta = {}
-    assert equal_attributes(a, b, ["meta"])
-
-    # compare ['meta']['a']
-    a.meta["z"] = 1
-    b.meta["z"] = 1
-
-    get_z = operator.itemgetter("z")
-    get_meta = operator.attrgetter("meta")
-
-    def compare_z(obj):
-        return get_z(get_meta(obj))
-
-    assert equal_attributes(a, b, [compare_z, "x"])
-    # fail z equality
-    a.meta["z"] = 2
-    assert not equal_attributes(a, b, [compare_z, "x"])
-
-
 def test_get_func_args():
     def f1(a, b, c):
         pass
@@ -211,7 +149,7 @@ def test_get_func_args():
         pass
 
     class A:
-        def __init__(self, a, b, c):
+        def __init__(self, a: int, b: int, c: int):
             pass
 
         def method(self, a, b, c):
@@ -236,7 +174,7 @@ def test_get_func_args():
     assert get_func_args(partial_f2) == ["a", "c"]
     assert get_func_args(partial_f3) == ["c"]
     assert get_func_args(cal) == ["a", "b", "c"]
-    assert get_func_args(object) == []  # pylint: disable=use-implicit-booleaness-not-comparison
+    assert get_func_args(object) == []
     assert get_func_args(str.split, stripself=True) == ["sep", "maxsplit"]
     assert get_func_args(" ".join, stripself=True) == ["iterable"]
 
@@ -250,6 +188,25 @@ def test_get_func_args():
             [],
             ["args", "kwargs"],
         ]
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 14),
+    reason="annotations are only lazily evaluated since Python 3.14 (PEP 649)",
+)
+def test_get_func_args_unresolvable_annotations():
+    # dont_inherit=True, or the module's future import stringizes the annotations
+    namespace: dict[str, Any] = {}
+    exec(  # pylint: disable=exec-used
+        compile(
+            "def f(a: OnlyAtTypeCheckingTime, b: int = 1) -> OnlyAtTypeCheckingTime: pass",
+            "<test>",
+            "exec",
+            dont_inherit=True,
+        ),
+        namespace,
+    )
+    assert get_func_args(namespace["f"]) == ["a", "b"]
 
 
 @pytest.mark.parametrize(

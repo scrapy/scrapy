@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from itemadapter import ItemAdapter, is_item
 
@@ -9,11 +9,21 @@ from scrapy.contracts import Contract
 from scrapy.exceptions import ContractFail
 from scrapy.http import Request
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 # contracts
 class UrlContract(Contract):
-    """Contract to set the url of the request (mandatory)
-    @url http://scrapy.org
+    """Sets (``@url``) the sample URL used when checking the other contract
+    conditions of a callback.
+
+    This contract is mandatory: callbacks lacking it are ignored when running
+    the checks.
+
+    .. code-block:: none
+
+        @url url
     """
 
     name = "url"
@@ -24,10 +34,14 @@ class UrlContract(Contract):
 
 
 class CallbackKeywordArgumentsContract(Contract):
-    """Contract to set the keyword arguments for the request.
-    The value should be a JSON-encoded dictionary, e.g.:
+    """Sets (``@cb_kwargs``) the :attr:`cb_kwargs <scrapy.Request.cb_kwargs>`
+    attribute of the sample request.
 
-    @cb_kwargs {"arg1": "some value"}
+    Its value must be a valid JSON dictionary.
+
+    .. code-block:: none
+
+        @cb_kwargs {"arg1": "value1", "arg2": "value2", ...}
     """
 
     name = "cb_kwargs"
@@ -38,10 +52,14 @@ class CallbackKeywordArgumentsContract(Contract):
 
 
 class MetadataContract(Contract):
-    """Contract to set metadata arguments for the request.
-    The value should be JSON-encoded dictionary, e.g.:
+    """Sets (``@meta``) the :attr:`meta <scrapy.Request.meta>` attribute of the
+    sample request.
 
-    @meta {"arg1": "some value"}
+    Its value must be a valid JSON dictionary.
+
+    .. code-block:: none
+
+        @meta {"arg1": "value1", "arg2": "value2", ...}
     """
 
     name = "meta"
@@ -52,20 +70,33 @@ class MetadataContract(Contract):
 
 
 class ReturnsContract(Contract):
-    """Contract to check the output of a callback
+    """Sets (``@returns``) lower and upper bounds for the items and requests
+    returned by a callback.
 
-    general form:
-    @returns request(s)/item(s) [min=1 [max]]
+    The upper bound is optional:
 
-    e.g.:
-    @returns request
-    @returns request 2
-    @returns request 2 10
-    @returns request 0 10
+    .. code-block:: none
+
+        @returns item(s)|request(s) [min [max]]
+
+    For example:
+
+    .. code-block:: none
+
+        @returns request
+        @returns request 2
+        @returns request 2 10
+        @returns request 0 10
+
+    Set both bounds to the same value to require an exact number:
+
+    .. code-block:: none
+
+        @returns request 2 2
     """
 
     name = "returns"
-    object_type_verifiers: dict[str | None, Callable[[Any], bool]] = {
+    object_type_verifiers: ClassVar[dict[str | None, Callable[[Any], bool]]] = {
         "request": lambda x: isinstance(x, Request),
         "requests": lambda x: isinstance(x, Request),
         "item": is_item,
@@ -75,7 +106,7 @@ class ReturnsContract(Contract):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
-        if len(self.args) not in [1, 2, 3]:
+        if len(self.args) not in {1, 2, 3}:
             raise ValueError(
                 f"Incorrect argument quantity: expected 1, 2 or 3, got {len(self.args)}"
             )
@@ -112,8 +143,12 @@ class ReturnsContract(Contract):
 
 
 class ScrapesContract(Contract):
-    """Contract to check presence of fields in scraped items
-    @scrapes page_name page_body
+    """Checks (``@scrapes``) that all items returned by a callback have the
+    specified fields.
+
+    .. code-block:: none
+
+        @scrapes field_1 field_2 ...
     """
 
     name = "scrapes"

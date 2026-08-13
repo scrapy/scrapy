@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import logging
 import pprint
+import re
 import sys
+import warnings
 from collections.abc import MutableMapping
 from logging.config import dictConfig
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings, _SettingsKeyT
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import Settings
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
@@ -35,7 +38,7 @@ def failure_to_exc_info(
         return (
             failure.type,
             failure.value,
-            cast("Optional[TracebackType]", failure.getTracebackObject()),
+            cast("TracebackType | None", failure.getTracebackObject()),
         )
     return None
 
@@ -72,6 +75,12 @@ DEFAULT_LOGGING = {
         "hpack": {
             "level": "ERROR",
         },
+        "httpcore": {
+            "level": "ERROR",
+        },
+        "httpx": {
+            "level": "WARNING",
+        },
         "scrapy": {
             "level": "DEBUG",
         },
@@ -83,7 +92,7 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(
-    settings: Settings | dict[_SettingsKeyT, Any] | None = None,
+    settings: Settings | dict[str, Any] | None = None,
     install_root_handler: bool = True,
 ) -> None:
     """
@@ -132,7 +141,7 @@ _scrapy_root_handler: logging.Handler | None = None
 
 
 def install_scrapy_root_handler(settings: Settings) -> None:
-    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
+    global _scrapy_root_handler  # noqa: PLW0603
 
     _uninstall_scrapy_root_handler()
     logging.root.setLevel(logging.NOTSET)
@@ -141,13 +150,14 @@ def install_scrapy_root_handler(settings: Settings) -> None:
 
 
 def _uninstall_scrapy_root_handler() -> None:
-    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
+    global _scrapy_root_handler  # noqa: PLW0603
 
-    if (
-        _scrapy_root_handler is not None
-        and _scrapy_root_handler in logging.root.handlers
-    ):
+    if _scrapy_root_handler is None:
+        return
+
+    if _scrapy_root_handler in logging.root.handlers:
         logging.root.removeHandler(_scrapy_root_handler)
+    _scrapy_root_handler.close()
     _scrapy_root_handler = None
 
 
@@ -183,7 +193,7 @@ def log_scrapy_info(settings: Settings) -> None:
         "Scrapy %(version)s started (bot: %(bot)s)",
         {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
     )
-    software = settings.getlist("LOG_VERSIONS")
+    software: list[str] = settings.getlist("LOG_VERSIONS")
     if not software:
         return
     versions = pprint.pformat(dict(get_versions(software)), sort_dicts=False)
@@ -232,29 +242,49 @@ class LogCounterHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         sname = f"log_count/{record.levelname}"
-        assert self.crawler.stats
         self.crawler.stats.inc_value(sname)
+
+
+_MSG_MAPPING_PLACEHOLDER = re.compile(r"%\(\w+\)")
 
 
 def logformatter_adapter(
     logkws: LogFormatterResult,
-) -> tuple[int, str, dict[str, Any] | tuple[Any, ...]]:
+) -> tuple[Any, ...]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
-    and adapts it into a tuple of positional arguments for logger.log calls,
-    handling backward compatibility as well.
+    and adapts it into a tuple of positional arguments for logger.log calls.
     """
 
     level = logkws.get("level", logging.INFO)
     message = logkws.get("msg") or ""
-    # NOTE: This also handles 'args' being an empty dict, that case doesn't
-    # play well in logger.log calls
-    args = cast("dict[str, Any]", logkws) if not logkws.get("args") else logkws["args"]
-
+    args = logkws.get("args")
+    # logging interpolates the message whenever it receives any positional
+    # argument, so empty args are left out. Tuple args become one positional
+    # argument each, while a dict is a single positional argument.
+    if not args:
+        if _MSG_MAPPING_PLACEHOLDER.search(message):
+            # The log formatter method has already returned, so there is no
+            # frame of it left in the stack to point at. msg is part of the
+            # warning message instead, so that each offending method gets its
+            # own warning.
+            warnings.warn(
+                f"A log formatter method returned msg {message!r} with "
+                f"%(name)s placeholders and no args. Interpolating msg with "
+                f"the returned dict is deprecated, return those values under "
+                f"args instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=1,
+            )
+            return (level, message, logkws)
+        return (level, message)
+    if isinstance(args, tuple):
+        return (level, message, *args)
     return (level, message, args)
 
 
-class SpiderLoggerAdapter(logging.LoggerAdapter):
+# LoggerAdapter is only parameterized since Python 3.11
+class SpiderLoggerAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
     def process(
         self, msg: str, kwargs: MutableMapping[str, Any]
     ) -> tuple[str, MutableMapping[str, Any]]:

@@ -6,25 +6,26 @@ from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
 class TestHttpProxyMiddleware:
-    failureException = AssertionError  # type: ignore[assignment]
-
     def setup_method(self):
         self._oldenv = os.environ.copy()
 
     def teardown_method(self):
-        os.environ = self._oldenv
+        os.environ.clear()
+        os.environ.update(self._oldenv)
 
     def test_not_enabled(self):
         crawler = get_crawler(Spider, {"HTTPPROXY_ENABLED": False})
         with pytest.raises(NotConfigured):
-            HttpProxyMiddleware.from_crawler(crawler)
+            build_from_crawler(HttpProxyMiddleware, crawler)
 
     def test_no_environment_proxies(self):
-        os.environ = {"dummy_proxy": "reset_env_and_do_not_raise"}
+        os.environ.clear()
+        os.environ["dummy_proxy"] = "reset_env_and_do_not_raise"
         mw = HttpProxyMiddleware()
 
         for url in ("http://e.com", "https://e.com", "file:///tmp/a"):
@@ -374,6 +375,12 @@ class TestHttpProxyMiddleware:
         assert middleware.process_request(request) is None
         assert "proxy" not in request.meta
         assert b"Proxy-Authorization" not in request.headers
+
+    def test_proxy_unparseable_url_clears_meta(self):
+        middleware = HttpProxyMiddleware()
+        request = Request("http://example.com", meta={"proxy": "//"})
+        assert middleware.process_request(request) is None
+        assert request.meta["proxy"] is None
 
     def test_proxy_authentication_header_disabled_proxy(self):
         middleware = HttpProxyMiddleware()

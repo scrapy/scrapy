@@ -1,16 +1,34 @@
-import argparse
+from __future__ import annotations
+
 import os
+import shlex
+import subprocess
 import sys
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.spiderloader import get_spider_loader
 
+if TYPE_CHECKING:
+    import argparse
+
+
+def _edit_file(editor: str, file_path: str | os.PathLike[str]) -> int:
+    """Open ``file_path`` with ``editor`` and return the editor exit code.
+
+    ``editor`` may include arguments (e.g. ``"code -w"``); it is split with
+    :func:`shlex.split` and the file is passed as a separate argument, so no
+    shell is involved.
+    """
+    return subprocess.call([*shlex.split(editor), os.fspath(file_path)])  # noqa: S603
+
 
 class Command(ScrapyCommand):
     requires_project = True
     requires_crawler_process = False
-    default_settings = {"LOG_ENABLED": False}
+    default_settings: ClassVar[dict[str, Any]] = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "<spider>"
@@ -44,4 +62,4 @@ class Command(ScrapyCommand):
         sfile = sys.modules[spidercls.__module__].__file__
         assert sfile
         sfile = sfile.replace(".pyc", ".py")
-        self.exitcode = os.system(f'{editor} "{sfile}"')  # noqa: S605
+        self.exitcode = _edit_file(editor, Path(sfile))

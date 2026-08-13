@@ -1,6 +1,59 @@
+from __future__ import annotations
+
+from http.cookiejar import DefaultCookiePolicy
+
 from scrapy.http import Request, Response
-from scrapy.http.cookies import WrappedRequest, WrappedResponse
+from scrapy.http.cookies import CookieJar, WrappedRequest, WrappedResponse
 from scrapy.utils.httpobj import urlparse_cached
+
+
+class TestCookieJar:
+    def setup_method(self):
+        self.jar = CookieJar()
+        self.request = Request("http://example.com/")
+        self.response = Response(
+            "http://example.com/",
+            headers={"Set-Cookie": "name=value; Domain=example.com; Path=/"},
+        )
+
+    def test_extract_cookies(self):
+        assert len(self.jar) == 0
+        self.jar.extract_cookies(self.response, self.request)
+        assert len(self.jar) == 1
+        cookie = next(iter(self.jar))
+        assert cookie.name == "name"
+        assert cookie.value == "value"
+        assert ".example.com" in self.jar._cookies
+
+    def test_make_cookies_and_set_cookie(self):
+        cookies = self.jar.make_cookies(self.response, self.request)
+        assert len(cookies) == 1
+        jar = CookieJar()
+        for cookie in cookies:
+            jar.set_cookie(cookie)
+        assert len(jar) == 1
+
+    def test_clear(self):
+        self.jar.extract_cookies(self.response, self.request)
+        assert len(self.jar) == 1
+        self.jar.clear()
+        assert len(self.jar) == 0
+
+    def test_clear_session_cookies(self):
+        self.jar.extract_cookies(self.response, self.request)
+        assert len(self.jar) == 1
+        self.jar.clear_session_cookies()
+        assert len(self.jar) == 0
+
+    def test_set_policy(self):
+        policy = DefaultCookiePolicy()
+        self.jar.set_policy(policy)
+        assert self.jar.jar._policy is policy  # type: ignore[attr-defined]
+
+    def test_check_expired_frequency(self):
+        jar = CookieJar(check_expired_frequency=1)
+        jar.add_cookie_header(self.request)
+        assert jar.processed == 1
 
 
 class TestWrappedRequest:

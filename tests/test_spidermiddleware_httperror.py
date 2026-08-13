@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import pytest
-from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.httperror import HttpError, HttpErrorMiddleware
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
 
 class _HttpErrorSpider(MockServerSpider):
@@ -20,6 +23,7 @@ class _HttpErrorSpider(MockServerSpider):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        assert self.mockserver
         self.start_urls = [
             self.mockserver.url("/status?n=200"),
             self.mockserver.url("/status?n=404"),
@@ -34,7 +38,7 @@ class _HttpErrorSpider(MockServerSpider):
         for url in self.start_urls:
             yield Request(url, self.parse, errback=self.on_error)
 
-    def parse(self, response):
+    def parse(self, response: Response) -> None:
         self.parsed.add(response.url[-3:])
 
     def on_error(self, failure):
@@ -76,7 +80,7 @@ class TestHttpErrorMiddleware:
     def mw(self) -> HttpErrorMiddleware:
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
-        return HttpErrorMiddleware.from_crawler(crawler)
+        return build_from_crawler(HttpErrorMiddleware, crawler)
 
     def test_process_spider_input(
         self, mw: HttpErrorMiddleware, res200: Response, res404: Response
@@ -88,7 +92,7 @@ class TestHttpErrorMiddleware:
     def test_process_spider_exception(
         self, mw: HttpErrorMiddleware, res404: Response
     ) -> None:
-        assert mw.process_spider_exception(res404, HttpError(res404)) == []
+        assert mw.process_spider_exception(res404, HttpError(res404)) == ()
         assert mw.process_spider_exception(res404, Exception()) is None
 
     def test_handle_httpstatus_list(
@@ -112,7 +116,7 @@ class TestHttpErrorMiddlewareSettings:
     def mw(self) -> HttpErrorMiddleware:
         crawler = get_crawler(DefaultSpider, {"HTTPERROR_ALLOWED_CODES": (402,)})
         crawler.spider = crawler._create_spider()
-        return HttpErrorMiddleware.from_crawler(crawler)
+        return build_from_crawler(HttpErrorMiddleware, crawler)
 
     def test_process_spider_input(
         self,
@@ -152,7 +156,7 @@ class TestHttpErrorMiddlewareHandleAll:
     def mw(self) -> HttpErrorMiddleware:
         crawler = get_crawler(DefaultSpider, {"HTTPERROR_ALLOW_ALL": True})
         crawler.spider = crawler._create_spider()
-        return HttpErrorMiddleware.from_crawler(crawler)
+        return build_from_crawler(HttpErrorMiddleware, crawler)
 
     def test_process_spider_input(
         self,
@@ -176,7 +180,7 @@ class TestHttpErrorMiddlewareHandleAll:
 
     def test_httperror_allow_all_false(self) -> None:
         crawler = get_crawler(_HttpErrorSpider)
-        mw = HttpErrorMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpErrorMiddleware, crawler)
         request_httpstatus_false = Request(
             "http://scrapytest.org", meta={"handle_httpstatus_all": False}
         )
@@ -192,65 +196,66 @@ class TestHttpErrorMiddlewareHandleAll:
 
 
 class TestHttpErrorMiddlewareIntegrational:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    @inlineCallbacks
-    def test_middleware_works(self):
+    @coroutine_test
+    async def test_middleware_works(self, mockserver: MockServer) -> None:
         crawler = get_crawler(_HttpErrorSpider)
-        yield crawler.crawl(mockserver=self.mockserver)
+        await crawler.crawl_async(mockserver=mockserver)
+        assert isinstance(crawler.spider, _HttpErrorSpider)
         assert not crawler.spider.skipped
         assert crawler.spider.parsed == {"200"}
         assert crawler.spider.failed == {"404", "402", "500"}
 
+        assert crawler.stats
         get_value = crawler.stats.get_value
         assert get_value("httperror/response_ignored_count") == 3
         assert get_value("httperror/response_ignored_status_count/404") == 1
         assert get_value("httperror/response_ignored_status_count/402") == 1
         assert get_value("httperror/response_ignored_status_count/500") == 1
 
-    @inlineCallbacks
-    def test_logging(self):
+    @coroutine_test
+    async def test_logging(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         crawler = get_crawler(_HttpErrorSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(mockserver=self.mockserver, bypass_status_codes={402})
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver, bypass_status_codes={402})
+        assert isinstance(crawler.spider, _HttpErrorSpider)
         assert crawler.spider.parsed == {"200", "402"}
         assert crawler.spider.skipped == {"402"}
         assert crawler.spider.failed == {"404", "500"}
 
-        assert "Ignoring response <404" in str(log)
-        assert "Ignoring response <500" in str(log)
-        assert "Ignoring response <200" not in str(log)
-        assert "Ignoring response <402" not in str(log)
+        assert "Ignoring response <404" in caplog.text
+        assert "Ignoring response <500" in caplog.text
+        assert "Ignoring response <200" not in caplog.text
+        assert "Ignoring response <402" not in caplog.text
 
-    @inlineCallbacks
-    def test_logging_level(self):
+    @coroutine_test
+    async def test_logging_level(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         # HttpError logs ignored responses with level INFO
         crawler = get_crawler(_HttpErrorSpider)
-        with LogCapture(level=logging.INFO) as log:
-            yield crawler.crawl(mockserver=self.mockserver)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+        assert isinstance(crawler.spider, _HttpErrorSpider)
         assert crawler.spider.parsed == {"200"}
         assert crawler.spider.failed == {"404", "402", "500"}
 
-        assert "Ignoring response <402" in str(log)
-        assert "Ignoring response <404" in str(log)
-        assert "Ignoring response <500" in str(log)
-        assert "Ignoring response <200" not in str(log)
+        assert "Ignoring response <402" in caplog.text
+        assert "Ignoring response <404" in caplog.text
+        assert "Ignoring response <500" in caplog.text
+        assert "Ignoring response <200" not in caplog.text
 
         # with level WARNING, we shouldn't capture anything from HttpError
+        caplog.clear()
         crawler = get_crawler(_HttpErrorSpider)
-        with LogCapture(level=logging.WARNING) as log:
-            yield crawler.crawl(mockserver=self.mockserver)
+        with caplog.at_level(logging.WARNING):
+            await crawler.crawl_async(mockserver=mockserver)
+        assert isinstance(crawler.spider, _HttpErrorSpider)
         assert crawler.spider.parsed == {"200"}
         assert crawler.spider.failed == {"404", "402", "500"}
 
-        assert "Ignoring response <402" not in str(log)
-        assert "Ignoring response <404" not in str(log)
-        assert "Ignoring response <500" not in str(log)
-        assert "Ignoring response <200" not in str(log)
+        assert "Ignoring response <402" not in caplog.text
+        assert "Ignoring response <404" not in caplog.text
+        assert "Ignoring response <500" not in caplog.text
+        assert "Ignoring response <200" not in caplog.text

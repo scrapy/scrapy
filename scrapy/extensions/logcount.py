@@ -20,9 +20,9 @@ class LogCount:
     """Install a log handler that counts log messages by level.
 
     The handler installed is :class:`scrapy.utils.log.LogCounterHandler`.
-    The counts are stored in stats as ``log_count/<level>``.
+    The counts are stored in the :stat:`log_count/{level}` stat.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
     """
 
     def __init__(self, crawler: Crawler):

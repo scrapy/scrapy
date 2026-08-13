@@ -1,14 +1,28 @@
+import warnings
 from unittest.mock import MagicMock
 
 import pytest
 
 from scrapy import signals
-from scrapy.exceptions import NotConfigured
-from scrapy.extensions import statsmailer
-from scrapy.mail import MailSender
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.signalmanager import SignalManager
 from scrapy.statscollectors import StatsCollector
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
+
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        r"The scrapy\.extensions\.statsmailer module is deprecated",
+        ScrapyDeprecationWarning,
+    )
+    warnings.filterwarnings(
+        "ignore",
+        r"The scrapy\.mail module is deprecated",
+        ScrapyDeprecationWarning,
+    )
+    from scrapy.extensions import statsmailer
+    from scrapy.mail import MailSender
 
 
 @pytest.fixture
@@ -30,7 +44,7 @@ def test_from_crawler_without_recipients_raises_notconfigured():
     crawler.stats = MagicMock()
 
     with pytest.raises(NotConfigured):
-        statsmailer.StatsMailer.from_crawler(crawler)
+        build_from_crawler(statsmailer.StatsMailer, crawler)
 
 
 def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeypatch):
@@ -42,7 +56,7 @@ def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeyp
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    ext = statsmailer.StatsMailer.from_crawler(crawler)
+    ext = build_from_crawler(statsmailer.StatsMailer, crawler)
 
     assert isinstance(ext, statsmailer.StatsMailer)
     assert ext.recipients == ["test@example.com"]
@@ -58,7 +72,7 @@ def test_from_crawler_connects_spider_closed_signal(dummy_stats, monkeypatch):
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    statsmailer.StatsMailer.from_crawler(crawler)
+    build_from_crawler(statsmailer.StatsMailer, crawler)
 
     connected = crawler.signals.send_catch_log(
         signals.spider_closed, spider=DefaultSpider(name="dummy")
@@ -74,7 +88,7 @@ def test_spider_closed_sends_email(dummy_stats):
     spider = DefaultSpider(name="dummy")
     ext.spider_closed(spider)
 
-    args, kwargs = mail.send.call_args
+    args, _ = mail.send.call_args
     to, subject, body = args
     assert to == recipients
     assert "Scrapy stats for: dummy" in subject
