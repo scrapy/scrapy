@@ -4,6 +4,8 @@ from collections import deque
 from logging import ERROR
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
 from scrapy import Request, Spider, signals
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider
@@ -14,8 +16,6 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
-
-    import pytest
 
     from scrapy.http import Response
 
@@ -50,6 +50,27 @@ class MemoryScheduler(BaseScheduler):
 
     def unpause(self) -> None:
         self.paused = False
+
+
+class NoneStartSpider(Spider):
+    name = "test"
+
+    def start(self) -> None:  # type: ignore[override]
+        return None
+
+
+class CoroutineStartSpider(Spider):
+    name = "test"
+
+    async def start(self) -> None:  # type: ignore[override]
+        return None
+
+
+class SyncStartSpider(Spider):
+    name = "test"
+
+    def start(self) -> Iterator[Request]:  # type: ignore[override]
+        yield Request("data:,a")
 
 
 class TestMain:
@@ -144,6 +165,34 @@ class TestMain:
         assert not caplog.records
         assert crawler.stats.get_value("finish_reason") == "shutdown"
         assert not actual_urls
+
+    @pytest.mark.parametrize(
+        ("spider_cls", "expected_type"),
+        [
+            (NoneStartSpider, "<class 'NoneType'>"),
+            (CoroutineStartSpider, "<class 'coroutine'>"),
+            (SyncStartSpider, "<class 'generator'>"),
+        ],
+    )
+    @coroutine_test
+    async def test_start_not_an_async_generator(
+        self,
+        spider_cls: type[Spider],
+        expected_type: str,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        crawler = get_crawler(spider_cls)
+
+        caplog.clear()
+        with caplog.at_level(ERROR):
+            await crawler.crawl_async()
+
+        assert (
+            f"{spider_cls.__name__}.start() must be an asynchronous generator,"
+            f" i.e. an async def method with yield statements, got {expected_type}"
+        ) in caplog.text
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "start_error"
 
     @coroutine_test
     async def test_start_error(self, caplog: pytest.LogCaptureFixture) -> None:
