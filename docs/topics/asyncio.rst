@@ -117,24 +117,37 @@ Enforcing asyncio as a requirement
 ==================================
 
 If you are writing a :ref:`component <topics-components>` that requires asyncio
-to work, use :func:`scrapy.utils.asyncio.is_asyncio_available` to
-:ref:`enforce it as a requirement <enforce-component-requirements>`. For
-example:
+ to work, use :func:`scrapy.utils.asyncio.is_asyncio_available` to check this
+ requirement from code that runs after the event loop has started. For example,
+ an extension can perform this check from a signal handler or another method
+ called during the crawl.
 
-.. code-block:: python
+Component instances are created while the crawler settings are being applied,
+ before the event loop starts. Therefore, do not call
+ :func:`scrapy.utils.asyncio.is_asyncio_available` unconditionally from a
+ component ``__init__`` method. In particular, this raises an exception when
+ :setting:`TWISTED_REACTOR_ENABLED` is ``False`` because the reactorless mode's
+ event loop is not running yet. If the requirement must be checked during
+ initialization, inspect the crawler settings instead: ``TWISTED_REACTOR_ENABLED``
+ set to ``False`` selects asyncio without a Twisted reactor; when it is ``True``,
+ :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` can be used after the
+ reactor has been installed. Then use :func:`scrapy.utils.asyncio.is_asyncio_available`
+ at run time when the component performs asyncio-dependent work.
 
-    from scrapy.utils.asyncio import is_asyncio_available
+ .. code-block:: python
+
+     from scrapy.utils.asyncio import is_asyncio_available
 
 
-    class MyComponent:
-        def __init__(self):
-            if not is_asyncio_available():
-                raise ValueError(
-                    f"{MyComponent.__qualname__} requires the asyncio support. "
-                    f"Make sure you have configured the asyncio reactor in the "
-                    f"TWISTED_REACTOR setting. See the asyncio documentation "
-                    f"of Scrapy for more information."
-                )
+     class MyComponent:
+         def process_item(self, item):
+             if not is_asyncio_available():
+                 raise ValueError(
+                     f"{MyComponent.__qualname__} requires the asyncio support. "
+                     f"Make sure you have configured an asyncio-compatible "
+                     f"Scrapy mode. See the asyncio documentation of Scrapy for "
+                     f"more information."
+                 )
 
 .. autofunction:: scrapy.utils.asyncio.is_asyncio_available
 .. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
