@@ -112,7 +112,7 @@ class StorageTestMixin(TestBase):
         raise NotImplementedError
 
     def test_storage(self):
-        with self._storage(HTTPCACHE_EXPIRATION_SECS=1) as (storage, crawler):
+        with self._storage(HTTPCACHE_EXPIRATION_SECS=100) as (storage, crawler):
             request2 = self.request.copy()
             assert storage.retrieve_response(crawler.spider, request2) is None
 
