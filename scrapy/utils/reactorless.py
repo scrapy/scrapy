@@ -20,7 +20,10 @@ def is_reactorless() -> bool:
 
     As this checks the runtime state and not the setting itself, it can be
     wrong when executed very early, before the reactor and/or the asyncio event
-    loop are initialized.
+    loop are initialized. In particular, do not call it from an extension
+    ``__init__`` or ``from_crawler``; those run while settings are applied,
+    before the loop is running. Check the :setting:`TWISTED_REACTOR_ENABLED`
+    setting instead.
 
     .. note:: As this function uses
         :func:`scrapy.utils.asyncio.is_asyncio_available()`, it has the same

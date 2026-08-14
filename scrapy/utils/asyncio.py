@@ -65,9 +65,21 @@ def is_asyncio_available() -> bool:
         calling it from code such as spiders and Scrapy components, if Scrapy
         is run using one of the supported ways).
 
+    .. note:: Do not call this function from an extension ``__init__`` or
+        ``from_crawler``. Extensions are created while settings are applied,
+        before the asyncio event loop is running, so this function cannot
+        detect asyncio support there (it may raise :exc:`RuntimeError` or
+        return a misleading result). Check the :setting:`TWISTED_REACTOR`
+        and :setting:`TWISTED_REACTOR_ENABLED` settings instead. Use this
+        function from code that runs after the crawl has started.
+
     .. versionchanged:: 2.15.0
         This function now also returns ``True`` if there is a running asyncio
         loop, even if no Twisted reactor is installed.
+
+    .. versionchanged:: VERSION
+        Documented that this function is not usable from extension
+        initialization.
     """
 
     # Check if there is a running asyncio loop.

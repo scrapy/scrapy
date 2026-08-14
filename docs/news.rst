@@ -25,6 +25,16 @@ Backward-incompatible changes
 
     (:gh:`6585`, :gh:`7731`)
 
+Documentation
+~~~~~~~~~~~~~
+
+-   Documented that :func:`scrapy.utils.asyncio.is_asyncio_available` and
+    :func:`scrapy.utils.reactorless.is_reactorless` cannot be used from
+    extension initialization, and updated the asyncio requirement example to
+    check the :setting:`TWISTED_REACTOR` and
+    :setting:`TWISTED_REACTOR_ENABLED` settings instead.
+    (:gh:`7812`)
+
 .. _release-2.17.0:
 
 Scrapy 2.17.0 (2026-07-07)
