@@ -21,6 +21,7 @@ from h2.events import (
     WindowUpdated,
 )
 from h2.exceptions import FrameTooLargeError, H2Error
+from h2.settings import SettingCodes
 from twisted.internet.interfaces import (
     IAddress,
     IHandshakeListener,
@@ -261,6 +262,9 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
         # Initiate H2 Connection
         self.conn.initiate_connection()
+        max_frame_size = self._crawler.settings.getint("HTTP2_MAX_FRAME_SIZE")
+        if max_frame_size != self.conn.local_settings.max_frame_size:
+            self.conn.update_settings({SettingCodes.MAX_FRAME_SIZE: max_frame_size})
         self._write_to_transport()
 
     def _lose_connection_with_error(self, errors: list[BaseException]) -> None:
