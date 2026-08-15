@@ -46,6 +46,7 @@ Install with:
     pip install scrapy
 
 And follow the documentation_ to learn how to use it.
+For the Arabic repository guide, see `README.ar.md <README.ar.md>`_.
 
 .. _documentation: https://docs.scrapy.org/en/latest/
 
