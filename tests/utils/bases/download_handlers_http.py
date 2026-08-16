@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 import pytest
 from cryptography.x509 import load_der_x509_certificate
+from twisted.internet.defer import DeferredList
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
@@ -127,6 +128,25 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.body == b""
+
+    @coroutine_test
+    async def test_download_concurrent(self, mockserver: MockServer) -> None:
+        """Requests started before a connection to the server is available are
+        sent once it is."""
+        url = mockserver.url("/text", is_secure=self.is_secure)
+        async with self.get_dh() as download_handler:
+            results = await maybe_deferred_to_future(
+                DeferredList(
+                    [
+                        deferred_from_coro(
+                            download_handler.download_request(Request(url))
+                        )
+                        for _ in range(2)
+                    ],
+                    fireOnOneErrback=True,
+                )
+            )
+        assert [response.body for _, response in results] == [b"Works", b"Works"]
 
     @pytest.mark.parametrize(
         "http_status",
@@ -754,6 +774,63 @@ class TestHttpBase(ABC):
         ) as download_handler:
             response = await download_handler.download_request(request)
         assert response.flags == ["dataloss"]
+
+    @coroutine_test
+    async def test_download_stream_reset(self, mockserver: MockServer) -> None:
+        if not self.http2:
+            pytest.skip("Streams are specific to HTTP/2")
+        request = Request(mockserver.url("/h2-reset-stream", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_stream_reset_after_data(
+        self, mockserver: MockServer
+    ) -> None:
+        """A stream reset that arrives along with the data that cancels the
+        download is ignored."""
+        if not self.http2:
+            pytest.skip("Streams are specific to HTTP/2")
+        request = Request(
+            mockserver.url("/h2-data-and-reset", is_secure=self.is_secure),
+            meta={"download_maxsize": 1},
+        )
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadCancelledError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_goaway(self, mockserver: MockServer) -> None:
+        if not self.http2:
+            pytest.skip("GOAWAY frames are specific to HTTP/2")
+        request = Request(mockserver.url("/h2-goaway", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_large_h2_frame(self, mockserver: MockServer) -> None:
+        if not self.http2:
+            pytest.skip("Frames are specific to HTTP/2")
+        request = Request(
+            mockserver.url("/h2-raw?raw=large-frame", is_secure=self.is_secure)
+        )
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_unknown_h2_frame(self, mockserver: MockServer) -> None:
+        """Frames of unknown types are ignored."""
+        if not self.http2:
+            pytest.skip("Frames are specific to HTTP/2")
+        request = Request(
+            mockserver.url("/h2-raw?raw=unknown-frame", is_secure=self.is_secure)
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
 
     @coroutine_test
     async def test_download_conn_failed(self) -> None:
