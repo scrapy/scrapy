@@ -4,13 +4,12 @@ import pickle
 import re
 
 import pytest
-from packaging.version import Version
-from w3lib import __version__ as w3lib_version
 
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
 from scrapy.linkextractors import lxmlhtml
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor, LxmlParserLinkExtractor
+from scrapy.utils._deps_compat import W3LIB_SAFE_URL_STRING_REJECTS_BAD_PORT
 from tests import get_testdata
 
 
@@ -859,11 +858,8 @@ class TestLxmlLinkExtractor(Base.TestLinkExtractorBase):
         ]
 
     @pytest.mark.skipif(
-        Version(w3lib_version) < Version("2.0.0"),
-        reason=(
-            "Before w3lib 2.0.0, w3lib.url.safe_url_string would not complain "
-            "about an invalid port value."
-        ),
+        not W3LIB_SAFE_URL_STRING_REJECTS_BAD_PORT,
+        reason="This w3lib version does not reject bad ports",
     )
     def test_skip_bad_links(self):
         html = b"""
