@@ -63,7 +63,6 @@ class TestHttpCompression:
     def setup_method(self):
         self.crawler = get_crawler(Spider)
         self.mw = build_from_crawler(HttpCompressionMiddleware, self.crawler)
-        assert self.crawler.stats
         self.crawler.stats.open_spider()
 
     def _getresponse(self, coding: str) -> Response:
@@ -89,7 +88,6 @@ class TestHttpCompression:
         return response
 
     def assertStatsEqual(self, key: str, value: Any) -> None:
-        assert self.crawler.stats
         assert self.crawler.stats.get_value(key) == value, str(
             self.crawler.stats.get_stats()
         )

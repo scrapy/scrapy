@@ -15,7 +15,7 @@ from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import AsyncIterator, Callable, Iterator
 
     from scrapy.http import Response
 
@@ -85,19 +85,23 @@ class TestMain:
         class TestSpider(Spider):
             name = "test"
 
-            async def start(self):
+            async def start(self) -> AsyncIterator[Any]:
+                assert self.crawler.engine._slot
+                scheduler = self.crawler.engine._slot.scheduler
+                assert isinstance(scheduler, MemoryScheduler)
+
                 yield Request("data:,a")
 
                 await sleep(seconds)
 
-                self.crawler.engine._slot.scheduler.pause()
-                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
+                scheduler.pause()
+                scheduler.enqueue_request(Request("data:,b"))
 
                 # During this time, the scheduler reports having requests but
                 # returns None.
                 await sleep(seconds)
 
-                self.crawler.engine._slot.scheduler.unpause()
+                scheduler.unpause()
 
                 # The scheduler request is processed.
                 await sleep(seconds)
@@ -106,21 +110,21 @@ class TestMain:
 
                 await sleep(seconds)
 
-                self.crawler.engine._slot.scheduler.pause()
-                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,d"))
+                scheduler.pause()
+                scheduler.enqueue_request(Request("data:,d"))
 
                 # The last start request is processed during the time until the
                 # delayed call below, proving that the start iteration can
                 # finish before a scheduler “sleep” without causing the
                 # scheduler to finish.
-                call_later(seconds, self.crawler.engine._slot.scheduler.unpause)
+                call_later(seconds, scheduler.unpause)
 
-            def parse(self, response):
+            def parse(self, response: Response) -> None:
                 pass
 
         actual_urls = []
 
-        def track_url(request, spider):
+        def track_url(request: Request, spider: Spider) -> None:
             actual_urls.append(request.url)
 
         settings = {"SCHEDULER": MemoryScheduler}
@@ -138,17 +142,16 @@ class TestMain:
         class TestSpider(Spider):
             name = "test"
 
-            async def start(self):
-                assert self.crawler.engine is not None
+            async def start(self) -> AsyncIterator[Any]:
                 await self.crawler.engine.close_async()
                 yield Request("data:,a")
 
-            def parse(self, response):
+            def parse(self, response: Response) -> None:
                 pass
 
         actual_urls = []
 
-        def track_url(request, spider):
+        def track_url(request: Request, spider: Spider) -> None:
             actual_urls.append(request.url)
 
         settings = {"SCHEDULER": MemoryScheduler}
@@ -160,7 +163,6 @@ class TestMain:
             await crawler.crawl_async()
 
         assert not caplog.records
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "shutdown"
         assert not actual_urls
 
@@ -229,7 +231,6 @@ class TestMain:
         failure, response = errors[0]
         assert isinstance(failure.value, ValueError)
         assert response is None
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "start_error"
         assert crawler.stats.get_value("spider_exceptions/count") == 1
         assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
@@ -256,12 +257,13 @@ class TestMain:
             await crawler.crawl_async()
 
         assert not caplog.records
-        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "my_reason"
         assert crawler.stats.get_value("spider_exceptions/count") is None
 
 
 class TestRequestSendOrder:
+    mockserver: MockServer
+
     seconds = 0.1  # increase if flaky
 
     @classmethod
@@ -273,52 +275,65 @@ class TestRequestSendOrder:
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def request(self, num, response_seconds, download_slots, priority=0):
+    def request(
+        self,
+        num: int,
+        response_seconds: float,
+        download_slots: int,
+        priority: int = 0,
+    ) -> Request:
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
         meta = {"download_slot": str(num % download_slots)}
         return Request(url, meta=meta, priority=priority)
 
-    def get_num(self, request_or_response: Request | Response):
+    def get_num(self, request_or_response: Request | Response) -> int:
         return int(request_or_response.url.rsplit("&", maxsplit=1)[1])
 
     async def _test_request_order(
         self,
-        start_nums,
-        cb_nums=None,
-        settings=None,
-        response_seconds=None,
-        download_slots=1,
-        start_fn=None,
-        parse_fn=None,
-    ):
+        start_nums: list[int],
+        cb_nums: list[int] | None = None,
+        settings: dict[str, Any] | None = None,
+        response_seconds: float | None = None,
+        download_slots: int = 1,
+        start_fn: Callable[[Spider], AsyncIterator[Any]] | None = None,
+        parse_fn: Callable[..., Iterator[Any]] | None = None,
+    ) -> None:
         cb_nums = cb_nums or []
         settings = settings or {}
-        response_seconds = response_seconds or self.seconds
+        seconds = response_seconds or self.seconds
 
         cb_requests = deque(
-            [self.request(num, response_seconds, download_slots) for num in cb_nums]
+            [self.request(num, seconds, download_slots) for num in cb_nums]
         )
 
         if start_fn is None:
 
-            async def start_fn(spider):
+            async def default_start(spider: Spider) -> AsyncIterator[Any]:
                 for num in start_nums:
-                    yield self.request(num, response_seconds, download_slots)
+                    yield self.request(num, seconds, download_slots)
+
+            start_fn = default_start
 
         if parse_fn is None:
 
-            def parse_fn(spider, response):
+            def default_parse(spider: Spider, response: Response) -> Iterator[Any]:
                 while cb_requests:
                     yield cb_requests.popleft()
 
+            parse_fn = default_parse
+
+        spider_start = start_fn
+        spider_parse = parse_fn
+
         class TestSpider(Spider):
             name = "test"
-            start = start_fn
-            parse = parse_fn
+            start = spider_start
+            parse = spider_parse
 
         actual_nums = []
 
-        def track_num(request, spider):
+        def track_num(request: Request, spider: Spider) -> None:
             actual_nums.append(self.get_num(request))
 
         crawler = get_crawler(TestSpider, settings_dict=settings)
@@ -337,12 +352,13 @@ class TestRequestSendOrder:
         response_seconds = 0
         download_slots = 1
 
-        def _request(num, priority=0):
+        def _request(num: int, priority: int = 0) -> Request:
             return self.request(
                 num, response_seconds, download_slots, priority=priority
             )
 
-        async def start(spider):
+        async def start(spider: Spider) -> AsyncIterator[Any]:
+            assert spider.crawler.engine._slot
             # The first CONCURRENT_REQUESTS start requests are sent
             # immediately.
             yield _request(1)
@@ -356,7 +372,7 @@ class TestRequestSendOrder:
             yield _request(3, priority=1)
             yield _request(4, priority=1)
 
-        def parse(spider, response):
+        def parse(spider: Spider, response: Response) -> Iterator[Any]:
             return
             yield
 
@@ -377,12 +393,13 @@ class TestRequestSendOrder:
         response_seconds = 0
         download_slots = 1
 
-        def _request(num, priority=0):
+        def _request(num: int, priority: int = 0) -> Request:
             return self.request(
                 num, response_seconds, download_slots, priority=priority
             )
 
-        async def start(spider):
+        async def start(spider: Spider) -> AsyncIterator[Any]:
+            assert spider.crawler.engine._slot
             # The first CONCURRENT_REQUESTS start requests are sent
             # immediately.
             yield _request(1)
@@ -396,7 +413,7 @@ class TestRequestSendOrder:
             yield _request(4, priority=1)
             yield _request(3, priority=1)
 
-        def parse(spider, response):
+        def parse(spider: Spider, response: Response) -> Iterator[Any]:
             return
             yield
 
@@ -420,12 +437,13 @@ class TestRequestSendOrder:
         response_seconds = 0
         download_slots = 1
 
-        def _request(num, priority=0):
+        def _request(num: int, priority: int = 0) -> Request:
             return self.request(
                 num, response_seconds, download_slots, priority=priority
             )
 
-        async def start(spider):
+        async def start(spider: Spider) -> AsyncIterator[Any]:
+            assert spider.crawler.engine._slot
             # The first CONCURRENT_REQUESTS start requests are sent
             # immediately.
             yield _request(1)
@@ -454,7 +472,7 @@ class TestRequestSendOrder:
             ):
                 spider.crawler.engine._slot.scheduler.enqueue_request(request)
 
-        def parse(spider, response):
+        def parse(spider: Spider, response: Response) -> Iterator[Any]:
             return
             yield
 
@@ -479,7 +497,7 @@ class TestRequestSendOrder:
         response_seconds = self.seconds * 2**1  # increase if flaky
         download_slots = 1
 
-        async def start(spider):
+        async def start(spider: Spider) -> AsyncIterator[Any]:
             for num in start_nums:
                 if spider.crawler.engine.needs_backout():
                     await spider.crawler.signals.wait_for(signals.scheduler_empty)

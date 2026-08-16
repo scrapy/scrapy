@@ -54,7 +54,6 @@ async def create_scheduler(
     finally:
         await ensure_awaitable(scheduler.close("finished"))
         await mock_crawler.stop_async()
-        assert mock_crawler.engine
         mock_crawler.engine.downloader.close()
 
 
@@ -254,7 +253,6 @@ class DownloaderAwareSchedulerTestMixin(TestSchedulerBase):
             dequeued_slots: list[str] = []
             requests: list[Request] = []
             assert scheduler.crawler
-            assert scheduler.crawler.engine
             downloader = scheduler.crawler.engine.downloader
             assert isinstance(downloader, MockDownloader)
             while scheduler.has_pending_requests():
@@ -320,7 +318,6 @@ class TestIntegrationWithDownloaderAwareInMemory:
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)
-            assert self.crawler.stats
             assert self.crawler.stats.get_value("downloader/response_count") == len(
                 start_urls
             )

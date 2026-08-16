@@ -364,7 +364,6 @@ with multiples lines
         est: list[list[tuple[str, Any]]] = []
 
         def cb(response):
-            assert crawler.engine
             est.append(get_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -399,7 +398,6 @@ with multiples lines
         est: list[str] = []
 
         def cb(response):
-            assert crawler.engine
             est.append(format_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -474,7 +472,6 @@ class TestCrawlSpider:
         await crawler.crawl_async(
             mockserver.url("/status?n=200"), mockserver=mockserver
         )
-        assert crawler.stats
         return items, crawler.stats
 
     @coroutine_test
@@ -540,7 +537,6 @@ class TestCrawlSpider:
         # so the failure is dropped silently and the crawl finishes normally.
         assert "[parse] status 200 (foo: None)" in caplog.text
         assert "[errback]" not in caplog.text
-        assert crawler.stats
         assert crawler.stats.get_value("downloader/response_status_count/404") == 1
 
     @coroutine_test

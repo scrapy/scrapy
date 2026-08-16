@@ -97,7 +97,6 @@ class TestLogCounterHandler:
             logger.removeHandler(handler)
 
     def test_init(self, crawler: Crawler, logger: logging.Logger) -> None:
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/DEBUG") is None
         assert crawler.stats.get_value("log_count/INFO") is None
         assert crawler.stats.get_value("log_count/WARNING") is None
@@ -106,12 +105,10 @@ class TestLogCounterHandler:
 
     def test_accepted_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.error("test log msg")
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/ERROR") == 1
 
     def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.debug("test log msg")
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/DEBUG") is None
 
 

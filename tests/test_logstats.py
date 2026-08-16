@@ -15,7 +15,6 @@ class TestLogStats:
     def setup_method(self) -> None:
         self.crawler = get_crawler(SimpleSpider)
         self.spider = self.crawler._create_spider("spidey")
-        assert self.crawler.stats is not None
         self.stats = self.crawler.stats
 
         self.stats.set_value("response_received_count", 4802)
