@@ -9,7 +9,6 @@ import pytest
 from scrapy.http import HtmlResponse, Response, TextResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
-    _remove_html_comments,
     get_base_url,
     get_meta_refresh,
     open_in_browser,
@@ -169,6 +168,31 @@ def test_response_status_message():
     </html>""",
             id="Conditional comment",
         ),
+        pytest.param(
+            b"""
+    <html>
+        <body><p>Hello world.</p></body>
+    </html>""",
+            id="No <head>",
+        ),
+        pytest.param(
+            b"<p>Hello world.</p>",
+            id="No <html>",
+        ),
+        pytest.param(
+            b"""<!DOCTYPE html>
+    <html>
+        <head><title>Dummy</title></head>
+        <body><p>Hello world.</p></body>
+    </html>""",
+            id="Doctype",
+        ),
+        pytest.param(
+            b"""
+    <!-- <head><base href="http://example.org"></head> -->
+    <p>Hello world.</p>""",
+            id="Only commented-out <head> and <base>",
+        ),
     ],
 )
 def test_inject_base_url(body: bytes) -> None:
@@ -176,8 +200,13 @@ def test_inject_base_url(body: bytes) -> None:
 
     def check_base_url(burl):
         bbody = _read_browser_output(burl)
-        assert bbody.count(b'><base href="' + to_bytes(url) + b'">') == 1
-        assert b"<head" in bbody
+        base_tag = b'<base href="' + to_bytes(url) + b'">'
+        assert bbody.count(base_tag) == 1
+        index = bbody.index(base_tag)
+        # The base tag is not commented out.
+        assert bbody.rfind(b"<!--", 0, index) <= bbody.rfind(b"-->", 0, index)
+        # The base tag comes after the doctype declaration, if any.
+        assert b"<!DOCTYPE" not in bbody[index:]
         return True
 
     resp = HtmlResponse(url, body=body)
@@ -211,24 +240,6 @@ def test_open_in_browser_redos_head():
     _assert_open_in_browser_is_fast(b"<head\t" * 80_000)
 
 
-@pytest.mark.parametrize(
-    ("input_body", "output_body"),
-    [
-        (b"a<!--", b"a"),
-        (b"a<!---->b", b"ab"),
-        (b"a<!--b-->c", b"ac"),
-        (b"a<!--b-->c<!--", b"ac"),
-        (b"a<!--b-->c<!--d", b"ac"),
-        (b"a<!--b-->c<!---->d", b"acd"),
-        (b"a<!--b--><!--c-->d", b"ad"),
-        (b"a<!-- <!-- inner --> -->b", b"a -->b"),
-        (b"<!-- <head>fake</head> --><head>real</head>", b"<head>real</head>"),
-    ],
-)
-def test_remove_html_comments(input_body: bytes, output_body: bytes) -> None:
-    assert _remove_html_comments(input_body) == output_body
-
-
 def test_open_in_browser_preserves_html_comments():
     url = "http://www.example.com"
     body = (
@@ -248,19 +259,24 @@ def test_open_in_browser_preserves_html_comments():
     assert open_in_browser(response, _openfunc=check)
 
 
-def test_open_in_browser_does_not_inject_base_when_present():
-    url = "http://www.example.com"
-    body = (
-        b"<html>"
-        b'<head><base href="http://real.com"><title>T</title></head>'
-        b"<body>hi</body>"
-        b"</html>"
-    )
+@pytest.mark.parametrize(
+    ("base_tag", "expected_base_url"),
+    [
+        (b'<base href="http://real.com/">', b"http://real.com/"),
+        (b'<BASE HREF="http://real.com/">', b"http://real.com/"),
+        (b'<base href="/img/">', b"http://www.example.com/img/"),
+        (b'<base target="_blank">', b"http://www.example.com/page.html"),
+    ],
+)
+def test_open_in_browser_keeps_base_url_of_response(
+    base_tag: bytes, expected_base_url: bytes
+):
+    url = "http://www.example.com/page.html"
+    body = b"<html><head>" + base_tag + b"<title>T</title></head><body>hi</body></html>"
 
     def check(burl):
         bbody = _read_browser_output(burl)
-        assert b'<base href="' + to_bytes(url) + b'">' not in bbody
-        assert b'<base href="http://real.com">' in bbody
+        assert bbody.startswith(b'<base href="' + expected_base_url + b'">')
         return True
 
     response = HtmlResponse(url, body=body)
@@ -286,7 +302,7 @@ def test_open_in_browser_injects_base_when_only_in_comment():
     assert open_in_browser(response, _openfunc=check)
 
 
-def test_open_in_browser_injects_base_at_real_head_not_commented_head():
+def test_open_in_browser_injects_base_before_head_contents():
     url = "http://www.example.com"
     body = (
         b"<html>"
