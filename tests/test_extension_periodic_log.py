@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.periodic_log import PeriodicLog
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 from .spiders import MetaSpider
@@ -72,7 +73,7 @@ class CustomPeriodicLog(PeriodicLog):
 
 def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
     crawler = get_crawler(MetaSpider, settings)
-    return CustomPeriodicLog.from_crawler(crawler)
+    return build_from_crawler(CustomPeriodicLog, crawler)
 
 
 class TestPeriodicLog:
@@ -248,3 +249,17 @@ class TestPeriodicLog:
         assert data["time"]["log_interval_real"] >= 0
         assert data["time"]["elapsed"] >= 0
         assert data["time"]["start_time"] <= data["time"]["utcnow"]
+
+    def test_multiplier_deprecated(self) -> None:
+        crawler = get_crawler(
+            MetaSpider,
+            {"PERIODIC_LOG_TIMING_ENABLED": True, "LOGSTATS_INTERVAL": 30},
+        )
+        crawler._apply_settings()
+        ext = build_from_crawler(PeriodicLog, crawler)
+        with pytest.warns(ScrapyDeprecationWarning):
+            assert ext.multiplier == 2.0
+        with pytest.warns(ScrapyDeprecationWarning):
+            ext.multiplier = 3.0
+        with pytest.warns(ScrapyDeprecationWarning):
+            assert ext.multiplier == 3.0

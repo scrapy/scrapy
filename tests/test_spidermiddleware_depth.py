@@ -26,7 +26,6 @@ def crawler() -> Crawler:
 
 @pytest.fixture
 def stats(crawler: Crawler) -> Generator[StatsCollector]:
-    assert crawler.stats is not None
     crawler.stats.open_spider()
 
     yield crawler.stats
@@ -36,7 +35,7 @@ def stats(crawler: Crawler) -> Generator[StatsCollector]:
 
 @pytest.fixture
 def mw(crawler: Crawler) -> DepthMiddleware:
-    return DepthMiddleware.from_crawler(crawler)
+    return build_from_crawler(DepthMiddleware, crawler)
 
 
 def test_process_spider_output(mw: DepthMiddleware, stats: StatsCollector) -> None:
@@ -58,6 +57,19 @@ def test_process_spider_output(mw: DepthMiddleware, stats: StatsCollector) -> No
 
     rdm = stats.get_value("request_depth_max")
     assert rdm == 1
+
+
+def test_depth_reset(mw: DepthMiddleware, stats: StatsCollector) -> None:
+    resp = Response("https://example.com")
+    resp.request = Request("https://example.com", meta={"depth": 5})
+    result = [Request("https://example.com", meta={"depth_reset": True})]
+
+    out = list(mw.process_spider_output(resp, result))
+
+    assert out == result
+    assert out[0].meta["depth"] == 0
+    assert "depth_reset" not in out[0].meta
+    assert stats.get_value("request_depth_count/0") == 1
 
 
 def test_process_spider_output_no_response(
@@ -85,12 +97,28 @@ async def test_process_spider_output_async_no_response(
     assert stats.get_value("request_depth_count/0") is None
 
 
+def test_ignored_logged_once(
+    mw: DepthMiddleware, stats: StatsCollector, caplog: pytest.LogCaptureFixture
+) -> None:
+    resp = Response("http://example.com")
+    resp.request = Request("http://example.com")
+    resp.meta["depth"] = 1
+    result = [Request(f"http://example.com/{i}") for i in range(3)]
+
+    with caplog.at_level("DEBUG", logger="scrapy.spidermiddlewares.depth"):
+        assert not list(mw.process_spider_output(resp, result))
+
+    messages = [r.getMessage() for r in caplog.records]
+    assert len(messages) == 1
+    assert "http://example.com/0" in messages[0]
+    assert stats.get_value("depth/request_ignored_count") == 3
+
+
 def test_priority_and_non_verbose_stats() -> None:
     crawler = get_crawler(
         Spider,
         {"DEPTH_LIMIT": 0, "DEPTH_STATS_VERBOSE": False, "DEPTH_PRIORITY": 10},
     )
-    assert crawler.stats is not None
     crawler.stats.open_spider()
     try:
         mw = build_from_crawler(DepthMiddleware, crawler)

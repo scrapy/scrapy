@@ -23,7 +23,10 @@ if TYPE_CHECKING:
 class MediaDownloadSpider(SimpleSpider):
     name = "mediadownload"
 
-    def _process_url(self, url):
+    media_key: str
+    media_urls_key: str
+
+    def _process_url(self, url: str) -> str:
         return url
 
     def parse(self, response):
@@ -44,14 +47,15 @@ class MediaDownloadSpider(SimpleSpider):
 class BrokenLinksMediaDownloadSpider(MediaDownloadSpider):
     name = "brokenmedia"
 
-    def _process_url(self, url):
+    def _process_url(self, url: str) -> str:
         return url + ".foo"
 
 
 class RedirectedMediaDownloadSpider(MediaDownloadSpider):
     name = "redirectedmedia"
 
-    def _process_url(self, url):
+    def _process_url(self, url: str) -> str:
+        assert self.mockserver
         return add_or_replace_parameter(
             self.mockserver.url("/redirect-to"), "goto", url
         )
@@ -136,7 +140,6 @@ class TestFileDownloadCrawl:
         assert not items[0][self.media_key]
 
         # check that there was 1 successful fetch and 3 other responses with non-200 code
-        assert crawler.stats
         assert crawler.stats.get_value("downloader/request_method_count/GET") == 4
         assert crawler.stats.get_value("downloader/response_count") == 4
         assert crawler.stats.get_value("downloader/response_status_count/200") == 1
@@ -204,7 +207,6 @@ class TestFileDownloadCrawl:
                 mockserver=self.mockserver,
             )
         self._assert_files_downloaded(self.items, caplog.text)
-        assert crawler.stats
         assert crawler.stats.get_value("downloader/response_status_count/302") == 3
 
     @coroutine_test

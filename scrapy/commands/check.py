@@ -119,4 +119,6 @@ class Command(ScrapyCommand):
 
                 result.printErrors()
                 result.printSummary(start_time, stop)
-                self.exitcode = int(not result.wasSuccessful())
+                self.exitcode = int(
+                    not result.wasSuccessful() or self.crawler_process.bootstrap_failed
+                )

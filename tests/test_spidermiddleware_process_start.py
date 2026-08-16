@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from asyncio import sleep
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -9,6 +12,11 @@ from scrapy.utils.test import get_crawler
 from .utils import twisted_sleep
 from .utils.decorators import coroutine_test
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from scrapy.http import Response
+
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 ITEM_C = {"id": "c"}
@@ -17,20 +25,20 @@ SLEEP_SECONDS = 0.1
 
 
 class AsyncioSleepSpiderMiddleware:
-    async def process_start(self, start):
+    async def process_start(self, start: AsyncIterator[Any]) -> AsyncIterator[Any]:
         await sleep(SLEEP_SECONDS)
         async for item_or_request in start:
             yield item_or_request
 
 
 class NoOpSpiderMiddleware:
-    async def process_start(self, start):
+    async def process_start(self, start: AsyncIterator[Any]) -> AsyncIterator[Any]:
         async for item_or_request in start:
             yield item_or_request
 
 
 class TwistedSleepSpiderMiddleware:
-    async def process_start(self, start):
+    async def process_start(self, start: AsyncIterator[Any]) -> AsyncIterator[Any]:
         await maybe_deferred_to_future(twisted_sleep(SLEEP_SECONDS))
         async for item_or_request in start:
             yield item_or_request
@@ -42,12 +50,12 @@ class TwistedSleepSpiderMiddleware:
 class ModernWrapSpider(Spider):
     name = "test"
 
-    async def start(self):
+    async def start(self) -> AsyncIterator[Any]:
         yield ITEM_B
 
 
 class ModernWrapSpiderMiddleware:
-    async def process_start(self, start):
+    async def process_start(self, start: AsyncIterator[Any]) -> AsyncIterator[Any]:
         yield ITEM_A
         async for item_or_request in start:
             yield item_or_request
@@ -55,10 +63,15 @@ class ModernWrapSpiderMiddleware:
 
 
 class TestMain:
-    async def _test(self, spider_middlewares, spider_cls, expected_items):
+    async def _test(
+        self,
+        spider_middlewares: list[type],
+        spider_cls: type[Spider],
+        expected_items: list[Any],
+    ) -> None:
         actual_items = []
 
-        def track_item(item, response, spider):
+        def track_item(item: Any, response: Response, spider: Spider) -> None:
             actual_items.append(item)
 
         settings = {
@@ -70,7 +83,12 @@ class TestMain:
         assert crawler.stats.get_value("finish_reason") == "finished"
         assert actual_items == expected_items, f"{actual_items=} != {expected_items=}"
 
-    async def _test_wrap(self, spider_middleware, spider_cls, expected_items=None):
+    async def _test_wrap(
+        self,
+        spider_middleware: type,
+        spider_cls: type[Spider],
+        expected_items: list[Any] | None = None,
+    ) -> None:
         expected_items = expected_items or [ITEM_A, ITEM_B, ITEM_C]
         await self._test([spider_middleware], spider_cls, expected_items)
 
@@ -78,11 +96,11 @@ class TestMain:
     async def test_modern_mw_modern_spider(self):
         await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
 
-    async def _test_sleep(self, spider_middlewares):
+    async def _test_sleep(self, spider_middlewares: list[type]) -> None:
         class TestSpider(Spider):
             name = "test"
 
-            async def start(self):
+            async def start(self) -> AsyncIterator[Any]:
                 yield ITEM_A
 
         await self._test(spider_middlewares, TestSpider, [ITEM_A])

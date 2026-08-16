@@ -108,6 +108,7 @@ __all__ = [
     "FTP_PASSWORD",
     "FTP_USER",
     "GCS_PROJECT_ID",
+    "HTTP2_MAX_FRAME_SIZE",
     "HTTPAUTH_DOMAIN",
     "HTTPAUTH_PASS",
     "HTTPAUTH_USER",
@@ -378,6 +379,7 @@ FEED_STORAGES_BASE = {
     "": "scrapy.extensions.feedexport.FileFeedStorage",
     "file": "scrapy.extensions.feedexport.FileFeedStorage",
     "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
+    "ftps": "scrapy.extensions.feedexport.FTPFeedStorage",
     "gs": "scrapy.extensions.feedexport.GCSFeedStorage",
     "s3": "scrapy.extensions.feedexport.S3FeedStorage",
     "stdout": "scrapy.extensions.feedexport.StdoutFeedStorage",
@@ -400,6 +402,8 @@ FTP_USER = "anonymous"
 FTP_PASSWORD = "guest"  # noqa: S105
 
 GCS_PROJECT_ID = None
+
+HTTP2_MAX_FRAME_SIZE = 16384
 
 HTTPAUTH_USER = ""
 HTTPAUTH_PASS = ""
