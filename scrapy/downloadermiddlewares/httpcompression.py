@@ -7,10 +7,12 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
+from scrapy.downloadermiddlewares.retry import get_retry_request
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
+    _DECOMPRESSION_ERRORS,
     _DecompressionMaxSizeExceeded,
     _inflate,
     _unbrotli,
@@ -19,6 +21,7 @@ from scrapy.utils._compression import (
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.gz import gunzip
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -54,10 +57,12 @@ class HttpCompressionMiddleware:
                 stacklevel=2,
             )
             self.stats = stats
+            self.crawler = None
             self._max_size = 1073741824
             self._warn_size = 33554432
             return
         self.stats = crawler.stats
+        self.crawler = crawler
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
         crawler.signals.connect(self.open_spider, signals.spider_opened)
@@ -108,6 +113,8 @@ class HttpCompressionMiddleware:
                 )
                 logger.warning(msg)
                 raise IgnoreRequest(msg) from e
+            except _DECOMPRESSION_ERRORS as e:
+                return self._handle_decompression_error(request, response, e)
             if len(response.body) < warn_size <= len(decoded_body):
                 logger.warning(
                     f"{response} body size after decompression "
@@ -135,6 +142,35 @@ class HttpCompressionMiddleware:
             if not content_encoding:
                 del response.headers["Content-Encoding"]
         return response
+
+    def _handle_decompression_error(
+        self, request: Request, response: Response, exception: Exception
+    ) -> Request:
+        """Retry *request*, whose body could not be decompressed.
+
+        A body that fails to decompress is usually a body that was truncated in
+        transit, so it is worth requesting again. Decompression happens in
+        process_response(), and exceptions raised there do not reach the
+        process_exception() method of RetryMiddleware, so the retry is requested
+        here instead.
+        """
+        reason = f"decompression error ({global_object_name(type(exception))})"
+        if (
+            self.crawler
+            and self.crawler.spider
+            and not request.meta.get("dont_retry", False)
+        ):
+            new_request = get_retry_request(
+                request,
+                spider=self.crawler.spider,
+                reason=reason,
+                stats_base_key="httpcompression/retry",
+            )
+            if new_request:
+                return new_request
+        msg = f"Ignored response {response} because of a {reason}: {exception}"
+        logger.warning(msg)
+        raise IgnoreRequest(msg) from exception
 
     def _handle_encoding(
         self, body: bytes, content_encoding: list[bytes], max_size: int

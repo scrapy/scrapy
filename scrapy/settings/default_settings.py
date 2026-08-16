@@ -516,8 +516,12 @@ RETRY_EXCEPTIONS = [
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    # OSError is raised by the HttpCompression middleware when trying to
-    # decompress an empty response
+    # OSError covers socket errors from download handlers. It used to be
+    # documented here as the exception that HttpCompressionMiddleware raises for
+    # a body it cannot decompress, but that never reached this setting:
+    # decompression happens in process_response(), and exceptions raised there
+    # are not passed to the process_exception() method of RetryMiddleware.
+    # HttpCompressionMiddleware requests those retries itself.
     OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]

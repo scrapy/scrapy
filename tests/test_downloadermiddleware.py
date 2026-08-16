@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
-from gzip import BadGzipFile
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -10,7 +9,7 @@ import pytest
 from twisted.internet.defer import Deferred, succeed
 
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -102,12 +101,11 @@ class TestDefaults(TestManagerBase):
             "Not redirected to location header"
         )
 
-    @coroutine_test
-    async def test_200_and_invalid_gzipped_body_must_fail(self):
-        req = Request("http://example.com")
+    @staticmethod
+    def _invalid_gzipped_response(request: Request) -> Response:
         body = b"<p>You are being redirected</p>"
-        resp = Response(
-            req.url,
+        return Response(
+            request.url,
             status=200,
             body=body,
             headers={
@@ -117,9 +115,26 @@ class TestDefaults(TestManagerBase):
                 "Location": "http://example.com/login",
             },
         )
-        with pytest.raises(BadGzipFile):
+
+    @coroutine_test
+    async def test_200_and_invalid_gzipped_body_must_fail(self):
+        # HttpCompressionMiddleware retries a body it cannot decompress instead
+        # of letting the BadGzipFile out, so the response never reaches the
+        # spider either way.
+        req = Request("http://example.com")
+        async with self.get_mwman() as mwman:
+            result = await self._download(
+                mwman, req, self._invalid_gzipped_response(req)
+            )
+        assert isinstance(result, Request)
+        assert result.url == req.url
+
+    @coroutine_test
+    async def test_200_and_invalid_gzipped_body_must_fail_without_retries(self):
+        req = Request("http://example.com", meta={"max_retry_times": 0})
+        with pytest.raises(IgnoreRequest):
             async with self.get_mwman() as mwman:
-                await self._download(mwman, req, resp)
+                await self._download(mwman, req, self._invalid_gzipped_response(req))
 
 
 class TestResponseFromProcessRequest(TestManagerBase):

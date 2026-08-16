@@ -706,6 +706,17 @@ HttpCompressionMiddleware
    This middleware also supports decoding `zstd-compressed`_ responses with
    the :ref:`zstd <extras>` extra.
 
+   A body that cannot be decompressed, e.g. one truncated in transit, makes
+   this middleware retry the request, counting the retry under the
+   ``httpcompression/retry`` stats keys. Set the :reqmeta:`dont_retry` request
+   meta key to disable that, and see :setting:`RETRY_TIMES` for the number of
+   retries. Once retries are exhausted the response is dropped with an
+   :exc:`~scrapy.exceptions.IgnoreRequest` exception.
+
+   Note that decompression happens in ``process_response()``, so these retries
+   cannot come from :class:`RetryMiddleware`, whose ``process_exception()``
+   method only sees download handler and ``process_request()`` errors.
+
 .. _brotli: https://www.ietf.org/rfc/rfc7932.txt
 .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
 

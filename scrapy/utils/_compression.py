@@ -1,5 +1,7 @@
 import contextlib
+import struct
 import zlib
+from importlib.util import find_spec
 from io import BytesIO
 
 try:
@@ -12,6 +14,22 @@ with contextlib.suppress(ImportError):
 
 
 _CHUNK_SIZE = 65536  # 64 KiB
+
+#: Exceptions that the decompression functions below raise for a body that
+#: cannot be decompressed, e.g. one truncated by a lost connection. Each codec
+#: reports failure differently: gzip raises gzip.BadGzipFile (an OSError),
+#: EOFError or struct.error, deflate raises zlib.error, and the brotli and zstd
+#: bindings raise their own exception types.
+_DECOMPRESSION_ERRORS: tuple[type[Exception], ...] = (
+    EOFError,
+    OSError,  # includes gzip.BadGzipFile
+    struct.error,
+    zlib.error,
+    brotli.error,
+)
+
+if find_spec("zstandard") is not None:
+    _DECOMPRESSION_ERRORS += (zstandard.ZstdError,)
 
 
 class _DecompressionMaxSizeExceeded(ValueError):

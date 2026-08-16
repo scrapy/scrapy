@@ -207,6 +207,61 @@ class TestHttpCompression:
         assert newresponse is not response
         assert newresponse.headers.getlist("Content-Encoding") == [b"zstd"]
 
+    def _get_undecodable_response(self, content_encoding: str, body: bytes) -> Response:
+        """A response whose body cannot be decompressed, as if truncated."""
+        response = Response(
+            "http://scrapytest.org/",
+            body=body,
+            headers={"Content-Encoding": content_encoding},
+        )
+        response.request = Request("http://scrapytest.org/")
+        return response
+
+    @pytest.mark.parametrize(
+        ("content_encoding", "body"),
+        [
+            # gzip raises EOFError for a stream that ends early
+            ("gzip", b"\x1f\x8b\x08" + b"truncated"),
+            # gzip raises gzip.BadGzipFile, an OSError, for a bad header
+            ("gzip", b"\x1f\x8b\xff" + b"bad-header"),
+            # deflate raises zlib.error
+            ("deflate", b"not-deflate-data"),
+        ],
+    )
+    def test_process_response_undecodable_body_retries(self, content_encoding, body):
+        self.crawler.spider = self.crawler._create_spider("scrapytest.org")
+        response = self._get_undecodable_response(content_encoding, body)
+        assert response.request
+        result = self.mw.process_response(response.request, response)
+        assert isinstance(result, Request), f"expected a retry request, got {result!r}"
+        assert result.url == response.request.url
+        self.assertStatsEqual("httpcompression/retry/count", 1)
+
+    def test_process_response_undecodable_body_dont_retry(
+        self, caplog: pytest.LogCaptureFixture
+    ):
+        self.crawler.spider = self.crawler._create_spider("scrapytest.org")
+        response = self._get_undecodable_response("gzip", b"\x1f\x8b\x08trunc")
+        assert response.request
+        response.request.meta["dont_retry"] = True
+        with (
+            caplog.at_level(
+                WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
+            ),
+            pytest.raises(IgnoreRequest),
+        ):
+            self.mw.process_response(response.request, response)
+        assert "decompression error" in caplog.text
+        self.assertStatsEqual("httpcompression/retry/count", None)
+
+    def test_process_response_undecodable_body_retries_exhausted(self):
+        self.crawler.spider = self.crawler._create_spider("scrapytest.org")
+        response = self._get_undecodable_response("gzip", b"\x1f\x8b\x08trunc")
+        assert response.request
+        response.request.meta["max_retry_times"] = 0
+        with pytest.raises(IgnoreRequest):
+            self.mw.process_response(response.request, response)
+
     def test_process_response_rawdeflate(self):
         response = self._getresponse("rawdeflate")
         assert response.request
