@@ -40,6 +40,7 @@ async def test_stats_calculations(crawler: Crawler, stats: StatsCollector) -> No
     with pytest.raises(AttributeError):
         logstats.itemsprev
 
+    assert crawler.spider
     logstats.spider_opened(crawler.spider)
     assert logstats.pagesprev == 4802
     assert logstats.itemsprev == 3201
@@ -76,6 +77,7 @@ def test_stats_calculations_no_time(crawler: Crawler, stats: StatsCollector) -> 
     not available.
     """
     logstats = build_from_crawler(LogStats, crawler)
+    assert crawler.spider
     logstats.spider_closed(crawler.spider, "test reason")
     assert stats.get_value("responses_per_minute") is None
     assert stats.get_value("items_per_minute") is None
@@ -88,6 +90,7 @@ def test_stats_calculation_no_elapsed_time(
     logstats = build_from_crawler(LogStats, crawler)
     stats.set_value("start_time", datetime.fromtimestamp(1655100172))
     stats.set_value("finish_time", datetime.fromtimestamp(1655100172))
+    assert crawler.spider
     logstats.spider_closed(crawler.spider, "test reason")
     assert stats.get_value("responses_per_minute") is None
     assert stats.get_value("items_per_minute") is None
