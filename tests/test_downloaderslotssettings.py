@@ -70,15 +70,14 @@ class TestCrawl:
         yield crawler.crawl(mockserver=self.mockserver)
         slots = crawler.engine.downloader.slots
         times = crawler.spider.times
-        tolerance = 0.3
+        # Downloading and processing a response add a roughly constant amount
+        # of time on top of the configured delay, so the margin is absolute.
+        # It stays well below the 1 second that separates the delays being
+        # compared, so a slot using the delay of another one still fails.
+        tolerance = 0.75
 
-        delays_real = {k: v[1] - v[0] for k, v in times.items()}
-        error_delta = {
-            k: 1 - min(delays_real[k], v.delay) / max(delays_real[k], v.delay)
-            for k, v in slots.items()
-        }
-
-        assert max(list(error_delta.values())) < tolerance
+        for slot, (first, second) in times.items():
+            assert abs((second - first) - slots[slot].delay) < tolerance
 
 
 @coroutine_test
@@ -149,7 +148,6 @@ async def test_none_slot_with_priority_queue(
     assert crawler.spider.default_slot in crawler.spider.times
     assert len(crawler.spider.times[crawler.spider.default_slot]) == 2
 
-    assert crawler.stats
     stats = crawler.stats
     assert stats.get_value("spider_exceptions", 0) == 0
     assert stats.get_value("downloader/exception_count", 0) == 0

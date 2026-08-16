@@ -9,6 +9,7 @@ from w3lib import __version__ as w3lib_version
 
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
+from scrapy.linkextractors import lxmlhtml
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor, LxmlParserLinkExtractor
 from tests import get_testdata
 
@@ -798,6 +799,25 @@ class Base:
 class TestLxmlLinkExtractor(Base.TestLinkExtractorBase):
     extractor_cls = LxmlLinkExtractor
 
+    def test_canonicalize_once_per_link(self, monkeypatch):
+        canonicalize_url = lxmlhtml.canonicalize_url
+        calls = []
+
+        def counting_canonicalize_url(url, *args, **kwargs):
+            calls.append(url)
+            return canonicalize_url(url, *args, **kwargs)
+
+        monkeypatch.setattr(lxmlhtml, "canonicalize_url", counting_canonicalize_url)
+        response = HtmlResponse(
+            "https://example.com",
+            body=b"".join(b'<a href="/p?b=2&a=1#f%d">x</a>' % i for i in range(10)),
+        )
+        lx = self.extractor_cls(canonicalize=True)
+        assert lx.extract_links(response) == [
+            Link(url="https://example.com/p?a=1&b=2", text="x")
+        ]
+        assert len(calls) == 10
+
     def test_link_restrict_text(self):
         html = b"""
         <a href="http://example.org/item1.html">Pic of a cat</a>
@@ -886,6 +906,19 @@ class TestLxmlParserLinkExtractor:
         lx = LxmlParserLinkExtractor()
         assert lx.extract_links(response) == [
             Link(url="http://example.com/page.html", text="Link", nofollow=False),
+        ]
+
+    def test_deduplicates_by_canonical_url(self):
+        # With canonicalized=False, the default, URLs are canonicalized to
+        # decide whether two extracted links are the same one.
+        html = (
+            b'<a href="http://example.com/page.html?b=2&amp;a=1">1</a>'
+            b'<a href="http://example.com/page.html?a=1&amp;b=2">2</a>'
+        )
+        response = HtmlResponse("http://example.com/", body=html)
+        lx = LxmlParserLinkExtractor(unique=True)
+        assert lx.extract_links(response) == [
+            Link(url="http://example.com/page.html?b=2&a=1", text="1", nofollow=False),
         ]
 
     def test_strip_false(self):

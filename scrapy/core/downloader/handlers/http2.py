@@ -4,10 +4,10 @@ from time import monotonic
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
+from scrapy.core._http2.agent import H2Agent, H2ConnectionPool
 from scrapy.core.downloader._idna_patch import _install_twisted_idna_fallbacks
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
 from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
@@ -42,7 +42,7 @@ class H2DownloadHandler(BaseDownloadHandler):
 
         from twisted.internet import reactor
 
-        self._pool = H2ConnectionPool(reactor, crawler.settings)
+        self._pool = H2ConnectionPool(reactor, crawler)
         self._context_factory = _load_context_factory_from_settings(crawler)
         self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 

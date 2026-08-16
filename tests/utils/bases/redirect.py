@@ -8,7 +8,7 @@ import pytest
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.utils.misc import set_environ
+from scrapy.utils.misc import build_from_crawler, set_environ
 from scrapy.utils.test import get_crawler
 
 
@@ -221,8 +221,8 @@ class TestRedirectBase(ABC):
 
     def test_meta_proxy_http_absolute(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
-        proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
+        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         meta = {"proxy": "https://a:@a.example"}
         request1 = Request("http://example.com", meta=meta)
@@ -262,8 +262,8 @@ class TestRedirectBase(ABC):
 
     def test_meta_proxy_http_relative(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
-        proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
+        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         meta = {"proxy": "https://a:@a.example"}
         request1 = Request("http://example.com", meta=meta)
@@ -303,8 +303,8 @@ class TestRedirectBase(ABC):
 
     def test_meta_proxy_https_absolute(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
-        proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
+        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         meta = {"proxy": "https://a:@a.example"}
         request1 = Request("https://example.com", meta=meta)
@@ -344,8 +344,8 @@ class TestRedirectBase(ABC):
 
     def test_meta_proxy_https_relative(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
-        proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
+        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         meta = {"proxy": "https://a:@a.example"}
         request1 = Request("https://example.com", meta=meta)
@@ -385,8 +385,8 @@ class TestRedirectBase(ABC):
 
     def test_meta_proxy_http_to_https(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
-        proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
+        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         meta = {"proxy": "https://a:@a.example"}
         request1 = Request("http://example.com", meta=meta)
@@ -426,8 +426,8 @@ class TestRedirectBase(ABC):
 
     def test_meta_proxy_https_to_http(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
-        proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
+        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         meta = {"proxy": "https://a:@a.example"}
         request1 = Request("https://example.com", meta=meta)
@@ -467,12 +467,12 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_http_absolute(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "http_proxy": "https://a:@a.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("http://example.com")
         proxy_mw.process_request(request1)
@@ -511,12 +511,12 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_http_relative(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "http_proxy": "https://a:@a.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("http://example.com")
         proxy_mw.process_request(request1)
@@ -555,12 +555,12 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_https_absolute(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "https_proxy": "https://a:@a.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("https://example.com")
         proxy_mw.process_request(request1)
@@ -599,12 +599,12 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_https_relative(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "https_proxy": "https://a:@a.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("https://example.com")
         proxy_mw.process_request(request1)
@@ -643,13 +643,13 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_proxied_http_to_proxied_https(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "http_proxy": "https://a:@a.example",
             "https_proxy": "https://b:@b.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("http://example.com")
         proxy_mw.process_request(request1)
@@ -688,12 +688,12 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_proxied_http_to_unproxied_https(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "http_proxy": "https://a:@a.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("http://example.com")
         proxy_mw.process_request(request1)
@@ -732,12 +732,12 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_unproxied_http_to_proxied_https(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "https_proxy": "https://b:@b.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("http://example.com")
         proxy_mw.process_request(request1)
@@ -776,8 +776,8 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_unproxied_http_to_unproxied_https(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
-        proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
+        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("http://example.com")
         proxy_mw.process_request(request1)
@@ -816,13 +816,13 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_proxied_https_to_proxied_http(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "http_proxy": "https://a:@a.example",
             "https_proxy": "https://b:@b.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("https://example.com")
         proxy_mw.process_request(request1)
@@ -861,12 +861,12 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_proxied_https_to_unproxied_http(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "https_proxy": "https://b:@b.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("https://example.com")
         proxy_mw.process_request(request1)
@@ -905,12 +905,12 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_unproxied_https_to_proxied_http(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
         env = {
             "http_proxy": "https://a:@a.example",
         }
         with set_environ(**env):
-            proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+            proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("https://example.com")
         proxy_mw.process_request(request1)
@@ -949,8 +949,8 @@ class TestRedirectBase(ABC):
 
     def test_system_proxy_unproxied_https_to_unproxied_http(self):
         crawler = get_crawler()
-        redirect_mw = self.mwcls.from_crawler(crawler)
-        proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
+        redirect_mw = build_from_crawler(self.mwcls, crawler)
+        proxy_mw = build_from_crawler(HttpProxyMiddleware, crawler)
 
         request1 = Request("https://example.com")
         proxy_mw.process_request(request1)

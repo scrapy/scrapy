@@ -16,6 +16,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+# Header for spider classes copied with inspect.getsource(): the future import
+# keeps their annotations from being evaluated in the generated module.
+SPIDER_HEADER = "from __future__ import annotations\nfrom scrapy import Spider\n"
+
+
 class TestRunSpiderCommand:
     spider_filename = "myspider.py"
 
@@ -65,14 +70,14 @@ class BadSpider(scrapy.Spider):
 
     def test_run_fail_spider(self, tmp_path: Path) -> None:
         ret, _, _ = self.runspider(
-            tmp_path, "from scrapy import Spider\n" + inspect.getsource(ExceptionSpider)
+            tmp_path, SPIDER_HEADER + inspect.getsource(ExceptionSpider)
         )
         assert ret != 0
 
     def test_run_good_spider(self, tmp_path: Path) -> None:
         ret, _, _ = self.runspider(
             tmp_path,
-            "from scrapy import Spider\n" + inspect.getsource(NoRequestsSpider),
+            SPIDER_HEADER + inspect.getsource(NoRequestsSpider),
         )
         assert ret == 0
 
