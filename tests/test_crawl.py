@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
@@ -18,7 +19,11 @@ from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownloa
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.engine import format_engine_status, get_engine_status
+from scrapy.utils.engine import (
+    format_engine_status,
+    get_engine_status,
+    print_engine_status,
+)
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
@@ -371,6 +376,23 @@ with multiples lines
         s = dict(est[0])
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == 1
+
+    @coroutine_test
+    async def test_print_engine_status(
+        self, mockserver: MockServer, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        def cb(response):
+            assert crawler.engine
+            print_engine_status(crawler.engine)
+
+        crawler = get_crawler(SingleRequestSpider)
+        await crawler.crawl_async(
+            seed=mockserver.url("/"), callback_func=cb, mockserver=mockserver
+        )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        out = capsys.readouterr().out
+        assert out.startswith("Execution engine status")
+        assert re.search(rf"engine\.spider\.name +: {crawler.spider.name}\n", out)
 
     @coroutine_test
     async def test_format_engine_status(self, mockserver: MockServer) -> None:

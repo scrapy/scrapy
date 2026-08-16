@@ -33,7 +33,9 @@ def _getarg(
     return type_(request.args[name][0]) if name in request.args else default
 
 
-if __name__ == "__main__":
+# The bench command kills this process, so coverage data is never written for
+# the lines below.
+if __name__ == "__main__":  # pragma: no cover
     from twisted.internet import reactor
 
     root = Root()  # type: ignore[no-untyped-call]
