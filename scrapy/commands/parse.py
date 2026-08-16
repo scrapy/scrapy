@@ -266,8 +266,8 @@ class Command(BaseRunSpiderCommand):
     def start_parsing(self, url: str, opts: argparse.Namespace) -> None:
         assert self.crawler_process
         assert self.spidercls
-        self.crawler_process.crawl(self.spidercls, **opts.spargs)
-        self.pcrawler = next(iter(self.crawler_process.crawlers))
+        self.pcrawler = self._create_crawler(self.spidercls)
+        self.crawler_process.crawl(self.pcrawler, **opts.spargs)
         self.crawler_process.start()
         if self.crawler_process.bootstrap_failed:
             self.exitcode = 1

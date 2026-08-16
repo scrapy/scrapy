@@ -59,7 +59,7 @@ class Command(BaseRunSpiderCommand):
         spidercls = spclasses.pop()
 
         assert self.crawler_process
-        self.crawler_process.crawl(spidercls, **opts.spargs)
+        self.crawler_process.crawl(self._create_crawler(spidercls), **opts.spargs)
         self.crawler_process.start()
 
         if self.crawler_process.bootstrap_failed:
