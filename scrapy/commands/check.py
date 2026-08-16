@@ -9,6 +9,7 @@ from unittest import TextTestRunner
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
+from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.misc import load_object, set_environ
 
@@ -69,6 +70,18 @@ class Command(ScrapyCommand):
             action="store_true",
             help="print contract tests for all spiders",
         )
+
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        super().process_options(args, opts)
+        assert self.settings is not None
+        # Contracts discard the output of callbacks, so item pipelines and
+        # feed exports get no items, and opening them only causes side
+        # effects, such as an empty output file. The priority is above spider
+        # custom settings, which also define them, and below the command line,
+        # which can hence set them back.
+        priority = (SETTINGS_PRIORITIES["spider"] + SETTINGS_PRIORITIES["cmdline"]) // 2
+        self.settings.set("ITEM_PIPELINES", {}, priority=priority)
+        self.settings.set("FEEDS", {}, priority=priority)
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts

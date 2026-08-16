@@ -21,7 +21,13 @@ class DummyTestCase(TestCase):
 class TestCheckCommand(TestProjectBase):
     spider_name = "check_spider"
 
-    def _write_contract(self, proj_path: Path, contracts: str, parse_def: str) -> None:
+    def _write_contract(
+        self,
+        proj_path: Path,
+        contracts: str,
+        parse_def: str,
+        custom_settings: str = "",
+    ) -> None:
         spider = proj_path / self.project_name / "spiders" / "checkspider.py"
         spider.write_text(
             f"""
@@ -33,6 +39,7 @@ class CheckSpider(scrapy.Spider):
 
     custom_settings = {{
         "DOWNLOAD_DELAY": 0,
+        {custom_settings}
     }}
 
     def parse(self, response, **cb_kwargs):
@@ -51,8 +58,9 @@ class CheckSpider(scrapy.Spider):
         contracts: str = "",
         parse_def: str = "pass",
         use_reactor: bool = True,
+        custom_settings: str = "",
     ) -> None:
-        self._write_contract(proj_path, contracts, parse_def)
+        self._write_contract(proj_path, contracts, parse_def, custom_settings)
         args = ["check"]
         if not use_reactor:
             args += ["-s", "TWISTED_REACTOR_ENABLED=False"]
@@ -127,6 +135,51 @@ class CheckSpider(scrapy.Spider):
             raise Exception("Callback args not set")
         """
         self._test_contract(proj_path, contracts, parse_def)
+
+    def test_check_no_item_processing(self, proj_path: Path) -> None:
+        (proj_path / self.project_name / "pipelines.py").write_text(
+            """
+from pathlib import Path
+
+class MarkerPipeline:
+    def open_spider(self, spider):
+        Path("pipeline.txt").touch()
+
+    def process_item(self, item, spider):
+        return item
+""",
+            encoding="utf-8",
+        )
+        self._append_settings(
+            proj_path / self.project_name,
+            """
+FEEDS = {"items.jsonl": {"format": "jsonlines"}}
+""",
+        )
+        contracts = """
+        @returns items 1
+        """
+        parse_def = """
+        yield {'key1': 'val1'}
+        """
+        custom_settings = f'"ITEM_PIPELINES": {{"{self.project_name}.pipelines.MarkerPipeline": 100}},'
+        self._test_contract(
+            proj_path, contracts, parse_def, custom_settings=custom_settings
+        )
+        assert not (proj_path / "items.jsonl").exists()
+        assert not (proj_path / "pipeline.txt").exists()
+
+        ret, _, err = proc(
+            "check",
+            "-s",
+            f'ITEM_PIPELINES={{"{self.project_name}.pipelines.MarkerPipeline": 100}}',
+            "-s",
+            'FEEDS={"items.jsonl": {"format": "jsonlines"}}',
+            cwd=proj_path,
+        )
+        assert ret == 0, err
+        assert (proj_path / "items.jsonl").exists()
+        assert (proj_path / "pipeline.txt").exists()
 
     def test_SCRAPY_CHECK_set(self, proj_path: Path) -> None:
         parse_def = """
