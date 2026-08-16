@@ -62,69 +62,73 @@ class ModernWrapSpiderMiddleware:
         yield ITEM_C
 
 
-class TestMain:
-    async def _test(
-        self,
-        spider_middlewares: list[type],
-        spider_cls: type[Spider],
-        expected_items: list[Any],
-    ) -> None:
-        actual_items = []
+async def _test(
+    spider_middlewares: list[type],
+    spider_cls: type[Spider],
+    expected_items: list[Any],
+) -> None:
+    actual_items = []
 
-        def track_item(item: Any, response: Response, spider: Spider) -> None:
-            actual_items.append(item)
+    def track_item(item: Any, response: Response, spider: Spider) -> None:
+        actual_items.append(item)
 
-        settings = {
-            "SPIDER_MIDDLEWARES": {cls: n for n, cls in enumerate(spider_middlewares)},
-        }
-        crawler = get_crawler(spider_cls, settings_dict=settings)
-        crawler.signals.connect(track_item, signals.item_scraped)
-        await crawler.crawl_async()
-        assert crawler.stats.get_value("finish_reason") == "finished"
-        assert actual_items == expected_items, f"{actual_items=} != {expected_items=}"
+    settings = {
+        "SPIDER_MIDDLEWARES": {cls: n for n, cls in enumerate(spider_middlewares)},
+    }
+    crawler = get_crawler(spider_cls, settings_dict=settings)
+    crawler.signals.connect(track_item, signals.item_scraped)
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("finish_reason") == "finished"
+    assert actual_items == expected_items, f"{actual_items=} != {expected_items=}"
 
-    async def _test_wrap(
-        self,
-        spider_middleware: type,
-        spider_cls: type[Spider],
-        expected_items: list[Any] | None = None,
-    ) -> None:
-        expected_items = expected_items or [ITEM_A, ITEM_B, ITEM_C]
-        await self._test([spider_middleware], spider_cls, expected_items)
 
-    @coroutine_test
-    async def test_modern_mw_modern_spider(self):
-        await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
+async def _test_wrap(
+    spider_middleware: type,
+    spider_cls: type[Spider],
+    expected_items: list[Any] | None = None,
+) -> None:
+    expected_items = expected_items or [ITEM_A, ITEM_B, ITEM_C]
+    await _test([spider_middleware], spider_cls, expected_items)
 
-    async def _test_sleep(self, spider_middlewares: list[type]) -> None:
-        class TestSpider(Spider):
-            name = "test"
 
-            async def start(self) -> AsyncIterator[Any]:
-                yield ITEM_A
+@coroutine_test
+async def test_modern_mw_modern_spider() -> None:
+    await _test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
 
-        await self._test(spider_middlewares, TestSpider, [ITEM_A])
 
-    @pytest.mark.only_asyncio
-    @coroutine_test
-    async def test_asyncio_sleep_single(self):
-        await self._test_sleep([AsyncioSleepSpiderMiddleware])
+async def _test_sleep(spider_middlewares: list[type]) -> None:
+    class TestSpider(Spider):
+        name = "test"
 
-    @pytest.mark.only_asyncio
-    @coroutine_test
-    async def test_asyncio_sleep_multiple(self):
-        await self._test_sleep(
-            [NoOpSpiderMiddleware, AsyncioSleepSpiderMiddleware, NoOpSpiderMiddleware]
-        )
+        async def start(self) -> AsyncIterator[Any]:
+            yield ITEM_A
 
-    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
-    @coroutine_test
-    async def test_twisted_sleep_single(self):
-        await self._test_sleep([TwistedSleepSpiderMiddleware])
+    await _test(spider_middlewares, TestSpider, [ITEM_A])
 
-    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
-    @coroutine_test
-    async def test_twisted_sleep_multiple(self):
-        await self._test_sleep(
-            [NoOpSpiderMiddleware, TwistedSleepSpiderMiddleware, NoOpSpiderMiddleware]
-        )
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_asyncio_sleep_single() -> None:
+    await _test_sleep([AsyncioSleepSpiderMiddleware])
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_asyncio_sleep_multiple() -> None:
+    await _test_sleep(
+        [NoOpSpiderMiddleware, AsyncioSleepSpiderMiddleware, NoOpSpiderMiddleware]
+    )
+
+
+@pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
+@coroutine_test
+async def test_twisted_sleep_single() -> None:
+    await _test_sleep([TwistedSleepSpiderMiddleware])
+
+
+@pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
+@coroutine_test
+async def test_twisted_sleep_multiple() -> None:
+    await _test_sleep(
+        [NoOpSpiderMiddleware, TwistedSleepSpiderMiddleware, NoOpSpiderMiddleware]
+    )
