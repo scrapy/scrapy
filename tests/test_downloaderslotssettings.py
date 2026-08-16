@@ -54,6 +54,29 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times[slot].append(time.time())
 
 
+class RedirectSlotSpider(MetaSpider):
+    """Follows a redirect to a different host name for the same server."""
+
+    name = "redirect_slot"
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        assert self.mockserver
+        self.slots: list[str] = []
+
+    async def start(self):
+        # 127.0.0.1 and localhost are different host names, so they get
+        # different download slots, while pointing at the same mock server.
+        target = self.mockserver.url("/text").replace("127.0.0.1", "localhost")
+        yield Request(
+            self.mockserver.url(f"/redirect-to?goto={target}"),
+            callback=self.parse,
+        )
+
+    def parse(self, response):
+        self.slots.append(response.meta["download_slot"])
+
+
 class TestCrawl:
     @classmethod
     def setup_class(cls):
@@ -63,6 +86,12 @@ class TestCrawl:
     @classmethod
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
+
+    @inline_callbacks_test
+    def test_redirect_to_other_host_changes_slot(self):
+        crawler = get_crawler(RedirectSlotSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        assert crawler.spider.slots == ["localhost"]
 
     @inline_callbacks_test
     def test_delay(self):

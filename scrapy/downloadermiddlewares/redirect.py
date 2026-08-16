@@ -129,6 +129,13 @@ class BaseRedirectMiddleware:
             cls=None,
             cookies=None,
         )
+        if redirect_request.meta.pop("_auto_download_slot", None):
+            # The download slot was assigned by the downloader from the URL of
+            # source_request, so it must not carry over to a different URL. The
+            # downloader assigns a new one, which is the same slot when the
+            # domain does not change.
+            redirect_request.meta.pop("download_slot", None)
+
         if "_scheme_proxy" in redirect_request.meta:
             source_request_scheme = urlparse_cached(source_request).scheme
             redirect_request_scheme = urlparse_cached(redirect_request).scheme

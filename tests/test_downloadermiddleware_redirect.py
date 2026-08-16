@@ -319,6 +319,30 @@ class TestRedirectMiddleware(TestRedirectBase):
         )
         _test_passthrough(Request(url, meta={"handle_httpstatus_all": True}))
 
+    def test_downloader_assigned_slot_dropped_on_new_domain(self):
+        req = Request("http://a.example/")
+        req.meta["download_slot"] = "a.example"
+        req.meta["_auto_download_slot"] = True
+        r = self.mw.process_response(req, self.get_response(req, "http://b.example/"))
+        assert "download_slot" not in r.meta
+        assert "_auto_download_slot" not in r.meta
+
+    def test_downloader_assigned_slot_dropped_on_same_domain(self):
+        # The downloader recomputes the same slot from the URL, so dropping it
+        # unconditionally keeps same-domain redirects on the same slot.
+        req = Request("http://a.example/one")
+        req.meta["download_slot"] = "a.example"
+        req.meta["_auto_download_slot"] = True
+        r = self.mw.process_response(
+            req, self.get_response(req, "http://a.example/two")
+        )
+        assert "download_slot" not in r.meta
+
+    def test_user_assigned_slot_kept(self):
+        req = Request("http://a.example/", meta={"download_slot": "custom"})
+        r = self.mw.process_response(req, self.get_response(req, "http://b.example/"))
+        assert r.meta["download_slot"] == "custom"
+
     def test_latin1_location(self):
         req = Request("http://scrapytest.org/first")
         latin1_location = "/ação".encode("latin1")  # HTTP historically supports latin1

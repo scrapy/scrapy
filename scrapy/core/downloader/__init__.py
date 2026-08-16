@@ -160,6 +160,10 @@ class Downloader:
     # passed as download_func into self.middleware.download() in self.fetch()
     async def _enqueue_request(self, request: Request) -> Response:
         key, slot = self._get_slot(request)
+        if self.DOWNLOAD_SLOT not in request.meta:
+            # Remember that we picked the slot, rather than the user, so that
+            # RedirectMiddleware knows it may recompute it for a new URL.
+            request.meta["_auto_download_slot"] = True
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
         self.signals.send_catch_log(
