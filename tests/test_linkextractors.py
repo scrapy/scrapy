@@ -3,13 +3,10 @@ from __future__ import annotations
 import pickle
 import re
 
-import pytest
-
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
 from scrapy.linkextractors import lxmlhtml
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor, LxmlParserLinkExtractor
-from scrapy.utils._deps_compat import W3LIB_SAFE_URL_STRING_REJECTS_BAD_PORT
 from tests import get_testdata
 
 
@@ -857,10 +854,6 @@ class TestLxmlLinkExtractor(Base.TestLinkExtractorBase):
             ),
         ]
 
-    @pytest.mark.skipif(
-        not W3LIB_SAFE_URL_STRING_REJECTS_BAD_PORT,
-        reason="This w3lib version does not reject bad ports",
-    )
     def test_skip_bad_links(self):
         html = b"""
         <a href="http://example.org:non-port">Why would you do this?</a>
