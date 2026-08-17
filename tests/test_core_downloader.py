@@ -17,15 +17,13 @@ from twisted.web.client import Response as TxResponse
 from scrapy import Request, Spider
 from scrapy.core.downloader import Downloader, Slot, tls
 from scrapy.core.downloader.contextfactory import (
+    _get_creator_context,
     _load_context_factory_from_settings,
     _ScrapyClientContextFactory,
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils._deps_compat import (
-    PYOPENSSL_SET_CIPHER_LIST_TMP_CONN,
-    TWISTED_TLS_NEW_IMPL,
-)
+from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
@@ -33,14 +31,18 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http_resources import PayloadResource, put_child
 from tests.mockserver.utils import ssl_context_factory
+from tests.utils.cmdline import proc
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from twisted.internet.defer import Deferred
     from twisted.internet.interfaces import IListeningPort
     from twisted.web.iweb import IBodyProducer
 
     from scrapy.http import Response
+    from tests.mockserver.http import MockServer
 
 
 class TestSlot:
@@ -127,17 +129,13 @@ class TestContextFactory(TestContextFactoryBase):
         body = await self.get_page(server_url + "payload", factory, body=s)
         assert body == to_bytes(s)
 
-    @pytest.mark.skipif(
-        TWISTED_TLS_NEW_IMPL,
-        reason="The context is not stored on this Twisted version",
-    )
     def test_no_context_sharing(self, factory: _ScrapyClientContextFactory) -> None:
         """Every call to creatorForNetloc() should give a fresh context."""
         creator1 = factory.creatorForNetloc(b"website1.tld", 443)
         assert creator1._hostnameBytes == b"website1.tld"
         creator2 = factory.creatorForNetloc(b"website2.tld", 443)
         assert creator2._hostnameBytes == b"website2.tld"
-        assert creator1._ctx is not creator2._ctx  # type: ignore[attr-defined]
+        assert _get_creator_context(creator1) is not _get_creator_context(creator2)
 
     def test_no_context_sharing_with_conn(
         self, factory: _ScrapyClientContextFactory
@@ -173,6 +171,39 @@ class TestContextFactory(TestContextFactoryBase):
                 message="Attempting to mutate a Context after a Connection was created",
             )
             factory.creatorForNetloc(b"website.tld", 443)
+
+    @pytest.mark.parametrize("verify_certs", [False, True])
+    def test_keylog(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        verify_certs: bool,
+    ) -> None:
+        """The key log callback should be set with and without verification."""
+        monkeypatch.setenv("SSLKEYLOGFILE", str(tmp_path / "keylog"))
+        crawler = get_crawler(
+            settings_dict={"DOWNLOAD_VERIFY_CERTIFICATES": verify_certs}
+        )
+        factory: _ScrapyClientContextFactory = _load_context_factory_from_settings(
+            crawler
+        )
+        creator = factory.creatorForNetloc(b"website.tld", 443)
+        conn = creator.clientConnectionForTLS(self._get_dummy_protocol())
+        assert conn.get_context()._keylog_callback is not None
+
+    def test_keylog_ignore_environment(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mockserver: MockServer,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        _, out, err = proc(
+            "fetch", mockserver.url("/text", is_secure=True), python_args=("-E",)
+        )
+        assert out.strip() == "Works", err
+        assert not keylog_file.exists()
 
     def test_ctx_flags(self, factory: _ScrapyClientContextFactory) -> None:
         """The context should have the expected flags set."""

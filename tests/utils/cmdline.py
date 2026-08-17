@@ -25,8 +25,10 @@ def call(*args: str, **popen_kwargs: Any) -> int:
     )
 
 
-def proc(*args: str, **popen_kwargs: Any) -> tuple[int, str, str]:
-    args = (sys.executable, "-m", "scrapy.cmdline", *args)
+def proc(
+    *args: str, python_args: tuple[str, ...] = (), **popen_kwargs: Any
+) -> tuple[int, str, str]:
+    args = (sys.executable, *python_args, "-m", "scrapy.cmdline", *args)
     try:
         p = subprocess.run(
             args,
