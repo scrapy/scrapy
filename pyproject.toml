@@ -21,7 +21,7 @@ dependencies = [
     "queuelib>=1.6.1",
     "service_identity>=24.2.0",
     "tldextract",
-    "w3lib>=2.1.0",
+    "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
