@@ -25,8 +25,7 @@ ConnectionKeyT = tuple[bytes, bytes, int]
 
 
 class H2ConnectionPool:
-    def __init__(self, reactor: ReactorBase, crawler: Crawler, limit: int = 0) -> None:
-        self._reactor = reactor
+    def __init__(self, crawler: Crawler, limit: int = 0) -> None:
         self._crawler = crawler
         self._limit = limit
 
@@ -69,7 +68,7 @@ class H2ConnectionPool:
         self._enforce_limit()
         self._pending_requests[key] = deque()
 
-        conn_lost_deferred: Deferred[list[BaseException]] = Deferred()
+        conn_lost_deferred: Deferred[None] = Deferred()
 
         factory = H2ClientFactory(
             uri,
@@ -124,7 +123,7 @@ class H2ConnectionPool:
         self,
         conn: H2ClientProtocol,
         key: ConnectionKeyT,
-        conn_lost_deferred: Deferred[list[BaseException]],
+        conn_lost_deferred: Deferred[None],
     ) -> H2ClientProtocol:
         self._connections[key] = conn
         conn_lost_deferred.addCallback(self._remove_connection, key, conn)
@@ -147,7 +146,7 @@ class H2ConnectionPool:
             d.errback(failure)
 
     def _remove_connection(
-        self, errors: list[BaseException], key: ConnectionKeyT, conn: H2ClientProtocol
+        self, _: None, key: ConnectionKeyT, conn: H2ClientProtocol
     ) -> None:
         # a newer connection may have taken over the key already
         if self._connections.get(key) is conn:

@@ -17,7 +17,6 @@ class MyException(Exception):
 class TestDownloaderStats:
     def setup_method(self) -> None:
         self.crawler = get_crawler(Spider)
-        assert self.crawler.stats is not None
         self.mw = build_from_crawler(DownloaderStats, self.crawler)
 
         self.crawler.stats.open_spider()
@@ -25,8 +24,10 @@ class TestDownloaderStats:
         self.req = Request("http://scrapytest.org")
         self.res = Response("http://scrapytest.org", status=400)
 
+    def teardown_method(self) -> None:
+        self.crawler.stats.close_spider()
+
     def assertStatsEqual(self, key: str, value: object) -> None:
-        assert self.crawler.stats is not None
         assert self.crawler.stats.get_value(key) == value, str(
             self.crawler.stats.get_stats()
         )
@@ -51,10 +52,6 @@ class TestDownloaderStats:
         crawler = get_crawler(Spider, {"DOWNLOADER_STATS": False})
         with pytest.raises(NotConfigured):
             build_from_crawler(DownloaderStats, crawler)
-
-    def teardown_method(self) -> None:
-        assert self.crawler.stats is not None
-        self.crawler.stats.close_spider()
 
 
 def test_get_header_size_non_list_value() -> None:

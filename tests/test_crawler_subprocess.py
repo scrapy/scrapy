@@ -19,6 +19,10 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
+# Guards against a hung subprocess. Generous, because starting a script is
+# slow on PyPy, slower still with coverage measurement on.
+SCRIPT_TIMEOUT = 60
+
 
 class ScriptRunnerMixin(ABC):
     @property
@@ -216,7 +220,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     ) -> None:
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
         args = self.get_script_args(script, "3", *extra_args)
-        p = PopenSpawn(args, timeout=5, env=get_script_run_env())
+        p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
@@ -234,7 +238,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     async def _test_shutdown_forced(self, script: str = "sleeping.py") -> None:
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
         args = self.get_script_args(script, "10")
-        p = PopenSpawn(args, timeout=5, env=get_script_run_env())
+        p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
