@@ -1,8 +1,10 @@
+import zlib
 from gzip import GzipFile
 from importlib.util import find_spec
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
+from threading import Thread
 from typing import Any
 
 import pytest
@@ -16,8 +18,9 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWar
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
-from scrapy.utils._compression import _DecompressionMaxSizeExceeded
+from scrapy.utils._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
 from scrapy.utils.gz import gunzip
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
 
@@ -59,8 +62,7 @@ def _skip_if_no_zstd() -> None:
 class TestHttpCompression:
     def setup_method(self):
         self.crawler = get_crawler(Spider)
-        self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
-        assert self.crawler.stats
+        self.mw = build_from_crawler(HttpCompressionMiddleware, self.crawler)
         self.crawler.stats.open_spider()
 
     def _getresponse(self, coding: str) -> Response:
@@ -86,27 +88,28 @@ class TestHttpCompression:
         return response
 
     def assertStatsEqual(self, key: str, value: Any) -> None:
-        assert self.crawler.stats
         assert self.crawler.stats.get_value(key) == value, str(
             self.crawler.stats.get_stats()
         )
 
     def test_setting_false_compression_enabled(self):
         with pytest.raises(NotConfigured):
-            HttpCompressionMiddleware.from_crawler(
-                get_crawler(settings_dict={"COMPRESSION_ENABLED": False})
+            build_from_crawler(
+                HttpCompressionMiddleware,
+                get_crawler(settings_dict={"COMPRESSION_ENABLED": False}),
             )
 
     def test_setting_default_compression_enabled(self):
         assert isinstance(
-            HttpCompressionMiddleware.from_crawler(get_crawler()),
+            build_from_crawler(HttpCompressionMiddleware, get_crawler()),
             HttpCompressionMiddleware,
         )
 
     def test_setting_true_compression_enabled(self):
         assert isinstance(
-            HttpCompressionMiddleware.from_crawler(
-                get_crawler(settings_dict={"COMPRESSION_ENABLED": True})
+            build_from_crawler(
+                HttpCompressionMiddleware,
+                get_crawler(settings_dict={"COMPRESSION_ENABLED": True}),
             ),
             HttpCompressionMiddleware,
         )
@@ -492,11 +495,62 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
 
+    @pytest.mark.parametrize(
+        "extra",
+        [
+            pytest.param(b"garbage", id="trailing-garbage"),
+            pytest.param(zlib.compress(b"b" * 100_000), id="second-zlib-stream"),
+        ],
+    )
+    def test_deflate_extra_data_after_stream(self, extra: bytes) -> None:
+        """Bytes after the end of a deflate stream must not stall decompression.
+
+        Such bytes stay in ``unconsumed_tail`` and produce no output, so feeding
+        them back to the decompressor never makes progress. Decompressing in a
+        thread lets the test fail instead of hanging if that ever regresses.
+        """
+        # The body must decompress to more than _CHUNK_SIZE, or the whole stream
+        # is consumed by the first decompress() call and no loop is entered.
+        plain = b"a" * 100_000
+        response = Response(
+            "http://example.com",
+            body=zlib.compress(plain) + extra,
+            headers={"Content-Encoding": "deflate"},
+        )
+        result: list[Request | Response] = []
+        thread = Thread(
+            target=lambda: result.append(
+                self.mw.process_response(Request("http://example.com"), response)
+            ),
+            daemon=True,
+        )
+        thread.start()
+        thread.join(60)
+        assert not thread.is_alive(), "decompression did not terminate"
+        assert result[0].body == plain
+
+    def test_deflate_chunked_output_leaves_nothing_to_flush(self) -> None:
+        """Guard the zlib behaviour that lets ``_inflate()`` skip ``flush()``.
+
+        ``decompress(max_length=...)`` leaves the input it could not turn into
+        output in ``unconsumed_tail``, so once that is empty every complete
+        stream has been fully emitted. If a future zlib buffers output instead,
+        this fails and ``_inflate()`` needs to flush the remainder again.
+        """
+        for size in (_CHUNK_SIZE - 1, _CHUNK_SIZE, _CHUNK_SIZE + 1, 4 * _CHUNK_SIZE):
+            decompressor = zlib.decompressobj()
+            decompressor.decompress(zlib.compress(b"a" * size), max_length=_CHUNK_SIZE)
+            while decompressor.unconsumed_tail and not decompressor.eof:
+                decompressor.decompress(
+                    decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
+                )
+            assert decompressor.flush() == b"", f"pending output for size {size}"
+
     def _test_compression_bomb_setting(self, compression_id: str) -> None:
         settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
         crawler = get_crawler(Spider, settings_dict=settings)
         spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")  # 11_511_612 B
@@ -506,6 +560,10 @@ class TestHttpCompression:
         cause = exc_info.value.__cause__
         assert isinstance(cause, _DecompressionMaxSizeExceeded)
         assert cause.decompressed_size < 1_100_000
+        assert str(cause) == (
+            f"The number of bytes decompressed so far ({cause.decompressed_size} B) "
+            "exceeded the specified maximum (1000000 B)."
+        )
 
     def test_compression_bomb_setting_br(self):
         self._test_compression_bomb_setting("br")
@@ -525,7 +583,7 @@ class TestHttpCompression:
         settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
         crawler = get_crawler(Spider, settings_dict=settings)
         spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
         mw.open_spider(spider)
 
         response = self._getresponse("bomb-gzip")  # 11_511_612 B
@@ -552,7 +610,7 @@ class TestHttpCompression:
 
         crawler = get_crawler(DownloadMaxSizeSpider)
         spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
@@ -584,7 +642,7 @@ class TestHttpCompression:
     def _test_compression_bomb_request_meta(self, compression_id: str) -> None:
         crawler = get_crawler(Spider)
         spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
@@ -616,7 +674,7 @@ class TestHttpCompression:
         settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
         crawler = get_crawler(Spider, settings_dict=settings)
         spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
         mw.open_spider(spider)
         response = self._getresponse(f"bomb-{compression_id}")
 
@@ -668,7 +726,7 @@ class TestHttpCompression:
 
         crawler = get_crawler(DownloadWarnSizeSpider)
         spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
         mw.open_spider(spider)
         response = self._getresponse(f"bomb-{compression_id}")
 
@@ -721,7 +779,7 @@ class TestHttpCompression:
     ) -> None:
         crawler = get_crawler(Spider)
         spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
         mw.open_spider(spider)
         response = self._getresponse(f"bomb-{compression_id}")
         response.meta["download_warnsize"] = 10_000_000
@@ -769,7 +827,7 @@ class TestHttpCompression:
     def _get_truncated_response(self, compression_id: str) -> Response:
         crawler = get_crawler(Spider)
         spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
         mw.open_spider(spider)
         response = self._getresponse(compression_id)
         truncated_body = response.body[: len(response.body) // 2]

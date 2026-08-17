@@ -4,18 +4,26 @@ import json
 import logging
 import re
 import sys
+import warnings
 from io import StringIO
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
+from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import Settings
 from scrapy.utils.log import (
     LogCounterHandler,
     SpiderLoggerAdapter,
     StreamLogger,
     TopLevelFormatter,
+    _uninstall_scrapy_root_handler,
+    configure_logging,
     failure_to_exc_info,
+    get_scrapy_root_handler,
+    install_scrapy_root_handler,
     logformatter_adapter,
 )
 from scrapy.utils.test import get_crawler
@@ -89,7 +97,6 @@ class TestLogCounterHandler:
             logger.removeHandler(handler)
 
     def test_init(self, crawler: Crawler, logger: logging.Logger) -> None:
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/DEBUG") is None
         assert crawler.stats.get_value("log_count/INFO") is None
         assert crawler.stats.get_value("log_count/WARNING") is None
@@ -98,12 +105,10 @@ class TestLogCounterHandler:
 
     def test_accepted_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.error("test log msg")
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/ERROR") == 1
 
     def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.debug("test log msg")
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/DEBUG") is None
 
 
@@ -119,6 +124,70 @@ class TestStreamLogger:
         assert caplog.record_tuples == [("test", logging.ERROR, "test log msg")]
 
         sys.stdout = old_stdout
+
+    def test_flush(self) -> None:
+        class FlushCountingHandler(logging.Handler):
+            flushes = 0
+
+            def flush(self) -> None:
+                self.flushes += 1
+
+        handler = FlushCountingHandler()
+        logger = logging.getLogger("test_flush")
+        logger.addHandler(handler)
+        try:
+            StreamLogger(logger).flush()
+        finally:
+            logger.removeHandler(handler)
+        assert handler.flushes == 1
+
+
+class TestConfigureLogging:
+    @pytest.fixture(autouse=True)
+    def restore_logging(self) -> Generator[None]:
+        root_handlers = logging.root.handlers[:]
+        # configure_logging() adds a Twisted log observer without giving any way
+        # to remove it afterwards.
+        observers = twisted_log.theLogPublisher.observers[:]
+        old_stdout = sys.stdout
+        old_showwarning = warnings.showwarning
+        try:
+            yield
+        finally:
+            warnings.showwarning = old_showwarning
+            sys.stdout = old_stdout
+            twisted_log.theLogPublisher.observers[:] = observers
+            logging.root.handlers[:] = root_handlers
+            _uninstall_scrapy_root_handler()
+
+    @staticmethod
+    def _warnings_are_captured() -> bool:
+        return warnings.showwarning.__module__ == "logging"
+
+    def test_log_stdout(self) -> None:
+        configure_logging(settings={"LOG_STDOUT": True}, install_root_handler=False)
+        assert isinstance(sys.stdout, StreamLogger)
+
+    def test_captures_warnings(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(sys, "warnoptions", [])
+        logging.captureWarnings(False)
+        configure_logging(install_root_handler=False)
+        assert self._warnings_are_captured()
+
+    def test_keeps_warnoptions(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(sys, "warnoptions", ["default"])
+        logging.captureWarnings(False)
+        configure_logging(install_root_handler=False)
+        assert not self._warnings_are_captured()
+
+    def test_reinstall_root_handler_removed_from_root(self) -> None:
+        install_scrapy_root_handler(Settings())
+        handler = get_scrapy_root_handler()
+        assert handler is not None
+        # Something else removed the handler from the root logger.
+        logging.root.removeHandler(handler)
+        install_scrapy_root_handler(Settings())
+        assert get_scrapy_root_handler() is not handler
 
 
 @pytest.mark.parametrize(
@@ -332,7 +401,9 @@ class TestLogformatterAdapter:
             "LogFormatterResult",
             {"level": logging.INFO, "msg": "90% done", "args": args},
         )
-        assert self._log(caplog, logkws) == "90% done"
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            assert self._log(caplog, logkws) == "90% done"
 
     @pytest.mark.parametrize(
         ("msg", "args"),
@@ -345,4 +416,16 @@ class TestLogformatterAdapter:
         args: dict[str, Any] | tuple[Any, ...],
     ) -> None:
         logkws: LogFormatterResult = {"level": logging.INFO, "msg": msg, "args": args}
-        assert self._log(caplog, logkws) == "90% done"
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            assert self._log(caplog, logkws) == "90% done"
+
+    def test_msg_mapping_placeholders_without_args(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        logkws = cast(
+            "LogFormatterResult",
+            {"level": logging.INFO, "msg": "%(pct)d%% done", "pct": 90},
+        )
+        with pytest.warns(ScrapyDeprecationWarning, match="no args"):
+            assert self._log(caplog, logkws) == "90% done"
