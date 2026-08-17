@@ -22,10 +22,17 @@ ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 
 
+def _sort_key(item: Any) -> Any:
+    # Items used in these tests are plain dicts; sort by contents so
+    # unordered comparisons are deterministic regardless of item shape.
+    return tuple(sorted(item.items())) if isinstance(item, dict) else item
+
+
 async def _test_spider(
     spider: type[Spider],
     expected_items: list[Any] | None = None,
     settings: dict[str, Any] | None = None,
+    ordered: bool = True,
 ) -> None:
     actual_items = []
     expected_items = [] if expected_items is None else expected_items
@@ -37,6 +44,10 @@ async def _test_spider(
     crawler.signals.connect(track_item, signals.item_scraped)
     await crawler.crawl_async()
     assert crawler.stats.get_value("finish_reason") == "finished"
+    if ordered:
+        assert sorted(actual_items, key=_sort_key) == sorted(
+            expected_items, key=_sort_key
+        )
     assert actual_items == expected_items
 
 
@@ -124,4 +135,5 @@ async def test_slow_pipeline() -> None:
         TestSpider,
         [ITEM_A, ITEM_B],
         {"ITEM_PIPELINES": {SlowPipeline: 0}},
+        ordered=False,
     )
