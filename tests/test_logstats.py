@@ -5,6 +5,7 @@ from datetime import datetime
 import pytest
 
 from scrapy.extensions.logstats import LogStats
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 from tests.utils.decorators import coroutine_test
@@ -14,7 +15,6 @@ class TestLogStats:
     def setup_method(self) -> None:
         self.crawler = get_crawler(SimpleSpider)
         self.spider = self.crawler._create_spider("spidey")
-        assert self.crawler.stats is not None
         self.stats = self.crawler.stats
 
         self.stats.set_value("response_received_count", 4802)
@@ -22,7 +22,7 @@ class TestLogStats:
 
     @coroutine_test
     async def test_stats_calculations(self) -> None:
-        logstats = LogStats.from_crawler(self.crawler)
+        logstats = build_from_crawler(LogStats, self.crawler)
 
         with pytest.raises(AttributeError):
             logstats.pagesprev
@@ -63,14 +63,14 @@ class TestLogStats:
         """The stat values should be None since the start and finish time are
         not available.
         """
-        logstats = LogStats.from_crawler(self.crawler)
+        logstats = build_from_crawler(LogStats, self.crawler)
         logstats.spider_closed(self.spider, "test reason")
         assert self.stats.get_value("responses_per_minute") is None
         assert self.stats.get_value("items_per_minute") is None
 
     def test_stats_calculation_no_elapsed_time(self) -> None:
         """The stat values should be None since the elapsed time is 0."""
-        logstats = LogStats.from_crawler(self.crawler)
+        logstats = build_from_crawler(LogStats, self.crawler)
         self.stats.set_value("start_time", datetime.fromtimestamp(1655100172))
         self.stats.set_value("finish_time", datetime.fromtimestamp(1655100172))
         logstats.spider_closed(self.spider, "test reason")

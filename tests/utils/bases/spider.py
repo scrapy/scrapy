@@ -32,7 +32,7 @@ class TestSpiderBase(ABC):
     def test_spider_args(self):
         """``__init__`` method arguments are assigned to spider attributes"""
         spider = self.spider_class("example.com", foo="bar")
-        assert spider.foo == "bar"
+        assert spider.foo == "bar"  # type: ignore[attr-defined]
 
     def test_spider_without_name(self):
         """``__init__`` raises when the name is not provided."""
@@ -58,7 +58,7 @@ class TestSpiderBase(ABC):
             mock_init.assert_called_once_with("example.com", foo="bar")
 
     def test_closed_signal_call(self):
-        class TestSpider(self.spider_class):
+        class TestSpider(self.spider_class):  # type: ignore[name-defined,misc]
             closed_called = False
 
             def closed(self, reason):
@@ -92,7 +92,7 @@ class TestSpiderBase(ABC):
             **get_reactor_settings(),
         }
 
-        class TestSpider(self.spider_class):
+        class TestSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             custom_settings = spider_settings
 
@@ -127,5 +127,5 @@ class TestSpiderBase(ABC):
                 ScrapyDeprecationWarning, match=r"Spider.log\(\) is deprecated"
             ),
         ):
-            spider.log("test log msg", "INFO")
+            spider.log("test log msg", "INFO")  # type: ignore[arg-type]
         mock_logger.log.assert_called_once_with("INFO", "test log msg")
