@@ -11,6 +11,8 @@ from scrapy.utils.test import get_testenv
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from pexpect.popen_spawn import PopenSpawn
+
 
 def call(*args: str, **popen_kwargs: Any) -> int:
     args = (sys.executable, "-m", "scrapy.cmdline", *args)
@@ -39,6 +41,16 @@ def proc(*args: str, **popen_kwargs: Any) -> tuple[int, str, str]:
         pytest.fail("Command took too much time to complete")
 
     return p.returncode, p.stdout, p.stderr
+
+
+def stop_spawn(p: PopenSpawn[str]) -> None:
+    p.sendeof()
+    p.wait()  # type: ignore[no-untyped-call]
+    # PopenSpawn leaves the subprocess pipes open, which triggers
+    # ResourceWarning at an arbitrary garbage collection point.
+    for pipe in (p.proc.stdin, p.proc.stdout):
+        if pipe:
+            pipe.close()
 
 
 def write_recording_editor(editor: Path) -> None:

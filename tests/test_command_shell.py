@@ -19,7 +19,7 @@ from scrapy.utils.reactor import _asyncio_reactor_path
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 from tests.utils.bases.commands import TestProjectBase
-from tests.utils.cmdline import proc
+from tests.utils.cmdline import proc, stop_spawn
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -163,16 +163,6 @@ class TestShellCommand:
         assert ret == 0, out
 
 
-def _stop(p: PopenSpawn[str]) -> None:
-    p.sendeof()
-    p.wait()  # type: ignore[no-untyped-call]
-    # PopenSpawn leaves the subprocess pipes open, which triggers
-    # ResourceWarning at an arbitrary garbage collection point.
-    for pipe in (p.proc.stdin, p.proc.stdout):
-        if pipe:
-            pipe.close()
-
-
 class TestShellCommandWithSpider(TestProjectBase):
     @pytest.fixture(autouse=True)
     def create_files(self, proj_path: Path) -> None:
@@ -222,7 +212,7 @@ class TestInteractiveShell:
         p.sendline(f"fetch('{mockserver.url('/')}')")
         p.sendline("type(response)")
         p.expect_exact("HtmlResponse")
-        _stop(p)
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -248,7 +238,7 @@ class TestInteractiveShell:
         p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
-        _stop(p)
+        stop_spawn(p)
         logfile.seek(0)
         return logfile.read().decode()
 
@@ -273,7 +263,7 @@ class TestInteractiveShell:
         # shell=python was honored, regardless of platform-specific prompts.
         p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
         p.expect_exact("IPYMODULE False")
-        _stop(p)
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -302,8 +292,7 @@ class TestInteractiveShell:
         p.expect_exact("Available Scrapy objects")
         p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
         p.expect_exact("IPYMODULE True")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
