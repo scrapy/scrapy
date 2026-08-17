@@ -14,6 +14,7 @@ from pexpect.popen_spawn import PopenSpawn
 
 from scrapy.utils.asyncio import sleep
 from tests.utils import get_script_run_env
+from tests.utils.cmdline import stop_spawn
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -226,11 +227,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
         p.expect_exact("Spider closed (shutdown)")
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
 
     def test_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful()
@@ -247,11 +244,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         await sleep(0.01)
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
 
     @coroutine_test
     async def test_shutdown_forced(self) -> None:

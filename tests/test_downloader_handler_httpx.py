@@ -37,8 +37,11 @@ from tests.utils.bases.download_handlers_http import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
+    from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
 
 pytestmark = pytest.mark.only_asyncio
@@ -176,6 +179,22 @@ class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
 
 class TestHttpsProxy(TestHttpProxy):
     is_secure = True
+
+    @coroutine_test
+    async def test_keylog(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        proxy_mockserver: ProxyEchoMockServer,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        http_proxy = proxy_mockserver.url("", is_secure=True)
+        request = Request("http://example.com", meta={"proxy": http_proxy})
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == self.expected_http_proxy_request_body
+        assert keylog_file.read_text()
 
 
 @pytest.mark.requires_mitmproxy
