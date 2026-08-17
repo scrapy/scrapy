@@ -119,7 +119,6 @@ async def test_telnet_vars() -> None:
         start_urls = ["data:,"]
 
         async def parse(self, response: Response) -> None:
-            assert self.crawler.extensions
             console = next(
                 ext
                 for ext in self.crawler.extensions.middlewares

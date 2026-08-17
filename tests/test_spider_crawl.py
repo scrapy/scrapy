@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import warnings
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from w3lib.url import safe_url_string
@@ -13,6 +14,12 @@ from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.utils.test import get_crawler
 from tests.utils.bases.spider import TestSpiderBase
 from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
+    from scrapy.http.request import CallbackT
+
+URL = "https://www.example.com"
 
 
 class TestCrawlSpider(TestSpiderBase):
@@ -33,7 +40,7 @@ class TestCrawlSpider(TestSpiderBase):
             "http://example.org/somepage/index.html", body=self.test_body
         )
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             allowed_domains = ["example.org"]
             rules = (Rule(),)
@@ -53,7 +60,7 @@ class TestCrawlSpider(TestSpiderBase):
             "http://example.org/somepage/index.html", body=self.test_body
         )
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             allowed_domains = ["example.org"]
             rules = (Rule(LinkExtractor(), process_links="dummy_process_links"),)
@@ -76,7 +83,7 @@ class TestCrawlSpider(TestSpiderBase):
             "http://example.org/somepage/index.html", body=self.test_body
         )
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             allowed_domains = ["example.org"]
             rules = (Rule(LinkExtractor(), process_links="filter_process_links"),)
@@ -99,7 +106,7 @@ class TestCrawlSpider(TestSpiderBase):
             "http://example.org/somepage/index.html", body=self.test_body
         )
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             allowed_domains = ["example.org"]
             rules = (Rule(LinkExtractor(), process_links="dummy_process_links"),)
@@ -125,7 +132,7 @@ class TestCrawlSpider(TestSpiderBase):
         def process_request_change_domain(request, response):
             return request.replace(url=request.url.replace(".org", ".com"))
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             allowed_domains = ["example.org"]
             rules = (
@@ -151,7 +158,7 @@ class TestCrawlSpider(TestSpiderBase):
             request.meta["response_class"] = response.__class__.__name__
             return request
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             allowed_domains = ["example.org"]
             rules = (
@@ -180,7 +187,7 @@ class TestCrawlSpider(TestSpiderBase):
             "http://example.org/somepage/index.html", body=self.test_body
         )
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             allowed_domains = ["example.org"]
             rules = (Rule(LinkExtractor(), process_request="process_request_upper"),)
@@ -203,7 +210,7 @@ class TestCrawlSpider(TestSpiderBase):
             "http://example.org/somepage/index.html", body=self.test_body
         )
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             allowed_domains = ["example.org"]
             rules = (
@@ -248,7 +255,6 @@ class TestCrawlSpider(TestSpiderBase):
     def test_parse_response_use(self):
         class _CrawlSpider(CrawlSpider):
             name = "test"
-            start_urls = "https://www.example.com"
             _follow_links = False
 
         with warnings.catch_warnings():
@@ -258,17 +264,20 @@ class TestCrawlSpider(TestSpiderBase):
             ScrapyDeprecationWarning,
             match=r"CrawlSpider\._parse_response method is deprecated",
         ):
-            spider._parse_response(
-                TextResponse(spider.start_urls, body=b""), None, None
-            )
+            spider._parse_response(TextResponse(URL, body=b""), None, {})
 
     def test_parse_response_override(self):
         class _CrawlSpider(CrawlSpider):
-            def _parse_response(self, response, callback, cb_kwargs, follow=True):
+            def _parse_response(
+                self,
+                response: Response,
+                callback: CallbackT | None,
+                cb_kwargs: dict[str, Any],
+                follow: bool = True,
+            ) -> Any:
                 pass
 
             name = "test"
-            start_urls = "https://www.example.com"
             _follow_links = False
 
         with pytest.warns(
@@ -278,21 +287,16 @@ class TestCrawlSpider(TestSpiderBase):
             spider = _CrawlSpider()
         with warnings.catch_warnings():
             warnings.simplefilter("error", category=ScrapyDeprecationWarning)
-            spider._parse_response(
-                TextResponse(spider.start_urls, body=b""), None, None
-            )
+            spider._parse_response(TextResponse(URL, body=b""), None, {})
 
     def test_parse_with_rules(self):
         class _CrawlSpider(CrawlSpider):
             name = "test"
-            start_urls = "https://www.example.com"
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", category=ScrapyDeprecationWarning)
             spider = _CrawlSpider()
-            spider.parse_with_rules(
-                TextResponse(spider.start_urls, body=b""), None, None
-            )
+            spider.parse_with_rules(TextResponse(URL, body=b""), None, {})
 
     @coroutine_test
     async def test_parse_with_rules_without_callback(self):
@@ -327,12 +331,13 @@ class TestCrawlSpider(TestSpiderBase):
             allowed_domains = ["example.org"]
             rules = (Rule(),)
 
+        def callback(response: Response) -> list[Any]:
+            return [item]
+
         spider = _CrawlSpider.from_crawler(get_crawler(_CrawlSpider))
         results = [
             r
-            async for r in spider.parse_with_rules(
-                response, lambda response: [item], {}, follow=False
-            )
+            async for r in spider.parse_with_rules(response, callback, {}, follow=False)
         ]
         assert results == [item]
 

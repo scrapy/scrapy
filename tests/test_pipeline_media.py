@@ -82,7 +82,6 @@ class TestBaseMediaPipeline:
         self.pipe = build_from_crawler(self.pipeline_class, crawler)
         self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
-        assert crawler.request_fingerprinter is not None
         self.fingerprint = crawler.request_fingerprinter.fingerprint
 
     @property
