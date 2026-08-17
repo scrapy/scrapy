@@ -57,7 +57,16 @@ def _get_keylog_filename() -> str | None:
     """Return the path where TLS session keys should be logged, or ``None``."""
     if sys.flags.ignore_environment:
         return None
-    return os.environ.get("SSLKEYLOGFILE")
+    filename = os.environ.get("SSLKEYLOGFILE")
+    if not filename:
+        return None
+    try:
+        with Path(filename).open("ab"):
+            pass
+    except OSError as ex:
+        logger.warning(f"Cannot write TLS session keys to {filename}: {ex}")
+        return None
+    return filename
 
 
 # stdlib ssl module utils

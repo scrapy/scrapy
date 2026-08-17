@@ -991,6 +991,22 @@ class TestHttpsBase(TestHttpBase):
         assert all(len(line.split()) == 3 for line in lines)
 
     @coroutine_test
+    async def test_keylog_unwritable(
+        self,
+        mockserver: MockServer,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        monkeypatch.setenv("SSLKEYLOGFILE", str(tmp_path / "missing" / "keylog"))
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        with caplog.at_level("WARNING"):
+            async with self.get_dh() as download_handler:
+                response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        assert "Cannot write TLS session keys" in caplog.text
+
+    @coroutine_test
     async def test_verify_certs_deprecated(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
         with (  # noqa: PT031
