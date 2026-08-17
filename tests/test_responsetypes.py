@@ -99,7 +99,6 @@ class TestResponseTypes:
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
     def test_from_args(self):
-        # TODO: add more tests that check precedence between the different arguments
         mappings: list[tuple[dict[str, Any], type[Response]]] = [
             ({"url": "http://www.example.com/data.csv"}, TextResponse),
             # headers takes precedence over url
@@ -119,6 +118,20 @@ class TestResponseTypes:
                 },
                 Response,
             ),
+            (
+                {"headers": Headers(), "url": "http://example.com/data.json"},
+                JsonResponse,
+            ),
+            (
+                {"url": "http://example.com/data.json", "filename": "index.html"},
+                JsonResponse,
+            ),
+            (
+                {"url": "http://example.com/data.unknown", "filename": "index.html"},
+                HtmlResponse,
+            ),
+            ({"filename": "data.xml", "body": b"<html></html>"}, XmlResponse),
+            ({"filename": "data.unknown", "body": b"<html></html>"}, HtmlResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
