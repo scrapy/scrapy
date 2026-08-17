@@ -10,8 +10,8 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import (
+    FileException,
     FileInfo,
     FileInfoOrError,
     MediaPipeline,
@@ -82,7 +82,6 @@ class TestBaseMediaPipeline:
         self.pipe = build_from_crawler(self.pipeline_class, crawler)
         self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
-        assert crawler.request_fingerprinter is not None
         self.fingerprint = crawler.request_fingerprinter.fingerprint
 
     @property

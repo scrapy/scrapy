@@ -226,6 +226,13 @@ class TestFTPFeedStorage:
             assert storage.overwrite is True
 
     @coroutine_test
+    async def test_missing_parent_directories(self):
+        with MockFTPServer() as ftp_server:
+            path = "missing/parent/dirs/file"
+            await self._store(ftp_server.url(path), b"foo")
+            self._assert_stored(ftp_server.path / path, b"foo")
+
+    @coroutine_test
     async def test_tls(self, monkeypatch):
         monkeypatch.setenv(
             "SSL_CERT_FILE", str(Path(__file__).parent / "keys" / "localhost.crt")

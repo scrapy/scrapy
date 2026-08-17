@@ -108,6 +108,7 @@ __all__ = [
     "FTP_PASSWORD",
     "FTP_USER",
     "GCS_PROJECT_ID",
+    "HTTP2_MAX_FRAME_SIZE",
     "HTTPAUTH_DOMAIN",
     "HTTPAUTH_PASS",
     "HTTPAUTH_USER",
@@ -402,6 +403,8 @@ FTP_USER = "anonymous"
 FTP_PASSWORD = "guest"  # noqa: S105
 
 GCS_PROJECT_ID = None
+
+HTTP2_MAX_FRAME_SIZE = 16384
 
 HTTPAUTH_USER = ""
 HTTPAUTH_PASS = ""

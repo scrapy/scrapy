@@ -128,7 +128,6 @@ class _DelayedPipeline:
     async def process_item(self, item: Any) -> Any:
         url = item["url"]
         self._active[url] += 1
-        assert self._crawler.stats
         self._crawler.stats.max_value("benchmark/peak_items", self._active[url])
         try:
             await asyncio.sleep(DELAY)
@@ -147,7 +146,6 @@ def _crawl_tree(
         pages=pages,
         items=items,
     )
-    assert crawler.stats
     assert crawler.stats.get_value("downloader/response_count") == domains * pages
     assert crawler.stats.get_value("item_scraped_count", 0) == domains * pages * items
     return crawler
@@ -166,7 +164,6 @@ def test_overhead_http(benchmark: BenchmarkFixture, mockserver: MockServer) -> N
 
     def run() -> None:
         crawler = crawl(_FollowSpider, settings, url=url)
-        assert crawler.stats
         assert crawler.stats.get_value("item_scraped_count") == PAGES + 1
 
     benchmark(run)
@@ -177,7 +174,6 @@ def test_overhead_engine(benchmark: BenchmarkFixture) -> None:
 
     def run() -> None:
         crawler = _crawl_tree({}, domains=1, pages=REQUESTS)
-        assert crawler.stats
         assert crawler.stats.get_value("benchmark/peak_concurrency") > 1
 
     benchmark(run)
@@ -262,7 +258,6 @@ def test_overhead_item_concurrency(benchmark: BenchmarkFixture) -> None:
         crawler = _crawl_tree(
             settings, domains=1, pages=ITEM_REQUESTS, items=ITEMS_PER_RESPONSE
         )
-        assert crawler.stats
         assert (
             crawler.stats.get_value("benchmark/peak_items") == DELAYED_CONCURRENT_ITEMS
         )
