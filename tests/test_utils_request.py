@@ -309,7 +309,6 @@ class TestRequestFingerprinter:
     def test_fingerprint(self):
         crawler = get_crawler()
         request = Request("https://example.com")
-        assert crawler.request_fingerprinter
         assert crawler.request_fingerprinter.fingerprint(request) == fingerprint(
             request
         )
@@ -326,7 +325,6 @@ class TestCustomRequestFingerprinter:
         }
         crawler = get_crawler(settings_dict=settings)
 
-        assert crawler.request_fingerprinter
         r1 = Request("http://www.example.com", headers={"X-ID": "1"})
         fp1 = crawler.request_fingerprinter.fingerprint(r1)
         r2 = Request("http://www.example.com", headers={"X-ID": "2"})
@@ -349,7 +347,6 @@ class TestCustomRequestFingerprinter:
         }
         crawler = get_crawler(settings_dict=settings)
 
-        assert crawler.request_fingerprinter
         r1 = Request("http://www.example.com?a=1&a=2")
         fp1 = crawler.request_fingerprinter.fingerprint(r1)
         r2 = Request("http://www.example.com?a=2&a=1")
@@ -368,7 +365,6 @@ class TestCustomRequestFingerprinter:
         }
         crawler = get_crawler(settings_dict=settings)
 
-        assert crawler.request_fingerprinter
         r1 = Request("http://www.example.com")
         fp1 = crawler.request_fingerprinter.fingerprint(r1)
         r2 = Request("http://www.example.com", meta={"fingerprint": "a"})
@@ -400,7 +396,6 @@ class TestCustomRequestFingerprinter:
         }
         crawler = get_crawler(settings_dict=settings)
 
-        assert crawler.request_fingerprinter
         request = Request("http://www.example.com")
         fingerprint = crawler.request_fingerprinter.fingerprint(request)
         assert fingerprint == settings["FINGERPRINT"]

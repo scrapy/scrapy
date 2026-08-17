@@ -14,7 +14,6 @@ This library has a minimal performance impact.
 
 from __future__ import annotations
 
-from collections import defaultdict
 from operator import itemgetter
 from time import monotonic_ns
 from types import NoneType
@@ -28,8 +27,8 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-live_refs: defaultdict[type, WeakKeyDictionary[object, float]] = defaultdict(
-    WeakKeyDictionary
+live_refs: WeakKeyDictionary[type, WeakKeyDictionary[object, float]] = (
+    WeakKeyDictionary()
 )
 
 
@@ -41,7 +40,11 @@ class object_ref:
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         obj = object.__new__(cls)
-        live_refs[cls][obj] = monotonic_ns()
+        try:
+            refs = live_refs[cls]
+        except KeyError:
+            refs = live_refs[cls] = WeakKeyDictionary()
+        refs[obj] = monotonic_ns()
         return obj
 
 
