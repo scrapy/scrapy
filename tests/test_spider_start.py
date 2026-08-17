@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from scrapy import Spider, signals
+from scrapy.utils.asyncio import sleep as scrapy_sleep
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
@@ -101,12 +102,11 @@ class TestMain:
 
         await self._test_start(start, [ITEM_A])
 
-    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
     @coroutine_test
     async def test_slow_pipeline(self):
         class SlowPipeline:
             async def process_item(self, item):
-                await maybe_deferred_to_future(twisted_sleep(SLEEP_SECONDS))
+                await scrapy_sleep(SLEEP_SECONDS)
                 return item
 
         class TestSpider(Spider):
