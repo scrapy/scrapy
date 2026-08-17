@@ -28,7 +28,6 @@ if TYPE_CHECKING:
 class Command(ScrapyCommand):
     default_settings: ClassVar[dict[str, Any]] = {
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
-        "KEEP_ALIVE": True,
         "LOGSTATS_INTERVAL": 0,
     }
 

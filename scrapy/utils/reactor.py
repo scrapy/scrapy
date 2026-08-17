@@ -27,7 +27,7 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
-def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # noqa: RET503
+def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
 
@@ -37,14 +37,14 @@ def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
         raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)  # type: ignore[no-any-return]
-    if len(portrange) == 1:
-        return reactor.listenTCP(portrange[0], factory, interface=host)  # type: ignore[no-any-return]
-    for x in range(portrange[0], portrange[1] + 1):
+    for x in range(portrange[0], portrange[-1]):
         try:
             return reactor.listenTCP(x, factory, interface=host)  # type: ignore[no-any-return]
         except error.CannotListenError:
-            if x == portrange[1]:
-                raise
+            pass
+    # The last port of the range is tried outside the loop so that its
+    # CannotListenError propagates to the caller.
+    return reactor.listenTCP(portrange[-1], factory, interface=host)  # type: ignore[no-any-return]
 
 
 class CallLaterOnce(Generic[_T]):

@@ -102,3 +102,5 @@ class Command(ScrapyCommand):
 
         self.crawler_process.crawl(spidercls)
         self.crawler_process.start()
+        if self.crawler_process.bootstrap_failed:
+            self.exitcode = 1
