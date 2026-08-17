@@ -1,5 +1,6 @@
 import pickle
 import sys
+from typing import Any, cast
 
 import pytest
 from queuelib.tests import test_queue as t
@@ -17,11 +18,35 @@ from scrapy.squeues import (
     _PickleFifoSerializationSQLiteQueue,
     _PickleLifoSerializationDiskQueue,
     _PickleLifoSerializationSQLiteQueue,
+    _scrapy_non_serialization_queue,
+    _serializable_queue,
 )
 
 
 class MyItem(Item):
     name = Field()
+
+
+class NoPeekQueue:
+    """Queue class without the optional peek method."""
+
+
+_no_peek_queue = cast("Any", NoPeekQueue)
+
+
+@pytest.mark.parametrize(
+    "queue_class",
+    [
+        _serializable_queue(_no_peek_queue, pickle.dumps, pickle.loads),
+        _scrapy_non_serialization_queue(_no_peek_queue),
+    ],
+)
+def test_peek_unsupported(queue_class):
+    with pytest.raises(
+        NotImplementedError,
+        match="The underlying queue class does not implement 'peek'",
+    ):
+        queue_class().peek()
 
 
 def _test_procesor(x):
