@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import warnings
 from asyncio import Future
 from typing import TYPE_CHECKING, Any
 
@@ -16,6 +17,7 @@ from scrapy.utils.defer import (
     deferred_to_future,
     iter_errback,
     maybe_deferred_to_future,
+    maybeDeferred_coro,
     mustbe_deferred,
     parallel_async,
 )
@@ -357,6 +359,15 @@ class TestDeferredToFuture:
         assert future_result == 42
 
 
+@pytest.mark.only_not_asyncio
+class TestDeferredToFutureNotAsyncio:
+    def test_deferred(self):
+        with pytest.raises(
+            RuntimeError, match=r"deferred_to_future\(\) requires an installed asyncio"
+        ):
+            deferred_to_future(Deferred())
+
+
 @pytest.mark.only_asyncio
 class TestMaybeDeferredToFutureAsyncio:
     @coroutine_test
@@ -400,3 +411,16 @@ class TestMaybeDeferredToFutureNotAsyncio:
         result = maybe_deferred_to_future(d)
         assert isinstance(result, Deferred)
         assert result is d
+
+
+def test_maybe_deferred_coro_deferred() -> None:
+    d: Deferred[int] = Deferred()
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always")
+        assert maybeDeferred_coro(lambda: d) is d
+    # Only the deprecation of maybeDeferred_coro() itself is reported; callables
+    # that return a Deferred are the reason it exists.
+    assert [str(record.message) for record in records] == [
+        "maybeDeferred_coro() is deprecated and will be removed in a future"
+        " Scrapy version."
+    ]

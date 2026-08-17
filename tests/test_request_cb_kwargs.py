@@ -70,7 +70,6 @@ class KeywordArgumentsSpider(MockServerSpider):
     checks: list[bool] = []
 
     def _inc_checks(self, count: int = 1) -> None:
-        assert self.crawler.stats
         self.crawler.stats.inc_value("boolean_checks", count)
 
     async def start(self):
@@ -171,7 +170,6 @@ class TestCallbackKeywordArguments:
             await crawler.crawl_async(mockserver=mockserver)
         assert isinstance(crawler.spider, KeywordArgumentsSpider)
         assert all(crawler.spider.checks)
-        assert crawler.stats
         assert len(crawler.spider.checks) == crawler.stats.get_value("boolean_checks")
         # check exceptions for argument mismatch
         exceptions = {}

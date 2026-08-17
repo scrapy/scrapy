@@ -75,6 +75,31 @@ class TestCrawler:
         assert crawler.settings.frozen
 
     @pytest.mark.parametrize(
+        "attr",
+        ["extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_before_apply_settings(self, attr: str) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        with pytest.raises(RuntimeError, match=rf"Crawler\.{attr} is not set yet"):
+            getattr(crawler, attr)
+        crawler._apply_settings()
+        assert getattr(crawler, attr) is not None
+
+    @pytest.mark.parametrize(
+        "attr",
+        ["engine", "extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_on_class(self, attr: str) -> None:
+        # Introspection tools such as help() read these off the class.
+        assert getattr(Crawler, attr) is getattr(Crawler, attr)
+
+    def test_late_attr_engine_before_crawl(self) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        crawler._apply_settings()
+        with pytest.raises(RuntimeError, match=r"Crawler\.engine is not set yet"):
+            _ = crawler.engine
+
+    @pytest.mark.parametrize(
         ("attr", "setting"),
         [
             ("download_delay", "DOWNLOAD_DELAY"),
@@ -511,7 +536,6 @@ class TestSpiderSettings:
             custom_settings = {"AUTOTHROTTLE_ENABLED": True}
 
         crawler = get_crawler(MySpider)
-        assert crawler.extensions
         enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
         assert AutoThrottle in enabled_exts
 
@@ -543,7 +567,6 @@ class TestCrawlerLogging:
             }
 
             async def start(self):
-                assert crawler.stats
                 info_count_start = crawler.stats.get_value("log_count/INFO")
                 logging.debug("debug message")  # noqa: LOG015
                 logging.info("info message")  # noqa: LOG015
@@ -576,7 +599,6 @@ class TestCrawlerLogging:
         assert "info message" in logged
         assert "warning message" in logged
         assert "error message" in logged
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/ERROR") == 1
         assert crawler.stats.get_value("log_count/WARNING") == 1
         assert info_count == 1

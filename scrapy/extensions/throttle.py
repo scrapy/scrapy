@@ -45,7 +45,6 @@ class AutoThrottle:
     def _spider_opened(self, spider: Spider) -> None:
         self.mindelay = self._min_delay()
         self.maxdelay = self._max_delay()
-        assert self.crawler.engine
         self.crawler.engine.downloader._delay = self._start_delay()
 
     def _min_delay(self) -> float:
@@ -98,7 +97,6 @@ class AutoThrottle:
         key: str | None = request.meta.get("download_slot")
         if key is None:
             return None, None
-        assert self.crawler.engine
         return key, self.crawler.engine.downloader.slots.get(key)
 
     def _adjust_delay(self, slot: Slot, latency: float, response: Response) -> None:
