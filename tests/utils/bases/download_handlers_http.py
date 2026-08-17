@@ -11,11 +11,12 @@ from contextlib import asynccontextmanager
 from http import HTTPStatus
 from ipaddress import IPv4Address
 from socket import gethostbyname
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from urllib.parse import urlparse
 
 import pytest
 from cryptography.x509 import load_der_x509_certificate
+from twisted.internet.defer import DeferredList
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
@@ -31,10 +32,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
-from scrapy.utils._deps_compat import (
-    PYOPENSSL_X509_DEPRECATED,
-    TWISTED_TLS_LIMITS_OFFBY1,
-)
+from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
@@ -60,6 +58,9 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
 
+BadHeaderHandling = Literal["skip-bad", "skip-rest", "fail"]
+
+
 class TestHttpBase(ABC):
     is_secure: bool = False
     http2: bool = False
@@ -72,6 +73,14 @@ class TestHttpBase(ABC):
     # h2.connection.H2Connection.receive_data()), thus closing all streams that
     # were using it, and we handle this as a normal exception.
     handler_supports_http2_dataloss: bool = True
+    # What the handler does with a bad response header line, e.g. one with no
+    # colon in it:
+    # "skip-bad": the bad line is skipped and the header lines that follow it
+    #         are still parsed, which is what web browsers do;
+    # "skip-rest": the bad line is skipped along with the header lines that
+    #         follow it;
+    # "fail": the response cannot be downloaded at all.
+    handler_bad_header_handling: BadHeaderHandling = "skip-bad"
     # default headers added by the underlying library that cannot be suppressed
     always_present_req_headers: ClassVar[frozenset[str]] = frozenset()
     default_handler_settings: ClassVar[dict[str, Any]] = {}
@@ -119,6 +128,25 @@ class TestHttpBase(ABC):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.body == b""
+
+    @coroutine_test
+    async def test_download_concurrent(self, mockserver: MockServer) -> None:
+        """Requests started before a connection to the server is available are
+        sent once it is."""
+        url = mockserver.url("/text", is_secure=self.is_secure)
+        async with self.get_dh() as download_handler:
+            results = await maybe_deferred_to_future(
+                DeferredList(
+                    [
+                        deferred_from_coro(
+                            download_handler.download_request(Request(url))
+                        )
+                        for _ in range(2)
+                    ],
+                    fireOnOneErrback=True,
+                )
+            )
+        assert [response.body for _, response in results] == [b"Works", b"Works"]
 
     @pytest.mark.parametrize(
         "http_status",
@@ -628,6 +656,7 @@ class TestHttpBase(ABC):
             "Expected to receive 5 bytes which is larger than download warn size (4)"
             in caplog.text
         )
+        assert caplog.text.count("download warn size (4)") == 1
 
     @coroutine_test
     async def test_download_with_warnsize_no_content_length(
@@ -643,6 +672,32 @@ class TestHttpBase(ABC):
             "Received 35 bytes which is larger than download warn size (10)"
             in caplog.text
         )
+
+    @coroutine_test
+    async def test_download_bad_header(self, mockserver: MockServer) -> None:
+        if self.http2:
+            pytest.skip("Header lines are specific to HTTP/1.x")
+        request = Request(mockserver.url("/bad-header", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            if self.handler_bad_header_handling == "fail":
+                with pytest.raises(DownloadFailedError):
+                    await download_handler.download_request(request)
+                return
+            response = await download_handler.download_request(request)
+        assert response.status == 200
+        assert response.body == b"Works"
+        # the header line that precedes the bad one
+        assert response.headers.get(b"Content-Type") == b"text/html"
+        # the header split into two lines, also before the bad one
+        folded_header = response.headers.get(b"X-Folded-Header")
+        assert folded_header is not None
+        # the separator between both parts depends on the handler
+        assert folded_header.split() == [b"one", b"two"]
+        # the header line that follows the bad one
+        expected_value = (
+            b"works" if self.handler_bad_header_handling == "skip-bad" else None
+        )
+        assert response.headers.get(b"X-After-Bad-Header") == expected_value
 
     @coroutine_test
     async def test_download_chunked_content(self, mockserver: MockServer) -> None:
@@ -719,6 +774,63 @@ class TestHttpBase(ABC):
         ) as download_handler:
             response = await download_handler.download_request(request)
         assert response.flags == ["dataloss"]
+
+    @coroutine_test
+    async def test_download_stream_reset(self, mockserver: MockServer) -> None:
+        if not self.http2:
+            pytest.skip("Streams are specific to HTTP/2")
+        request = Request(mockserver.url("/h2-reset-stream", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_stream_reset_after_data(
+        self, mockserver: MockServer
+    ) -> None:
+        """A stream reset that arrives along with the data that cancels the
+        download is ignored."""
+        if not self.http2:
+            pytest.skip("Streams are specific to HTTP/2")
+        request = Request(
+            mockserver.url("/h2-data-and-reset", is_secure=self.is_secure),
+            meta={"download_maxsize": 1},
+        )
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadCancelledError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_goaway(self, mockserver: MockServer) -> None:
+        if not self.http2:
+            pytest.skip("GOAWAY frames are specific to HTTP/2")
+        request = Request(mockserver.url("/h2-goaway", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_large_h2_frame(self, mockserver: MockServer) -> None:
+        if not self.http2:
+            pytest.skip("Frames are specific to HTTP/2")
+        request = Request(
+            mockserver.url("/h2-raw?raw=large-frame", is_secure=self.is_secure)
+        )
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_download_unknown_h2_frame(self, mockserver: MockServer) -> None:
+        """Frames of unknown types are ignored."""
+        if not self.http2:
+            pytest.skip("Frames are specific to HTTP/2")
+        request = Request(
+            mockserver.url("/h2-raw?raw=unknown-frame", is_secure=self.is_secure)
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
 
     @coroutine_test
     async def test_download_conn_failed(self) -> None:
@@ -832,15 +944,8 @@ class TestHttpsBase(TestHttpBase):
     is_secure = True
 
     tls_log_message = (
-        (
-            'SSL connection certificate: issuer "CN=localhost,O=Scrapy,C=IE", '
-            'subject "CN=localhost,O=Scrapy,C=IE"'
-        )
-        if PYOPENSSL_X509_DEPRECATED
-        else (
-            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
-            'subject "/C=IE/O=Scrapy/CN=localhost"'
-        )
+        'SSL connection certificate: issuer "CN=localhost,O=Scrapy,C=IE", '
+        'subject "CN=localhost,O=Scrapy,C=IE"'
     )
 
     def test_download_conn_lost(self) -> None:  # type: ignore[override]
@@ -902,6 +1007,9 @@ class TestSimpleHttpsBase(ABC):
     certfile = "keys/localhost.crt"
     host = "localhost"
     cipher_string: str | None = None
+    # Crawler settings for the download handler. When unset, the client is asked
+    # for the same ciphers the server is restricted to.
+    client_settings: dict[str, Any] | None = None
 
     @pytest.fixture(scope="class")
     @classmethod
@@ -923,10 +1031,9 @@ class TestSimpleHttpsBase(ABC):
 
     @asynccontextmanager
     async def get_dh(self) -> AsyncGenerator[DownloadHandlerProtocol]:
-        if self.cipher_string is not None:
+        settings_dict = self.client_settings
+        if settings_dict is None and self.cipher_string is not None:
             settings_dict = {"DOWNLOADER_CLIENT_TLS_CIPHERS": self.cipher_string}
-        else:
-            settings_dict = None
         crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
         crawler.spider = crawler._create_spider()
         dh = build_from_crawler(self.download_handler_cls, crawler)
@@ -968,6 +1075,12 @@ class TestHttpsInvalidDNSPatternBase(TestSimpleHttpsBase):
 
 class TestHttpsCustomCiphersBase(TestSimpleHttpsBase):
     cipher_string = "CAMELLIA256-SHA"
+
+
+class TestHttpsDefaultCiphersBase(TestSimpleHttpsBase):
+    """A ``None`` cipher list leaves the TLS library defaults in place."""
+
+    client_settings: dict[str, Any] | None = {"DOWNLOADER_CLIENT_TLS_CIPHERS": None}
 
 
 class TestHttpsTLSVersionBase(ABC):
@@ -1475,6 +1588,12 @@ class TestMitmProxyBase(ABC):
         assert "Proxy Authentication Required" in log or "407" in log
 
 
+# Tests below are rerun on failure (see pytest_collection_modifyitems() in the
+# root conftest.py), so an attempt must give up soon enough for a rerun to be
+# cheap.
+REAL_WEBSITE_SETTINGS = {"DOWNLOAD_TIMEOUT": 30}
+
+
 class TestRealWebsiteBase(ABC):
     @property
     @abstractmethod
@@ -1499,7 +1618,9 @@ class TestRealWebsiteBase(ABC):
     async def get_dh(
         self, settings_dict: dict[str, Any] | None = None
     ) -> AsyncGenerator[DownloadHandlerProtocol]:
-        crawler = get_crawler(DefaultSpider, settings_dict)
+        crawler = get_crawler(
+            DefaultSpider, {**REAL_WEBSITE_SETTINGS, **(settings_dict or {})}
+        )
         crawler.spider = crawler._create_spider()
         dh = build_from_crawler(self.download_handler_cls, crawler)
         try:
@@ -1517,7 +1638,9 @@ class TestRealWebsiteBase(ABC):
 
     @coroutine_test
     async def test_download_with_spider(self) -> None:
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        crawler = get_crawler(
+            SingleRequestSpider, {**REAL_WEBSITE_SETTINGS, **(self.settings_dict or {})}
+        )
         await maybe_deferred_to_future(
             crawler.crawl(seed=Request("https://books.toscrape.com/"))
         )

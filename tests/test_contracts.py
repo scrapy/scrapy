@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from unittest import TextTestResult
 
 import pytest
@@ -12,13 +15,32 @@ from scrapy.contracts.default import (
     UrlContract,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+    from unittest import TestResult
+
+    from scrapy.http.request import CallbackT
+
+
+def _request(
+    conman: ContractsManager, method: CallbackT, results: TestResult
+) -> Request:
+    request = conman.from_method(method, results)
+    assert request
+    return request
+
+
+def _call(request: Request, response: Any) -> Any:
+    assert request.callback
+    return request.callback(response, **request.cb_kwargs)
 
 
 class DemoItem(Item):
@@ -31,7 +53,7 @@ class ResponseMock:
 
 
 class ResponseMetaMock(ResponseMock):
-    meta = None
+    meta: Any = None
 
 
 class TaggedRequest(Request):
@@ -75,7 +97,7 @@ class DemoSpider(Spider):
         """
         return Request("http://scrapy.org", callback=self.returns_item)
 
-    async def returns_request_async(self, response):
+    async def returns_request_async(self, response: Response) -> Request:
         """async method which returns request
         @url http://scrapy.org
         @returns requests 1
@@ -150,7 +172,7 @@ class DemoSpider(Spider):
         yield DemoItem(name="test", url=response.url)
         yield Request("http://scrapy.org", callback=self.returns_item)
 
-    async def returns_async_gen(self, response):
+    async def returns_async_gen(self, response: Response) -> AsyncIterator[DemoItem]:
         """async generator callback
         @url http://scrapy.org
         @returns items 1 1
@@ -311,17 +333,19 @@ class TestContractsManager:
 
     def setup_method(self):
         self.conman = ContractsManager(self.contracts)
-        self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
+        self.results = TextTestResult(  # type: ignore[type-var]
+            stream=None, descriptions=False, verbosity=0
+        )
 
-    def should_succeed(self):
+    def should_succeed(self) -> None:
         assert not self.results.failures
         assert not self.results.errors
 
-    def should_fail(self):
+    def should_fail(self) -> None:
         assert self.results.failures
         assert not self.results.errors
 
-    def should_error(self):
+    def should_error(self) -> None:
         assert self.results.errors
 
     def test_contracts(self):
@@ -335,12 +359,10 @@ class TestContractsManager:
         )
 
         # returns request for valid method
-        request = self.conman.from_method(spider.returns_request, self.results)
-        assert request is not None
+        assert self.conman.from_method(spider.returns_request, self.results) is not None
 
         # no request for missing url
-        request = self.conman.from_method(spider.parse_no_url, self.results)
-        assert request is None
+        assert self.conman.from_method(spider.parse_no_url, self.results) is None
 
     def test_cb_kwargs(self):
         spider = DemoSpider()
@@ -376,29 +398,31 @@ class TestContractsManager:
         )
 
         # returns_request
-        request = self.conman.from_method(
-            spider.returns_request_cb_kwargs, self.results
-        )
-        request.callback(response, **request.cb_kwargs)
+        request = _request(self.conman, spider.returns_request_cb_kwargs, self.results)
+        _call(request, response)
         self.should_succeed()
 
         # returns_item
-        request = self.conman.from_method(spider.returns_item_cb_kwargs, self.results)
-        request.callback(response, **request.cb_kwargs)
+        request = _request(self.conman, spider.returns_item_cb_kwargs, self.results)
+        _call(request, response)
         self.should_succeed()
 
         # returns_item (error, callback doesn't take keyword arguments)
-        request = self.conman.from_method(
-            spider.returns_item_cb_kwargs_error_unexpected_keyword, self.results
+        request = _request(
+            self.conman,
+            spider.returns_item_cb_kwargs_error_unexpected_keyword,
+            self.results,
         )
-        request.callback(response, **request.cb_kwargs)
+        _call(request, response)
         self.should_error()
 
         # returns_item (error, contract doesn't provide keyword arguments)
-        request = self.conman.from_method(
-            spider.returns_item_cb_kwargs_error_missing_argument, self.results
+        request = _request(
+            self.conman,
+            spider.returns_item_cb_kwargs_error_missing_argument,
+            self.results,
         )
-        request.callback(response, **request.cb_kwargs)
+        _call(request, response)
         self.should_error()
 
     def test_meta(self):
@@ -420,29 +444,27 @@ class TestContractsManager:
         response = ResponseMetaMock()
 
         # returns_request
-        request = self.conman.from_method(spider.returns_request_meta, self.results)
+        request = _request(self.conman, spider.returns_request_meta, self.results)
         assert request.meta["cookiejar"] == "session1"
         response.meta = request.meta
-        request.callback(response)
+        _call(request, response)
         assert response.meta["cookiejar"] == "session1"
         self.should_succeed()
 
         response = ResponseMetaMock()
 
         # returns_item
-        request = self.conman.from_method(spider.returns_item_meta, self.results)
+        request = _request(self.conman, spider.returns_item_meta, self.results)
         assert request.meta["key"] == "example"
         response.meta = request.meta
-        request.callback(response)
+        _call(request, response)
         assert response.meta["key"] == "example"
         self.should_succeed()
 
         response = ResponseMetaMock()
 
-        request = self.conman.from_method(
-            spider.returns_error_missing_meta, self.results
-        )
-        request.callback(response)
+        request = _request(self.conman, spider.returns_error_missing_meta, self.results)
+        _call(request, response)
         self.should_error()
 
     def test_returns(self):
@@ -450,28 +472,28 @@ class TestContractsManager:
         response = ResponseMock()
 
         # returns_item
-        request = self.conman.from_method(spider.returns_item, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.returns_item, self.results)
+        _call(request, response)
         self.should_succeed()
 
         # returns_dict_item
-        request = self.conman.from_method(spider.returns_dict_item, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.returns_dict_item, self.results)
+        _call(request, response)
         self.should_succeed()
 
         # returns_request
-        request = self.conman.from_method(spider.returns_request, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.returns_request, self.results)
+        _call(request, response)
         self.should_succeed()
 
         # returns_fail
-        request = self.conman.from_method(spider.returns_fail, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.returns_fail, self.results)
+        _call(request, response)
         self.should_fail()
 
         # returns_dict_fail
-        request = self.conman.from_method(spider.returns_dict_fail, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.returns_dict_fail, self.results)
+        _call(request, response)
         self.should_fail()
 
     @coroutine_test
@@ -479,8 +501,8 @@ class TestContractsManager:
         spider = DemoSpider()
         response = ResponseMock()
 
-        request = self.conman.from_method(spider.returns_request_async, self.results)
-        await request.callback(response)
+        request = _request(self.conman, spider.returns_request_async, self.results)
+        await _call(request, response)
         self.should_succeed()
 
     @coroutine_test
@@ -488,24 +510,24 @@ class TestContractsManager:
         spider = DemoSpider()
         response = ResponseMock()
 
-        request = self.conman.from_method(spider.returns_async_gen, self.results)
-        await request.callback(response)
+        request = _request(self.conman, spider.returns_async_gen, self.results)
+        await _call(request, response)
         self.should_succeed()
 
     def test_returns_coroutine(self):
         spider = DemoSpider()
         response = ResponseMock()
 
-        request = self.conman.from_method(spider.returns_coroutine, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.returns_coroutine, self.results)
+        _call(request, response)
         self.should_error()
 
     def test_returns_async_gen_sync(self):
         spider = DemoSpider()
         response = ResponseMock()
 
-        request = self.conman.from_method(spider.returns_async_gen_sync, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.returns_async_gen_sync, self.results)
+        _call(request, response)
         self.should_error()
 
     @coroutine_test
@@ -513,8 +535,8 @@ class TestContractsManager:
         spider = DemoSpider()
         response = ResponseMock()
 
-        request = self.conman.from_method(spider.raises_async, self.results)
-        await request.callback(response)
+        request = _request(self.conman, spider.raises_async, self.results)
+        await _call(request, response)
         self.should_error()
 
     def test_returns_invalid_argument_count(self):
@@ -534,10 +556,8 @@ class TestContractsManager:
         spider = DemoSpider()
         response = ResponseMock()
 
-        request = self.conman.from_method(
-            spider.returns_request_range_fail, self.results
-        )
-        request.callback(response)
+        request = _request(self.conman, spider.returns_request_range_fail, self.results)
+        _call(request, response)
         self.should_fail()
         assert "expected 2..3" in self.results.failures[-1][-1]
 
@@ -547,8 +567,8 @@ class TestContractsManager:
 
         # @returns and @scrapes only count matching output objects and skip
         # the request that is also yielded.
-        request = self.conman.from_method(spider.yields_item_and_request, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.yields_item_and_request, self.results)
+        _call(request, response)
         self.should_succeed()
 
     def test_testcase_str(self):
@@ -564,30 +584,30 @@ class TestContractsManager:
         response = ResponseMock()
 
         # scrapes_item_ok
-        request = self.conman.from_method(spider.scrapes_item_ok, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.scrapes_item_ok, self.results)
+        _call(request, response)
         self.should_succeed()
 
         # scrapes_dict_item_ok
-        request = self.conman.from_method(spider.scrapes_dict_item_ok, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.scrapes_dict_item_ok, self.results)
+        _call(request, response)
         self.should_succeed()
 
         # scrapes_item_fail
-        request = self.conman.from_method(spider.scrapes_item_fail, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.scrapes_item_fail, self.results)
+        _call(request, response)
         self.should_fail()
 
         # scrapes_dict_item_fail
-        request = self.conman.from_method(spider.scrapes_dict_item_fail, self.results)
-        request.callback(response)
+        request = _request(self.conman, spider.scrapes_dict_item_fail, self.results)
+        _call(request, response)
         self.should_fail()
 
         # scrapes_multiple_missing_fields
-        request = self.conman.from_method(
-            spider.scrapes_multiple_missing_fields, self.results
+        request = _request(
+            self.conman, spider.scrapes_multiple_missing_fields, self.results
         )
-        request.callback(response)
+        _call(request, response)
         self.should_fail()
         message = "ContractFail: Missing fields: name, url"
         assert message in self.results.failures[-1][-1]
@@ -597,14 +617,13 @@ class TestContractsManager:
         response = ResponseMock()
 
         # invalid regex
-        request = self.conman.from_method(spider.invalid_regex, self.results)
-        assert request is None
+        assert self.conman.from_method(spider.invalid_regex, self.results) is None
 
         # invalid regex with valid contract
-        request = self.conman.from_method(
-            spider.invalid_regex_with_valid_contract, self.results
+        request = _request(
+            self.conman, spider.invalid_regex_with_valid_contract, self.results
         )
-        request.callback(response)
+        _call(request, response)
         self.should_succeed()
 
     def test_custom_contracts(self):
@@ -616,14 +635,14 @@ class TestContractsManager:
 
     def test_errback(self):
         spider = DemoSpider()
-        response = ResponseMock()
 
         try:
-            raise HttpError(response, "Ignoring non-200 response")
+            raise HttpError(Response("http://scrapy.org"), "Ignoring non-200 response")
         except HttpError:
             failure_mock = failure.Failure()
 
-        request = self.conman.from_method(spider.returns_request, self.results)
+        request = _request(self.conman, spider.returns_request, self.results)
+        assert request.errback
         request.errback(failure_mock)
 
         assert not self.results.failures
@@ -659,6 +678,7 @@ class TestContractsManager:
             crawler = get_crawler(TestSameUrlSpider)
             yield crawler.crawl()
 
+        assert isinstance(crawler.spider, TestSameUrlSpider)
         assert crawler.spider.visited == 2
 
     @inline_callbacks_test
@@ -694,7 +714,7 @@ class TestContractsManager:
 
     def test_custom_tagged_request_contract(self):
         spider = DemoSpider()
-        request = self.conman.from_method(spider.custom_tagged_request, self.results)
+        request = _request(self.conman, spider.custom_tagged_request, self.results)
         assert request.method == "POST"
         assert isinstance(request, TaggedRequest)
         assert request.contract_tag == "custom"
@@ -760,20 +780,20 @@ class PostProcessErrorContract(Contract):
 
 class TestCustomContractPrePostProcess:
     def setup_method(self):
-        self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
+        self.results = TextTestResult(  # type: ignore[type-var]
+            stream=None, descriptions=False, verbosity=0
+        )
 
     def test_pre_hook_keyboard_interrupt(self):
         spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPreProcess(spider.returns_request)
-        conman = ContractsManager(
-            [UrlContract, ReturnsContract, CustomFailContractPreProcess]
-        )
+        conman = ContractsManager([UrlContract, ReturnsContract])
 
-        request = conman.from_method(spider.returns_request, self.results)
+        request = _request(conman, spider.returns_request, self.results)
         contract.add_pre_hook(request, self.results)
         with pytest.raises(KeyboardInterrupt, match="Pre-process exception"):
-            request.callback(response, **request.cb_kwargs)
+            _call(request, response)
 
         assert not self.results.failures
         assert not self.results.errors
@@ -782,14 +802,12 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPostProcess(spider.returns_request)
-        conman = ContractsManager(
-            [UrlContract, ReturnsContract, CustomFailContractPostProcess]
-        )
+        conman = ContractsManager([UrlContract, ReturnsContract])
 
-        request = conman.from_method(spider.returns_request, self.results)
+        request = _request(conman, spider.returns_request, self.results)
         contract.add_post_hook(request, self.results)
         with pytest.raises(KeyboardInterrupt, match="Post-process exception"):
-            request.callback(response, **request.cb_kwargs)
+            _call(request, response)
 
         assert not self.results.failures
         assert not self.results.errors
@@ -798,13 +816,11 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = PreProcessSuccessContract(spider.returns_request)
-        conman = ContractsManager(
-            [UrlContract, ReturnsContract, PreProcessSuccessContract]
-        )
+        conman = ContractsManager([UrlContract, ReturnsContract])
 
-        request = conman.from_method(spider.returns_request, self.results)
+        request = _request(conman, spider.returns_request, self.results)
         contract.add_pre_hook(request, self.results)
-        request.callback(response, **request.cb_kwargs)
+        _call(request, response)
 
         assert not self.results.failures
         assert not self.results.errors
@@ -813,13 +829,11 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = PreProcessAssertionFailContract(spider.returns_request)
-        conman = ContractsManager(
-            [UrlContract, ReturnsContract, PreProcessAssertionFailContract]
-        )
+        conman = ContractsManager([UrlContract, ReturnsContract])
 
-        request = conman.from_method(spider.returns_request, self.results)
+        request = _request(conman, spider.returns_request, self.results)
         contract.add_pre_hook(request, self.results)
-        request.callback(response, **request.cb_kwargs)
+        _call(request, response)
 
         assert self.results.failures
         assert not self.results.errors
@@ -828,13 +842,11 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = PreProcessErrorContract(spider.returns_request)
-        conman = ContractsManager(
-            [UrlContract, ReturnsContract, PreProcessErrorContract]
-        )
+        conman = ContractsManager([UrlContract, ReturnsContract])
 
-        request = conman.from_method(spider.returns_request, self.results)
+        request = _request(conman, spider.returns_request, self.results)
         contract.add_pre_hook(request, self.results)
-        request.callback(response, **request.cb_kwargs)
+        _call(request, response)
 
         assert self.results.errors
 
@@ -846,7 +858,7 @@ class TestCustomContractPrePostProcess:
         request = Request("http://scrapy.org", callback=spider.returns_request_async)
         contract.add_pre_hook(request, self.results)
 
-        output = await request.callback(response)
+        output = await _call(request, response)
 
         assert len(output) == 1
         assert not self.results.failures
@@ -860,7 +872,7 @@ class TestCustomContractPrePostProcess:
         request = Request("http://scrapy.org", callback=spider.returns_async_gen)
         contract.add_pre_hook(request, self.results)
 
-        output = await request.callback(response)
+        output = await _call(request, response)
 
         assert len(output) == 1
         assert not self.results.failures
@@ -874,7 +886,7 @@ class TestCustomContractPrePostProcess:
         request = Request("http://scrapy.org", callback=spider.returns_async_gen)
         contract.add_post_hook(request, self.results)
 
-        output = await request.callback(response)
+        output = await _call(request, response)
 
         assert len(output) == 1
         assert not self.results.failures
@@ -884,13 +896,11 @@ class TestCustomContractPrePostProcess:
         spider = DemoSpider()
         response = ResponseMock()
         contract = PostProcessErrorContract(spider.returns_request)
-        conman = ContractsManager(
-            [UrlContract, ReturnsContract, PostProcessErrorContract]
-        )
+        conman = ContractsManager([UrlContract, ReturnsContract])
 
-        request = conman.from_method(spider.returns_request, self.results)
+        request = _request(conman, spider.returns_request, self.results)
         contract.add_post_hook(request, self.results)
-        request.callback(response, **request.cb_kwargs)
+        _call(request, response)
 
         assert self.results.errors
 
