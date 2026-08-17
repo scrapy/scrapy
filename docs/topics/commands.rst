@@ -535,7 +535,7 @@ Supported options:
 * ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
   This must be a valid json string. Example: --cbkwargs='{"foo" : "bar"}'
 
-* ``--pipelines``: process items through pipelines
+* ``--pipelines``: :ref:`process items through pipelines <test-item-pipeline>`
 
 * ``--rules`` or ``-r``: use :class:`~scrapy.spiders.CrawlSpider`
   rules to discover the callback (i.e. spider method) to use for parsing the

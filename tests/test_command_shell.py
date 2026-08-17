@@ -219,6 +219,11 @@ class MySpider(scrapy.Spider):
 
 
 class TestInteractiveShell:
+    # Starting an interactive shell involves an interpreter start-up, Scrapy
+    # imports and shell imports, which on PyPy with coverage enabled can take
+    # well over 10 seconds.
+    TIMEOUT = 60
+
     def test_fetch(self, mockserver: MockServer) -> None:
         args = (
             sys.executable,
@@ -229,7 +234,7 @@ class TestInteractiveShell:
         env = os.environ.copy()
         env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline(f"fetch('{mockserver.url('/')}')")
@@ -263,7 +268,7 @@ class TestInteractiveShell:
     def _run_interactive_shell(self, env: dict[str, str]) -> str:
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendeof()
@@ -284,7 +289,7 @@ class TestInteractiveShell:
         self._isolate_config(env, config_home)
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=10)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         # The standard Python shell never imports IPython, whereas the IPython
@@ -303,6 +308,29 @@ class TestInteractiveShell:
         env = os.environ.copy()
         self._isolate_config(env, config_home)
         assert "Traceback" not in self._run_interactive_shell(env)
+
+    @pytest.mark.skipif(
+        importlib.util.find_spec("IPython") is None, reason="IPython is not installed"
+    )
+    def test_shell_ipython(self, tmp_path: Path) -> None:
+        # Reaching the embedded IPython shell requires selecting it explicitly,
+        # since ptpython takes precedence when both are installed.
+        config_home = tmp_path / "config"
+        config_home.mkdir()
+        env = os.environ.copy()
+        self._isolate_config(env, config_home)
+        env["SCRAPY_PYTHON_SHELL"] = "ipython"
+        args = (sys.executable, "-m", "scrapy.cmdline", "shell")
+        logfile = BytesIO()
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
+        p.logfile_read = logfile
+        p.expect_exact("Available Scrapy objects")
+        p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
+        p.expect_exact("IPYMODULE True")
+        p.sendeof()
+        p.wait()  # type: ignore[no-untyped-call]
+        logfile.seek(0)
+        assert "Traceback" not in logfile.read().decode()
 
 
 @pytest.fixture
@@ -393,7 +421,7 @@ class TestShell:
         crawler.engine = MagicMock()
         crawler.engine.open_spider_async = AsyncMock()
         shell = Shell(crawler)
-        spider = Spider("test")
+        spider = Spider.from_crawler(crawler, "test")
         await shell._open_spider(spider)
         assert shell.spider is spider
         assert crawler.spider is spider

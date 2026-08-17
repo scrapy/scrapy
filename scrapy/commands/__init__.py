@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import builtins
+import logging
 import os
 import warnings
 from abc import ABC, abstractmethod
@@ -14,7 +15,9 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from twisted.python import failure
 
+from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.extensions.feedexport import FeedExporter
 from scrapy.http import Request
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.deprecate import method_is_overridden
@@ -23,8 +26,12 @@ from scrapy.utils.python import global_object_name
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from scrapy import Spider
     from scrapy.crawler import Crawler, CrawlerProcessBase
     from scrapy.settings import Settings
+
+
+logger = logging.getLogger(__name__)
 
 
 def _add_curl_option(parser: argparse.ArgumentParser) -> None:
@@ -227,6 +234,24 @@ class BaseRunSpiderCommand(ScrapyCommand):
                 overwrite_output=opts.overwrite_output,
             )
             self.settings.set("FEEDS", feeds, priority="cmdline")
+
+    def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
+        assert self.crawler_process is not None
+        crawler = self.crawler_process.create_crawler(spidercls)
+        crawler.signals.connect(
+            self._warn_if_feeds_unused, signal=signals.engine_started
+        )
+        return crawler
+
+    def _warn_if_feeds_unused(self, sender: Crawler, **kwargs: Any) -> None:
+        if (
+            sender.settings.getdict("FEEDS")
+            and sender.get_extension(FeedExporter) is None
+        ):
+            logger.warning(
+                "The FeedExporter extension is not enabled, so no item will be "
+                "exported to the configured feeds (FEEDS, -o, -O)."
+            )
 
 
 class ScrapyHelpFormatter(argparse.HelpFormatter):

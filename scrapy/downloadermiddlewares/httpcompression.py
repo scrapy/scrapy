@@ -30,27 +30,7 @@ if TYPE_CHECKING:
 
 logger = getLogger(__name__)
 
-ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
-
-try:
-    try:
-        import brotli
-    except ImportError:
-        import brotlicffi as brotli
-except ImportError:
-    pass
-else:
-    try:
-        brotli.Decompressor.can_accept_more_data  # noqa: B018
-    except AttributeError:  # pragma: no cover
-        warnings.warn(
-            "You have brotli installed. But 'br' encoding support now requires "
-            "brotli's or brotlicffi's version >= 1.2.0. Please upgrade "
-            "brotli/brotlicffi to make Scrapy decode 'br' encoded responses.",
-            stacklevel=2,
-        )
-    else:
-        ACCEPTED_ENCODINGS.append(b"br")
+ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate", b"br"]
 
 if find_spec("zstandard") is not None:
     ACCEPTED_ENCODINGS.append(b"zstd")
@@ -205,8 +185,6 @@ class HttpCompressionMiddleware:
             f"{self.__class__.__name__} cannot decode the response for {response.url} "
             f"from unsupported encoding(s) '{encodings_str}'."
         )
-        if b"br" in encodings:
-            msg += " You need to install brotli or brotlicffi >= 1.2.0 to decode 'br'."
         if b"zstd" in encodings:
             msg += " You need to install zstandard to decode 'zstd'."
         logger.warning(msg)

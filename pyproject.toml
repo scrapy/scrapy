@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
-    "cryptography>=37.0.0",
+    "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
     "itemadapter>=0.1.0",
@@ -17,15 +17,17 @@ dependencies = [
     "packaging",
     "parsel>=1.5.0",
     "protego>=0.1.15",
-    "pyOpenSSL>=22.0.0",
-    "queuelib>=1.4.2",
-    "service_identity>=23.1.0",
+    "pyOpenSSL>=24.3.0",
+    "queuelib>=1.6.1",
+    "service_identity>=24.2.0",
     "tldextract",
-    "w3lib>=1.17.0",
+    "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    'brotli>=1.2.0; implementation_name != "pypy"',
+    'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -62,10 +64,6 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
-brotli = [
-    "brotli>=1.2.0; implementation_name != 'pypy'",
-    "brotlicffi>=1.2.0.0; implementation_name == 'pypy'",
-]
 gcs = ["google-cloud-storage>=1.29.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
@@ -118,42 +116,20 @@ allow_incomplete_defs = true # 59 errors
 # TODO
 [[tool.mypy.overrides]]
 module = [
-    "tests.spiders",
-    "tests.test_closespider",
     "tests.test_cmdline",
-    "tests.test_contracts",
     "tests.test_downloaderslotssettings",
     "tests.test_dupefilters",
-    "tests.test_engine_loop",
-    "tests.test_exporters",
     "tests.test_extension_statsmailer",
     "tests.test_extension_throttle",
-    "tests.test_feedexport",
-    "tests.test_feedexport_postprocess",
-    "tests.test_feedexport_storages",
-    "tests.test_feedexport_uri_params",
-    "tests.test_item",
     "tests.test_linkextractors",
-    "tests.test_loader",
     "tests.test_logformatter",
     "tests.test_mail",
-    "tests.test_pipeline_crawl",
-    "tests.test_pipeline_files",
-    "tests.test_pipeline_images",
-    "tests.test_pipeline_media",
-    "tests.test_pipelines",
     "tests.test_pqueues",
     "tests.test_scheduler_base",
     "tests.test_settings",
-    "tests.test_spider",
-    "tests.test_spider_crawl",
-    "tests.test_spidermiddleware_output_chain",
-    "tests.test_spidermiddleware_process_start",
-    "tests.test_spider_sitemap",
     "tests.test_squeues",
     "tests.test_squeues_request",
     "tests.test_stats",
-    "tests.utils.bases.spider",
 ]
 check_untyped_defs = false
 
@@ -333,6 +309,9 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",
+    # Jobs that do not report coverage disable it with --no-cov, which pytest-cov
+    # warns about because the coverage options below stay in place.
+    "ignore::pytest_cov.CovDisabledWarning",
     # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
     "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
 ]
