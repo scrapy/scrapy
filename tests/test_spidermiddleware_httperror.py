@@ -205,7 +205,6 @@ class TestHttpErrorMiddlewareIntegrational:
         assert crawler.spider.parsed == {"200"}
         assert crawler.spider.failed == {"404", "402", "500"}
 
-        assert crawler.stats
         get_value = crawler.stats.get_value
         assert get_value("httperror/response_ignored_count") == 3
         assert get_value("httperror/response_ignored_status_count/404") == 1
