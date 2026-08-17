@@ -54,30 +54,21 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times[slot].append(time.time())
 
 
-class TestCrawl:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
+@inline_callbacks_test
+def test_delay(mockserver: MockServer):
+    crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
+    yield crawler.crawl(mockserver=mockserver)
+    assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
+    slots = crawler.engine.downloader.slots
+    times = crawler.spider.times
+    # Downloading and processing a response add a roughly constant amount
+    # of time on top of the configured delay, so the margin is absolute.
+    # It stays well below the 1 second that separates the delays being
+    # compared, so a slot using the delay of another one still fails.
+    tolerance = 0.75
 
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    @inline_callbacks_test
-    def test_delay(self):
-        crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
-        yield crawler.crawl(mockserver=self.mockserver)
-        slots = crawler.engine.downloader.slots
-        times = crawler.spider.times
-        # Downloading and processing a response add a roughly constant amount
-        # of time on top of the configured delay, so the margin is absolute.
-        # It stays well below the 1 second that separates the delays being
-        # compared, so a slot using the delay of another one still fails.
-        tolerance = 0.75
-
-        for slot, (first, second) in times.items():
-            assert abs((second - first) - slots[slot].delay) < tolerance
+    for slot, (first, second) in times.items():
+        assert abs((second - first) - slots[slot].delay) < tolerance
 
 
 @coroutine_test
