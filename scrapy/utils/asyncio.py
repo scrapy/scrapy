@@ -59,6 +59,12 @@ def is_asyncio_available() -> bool:
     but it's possible to await on :class:`~twisted.internet.defer.Deferred`
     objects.
 
+    This function checks runtime state and should not be called from a component
+    constructor. In reactorless mode, components are initialized before
+    Scrapy starts its asyncio event loop. During initialization, inspect
+    ``crawler.settings.getbool("TWISTED_REACTOR_ENABLED")`` instead, and call
+    this function later from code running as part of the crawl.
+
     .. note:: As this function uses :func:`asyncio.get_running_loop()`, it will
         only detect the event loop if called in the same thread and from the
         code that runs inside that loop (this shouldn't be a problem when
@@ -86,7 +92,9 @@ def is_asyncio_available() -> bool:
     if not is_reactor_installed():
         raise RuntimeError(
             "is_asyncio_available() called without an installed reactor"
-            " or running asyncio loop."
+            " or running asyncio loop. Components should check the"
+            " TWISTED_REACTOR_ENABLED setting during initialization and call"
+            " is_asyncio_available() from code running during the crawl."
         )
 
     return is_asyncio_reactor_installed()

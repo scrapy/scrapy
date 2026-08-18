@@ -117,24 +117,38 @@ Enforcing asyncio as a requirement
 ==================================
 
 If you are writing a :ref:`component <topics-components>` that requires asyncio
-to work, use :func:`scrapy.utils.asyncio.is_asyncio_available` to
-:ref:`enforce it as a requirement <enforce-component-requirements>`. For
-example:
+to work, use :func:`scrapy.utils.asyncio.is_asyncio_available` from code that
+runs during the crawl to :ref:`enforce it as a requirement
+<enforce-component-requirements>`. This function checks runtime state, so it
+must not be called from a component constructor: in reactorless mode, Scrapy
+initializes components before it starts the asyncio event loop. During
+initialization, use the crawler settings instead. For example:
 
 .. code-block:: python
 
     from scrapy.utils.asyncio import is_asyncio_available
+    from scrapy.utils.reactor import is_asyncio_reactor_installed
 
 
     class MyComponent:
-        def __init__(self):
-            if not is_asyncio_available():
+        @classmethod
+        def from_crawler(cls, crawler):
+            if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+                # Reactorless mode uses asyncio once the crawl starts, but the
+                # loop is not running yet during component initialization.
+                return cls()
+            if not is_asyncio_reactor_installed():
                 raise ValueError(
                     f"{MyComponent.__qualname__} requires the asyncio support. "
                     f"Make sure you have configured the asyncio reactor in the "
                     f"TWISTED_REACTOR setting. See the asyncio documentation "
                     f"of Scrapy for more information."
                 )
+            return cls()
+
+        async def spider_opened(self):
+            if not is_asyncio_available():
+                raise RuntimeError("asyncio support is not available")
 
 .. autofunction:: scrapy.utils.asyncio.is_asyncio_available
 .. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed

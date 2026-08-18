@@ -28,6 +28,21 @@ async def test_is_asyncio_available(reactor_pytest: str) -> None:
     assert is_asyncio_available() == (reactor_pytest != "default")
 
 
+def test_is_asyncio_available_explains_initialization_limit() -> None:
+    with (
+        mock.patch(
+            "scrapy.utils.asyncio.asyncio.get_running_loop",
+            side_effect=RuntimeError,
+        ),
+        mock.patch("scrapy.utils.asyncio.is_reactor_installed", return_value=False),
+        pytest.raises(
+            RuntimeError,
+            match=r"TWISTED_REACTOR_ENABLED.*during initialization",
+        ),
+    ):
+        is_asyncio_available()
+
+
 @coroutine_test
 async def test_sleep() -> None:
     events: list[str] = []
