@@ -26,6 +26,7 @@ dependencies = [
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    'backports.zstd>=1.3.0; python_version < "3.14"',
     'brotli>=1.2.0; implementation_name != "pypy"',
     'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
@@ -75,7 +76,6 @@ twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
     "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
 ]
-zstd = ["zstandard>=0.16.0; implementation_name != 'pypy'"]
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
