@@ -71,10 +71,6 @@ class TestBuildComponentList:
         assert build_component_list(d, convert=lambda x: x) == ["b", "c", "a"]
 
 
-def test_get_sources():
-    assert get_sources() == [*get_sources(use_closest=False), closest_scrapy_cfg()]
-
-
 def test_arglist_to_dict():
     assert arglist_to_dict(["arg1=val1", "arg2=val2"]) == {
         "arg1": "val1",

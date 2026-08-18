@@ -59,12 +59,9 @@ def test_data_path_inside_project(proj_path: Path) -> None:
     assert abspath == data_path(abspath)
 
 
-def test_project_data_dir_without_config_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_project_data_dir_without_config_file(no_proj_path: Path) -> None:
     """A project defined only through the environment has no folder to infer
     its data dir from."""
-    monkeypatch.chdir(tmp_path)
     with (
         set_environ(SCRAPY_SETTINGS_MODULE="tests.test_cmdline.settings"),
         pytest.raises(NotConfigured, match=r"Unable to find a pyproject\.toml file"),
@@ -94,14 +91,6 @@ def test_project_data_dir_outside_project(no_proj_path: Path) -> None:
         project_data_dir()
 
 
-def test_project_data_dir_without_scrapy_cfg(no_proj_path: Path) -> None:
-    with (
-        set_environ(SCRAPY_SETTINGS_MODULE="tests.test_cmdline.settings"),
-        pytest.raises(NotConfigured, match=r"Unable to find scrapy\.cfg file"),
-    ):
-        project_data_dir()
-
-
 def test_project_data_dir_default(proj_path: Path) -> None:
     expected = (proj_path / ".scrapy").resolve()
     assert Path(project_data_dir()) == expected
@@ -110,9 +99,11 @@ def test_project_data_dir_default(proj_path: Path) -> None:
     assert Path(project_data_dir()) == expected
 
 
-def test_project_data_dir_from_scrapy_cfg(proj_path: Path) -> None:
+def test_project_data_dir_from_config(proj_path: Path) -> None:
     datadir = proj_path / "custom-datadir"
-    Path("scrapy.cfg").write_text(f"[datadir]\ndefault = {datadir}\n")
+    Path("pyproject.toml").write_text(
+        f'[tool.scrapy.datadir]\ndefault = "{datadir}"\n', encoding="utf-8"
+    )
     assert Path(project_data_dir()) == datadir
     assert datadir.is_dir()
 
