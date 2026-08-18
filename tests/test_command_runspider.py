@@ -16,6 +16,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+# Header for spider classes copied with inspect.getsource(): the future import
+# keeps their annotations from being evaluated in the generated module.
+SPIDER_HEADER = "from __future__ import annotations\nfrom scrapy import Spider\n"
+
+
 class TestRunSpiderCommand:
     spider_filename = "myspider.py"
 
@@ -65,14 +70,14 @@ class BadSpider(scrapy.Spider):
 
     def test_run_fail_spider(self, tmp_path: Path) -> None:
         ret, _, _ = self.runspider(
-            tmp_path, "from scrapy import Spider\n" + inspect.getsource(ExceptionSpider)
+            tmp_path, SPIDER_HEADER + inspect.getsource(ExceptionSpider)
         )
         assert ret != 0
 
     def test_run_good_spider(self, tmp_path: Path) -> None:
         ret, _, _ = self.runspider(
             tmp_path,
-            "from scrapy import Spider\n" + inspect.getsource(NoRequestsSpider),
+            SPIDER_HEADER + inspect.getsource(NoRequestsSpider),
         )
         assert ret == 0
 
@@ -341,6 +346,55 @@ class MySpider(scrapy.Spider):
         args = ["-o", "-:json"]
         log = self.get_log(tmp_path, spider_code, args=args)
         assert "[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}" in log
+
+    def test_output_feed_exporter_disabled(self, tmp_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    custom_settings = {
+        "EXTENSIONS": {"scrapy.extensions.feedexport.FeedExporter": None},
+    }
+
+    start_urls = ["data:,"]
+
+    def parse(self, response):
+        yield {"hello": "world"}
+"""
+        args = ["-o", "example.json"]
+        log = self.get_log(tmp_path, spider_code, args=args)
+        assert "FeedExporter extension is not enabled" in log
+        assert not (tmp_path / "example.json").exists()
+
+    def test_output_feed_exporter_subclass(self, tmp_path: Path) -> None:
+        spider_code = """
+import scrapy
+from scrapy.extensions.feedexport import FeedExporter
+
+class MyFeedExporter(FeedExporter):
+    pass
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    custom_settings = {
+        "EXTENSIONS": {
+            "scrapy.extensions.feedexport.FeedExporter": None,
+            MyFeedExporter: 0,
+        },
+    }
+
+    start_urls = ["data:,"]
+
+    def parse(self, response):
+        yield {"hello": "world"}
+"""
+        args = ["-o", "example.json"]
+        log = self.get_log(tmp_path, spider_code, args=args)
+        assert "FeedExporter extension is not enabled" not in log
+        assert (tmp_path / "example.json").exists()
 
     @pytest.mark.parametrize("arg", ["output.json:json", "output.json"])
     def test_absolute_path(self, tmp_path: Path, arg: str) -> None:

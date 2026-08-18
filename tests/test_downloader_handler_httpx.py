@@ -22,6 +22,7 @@ from tests.utils.bases.download_handlers_http import (
     TestHttpProxyBase,
     TestHttpsBase,
     TestHttpsCustomCiphersBase,
+    TestHttpsDefaultCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
     TestHttpsTLSVersionBase,
@@ -34,8 +35,11 @@ from tests.utils.bases.download_handlers_http import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
+    from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
 
 pytestmark = pytest.mark.only_asyncio
@@ -61,6 +65,7 @@ class HttpxDownloadHandlerMixin:
 
 class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
     handler_supports_bindaddress_meta = False
+    handler_bad_header_handling = "fail"
 
     @pytest.mark.skipif(
         sys.platform == "darwin",
@@ -82,6 +87,7 @@ class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
 
 class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
     handler_supports_bindaddress_meta = False
+    handler_bad_header_handling = "fail"
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
     @pytest.mark.skip(reason="The check is Twisted-specific")
@@ -135,6 +141,10 @@ class TestHttpsCustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBa
     pass
 
 
+class TestHttpsDefaultCiphers(HttpxDownloadHandlerMixin, TestHttpsDefaultCiphersBase):
+    pass
+
+
 class TestHttpsTLSVersion(HttpxDownloadHandlerMixin, TestHttpsTLSVersionBase):
     pass
 
@@ -153,6 +163,22 @@ class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
 
 class TestHttpsProxy(TestHttpProxy):
     is_secure = True
+
+    @coroutine_test
+    async def test_keylog(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        proxy_mockserver: ProxyEchoMockServer,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        http_proxy = proxy_mockserver.url("", is_secure=True)
+        request = Request("http://example.com", meta={"proxy": http_proxy})
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == self.expected_http_proxy_request_body
+        assert keylog_file.read_text()
 
 
 @pytest.mark.requires_mitmproxy

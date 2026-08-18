@@ -15,6 +15,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -31,7 +32,7 @@ class TestSpiderMiddleware:
         self.response = Response(self.request.url, request=self.request)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES_BASE": {}})
         self.crawler.spider = self.crawler._create_spider("foo")
-        self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
+        self.mwman = build_from_crawler(SpiderMiddlewareManager, self.crawler)
 
     async def _scrape_response(self) -> Any:
         """Execute spider mw manager's scrape_response_async method and return the result.
@@ -139,7 +140,7 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
             Spider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
         self.crawler.spider = self.crawler._create_spider("foo")
-        self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
+        self.mwman = build_from_crawler(SpiderMiddlewareManager, self.crawler)
         return await self.mwman.scrape_response_async(
             self._scrape_func, self.response, self.request
         )
@@ -266,7 +267,7 @@ class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
             TestSpider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
         self.crawler.spider = self.crawler._create_spider()
-        self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
+        self.mwman = build_from_crawler(SpiderMiddlewareManager, self.crawler)
         return await self.mwman.process_start()
 
     @coroutine_test
@@ -307,7 +308,7 @@ class TestUniversalMiddlewareManager:
 
     @pytest.fixture
     def mwman(self, crawler: Crawler) -> SpiderMiddlewareManager:
-        return SpiderMiddlewareManager.from_crawler(crawler)
+        return build_from_crawler(SpiderMiddlewareManager, crawler)
 
     def test_simple_mw(self, mwman: SpiderMiddlewareManager) -> None:
         mw = ProcessSpiderOutputSyncMiddleware()
@@ -376,7 +377,7 @@ class TestBuiltinMiddlewareSimple(TestBaseAsyncSpiderMiddleware):
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES": setting})
         self.crawler.spider = self.crawler._create_spider("foo")
-        self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
+        self.mwman = build_from_crawler(SpiderMiddlewareManager, self.crawler)
         return await self.mwman.scrape_response_async(
             self._scrape_func, self.response, self.request
         )
