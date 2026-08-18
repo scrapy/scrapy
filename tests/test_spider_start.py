@@ -22,12 +22,6 @@ ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 
 
-def _sort_key(item: Any) -> Any:
-    # Items used in these tests are plain dicts; sort by contents so
-    # unordered comparisons are deterministic regardless of item shape.
-    return tuple(sorted(item.items())) if isinstance(item, dict) else item
-
-
 async def _test_spider(
     spider: type[Spider],
     expected_items: list[Any] | None = None,
@@ -46,8 +40,8 @@ async def _test_spider(
     await crawler.crawl_async()
     assert crawler.stats.get_value("finish_reason") == "finished"
     if not ordered:
-        actual_items = sorted(actual_items, key=_sort_key)
-        expected_items = sorted(expected_items, key=_sort_key)
+        actual_items = sorted(actual_items, key=repr)
+        expected_items = sorted(expected_items, key=repr)
 
     assert actual_items == expected_items
 
