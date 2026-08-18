@@ -536,7 +536,6 @@ class TestSpiderSettings:
             custom_settings = {"AUTOTHROTTLE_ENABLED": True}
 
         crawler = get_crawler(MySpider)
-        assert crawler.extensions
         enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
         assert AutoThrottle in enabled_exts
 
@@ -568,7 +567,6 @@ class TestCrawlerLogging:
             }
 
             async def start(self):
-                assert crawler.stats
                 info_count_start = crawler.stats.get_value("log_count/INFO")
                 logging.debug("debug message")  # noqa: LOG015
                 logging.info("info message")  # noqa: LOG015
@@ -601,7 +599,6 @@ class TestCrawlerLogging:
         assert "info message" in logged
         assert "warning message" in logged
         assert "error message" in logged
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/ERROR") == 1
         assert crawler.stats.get_value("log_count/WARNING") == 1
         assert info_count == 1

@@ -118,7 +118,7 @@ class Slot(metaclass=_SlotMeta):
         self._max_active_size: int = max_active_size
         self.queue: deque[QueueTuple] = deque()
         self.active: set[Request] = set()
-        self.itemproc_size: int = 0  # just for scrapy.utils.engine.get_engine_status()
+        self.itemproc_size: int = 0
         self.closing: Deferred[Spider] | None = None
         self._active_size: int = 0
 
@@ -197,7 +197,7 @@ class Slot(metaclass=_SlotMeta):
             self._active_size -= self._MIN_RESPONSE_SIZE
 
     def is_idle(self) -> bool:
-        return not (self.queue or self.active)
+        return not (self.queue or self.active or self.itemproc_size)
 
     def needs_backout(self) -> bool:
         warnings.warn(
@@ -580,6 +580,23 @@ class Scraper:
             stacklevel=2,
         )
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
+
+    def _start_itemproc_nowait(self, item: Any) -> None:
+        """Send *item* to the item pipelines without waiting for the outcome.
+
+        The scraper slot counts the item as being processed straight away, so
+        that the spider is not considered idle before the item pipelines have
+        had a chance to run.
+        """
+        assert self.slot is not None  # typing
+        self.slot.itemproc_size += 1
+        _schedule_coro(self._start_itemproc_nowait_async(item))
+
+    async def _start_itemproc_nowait_async(self, item: Any) -> None:
+        assert self.slot is not None  # typing
+        # start_itemproc_async() takes over the count of this item.
+        self.slot.itemproc_size -= 1
+        await self.start_itemproc_async(item, response=None)
 
     async def start_itemproc_async(
         self, item: Any, *, response: Response | Failure | None

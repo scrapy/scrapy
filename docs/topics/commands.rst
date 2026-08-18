@@ -406,7 +406,7 @@ Usage examples::
     > Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
     > Accept-Language: en
     > User-Agent: Scrapy/2.16.0 (+https://scrapy.org)
-    > Accept-Encoding: gzip, deflate, br
+    > Accept-Encoding: gzip, deflate, br, zstd
     >
     < Date: Wed, 08 Jul 2026 06:15:01 GMT
     < Content-Type: text/html
