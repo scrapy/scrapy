@@ -156,6 +156,61 @@ defines one or more of these methods:
       :param exception: the raised exception
       :type exception: an ``Exception`` object
 
+.. _mw-download:
+
+Downloading a request from a downloader middleware
+==================================================
+
+A downloader middleware can download a request of its own while it processes
+another one, e.g. to fetch something that the request it is processing needs.
+The built-in :ref:`robots.txt middleware <topics-dlmw-robots>` does that: it
+holds each request while it downloads the ``robots.txt`` file of its website.
+
+Use :meth:`crawler.engine.download_async()
+<scrapy.core.engine.ExecutionEngine.download_async>` for that:
+
+.. code-block:: python
+
+    from scrapy import Request
+    from scrapy.http.request import NO_CALLBACK
+
+
+    class TokenMiddleware:
+        def __init__(self, crawler):
+            self.crawler = crawler
+            self.token = None
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            return cls(crawler)
+
+        async def process_request(self, request):
+            if request.meta.get("dont_obey_robotstxt"):
+                return
+            if self.token is None:
+                response = await self.crawler.engine.download_async(
+                    Request(
+                        "https://example.com/token",
+                        callback=NO_CALLBACK,
+                        meta={"dont_obey_robotstxt": True},
+                    )
+                )
+                self.token = response.text
+            request.headers["Authorization"] = self.token
+
+Requests that you download this way go through the downloader middleware chain
+as well, including your own middleware and the :ref:`robots.txt middleware
+<topics-dlmw-robots>`, which holds a request until the ``robots.txt`` file of
+its website arrives. Be careful not to introduce deadlocks: a request that you
+download must not end up waiting for the request that is waiting for it. Hence
+:reqmeta:`dont_obey_robotstxt` above, which makes both middlewares let the token
+request through.
+
+While the first token response is in transit, ``process_request`` runs for other
+requests as well, and the middleware above downloads a token for each of them.
+Cache the task that downloads the token, and not only its result, to download
+the token only once.
+
 .. _topics-downloader-middleware-ref:
 
 Built-in downloader middleware reference
@@ -169,106 +224,10 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
-.. _cookies-mw:
-
 CookiesMiddleware
 -----------------
 
-.. module:: scrapy.downloadermiddlewares.cookies
-   :synopsis: Cookies Downloader Middleware
-
-.. class:: CookiesMiddleware
-
-   This middleware enables working with sites that require cookies, such as
-   those that use sessions. It keeps track of cookies sent by web servers, and
-   sends them back on subsequent requests (from that spider), just like web
-   browsers do.
-
-   .. caution:: When non-UTF8 encoded byte sequences are passed to a
-      :class:`~scrapy.Request`, the ``CookiesMiddleware`` will log
-      a warning. Refer to :ref:`topics-logging-advanced-customization`
-      to customize the logging behaviour.
-
-   .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-      :ref:`cookies-mw`. If you need to set cookies for a request, use the
-      :class:`Request.cookies <scrapy.Request>` parameter. This is a known
-      current limitation that is being worked on.
-
-The following settings can be used to configure the cookie middleware:
-
-* :setting:`COOKIES_ENABLED`
-* :setting:`COOKIES_DEBUG`
-
-.. reqmeta:: cookiejar
-
-Multiple cookie sessions per spider
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There is support for keeping multiple cookie sessions per spider by using the
-:reqmeta:`cookiejar` Request meta key. By default it uses a single cookie jar
-(session), but you can pass an identifier to use different ones.
-
-For example:
-
-.. skip: next
-.. code-block:: python
-
-    for i, url in enumerate(urls):
-        yield scrapy.Request(url, meta={"cookiejar": i}, callback=self.parse_page)
-
-Keep in mind that the :reqmeta:`cookiejar` meta key is not "sticky". You need to keep
-passing it along on subsequent requests. For example:
-
-.. code-block:: python
-
-    def parse_page(self, response):
-        # do some processing
-        return scrapy.Request(
-            "http://www.example.com/otherpage",
-            meta={"cookiejar": response.meta["cookiejar"]},
-            callback=self.parse_other_page,
-        )
-
-.. setting:: COOKIES_ENABLED
-
-COOKIES_ENABLED
-~~~~~~~~~~~~~~~
-
-Default: ``True``
-
-Whether to enable the cookies middleware. If disabled, no cookies will be sent
-to web servers.
-
-Notice that despite the value of :setting:`COOKIES_ENABLED` setting if
-``Request.``:reqmeta:`meta['dont_merge_cookies'] <dont_merge_cookies>`
-evaluates to ``True`` the request cookies will **not** be sent to the
-web server and received cookies in :class:`~scrapy.http.Response` will
-**not** be merged with the existing cookies.
-
-For more detailed information see the ``cookies`` parameter in
-:class:`~scrapy.Request`.
-
-.. setting:: COOKIES_DEBUG
-
-COOKIES_DEBUG
-~~~~~~~~~~~~~
-
-Default: ``False``
-
-If enabled, Scrapy will log all cookies sent in requests (i.e. ``Cookie``
-header) and all cookies received in responses (i.e. ``Set-Cookie`` header).
-
-Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
-
-    2011-04-06 14:35:10-0300 [scrapy.core.engine] INFO: Spider opened
-    2011-04-06 14:35:10-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Sending cookies to: <GET http://www.diningcity.com/netherlands/index.html>
-            Cookie: clientlanguage_nl=en_EN
-    2011-04-06 14:35:14-0300 [scrapy.downloadermiddlewares.cookies] DEBUG: Received cookies from: <200 http://www.diningcity.com/netherlands/index.html>
-            Set-Cookie: JSESSIONID=B~FA4DC0C496C8762AE4F1A620EAB34F38; Path=/
-            Set-Cookie: ip_isocode=US
-            Set-Cookie: clientlanguage_nl=en_EN; Expires=Thu, 07-Apr-2011 21:21:34 GMT; Path=/
-    2011-04-06 14:49:50-0300 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
-    [...]
+See :ref:`cookies`.
 
 
 DefaultHeadersMiddleware
@@ -741,15 +700,11 @@ HttpCompressionMiddleware
 
 .. class:: HttpCompressionMiddleware
 
-   This middleware allows compressed (gzip, deflate) traffic to be
-   sent/received from web sites.
+   This middleware allows compressed (gzip, deflate, `brotli`_, `zstd`_)
+   traffic to be sent/received from web sites.
 
-   This middleware also supports decoding `brotli-compressed`_ responses with
-   the :ref:`brotli <extras>` extra, and `zstd-compressed`_
-   responses with the :ref:`zstd <extras>` extra.
-
-.. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
+.. _brotli: https://www.ietf.org/rfc/rfc7932.txt
+.. _zstd: https://www.ietf.org/rfc/rfc8478.txt
 
 
 HttpCompressionMiddleware Settings
@@ -841,40 +796,9 @@ OffsiteMiddleware
 .. module:: scrapy.downloadermiddlewares.offsite
    :synopsis: Offsite Middleware
 
-.. class:: OffsiteMiddleware
+.. autoclass:: OffsiteMiddleware
 
-   .. versionadded:: 2.11.2
-
-   Filters out Requests for URLs outside the domains covered by the spider.
-
-   This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.Spider.allowed_domains` attribute.
-   All subdomains of any domain in the list are also allowed.
-   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
-   but not ``www2.example.com`` nor ``example.com``.
-
-   When your spider returns a request for a domain not belonging to those
-   covered by the spider, this middleware will log a debug message similar to
-   this one::
-
-      DEBUG: Filtered offsite request to 'offsite.example': <GET http://offsite.example/some/page.html>
-
-   To avoid filling the log with too much noise, it will only print one of
-   these messages for each new domain filtered. So, for example, if another
-   request for ``offsite.example`` is filtered, no log message will be
-   printed. But if a request for ``other.example`` is filtered, a message
-   will be printed (but only for the first request filtered).
-
-   If the spider doesn't define an
-   :attr:`~scrapy.Spider.allowed_domains` attribute, or the
-   attribute is empty, the offsite middleware will allow all requests.
-
-   .. reqmeta:: allow_offsite
-
-   If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
-   ``True`` or :attr:`Request.meta <scrapy.Request.meta>` has ``allow_offsite``
-   set to ``True``, then the OffsiteMiddleware will allow the request even if
-   its domain is not listed in allowed domains.
+   .. automethod:: should_follow
 
 RedirectMiddleware
 ------------------

@@ -192,7 +192,6 @@ class Shell:
         """
         if not self.spider:
             await self._open_spider(spider)
-        assert self.crawler.engine is not None
         # send the request to the engine
         self.crawler.engine.crawl(request)
         # this will fire when the request callback runs (via the callback hijacking in _request_deferred())
@@ -203,7 +202,6 @@ class Shell:
             spider = self.crawler.spider or self.crawler._create_spider()
 
         self.crawler.spider = spider
-        assert self.crawler.engine
         await self.crawler.engine.open_spider_async(close_if_idle=False)
         self.spider = spider
 

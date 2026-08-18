@@ -16,6 +16,7 @@ from scrapy.exceptions import (
 from scrapy.http import Request, Response
 from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
@@ -24,13 +25,14 @@ class TestRetry:
     def setup_method(self):
         self.crawler = get_crawler(DefaultSpider)
         self.crawler.spider = self.crawler._create_spider()
-        self.mw = RetryMiddleware.from_crawler(self.crawler)
+        self.mw = build_from_crawler(RetryMiddleware, self.crawler)
         self.mw.max_retry_times = 2
 
     def test_priority_adjust(self):
         req = Request("http://www.scrapytest.org/503")
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
         req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
         assert req2.priority < req.priority
 
     def test_404(self):
@@ -53,9 +55,9 @@ class TestRetry:
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
         # first retry
-        req = self.mw.process_response(req, rsp)
-        assert isinstance(req, Request)
-        assert req.meta["retry_times"] == 1
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.meta["retry_times"] == 1
 
     def test_dont_retry_exc(self):
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": True})
@@ -68,17 +70,17 @@ class TestRetry:
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
         # first retry
-        req = self.mw.process_response(req, rsp)
-        assert isinstance(req, Request)
-        assert req.meta["retry_times"] == 1
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.meta["retry_times"] == 1
 
         # second retry
-        req = self.mw.process_response(req, rsp)
-        assert isinstance(req, Request)
-        assert req.meta["retry_times"] == 2
+        req3 = self.mw.process_response(req2, rsp)
+        assert isinstance(req3, Request)
+        assert req3.meta["retry_times"] == 2
 
         # discard it
-        assert self.mw.process_response(req, rsp) is rsp
+        assert self.mw.process_response(req3, rsp) is rsp
 
         assert self.crawler.stats.get_value("retry/max_reached") == 1
         assert (
@@ -92,7 +94,7 @@ class TestRetry:
             DefaultSpider, settings_dict={"RETRY_GIVE_UP_LOG_LEVEL": "WARNING"}
         )
         crawler.spider = crawler._create_spider()
-        mw = RetryMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(RetryMiddleware, crawler)
         mw.max_retry_times = 0
         req = Request("http://example.com/503")
         rsp = Response("http://example.com/503", body=b"", status=503)
@@ -145,36 +147,37 @@ class TestRetry:
         }
         crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
         crawler.spider = crawler._create_spider()
-        mw = RetryMiddleware.from_crawler(crawler)
+        mw = build_from_crawler(RetryMiddleware, crawler)
         req = Request(f"http://www.scrapytest.org/{exc.__name__}")
         self._test_retry_exception(req, exc("foo"), mw)
 
-    def _test_retry_exception(self, req, exception, mw=None):
+    def _test_retry_exception(
+        self, req: Request, exception: Exception, mw: RetryMiddleware | None = None
+    ) -> None:
         if mw is None:
             mw = self.mw
 
         # first retry
-        req = mw.process_exception(req, exception)
-        assert isinstance(req, Request)
-        assert req.meta["retry_times"] == 1
+        req2 = mw.process_exception(req, exception)
+        assert isinstance(req2, Request)
+        assert req2.meta["retry_times"] == 1
 
         # second retry
-        req = mw.process_exception(req, exception)
-        assert isinstance(req, Request)
-        assert req.meta["retry_times"] == 2
+        req3 = mw.process_exception(req2, exception)
+        assert isinstance(req3, Request)
+        assert req3.meta["retry_times"] == 2
 
         # discard it
-        req = mw.process_exception(req, exception)
-        assert req is None
+        assert mw.process_exception(req3, exception) is None
 
 
 class TestMaxRetryTimes:
     invalid_url = "http://www.scrapytest.org/invalid_url"
 
-    def get_middleware(self, settings=None):
+    def get_middleware(self, settings: dict[str, Any] | None = None) -> RetryMiddleware:
         crawler = get_crawler(DefaultSpider, settings or {})
         crawler.spider = crawler._create_spider()
-        return RetryMiddleware.from_crawler(crawler)
+        return build_from_crawler(RetryMiddleware, crawler)
 
     def test_with_settings_zero(self):
         max_retry_times = 0
@@ -275,20 +278,18 @@ class TestMaxRetryTimes:
 
     def _test_retry(
         self,
-        req,
-        exception,
-        max_retry_times,
-        middleware=None,
-    ):
-        middleware = middleware or self.mw
-
+        req: Request,
+        exception: Exception,
+        max_retry_times: int,
+        middleware: RetryMiddleware,
+    ) -> None:
         for _ in range(max_retry_times):
-            req = middleware.process_exception(req, exception)
-            assert isinstance(req, Request)
+            result = middleware.process_exception(req, exception)
+            assert isinstance(result, Request)
+            req = result
 
         # discard it
-        req = middleware.process_exception(req, exception)
-        assert req is None
+        assert middleware.process_exception(req, exception) is None
 
 
 class TestGetRetryRequest:
@@ -312,7 +313,6 @@ class TestGetRetryRequest:
         assert new_request.meta["retry_times"] == expected_retry_times
         assert new_request.priority == -1
         expected_reason = "unspecified"
-        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
             assert spider.crawler.stats.get_value(stat) == 1
         assert (
@@ -333,7 +333,6 @@ class TestGetRetryRequest:
                 max_retry_times=max_retry_times,
             )
         assert new_request is None
-        assert spider.crawler.stats
         assert spider.crawler.stats.get_value("retry/max_reached") == 1
         failure_count = max_retry_times + 1
         expected_reason = "unspecified"
@@ -360,7 +359,6 @@ class TestGetRetryRequest:
         assert new_request.meta["retry_times"] == expected_retry_times
         assert new_request.priority == -1
         expected_reason = "unspecified"
-        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
             assert spider.crawler.stats.get_value(stat) == 1
         assert (
@@ -393,7 +391,6 @@ class TestGetRetryRequest:
             assert new_request.meta["retry_times"] == expected_retry_times
             assert new_request.priority == -expected_retry_times
             expected_reason = "unspecified"
-            assert spider.crawler.stats
             for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
                 value = spider.crawler.stats.get_value(stat)
                 assert value == expected_retry_times
@@ -428,7 +425,7 @@ class TestGetRetryRequest:
     def test_no_spider(self):
         request = Request("https://example.com")
         with pytest.raises(TypeError):
-            get_retry_request(request)  # pylint: disable=missing-kwoa
+            get_retry_request(request)  # type: ignore[call-arg]  # pylint: disable=missing-kwoa
 
     def test_max_retry_times_setting(self):
         max_retry_times = 0
@@ -471,6 +468,7 @@ class TestGetRetryRequest:
             request,
             spider=spider,
         )
+        assert new_request
         assert new_request.priority == priority_adjust
 
     def test_priority_adjust_argument(self):
@@ -482,6 +480,7 @@ class TestGetRetryRequest:
             spider=spider,
             priority_adjust=priority_adjust,
         )
+        assert new_request
         assert new_request.priority == priority_adjust
 
     def test_log_extra_retry_success(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -516,7 +515,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
             assert spider.crawler.stats.get_value(stat) == 1
         assert (
@@ -538,7 +536,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
@@ -564,7 +561,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
@@ -588,7 +584,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
@@ -614,7 +609,6 @@ class TestGetRetryRequest:
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        assert spider.crawler.stats
         stat = spider.crawler.stats.get_value(
             f"retry/reason_count/{expected_reason_string}"
         )

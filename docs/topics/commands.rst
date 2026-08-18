@@ -141,8 +141,8 @@ some usage help and the available commands::
       scrapy <command> [options] [args]
 
     Available commands:
-      crawl         Run a spider
       fetch         Fetch a URL using the Scrapy downloader
+      runspider     Run a spider from a Python file, no project required
     [...]
 
 The first line will print the currently active project if you're inside a
@@ -290,7 +290,9 @@ crawl
 * Syntax: ``scrapy crawl <spider>``
 * Requires project: *yes*
 
-Start crawling using a spider.
+Start crawling using the spider with the given :attr:`~scrapy.Spider.name`,
+which must be one of those that :command:`list` reports. To run a spider from a
+file instead, use :command:`runspider`.
 
 Supported options:
 
@@ -431,7 +433,7 @@ Usage examples::
     > Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
     > Accept-Language: en
     > User-Agent: Scrapy/2.16.0 (+https://scrapy.org)
-    > Accept-Encoding: gzip, deflate, br
+    > Accept-Encoding: gzip, deflate, br, zstd
     >
     < Date: Wed, 08 Jul 2026 06:15:01 GMT
     < Content-Type: text/html
@@ -532,7 +534,7 @@ Supported options:
 * ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
   This must be a valid json string. Example: --cbkwargs='{"foo" : "bar"}'
 
-* ``--pipelines``: process items through pipelines
+* ``--pipelines``: :ref:`process items through pipelines <test-item-pipeline>`
 
 * ``--rules`` or ``-r``: use :class:`~scrapy.spiders.CrawlSpider`
   rules to discover the callback (i.e. spider method) to use for parsing the
@@ -598,8 +600,9 @@ runspider
 * Syntax: ``scrapy runspider <spider_file.py>``
 * Requires project: *no*
 
-Run a spider self-contained in a Python file, without having to create a
-project.
+Run the spider defined in the given Python file, without requiring a project.
+
+Supported options: the same as :command:`crawl`.
 
 Example usage::
 
@@ -691,6 +694,8 @@ Example:
 .. code-block:: python
 
     COMMANDS_MODULE = "mybot.commands"
+
+.. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
 .. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 
