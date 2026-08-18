@@ -1,6 +1,5 @@
 import zlib
 from gzip import GzipFile
-from importlib.util import find_spec
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
@@ -53,10 +52,6 @@ FORMAT = {
         )
     },
 }
-
-
-def _skip_if_no_zstd() -> None:
-    pytest.importorskip("zstandard")
 
 
 class TestHttpCompression:
@@ -162,8 +157,6 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
     def test_process_response_zstd(self):
-        _skip_if_no_zstd()
-
         raw_content = None
         for check_key in FORMAT:
             if not check_key.startswith("zstd-"):
@@ -180,32 +173,6 @@ class TestHttpCompression:
             assert newresponse is not response
             assert newresponse.body.startswith(b"<!DOCTYPE")
             assert "Content-Encoding" not in newresponse.headers
-
-    def test_process_response_zstd_unsupported(self, caplog: pytest.LogCaptureFixture):
-        if find_spec("zstandard") is not None:
-            pytest.skip("Requires not having zstandard support")
-        response = self._getresponse("zstd-static-content-size")
-        assert response.request
-        request = response.request
-        assert response.headers["Content-Encoding"] == b"zstd"
-        caplog.clear()
-        with caplog.at_level(
-            WARNING, logger="scrapy.downloadermiddlewares.httpcompression"
-        ):
-            newresponse = self.mw.process_response(request, response)
-        assert caplog.record_tuples == [
-            (
-                "scrapy.downloadermiddlewares.httpcompression",
-                WARNING,
-                (
-                    "HttpCompressionMiddleware cannot decode the response for"
-                    " http://scrapytest.org/ from unsupported encoding(s) 'zstd'."
-                    " You need to install zstandard to decode 'zstd'."
-                ),
-            ),
-        ]
-        assert newresponse is not response
-        assert newresponse.headers.getlist("Content-Encoding") == [b"zstd"]
 
     def test_process_response_rawdeflate(self):
         response = self._getresponse("rawdeflate")
@@ -575,8 +542,6 @@ class TestHttpCompression:
         self._test_compression_bomb_setting("gzip")
 
     def test_compression_bomb_setting_zstd(self):
-        _skip_if_no_zstd()
-
         self._test_compression_bomb_setting("zstd")
 
     def test_compression_bomb_setting_logs_warning(self, caplog):
@@ -635,8 +600,6 @@ class TestHttpCompression:
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_zstd(self):
-        _skip_if_no_zstd()
-
         self._test_compression_bomb_spider_attr("zstd")
 
     def _test_compression_bomb_request_meta(self, compression_id: str) -> None:
@@ -664,8 +627,6 @@ class TestHttpCompression:
         self._test_compression_bomb_request_meta("gzip")
 
     def test_compression_bomb_request_meta_zstd(self):
-        _skip_if_no_zstd()
-
         self._test_compression_bomb_request_meta("zstd")
 
     def _test_download_warnsize_setting(
@@ -714,8 +675,6 @@ class TestHttpCompression:
     def test_download_warnsize_setting_zstd(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        _skip_if_no_zstd()
-
         self._test_download_warnsize_setting(caplog, "zstd")
 
     def _test_download_warnsize_spider_attr(
@@ -770,8 +729,6 @@ class TestHttpCompression:
     def test_download_warnsize_spider_attr_zstd(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        _skip_if_no_zstd()
-
         self._test_download_warnsize_spider_attr(caplog, "zstd")
 
     def _test_download_warnsize_request_meta(
@@ -820,8 +777,6 @@ class TestHttpCompression:
     def test_download_warnsize_request_meta_zstd(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        _skip_if_no_zstd()
-
         self._test_download_warnsize_request_meta(caplog, "zstd")
 
     def _get_truncated_response(self, compression_id: str) -> Response:
@@ -850,7 +805,6 @@ class TestHttpCompression:
         assert resp.body.startswith(b"<!DOCTYPE")
 
     def test_process_truncated_response_zstd(self):
-        _skip_if_no_zstd()
         for check_key in FORMAT:
             if not check_key.startswith("zstd-"):
                 continue

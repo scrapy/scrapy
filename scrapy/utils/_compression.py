@@ -1,4 +1,4 @@
-import contextlib
+import sys
 import zlib
 from io import BytesIO
 
@@ -7,8 +7,10 @@ try:
 except ImportError:
     import brotlicffi as brotli
 
-with contextlib.suppress(ImportError):
-    import zstandard
+if sys.version_info >= (3, 14):
+    from compression import zstd
+else:
+    from backports import zstd
 
 
 _CHUNK_SIZE = 65536  # 64 KiB
@@ -74,13 +76,16 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
 
 
 def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
-    decompressor = zstandard.ZstdDecompressor()
-    stream_reader = decompressor.stream_reader(BytesIO(data))
+    stream_reader = zstd.ZstdFile(BytesIO(data))
     output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
     while output_chunk:
-        output_chunk = stream_reader.read(_CHUNK_SIZE)
+        try:
+            output_chunk = stream_reader.read(_CHUNK_SIZE)
+        except EOFError:
+            # Return as much data as possible out of a truncated response.
+            break
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)

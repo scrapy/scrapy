@@ -7,7 +7,7 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
-    "Twisted>=21.7.0",
+    'backports.zstd>=1.3.0; python_version < "3.14"',
     "blinker>=1.7.0",
     "cryptography>=41.0.5",
     "cssselect>=0.9.1",
@@ -22,6 +22,7 @@ dependencies = [
     "queuelib>=1.6.1",
     "service_identity>=24.2.0",
     "tldextract",
+    "twisted>=21.7.0",
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
@@ -74,7 +75,6 @@ twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
     "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
 ]
-zstd = ["zstandard>=0.16.0; implementation_name != 'pypy'"]
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
@@ -306,12 +306,32 @@ markers = [
     "requires_internet: marks tests that need real Internet access",
 ]
 filterwarnings = [
+    # Envs with pinned old dependencies opt out of this, see tox.ini.
+    "error",
     "ignore::DeprecationWarning:twisted.web.static",
-    # Jobs that do not report coverage disable it with --no-cov, which pytest-cov
-    # warns about because the coverage options below stay in place.
-    "ignore::pytest_cov.CovDisabledWarning",
-    # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
-    "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
+    # Twisted leaves the listening socket open after a failed bind
+    # (CannotListenError): https://github.com/twisted/twisted/issues/6108
+    # The asyncio reactor likewise leaves client sockets and transports open on
+    # teardown. These surface as unraisable exceptions during finalization; the
+    # message wording varies across Python implementations and versions
+    # (PyPy leaves the prefix empty), so match on the object repr.
+    "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
+    "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    # PyDispatcher iterates its connection registry while a weakref callback
+    # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
+    # can die within a single collection.
+    "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
+    # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
+    # files open; the resulting warning surfaces at an arbitrary GC point.
+    "ignore:.*<_io\\.FileIO name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
+    "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
+    # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.
+    "ignore:The async(hat|ore) module is deprecated:DeprecationWarning",
+    # CI runs without coverage pass --no-cov, which pytest-cov reports. Matched
+    # by message because some tox envs do not install pytest-cov, and pytest
+    # warns when a filter names a module it cannot import.
+    "ignore:Coverage disabled via --no-cov switch!",
 ]
 
 [tool.ruff.lint]
