@@ -27,6 +27,7 @@ from scrapy.extensions.feedexport import (
     ItemFilter,
     apply_uri_params,
 )
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
@@ -100,6 +101,8 @@ class InstrumentedFeedSlot(FeedSlot):
     """Instrumented FeedSlot subclass for keeping track of calls to
     start_exporting and finish_exporting."""
 
+    update_listener: Callable[[str], None]
+
     def start_exporting(self):
         self.update_listener("start")
         super().start_exporting()
@@ -109,7 +112,7 @@ class InstrumentedFeedSlot(FeedSlot):
         super().finish_exporting()
 
     @classmethod
-    def subscribe__listener(cls, listener):
+    def subscribe__listener(cls, listener: IsExportingListener) -> None:
         cls.update_listener = listener.update
 
 
@@ -119,7 +122,7 @@ class IsExportingListener:
     finish_exporting and when a call to finish_exporting has been made
     before a call to start_exporting."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.start_without_finish = False
         self.finish_without_start = False
 
@@ -487,7 +490,7 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_start_finish_exporting_no_items(self):
-        items = []
+        items: list[Any] = []
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -526,7 +529,7 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_start_finish_exporting_no_items_exception(self):
-        items = []
+        items: list[Any] = []
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -611,7 +614,7 @@ class TestFeedExport(TestFeedExportBase):
         items = [{"foo": "bar"}]
         header = ["foo"]
         rows = [{"foo": "bar"}]
-        settings = {"FEED_EXPORT_FIELDS": []}
+        settings: dict[str, Any] = {"FEED_EXPORT_FIELDS": []}
         await self.assertExportedCsv(items, header, rows)
         await self.assertExportedJsonLines(items, rows, settings)
 
@@ -727,14 +730,14 @@ class TestFeedExport(TestFeedExportBase):
             def accepts(self, item):
                 return isinstance(item, MyItem)
 
-        class CustomFilter2(scrapy.extensions.feedexport.ItemFilter):
+        class CustomFilter2(ItemFilter):
             def accepts(self, item):
                 return "foo" in item.fields
 
-        class CustomFilter3(scrapy.extensions.feedexport.ItemFilter):
+        class CustomFilter3(ItemFilter):
             def accepts(self, item):
                 return (
-                    isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1"
+                    isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1"  # type: ignore[index]
                 )
 
         formats = {
@@ -834,7 +837,7 @@ class TestFeedExport(TestFeedExportBase):
         }
 
         for fmt, expected in formats.items():
-            settings = {
+            settings: dict[str, Any] = {
                 "FEEDS": {
                     self._random_temp_filename(): {"format": fmt},
                 },
@@ -911,7 +914,7 @@ class TestFeedExport(TestFeedExportBase):
             {"key": "value"},
         ]
 
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             # JSON
             {
                 "format": "json",
@@ -1132,7 +1135,7 @@ class TestFeedExport(TestFeedExportBase):
 
         expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
         expected_without_title_csv = b"FOO,BAR\r\n"
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             # with title
             {
                 "options": {
@@ -1166,6 +1169,9 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_storage_file_no_postprocessing(self):
         class Storage:
+            open_file: IO[bytes]
+            store_file: IO[bytes]
+
             def __init__(self, uri, *, feed_options=None):
                 pass
 
@@ -1187,6 +1193,10 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_storage_file_postprocessing(self):
         class Storage:
+            open_file: IO[bytes]
+            store_file: IO[bytes]
+            file_was_closed: bool
+
             def __init__(self, uri, *, feed_options=None):
                 pass
 
@@ -1250,9 +1260,8 @@ class TestFeedExporterSignals:
         feed_slot_signal_handler: Callable[[Any], Awaitable[None] | None],
     ) -> None:
         crawler = get_crawler(settings_dict=self.settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
+        feed_exporter = build_from_crawler(FeedExporter, crawler)
+        spider = scrapy.Spider.from_crawler(crawler, "default")
         crawler.signals.connect(
             feed_exporter_signal_handler,
             signal=signals.feed_exporter_closed,
@@ -1299,14 +1308,14 @@ class TestItemFilter:
 
 class TestFeedExportInit:
     def test_unsupported_storage(self):
-        settings = {
+        settings: dict[str, Any] = {
             "FEEDS": {
                 "unsupported://uri": {},
             },
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
 
     def test_disabled_storage(self, caplog: pytest.LogCaptureFixture):
         class DisabledFeedStorage:
@@ -1321,7 +1330,7 @@ class TestFeedExportInit:
         }
         crawler = get_crawler(settings_dict=settings)
         with caplog.at_level(logging.ERROR), pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
         assert (
             "Disabled feed storage scheme: disabled. Reason: not today" in caplog.text
         )
@@ -1336,7 +1345,7 @@ class TestFeedExportInit:
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
 
     def test_absolute_pathlib_as_uri(self):
         with tempfile.NamedTemporaryFile(suffix="json") as tmp:
@@ -1348,7 +1357,7 @@ class TestFeedExportInit:
                 },
             }
             crawler = get_crawler(settings_dict=settings)
-            exporter = FeedExporter.from_crawler(crawler)
+            exporter = build_from_crawler(FeedExporter, crawler)
             assert isinstance(exporter, FeedExporter)
 
     def test_relative_pathlib_as_uri(self):
@@ -1360,7 +1369,7 @@ class TestFeedExportInit:
             },
         }
         crawler = get_crawler(settings_dict=settings)
-        exporter = FeedExporter.from_crawler(crawler)
+        exporter = build_from_crawler(FeedExporter, crawler)
         assert isinstance(exporter, FeedExporter)
 
 

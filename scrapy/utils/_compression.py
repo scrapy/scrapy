@@ -1,15 +1,16 @@
-import contextlib
+import sys
 import zlib
 from io import BytesIO
 
-with contextlib.suppress(ImportError):
-    try:
-        import brotli
-    except ImportError:
-        import brotlicffi as brotli
+try:
+    import brotli
+except ImportError:
+    import brotlicffi as brotli
 
-with contextlib.suppress(ImportError):
-    import zstandard
+if sys.version_info >= (3, 14):
+    from compression import zstd
+else:
+    from backports import zstd
 
 
 _CHUNK_SIZE = 65536  # 64 KiB
@@ -45,17 +46,15 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
     _check_max_size(decompressed_size, max_size)
     output_stream = BytesIO()
     output_stream.write(first_chunk)
-    while decompressor.unconsumed_tail:
+    # Anything left in unconsumed_tail once the stream has ended is not part of
+    # it, and feeding it back would neither consume it nor produce output.
+    while decompressor.unconsumed_tail and not decompressor.eof:
         output_chunk = decompressor.decompress(
             decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
         )
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
-    if tail := decompressor.flush():
-        decompressed_size += len(tail)
-        _check_max_size(decompressed_size, max_size)
-        output_stream.write(tail)
     return output_stream.getvalue()
 
 
@@ -77,13 +76,16 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
 
 
 def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
-    decompressor = zstandard.ZstdDecompressor()
-    stream_reader = decompressor.stream_reader(BytesIO(data))
+    stream_reader = zstd.ZstdFile(BytesIO(data))
     output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
     while output_chunk:
-        output_chunk = stream_reader.read(_CHUNK_SIZE)
+        try:
+            output_chunk = stream_reader.read(_CHUNK_SIZE)
+        except EOFError:
+            # Return as much data as possible out of a truncated response.
+            break
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)

@@ -406,7 +406,7 @@ Usage examples::
     > Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
     > Accept-Language: en
     > User-Agent: Scrapy/2.16.0 (+https://scrapy.org)
-    > Accept-Encoding: gzip, deflate, br
+    > Accept-Encoding: gzip, deflate, br, zstd
     >
     < Date: Wed, 08 Jul 2026 06:15:01 GMT
     < Content-Type: text/html
@@ -507,7 +507,7 @@ Supported options:
 * ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
   This must be a valid json string. Example: --cbkwargs='{"foo" : "bar"}'
 
-* ``--pipelines``: process items through pipelines
+* ``--pipelines``: :ref:`process items through pipelines <test-item-pipeline>`
 
 * ``--rules`` or ``-r``: use :class:`~scrapy.spiders.CrawlSpider`
   rules to discover the callback (i.e. spider method) to use for parsing the

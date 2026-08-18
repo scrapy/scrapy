@@ -12,6 +12,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.extensions import memusage as memusage_mod
 from scrapy.extensions.memusage import MemoryUsage
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils import OneShotLoop
 from tests.utils.cmdline import proc
@@ -60,7 +61,7 @@ def test_memusage_disabled() -> None:
         "MEMUSAGE_ENABLED": False,
     }
     with pytest.raises(NotConfigured):
-        MemoryUsage.from_crawler(get_crawler(settings_dict=settings))
+        build_from_crawler(MemoryUsage, get_crawler(settings_dict=settings))
 
 
 def test_memusage_limit_stops_crawler_without_spider(mockserver: MockServer) -> None:
@@ -98,7 +99,6 @@ async def test_memusage_below_thresholds_logs_peak(
     with caplog.at_level(logging.INFO, logger="scrapy.extensions.memusage"):
         await crawler.crawl_async(url="data:,", loops=1)
 
-    assert crawler.stats
     assert crawler.stats.get_value("memusage/limit_reached") is None
     assert crawler.stats.get_value("memusage/warning_reached") is None
     assert crawler.stats.get_value("memusage/max") == 25 * MB
@@ -128,7 +128,6 @@ async def test_memusage_limit_closes_spider_with_reason_and_error_log(
     with caplog.at_level(logging.ERROR, logger="scrapy.extensions.memusage"):
         await crawler.crawl_async(url="data:,", loops=100)
 
-    assert crawler.stats
     assert crawler.stats.get_value("memusage/limit_reached") == 1
     assert crawler.stats.get_value("finish_reason") == "memusage_exceeded"
     assert any(
@@ -166,7 +165,6 @@ async def test_memusage_warning_logs_but_allows_normal_finish(
         await crawler.crawl_async(url="data:,", loops=60)
 
     assert warning_signals == [1]
-    assert crawler.stats
     assert crawler.stats.get_value("memusage/warning_reached") == 1
     assert crawler.stats.get_value("finish_reason") == "finished"
     warnings_logged = [
