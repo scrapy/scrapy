@@ -33,7 +33,6 @@ def test_spider_closed_sets_stats() -> None:
 
     ext.spider_closed(DefaultSpider.from_crawler(crawler), "finished")
 
-    assert crawler.stats
     assert crawler.stats.get_value("memdebug/gc_garbage_count") == len(gc.garbage)
     assert crawler.stats.get_value("memdebug/live_refs/TrackedObject") == len(tracked)
     assert crawler.stats.get_value("memdebug/live_refs/CollectedObject") is None
@@ -47,6 +46,5 @@ async def test_crawl_sets_stats() -> None:
 
     crawler = get_crawler(MemDebugSpider, settings_dict={"MEMDEBUG_ENABLED": True})
     await crawler.crawl_async()
-    assert crawler.stats
     assert crawler.stats.get_value("memdebug/gc_garbage_count") is not None
     assert crawler.stats.get_value("memdebug/live_refs/MemDebugSpider") == 1

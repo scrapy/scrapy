@@ -107,6 +107,14 @@ def pytest_configure(config):
         install_reactor_import_hook()
 
 
+def pytest_collection_modifyitems(items):
+    for item in items:
+        if item.get_closest_marker("requires_internet"):
+            # Requests to real websites fail every now and then in CI for
+            # reasons unrelated to the code under test.
+            item.add_marker(pytest.mark.flaky(reruns=2, reruns_delay=5))
+
+
 def pytest_runtest_setup(item):
     # Skip tests based on reactor markers
     reactor = item.config.getoption("--reactor")
