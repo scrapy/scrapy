@@ -102,7 +102,7 @@ def test_project_data_dir_default(proj_path: Path) -> None:
 def test_project_data_dir_from_config(proj_path: Path) -> None:
     datadir = proj_path / "custom-datadir"
     Path("pyproject.toml").write_text(
-        f'[tool.scrapy.datadir]\ndefault = "{datadir}"\n', encoding="utf-8"
+        f'[tool.scrapy.datadir]\ndefault = "{datadir.as_posix()}"\n', encoding="utf-8"
     )
     assert Path(project_data_dir()) == datadir
     assert datadir.is_dir()
