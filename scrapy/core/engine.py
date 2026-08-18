@@ -307,9 +307,7 @@ class ExecutionEngine:
                 self.crawl(item_or_request)
             else:
                 assert self._slot is not None
-                _schedule_coro(
-                    self.scraper.start_itemproc_async(item_or_request, response=None)
-                )
+                self.scraper._start_itemproc_nowait(item_or_request)
                 self._slot.nextcall.schedule()
 
     async def _start_request_processing(self) -> None:
