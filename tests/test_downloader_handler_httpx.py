@@ -9,14 +9,16 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import pytest
 
 from scrapy import Request
-from scrapy.core.downloader.handlers._httpx import (
+from scrapy.core.downloader.handlers._httpx import (  # type: ignore[attr-defined]
     HAS_HTTP2,
     HAS_SOCKS,
     HttpxDownloadHandler,
+    httpx,
 )
 from scrapy.exceptions import DownloadFailedError
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
+from tests import IDNA_REJECTED_HOSTNAMES
 from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
@@ -47,6 +49,18 @@ pytestmark = pytest.mark.only_asyncio
 if find_spec("httpx2") is None and find_spec("httpx") is None:
     pytest.skip("Neither httpx2 nor httpx are installed", allow_module_level=True)
 
+# httpx2 < 2.4.0 reads URL.host through idna.decode() without display=True when
+# building the Host header, which raises for punycode labels that IDNA 2008
+# rejects. https://github.com/pydantic/httpx2/pull/1018
+# This check can be dropped once the httpx2 requirement is bumped to >= 2.4.0.
+try:
+    for _hostname in IDNA_REJECTED_HOSTNAMES:
+        _ = httpx.URL(f"http://{_hostname}").host
+except Exception:
+    HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES = False
+else:
+    HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES = True
+
 
 class HttpxDownloadHandlerMixin:
     @property
@@ -66,6 +80,7 @@ class HttpxDownloadHandlerMixin:
 class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
     handler_supports_bindaddress_meta = False
     handler_bad_header_handling = "fail"
+    handler_supports_idna_rejected_hostnames = HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES
 
     @pytest.mark.skipif(
         sys.platform == "darwin",
@@ -88,6 +103,7 @@ class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
 class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
     handler_supports_bindaddress_meta = False
     handler_bad_header_handling = "fail"
+    handler_supports_idna_rejected_hostnames = HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
     @pytest.mark.skip(reason="The check is Twisted-specific")
