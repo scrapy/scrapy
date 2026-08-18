@@ -80,7 +80,7 @@ def fingerprint(
     # A handler ID matching the URL scheme is the one that would be used
     # anyway, so it is left out to keep such fingerprints unchanged.
     handler_id: str | None = request.meta.get("download_handler")
-    if handler_id == urlparse_cached(request).scheme:
+    if handler_id is not None and handler_id == urlparse_cached(request).scheme:
         handler_id = None
     cache = _fingerprint_cache.setdefault(request, {})
     cache_key = (
