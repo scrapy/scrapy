@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
+from tests.spiders import MockServerSpider
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
+
     import pytest
+
+    from scrapy.http import Response
 
 
 class _BaseSpiderMiddleware:
@@ -41,7 +46,7 @@ class RecoveryMiddleware(_BaseSpiderMiddleware):
         ]
 
 
-class RecoverySpider(Spider):
+class RecoverySpider(MockServerSpider):
     name = "RecoverySpider"
     custom_settings = {
         "SPIDER_MIDDLEWARES_BASE": {},
@@ -50,10 +55,11 @@ class RecoverySpider(Spider):
         },
     }
 
-    async def start(self):
+    async def start(self) -> AsyncIterator[Any]:
+        assert self.mockserver
         yield Request(self.mockserver.url("/status?n=200"))
 
-    def parse(self, response):
+    def parse(self, response: Response) -> Iterator[Any]:
         yield {"test": 1}
         self.logger.info("DONT_FAIL: %s", response.meta.get("dont_fail"))
         if not response.meta.get("dont_fail"):
@@ -63,7 +69,7 @@ class RecoverySpider(Spider):
 class RecoveryAsyncGenSpider(RecoverySpider):
     name = "RecoveryAsyncGenSpider"
 
-    async def parse(self, response):
+    async def parse(self, response: Response) -> AsyncIterator[Any]:  # type: ignore[override]
         for r in super().parse(response):
             yield r
 
@@ -76,7 +82,7 @@ class FailProcessSpiderInputMiddleware(_BaseSpiderMiddleware):
         raise IndexError
 
 
-class ProcessSpiderInputSpiderWithoutErrback(Spider):
+class ProcessSpiderInputSpiderWithoutErrback(MockServerSpider):
     name = "ProcessSpiderInputSpiderWithoutErrback"
     custom_settings = {
         "SPIDER_MIDDLEWARES": {
@@ -87,7 +93,8 @@ class ProcessSpiderInputSpiderWithoutErrback(Spider):
         }
     }
 
-    async def start(self):
+    async def start(self) -> AsyncIterator[Any]:
+        assert self.mockserver
         yield Request(url=self.mockserver.url("/status?n=200"), callback=self.parse)
 
     def parse(self, response):
@@ -97,7 +104,8 @@ class ProcessSpiderInputSpiderWithoutErrback(Spider):
 class ProcessSpiderInputSpiderWithErrback(ProcessSpiderInputSpiderWithoutErrback):
     name = "ProcessSpiderInputSpiderWithErrback"
 
-    async def start(self):
+    async def start(self) -> AsyncIterator[Any]:
+        assert self.mockserver
         yield Request(
             self.mockserver.url("/status?n=200"), self.parse, errback=self.errback
         )
@@ -109,7 +117,7 @@ class ProcessSpiderInputSpiderWithErrback(ProcessSpiderInputSpiderWithoutErrback
 
 # ================================================================================
 # (2) exceptions from a spider callback (generator)
-class GeneratorCallbackSpider(Spider):
+class GeneratorCallbackSpider(MockServerSpider):
     name = "GeneratorCallbackSpider"
     custom_settings = {
         "SPIDER_MIDDLEWARES": {
@@ -117,7 +125,8 @@ class GeneratorCallbackSpider(Spider):
         },
     }
 
-    async def start(self):
+    async def start(self) -> AsyncIterator[Any]:
+        assert self.mockserver
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
@@ -146,7 +155,7 @@ class GeneratorCallbackSpiderMiddlewareRightAfterSpider(GeneratorCallbackSpider)
 
 # ================================================================================
 # (3) exceptions from a spider callback (not a generator)
-class NotGeneratorCallbackSpider(Spider):
+class NotGeneratorCallbackSpider(MockServerSpider):
     name = "NotGeneratorCallbackSpider"
     custom_settings = {
         "SPIDER_MIDDLEWARES": {
@@ -154,7 +163,8 @@ class NotGeneratorCallbackSpider(Spider):
         },
     }
 
-    async def start(self):
+    async def start(self) -> AsyncIterator[Any]:
+        assert self.mockserver
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
@@ -224,7 +234,7 @@ class GeneratorDoNothingAfterRecoveryMiddleware(_GeneratorDoNothingMiddleware):
     pass
 
 
-class GeneratorOutputChainSpider(Spider):
+class GeneratorOutputChainSpider(MockServerSpider):
     name = "GeneratorOutputChainSpider"
     custom_settings = {
         "SPIDER_MIDDLEWARES": {
@@ -235,7 +245,8 @@ class GeneratorOutputChainSpider(Spider):
         },
     }
 
-    async def start(self):
+    async def start(self) -> AsyncIterator[Any]:
+        assert self.mockserver
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
