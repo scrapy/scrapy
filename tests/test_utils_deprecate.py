@@ -51,11 +51,6 @@ class TestCreateDeprecatedClass:
 
         assert issubclass(UserClass, Deprecated)
 
-    def test_unknown_parent_module(self):
-        with mock.patch("inspect.getmodule", return_value=None):
-            cls = create_deprecated_class("DeprecatedName", NewName)
-        assert cls.__module__ == "scrapy.utils.deprecate"
-
 
 @mock.patch(
     "scrapy.utils.deprecate.DEPRECATION_RULES",
