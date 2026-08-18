@@ -40,8 +40,19 @@ Modified requirements
 
     (:gh:`4698`, :gh:`7929`)
 
--   The minimum required ``queuelib`` version is now 1.6.1.
-    (:gh:`7874`)
+-   Increased the minimum versions of the following dependencies:
+
+    - cryptography_: 37.0.0 → 41.0.5
+
+    - pyOpenSSL_: 22.0.0 → 24.3.0
+
+    - queuelib_: 1.4.2 → 1.6.1
+
+    - service_identity_: 23.1.0 → 24.2.0
+
+    - w3lib_: 1.17.0 → 2.1.1
+
+    (:gh:`7841`, :gh:`7874`, :gh:`7879`, :gh:`8001`)
 
 -   The IPython :ref:`shell <topics-shell>` requires IPython 8.15.0 or higher.
     Install the :ref:`ipython extra <extras>` to get a compatible version.
@@ -142,15 +153,28 @@ Backward-incompatible changes
 -   :class:`~scrapy.Selector` and :attr:`TextResponse.selector
     <scrapy.http.TextResponse.selector>` no longer force the ``html`` selector
     type for responses that are neither :class:`~scrapy.http.HtmlResponse` nor
-    :class:`~scrapy.http.XmlResponse` objects, e.g. for a JSON response.
-    ``parsel`` determines the type from the body in those cases instead.
-    (:gh:`5291`, :gh:`6025`, :gh:`7924`)
+    :class:`~scrapy.http.XmlResponse` objects. A
+    :class:`~scrapy.http.JsonResponse` gets the ``json`` type, and for any
+    other response ``parsel`` determines the type from the body.
+
+    The response class, and hence the selector type, comes from the content
+    type that the website reports. When a website reports the wrong content
+    type, recast the response, e.g. ``response.replace(cls=HtmlResponse)``.
+
+    (:gh:`4627`, :gh:`5291`, :gh:`6025`, :gh:`7924`, :gh:`7972`)
 
 -   :ref:`AutoThrottle <topics-autothrottle>` no longer sets the
     ``download_delay`` attribute of the running spider to define the starting
     delay of download slots. The starting delay is still applied, but code
     that reads that attribute at run time no longer sees it.
     (:gh:`7167`, :gh:`7175`, :gh:`7833`)
+
+-   The :command:`check` command now ignores :setting:`ITEM_PIPELINES` and
+    :setting:`FEEDS`, since contracts check the output of callbacks instead of
+    sending it to item processing, so a check run no longer triggers their side
+    effects, e.g. writing an empty output file. Use the ``-s`` command-line
+    option to set them back for a check run.
+    (:gh:`3385`, :gh:`7957`)
 
 -   :class:`~scrapy.spiders.XMLFeedSpider` and
     :class:`~scrapy.spiders.CSVFeedSpider` no longer raise
@@ -347,6 +371,22 @@ New features
     :ref:`custom item exporters <custom-exporters>` to use.
     (:gh:`5706`, :gh:`7931`)
 
+-   Scrapy now writes the session keys of its HTTPS connections to the file
+    that the ``SSLKEYLOGFILE`` environment variable points to, so that traffic
+    analysis tools such as Wireshark can decrypt them. See :ref:`debug-tls`.
+    (:gh:`4368`, :gh:`7948`)
+
+-   Added an :setting:`HTTP2_MAX_FRAME_SIZE` setting, which allows raising the
+    maximum HTTP/2 frame size that servers may send, previously fixed at
+    16384, above which connections failed.
+    (:gh:`5050`, :gh:`7988`)
+
+-   The :command:`crawl`, :command:`parse` and :command:`runspider` commands
+    now warn when :setting:`FEEDS` is set, e.g. through ``-o`` or ``-O``, but
+    the :class:`~scrapy.extensions.feedexport.FeedExporter` extension is
+    disabled, so that no item is exported.
+    (:gh:`5970`, :gh:`7902`)
+
 -   Log formatters (:setting:`LOG_FORMATTER`), item processors
     (:setting:`ITEM_PROCESSOR`) and :ref:`robots.txt parsers
     <topics-dlmw-robots>` (:setting:`ROBOTSTXT_PARSER`) are now built as
@@ -473,6 +513,38 @@ Bug fixes
     ``canonicalize`` is ``True``.
     (:gh:`7961`)
 
+-   Items yielded from :meth:`Spider.start() <scrapy.Spider.start>` now keep
+    the spider busy until the :ref:`item pipelines <topics-item-pipeline>` are
+    done with them, so that a spider that only yields items from
+    :meth:`~scrapy.Spider.start` no longer closes before processing them.
+    (:gh:`7029`, :gh:`7891`)
+
+-   :func:`~scrapy.utils.response.open_in_browser` now also adds its ``base``
+    tag to HTML responses that have no ``head`` element, and it now overrides a
+    ``base`` tag already present in the response, so that relative URLs resolve
+    against the response URL in every case.
+    (:gh:`6550`, :gh:`7879`)
+
+-   :meth:`Spider.start() <scrapy.Spider.start>` implementations that are not
+    asynchronous generators now raise :exc:`TypeError` with a message that says
+    so, instead of failing in a way that does not point at the cause.
+    (:gh:`5426`, :gh:`7946`)
+
+-   The :command:`check`, :command:`fetch` and :command:`parse` commands now
+    return the exit code 1 when a component fails to initialize, as
+    :command:`crawl` and :command:`runspider` already did.
+    (:gh:`4292`, :gh:`7920`)
+
+-   :class:`HttpCompressionMiddleware
+    <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>`
+    no longer hangs on a ``deflate`` response body followed by extra bytes.
+    (:gh:`7841`)
+
+-   :func:`scrapy.utils.python.get_func_args` now reports the parameters that a
+    :class:`functools.partial` object binds by position, instead of an empty
+    list.
+    (:gh:`7841`)
+
 -   Fixed :exc:`NameError` exceptions on Python 3.14, where :pep:`649` made
     annotation evaluation lazy, when inspecting the signature of a callable
     with annotations imported only for type checking.
@@ -529,6 +601,15 @@ Documentation
     :gh:`7889`,
     :gh:`7909`,
     :gh:`7931`)
+
+-   Added an :ref:`inspecting live traffic <debug-live-traffic>` section to the
+    debugging page, covering Wireshark and mitmproxy.
+    (:gh:`5222`, :gh:`8007`)
+
+-   Documented how :class:`~scrapy.http.TextResponse` resolves the response
+    encoding, and how to resolve it differently, e.g. to give the encoding
+    declared in the response body precedence over the ``Content-Type`` header.
+    (:gh:`4933`, :gh:`7977`)
 
 -   Documented the :ref:`memory use of response parsing
     <security-response-size>` and the :ref:`parser limits
@@ -618,6 +699,7 @@ Quality assurance
     :gh:`6478`,
     :gh:`6794`,
     :gh:`7437`,
+    :gh:`7702`,
     :gh:`7720`,
     :gh:`7724`,
     :gh:`7727`,
@@ -639,19 +721,29 @@ Quality assurance
     :gh:`7834`,
     :gh:`7836`,
     :gh:`7838`,
+    :gh:`7841`,
     :gh:`7844`,
     :gh:`7848`,
     :gh:`7853`,
+    :gh:`7854`,
     :gh:`7857`,
+    :gh:`7859`,
     :gh:`7863`,
     :gh:`7895`,
     :gh:`7906`,
     :gh:`7928`,
     :gh:`7935`,
     :gh:`7966`,
+    :gh:`7968`,
     :gh:`7974`,
     :gh:`7979`,
-    :gh:`7985`)
+    :gh:`7985`,
+    :gh:`7990`,
+    :gh:`7993`,
+    :gh:`7995`,
+    :gh:`8000`,
+    :gh:`8001`,
+    :gh:`8002`)
 
 .. _release-2.17.0:
 
