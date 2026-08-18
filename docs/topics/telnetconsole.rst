@@ -1,4 +1,4 @@
-.. currentmodule:: scrapy.extensions.telnet
+.. module:: scrapy.extensions.telnet
 
 .. _topics-telnetconsole:
 

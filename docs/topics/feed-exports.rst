@@ -442,8 +442,6 @@ These are the settings used for configuring the feed exports:
 -   :setting:`FEED_EXPORTERS`
 -   :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
 
-.. currentmodule:: scrapy.extensions.feedexport
-
 .. setting:: FEEDS
 
 FEEDS
@@ -766,7 +764,7 @@ feed URI.
 
 The function signature should be as follows:
 
-.. function:: uri_params(params, spider)
+.. function:: scrapy.extensions.feedexport.uri_params(params, spider)
 
    Return a :class:`dict` of key-value pairs to apply to the feed URI using
    :ref:`printf-style string formatting <python:old-string-formatting>`.
