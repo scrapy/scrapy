@@ -5,12 +5,12 @@ import json
 import logging
 import os
 import re
+import socket
 import sys
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from ipaddress import IPv4Address
-from socket import gethostbyname
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from urllib.parse import urlparse
 
@@ -35,9 +35,10 @@ from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.reactor import is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests import NON_EXISTING_RESOLVABLE
+from tests import IDNA_REJECTED_HOSTNAMES, NON_EXISTING_RESOLVABLE
 from tests.mockserver.mitm_proxy import wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.simple_https import SimpleMockServer
@@ -53,6 +54,7 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
+    from pathlib import Path
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
@@ -66,6 +68,9 @@ class TestHttpBase(ABC):
     http2: bool = False
     # whether the handler supports per-request bindaddress
     handler_supports_bindaddress_meta: bool = True
+    # whether the handler can request hostnames that the idna package rejects
+    # (see IDNA_REJECTED_HOSTNAMES)
+    handler_supports_idna_rejected_hostnames: bool = True
     # What the handler does with a bad response header line, e.g. one with no
     # colon in it:
     # "skip-bad": the bad line is skipped and the header lines that follow it
@@ -398,6 +403,49 @@ class TestHttpBase(ABC):
             assert request.headers.get("Host") == host_port.encode()
         else:
             assert not request.headers
+
+    @pytest.fixture
+    def resolve_to_loopback(self, monkeypatch: pytest.MonkeyPatch) -> Generator[None]:
+        """Resolve every hostname to 127.0.0.1 for the duration of a test."""
+        real_getaddrinfo = socket.getaddrinfo
+
+        def getaddrinfo(host, port, *args, **kwargs):
+            return real_getaddrinfo("127.0.0.1", port, *args, **kwargs)
+
+        # httpx goes through anyio and asyncio, which look socket.getaddrinfo
+        # up when resolving.
+        monkeypatch.setattr(socket, "getaddrinfo", getaddrinfo)
+        previous = None
+        if is_reactor_installed():
+            # Twisted resolves through a GAIResolver that bound
+            # socket.getaddrinfo at import time, so it needs its own instance.
+            from twisted.internet import reactor
+            from twisted.internet._resolver import GAIResolver  # noqa: PLC0415
+
+            previous = reactor.installNameResolver(
+                GAIResolver(reactor, getaddrinfo=getaddrinfo)
+            )
+        try:
+            yield
+        finally:
+            if previous is not None:
+                reactor.installNameResolver(previous)
+
+    @pytest.mark.parametrize("hostname", IDNA_REJECTED_HOSTNAMES)
+    @coroutine_test
+    async def test_idna_rejected_hostname(
+        self, hostname: str, mockserver: MockServer, resolve_to_loopback: None
+    ) -> None:
+        """Hostnames that the idna package rejects, such as punycode emoji
+        domains or domains with underscores, should still be downloadable."""
+        if not self.handler_supports_idna_rejected_hostnames:
+            pytest.skip("This handler cannot request IDNA-rejected hostnames")
+        scheme = "https" if self.is_secure else "http"
+        port = mockserver.port(is_secure=self.is_secure)
+        request = Request(f"{scheme}://{hostname}:{port}/text")
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
 
     @coroutine_test
     async def test_content_length_zero_bodyless_post_request_headers(
@@ -953,6 +1001,44 @@ class TestHttpsBase(TestHttpBase):
         assert self.tls_log_message in caplog.text
 
     @coroutine_test
+    async def test_keylog(
+        self,
+        mockserver: MockServer,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        # The stdlib writes a comment line at the top of the file.
+        lines = [
+            line
+            for line in keylog_file.read_text().splitlines()
+            if not line.startswith("#")
+        ]
+        assert lines
+        assert all(len(line.split()) == 3 for line in lines)
+
+    @coroutine_test
+    async def test_keylog_unwritable(
+        self,
+        mockserver: MockServer,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        monkeypatch.setenv("SSLKEYLOGFILE", str(tmp_path / "missing" / "keylog"))
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        with caplog.at_level("WARNING"):
+            async with self.get_dh() as download_handler:
+                response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        assert "Cannot write TLS session keys" in caplog.text
+
+    @coroutine_test
     async def test_verify_certs_deprecated(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
         with (  # noqa: PT031
@@ -1276,7 +1362,7 @@ class TestHttpWithCrawlerBase(ABC):
         assert isinstance(crawler.spider, SingleRequestSpider)
         ip_address = crawler.spider.meta["responses"][0].ip_address
         assert isinstance(ip_address, IPv4Address)
-        assert str(ip_address) == gethostbyname(expected_netloc)
+        assert str(ip_address) == socket.gethostbyname(expected_netloc)
 
     @coroutine_test
     async def test_bytes_received_stop_download_callback(

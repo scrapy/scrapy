@@ -38,6 +38,7 @@ from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IRe
 from zope.interface import implementer
 
 from scrapy import Request, signals
+from scrapy.core.downloader._idna_patch import _install_twisted_idna_fallbacks
 from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
 from scrapy.exceptions import (
     DownloadCancelledError,
@@ -94,6 +95,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
             raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
+        _install_twisted_idna_fallbacks()
         super().__init__(crawler)
         self._crawler = crawler
 
