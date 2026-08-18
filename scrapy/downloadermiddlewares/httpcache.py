@@ -139,6 +139,7 @@ class HttpCacheMiddleware:
 
         if self.policy.is_cached_response_valid(cachedresponse, response, request):
             self.stats.inc_value("httpcache/revalidate")
+            self._cache_response(cachedresponse, request)
             return cachedresponse
 
         self.stats.inc_value("httpcache/invalidate")

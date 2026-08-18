@@ -7,6 +7,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -16,7 +17,9 @@ from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.extensions.httpcache import DummyPolicy
 from scrapy.http import HtmlResponse, Request, Response
+from scrapy.settings import Settings
 from scrapy.spiders import Spider
+from scrapy.statscollectors import MemoryStatsCollector
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
@@ -32,6 +35,61 @@ class AlwaysStalePolicy(DummyPolicy):
 
     def is_cached_response_fresh(self, cachedresponse, request):
         return False
+
+
+def test_rfc2616_revalidation_refreshes_cached_response():
+    settings = Settings(
+        {
+            "HTTPCACHE_ENABLED": True,
+            "HTTPCACHE_POLICY": "scrapy.extensions.httpcache.RFC2616Policy",
+            "HTTPCACHE_STORAGE": "scrapy.extensions.httpcache.FilesystemCacheStorage",
+        }
+    )
+    crawler = SimpleNamespace(settings=settings, spider=object())
+    middleware = HttpCacheMiddleware(settings, MemoryStatsCollector(crawler))
+    storage = SimpleNamespace(response=None)
+
+    def retrieve_response(spider, request):
+        return storage.response.copy() if storage.response else None
+
+    def store_response(spider, request, response):
+        storage.response = response.copy()
+
+    middleware.storage = SimpleNamespace(
+        retrieve_response=retrieve_response,
+        store_response=store_response,
+    )
+    middleware.crawler = crawler
+
+    request = Request("http://example.com")
+    cached_response = Response(
+        request.url,
+        headers={
+            "Cache-Control": "max-age=60",
+            "Date": "Wed, 01 Jan 2020 00:00:00 GMT",
+            "ETag": '"v1"',
+        },
+        body=b"cached",
+    )
+    assert middleware.process_response(request, cached_response) is cached_response
+
+    revalidation_request = request.replace(headers={"Cache-Control": "max-age=0"})
+    assert middleware.process_request(revalidation_request) is None
+    revalidated_response = Response(
+        request.url,
+        status=304,
+        headers={
+            "Cache-Control": "max-age=3600",
+            "Date": email.utils.formatdate(),
+            "ETag": '"v1"',
+        },
+    )
+    response = middleware.process_response(revalidation_request, revalidated_response)
+    assert response.status == 200
+    assert response.body == b"cached"
+    assert response.headers["Cache-Control"] == b"max-age=3600"
+
+    assert middleware.process_request(request) is not None
 
 
 class TestBase:

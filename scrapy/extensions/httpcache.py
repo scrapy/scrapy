@@ -170,7 +170,20 @@ class RFC2616Policy:
                 return True
 
         # Use the cached response if the server says it hasn't changed.
-        return response.status == 304
+        if response.status == 304:
+            cachedresponse.headers.update(response.headers)
+            warnings = [
+                warning
+                for warning in cachedresponse.headers.getlist(b"Warning")
+                if not warning.lstrip().startswith(b"1")
+            ]
+            if warnings:
+                cachedresponse.headers.setlist(b"Warning", warnings)
+            elif b"Warning" in cachedresponse.headers:
+                del cachedresponse.headers[b"Warning"]
+            return True
+
+        return False
 
     def _set_conditional_validators(
         self, request: Request, cachedresponse: Response
