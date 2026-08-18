@@ -14,10 +14,15 @@ from pexpect.popen_spawn import PopenSpawn
 
 from scrapy.utils.asyncio import sleep
 from tests.utils import get_script_run_env
+from tests.utils.cmdline import stop_spawn
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
+
+# Guards against a hung subprocess. Generous, because starting a script is
+# slow on PyPy, slower still with coverage measurement on.
+SCRIPT_TIMEOUT = 60
 
 
 class ScriptRunnerMixin(ABC):
@@ -216,17 +221,13 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     ) -> None:
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
         args = self.get_script_args(script, "3", *extra_args)
-        p = PopenSpawn(args, timeout=5, env=get_script_run_env())
+        p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
         p.expect_exact("Spider closed (shutdown)")
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
 
     def test_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful()
@@ -234,7 +235,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     async def _test_shutdown_forced(self, script: str = "sleeping.py") -> None:
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
         args = self.get_script_args(script, "10")
-        p = PopenSpawn(args, timeout=5, env=get_script_run_env())
+        p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
@@ -246,11 +247,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         await sleep(0.01)
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown", timeout=20)
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
 
     @coroutine_test
     async def test_shutdown_forced(self) -> None:
