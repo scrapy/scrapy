@@ -37,6 +37,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times: dict[str, list[float]] = {}
 
     async def start(self):
+        assert self.mockserver
         slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
@@ -44,6 +45,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
             yield Request(url, callback=self.parse, meta={"download_slot": slot})
 
     def parse(self, response):
+        assert self.mockserver
         slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
@@ -73,7 +75,7 @@ def test_delay(mockserver: MockServer):
 
 @coroutine_test
 async def test_params():
-    params = {
+    params: dict[str, Any] = {
         "concurrency": 1,
         "delay": 2,
         "randomize_delay": False,

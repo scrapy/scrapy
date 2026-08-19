@@ -113,26 +113,6 @@ module = "tests.*"
 allow_untyped_defs = true
 allow_incomplete_defs = true # 59 errors
 
-# TODO
-[[tool.mypy.overrides]]
-module = [
-    "tests.test_cmdline",
-    "tests.test_downloaderslotssettings",
-    "tests.test_dupefilters",
-    "tests.test_extension_statsmailer",
-    "tests.test_extension_throttle",
-    "tests.test_linkextractors",
-    "tests.test_logformatter",
-    "tests.test_mail",
-    "tests.test_pqueues",
-    "tests.test_scheduler_base",
-    "tests.test_settings",
-    "tests.test_squeues",
-    "tests.test_squeues_request",
-    "tests.test_stats",
-]
-check_untyped_defs = false
-
 # Interface classes are hard to support
 [[tool.mypy.overrides]]
 module = "twisted.internet.interfaces"
