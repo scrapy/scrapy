@@ -29,7 +29,11 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
-from tests.utils.cloud import mock_google_cloud_storage
+from tests.utils.cloud import (
+    mock_google_cloud_storage,
+    mock_google_cloud_storage_blob,
+    mock_google_cloud_storage_blobs,
+)
 from tests.utils.decorators import coroutine_test
 
 
@@ -516,6 +520,9 @@ class TestS3FeedStorage:
 
 
 class TestGCSFeedStorage:
+    APPEND_UUID_HEX = "1a2b3c"
+    TEMP_BLOB_NAME = f"export.csv.scrapy-append-{APPEND_UUID_HEX}"
+
     def test_parse_settings(self):
         pytest.importorskip("google.cloud.storage")
 
@@ -592,20 +599,129 @@ class TestGCSFeedStorage:
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
             f.close.assert_called_once_with()
 
-    def test_overwrite_default(self, caplog: pytest.LogCaptureFixture):
-        with caplog.at_level(logging.DEBUG):
-            GCSFeedStorage("gs://mybucket/export.csv", "myproject-123", "custom-acl")
-        assert "GCS does not support appending to files" not in caplog.text
+    @pytest.fixture
+    def append_mocks(self):
+        """Mock the google-cloud-storage classes and the object name suffix
+        used when appending.
 
-    def test_overwrite_false(self, caplog: pytest.LogCaptureFixture):
-        with caplog.at_level(logging.DEBUG):
-            GCSFeedStorage(
-                "gs://mybucket/export.csv",
-                "myproject-123",
-                "custom-acl",
-                feed_options={"overwrite": False},
-            )
-        assert "GCS does not support appending to files" in caplog.text
+        Yields the Bucket mock and a dict of Blob mocks by object name, which
+        may be pre-populated to configure the Blob mock of a given object.
+        """
+        pytest.importorskip("google.cloud.storage")
+
+        (client_mock, bucket_mock, blob_mocks) = mock_google_cloud_storage_blobs()
+        with (
+            mock.patch("google.cloud.storage.Client", return_value=client_mock),
+            mock.patch("scrapy.extensions.feedexport.uuid4") as uuid4_mock,
+        ):
+            uuid4_mock.return_value.hex = self.APPEND_UUID_HEX
+            yield bucket_mock, blob_mocks
+
+    @staticmethod
+    def _append(file: Any, acl: str | None = "publicRead") -> Any:
+        storage = GCSFeedStorage(
+            "gs://mybucket/export.csv",
+            "myproject-123",
+            acl,
+            feed_options={"overwrite": False},
+        )
+        return maybe_deferred_to_future(storage.store(file))
+
+    @coroutine_test
+    async def test_append_to_missing_object(self, append_mocks):
+        bucket_mock, blob_mocks = append_mocks
+        f = mock.Mock()
+
+        await self._append(f)
+
+        bucket_mock.get_blob.assert_called_once_with("export.csv")
+        assert set(blob_mocks) == {"export.csv"}
+        blob_mock = blob_mocks["export.csv"]
+        blob_mock.upload_from_file.assert_called_once_with(
+            f, predefined_acl="publicRead"
+        )
+        blob_mock.compose.assert_not_called()
+        f.seek.assert_called_once_with(0)
+        f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_append_to_existing_object(self, append_mocks):
+        bucket_mock, blob_mocks = append_mocks
+        old_blob_mock = mock_google_cloud_storage_blob(
+            name="export.csv", content_type="text/csv", storage_class="NEARLINE"
+        )
+        bucket_mock.get_blob.return_value = old_blob_mock
+        f = mock.Mock()
+
+        await self._append(f)
+
+        # The new data is uploaded as a temporary object, which must have the
+        # storage class of the existing object to be composable with it.
+        new_blob_mock = blob_mocks[self.TEMP_BLOB_NAME]
+        new_blob_mock.upload_from_file.assert_called_once_with(f)
+        assert new_blob_mock.storage_class == "NEARLINE"
+        # Both objects are then composed into the target object, preserving its
+        # content type and applying the ACL, which composition does not support.
+        blob_mock = blob_mocks["export.csv"]
+        blob_mock.compose.assert_called_once_with([old_blob_mock, new_blob_mock])
+        assert blob_mock.content_type == "text/csv"
+        blob_mock.acl.save_predefined.assert_called_once_with("publicRead")
+        blob_mock.upload_from_file.assert_not_called()
+        # And the temporary object is removed.
+        new_blob_mock.delete.assert_called_once_with()
+        f.seek.assert_called_once_with(0)
+        f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_append_without_acl(self, append_mocks):
+        bucket_mock, blob_mocks = append_mocks
+        bucket_mock.get_blob.return_value = mock_google_cloud_storage_blob(
+            name="export.csv", content_type="text/csv", storage_class="STANDARD"
+        )
+
+        await self._append(mock.Mock(), acl=None)
+
+        blob_mock = blob_mocks["export.csv"]
+        blob_mock.compose.assert_called_once()
+        blob_mock.acl.save_predefined.assert_not_called()
+
+    @coroutine_test
+    async def test_append_deletes_temporary_object_on_compose_error(self, append_mocks):
+        bucket_mock, blob_mocks = append_mocks
+        bucket_mock.get_blob.return_value = mock_google_cloud_storage_blob(
+            name="export.csv", content_type="text/csv", storage_class="STANDARD"
+        )
+        blob_mocks["export.csv"] = mock_google_cloud_storage_blob(name="export.csv")
+        blob_mocks["export.csv"].compose.side_effect = OSError("Compose failed")
+        f = mock.Mock()
+
+        with pytest.raises(OSError, match="Compose failed"):
+            await self._append(f)
+
+        blob_mocks[self.TEMP_BLOB_NAME].delete.assert_called_once_with()
+        f.close.assert_called_once_with()
+
+    @coroutine_test
+    async def test_append_logs_temporary_object_deletion_error(
+        self, append_mocks, caplog: pytest.LogCaptureFixture
+    ):
+        bucket_mock, blob_mocks = append_mocks
+        bucket_mock.get_blob.return_value = mock_google_cloud_storage_blob(
+            name="export.csv", content_type="text/csv", storage_class="STANDARD"
+        )
+        blob_mocks[self.TEMP_BLOB_NAME] = mock_google_cloud_storage_blob(
+            name=self.TEMP_BLOB_NAME
+        )
+        blob_mocks[self.TEMP_BLOB_NAME].delete.side_effect = OSError("Delete failed")
+
+        with caplog.at_level(logging.WARNING):
+            await self._append(mock.Mock())
+
+        blob_mocks["export.csv"].compose.assert_called_once()
+        assert (
+            f"Could not delete the temporary object gs://mybucket/{self.TEMP_BLOB_NAME}"
+            in caplog.text
+        )
 
 
 class TestStdoutFeedStorage:

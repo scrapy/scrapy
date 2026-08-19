@@ -19,6 +19,7 @@ from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
+from uuid import uuid4
 
 from twisted.internet.defer import Deferred, DeferredList
 from w3lib.url import file_uri_to_path
@@ -37,6 +38,7 @@ from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     from _typeshed import OpenBinaryMode
+    from google.cloud.storage import Blob, Bucket
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -311,13 +313,7 @@ class GCSFeedStorage(BlockingFeedStorage):
         assert u.hostname
         self.bucket_name: str = u.hostname
         self.blob_name: str = u.path[1:]  # remove first "/"
-
-        if feed_options and feed_options.get("overwrite", True) is False:
-            logger.warning(
-                "GCS does not support appending to files. To "
-                "suppress this warning, remove the overwrite "
-                "option from your FEEDS setting or set it to True."
-            )
+        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
     @classmethod
     def from_crawler(
@@ -341,10 +337,44 @@ class GCSFeedStorage(BlockingFeedStorage):
 
             client = Client(project=self.project_id)
             bucket = client.bucket(self.bucket_name)
-            blob = bucket.blob(self.blob_name)
-            blob.upload_from_file(file, predefined_acl=self.acl)
+            old_blob = None if self.overwrite else bucket.get_blob(self.blob_name)
+            if old_blob is None:
+                blob = bucket.blob(self.blob_name)
+                blob.upload_from_file(file, predefined_acl=self.acl)
+            else:
+                self._append_in_thread(bucket, old_blob, file)
         finally:
             file.close()
+
+    def _append_in_thread(
+        self, bucket: Bucket, old_blob: Blob, file: IO[bytes]
+    ) -> None:
+        # Objects cannot be modified, so the new data is uploaded as a separate,
+        # temporary object, which is then concatenated with the existing object
+        # into a composite object:
+        # https://docs.cloud.google.com/storage/docs/composite-objects
+        new_blob = bucket.blob(f"{self.blob_name}.scrapy-append-{uuid4().hex}")
+        # Composition sources must share the storage class of the destination.
+        new_blob.storage_class = old_blob.storage_class
+        new_blob.upload_from_file(file)
+        try:
+            blob = bucket.blob(self.blob_name)
+            if old_blob.content_type:
+                blob.content_type = old_blob.content_type
+            blob.compose([old_blob, new_blob])
+            if self.acl:
+                # Composition does not support predefined ACLs.
+                blob.acl.save_predefined(self.acl)
+        finally:
+            try:
+                new_blob.delete()
+            except Exception:
+                logger.warning(
+                    "Could not delete the temporary object gs://%s/%s.",
+                    self.bucket_name,
+                    new_blob.name,
+                    exc_info=True,
+                )
 
 
 class FTPFeedStorage(BlockingFeedStorage):

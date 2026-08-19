@@ -290,6 +290,29 @@ storage backend is: ``True``.
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
      previous version of your data.
 
+.. versionchanged:: VERSION
+   Setting ``overwrite`` to ``False`` appends to the target object. It was
+   previously ignored, with a warning.
+
+Since objects cannot be modified, appending uploads the new data as a separate,
+temporary object of the target bucket, composes it with the target object into
+a `composite object`_, and then deletes it. Mind that:
+
+-   Appending requires permission to read, create and delete objects, while
+    overwriting only requires permission to create them.
+
+-   Composite objects have no MD5 hash.
+
+-   Appending takes several API calls, so it is not atomic. If one of them
+    fails, the temporary object may be left behind.
+
+-   In buckets with `object versioning`_ or `soft delete`_ enabled, appending
+    creates additional object versions, which may increase storage costs.
+
+.. _composite object: https://docs.cloud.google.com/storage/docs/composite-objects
+.. _object versioning: https://docs.cloud.google.com/storage/docs/object-versioning
+.. _soft delete: https://docs.cloud.google.com/storage/docs/soft-delete
+
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
 
@@ -536,7 +559,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-s3`: ``True`` (appending is not supported)
 
-    -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
+    -   :ref:`topics-feed-storage-gcs`: ``True``
 
     -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
 
