@@ -359,7 +359,7 @@ class TestRequestBackout:
             state lasts a measurable amount of wall-clock time, which keeps the
             request_backout_seconds/concurrency stat reliably above 0."""
 
-            def process_request(self, request, spider):
+            def process_request(self, request):
                 from twisted.internet import reactor
 
                 d: Deferred[None] = Deferred()
@@ -423,7 +423,7 @@ class TestRequestBackout:
     async def test_response_size_process_request(self):
 
         class DownloaderMiddleware:
-            def process_request(self, request, spider):
+            def process_request(self, request):
                 return Response("https://example.com", body=b"a")
 
         class TestSpider(Spider):
@@ -490,7 +490,7 @@ class TestRequestBackout:
     async def test_response_size_process_response(self):
 
         class DownloaderMiddleware:
-            def process_response(self, request, response, spider):
+            def process_response(self, request, response):
                 return Response("https://example.com", body=b"a")
 
         class TestSpider(Spider):
@@ -521,11 +521,11 @@ class TestRequestBackout:
     async def test_response_size_process_exception(self):
 
         class DownloaderMiddleware1:
-            def process_exception(self, request, exception, spider):
+            def process_exception(self, request, exception):
                 return Response("https://example.com", body=b"a")
 
         class DownloaderMiddleware2:
-            def process_request(self, request, spider):
+            def process_request(self, request):
                 raise ValueError
 
         class TestSpider(Spider):
@@ -564,7 +564,7 @@ class TestRequestBackout:
             """Item pipeline that returns a non-instant deferred, to force
             need_backout calls to happen at that point."""
 
-            def process_item(self, item, spider):
+            def process_item(self, item):
                 from twisted.internet import reactor
 
                 d: Deferred[dict[Any, Any]] = Deferred()
@@ -581,7 +581,7 @@ class TestRequestBackout:
 
             async def parse(self, response):
                 assert self.crawler.engine
-                response = await self.crawler.engine.download(Request("data:,a"))
+                response = await self.crawler.engine.download_async(Request("data:,a"))
                 yield {"response": response}
 
         crawler = get_crawler(TestSpider)
