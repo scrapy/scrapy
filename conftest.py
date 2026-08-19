@@ -111,11 +111,12 @@ def reactor_pytest(request) -> str:
 
 
 def pytest_configure(config):
-    if config.getoption("--reactor") == "asyncio":
-        # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
-        # If we decide to run tests with both, we will need to add a new option and check it here.
+    if config.getoption("--reactor") in {"asyncio", "none"}:
+        # Needed on Windows to switch from proactor to selector, which supports
+        # add_reader/add_writer (required by the Twisted asyncio reactor, and by
+        # tests that register their own readers) and is what Twisted expects.
         set_asyncio_event_loop_policy()
-    elif config.getoption("--reactor") == "none":
+    if config.getoption("--reactor") == "none":
         install_reactor_import_hook()
 
 
