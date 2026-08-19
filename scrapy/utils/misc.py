@@ -107,7 +107,7 @@ def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     >>> list(gen)
     Traceback (most recent call last):
         ...
-    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'
+    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'...
     """
 
     mod = import_module(path)
