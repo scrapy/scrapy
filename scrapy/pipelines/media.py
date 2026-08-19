@@ -18,7 +18,7 @@ from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io_async,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
@@ -176,7 +176,7 @@ class MediaPipeline(ABC):
 
         # Return cached result if request was already seen
         if fp in info.downloaded:
-            await _defer_sleep_async()
+            await _process_pending_io_async()
             cached_result = info.downloaded[fp]
             if isinstance(cached_result, Failure):
                 if eb:
@@ -196,7 +196,7 @@ class MediaPipeline(ABC):
 
         # Download request checking media_to_download hook output first
         info.downloading.add(fp)
-        await _defer_sleep_async()
+        await _process_pending_io_async()
         result: FileInfo | Failure
         try:
             file_info: FileInfo | None = await ensure_awaitable(
@@ -212,7 +212,7 @@ class MediaPipeline(ABC):
             result = Failure()
             if not _media_request_filtered(result):
                 logger.exception(result)
-        await _defer_sleep_async()
+        await _process_pending_io_async()
         self._cache_result_and_execute_waiters(result, fp, info)
         return await maybe_deferred_to_future(wad)  # it must return wad at last
 

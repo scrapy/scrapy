@@ -23,7 +23,7 @@ from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io_async,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
@@ -224,7 +224,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             ait = it if isinstance(it, AsyncIterator) else as_async_generator(it)
             return await self._process_callback_output(response, ait)
         except Exception as ex:
-            await _defer_sleep_async()
+            await _process_pending_io_async()
             return self._process_spider_exception(response, ex)
 
     async def process_start(

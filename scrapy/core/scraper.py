@@ -24,7 +24,7 @@ from scrapy.http import Request, Response
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io_async,
     _schedule_coro,
     aiter_errback,
     deferred_from_coro,
@@ -312,7 +312,7 @@ class Scraper:
 
         .. versionadded:: 2.13
         """
-        await _defer_sleep_async()
+        await _process_pending_io_async()
         assert self.crawler.spider
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:

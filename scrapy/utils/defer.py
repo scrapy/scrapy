@@ -86,8 +86,8 @@ def defer_succeed(result: _T) -> Deferred[_T]:  # pragma: no cover
     return d
 
 
-async def _defer_sleep_async() -> None:
-    """Yield control until the reactor has gone through its readers and writers.
+async def _process_pending_io_async() -> None:
+    """Yield control until the event loop has gone through its readers and writers.
 
     Yielding twice is what makes that guarantee: the first yield can resume
     before the callbacks of the file descriptors that the poll found ready, and

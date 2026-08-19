@@ -15,7 +15,7 @@ from zope.interface import implementer
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io_async,
     aiter_errback,
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -191,7 +191,7 @@ class _ReadTracker:
 
 
 @coroutine_test
-async def test_defer_sleep_async() -> None:
+async def test_process_pending_io_async() -> None:
     # The wait runs from a read callback, which is where Scrapy's own waits
     # happen, since what precedes them is a response arriving over a socket. It
     # is also the strictest place to wait from: the event loop polled right
@@ -201,7 +201,7 @@ async def test_defer_sleep_async() -> None:
 
     async def check() -> None:
         with _ReadTracker() as tracker:
-            await _defer_sleep_async()
+            await _process_pending_io_async()
             done.callback(tracker.reads)
 
     def start() -> None:
