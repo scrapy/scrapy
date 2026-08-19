@@ -104,7 +104,7 @@ def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     >>> list(walk_modules_iter('scrapy.utils'))
     [<module 'scrapy.utils' from '...'>, ...]
     >>> gen = walk_modules_iter('scrapy.utils.nonexistent') # error not raised until the generator is consumed
-    >>> list(gen)  # doctest: +ELLIPSIS
+    >>> list(gen)
     Traceback (most recent call last):
         ...
     ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'...
