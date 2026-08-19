@@ -22,7 +22,7 @@ from scrapy.utils.asyncio import (
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
-    _process_pending_io_async,
+    _process_pending_io,
     _schedule_coro,
     deferred_from_coro,
     maybe_deferred_to_future,
@@ -219,7 +219,7 @@ class Downloader:
             )
             return response
         except Exception:
-            await _process_pending_io_async()
+            await _process_pending_io()
             raise
         finally:
             # 3. After response arrives, remove the request from transferring

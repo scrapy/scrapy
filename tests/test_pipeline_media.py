@@ -17,7 +17,7 @@ from scrapy.pipelines.media import (
     MediaPipeline,
     _MediaRequestFiltered,
 )
-from scrapy.utils.defer import _process_pending_io_async
+from scrapy.utils.defer import _process_pending_io
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.signal import disconnect_all
@@ -443,7 +443,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         rsp1 = Response("http://url")
 
         async def rsp1_func():
-            await _process_pending_io_async()
+            await _process_pending_io()
             _check_downloading(rsp1)
 
         async def rsp2_func():
