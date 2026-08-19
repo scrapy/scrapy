@@ -2,15 +2,20 @@ from __future__ import annotations
 
 import asyncio
 import random
+import socket
 import warnings
 from asyncio import Future
 from typing import TYPE_CHECKING, Any
 
 import pytest
 from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.interfaces import IReadDescriptor
+from zope.interface import implementer
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
+from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
+    _defer_sleep_async,
     aiter_errback,
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -27,6 +32,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 
     from twisted.python.failure import Failure
+    from typing_extensions import Self
 
 
 @pytest.mark.requires_reactor  # mustbe_deferred() requires a reactor
@@ -129,6 +135,81 @@ class TestAsyncDefTestsuite:
     @coroutine_test
     async def test_coroutine_test_xfail(self):
         raise RuntimeError("This is expected to be raised")
+
+
+@implementer(IReadDescriptor)
+class _ReadTracker:
+    """Socket that the event loop finds readable, counting how often it reads it.
+
+    Entering the context manager registers the socket and makes it readable,
+    from the next poll of the event loop on, so that a non-zero *reads* means
+    that the loop has polled its file descriptors since then. *on_read*, if
+    given, is called on every read.
+    """
+
+    def __init__(self, on_read: Callable[[], None] | None = None) -> None:
+        self._on_read = on_read
+        self._rx, self._tx = socket.socketpair()
+        self.reads = 0
+
+    def _read(self) -> None:
+        self.reads += 1
+        self._rx.recv(1)
+        if self._on_read is not None:
+            self._on_read()
+
+    def fileno(self) -> int:
+        return self._rx.fileno()
+
+    doRead = _read
+
+    def connectionLost(self, reason: Failure) -> None:
+        pass
+
+    def logPrefix(self) -> str:
+        return "read-tracker"
+
+    def __enter__(self) -> Self:
+        if is_asyncio_available():
+            asyncio.get_event_loop().add_reader(self._rx, self._read)
+        else:
+            from twisted.internet import reactor
+
+            reactor.addReader(self)
+        self._tx.send(b"x")
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        if is_asyncio_available():
+            asyncio.get_event_loop().remove_reader(self._rx)
+        else:
+            from twisted.internet import reactor
+
+            reactor.removeReader(self)
+        self._rx.close()
+        self._tx.close()
+
+
+@coroutine_test
+async def test_defer_sleep_async() -> None:
+    # The wait runs from a read callback, which is where Scrapy's own waits
+    # happen, since what precedes them is a response arriving over a socket. It
+    # is also the strictest place to wait from: the event loop polled right
+    # before calling us, so only another poll can read the socket that check()
+    # registers.
+    done: Deferred[int] = Deferred()
+
+    async def check() -> None:
+        with _ReadTracker() as tracker:
+            await _defer_sleep_async()
+            done.callback(tracker.reads)
+
+    def start() -> None:
+        deferred_from_coro(check()).addErrback(done.errback)
+
+    with _ReadTracker(on_read=start):
+        reads = await maybe_deferred_to_future(done)
+    assert reads
 
 
 @pytest.mark.requires_reactor  # parallel_async() requires a reactor

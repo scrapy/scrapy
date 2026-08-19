@@ -87,10 +87,14 @@ def defer_succeed(result: _T) -> Deferred[_T]:  # pragma: no cover
 
 
 async def _defer_sleep_async() -> None:
-    """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
-    before attending pending delayed calls, so do not set delay to zero.
+    """Yield control until the reactor has gone through its readers and writers.
+
+    Yielding twice is what makes that guarantee: the first yield can resume
+    before the callbacks of the file descriptors that the poll found ready, and
+    only the second one is certain to resume after them.
     """
-    await sleep(_DEFER_DELAY)
+    await sleep(0)
+    await sleep(0)
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover
