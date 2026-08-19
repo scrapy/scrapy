@@ -73,6 +73,16 @@ the project settings. Here is an example:
     [settings]
     default = myproject.settings
 
+.. _find-projects:
+
+Finding projects
+----------------
+
+To find the Scrapy projects in a directory tree, e.g. from an editor extension,
+use :func:`~scrapy.utils.project.find_projects`:
+
+.. autofunction:: scrapy.utils.project.find_projects
+
 .. _topics-project-envvar:
 
 Sharing the root directory between projects
