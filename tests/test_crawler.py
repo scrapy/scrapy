@@ -687,10 +687,40 @@ class TestAsyncCrawlerProcessReactorlessHelpers:
         loop = MagicMock()
         process._reactorless_loop = loop
         process._reactorless_main_task = None
-        # No main task to cancel, so nothing is scheduled on the loop.
+        # No main task to cancel, only the log message is scheduled.
         process._signal_kill_reactorless(signal.SIGINT, None)
         assert installed_handlers == [signal.SIG_IGN]
-        loop.call_soon_threadsafe.assert_not_called()
+        loop.call_soon_threadsafe.assert_called_once_with(
+            process._log_kill, signal.SIGINT
+        )
+
+    def test_signal_shutdown_reactorless_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        loop = MagicMock()
+        process._reactorless_loop = loop
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_shutdown", log_calls.append)
+        # A signal can land while the interrupted code is itself writing to
+        # the log stream, so logging from the handler would reenter that
+        # write; it must be scheduled on the loop instead of called directly.
+        process._signal_shutdown_reactorless(signal.SIGINT, None)
+        assert log_calls == []
+        loop.call_soon_threadsafe.assert_any_call(process._log_shutdown, signal.SIGINT)
+
+    def test_signal_kill_reactorless_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        loop = MagicMock()
+        process._reactorless_loop = loop
+        process._reactorless_main_task = MagicMock()
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_kill", log_calls.append)
+        process._signal_kill_reactorless(signal.SIGINT, None)
+        assert log_calls == []
+        loop.call_soon_threadsafe.assert_any_call(process._log_kill, signal.SIGINT)
 
     def test_shutdown_graceful_reactorless_main_task_already_done(
         self, monkeypatch: pytest.MonkeyPatch
@@ -765,6 +795,53 @@ class TestAsyncCrawlerProcessReactorlessHelpers:
             == "unhandled exception during AsyncCrawlerProcess shutdown"
             for context in contexts
         )
+
+
+class TestCrawlerProcessBaseSignalHandlers:
+    """Unit tests for the Twisted-reactor shutdown handlers shared by
+    CrawlerProcess and AsyncCrawlerProcess.
+    """
+
+    @staticmethod
+    def _bare_process(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> tuple[CrawlerProcess, list[Any]]:
+        installed_handlers: list[Any] = []
+        monkeypatch.setattr(
+            "scrapy.crawler.install_shutdown_handlers",
+            lambda handler, *args, **kwargs: installed_handlers.append(handler),
+        )
+        return CrawlerProcess.__new__(CrawlerProcess), installed_handlers
+
+    def test_signal_shutdown_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        reactor = MagicMock()
+        monkeypatch.setattr("twisted.internet.reactor", reactor)
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_shutdown", log_calls.append)
+        # A signal can land while the interrupted code is itself writing to
+        # the log stream, so logging from the handler would reenter that
+        # write and raise, aborting the handler before it schedules the
+        # graceful stop; it must be scheduled on the reactor instead.
+        process._signal_shutdown(signal.SIGINT, None)
+        assert log_calls == []
+        reactor.callFromThread.assert_any_call(process._log_shutdown, signal.SIGINT)
+        reactor.callFromThread.assert_any_call(process._graceful_stop_reactor)
+
+    def test_signal_kill_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        reactor = MagicMock()
+        monkeypatch.setattr("twisted.internet.reactor", reactor)
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_kill", log_calls.append)
+        process._signal_kill(signal.SIGINT, None)
+        assert log_calls == []
+        reactor.callFromThread.assert_any_call(process._log_kill, signal.SIGINT)
+        reactor.callFromThread.assert_any_call(process._stop_reactor)
 
 
 @pytest.mark.parametrize(
