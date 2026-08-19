@@ -818,7 +818,9 @@ class TestCrawlerProcessBaseSignalHandlers:
     ) -> None:
         process, _ = self._bare_process(monkeypatch)
         reactor = MagicMock()
-        monkeypatch.setattr("twisted.internet.reactor", reactor)
+        # No reactor may be installed yet in the test process, so
+        # twisted.internet may not have a "reactor" attribute to patch over.
+        monkeypatch.setattr("twisted.internet.reactor", reactor, raising=False)
         log_calls: list[int] = []
         monkeypatch.setattr(process, "_log_shutdown", log_calls.append)
         # A signal can land while the interrupted code is itself writing to
@@ -835,7 +837,7 @@ class TestCrawlerProcessBaseSignalHandlers:
     ) -> None:
         process, _ = self._bare_process(monkeypatch)
         reactor = MagicMock()
-        monkeypatch.setattr("twisted.internet.reactor", reactor)
+        monkeypatch.setattr("twisted.internet.reactor", reactor, raising=False)
         log_calls: list[int] = []
         monkeypatch.setattr(process, "_log_kill", log_calls.append)
         process._signal_kill(signal.SIGINT, None)
