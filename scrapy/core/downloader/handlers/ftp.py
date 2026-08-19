@@ -114,11 +114,12 @@ class FTPDownloadHandler(BaseDownloadHandler):
             await maybe_deferred_to_future(client.retrieveFile(filepath, protocol))
         except CommandFailed as e:
             message = str(e)
-            if m := _CODE_RE.search(message):
-                ftpcode = m.group()
-                httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
-                return Response(url=request.url, status=httpcode, body=message.encode())
-            raise
+            # Twisted only raises CommandFailed for a reply whose numeric code
+            # it has parsed, so the message always carries that code.
+            m = _CODE_RE.search(message)
+            assert m
+            httpcode = self.CODE_MAPPING.get(m.group(), self.CODE_MAPPING["default"])
+            return Response(url=request.url, status=httpcode, body=message.encode())
         finally:
             protocol.close()
             assert client.transport

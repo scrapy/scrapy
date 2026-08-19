@@ -497,3 +497,19 @@ class TestDeprecatedSpiderArg(TestSpiderMiddleware):
             r" is deprecated, SpiderMiddlewareManager should be instantiated with a Crawler",
         ):
             await mwman.process_start(DefaultSpider())
+
+    @coroutine_test
+    async def test_scrape_response_no_crawler(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"MiddlewareManager.__init__\(\) was called without the crawler argument",
+        ):
+            mwman = SpiderMiddlewareManager()
+
+        async def scrape_func(
+            response: Response | Failure, request: Request
+        ) -> Iterable[Any]:
+            return []
+
+        with pytest.raises(RuntimeError, match="created without a crawler"):
+            await mwman.scrape_response_async(scrape_func, self.response, self.request)
