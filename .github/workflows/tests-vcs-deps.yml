@@ -15,7 +15,7 @@ concurrency:
 jobs:
   tests:
     name: tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
       # A development branch of a dependency can make a test hang forever, so
