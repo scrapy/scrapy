@@ -90,6 +90,11 @@ def load_object(path: str | Callable[..., Any]) -> Any:
     return obj
 
 
+def _load_objects(objects: Iterable[str | Callable[..., Any]]) -> tuple[Any, ...]:
+    """Resolve *objects* (objects or import paths) to a tuple of objects."""
+    return tuple(load_object(obj) if isinstance(obj, str) else obj for obj in objects)
+
+
 def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that

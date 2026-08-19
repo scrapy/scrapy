@@ -29,34 +29,7 @@ if TYPE_CHECKING:
 
 logger = getLogger(__name__)
 
-ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
-
-try:
-    try:
-        import brotli
-    except ImportError:
-        import brotlicffi as brotli
-except ImportError:
-    pass
-else:
-    try:
-        brotli.Decompressor.can_accept_more_data  # noqa: B018
-    except AttributeError:  # pragma: no cover
-        warnings.warn(
-            "You have brotli installed. But 'br' encoding support now requires "
-            "brotli's or brotlicffi's version >= 1.2.0. Please upgrade "
-            "brotli/brotlicffi to make Scrapy decode 'br' encoded responses.",
-            stacklevel=2,
-        )
-    else:
-        ACCEPTED_ENCODINGS.append(b"br")
-
-try:
-    import zstandard  # noqa: F401
-except ImportError:
-    pass
-else:
-    ACCEPTED_ENCODINGS.append(b"zstd")
+ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate", b"br", b"zstd"]
 
 
 class HttpCompressionMiddleware:
@@ -123,12 +96,14 @@ class HttpCompressionMiddleware:
                     response.body, content_encoding, max_size
                 )
             except _DecompressionMaxSizeExceeded as e:
-                raise IgnoreRequest(
+                msg = (
                     f"Ignored response {response} because its body "
                     f"({len(response.body)} B compressed, "
                     f"{e.decompressed_size} B decompressed so far) exceeded "
                     f"DOWNLOAD_MAXSIZE ({max_size} B) during decompression."
-                ) from e
+                )
+                logger.warning(msg)
+                raise IgnoreRequest(msg) from e
             if len(response.body) < warn_size <= len(decoded_body):
                 logger.warning(
                     f"{response} body size after decompression "
@@ -202,12 +177,7 @@ class HttpCompressionMiddleware:
         self, response: Response, encodings: list[bytes]
     ) -> None:
         encodings_str = b",".join(encodings).decode()
-        msg = (
+        logger.warning(
             f"{self.__class__.__name__} cannot decode the response for {response.url} "
             f"from unsupported encoding(s) '{encodings_str}'."
         )
-        if b"br" in encodings:
-            msg += " You need to install brotli or brotlicffi >= 1.2.0 to decode 'br'."
-        if b"zstd" in encodings:
-            msg += " You need to install zstandard to decode 'zstd'."
-        logger.warning(msg)

@@ -83,16 +83,17 @@ While this enables you to do very fast crawls (sending multiple concurrent
 requests at the same time, in a fault-tolerant way) Scrapy also gives you
 control over the politeness of the crawl through :ref:`a few settings
 <topics-settings-ref>`. You can do things like setting a download delay between
-each request, limiting the amount of concurrent requests per domain or per IP, and
+each request, limiting the amount of concurrent requests per domain, and
 even :ref:`using an auto-throttling extension <topics-autothrottle>` that tries
 to figure these settings out automatically.
 
 .. note::
 
     This is using :ref:`feed exports <topics-feed-exports>` to generate the
-    JSON file, you can easily change the export format (XML or CSV, for example) or the
-    storage backend (FTP or `Amazon S3`_, for example).  You can also write an
-    :ref:`item pipeline <topics-item-pipeline>` to store the items in a database.
+    JSON Lines file, you can easily change the export format (XML or CSV, for
+    example) or the storage backend (FTP or `Amazon S3`_, for example). You can
+    also write an :ref:`item pipeline <topics-item-pipeline>` to store the
+    items in a database.
 
 
 .. _topics-whatelse:

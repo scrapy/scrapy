@@ -136,6 +136,70 @@ Example:
                   return f"$ {str(value)}"
               return super().serialize_field(field, name, value)
 
+.. _custom-exporters:
+
+Writing your own item exporter
+==============================
+
+To write an item exporter, subclass :class:`BaseItemExporter` and implement
+:meth:`~BaseItemExporter.export_item`, where
+:meth:`~BaseItemExporter.get_serialized_fields` gives you the ``(name, value)``
+pairs to export.
+
+To make your exporter available to the :ref:`feed exports
+<topics-feed-exports>`, list it in the :setting:`FEED_EXPORTERS` setting. Feed
+exports :ref:`build <from-crawler>` it with the output file as the first
+positional argument, and with the ``fields``, ``encoding`` and ``indent``
+:ref:`feed options <feed-options>` and every key of ``item_export_kwargs`` as
+keyword arguments, so your ``__init__`` method must forward unknown keyword
+arguments to :class:`BaseItemExporter`.
+
+The file object belongs to whoever opened it, i.e. to the feed storage in the
+case of feed exports, which also closes it. If you need a text file, for
+example to use :func:`csv.writer` or another Python API that does not accept a
+binary file, wrap it with :class:`io.TextIOWrapper` and call
+:meth:`~io.TextIOBase.detach` on the wrapper in
+:meth:`~BaseItemExporter.finish_exporting`; otherwise the wrapper closes the
+underlying file when it is garbage-collected.
+
+For example, the following item exporter writes items as blocks of
+``name: value`` lines:
+
+.. code-block:: python
+
+    from io import TextIOWrapper
+
+    from scrapy.exporters import BaseItemExporter
+
+
+    class TextItemExporter(BaseItemExporter):
+        def __init__(self, file, item_separator="\n", **kwargs):
+            super().__init__(**kwargs)
+            self.item_separator = item_separator
+            self.stream = TextIOWrapper(
+                file, encoding=self.encoding or "utf-8", write_through=True
+            )
+
+        def export_item(self, item):
+            for name, value in self.get_serialized_fields(item):
+                print(f"{name}: {value}", file=self.stream)
+            self.stream.write(self.item_separator)
+
+        def finish_exporting(self):
+            self.stream.detach()
+
+To use it as the ``txt`` feed format:
+
+.. code-block:: python
+
+    FEED_EXPORTERS = {"txt": "myproject.exporters.TextItemExporter"}
+    FEEDS = {
+        "items.txt": {
+            "format": "txt",
+            "item_export_kwargs": {"item_separator": "---\n"},
+        },
+    }
+
 .. _topics-exporters-reference:
 
 Built-in Item Exporters reference
@@ -153,7 +217,7 @@ output examples, which assume you're exporting these two items:
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8', indent=0, dont_fail=False)
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding=None, indent=None, dont_fail=False)
 
    This is the (abstract) base class for all Item Exporters. It provides
    support for common features used by all (concrete) Item Exporters, such as
@@ -167,6 +231,8 @@ BaseItemExporter
    .. method:: export_item(item)
 
       Exports the given item. This method must be implemented in subclasses.
+
+   .. automethod:: BaseItemExporter.get_serialized_fields
 
    .. method:: serialize_field(field, name, value)
 
@@ -211,13 +277,27 @@ BaseItemExporter
 
       -   ``None`` (all fields [2]_, default)
 
-      -   A list of fields::
+          Fields are exported in declaration order, i.e. the order in which
+          they are defined in the :ref:`item class <item-types>`. For
+          :class:`dict` items, which have no declared fields, the key order of
+          each item is used instead.
 
-              ['field1', 'field2']
+          .. versionchanged:: VERSION
+             Fields of non-\ :class:`dict` items used to be exported in the
+             order in which they had been populated, except in
+             :class:`CsvItemExporter`, which has always used declaration order.
 
-      -   A dict where keys are fields and values are output names::
+      -   A list of fields:
 
-              {'field1': 'Field 1', 'field2': 'Field 2'}
+          .. code-block:: python
+
+              ["field1", "field2"]
+
+      -   A dict where keys are fields and values are output names:
+
+          .. code-block:: python
+
+              {"field1": "Field 1", "field2": "Field 2"}
 
       .. [1] Not all exporters respect the specified field order.
       .. [2] When using :ref:`item objects <item-types>` that do not expose
@@ -239,7 +319,7 @@ BaseItemExporter
 
    .. attribute:: indent
 
-      Amount of spaces used to indent the output on each level. Defaults to ``0``.
+      Amount of spaces used to indent the output on each level. Defaults to ``None``.
 
       * ``indent=None`` selects the most compact representation,
         all items in the same line with no indentation
@@ -273,7 +353,9 @@ XmlItemExporter
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: xml
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -291,11 +373,17 @@ XmlItemExporter
    exported by serializing each value inside a ``<value>`` element. This is for
    convenience, as multi-valued fields are very common.
 
-   For example, the item::
+   For example, the item:
 
-        Item(name=['John', 'Doe'], age='23')
+   .. skip: next
 
-   Would be serialized as::
+   .. code-block:: python
+
+        Item(name=["John", "Doe"], age="23")
+
+   Would be serialized as:
+
+   .. code-block:: xml
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -328,7 +416,7 @@ CsvItemExporter
 
    :param join_multivalued: The char (or chars) that will be used for joining
       multi-valued fields, if found.
-   :type include_headers_line: str
+   :type join_multivalued: str
 
    :param errors: The optional string that specifies how encoding and decoding
       errors are to be handled. For more information see
@@ -342,14 +430,14 @@ CsvItemExporter
 
    A typical output of this exporter would be::
 
-      product,price
+      name,price
       Color TV,1200
       DVD player,200
 
 PickleItemExporter
 ------------------
 
-.. class:: PickleItemExporter(file, protocol=0, **kwargs)
+.. class:: PickleItemExporter(file, protocol=4, **kwargs)
 
    Exports items in pickle format to the given file-like object.
 
@@ -379,10 +467,12 @@ PprintItemExporter
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
 
-        {'name': 'Color TV', 'price': '1200'}
-        {'name': 'DVD player', 'price': '200'}
+   .. code-block:: python
+
+        {"name": "Color TV", "price": "1200"}
+        {"name": "DVD player", "price": "200"}
 
    Longer lines (when present) are pretty-formatted.
 
@@ -400,7 +490,9 @@ JsonItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: json
 
         [{"name": "Color TV", "price": "1200"},
         {"name": "DVD player", "price": "200"}]
@@ -429,7 +521,9 @@ JsonLinesItemExporter
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
 
-   A typical output of this exporter would be::
+   A typical output of this exporter would be:
+
+   .. code-block:: json
 
         {"name": "Color TV", "price": "1200"}
         {"name": "DVD player", "price": "200"}

@@ -10,6 +10,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider
 from scrapy.statscollectors import DummyStatsCollector, StatsCollector
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 from tests.utils.decorators import coroutine_test
@@ -32,12 +33,16 @@ class TestCoreStatsExtension:
     @mock.patch("scrapy.extensions.corestats.monotonic", return_value=0)
     @mock.patch("scrapy.extensions.corestats.datetime")
     def test_core_stats_default_stats_collector(
-        self, mock_datetime: mock.Mock, crawler: Crawler, spider: Spider
+        self,
+        mock_datetime: mock.Mock,
+        mock_monotonic: mock.Mock,
+        crawler: Crawler,
+        spider: Spider,
     ) -> None:
         fixed_datetime = datetime(2019, 12, 1, 11, 38)
         mock_datetime.now = mock.Mock(return_value=fixed_datetime)
         crawler.stats = StatsCollector(crawler)
-        ext = CoreStats.from_crawler(crawler)
+        ext = build_from_crawler(CoreStats, crawler)
         ext.spider_opened(spider)
         ext.item_scraped({}, spider)
         ext.response_received(spider)
@@ -58,7 +63,7 @@ class TestCoreStatsExtension:
         self, crawler: Crawler, spider: Spider
     ) -> None:
         crawler.stats = DummyStatsCollector(crawler)
-        ext = CoreStats.from_crawler(crawler)
+        ext = build_from_crawler(CoreStats, crawler)
         ext.spider_opened(spider)
         ext.item_scraped({}, spider)
         ext.response_received(spider)

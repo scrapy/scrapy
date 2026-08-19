@@ -1,8 +1,18 @@
+from __future__ import annotations
+
 import builtins
+import sys
 from io import StringIO
+from typing import TYPE_CHECKING
 from unittest import mock
 
-from scrapy.utils.display import pformat, pprint
+import pytest
+
+from scrapy.utils.display import _enable_windows_terminal_processing, pformat, pprint
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+    from types import ModuleType
 
 value = {"a": 1}
 colorized_strings = {
@@ -24,13 +34,13 @@ plain_string = "{'a': 1}"
 
 @mock.patch("sys.platform", "linux")
 @mock.patch("sys.stdout.isatty")
-def test_pformat(isatty):
+def test_pformat(isatty: mock.Mock) -> None:
     isatty.return_value = True
     assert pformat(value) in colorized_strings
 
 
 @mock.patch("sys.stdout.isatty")
-def test_pformat_dont_colorize(isatty):
+def test_pformat_dont_colorize(isatty: mock.Mock) -> None:
     isatty.return_value = True
     assert pformat(value, colorize=False) == plain_string
 
@@ -42,7 +52,7 @@ def test_pformat_not_tty():
 @mock.patch("sys.platform", "win32")
 @mock.patch("platform.version")
 @mock.patch("sys.stdout.isatty")
-def test_pformat_old_windows(isatty, version):
+def test_pformat_old_windows(isatty: mock.Mock, version: mock.Mock) -> None:
     isatty.return_value = True
     version.return_value = "10.0.14392"
     assert pformat(value) in colorized_strings
@@ -52,7 +62,9 @@ def test_pformat_old_windows(isatty, version):
 @mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
 @mock.patch("platform.version")
 @mock.patch("sys.stdout.isatty")
-def test_pformat_windows_no_terminal_processing(isatty, version, terminal_processing):
+def test_pformat_windows_no_terminal_processing(
+    isatty: mock.Mock, version: mock.Mock, terminal_processing: mock.Mock
+) -> None:
     isatty.return_value = True
     version.return_value = "10.0.14393"
     terminal_processing.return_value = False
@@ -63,28 +75,43 @@ def test_pformat_windows_no_terminal_processing(isatty, version, terminal_proces
 @mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
 @mock.patch("platform.version")
 @mock.patch("sys.stdout.isatty")
-def test_pformat_windows(isatty, version, terminal_processing):
+def test_pformat_windows(
+    isatty: mock.Mock, version: mock.Mock, terminal_processing: mock.Mock
+) -> None:
     isatty.return_value = True
     version.return_value = "10.0.14393"
     terminal_processing.return_value = True
     assert pformat(value) in colorized_strings
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only console API")
+def test_enable_windows_terminal_processing() -> None:
+    # The tests above mock this out, so this is the only place the real
+    # kernel32 calls run. Whether they succeed depends on whether stdout is a
+    # console, which pytest does not guarantee.
+    assert isinstance(_enable_windows_terminal_processing(), bool)
+
+
 @mock.patch("sys.platform", "linux")
 @mock.patch("sys.stdout.isatty")
-def test_pformat_no_pygments(isatty):
+def test_pformat_no_pygments(isatty: mock.Mock) -> None:
     isatty.return_value = True
 
     real_import = builtins.__import__
 
-    def mock_import(name, globals_, locals_, fromlist, level):
+    def mock_import(
+        name: str,
+        globals_: Mapping[str, object] | None = None,
+        locals_: Mapping[str, object] | None = None,
+        fromlist: Sequence[str] | None = (),
+        level: int = 0,
+    ) -> ModuleType:
         if "pygments" in name:
             raise ImportError
         return real_import(name, globals_, locals_, fromlist, level)
 
-    builtins.__import__ = mock_import
-    assert pformat(value) == plain_string
-    builtins.__import__ = real_import
+    with mock.patch("builtins.__import__", mock_import):
+        assert pformat(value) == plain_string
 
 
 def test_pprint():

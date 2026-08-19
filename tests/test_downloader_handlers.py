@@ -9,15 +9,31 @@ from tempfile import mkdtemp, mkstemp
 from unittest import mock
 
 import pytest
+from twisted.internet.defer import CancelledError
+from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
+from twisted.internet.error import DNSLookupError
+from twisted.internet.error import TimeoutError as TxTimeoutError
+from twisted.web.client import ResponseFailed
+from twisted.web.error import SchemeNotSupported
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import Request
+from scrapy.exceptions import (
+    CannotResolveHostError,
+    DownloadCancelledError,
+    DownloadConnectionRefusedError,
+    DownloadFailedError,
+    DownloadTimeoutError,
+    NotConfigured,
+    ScrapyDeprecationWarning,
+    UnsupportedURLSchemeError,
+)
+from scrapy.http import Request, TextResponse
 from scrapy.responsetypes import responsetypes
+from scrapy.utils._download_handlers import wrap_twisted_exceptions
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
@@ -170,6 +186,16 @@ class TestS3Anon:
         httpreq = await self.download_request(req)
         assert hasattr(self.s3reqh, "anon")
         assert self.s3reqh.anon
+        assert httpreq.url == "https://aws-publicdatasets.s3.amazonaws.com/"
+
+    @coroutine_test
+    async def test_anon_request_insecure(self):
+        req = Request("s3://aws-publicdatasets/", meta={"is_secure": False})
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Passing is_secure=False for s3:// requests is deprecated",
+        ):
+            httpreq = await self.download_request(req)
         assert httpreq.url == "http://aws-publicdatasets.s3.amazonaws.com/"
 
 
@@ -199,6 +225,22 @@ class TestS3:
         with mock.patch("botocore.auth.formatdate") as mock_formatdate:
             mock_formatdate.return_value = date
             yield
+
+    @coroutine_test
+    async def test_secure_by_default(self):
+        req = Request("s3://johnsmith/photos/puppy.jpg")
+        httpreq = await self.download_request(req)
+        assert httpreq.url == "https://johnsmith.s3.amazonaws.com/photos/puppy.jpg"
+
+    @coroutine_test
+    async def test_insecure_opt_out(self):
+        req = Request("s3://johnsmith/photos/puppy.jpg", meta={"is_secure": False})
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Passing is_secure=False for s3:// requests is deprecated",
+        ):
+            httpreq = await self.download_request(req)
+        assert httpreq.url == "http://johnsmith.s3.amazonaws.com/photos/puppy.jpg"
 
     @coroutine_test
     async def test_request_signing1(self):
@@ -336,6 +378,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "A brief note"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "US-ASCII"
 
     @coroutine_test
@@ -344,6 +387,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
     @coroutine_test
@@ -352,6 +396,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert response.body == b"\xbe\xd3\xbe"
+        assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
     @coroutine_test
@@ -364,6 +409,7 @@ class TestDataURI:
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert isinstance(response, TextResponse)
         assert response.encoding == "utf-8"
 
     @coroutine_test
@@ -377,3 +423,38 @@ class TestDataURI:
         request = Request("data:,")
         response = await self.download_request(request)
         assert response.protocol is None
+
+
+class TestWrapTwistedExceptions:
+    """Every Twisted exception the HTTP handlers can raise has a Scrapy equivalent.
+
+    Most mappings are also covered end to end by the HTTP handler tests, but a
+    Twisted ``TimeoutError`` needs a connection attempt that is silently dropped
+    rather than refused, which no mock server can offer reliably.
+    """
+
+    @pytest.mark.parametrize(
+        ("twisted_exception", "scrapy_exception"),
+        [
+            (SchemeNotSupported, UnsupportedURLSchemeError),
+            (CancelledError, DownloadCancelledError),
+            (TxConnectionRefusedError, DownloadConnectionRefusedError),
+            (DNSLookupError, CannotResolveHostError),
+            (ResponseFailed, DownloadFailedError),
+            (TxTimeoutError, DownloadTimeoutError),
+        ],
+    )
+    def test_mapping(
+        self,
+        twisted_exception: type[Exception],
+        scrapy_exception: type[Exception],
+    ) -> None:
+        original = twisted_exception("some message")
+        with pytest.raises(scrapy_exception) as exc_info, wrap_twisted_exceptions():
+            raise original
+        assert exc_info.value.__cause__ is original
+        assert str(exc_info.value) == str(original)
+
+    def test_other_exceptions_pass_through(self) -> None:
+        with pytest.raises(ZeroDivisionError), wrap_twisted_exceptions():
+            1 / 0

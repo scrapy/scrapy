@@ -10,15 +10,19 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
-from w3lib import __version__ as w3lib_version
 
-from tests.utils import async_sleep, get_script_run_env
+from scrapy.utils.asyncio import sleep
+from tests.utils import get_script_run_env
+from tests.utils.cmdline import stop_spawn
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
+
+# Guards against a hung subprocess. Generous, because starting a script is
+# slow on PyPy, slower still with coverage measurement on.
+SCRIPT_TIMEOUT = 60
 
 
 class ScriptRunnerMixin(ABC):
@@ -96,10 +100,6 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         )
         assert "RuntimeError" not in log
 
-    @pytest.mark.skipif(
-        parse_version(w3lib_version) >= parse_version("2.0.0"),
-        reason="w3lib 2.0.0 and later do not allow invalid domains.",
-    )
     def test_ipv6_default_name_resolver(self) -> None:
         log = self.run_script("default_name_resolver.py")
         assert "Spider closed (finished)" in log
@@ -115,6 +115,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     def test_caching_hostname_resolver_ipv6(self) -> None:
         log = self.run_script("caching_hostname_resolver_ipv6.py")
         assert "Spider closed (finished)" in log
+        assert "http://::1" not in log
         assert "scrapy.exceptions.CannotResolveHostError" not in log
 
     def test_caching_hostname_resolver_finite_execution(
@@ -220,17 +221,13 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     ) -> None:
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
         args = self.get_script_args(script, "3", *extra_args)
-        p = PopenSpawn(args, timeout=5, env=get_script_run_env())
+        p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
         p.expect_exact("Spider closed (shutdown)")
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
 
     def test_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful()
@@ -238,20 +235,16 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     async def _test_shutdown_forced(self, script: str = "sleeping.py") -> None:
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
         args = self.get_script_args(script, "10")
-        p = PopenSpawn(args, timeout=5, env=get_script_run_env())
+        p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
-        await async_sleep(0.01)
+        await sleep(0.01)
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
 
     @coroutine_test
     async def test_shutdown_forced(self) -> None:
@@ -352,7 +345,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         ) in log
 
     @pytest.mark.requires_uvloop
-    def test_asyncio_enabled_reactor_same_loop(self) -> None:
+    def test_asyncio_custom_loop_custom_settings_same(self) -> None:
         log = self.run_script("asyncio_custom_loop_custom_settings_same.py")
         assert "Spider closed (finished)" in log
         assert (
@@ -362,7 +355,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Using asyncio event loop: uvloop.Loop" in log
 
     @pytest.mark.requires_uvloop
-    def test_asyncio_enabled_reactor_different_loop(self) -> None:
+    def test_asyncio_custom_loop_custom_settings_different(self) -> None:
         log = self.run_script("asyncio_custom_loop_custom_settings_different.py")
         assert "Spider closed (finished)" not in log
         assert (
@@ -404,8 +397,40 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def test_reactorless_import_hook(self) -> None:
         log = self.run_script("reactorless_import_hook.py")
         assert "Not using a Twisted reactor" in log
-        assert "Spider closed (finished)" in log
+        assert "Spider closed (start_error)" in log
         assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
+
+    def test_reactorless_import_hook_uninstall(self) -> None:
+        """The import hook is removed when start() returns, so importing
+        twisted.internet.reactor becomes possible again."""
+        log = self.run_script("reactorless_import_hook_uninstall.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "Hooks in sys.meta_path after start(): 0" in log
+        assert "Reactor imported after start()" in log
+        assert "ImportError" not in log
+
+    def test_reactorless_import_hook_multiple(self) -> None:
+        """Sequential AsyncCrawlerProcess instances don't accumulate import
+        hooks: there is exactly one during each run and none afterwards."""
+        log = self.run_script("reactorless_import_hook_multiple.py")
+        assert log.count("Spider closed (finished)") == 2
+        assert log.count("Hooks during run: 1") == 2
+        assert "Hooks after runs: 0" in log
+        assert "ERROR: " not in log
+
+    def test_reactorless_then_reactor(self) -> None:
+        """After a reactorless run finishes, a reactor-based run is possible
+        in the same process."""
+        log = self.run_script("reactorless_then_reactor.py")
+        assert log.count("Spider closed (finished)") == 2
+        assert "Not using a Twisted reactor" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert "ImportError" not in log
+        assert "ERROR: " not in log
 
     def test_reactorless_telnetconsole_default(self) -> None:
         """By default TWISTED_REACTOR_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
@@ -437,14 +462,14 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
-    def test_shutdown_graceful(self) -> None:
+    def test_reactorless_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful("reactorless_sleeping.py")
 
     @coroutine_test
-    async def test_shutdown_forced(self) -> None:
+    async def test_reactorless_shutdown_forced(self) -> None:
         await self._test_shutdown_forced("reactorless_sleeping.py")
 
-    def test_shutdown_graceful_reactorless_no_stop(self) -> None:
+    def test_reactorless_shutdown_graceful_no_stop(self) -> None:
         self._test_shutdown_graceful("reactorless_sleeping.py", "--no-stop")
 
     def test_asyncio_enabled_reactor_same_loop_default(self) -> None:

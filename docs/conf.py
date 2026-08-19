@@ -31,8 +31,13 @@ extensions = [
     "sphinx_scrapy",
     "scrapyfixautodoc",  # Must be after "sphinx.ext.autodoc"
     "sphinx.ext.coverage",
+    "sphinx_reredirects",
     "sphinx_rtd_dark_mode",
 ]
+
+redirects = {
+    "topics/broad-crawls": "optimize.html#broad-crawls",
+}
 
 templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
@@ -141,6 +146,8 @@ coverage_ignore_pyobjects = [
     r"^scrapy\.linkextractors\.lxmlhtml\.LxmlParserLinkExtractor",
 ]
 
+# -- Options for the autodoc extension ----------------------------------------
+autodoc_member_order = "bysource"
 
 # -- Options for the InterSphinx extension -----------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
@@ -158,6 +165,7 @@ scrapy_intersphinx_enable = [
     "itemloaders",
     "parsel",
     "pytest",
+    "pypug",
     "scrapy-lint",
     "sphinx",
     "tox",

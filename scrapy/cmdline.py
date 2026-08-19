@@ -225,13 +225,11 @@ def _run_command(cmd: ScrapyCommand, args: list[str], opts: argparse.Namespace) 
 def _run_command_profiled(
     cmd: ScrapyCommand, args: list[str], opts: argparse.Namespace
 ) -> None:
-    if opts.profile:
-        sys.stderr.write(f"scrapy: writing cProfile stats to {opts.profile!r}\n")
+    sys.stderr.write(f"scrapy: writing cProfile stats to {opts.profile!r}\n")
     loc = locals()
     p = cProfile.Profile()
     p.runctx("cmd.run(args, opts)", globals(), loc)
-    if opts.profile:
-        p.dump_stats(opts.profile)
+    p.dump_stats(opts.profile)
 
 
 if __name__ == "__main__":

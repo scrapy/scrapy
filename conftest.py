@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import importlib
+import os
+from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -11,7 +12,7 @@ from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
-from tests.mockserver.mitm_proxy import MitmProxy
+from tests.mockserver.mitm_proxy import MitmProxy, mitmdump_cmd
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -46,14 +47,15 @@ if not H2_ENABLED:
     collect_ignore.extend(
         (
             "scrapy/core/downloader/handlers/http2.py",
-            *_py_files("scrapy/core/http2"),
+            *_py_files("scrapy/core/_http2"),
         )
     )
 
-try:
-    import httpx  # noqa: F401
-except ImportError:
+if find_spec("httpx2") is None and find_spec("httpx") is None:
     collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
+
+if find_spec("pytest_codspeed") is None:
+    collect_ignore.append("tests/benchmarks")
 
 
 def pytest_addoption(parser, pluginmanager):
@@ -105,6 +107,14 @@ def pytest_configure(config):
         install_reactor_import_hook()
 
 
+def pytest_collection_modifyitems(items):
+    for item in items:
+        if item.get_closest_marker("requires_internet"):
+            # Requests to real websites fail every now and then in CI for
+            # reasons unrelated to the code under test.
+            item.add_marker(pytest.mark.flaky(reruns=2, reruns_delay=5))
+
+
 def pytest_runtest_setup(item):
     # Skip tests based on reactor markers
     reactor = item.config.getoption("--reactor")
@@ -127,16 +137,16 @@ def pytest_runtest_setup(item):
         "uvloop",
         "botocore",
         "boto3",
-        "mitmproxy",
     ]
 
     for module in optional_deps:
-        if item.get_closest_marker(f"requires_{module}"):
-            try:
-                importlib.import_module(module)
-            except ImportError:
-                pytest.skip(f"{module} is not installed")
+        if item.get_closest_marker(f"requires_{module}") and find_spec(module) is None:
+            pytest.skip(f"{module} is not installed")
+
+    if item.get_closest_marker("requires_mitmproxy") and mitmdump_cmd() is None:
+        pytest.skip("mitmdump is not available")
 
 
-# Generate localhost certificate files, needed by some tests
-generate_keys()
+# Generate localhost certificate files, needed by some tests (but only once if xdist is used)
+if "PYTEST_XDIST_WORKER" not in os.environ:
+    generate_keys()

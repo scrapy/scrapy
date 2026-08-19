@@ -3,23 +3,27 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from io import StringIO
-from shutil import copytree
+from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest import mock
 
 import pytest
 
 import scrapy
-from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
-from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
+from scrapy.cmdline import _pop_command_name, execute
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.reactor import _asyncio_reactor_path
-from tests.utils.cmdline import call, proc
+from tests.utils.bases.commands import TestProjectBase
+from tests.utils.cmdline import (
+    call,
+    proc,
+    write_recording_browser,
+    write_recording_editor,
+)
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from tests.mockserver.http import MockServer
 
 
 class EmptyCommand(ScrapyCommand):
@@ -89,6 +93,7 @@ class TestCommandSettings:
             args=["-s", f"FEEDS={feeds_json}", "spider.py"]
         )
         self.command.process_options(args, opts)
+        assert self.command.settings is not None
         assert isinstance(self.command.settings["FEEDS"], scrapy.settings.BaseSettings)
         assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
 
@@ -108,27 +113,91 @@ class TestCommandSettings:
         )
 
 
-class TestProjectBase:
-    """A base class for tests that may need a Scrapy project."""
+class TestGlobalOptions:
+    """Tests for the options that every command supports."""
 
-    project_name = "testproject"
+    spider_code = """
+import scrapy
 
-    @pytest.fixture(scope="session")
-    def _proj_path_cached(self, tmp_path_factory: pytest.TempPathFactory) -> Path:
-        """Create a Scrapy project in a temporary directory and return its path.
+class MySpider(scrapy.Spider):
+    name = "myspider"
 
-        Used as a cache for ``proj_path``.
-        """
-        tmp_path = tmp_path_factory.mktemp("proj")
-        call("startproject", self.project_name, cwd=tmp_path)
-        return tmp_path / self.project_name
+    async def start(self):
+        self.logger.debug("It works!")
+        return
+        yield
+"""
 
     @pytest.fixture
-    def proj_path(self, tmp_path: Path, _proj_path_cached: Path) -> Path:
-        """Copy a pre-generated Scrapy project into a temporary directory and return its path."""
-        proj_path = tmp_path / self.project_name
-        copytree(_proj_path_cached, proj_path)
-        return proj_path
+    def spider_path(self, tmp_path: Path) -> Path:
+        path = tmp_path / "myspider.py"
+        path.write_text(self.spider_code, encoding="utf-8")
+        return path
+
+    def test_invalid_set(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "-s", "FOO")
+        assert returncode == 2
+        assert "Invalid -s value, use -s NAME=VALUE" in err
+
+    def test_invalid_spider_argument(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "-a", "FOO")
+        assert returncode == 2
+        assert "Invalid -a value, use -a NAME=VALUE" in err
+
+    def test_logfile(self, tmp_path: Path, spider_path: Path) -> None:
+        logfile = tmp_path / "scrapy.log"
+        returncode, _, err = proc(
+            "runspider", str(spider_path), "--logfile", str(logfile)
+        )
+        assert returncode == 0, err
+        assert "It works!" in logfile.read_text(encoding="utf-8")
+        assert "It works!" not in err
+
+    def test_loglevel(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "--loglevel", "INFO")
+        assert returncode == 0, err
+        assert "It works!" not in err
+        assert "Spider closed (finished)" in err
+
+    def test_nolog(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "--nolog")
+        assert returncode == 0, err
+        assert not err
+
+    def test_pidfile(self, tmp_path: Path, spider_path: Path) -> None:
+        pidfile = tmp_path / "scrapy.pid"
+        returncode, _, err = proc(
+            "runspider", str(spider_path), "--pidfile", str(pidfile)
+        )
+        assert returncode == 0, err
+        assert pidfile.read_text(encoding="utf-8").strip().isdigit()
+
+    def test_pdb(self, spider_path: Path) -> None:
+        returncode, _, err = proc("runspider", str(spider_path), "--pdb")
+        assert returncode == 0, err
+        assert "It works!" in err
+
+
+class TestSettingsCommand:
+    @pytest.mark.parametrize(
+        ("option", "setting", "expected"),
+        [
+            ("--get", "BOT_NAME", "scrapybot"),
+            ("--getbool", "COOKIES_ENABLED", "True"),
+            ("--getint", "CONCURRENT_REQUESTS", "16"),
+            ("--getfloat", "DOWNLOAD_DELAY", "0.0"),
+            ("--getlist", "SPIDER_MODULES", "[]"),
+        ],
+    )
+    def test_get(self, option: str, setting: str, expected: str) -> None:
+        returncode, out, err = proc("settings", option, setting)
+        assert returncode == 0, err
+        assert out.startswith(expected)
+
+    def test_no_option(self) -> None:
+        returncode, out, err = proc("settings")
+        assert returncode == 0, err
+        assert not out
 
 
 class TestCommandCrawlerProcess(TestProjectBase):
@@ -174,12 +243,6 @@ class MySpider(scrapy.Spider):
 """)
 
         self._append_settings(proj_mod_path, "LOG_LEVEL = 'DEBUG'\n")
-
-    @staticmethod
-    def _append_settings(proj_mod_path: Path, text: str) -> None:
-        """Add text to the end of the project settings.py."""
-        with (proj_mod_path / "settings.py").open("a", encoding="utf-8") as f:
-            f.write(text)
 
     @staticmethod
     def _replace_custom_settings(
@@ -369,23 +432,223 @@ class TestMiscCommands(TestProjectBase):
         subdir.mkdir(exist_ok=True)
         assert call("list", cwd=subdir) == 0
 
-    def test_command_not_found(self) -> None:
-        na_msg = """
-The list command is not available from this location.
-These commands are only available from within a project: check, crawl, edit, list, parse.
-"""
-        not_found_msg = """
-Unknown command: abc
-"""
-        params = [
-            ("list", False, na_msg),
-            ("abc", False, not_found_msg),
-            ("abc", True, not_found_msg),
-        ]
-        for cmdname, inproject, message in params:
-            with mock.patch("sys.stdout", new=StringIO()) as out:
-                _print_unknown_command_msg(Settings(), cmdname, inproject)
-                assert out.getvalue().strip() == message.strip()
+
+class TestCommandListing(TestProjectBase):
+    """Tests for the command list that ``scrapy`` prints when called without a
+    command name."""
+
+    def test_outside_project(self) -> None:
+        returncode, out, err = proc()
+        assert returncode == 0, err
+        assert f"Scrapy {scrapy.__version__} - no active project" in out
+        assert "Available commands:" in out
+        assert "Create new project" in out
+        assert "More commands available when run from project directory" in out
+        assert 'Use "scrapy <command> -h" to see more info about a command' in out
+
+    def test_inside_project(self, proj_path: Path) -> None:
+        returncode, out, err = proc(cwd=proj_path)
+        assert returncode == 0, err
+        assert (
+            f"Scrapy {scrapy.__version__} - active project: {self.project_name}" in out
+        )
+        assert "List available spiders" in out
+        assert "More commands available when run from project directory" not in out
+
+
+class TestUnknownCommand(TestProjectBase):
+    def test_outside_project(self) -> None:
+        returncode, out, err = proc("abc")
+        assert returncode == 2, err
+        assert f"Scrapy {scrapy.__version__} - no active project" in out
+        assert "Unknown command: abc" in out
+        assert 'Use "scrapy" to see available commands' in out
+
+    def test_inside_project(self, proj_path: Path) -> None:
+        returncode, out, err = proc("abc", cwd=proj_path)
+        assert returncode == 2, err
+        assert (
+            f"Scrapy {scrapy.__version__} - active project: {self.project_name}" in out
+        )
+        assert "Unknown command: abc" in out
+
+    def test_project_only_command_outside_project(self) -> None:
+        returncode, out, err = proc("list")
+        assert returncode == 2, err
+        assert "The list command is not available from this location." in out
+        assert (
+            "These commands are only available from within a project: "
+            "check, crawl, edit, list, parse." in out
+        )
+
+
+class TestCommandsModule(TestProjectBase):
+    """Tests for commands defined in the module of the COMMANDS_MODULE setting."""
+
+    @pytest.fixture
+    def proj_path_with_commands(self, proj_path: Path) -> Path:
+        commands_path = proj_path / self.project_name / "commands"
+        commands_path.mkdir()
+        (commands_path / "__init__.py").touch()
+        (commands_path / "mycmd.py").write_text(
+            """
+from scrapy.commands import ScrapyCommand
+
+
+class Command(ScrapyCommand):
+    requires_crawler_process = False
+
+    def short_desc(self):
+        return "My custom command"
+
+    def run(self, args, opts):
+        print("My custom command ran")
+""",
+            encoding="utf-8",
+        )
+        (commands_path / "helpcmd.py").write_text(
+            """
+from scrapy.commands import ScrapyCommand
+from scrapy.exceptions import UsageError
+
+
+class Command(ScrapyCommand):
+    requires_crawler_process = False
+
+    def short_desc(self):
+        return "My command that asks for its help message"
+
+    def run(self, args, opts):
+        raise UsageError
+""",
+            encoding="utf-8",
+        )
+        (commands_path / "silentcmd.py").write_text(
+            """
+from scrapy.commands import ScrapyCommand
+from scrapy.exceptions import UsageError
+
+
+class Command(ScrapyCommand):
+    requires_crawler_process = False
+
+    def short_desc(self):
+        return "My command that fails silently"
+
+    def run(self, args, opts):
+        raise UsageError(print_help=False)
+""",
+            encoding="utf-8",
+        )
+        self._append_settings(
+            proj_path / self.project_name,
+            f'\nCOMMANDS_MODULE = "{self.project_name}.commands"\n',
+        )
+        return proj_path
+
+    def test_listed(self, proj_path_with_commands: Path) -> None:
+        returncode, out, err = proc(cwd=proj_path_with_commands)
+        assert returncode == 0, err
+        assert "My custom command" in out
+
+    def test_run(self, proj_path_with_commands: Path) -> None:
+        returncode, out, err = proc("mycmd", cwd=proj_path_with_commands)
+        assert returncode == 0, err
+        assert "My custom command ran" in out
+
+    def test_usage_error(self, proj_path_with_commands: Path) -> None:
+        """A message-less UsageError makes the help message be printed."""
+        returncode, out, err = proc("helpcmd", cwd=proj_path_with_commands)
+        assert returncode == 2, err
+        assert "scrapy helpcmd" in out
+
+    def test_usage_error_without_help(self, proj_path_with_commands: Path) -> None:
+        """A message-less UsageError with print_help disabled prints nothing."""
+        returncode, out, err = proc("silentcmd", cwd=proj_path_with_commands)
+        assert returncode == 2, err
+        assert not out
+
+
+class TestEntryPointCommands:
+    """Tests for commands defined in the scrapy.commands entry point group."""
+
+    @staticmethod
+    def _write_dist(path: Path, entry_point: str) -> None:
+        """Write into *path* a package with a command and a function, and the
+        metadata of an installed distribution that declares *entry_point* in
+        the scrapy.commands entry point group.
+
+        Since ``python -m scrapy.cmdline`` puts the current working directory
+        in the import path, running it with *path* as the working directory
+        makes Scrapy find that entry point.
+        """
+        package_path = path / "mycmds"
+        package_path.mkdir()
+        (package_path / "__init__.py").touch()
+        (package_path / "mycmd.py").write_text(
+            """
+from scrapy.commands import ScrapyCommand
+
+
+class Command(ScrapyCommand):
+    requires_crawler_process = False
+
+    def short_desc(self):
+        return "My entry point command"
+
+    def run(self, args, opts):
+        print("My entry point command ran")
+
+
+def not_a_command():
+    pass
+""",
+            encoding="utf-8",
+        )
+        dist_info_path = path / "mycmds-1.0.dist-info"
+        dist_info_path.mkdir()
+        (dist_info_path / "METADATA").write_text(
+            "Metadata-Version: 2.1\nName: mycmds\nVersion: 1.0\n", encoding="utf-8"
+        )
+        (dist_info_path / "entry_points.txt").write_text(
+            f"[scrapy.commands]\n{entry_point}\n", encoding="utf-8"
+        )
+
+    def test_listed(self, tmp_path: Path) -> None:
+        self._write_dist(tmp_path, "mycmd = mycmds.mycmd:Command")
+        returncode, out, err = proc(cwd=tmp_path)
+        assert returncode == 0, err
+        assert "My entry point command" in out
+
+    def test_run(self, tmp_path: Path) -> None:
+        self._write_dist(tmp_path, "mycmd = mycmds.mycmd:Command")
+        returncode, out, err = proc("mycmd", cwd=tmp_path)
+        assert returncode == 0, err
+        assert "My entry point command ran" in out
+
+    def test_not_a_class(self, tmp_path: Path) -> None:
+        self._write_dist(tmp_path, "mycmd = mycmds.mycmd:not_a_command")
+        returncode, _, err = proc("version", cwd=tmp_path)
+        assert returncode == 1
+        assert "ValueError: Invalid entry point mycmd" in err
+
+
+class TestExecute:
+    """Tests for calls to scrapy.cmdline.execute() from Python code, which the
+    command line does not cover."""
+
+    def test_argv(self, capsys: pytest.CaptureFixture[str]) -> None:
+        with pytest.raises(SystemExit) as exc_info:
+            execute(["scrapy", "version"])
+        assert exc_info.value.code == 0
+        assert scrapy.__version__ in capsys.readouterr().out
+
+    def test_settings(self, capsys: pytest.CaptureFixture[str]) -> None:
+        settings = Settings()
+        with pytest.raises(SystemExit) as exc_info:
+            execute(["scrapy", "settings", "--get", "BOT_NAME"], settings=settings)
+        assert exc_info.value.code == 0
+        assert capsys.readouterr().out.strip() == "scrapybot"
 
 
 class TestBenchCommand:
@@ -407,18 +670,31 @@ class TestBenchCommand:
 
 
 class TestViewCommand:
-    def test_methods(self) -> None:
-        command = view.Command()
-        command.settings = Settings()
-        parser = argparse.ArgumentParser(
-            prog="scrapy",
-            prefix_chars="-",
-            formatter_class=ScrapyHelpFormatter,
-            conflict_handler="resolve",
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="requires a POSIX shell browser script"
+    )
+    def test_view(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mockserver: MockServer
+    ) -> None:
+        opened = tmp_path / "opened.txt"
+        browser = tmp_path / "fake-browser.sh"
+        write_recording_browser(browser, opened)
+        monkeypatch.setenv("BROWSER", str(browser))
+
+        returncode, _, err = proc("view", mockserver.url("/html"), cwd=tmp_path)
+
+        assert returncode == 0, err
+        url = opened.read_text(encoding="utf-8")
+        assert url.startswith("file://")
+        body = Path(url.removeprefix("file://")).read_text(encoding="utf-8")
+        assert "<p class='one'>Works</p>" in body
+
+    def test_non_text_response(self, mockserver: MockServer) -> None:
+        returncode, _, err = proc(
+            "view", mockserver.url("/static/files/images/scrapy.png")
         )
-        command.add_options(parser)
-        assert command.short_desc() == "Open URL in browser, as seen by Scrapy"
-        assert "URL using the Scrapy downloader and show its" in command.long_desc()
+        assert returncode == 0, err
+        assert "Cannot view a non-text response." in err
 
 
 class TestEditCommand(TestProjectBase):
@@ -429,9 +705,7 @@ class TestEditCommand(TestProjectBase):
         spider = proj_path / self.project_name / "spiders" / "example.py"
         edited = proj_path / "edited.txt"
         editor = proj_path / "fake-editor.sh"
-        # Records the file it is asked to open ($2) into the file given as $1.
-        editor.write_text('#!/bin/sh\nprintf "%s" "$2" > "$1"\n', encoding="utf-8")
-        editor.chmod(0o755)
+        write_recording_editor(editor)
         monkeypatch.setenv("EDITOR", f"{editor} {edited}")
 
         assert call("genspider", "example", "example.com", cwd=proj_path) == 0
@@ -446,6 +720,11 @@ class TestEditCommand(TestProjectBase):
         returncode, _, err = proc("edit", "nonexistent", cwd=proj_path)
         assert returncode == 1
         assert "Spider not found: nonexistent" in err
+
+    def test_edit_no_spider(self, proj_path: Path) -> None:
+        returncode, out, _ = proc("edit", cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
 
 
 class TestHelpMessage(TestProjectBase):

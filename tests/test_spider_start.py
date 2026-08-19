@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 from asyncio import sleep
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from scrapy import Spider, signals
+from scrapy.utils.asyncio import sleep as scrapy_sleep
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 from .utils import twisted_sleep
 from .utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable
 
 SLEEP_SECONDS = 0.1
 
@@ -18,76 +22,113 @@ ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 
 
-class TestMain:
-    async def _test_spider(
-        self, spider: type[Spider], expected_items: list[Any] | None = None
-    ) -> None:
-        actual_items = []
-        expected_items = [] if expected_items is None else expected_items
+async def _test_spider(
+    spider: type[Spider],
+    expected_items: list[Any] | None = None,
+    settings: dict[str, Any] | None = None,
+    *,
+    ordered: bool = True,
+) -> None:
+    actual_items: list[Any] = []
+    expected_items = [] if expected_items is None else expected_items
 
-        def track_item(item, response, spider):
-            actual_items.append(item)
+    def track_item(item: Any, response: Any, spider: Spider) -> None:
+        actual_items.append(item)
 
-        crawler = get_crawler(spider)
-        crawler.signals.connect(track_item, signals.item_scraped)
-        await crawler.crawl_async()
-        assert crawler.stats
-        assert crawler.stats.get_value("finish_reason") == "finished"
-        assert actual_items == expected_items
+    crawler = get_crawler(spider, settings)
+    crawler.signals.connect(track_item, signals.item_scraped)
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("finish_reason") == "finished"
+    if not ordered:
+        actual_items = sorted(actual_items, key=repr)
+        expected_items = sorted(expected_items, key=repr)
 
-    @coroutine_test
-    async def test_start_urls(self):
-        class TestSpider(Spider):
-            name = "test"
-            start_urls = ["data:,"]
+    assert actual_items == expected_items
 
-            async def parse(self, response):
-                yield ITEM_A
 
-        await self._test_spider(TestSpider, [ITEM_A])
+@coroutine_test
+async def test_start_urls() -> None:
+    class TestSpider(Spider):
+        name = "test"
+        start_urls = ["data:,"]
 
-    @coroutine_test
-    async def test_start(self):
-        class TestSpider(Spider):
-            name = "test"
-
-            async def start(self):
-                yield ITEM_A
-
-        await self._test_spider(TestSpider, [ITEM_A])
-
-    @coroutine_test
-    async def test_start_subclass(self):
-        class BaseSpider(Spider):
-            async def start(self):
-                yield ITEM_A
-
-        class TestSpider(BaseSpider):
-            name = "test"
-
-        await self._test_spider(TestSpider, [ITEM_A])
-
-    async def _test_start(self, start_, expected_items=None):
-        class TestSpider(Spider):
-            name = "test"
-            start = start_
-
-        await self._test_spider(TestSpider, expected_items)
-
-    @pytest.mark.only_asyncio
-    @coroutine_test
-    async def test_asyncio_delayed(self):
-        async def start(spider):
-            await sleep(SLEEP_SECONDS)
+        async def parse(self, response):
             yield ITEM_A
 
-        await self._test_start(start, [ITEM_A])
+    await _test_spider(TestSpider, [ITEM_A])
 
-    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
-    @coroutine_test
-    async def test_twisted_delayed(self):
-        async def start(spider):
-            await maybe_deferred_to_future(twisted_sleep(SLEEP_SECONDS))
+
+@coroutine_test
+async def test_start() -> None:
+    class TestSpider(Spider):
+        name = "test"
+
+        async def start(self):
             yield ITEM_A
 
-        await self._test_start(start, [ITEM_A])
+    await _test_spider(TestSpider, [ITEM_A])
+
+
+@coroutine_test
+async def test_start_subclass() -> None:
+    class BaseSpider(Spider):
+        async def start(self):
+            yield ITEM_A
+
+    class TestSpider(BaseSpider):
+        name = "test"
+
+    await _test_spider(TestSpider, [ITEM_A])
+
+
+async def _test_start(
+    start_: Callable[[Any], AsyncIterator[Any]],
+    expected_items: list[Any] | None = None,
+) -> None:
+    class TestSpider(Spider):
+        name = "test"
+        start = start_
+
+    await _test_spider(TestSpider, expected_items)
+
+
+@pytest.mark.only_asyncio
+@coroutine_test
+async def test_asyncio_delayed() -> None:
+    async def start(spider):
+        await sleep(SLEEP_SECONDS)
+        yield ITEM_A
+
+    await _test_start(start, [ITEM_A])
+
+
+@pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
+@coroutine_test
+async def test_twisted_delayed() -> None:
+    async def start(spider):
+        await maybe_deferred_to_future(twisted_sleep(SLEEP_SECONDS))
+        yield ITEM_A
+
+    await _test_start(start, [ITEM_A])
+
+
+@coroutine_test
+async def test_slow_pipeline() -> None:
+    class SlowPipeline:
+        async def process_item(self, item):
+            await scrapy_sleep(SLEEP_SECONDS)
+            return item
+
+    class TestSpider(Spider):
+        name = "test"
+
+        async def start(self):
+            yield ITEM_A
+            yield ITEM_B
+
+    await _test_spider(
+        TestSpider,
+        [ITEM_A, ITEM_B],
+        {"ITEM_PIPELINES": {SlowPipeline: 0}},
+        ordered=False,
+    )

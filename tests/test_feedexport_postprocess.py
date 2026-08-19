@@ -12,9 +12,11 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.test import get_crawler
-from tests.test_feedexport import TestFeedExportBase, path_to_url, printf_escape
+from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test
+from tests.utils.feedexport import path_to_url, printf_escape
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -72,7 +74,13 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
 
         return content
 
-    def get_gzip_compressed(self, data, compresslevel=9, mtime=0, filename=""):
+    def get_gzip_compressed(
+        self,
+        data: bytes,
+        compresslevel: int = 9,
+        mtime: int = 0,
+        filename: str = "",
+    ) -> bytes:
         data_stream = BytesIO()
         gzipf = gzip.GzipFile(
             fileobj=data_stream,
@@ -85,6 +93,15 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         gzipf.close()
         data_stream.seek(0)
         return data_stream.read()
+
+    def test_tell_reports_target_file_position(self):
+        """Exporters that wrap the file they get, e.g. through
+        :class:`io.TextIOWrapper`, need it to report a position."""
+        file = BytesIO()
+        manager = PostProcessingManager([self.MyPlugin1], file, {})
+        assert manager.tell() == 0
+        manager.write(b"foo")
+        assert manager.tell() == file.tell() == 3
 
     @coroutine_test
     async def test_gzip_plugin(self):
@@ -528,11 +545,13 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
 
         data = await self.exported_data(self.items, settings)
 
-        for filename, result in data.items():
+        for filename, data_bytes in data.items():
+            expected: Any
+            result: Any
             if "pickle" in filename:
-                expected, result = self.items[0], pickle.loads(result)
+                expected, result = self.items[0], pickle.loads(data_bytes)
             elif "marshal" in filename:
-                expected, result = self.items[0], marshal.loads(result)
+                expected, result = self.items[0], marshal.loads(data_bytes)
             else:
-                expected = filename_to_expected[filename]
+                expected, result = filename_to_expected[filename], data_bytes
             assert result == expected

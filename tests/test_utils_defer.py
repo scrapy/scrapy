@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import warnings
 from asyncio import Future
 from typing import TYPE_CHECKING, Any
 
@@ -16,6 +17,7 @@ from scrapy.utils.defer import (
     deferred_to_future,
     iter_errback,
     maybe_deferred_to_future,
+    maybeDeferred_coro,
     mustbe_deferred,
     parallel_async,
 )
@@ -23,6 +25,8 @@ from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
+
+    from twisted.python.failure import Failure
 
 
 @pytest.mark.requires_reactor  # mustbe_deferred() requires a reactor
@@ -70,7 +74,7 @@ class TestIterErrback:
         def itergood() -> Generator[int, None, None]:
             yield from range(10)
 
-        errors = []
+        errors: list[Failure] = []
         out = list(iter_errback(itergood(), errors.append))
         assert out == list(range(10))
         assert not errors
@@ -82,7 +86,7 @@ class TestIterErrback:
                     1 / 0
                 yield x
 
-        errors = []
+        errors: list[Failure] = []
         out = list(iter_errback(iterbad(), errors.append))
         assert out == [0, 1, 2, 3, 4]
         assert len(errors) == 1
@@ -96,7 +100,7 @@ class TestAiterErrback:
             for x in range(10):
                 yield x
 
-        errors = []
+        errors: list[Failure] = []
         out = await collect_asyncgen(aiter_errback(itergood(), errors.append))
         assert out == list(range(10))
         assert not errors
@@ -109,7 +113,7 @@ class TestAiterErrback:
                     1 / 0
                 yield x
 
-        errors = []
+        errors: list[Failure] = []
         out = await collect_asyncgen(aiter_errback(iterbad(), errors.append))
         assert out == [0, 1, 2, 3, 4]
         assert len(errors) == 1
@@ -202,7 +206,7 @@ class TestParallelAsync:
         for length in [20, 50, 100]:
             parallel_count = [0]
             max_parallel_count = [0]
-            results = []
+            results: list[int] = []
             ait = self.get_async_iterable(length)
             dl = parallel_async(
                 ait,
@@ -222,7 +226,7 @@ class TestParallelAsync:
         for length in [20, 50, 100]:
             parallel_count = [0]
             max_parallel_count = [0]
-            results = []
+            results: list[int] = []
             ait = self.get_async_iterable_with_delays(length)
             dl = parallel_async(
                 ait,
@@ -240,7 +244,7 @@ class TestParallelAsync:
 
 class TestDeferredFromCoro:
     def test_deferred(self):
-        d = Deferred()
+        d: Deferred[None] = Deferred()
         result = deferred_from_coro(d)
         assert isinstance(result, Deferred)
         assert result is d
@@ -274,7 +278,7 @@ class TestDeferredFromCoro:
     @pytest.mark.only_asyncio
     @inline_callbacks_test
     def test_future(self):
-        future = Future()
+        future: Future[int] = Future()
         result = deferred_from_coro(future)
         assert isinstance(result, Deferred)
         future.set_result(42)
@@ -324,7 +328,7 @@ class TestDeferredFFromCoroF:
 class TestDeferredToFuture:
     @coroutine_test
     async def test_deferred(self):
-        d = Deferred()
+        d: Deferred[int] = Deferred()
         result = deferred_to_future(d)
         assert isinstance(result, Future)
         d.callback(42)
@@ -355,11 +359,20 @@ class TestDeferredToFuture:
         assert future_result == 42
 
 
+@pytest.mark.only_not_asyncio
+class TestDeferredToFutureNotAsyncio:
+    def test_deferred(self):
+        with pytest.raises(
+            RuntimeError, match=r"deferred_to_future\(\) requires an installed asyncio"
+        ):
+            deferred_to_future(Deferred())
+
+
 @pytest.mark.only_asyncio
 class TestMaybeDeferredToFutureAsyncio:
     @coroutine_test
     async def test_deferred(self):
-        d = Deferred()
+        d: Deferred[int] = Deferred()
         result = maybe_deferred_to_future(d)
         assert isinstance(result, Future)
         d.callback(42)
@@ -394,7 +407,20 @@ class TestMaybeDeferredToFutureAsyncio:
 class TestMaybeDeferredToFutureNotAsyncio:
     @coroutine_test
     async def test_deferred(self):
-        d = Deferred()
+        d: Deferred[int] = Deferred()
         result = maybe_deferred_to_future(d)
         assert isinstance(result, Deferred)
         assert result is d
+
+
+def test_maybe_deferred_coro_deferred() -> None:
+    d: Deferred[int] = Deferred()
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always")
+        assert maybeDeferred_coro(lambda: d) is d
+    # Only the deprecation of maybeDeferred_coro() itself is reported; callables
+    # that return a Deferred are the reason it exists.
+    assert [str(record.message) for record in records] == [
+        "maybeDeferred_coro() is deprecated and will be removed in a future"
+        " Scrapy version."
+    ]

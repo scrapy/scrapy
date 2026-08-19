@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from w3lib.http import basic_auth_header
 
@@ -5,19 +7,22 @@ from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 _DOMAIN_NOT_SET = object()
 
 
-def make_mw(user="", passwd="", domain=_DOMAIN_NOT_SET):
-    settings: dict = {
+def make_mw(
+    user: str = "", passwd: str = "", domain: str | object = _DOMAIN_NOT_SET
+) -> HttpAuthMiddleware:
+    settings: dict[str, Any] = {
         "HTTPAUTH_USER": user,
         "HTTPAUTH_PASS": passwd,
     }
     if domain is not _DOMAIN_NOT_SET:
         settings["HTTPAUTH_DOMAIN"] = domain
-    return HttpAuthMiddleware.from_crawler(get_crawler(settings_dict=settings))
+    return build_from_crawler(HttpAuthMiddleware, get_crawler(settings_dict=settings))
 
 
 # --- Spider attribute tests (deprecated) ---

@@ -28,6 +28,7 @@ __all__ = [
     "AUTOTHROTTLE_TARGET_CONCURRENCY",
     "AWS_ACCESS_KEY_ID",
     "AWS_ENDPOINT_URL",
+    "AWS_MAX_POOL_CONNECTIONS",
     "AWS_REGION_NAME",
     "AWS_SECRET_ACCESS_KEY",
     "AWS_SESSION_TOKEN",
@@ -107,6 +108,7 @@ __all__ = [
     "FTP_PASSWORD",
     "FTP_USER",
     "GCS_PROJECT_ID",
+    "HTTP2_MAX_FRAME_SIZE",
     "HTTPAUTH_DOMAIN",
     "HTTPAUTH_PASS",
     "HTTPAUTH_USER",
@@ -154,7 +156,6 @@ __all__ = [
     "MAIL_TLS",
     "MAIL_USER",
     "MEMDEBUG_ENABLED",
-    "MEMDEBUG_NOTIFY",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
     "MEMUSAGE_LIMIT_MB",
@@ -230,6 +231,7 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 AWS_ACCESS_KEY_ID = None
 AWS_SECRET_ACCESS_KEY = None
 AWS_ENDPOINT_URL = None
+AWS_MAX_POOL_CONNECTIONS = None
 AWS_REGION_NAME = None
 AWS_SESSION_TOKEN = None
 AWS_USE_SSL = None
@@ -240,7 +242,7 @@ BOT_NAME = "scrapybot"
 CLOSESPIDER_ERRORCOUNT = 0
 CLOSESPIDER_ITEMCOUNT = 0
 CLOSESPIDER_PAGECOUNT = 0
-CLOSESPIDER_TIMEOUT = 0
+CLOSESPIDER_TIMEOUT = 0.0
 CLOSESPIDER_PAGECOUNT_NO_ITEM = 0
 CLOSESPIDER_TIMEOUT_NO_ITEM = 0
 
@@ -377,6 +379,7 @@ FEED_STORAGES_BASE = {
     "": "scrapy.extensions.feedexport.FileFeedStorage",
     "file": "scrapy.extensions.feedexport.FileFeedStorage",
     "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
+    "ftps": "scrapy.extensions.feedexport.FTPFeedStorage",
     "gs": "scrapy.extensions.feedexport.GCSFeedStorage",
     "s3": "scrapy.extensions.feedexport.S3FeedStorage",
     "stdout": "scrapy.extensions.feedexport.StdoutFeedStorage",
@@ -399,6 +402,8 @@ FTP_USER = "anonymous"
 FTP_PASSWORD = "guest"  # noqa: S105
 
 GCS_PROJECT_ID = None
+
+HTTP2_MAX_FRAME_SIZE = 16384
 
 HTTPAUTH_USER = ""
 HTTPAUTH_PASS = ""
@@ -470,7 +475,6 @@ MAIL_SSL = False
 MAIL_TLS = False
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
-MEMDEBUG_NOTIFY = []  # send memory debugging report by mail at engine shutdown
 
 MEMUSAGE_ENABLED = True
 MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
@@ -556,6 +560,7 @@ SPIDER_MIDDLEWARES_BASE = {
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+    "scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware": 1000,
     # Spider side
 }
 

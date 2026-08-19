@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
-    "cryptography>=37.0.0",
+    "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
     "itemadapter>=0.1.0",
@@ -17,15 +17,18 @@ dependencies = [
     "packaging",
     "parsel>=1.5.0",
     "protego>=0.1.15",
-    "pyOpenSSL>=22.0.0",
-    "queuelib>=1.4.2",
-    "service_identity>=23.1.0",
+    "pyOpenSSL>=24.3.0",
+    "queuelib>=1.6.1",
+    "service_identity>=24.2.0",
     "tldextract",
-    "w3lib>=1.17.0",
+    "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    'backports.zstd>=1.3.0; python_version < "3.14"',
+    'brotli>=1.2.0; implementation_name != "pypy"',
+    'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -61,6 +64,20 @@ Source = "https://github.com/scrapy/scrapy"
 Tracker = "https://github.com/scrapy/scrapy/issues"
 "Release notes" = "https://docs.scrapy.org/en/latest/news.html"
 
+[project.optional-dependencies]
+bpython = ["bpython>=0.7.1"]
+gcs = ["google-cloud-storage>=1.29.0"]
+httpx = ["httpx2[http2,socks]>=2.0.0"]
+images = ["Pillow>=8.3.2"]
+ipython = ["ipython>=8.15.0"]
+ptpython = ["ptpython>=3.0.23"]
+robotparser = ["robotexclusionrulesparser>=1.6.2"]
+s3 = ["boto3>=1.20.0"]
+twisted-http2 = ["Twisted[http2]>=21.7.0"]
+uvloop = [
+    "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
+]
+
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
 
@@ -95,7 +112,26 @@ untyped_calls_exclude = [
 [[tool.mypy.overrides]]
 module = "tests.*"
 allow_untyped_defs = true
-allow_incomplete_defs = true # 48 errors
+allow_incomplete_defs = true # 59 errors
+
+# TODO
+[[tool.mypy.overrides]]
+module = [
+    "tests.test_cmdline",
+    "tests.test_downloaderslotssettings",
+    "tests.test_dupefilters",
+    "tests.test_extension_statsmailer",
+    "tests.test_extension_throttle",
+    "tests.test_linkextractors",
+    "tests.test_logformatter",
+    "tests.test_mail",
+    "tests.test_pqueues",
+    "tests.test_scheduler_base",
+    "tests.test_settings",
+    "tests.test_squeues",
+    "tests.test_squeues_request",
+    "tests.test_stats",
+]
 check_untyped_defs = false
 
 # Interface classes are hard to support
@@ -132,13 +168,12 @@ module = [
     "pyftpdlib.*",
     "pytest_twisted",
     "robotexclusionrulesparser",
-    "testfixtures",
     "zope.interface.*",
 ]
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.16.0"
+current_version = "2.17.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -270,13 +305,36 @@ markers = [
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
-    "requires_mitmproxy: marks tests that need mitmproxy",
+    "requires_mitmproxy: marks tests that need a mitmdump executable",
     "requires_internet: marks tests that need real Internet access",
 ]
 filterwarnings = [
+    # Envs with pinned old dependencies opt out of this, see tox.ini.
+    "error",
     "ignore::DeprecationWarning:twisted.web.static",
-    # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
-    "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
+    # Twisted leaves the listening socket open after a failed bind
+    # (CannotListenError): https://github.com/twisted/twisted/issues/6108
+    # The asyncio reactor likewise leaves client sockets and transports open on
+    # teardown. These surface as unraisable exceptions during finalization; the
+    # message wording varies across Python implementations and versions
+    # (PyPy leaves the prefix empty), so match on the object repr.
+    "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
+    "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    # PyDispatcher iterates its connection registry while a weakref callback
+    # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
+    # can die within a single collection.
+    "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
+    # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
+    # files open; the resulting warning surfaces at an arbitrary GC point.
+    "ignore:.*<_io\\.FileIO name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
+    "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
+    # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.
+    "ignore:The async(hat|ore) module is deprecated:DeprecationWarning",
+    # CI runs without coverage pass --no-cov, which pytest-cov reports. Matched
+    # by message because some tox envs do not install pytest-cov, and pytest
+    # warns when a filter names a module it cannot import.
+    "ignore:Coverage disabled via --no-cov switch!",
 ]
 
 [tool.ruff.lint]

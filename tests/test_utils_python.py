@@ -4,7 +4,7 @@ import functools
 import operator
 import platform
 import sys
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pytest
 
@@ -12,8 +12,10 @@ from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
     MutableAsyncChain,
+    _looks_like_import_path,
     binary_is_text,
     get_func_args,
+    get_spec,
     memoizemethod_noargs,
     to_bytes,
     to_unicode,
@@ -22,8 +24,7 @@ from scrapy.utils.python import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
-
+    from collections.abc import AsyncIterator, Iterable, Mapping
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -31,22 +32,22 @@ _VT = TypeVar("_VT")
 
 class TestMutableAsyncChain:
     @staticmethod
-    async def g1():
+    async def g1() -> AsyncIterator[int]:
         for i in range(3):
             yield i
 
     @staticmethod
-    async def g2():
+    async def g2() -> AsyncIterator[int]:
         return
         yield
 
     @staticmethod
-    async def g3():
+    async def g3() -> AsyncIterator[int]:
         for i in range(7, 10):
             yield i
 
     @staticmethod
-    async def g4():
+    async def g4() -> AsyncIterator[int]:
         for i in range(3, 5):
             yield i
         1 / 0
@@ -85,7 +86,7 @@ class TestToUnicode:
 
     def test_converting_a_strange_object_should_raise_type_error(self):
         with pytest.raises(TypeError):
-            to_unicode(423)
+            to_unicode(423)  # type: ignore[arg-type]
 
     def test_errors_argument(self):
         assert to_unicode(b"a\xedb", "utf-8", errors="replace") == "a\ufffdb"
@@ -103,7 +104,7 @@ class TestToBytes:
 
     def test_converting_a_strange_object_should_raise_type_error(self):
         with pytest.raises(TypeError):
-            to_bytes(pytest)
+            to_bytes(pytest)  # type: ignore[arg-type]
 
     def test_errors_argument(self):
         assert to_bytes("a\ufffdb", "latin-1", errors="replace") == b"a?b"
@@ -112,10 +113,10 @@ class TestToBytes:
 def test_memoizemethod_noargs():
     class A:
         @memoizemethod_noargs
-        def cached(self):
+        def cached(self) -> object:
             return object()
 
-        def noncached(self):
+        def noncached(self) -> object:
             return object()
 
     a = A()
@@ -139,6 +140,11 @@ def test_binaryistext(value: bytes, expected: bool) -> None:
     assert binary_is_text(value) is expected
 
 
+def test_binaryistext_not_bytes() -> None:
+    with pytest.raises(TypeError, match="data must be bytes, got 'str'"):
+        binary_is_text("hello")  # type: ignore[arg-type]
+
+
 def test_get_func_args():
     def f1(a, b, c):
         pass
@@ -150,7 +156,7 @@ def test_get_func_args():
         pass
 
     class A:
-        def __init__(self, a, b, c):
+        def __init__(self, a: int, b: int, c: int):
             pass
 
         def method(self, a, b, c):
@@ -165,6 +171,8 @@ def test_get_func_args():
     partial_f1 = functools.partial(f1, None)
     partial_f2 = functools.partial(f1, b=None)
     partial_f3 = functools.partial(partial_f2, None)
+    # a positional value that happens to match the name of a free parameter
+    partial_f4 = functools.partial(f1, "b")
 
     assert get_func_args(f1) == ["a", "b", "c"]
     assert get_func_args(f2) == ["a", "b", "c"]
@@ -174,6 +182,7 @@ def test_get_func_args():
     assert get_func_args(partial_f1) == ["b", "c"]
     assert get_func_args(partial_f2) == ["a", "c"]
     assert get_func_args(partial_f3) == ["c"]
+    assert get_func_args(partial_f4) == ["b", "c"]
     assert get_func_args(cal) == ["a", "b", "c"]
     assert get_func_args(object) == []
     assert get_func_args(str.split, stripself=True) == ["sep", "maxsplit"]
@@ -189,6 +198,54 @@ def test_get_func_args():
             [],
             ["args", "kwargs"],
         ]
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 14),
+    reason="annotations are only lazily evaluated since Python 3.14 (PEP 649)",
+)
+def test_get_func_args_unresolvable_annotations():
+    # dont_inherit=True, or the module's future import stringizes the annotations
+    namespace: dict[str, Any] = {}
+    exec(  # pylint: disable=exec-used
+        compile(
+            "def f(a: OnlyAtTypeCheckingTime, b: int = 1) -> OnlyAtTypeCheckingTime: pass",
+            "<test>",
+            "exec",
+            dont_inherit=True,
+        ),
+        namespace,
+    )
+    assert get_func_args(namespace["f"]) == ["a", "b"]
+
+
+def test_get_func_args_not_callable() -> None:
+    with pytest.raises(TypeError, match="func must be callable, got 'int'"):
+        get_func_args(1)  # type: ignore[arg-type]
+
+
+def test_get_spec_not_callable() -> None:
+    with pytest.raises(TypeError, match="is not callable"):
+        get_spec(1)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("scrapy.Spider", True),
+        ("scrapy", True),
+        ("", False),
+        ("scrapy Spider", False),
+        ("scrapy.Spider\n", False),
+        ("scrapy-Spider", False),
+        (".scrapy", False),
+        ("scrapy.", False),
+        ("scrapy..Spider", False),
+        ("scrapy.1Spider", False),
+    ],
+)
+def test_looks_like_import_path(value: str, expected: bool) -> None:
+    assert _looks_like_import_path(value) is expected
 
 
 @pytest.mark.parametrize(

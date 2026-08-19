@@ -36,6 +36,77 @@ their input in an unsafe way, such as :func:`eval`, :func:`exec`, or
 :func:`pickle.loads`, and be careful when writing response data to paths
 derived from the response itself.
 
+.. _security-response-size:
+
+Memory use when parsing responses
+=================================
+
+Parsing a response with :ref:`selectors <topics-selectors>` builds an in-memory
+tree of the whole response body, which takes several times as much memory as
+the body itself. Scrapy parses without the size limits that libxml2 applies by
+default, so the size of that tree is bound only by the size of the response, as
+controlled by :setting:`DOWNLOAD_MAXSIZE` (default: 1 GiB).
+
+XML entities are left unresolved, so the tree stays proportional to the
+response body even for input crafted as an `XML bomb
+<https://lxml.de/FAQ.html#is-lxml-vulnerable-to-xml-bombs>`_. A server can still
+make a crawler allocate a lot of memory by returning a very large response,
+though, so if you know the size of the responses you care about, lower the
+limit:
+
+.. code-block:: python
+
+    DOWNLOAD_MAXSIZE = 32 * 1024 * 1024  # 32 MiB
+
+* **Pro:** a server cannot make the crawler allocate more memory than the limit
+  allows, whether by returning a large response or by crafting one that is
+  expensive to parse.
+
+* **Con:** you can no longer scrape sites that legitimately serve responses
+  above the limit, as those responses are dropped.
+
+.. _security-parser-limits:
+
+Parser limits
+-------------
+
+The limits that libxml2 applies by default, such as 256 nesting levels and
+10 MB per text node, can be restored by overriding
+:attr:`~scrapy.http.TextResponse.selector` in a response subclass and swapping
+responses in a :ref:`downloader middleware <topics-downloader-middleware>`:
+
+.. code-block:: python
+
+    from functools import cached_property
+
+    from scrapy import Selector
+    from scrapy.http import HtmlResponse
+
+
+    class LimitedHtmlResponse(HtmlResponse):
+        @cached_property
+        def selector(self):
+            return Selector(self, huge_tree=False)
+
+
+    class LimitedParsingMiddleware:
+        def process_response(self, request, response, spider):
+            if isinstance(response, HtmlResponse):
+                return response.replace(cls=LimitedHtmlResponse)
+            return response
+
+Do the same with :class:`~scrapy.http.XmlResponse` if you also parse XML.
+
+These limits apply per node, so :setting:`DOWNLOAD_MAXSIZE` remains your bound
+on total memory: a response made of many small elements is parsed in full and
+uses as much memory either way.
+
+* **Pro:** deeply nested responses, and responses with very large individual
+  nodes, become cheaper to parse.
+
+* **Con:** parsing stops at those limits without raising, so a legitimate page
+  that exceeds them yields incomplete data and no error.
+
 TLS connections
 ===============
 

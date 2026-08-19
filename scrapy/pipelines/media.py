@@ -55,6 +55,25 @@ FileInfoOrError: TypeAlias = (
 logger = logging.getLogger(__name__)
 
 
+class FileException(Exception):
+    """General media error exception"""
+
+
+class _MediaRequestFiltered(FileException):
+    """Raised internally by media pipelines when a media request is filtered
+    out (e.g. as an offsite request) instead of being downloaded.
+
+    It is a subclass of :exc:`FileException` for backward compatibility, but
+    unlike an actual download error it is logged at the ``DEBUG`` level and
+    without a traceback, since filtering a request is expected behavior rather
+    than an error.
+    """
+
+
+def _media_request_filtered(failure: Failure) -> bool:
+    return isinstance(failure.value, _MediaRequestFiltered)
+
+
 class MediaPipeline(ABC):
     LOG_FAILED_RESULTS: bool = True
 
@@ -81,7 +100,6 @@ class MediaPipeline(ABC):
                 stacklevel=2,
             )
         self.crawler: Crawler = crawler
-        assert crawler.request_fingerprinter
         self._fingerprinter: RequestFingerprinterProtocol = (
             crawler.request_fingerprinter
         )
@@ -193,7 +211,8 @@ class MediaPipeline(ABC):
                 result = await self._check_media_to_download(request, info, item=item)
         except Exception:
             result = Failure()
-            logger.exception(result)
+            if not _media_request_filtered(result):
+                logger.exception(result)
         self._cache_result_and_execute_waiters(result, fp, info)
         return await maybe_deferred_to_future(wad)  # it must return wad at last
 
@@ -208,7 +227,6 @@ class MediaPipeline(ABC):
     ) -> FileInfo:
         try:
             self._modify_media_request(request)
-            assert self.crawler.engine
             response = await self.crawler.engine.download_async(request)
             return await ensure_awaitable(
                 self.media_downloaded(response, request, info, item=item)
@@ -304,6 +322,8 @@ class MediaPipeline(ABC):
             for ok, value in results:
                 if not ok:
                     assert isinstance(value, Failure)
+                    if _media_request_filtered(value):
+                        continue
                     logger.error(
                         "%(class)s found errors processing %(item)s",
                         {"class": self.__class__.__name__, "item": item},
