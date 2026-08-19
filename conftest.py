@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import pytest
 from twisted.web.http import H2_ENABLED
 
+from scrapy.core.engine import ExecutionEngine
 from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
@@ -67,6 +68,17 @@ def pytest_addoption(parser, pluginmanager):
         default="none",
         choices=["asyncio", "default", "none"],
     )
+
+
+@pytest.fixture(autouse=True)
+def fast_engine_heartbeat(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Shorten the interval at which the engine checks for work while idle.
+
+    Whenever nothing else wakes the engine up, e.g. while a component sleeps,
+    it stays idle until its next heartbeat, so tests that go through that wait
+    pay the whole interval.
+    """
+    monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.1)
 
 
 @pytest.fixture(scope="session")
