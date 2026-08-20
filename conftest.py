@@ -87,22 +87,32 @@ def mockserver() -> Generator[MockServer]:
         yield mockserver
 
 
+@pytest.fixture(scope="session")
+def _mitm_proxies() -> Generator[dict[str, tuple[MitmProxy, str]]]:
+    proxies: dict[str, tuple[MitmProxy, str]] = {}
+    try:
+        yield proxies
+    finally:
+        for proxy, _url in proxies.values():
+            proxy.stop()
+
+
 @pytest.fixture  # function scope because it modifies os.environ
 def proxy_server(
-    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
-) -> Generator[str]:
-    kind = request.param
-    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
-    url = proxy.start()
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+    _mitm_proxies: dict[str, tuple[MitmProxy, str]],
+) -> str:
+    kind: str = request.param
+    if kind not in _mitm_proxies:
+        proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
+        _mitm_proxies[kind] = (proxy, proxy.start())
+    _, url = _mitm_proxies[kind]
     if kind == "https":
         url = url.replace("http://", "https://")
     monkeypatch.setenv("http_proxy", url)
     monkeypatch.setenv("https_proxy", url)
-
-    try:
-        yield kind
-    finally:
-        proxy.stop()
+    return kind
 
 
 @pytest.fixture(scope="session")

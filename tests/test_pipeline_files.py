@@ -430,7 +430,7 @@ class TestFilesPipeline:
             mock.patch.object(
                 FSFilesStore,
                 "stat_file",
-                return_value={"checksum": "abc", "last_modified": time.time()},
+                return_value={"checksum": "abc", "last_modified": time.time() - 1},
             ),
             mock.patch.object(
                 FilesPipeline, "get_media_requests", return_value=[request]
