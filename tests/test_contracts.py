@@ -31,9 +31,9 @@ if TYPE_CHECKING:
 def _request(
     conman: ContractsManager, method: CallbackT, results: TestResult
 ) -> Request:
-    request = conman.from_method(method, results)
-    assert request
-    return request
+    requests = conman.from_method(method, results)
+    assert len(requests) == 1
+    return requests[0]
 
 
 def _call(request: Request, response: Any) -> Any:
@@ -273,6 +273,18 @@ class DemoSpider(Spider):
         key = response.meta["key"]
         yield {key: "value"}
 
+    def returns_multiple_urls(self, response):
+        """checked against two sample urls in one batch, and once more in a
+        second batch, each batch with its own expectations
+        @url http://scrapy.org
+        @url http://example.com
+        @returns items 1 1
+
+        @url http://scrapy.org
+        @returns items 0 0
+        """
+        return DemoItem(url=response.url)
+
 
 class CustomContractSuccessSpider(Spider):
     name = "custom_contract_success_spider"
@@ -328,37 +340,38 @@ class TestContractsManager:
     def test_contracts(self):
         spider = DemoSpider()
 
-        # extract contracts correctly
-        contracts = self.conman.extract_contracts(spider.returns_request)
-        assert len(contracts) == 2
-        assert frozenset(type(x) for x in contracts) == frozenset(
+        # extract contracts correctly, as a single batch
+        batches = self.conman.extract_contracts(spider.returns_request)
+        assert len(batches) == 1
+        assert len(batches[0]) == 2
+        assert frozenset(type(x) for x in batches[0]) == frozenset(
             [UrlContract, ReturnsContract]
         )
 
-        # returns request for valid method
-        assert self.conman.from_method(spider.returns_request, self.results) is not None
+        # returns a request for a valid method
+        assert len(self.conman.from_method(spider.returns_request, self.results)) == 1
 
         # no request for missing url
-        assert self.conman.from_method(spider.parse_no_url, self.results) is None
+        assert self.conman.from_method(spider.parse_no_url, self.results) == []
 
     def test_cb_kwargs(self):
         spider = DemoSpider()
         response = ResponseMock()
 
         # extract contracts correctly
-        contracts = self.conman.extract_contracts(spider.returns_request_cb_kwargs)
+        (contracts,) = self.conman.extract_contracts(spider.returns_request_cb_kwargs)
         assert len(contracts) == 3
         assert frozenset(type(x) for x in contracts) == frozenset(
             [UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]
         )
 
-        contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs)
+        (contracts,) = self.conman.extract_contracts(spider.returns_item_cb_kwargs)
         assert len(contracts) == 3
         assert frozenset(type(x) for x in contracts) == frozenset(
             [UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]
         )
 
-        contracts = self.conman.extract_contracts(
+        (contracts,) = self.conman.extract_contracts(
             spider.returns_item_cb_kwargs_error_unexpected_keyword
         )
         assert len(contracts) == 3
@@ -366,7 +379,7 @@ class TestContractsManager:
             [UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]
         )
 
-        contracts = self.conman.extract_contracts(
+        (contracts,) = self.conman.extract_contracts(
             spider.returns_item_cb_kwargs_error_missing_argument
         )
         assert len(contracts) == 2
@@ -406,13 +419,13 @@ class TestContractsManager:
         spider = DemoSpider()
 
         # extract contracts correctly
-        contracts = self.conman.extract_contracts(spider.returns_request_meta)
+        (contracts,) = self.conman.extract_contracts(spider.returns_request_meta)
         assert len(contracts) == 3
         assert frozenset(type(x) for x in contracts) == frozenset(
             [UrlContract, MetadataContract, ReturnsContract]
         )
 
-        contracts = self.conman.extract_contracts(spider.returns_item_meta)
+        (contracts,) = self.conman.extract_contracts(spider.returns_item_meta)
         assert len(contracts) == 3
         assert frozenset(type(x) for x in contracts) == frozenset(
             [UrlContract, MetadataContract, ReturnsContract]
@@ -513,6 +526,33 @@ class TestContractsManager:
         _call(request, response)
         self.should_succeed()
 
+    def test_multiple_urls_and_batches(self):
+        spider = DemoSpider()
+
+        # a blank line starts a new batch, and each batch may repeat @url
+        batches = self.conman.extract_contracts(spider.returns_multiple_urls)
+        assert len(batches) == 2
+        assert len(batches[0]) == 3
+        assert len(batches[1]) == 2
+
+        requests = self.conman.from_method(spider.returns_multiple_urls, self.results)
+        assert sorted(request.url for request in requests) == [
+            "http://example.com",
+            "http://scrapy.org",
+            "http://scrapy.org",
+        ]
+
+        for request in requests:
+            response = ResponseMock()
+            response.url = request.url
+            _call(request, response)
+
+        # the first batch expects one item from each of its two urls, and
+        # gets it from both; the second batch expects zero items from its
+        # url, but gets one, so only that one fails
+        assert len(self.results.failures) == 1
+        assert not self.results.errors
+
     def test_testcase_str(self):
         spider = DemoSpider()
         contract = UrlContract(spider.returns_request, "http://scrapy.org")
@@ -559,7 +599,7 @@ class TestContractsManager:
         response = ResponseMock()
 
         # invalid regex
-        assert self.conman.from_method(spider.invalid_regex, self.results) is None
+        assert self.conman.from_method(spider.invalid_regex, self.results) == []
 
         # invalid regex with valid contract
         request = _request(
