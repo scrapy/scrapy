@@ -774,22 +774,27 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         from twisted.internet import reactor
 
         install_shutdown_handlers(self._signal_fast_shutdown)
-        self._log_shutdown(signum)
+        reactor.callFromThread(self._log_shutdown, signum)
         reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_fast_shutdown(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
 
         install_shutdown_handlers(self._signal_kill)
-        self._log_fast_shutdown(signum)
+        reactor.callFromThread(self._log_fast_shutdown, signum)
         reactor.callFromThread(self._fast_stop_reactor)
 
     def _signal_kill(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
 
         install_shutdown_handlers(signal.SIG_IGN)
-        self._log_kill(signum)
+        reactor.callFromThread(self._log_kill, signum)
         reactor.callFromThread(self._stop_reactor)
+
+    # Logging cannot happen in a signal handler: the interrupted code may be
+    # in the middle of writing to the same stream, and writing to it again
+    # raises RuntimeError, which would leave the shutdown unfinished. These
+    # two methods must be called from the reactor or event loop thread.
 
     @staticmethod
     def _log_shutdown(signum: int) -> None:
@@ -1183,9 +1188,12 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
                     }
                 )
 
-    def _schedule_reactorless_shutdown(self, *, mode: _StopMode) -> None:
+    def _schedule_reactorless_shutdown(self, *, mode: _StopMode, signum: int) -> None:
         if (loop := self._reactorless_loop) is None:
             return
+
+        log_func = self._log_fast_shutdown if mode == "fast" else self._log_shutdown
+        loop.call_soon_threadsafe(log_func, signum)
 
         def _create_shutdown_task() -> None:
             coro = self._shutdown_reactorless(mode=mode)
@@ -1198,13 +1206,11 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
     def _signal_shutdown_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(self._signal_fast_shutdown_reactorless)
-        self._log_shutdown(signum)
-        self._schedule_reactorless_shutdown(mode="graceful")
+        self._schedule_reactorless_shutdown(mode="graceful", signum=signum)
 
     def _signal_fast_shutdown_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(self._signal_kill_reactorless)
-        self._log_fast_shutdown(signum)
-        self._schedule_reactorless_shutdown(mode="fast")
+        self._schedule_reactorless_shutdown(mode="fast", signum=signum)
 
     async def _shutdown_reactorless(self, *, mode: _StopMode) -> None:
         await self.stop(mode=mode)
@@ -1216,9 +1222,9 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
 
     def _signal_kill_reactorless(self, signum: int, _: Any) -> None:
         install_shutdown_handlers(signal.SIG_IGN)
-        self._log_kill(signum)
         if (loop := self._reactorless_loop) is None:
             return
+        loop.call_soon_threadsafe(self._log_kill, signum)
         if (task := self._reactorless_main_task) is not None:
             loop.call_soon_threadsafe(task.cancel)
 

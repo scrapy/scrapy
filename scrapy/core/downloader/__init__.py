@@ -23,7 +23,7 @@ from scrapy.utils.asyncio import (
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
@@ -234,7 +234,7 @@ class Downloader:
             )
             return response
         except Exception:
-            await _defer_sleep_async()
+            await _process_pending_io()
             raise
         finally:
             # 3. After response arrives, remove the request from transferring
@@ -291,7 +291,7 @@ class Downloader:
             download_dfd.cancel()
 
         if dropped_count:
-            await _defer_sleep_async()
+            await _process_pending_io()
 
         return dropped_count
 
