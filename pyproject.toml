@@ -172,7 +172,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.17.0"
+current_version = "2.18.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -198,8 +198,12 @@ branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
 disable_warnings = ["include-ignored"]
+# Starting a coverage session in every spawned interpreter is what covers the
+# code paths of the command-line interface. It is also the bulk of the run time
+# of the tests that spawn one, so SCRAPY_COVERAGE_PATCH switches it for a cheap
+# patch where that cost is not worth paying; see tox.ini.
 patch = [
-    "subprocess",
+    "${SCRAPY_COVERAGE_PATCH-subprocess}",
 ]
 
 [tool.coverage.paths]

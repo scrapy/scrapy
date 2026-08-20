@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import hashlib
 import inspect
 import os
 import re
@@ -13,7 +12,7 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from typing import IO, TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, cast, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
@@ -138,26 +137,6 @@ def walk_modules(path: str) -> list[ModuleType]:  # pragma: no cover
     )
 
     return list(walk_modules_iter(path))
-
-
-def md5sum(file: IO[bytes]) -> str:  # pragma: no cover
-    """Calculate the md5 checksum of a file-like object without reading its
-    whole content in memory."""
-    warnings.warn(
-        (
-            "The scrapy.utils.misc.md5sum function is deprecated and will be "
-            "removed in a future version of Scrapy."
-        ),
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    m = hashlib.md5()  # noqa: S324
-    while True:
-        d = file.read(8096)
-        if not d:
-            break
-        m.update(d)
-    return m.hexdigest()
 
 
 def rel_has_nofollow(rel: str | None) -> bool:
