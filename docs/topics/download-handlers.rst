@@ -393,7 +393,7 @@ WebSocketDownloadHandler
 
 .. versionadded:: VERSION
 
-.. autoclass:: scrapy.core.downloader.handlers._websocket.WebSocketDownloadHandler
+.. autoclass:: scrapy.core.downloader.handlers.websocket.WebSocketDownloadHandler
 
 | Supported schemes: ``ws``, ``wss``.
 | :ref:`Lazy <lazy-download-handlers>`: yes.

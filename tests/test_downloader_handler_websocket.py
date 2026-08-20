@@ -8,7 +8,7 @@ import pytest
 from websockets.exceptions import ConnectionClosed
 
 from scrapy import Request, Spider, signals
-from scrapy.core.downloader.handlers._websocket import WebSocketDownloadHandler
+from scrapy.core.downloader.handlers.websocket import WebSocketDownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import WebSocketResponse
 from scrapy.spidermiddlewares.httperror import HttpError
@@ -224,7 +224,7 @@ class TestWebSocketDownloadHandler:
 
     def test_no_websockets_library(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "scrapy.core.downloader.handlers._websocket.HAS_WEBSOCKETS", False
+            "scrapy.core.downloader.handlers.websocket.HAS_WEBSOCKETS", False
         )
         with pytest.raises(NotConfigured, match="websockets library"):
             build_from_crawler(WebSocketDownloadHandler, get_crawler())
