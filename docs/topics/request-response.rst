@@ -1325,16 +1325,51 @@ TextResponse objects
 
        1. the encoding passed in the ``__init__()`` method ``encoding`` argument
 
-       2. the encoding declared in the Content-Type HTTP header. If this
+       2. the encoding of the `byte order mark`_ at the start of the response
+          body
+
+       3. the encoding declared in the Content-Type HTTP header. If this
           encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
-       3. the encoding declared in the response body. The TextResponse class
+       4. the encoding declared in the response body. The TextResponse class
           doesn't provide any special functionality for this. However, the
           :class:`HtmlResponse` and :class:`XmlResponse` classes do.
 
-       4. the encoding inferred by looking at the response body. This is the more
+       5. the encoding inferred by looking at the response body. This is the more
           fragile method but also the last one tried.
+
+       This order matches the `encoding sniffing algorithm`_ of the HTML
+       standard, which web browsers follow.
+
+       To resolve the encoding differently, determine it yourself and pass it
+       through :meth:`Response.replace` from a :ref:`downloader middleware
+       <topics-downloader-middleware>`. Give that middleware an order between
+       those of
+       :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
+       (580) and
+       :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+       (590), so that it gets a decompressed body and no other component reads
+       the response text before it.
+
+       For example, to give a declaration in the response body precedence over
+       the Content-Type header:
+
+       .. code-block:: python
+
+           from w3lib.encoding import html_body_declared_encoding, read_bom
+
+           from scrapy.http import TextResponse
+
+
+           class BodyEncodingMiddleware:
+               def process_response(self, request, response, spider):
+                   if not isinstance(response, TextResponse):
+                       return response
+                   if read_bom(response.body)[0]:
+                       return response
+                   encoding = html_body_declared_encoding(response.body)
+                   return response.replace(encoding=encoding) if encoding else response
 
     .. attribute:: TextResponse.selector
 
@@ -1387,6 +1422,8 @@ TextResponse objects
         ``<base>`` tag, or just :attr:`Response.url` if there is no such
         tag.
 
+.. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
+.. _encoding sniffing algorithm: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
 
 HtmlResponse objects

@@ -36,7 +36,6 @@ class NullDownloadHandler:
 
     async def download_request(self, request: Request) -> Response:
         self._active += 1
-        assert self._crawler.stats
         self._crawler.stats.max_value("benchmark/peak_concurrency", self._active)
         try:
             await asyncio.sleep(0)

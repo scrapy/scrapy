@@ -6,6 +6,7 @@ on:
         branches:
             - master
     pull_request:
+        types: [opened, synchronize, reopened, closed]
         paths:
             - scrapy/**
             - tests/benchmarks/**
@@ -14,13 +15,14 @@ on:
     workflow_dispatch:
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+    group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
     cancel-in-progress: true
 
 permissions: {}
 
 jobs:
     benchmark:
+        if: github.event.action != 'closed'
         runs-on: ubuntu-latest
         env:
             # Make uv use the interpreter that actions/setup-python installed

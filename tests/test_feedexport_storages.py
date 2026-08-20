@@ -173,6 +173,13 @@ class TestFTPFeedStorage:
             self._assert_stored(ftp_server.path / filename, b"bar")
 
     @coroutine_test
+    async def test_missing_parent_directories(self):
+        with MockFTPServer() as ftp_server:
+            path = "missing/parent/dirs/file"
+            await self._store(ftp_server.url(path), b"foo")
+            self._assert_stored(ftp_server.path / path, b"foo")
+
+    @coroutine_test
     async def test_tls(self, monkeypatch):
         monkeypatch.setenv(
             "SSL_CERT_FILE", str(Path(__file__).parent / "keys" / "localhost.crt")
@@ -212,16 +219,16 @@ class TestBlockingFeedStorage:
     def test_default_temp_dir(self):
         b = MyBlockingFeedStorage()
 
-        storage_file = b.open(get_test_spider())
-        storage_dir = Path(storage_file.name).parent
+        with b.open(get_test_spider()) as storage_file:
+            storage_dir = Path(storage_file.name).parent
         assert str(storage_dir) == tempfile.gettempdir()
 
     def test_temp_file(self, tmp_path):
         b = MyBlockingFeedStorage()
 
         spider = get_test_spider({"FEED_TEMPDIR": str(tmp_path)})
-        storage_file = b.open(spider)
-        storage_dir = Path(storage_file.name).parent
+        with b.open(spider) as storage_file:
+            storage_dir = Path(storage_file.name).parent
         assert storage_dir == tmp_path
 
     def test_invalid_folder(self, tmp_path):

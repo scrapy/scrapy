@@ -12,8 +12,10 @@ from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
     MutableAsyncChain,
+    _looks_like_import_path,
     binary_is_text,
     get_func_args,
+    get_spec,
     memoizemethod_noargs,
     to_bytes,
     to_unicode,
@@ -138,6 +140,11 @@ def test_binaryistext(value: bytes, expected: bool) -> None:
     assert binary_is_text(value) is expected
 
 
+def test_binaryistext_not_bytes() -> None:
+    with pytest.raises(TypeError, match="data must be bytes, got 'str'"):
+        binary_is_text("hello")  # type: ignore[arg-type]
+
+
 def test_get_func_args():
     def f1(a, b, c):
         pass
@@ -164,6 +171,8 @@ def test_get_func_args():
     partial_f1 = functools.partial(f1, None)
     partial_f2 = functools.partial(f1, b=None)
     partial_f3 = functools.partial(partial_f2, None)
+    # a positional value that happens to match the name of a free parameter
+    partial_f4 = functools.partial(f1, "b")
 
     assert get_func_args(f1) == ["a", "b", "c"]
     assert get_func_args(f2) == ["a", "b", "c"]
@@ -173,6 +182,7 @@ def test_get_func_args():
     assert get_func_args(partial_f1) == ["b", "c"]
     assert get_func_args(partial_f2) == ["a", "c"]
     assert get_func_args(partial_f3) == ["c"]
+    assert get_func_args(partial_f4) == ["b", "c"]
     assert get_func_args(cal) == ["a", "b", "c"]
     assert get_func_args(object) == []
     assert get_func_args(str.split, stripself=True) == ["sep", "maxsplit"]
@@ -207,6 +217,35 @@ def test_get_func_args_unresolvable_annotations():
         namespace,
     )
     assert get_func_args(namespace["f"]) == ["a", "b"]
+
+
+def test_get_func_args_not_callable() -> None:
+    with pytest.raises(TypeError, match="func must be callable, got 'int'"):
+        get_func_args(1)  # type: ignore[arg-type]
+
+
+def test_get_spec_not_callable() -> None:
+    with pytest.raises(TypeError, match="is not callable"):
+        get_spec(1)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("scrapy.Spider", True),
+        ("scrapy", True),
+        ("", False),
+        ("scrapy Spider", False),
+        ("scrapy.Spider\n", False),
+        ("scrapy-Spider", False),
+        (".scrapy", False),
+        ("scrapy.", False),
+        ("scrapy..Spider", False),
+        ("scrapy.1Spider", False),
+    ],
+)
+def test_looks_like_import_path(value: str, expected: bool) -> None:
+    assert _looks_like_import_path(value) is expected
 
 
 @pytest.mark.parametrize(
