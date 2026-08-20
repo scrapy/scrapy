@@ -24,13 +24,13 @@ def _import_file(filepath: str | PathLike[str]) -> ModuleType:
     if abspath.suffix and abspath.suffix not in {".py", ".pyw"}:
         raise ValueError(f"Not a Python source file: {abspath}")
     module_name = abspath.stem or "spidermodule"
-    spec = importlib.util.spec_from_file_location(
-        module_name, abspath, loader=SourceFileLoader(module_name, str(abspath))
-    )
-    if spec is None or spec.loader is None:
-        raise ValueError(f"Not a Python source file: {abspath}")
+    # An explicit loader is required: without it extensionless file paths, such
+    # as the /dev/fd paths of process substitution, get no loader assigned.
+    loader = SourceFileLoader(module_name, str(abspath))
+    spec = importlib.util.spec_from_file_location(module_name, abspath, loader=loader)
+    assert spec
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    loader.exec_module(module)
     return module
 
 
