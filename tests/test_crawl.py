@@ -76,11 +76,11 @@ class TestCrawl:
 
     @coroutine_test
     async def test_fixed_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.2)
+        await self._test_delay(mockserver, total=10, delay=0.2)
 
     @coroutine_test
     async def test_randomized_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.1, randomize=True)
+        await self._test_delay(mockserver, total=10, delay=0.1, randomize=True)
 
     @staticmethod
     async def _test_delay(
@@ -115,8 +115,7 @@ class TestCrawl:
         times = crawler.spider.times
         total_time = times[-1] - times[0]
         average = total_time / (len(times) - 1)
-        if average > delay / tolerance:
-            pytest.skip("control run without download delay was too slow")
+        assert average <= delay / tolerance, "test total or delay values are too small"
 
     @coroutine_test
     async def test_timeout_success(self, mockserver: MockServer) -> None:
