@@ -711,7 +711,7 @@ class CrawlerProcessBase(CrawlerRunnerBase):
     def __init__(
         self,
         settings: dict[str, Any] | Settings | None = None,
-        install_root_handler: bool = True,
+        install_root_handler: bool | None = None,
     ):
         super().__init__(settings)
         configure_logging(self.settings, install_root_handler)
@@ -831,7 +831,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
     :class:`~scrapy.settings.Settings` object.
 
     :param install_root_handler: whether to install root logging handler
-        (default: True)
+        (default: the :setting:`LOG_INSTALL_ROOT_HANDLER` setting)
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
@@ -844,7 +844,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
     def __init__(
         self,
         settings: dict[str, Any] | Settings | None = None,
-        install_root_handler: bool = True,
+        install_root_handler: bool | None = None,
     ):
         super().__init__(settings, install_root_handler)
         self._initialized_reactor: bool = False
@@ -911,7 +911,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     to not be installed but installs an asyncio event loop and uses it.
 
     :param install_root_handler: whether to install root logging handler
-        (default: True)
+        (default: the :setting:`LOG_INSTALL_ROOT_HANDLER` setting)
 
     This class shouldn't be needed (since Scrapy is responsible of using it
     accordingly) unless writing scripts that manually handle the crawling
@@ -925,7 +925,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
     def __init__(
         self,
         settings: dict[str, Any] | Settings | None = None,
-        install_root_handler: bool = True,
+        install_root_handler: bool | None = None,
     ):
         super().__init__(settings, install_root_handler)
         logger.debug("Using AsyncCrawlerProcess")
