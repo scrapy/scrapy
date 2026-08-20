@@ -87,16 +87,14 @@ def defer_succeed(result: _T) -> Deferred[_T]:  # pragma: no cover
 
 
 async def _process_pending_io() -> None:
-    """Delay so the event loop has a chance to go through its readers and
-    writers, and cancelled tasks a chance to actually settle, before resuming.
+    """Yield control until the event loop has gone through its readers and writers.
 
-    Do not replace this with a couple of zero-delay yields: those only
-    guarantee resuming after readers and writers that were *already* ready
-    when this was awaited, not after work that a callback running during
-    those yields schedules, such as the cleanup of a task cancelled right
-    before this call.
+    Yielding twice is what makes that guarantee: the first yield can resume
+    before the callbacks of the file descriptors that the poll found ready, and
+    only the second one is certain to resume after them.
     """
-    await sleep(_DEFER_DELAY)
+    await sleep(0)
+    await sleep(0)
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover

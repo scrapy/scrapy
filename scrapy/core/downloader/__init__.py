@@ -7,7 +7,7 @@ from datetime import datetime
 from time import monotonic
 from typing import TYPE_CHECKING, Any
 
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
@@ -284,14 +284,21 @@ class Downloader:
                     spider=self.crawler.spider,
                 )
 
+        cancelled_dfds: list[Deferred[None]] = []
         for download_dfd in list(self._download_tasks.values()):
             if download_dfd.called:
                 continue
             dropped_count += 1
             download_dfd.cancel()
+            cancelled_dfds.append(download_dfd)
 
-        if dropped_count:
-            await _process_pending_io()
+        if cancelled_dfds:
+            # Wait for the cancellations themselves to settle, e.g. the
+            # _download_tasks entries to be popped by _download_task_done(),
+            # instead of guessing how many event loop iterations that takes.
+            await maybe_deferred_to_future(
+                DeferredList(cancelled_dfds, consumeErrors=True)
+            )
 
         return dropped_count
 
