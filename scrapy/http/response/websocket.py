@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from scrapy.exceptions import DownloadFailedError
 from scrapy.http.response import Response
 from scrapy.utils.defer import deferred_from_coro
 
@@ -58,8 +59,18 @@ class WebSocketResponse(Response):
         await self.connection.send(message)
 
     async def receive(self) -> str | bytes:
-        """Return the next message from the server."""
-        return await self.connection.recv()
+        """Return the next message from the server.
+
+        Raises :exc:`~scrapy.exceptions.DownloadFailedError` if the
+        connection is closed, e.g. because a message went over
+        :setting:`DOWNLOAD_MAXSIZE`.
+        """
+        from websockets.exceptions import ConnectionClosed  # noqa: PLC0415
+
+        try:
+            return await self.connection.recv()
+        except ConnectionClosed as e:
+            raise DownloadFailedError(str(e)) from e
 
     async def close(self) -> None:
         """Close the connection."""
@@ -69,7 +80,16 @@ class WebSocketResponse(Response):
         await self.close()
 
     def __aiter__(self) -> AsyncIterator[str | bytes]:
-        return aiter(self.connection)
+        return self._iter_messages()
+
+    async def _iter_messages(self) -> AsyncIterator[str | bytes]:
+        from websockets.exceptions import ConnectionClosedError  # noqa: PLC0415
+
+        try:
+            async for message in self.connection:
+                yield message
+        except ConnectionClosedError as e:
+            raise DownloadFailedError(str(e)) from e
 
     async def __aenter__(self) -> Self:
         return self

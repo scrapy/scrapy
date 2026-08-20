@@ -5,11 +5,10 @@ from ipaddress import IPv4Address
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 import pytest
-from websockets.exceptions import ConnectionClosed
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers.websocket import WebSocketDownloadHandler
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import DownloadFailedError, NotConfigured
 from scrapy.http import WebSocketResponse
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -165,8 +164,22 @@ class TestWebSocketDownloadHandler:
     async def test_download_maxsize(self, ws_server: WebSocketMockServer) -> None:
         async def callback(response: WebSocketResponse) -> AsyncIterator[Any]:
             async with response:
-                with pytest.raises(ConnectionClosed):
+                with pytest.raises(DownloadFailedError):
                     await response.receive()
+            yield {"closed": True}
+
+        items, _ = await _crawl(ws_server.url("/large"), callback, DOWNLOAD_MAXSIZE=100)
+        assert items == [{"closed": True}]
+
+    @coroutine_test
+    async def test_download_maxsize_while_iterating(
+        self, ws_server: WebSocketMockServer
+    ) -> None:
+        async def callback(response: WebSocketResponse) -> AsyncIterator[Any]:
+            async with response:
+                with pytest.raises(DownloadFailedError):
+                    async for _ in response:
+                        pass
             yield {"closed": True}
 
         items, _ = await _crawl(ws_server.url("/large"), callback, DOWNLOAD_MAXSIZE=100)
