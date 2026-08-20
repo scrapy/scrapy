@@ -579,6 +579,12 @@ Bug fixes
     itself writing to the log.
     (:gh:`8022`)
 
+-   Nested selectors, e.g. the result of calling
+    :meth:`~scrapy.Selector.jmespath` on a selector, now let ``parsel``
+    determine their type instead of forcing the ``html`` type, so that they no
+    longer return the wrong type or value.
+    (:gh:`8038`, :gh:`8040`)
+
 Documentation
 ~~~~~~~~~~~~~
 
@@ -590,6 +596,10 @@ Documentation
     page, about finding the bottleneck of a crawl before changing any setting,
     which covers :ref:`broad crawls <broad-crawls>` as one of its sections.
     (:gh:`4737`, :gh:`7938`)
+
+-   Added a :ref:`concepts <concepts>` page, a quick map of Scrapy's main
+    building blocks, what problem each one solves, and when to reach for it.
+    (:gh:`1569`, :gh:`8025`)
 
 -   Added a :ref:`cookies <cookies>` page, which gathers what used to be
     spread across the request and downloader middleware pages.
@@ -653,6 +663,27 @@ Documentation
     :gh:`7883`,
     :gh:`7907`,
     :gh:`7941`)
+
+-   Documented that the ``html`` iterator of
+    :class:`~scrapy.spiders.XMLFeedSpider` can silently mangle tags that HTML
+    treats as void elements, e.g. ``<link>``, dropping their content and
+    closing tag.
+    (:gh:`4675`, :gh:`8045`)
+
+-   Documented that the ``keep_fragments`` parameter of
+    :func:`~scrapy.utils.request.fingerprint` is not a substitute for
+    rendering JavaScript to reach content that a headless browser loads based
+    on the URL fragment.
+    (:gh:`4789`, :gh:`8033`)
+
+-   Documented :ref:`how to derive the job directory from the spider name
+    <job-dir-spider-name>`.
+    (:gh:`4748`, :gh:`8035`)
+
+-   Documented that the project name from :file:`scrapy.cfg` also appears
+    elsewhere by default, and which of those uses actually require it to
+    match.
+    (:gh:`2484`, :gh:`8044`)
 
 -   Many other corrections and improvements.
     (:gh:`4589`,
