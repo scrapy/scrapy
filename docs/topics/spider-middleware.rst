@@ -7,7 +7,8 @@ Spider Middleware
 The spider middleware is a framework of hooks into Scrapy's spider processing
 mechanism where you can plug custom functionality to process the responses that
 are sent to :ref:`topics-spiders` for processing and to process the requests
-and items that are generated from spiders.
+and items that come out of a spider's callback. See :ref:`concepts` for a
+rundown of other alternatives.
 
 .. _topics-spider-middleware-setting:
 
@@ -125,6 +126,10 @@ one or more of these methods:
         *result* is lazy: a generator callback runs as *result* is iterated, so
         code that runs before that iteration runs before the callback body.
 
+        The number of objects yielded need not match the number received: drop
+        some, pass others through unchanged, or yield more than were received,
+        e.g. turning one item into several.
+
         .. seealso:: :ref:`universal-spider-middleware`.
 
         :param response: the response which generated this output from the
@@ -228,25 +233,7 @@ DepthMiddleware
 .. module:: scrapy.spidermiddlewares.depth
    :synopsis: Depth Spider Middleware
 
-.. class:: DepthMiddleware
-
-   DepthMiddleware is used for tracking the depth of each Request inside the
-   site being scraped. It works by setting ``request.meta['depth'] = 0`` whenever
-   there is no value previously set (usually just the first Request) and
-   incrementing it by 1 otherwise.
-
-   It can be used to limit the maximum depth to scrape, control Request
-   priority based on their depth, and things like that.
-
-   The :class:`DepthMiddleware` can be configured through the following
-   settings (see the settings documentation for more info):
-
-      * :setting:`DEPTH_LIMIT` - The maximum depth that will be allowed to
-        crawl for any site. If zero, no limit will be imposed.
-      * :setting:`DEPTH_STATS_VERBOSE` - Whether to collect the number of
-        requests for each depth.
-      * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
-        their depth.
+.. autoclass:: DepthMiddleware
 
 HttpErrorMiddleware
 -------------------

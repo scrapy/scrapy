@@ -111,8 +111,6 @@ The following extras are available:
      - Provides
    * - ``bpython``
      - :ref:`bpython shell <shell-config>`
-   * - ``brotli``
-     - :ref:`Brotli response decompression <http-compression>`
    * - ``gcs``
      - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
        :ref:`feed exports <topics-feed-exports>` and
@@ -136,8 +134,6 @@ The following extras are available:
      - :ref:`twisted-http2-handler`
    * - ``uvloop``
      - `uvloop <https://github.com/MagicStack/uvloop>`_ event loop
-   * - ``zstd``
-     - :ref:`Zstandard response decompression <http-compression>`
 
 
 .. _intro-install-platform-notes:

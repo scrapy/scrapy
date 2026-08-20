@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
-    "cryptography>=37.0.0",
+    "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
     "itemadapter>=0.1.0",
@@ -17,15 +17,18 @@ dependencies = [
     "packaging",
     "parsel>=1.5.0",
     "protego>=0.1.15",
-    "pyOpenSSL>=22.0.0",
+    "pyOpenSSL>=24.3.0",
     "queuelib>=1.6.1",
-    "service_identity>=23.1.0",
+    "service_identity>=24.2.0",
     "tldextract",
-    "w3lib>=1.17.0",
+    "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    'backports.zstd>=1.3.0; python_version < "3.14"',
+    'brotli>=1.2.0; implementation_name != "pypy"',
+    'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -62,10 +65,6 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
-brotli = [
-    "brotli>=1.2.0; implementation_name != 'pypy'",
-    "brotlicffi>=1.2.0.0; implementation_name == 'pypy'",
-]
 gcs = ["google-cloud-storage>=1.29.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
@@ -77,7 +76,6 @@ twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
     "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
 ]
-zstd = ["zstandard>=0.16.0; implementation_name != 'pypy'"]
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
@@ -118,42 +116,20 @@ allow_incomplete_defs = true # 59 errors
 # TODO
 [[tool.mypy.overrides]]
 module = [
-    "tests.spiders",
-    "tests.test_closespider",
     "tests.test_cmdline",
-    "tests.test_contracts",
     "tests.test_downloaderslotssettings",
     "tests.test_dupefilters",
-    "tests.test_engine_loop",
-    "tests.test_exporters",
     "tests.test_extension_statsmailer",
     "tests.test_extension_throttle",
-    "tests.test_feedexport",
-    "tests.test_feedexport_postprocess",
-    "tests.test_feedexport_storages",
-    "tests.test_feedexport_uri_params",
-    "tests.test_item",
     "tests.test_linkextractors",
-    "tests.test_loader",
     "tests.test_logformatter",
     "tests.test_mail",
-    "tests.test_pipeline_crawl",
-    "tests.test_pipeline_files",
-    "tests.test_pipeline_images",
-    "tests.test_pipeline_media",
-    "tests.test_pipelines",
     "tests.test_pqueues",
     "tests.test_scheduler_base",
     "tests.test_settings",
-    "tests.test_spider",
-    "tests.test_spider_crawl",
-    "tests.test_spidermiddleware_output_chain",
-    "tests.test_spidermiddleware_process_start",
-    "tests.test_spider_sitemap",
     "tests.test_squeues",
     "tests.test_squeues_request",
     "tests.test_stats",
-    "tests.utils.bases.spider",
 ]
 check_untyped_defs = false
 
@@ -196,7 +172,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.17.0"
+current_version = "2.18.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -222,8 +198,12 @@ branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
 disable_warnings = ["include-ignored"]
+# Starting a coverage session in every spawned interpreter is what covers the
+# code paths of the command-line interface. It is also the bulk of the run time
+# of the tests that spawn one, so SCRAPY_COVERAGE_PATCH switches it for a cheap
+# patch where that cost is not worth paying; see tox.ini.
 patch = [
-    "subprocess",
+    "${SCRAPY_COVERAGE_PATCH-subprocess}",
 ]
 
 [tool.coverage.paths]
@@ -332,9 +312,35 @@ markers = [
     "requires_internet: marks tests that need real Internet access",
 ]
 filterwarnings = [
+    # Envs with pinned old dependencies opt out of this, see tox.ini.
+    "error",
     "ignore::DeprecationWarning:twisted.web.static",
-    # Twisted doesn't close failed sockets after CannotListenError: https://github.com/twisted/twisted/issues/6108
-    "ignore:Exception ignored in. <socket\\.socket.*laddr=..0\\.0\\.0\\.0., 0.:pytest.PytestUnraisableExceptionWarning",
+    # Twisted leaves the listening socket open after a failed bind
+    # (CannotListenError): https://github.com/twisted/twisted/issues/6108
+    # The asyncio reactor likewise leaves client sockets and transports open on
+    # teardown. These surface as unraisable exceptions during finalization; the
+    # message wording varies across Python implementations and versions
+    # (PyPy leaves the prefix empty), so match on the object repr.
+    "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
+    "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    # PyDispatcher iterates its connection registry while a weakref callback
+    # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
+    # can die within a single collection.
+    "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
+    # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
+    # files open; the resulting warning surfaces at an arbitrary GC point, as an
+    # unraisable exception or as a plain ResourceWarning, which pytest.warns()
+    # re-emits when it does not match, failing an unrelated test.
+    "ignore:.*<_io\\.\\w+ name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed file <_io\\.\\w+ name=.*queuelib-tests-:ResourceWarning",
+    # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
+    "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
+    # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.
+    "ignore:The async(hat|ore) module is deprecated:DeprecationWarning",
+    # CI runs without coverage pass --no-cov, which pytest-cov reports. Matched
+    # by message because some tox envs do not install pytest-cov, and pytest
+    # warns when a filter names a module it cannot import.
+    "ignore:Coverage disabled via --no-cov switch!",
 ]
 
 [tool.ruff.lint]

@@ -53,65 +53,13 @@ Request objects
        ``None`` is passed as value, the HTTP header will not be sent at all.
 
        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-           :ref:`cookies-mw`. If you need to set cookies for a request, use the
-           ``cookies`` argument. This is a known current limitation that is being
-           worked on.
+           :ref:`cookie middleware <cookies>`. If you need to set cookies for a
+           request, use the ``cookies`` argument.
 
     :type headers: dict
 
-    :param cookies: the request cookies. These can be sent in two forms.
-
-        .. invisible-code-block: python
-
-            from scrapy import Request
-
-        1. Using a dict:
-
-        .. code-block:: python
-
-            request_with_cookies = Request(
-                url="http://www.example.com",
-                cookies={"currency": "USD", "country": "UY"},
-            )
-
-        2. Using a list of dicts:
-
-        .. code-block:: python
-
-            request_with_cookies = Request(
-                url="https://www.example.com",
-                cookies=[
-                    {
-                        "name": "currency",
-                        "value": "USD",
-                        "domain": "example.com",
-                        "path": "/currency",
-                        "secure": True,
-                    },
-                ],
-            )
-
-        The latter form allows for customizing the ``domain`` and ``path``
-        attributes of the cookie. This is only useful if the cookies are saved
-        for later requests.
-
-        .. reqmeta:: dont_merge_cookies
-
-        When some site returns cookies (in a response) those are stored in the
-        cookies for that domain and will be sent again in future requests.
-        That's the typical behaviour of any regular web browser.
-
-        Note that setting the :reqmeta:`dont_merge_cookies` key to ``True`` in
-        :attr:`request.meta <scrapy.Request.meta>` causes custom cookies to be
-        ignored.
-
-        For more info see :ref:`cookies-mw`.
-
-        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-            :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`scrapy.Request.cookies <scrapy.Request>` parameter. This is a known
-            current limitation that is being worked on.
-
+    :param cookies: the request cookies, as a dict of cookie names and values
+        or as a list of dicts with a cookie each. See :ref:`cookies`.
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
@@ -1377,16 +1325,51 @@ TextResponse objects
 
        1. the encoding passed in the ``__init__()`` method ``encoding`` argument
 
-       2. the encoding declared in the Content-Type HTTP header. If this
+       2. the encoding of the `byte order mark`_ at the start of the response
+          body
+
+       3. the encoding declared in the Content-Type HTTP header. If this
           encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
-       3. the encoding declared in the response body. The TextResponse class
+       4. the encoding declared in the response body. The TextResponse class
           doesn't provide any special functionality for this. However, the
           :class:`HtmlResponse` and :class:`XmlResponse` classes do.
 
-       4. the encoding inferred by looking at the response body. This is the more
+       5. the encoding inferred by looking at the response body. This is the more
           fragile method but also the last one tried.
+
+       This order matches the `encoding sniffing algorithm`_ of the HTML
+       standard, which web browsers follow.
+
+       To resolve the encoding differently, determine it yourself and pass it
+       through :meth:`Response.replace` from a :ref:`downloader middleware
+       <topics-downloader-middleware>`. Give that middleware an order between
+       those of
+       :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
+       (580) and
+       :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+       (590), so that it gets a decompressed body and no other component reads
+       the response text before it.
+
+       For example, to give a declaration in the response body precedence over
+       the Content-Type header:
+
+       .. code-block:: python
+
+           from w3lib.encoding import html_body_declared_encoding, read_bom
+
+           from scrapy.http import TextResponse
+
+
+           class BodyEncodingMiddleware:
+               def process_response(self, request, response, spider):
+                   if not isinstance(response, TextResponse):
+                       return response
+                   if read_bom(response.body)[0]:
+                       return response
+                   encoding = html_body_declared_encoding(response.body)
+                   return response.replace(encoding=encoding) if encoding else response
 
     .. attribute:: TextResponse.selector
 
@@ -1439,6 +1422,8 @@ TextResponse objects
         ``<base>`` tag, or just :attr:`Response.url` if there is no such
         tag.
 
+.. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
+.. _encoding sniffing algorithm: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
 
 HtmlResponse objects

@@ -9,7 +9,8 @@ own custom functionality into Scrapy.
 
 Unlike other components, extensions do not have a specific role in Scrapy. They
 are “wildcard” components that can be used for anything that does not fit the
-role of any other type of component.
+role of any other type of component, such as collecting stats or enforcing a
+memory limit; see :ref:`concepts` for a rundown of other alternatives.
 
 Loading and activating extensions
 =================================
@@ -374,8 +375,8 @@ This extension periodically logs rich stat data as a JSON object::
             "elapsed": 360.008903,
             "log_interval": 60.0,
             "log_interval_real": 60.006694,
-            "start_time": "2023-08-03 23:24:57",
-            "utcnow": "2023-08-03 23:30:57"
+            "start_time": "2023-08-03T23:24:57.148903+00:00",
+            "utcnow": "2023-08-03T23:30:57.157806+00:00"
         }
     }
 

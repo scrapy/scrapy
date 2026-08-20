@@ -136,6 +136,70 @@ Example:
                   return f"$ {str(value)}"
               return super().serialize_field(field, name, value)
 
+.. _custom-exporters:
+
+Writing your own item exporter
+==============================
+
+To write an item exporter, subclass :class:`BaseItemExporter` and implement
+:meth:`~BaseItemExporter.export_item`, where
+:meth:`~BaseItemExporter.get_serialized_fields` gives you the ``(name, value)``
+pairs to export.
+
+To make your exporter available to the :ref:`feed exports
+<topics-feed-exports>`, list it in the :setting:`FEED_EXPORTERS` setting. Feed
+exports :ref:`build <from-crawler>` it with the output file as the first
+positional argument, and with the ``fields``, ``encoding`` and ``indent``
+:ref:`feed options <feed-options>` and every key of ``item_export_kwargs`` as
+keyword arguments, so your ``__init__`` method must forward unknown keyword
+arguments to :class:`BaseItemExporter`.
+
+The file object belongs to whoever opened it, i.e. to the feed storage in the
+case of feed exports, which also closes it. If you need a text file, for
+example to use :func:`csv.writer` or another Python API that does not accept a
+binary file, wrap it with :class:`io.TextIOWrapper` and call
+:meth:`~io.TextIOBase.detach` on the wrapper in
+:meth:`~BaseItemExporter.finish_exporting`; otherwise the wrapper closes the
+underlying file when it is garbage-collected.
+
+For example, the following item exporter writes items as blocks of
+``name: value`` lines:
+
+.. code-block:: python
+
+    from io import TextIOWrapper
+
+    from scrapy.exporters import BaseItemExporter
+
+
+    class TextItemExporter(BaseItemExporter):
+        def __init__(self, file, item_separator="\n", **kwargs):
+            super().__init__(**kwargs)
+            self.item_separator = item_separator
+            self.stream = TextIOWrapper(
+                file, encoding=self.encoding or "utf-8", write_through=True
+            )
+
+        def export_item(self, item):
+            for name, value in self.get_serialized_fields(item):
+                print(f"{name}: {value}", file=self.stream)
+            self.stream.write(self.item_separator)
+
+        def finish_exporting(self):
+            self.stream.detach()
+
+To use it as the ``txt`` feed format:
+
+.. code-block:: python
+
+    FEED_EXPORTERS = {"txt": "myproject.exporters.TextItemExporter"}
+    FEEDS = {
+        "items.txt": {
+            "format": "txt",
+            "item_export_kwargs": {"item_separator": "---\n"},
+        },
+    }
+
 .. _topics-exporters-reference:
 
 Built-in Item Exporters reference
@@ -167,6 +231,8 @@ BaseItemExporter
    .. method:: export_item(item)
 
       Exports the given item. This method must be implemented in subclasses.
+
+   .. automethod:: BaseItemExporter.get_serialized_fields
 
    .. method:: serialize_field(field, name, value)
 
@@ -216,7 +282,7 @@ BaseItemExporter
           :class:`dict` items, which have no declared fields, the key order of
           each item is used instead.
 
-          .. versionchanged:: VERSION
+          .. versionchanged:: 2.18.0
              Fields of non-\ :class:`dict` items used to be exported in the
              order in which they had been populated, except in
              :class:`CsvItemExporter`, which has always used declaration order.

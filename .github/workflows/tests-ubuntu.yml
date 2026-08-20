@@ -9,13 +9,15 @@ on:
     - master
     - '[0-9]+.[0-9]+'
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
-  group: ${{github.workflow}}-${{ github.ref }}
+  group: ${{github.workflow}}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   tests:
+    if: github.event.action != 'closed'
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: ubuntu-latest
     env:
@@ -86,6 +88,7 @@ jobs:
         - python-version: pypy3.11-7.3.20
           env:
             TOXENV: pypy3-extra-deps
+          coverage: true
         - python-version: "3.14"
           env:
             TOXENV: botocore

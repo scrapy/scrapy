@@ -48,7 +48,11 @@ class XMLFeedSpider(Spider):
     #:
     #: -   ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
     #:     Keep in mind this uses DOM parsing and must load all DOM in memory
-    #:     which could be a problem for big feeds
+    #:     which could be a problem for big feeds. It also parses the feed
+    #:     with an HTML parser, which can silently mangle tags that HTML
+    #:     treats as void elements, such as ``<link>``, dropping their
+    #:     content and closing tag. Use ``xml`` or ``iternodes`` instead
+    #:     for feeds affected by this.
     #:
     #: -   ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
     #:     Keep in mind this uses DOM parsing and must load all DOM in memory
