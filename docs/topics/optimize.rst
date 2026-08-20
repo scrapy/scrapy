@@ -257,14 +257,6 @@ Lowering memory usage
 Lowering network usage
 ----------------------
 
--   Install brotli_ and zstandard_ to support brotli-compressed_ and
-    zstd-compressed_ responses.
-
-    .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-    .. _brotli: https://pypi.org/project/Brotli/
-    .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
-    .. _zstandard: https://pypi.org/project/zstandard/
-
 -   Enable :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`
     while developing your spider, so that re-runs do not download the same
     responses again.

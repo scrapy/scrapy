@@ -109,6 +109,12 @@ def test_setdefault() -> None:
     assert h.getlist("X-Forwarded-For") is olist
 
 
+def test_fromkeys() -> None:
+    h = Headers.fromkeys(("Content-Type", "Content-Length"), "value")
+    assert h.getlist("Content-Type") == [b"value"]
+    assert h.getlist("Content-Length") == [b"value"]
+
+
 def test_iterables() -> None:
     idict = {"Content-Type": "text/html", "X-Forwarded-For": ["ip1", "ip2"]}
 
