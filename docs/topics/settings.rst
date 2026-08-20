@@ -1046,6 +1046,8 @@ Default:
         "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
+        "ws": "scrapy.core.downloader.handlers._websocket.WebSocketDownloadHandler",
+        "wss": "scrapy.core.downloader.handlers._websocket.WebSocketDownloadHandler",
     }
 
 (when :setting:`TWISTED_REACTOR_ENABLED` is ``True``)
@@ -1059,6 +1061,8 @@ Default:
         "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": None,
+        "ws": "scrapy.core.downloader.handlers._websocket.WebSocketDownloadHandler",
+        "wss": "scrapy.core.downloader.handlers._websocket.WebSocketDownloadHandler",
     }
 
 (when :setting:`TWISTED_REACTOR_ENABLED` is ``False``)

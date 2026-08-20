@@ -152,3 +152,16 @@ def strip_url(
             "" if strip_fragment else parsed_url.fragment,
         )
     )
+
+
+_HTTP_SCHEMES = {"ws": "http", "wss": "https"}
+
+
+def _to_http_scheme(scheme: str) -> str:
+    """Return the HTTP scheme that *scheme* is served over.
+
+    WebSocket URLs have schemes of their own, so code that reasons about the
+    underlying HTTP transport, such as looking up the matching :file:`robots.txt`
+    URL or proxy, needs their HTTP equivalent.
+    """
+    return _HTTP_SCHEMES.get(scheme, scheme)
