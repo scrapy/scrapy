@@ -105,7 +105,7 @@ class RemoteControl:
                 f"{type(self).__name__} requires the asyncio support."
                 f" You can set the REMOTE_CONTROL_ENABLED setting to False to remove this warning."
             )
-        self.crawler: Crawler = crawler
+        self._crawler: Crawler = crawler
         self._default_timeout: float = crawler.settings.getfloat(
             "REMOTE_CONTROL_TIMEOUT_DEFAULT"
         )
@@ -138,7 +138,7 @@ class RemoteControl:
             kwargs.setdefault("file", buf)
             print(*args, **kwargs)
 
-        return {"crawler": self.crawler, "stash": self._stash, "print": _print}
+        return {"crawler": self._crawler, "stash": self._stash, "print": _print}
 
     async def start(self) -> None:
         """Start the HTTP server."""
@@ -158,13 +158,13 @@ class RemoteControl:
             await site.start()
             port = self._runner.addresses[0][1]
 
-            job_path = job_files_dir(self.crawler.settings) / new_job_file_name()
-            assert self.crawler.spider
+            job_path = job_files_dir(self._crawler.settings) / new_job_file_name()
+            assert self._crawler.spider
             # we create the job file after starting the HTTP server
             write_job_file(
                 job_path,
-                spider=self.crawler.spider.name,
-                project=self.crawler.settings.get("BOT_NAME"),
+                spider=self._crawler.spider.name,
+                project=self._crawler.settings.get("BOT_NAME"),
                 scrapy_version=scrapy.__version__,
                 port=port,
                 token=self._auth_token,
@@ -173,12 +173,12 @@ class RemoteControl:
             logger.info(
                 f"Remote control HTTP server listening on"
                 f" port {port} (job {job_path.stem})",
-                extra={"crawler": self.crawler},
+                extra={"crawler": self._crawler},
             )
         except Exception:
             logger.exception(
                 "Remote control HTTP server failed to start",
-                extra={"crawler": self.crawler},
+                extra={"crawler": self._crawler},
             )
             await self.stop()
 
@@ -196,7 +196,7 @@ class RemoteControl:
         except Exception:
             logger.exception(
                 "Error stopping the remote control HTTP server",
-                extra={"crawler": self.crawler},
+                extra={"crawler": self._crawler},
             )
         finally:
             self._stash.clear()
@@ -295,12 +295,12 @@ class RemoteControl:
 
     def _get_status(self) -> StatusResult:
         """Return the data for the ``/status`` response."""
-        assert self.crawler.spider
-        start_time: datetime | None = self.crawler.stats.get_value("start_time")
+        assert self._crawler.spider
+        start_time: datetime | None = self._crawler.stats.get_value("start_time")
         return {
             "pid": os.getpid(),
-            "spider": self.crawler.spider.name,
-            "project": self.crawler.settings.get("BOT_NAME"),
+            "spider": self._crawler.spider.name,
+            "project": self._crawler.settings.get("BOT_NAME"),
             "scrapy_version": scrapy.__version__,
             "start_time": start_time.timestamp() if start_time is not None else None,
         }

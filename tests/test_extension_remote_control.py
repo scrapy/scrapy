@@ -24,6 +24,7 @@ from scrapy.extensions.remote_control import (
     _effective_timeout,
 )
 from scrapy.settings import default_settings
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -39,7 +40,7 @@ def _get_extension(settings: dict[str, Any] | None = None) -> RemoteControl:
         settings_dict={"REMOTE_CONTROL_ENABLED": True, **(settings or {})}
     )
     crawler.spider = crawler._create_spider()
-    return RemoteControl(crawler)
+    return build_from_crawler(RemoteControl, crawler)
 
 
 def compile_or_fail(source: str) -> CodeType:
@@ -136,7 +137,7 @@ async def test_crawler_is_in_the_namespace() -> None:
     result = await extension._run_code(
         compile_or_fail("print(crawler.spidercls.name)"), 5
     )
-    assert result["output"] == f"{extension.crawler.spidercls.name}\n"
+    assert result["output"] == f"{extension._crawler.spidercls.name}\n"
 
 
 @coroutine_test
@@ -422,7 +423,7 @@ def test_get_status_fields() -> None:
     extension = _get_extension()
     assert extension._get_status() == {
         "pid": os.getpid(),
-        "spider": extension.crawler.spidercls.name,
+        "spider": extension._crawler.spidercls.name,
         "project": "scrapybot",
         "scrapy_version": scrapy.__version__,
         "start_time": None,
@@ -442,21 +443,21 @@ def test_get_status_project_unset() -> None:
 def test_get_status_start_time() -> None:
     extension = _get_extension()
     start_time = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
-    extension.crawler.stats.set_value("start_time", start_time)
+    extension._crawler.stats.set_value("start_time", start_time)
     assert extension._get_status()["start_time"] == start_time.timestamp()
 
 
 @coroutine_test
 async def test_status(tmp_path: Path) -> None:
     async with _started_extension(tmp_path) as extension:
-        extension.crawler.stats.set_value(
+        extension._crawler.stats.set_value(
             "start_time", datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
         )
         status, body = await _request_status(extension, headers=_auth(extension))
     assert status == 200
     assert body == {
         "pid": os.getpid(),
-        "spider": extension.crawler.spidercls.name,
+        "spider": extension._crawler.spidercls.name,
         "project": "scrapybot",
         "scrapy_version": scrapy.__version__,
         "start_time": datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc).timestamp(),
@@ -521,7 +522,7 @@ async def test_job_file_written_and_removed(tmp_path: Path) -> None:
         assert len(files) == 1
         record = json.loads(files[0].read_text(encoding="utf-8"))
         assert record["token"] == extension._auth_token
-        assert record["spider"] == extension.crawler.spidercls.name
+        assert record["spider"] == extension._crawler.spidercls.name
     assert list(tmp_path.glob("*.json")) == []
 
 
@@ -616,7 +617,7 @@ async def test_stop_does_not_wait_for_a_running_snippet(
 ) -> None:
     monkeypatch.setattr(remote_control, "STOP_TIMEOUT", 0.1)
     extension = _get_extension({"REMOTE_CONTROL_JOBS_DIR": str(tmp_path)})
-    extension.crawler.spider = extension.crawler.spidercls()
+    extension._crawler.spider = extension._crawler.spidercls()
     await extension.start()
     request = asyncio.ensure_future(
         _request_execute(
