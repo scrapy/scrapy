@@ -196,6 +196,29 @@ class MySpider(scrapy.Spider):
         _, out, err = proc("runspider", str(path), "--pdb", input="")
         assert "(Pdb)" in out, err
 
+    def test_pdb_on_logged_error_without_exception(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import logging
+import scrapy
+
+logger = logging.getLogger(__name__)
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+
+    async def start(self):
+        logger.error("boom")
+        return
+        yield
+""",
+            encoding="utf-8",
+        )
+        returncode, out, err = proc("runspider", str(path), "--pdb", input="")
+        assert returncode == 0, err
+        assert "(Pdb)" not in out
+
     def test_pdb_on_handled_failure(self, tmp_path: Path) -> None:
         path = tmp_path / "myspider.py"
         path.write_text(
