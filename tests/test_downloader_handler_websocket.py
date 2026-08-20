@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
 
-    _CallbackT: TypeAlias = Callable[[WebSocketResponse], AsyncIterator[Any]]
+    _Callback: TypeAlias = Callable[[WebSocketResponse], AsyncIterator[Any]]
 
 
 pytestmark = pytest.mark.only_asyncio
@@ -37,7 +37,7 @@ def ws_server() -> Generator[WebSocketMockServer]:
 
 
 async def _crawl(
-    url: str, callback: _CallbackT | None = None, **settings: Any
+    url: str, callback: _Callback | None = None, **settings: Any
 ) -> tuple[list[Any], Crawler]:
     """Crawl *url* with *callback* and return the scraped items and the crawler."""
     items: list[Any] = []
