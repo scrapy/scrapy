@@ -262,6 +262,39 @@ pre-defined templates, but certainly not the only way to create spiders. You
 can just create the spider source code files yourself, instead of using this
 command.
 
+.. _spider-templates:
+
+Custom spider templates
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To define your own spider templates, point :setting:`TEMPLATES_DIR` at a
+directory with a :file:`spiders` subdirectory, and write a :file:`{name}.tmpl`
+file there for every template, where *name* is the value to pass to ``-t``.
+Your templates replace the built-in ones, which live in the :file:`templates`
+directory of the ``scrapy`` package, so copy over any of those that you want to
+keep.
+
+Templates are rendered with :class:`string.Template`: ``$variable`` and
+``${variable}`` are replaced, and ``$$`` renders as a single ``$``, which
+regular expressions often need. Rendering fails on any variable other than the
+following:
+
+-   ``name``: the spider name, as passed to the command.
+
+-   ``module``: *name* as a valid module name, also used as the file name of
+    the generated spider.
+
+-   ``classname``: *module* in camel case, with a ``Spider`` suffix.
+
+-   ``url``: the URL passed to the command, with an ``https`` scheme added if
+    it had none.
+
+-   ``domain``: the domain of *url*.
+
+-   ``project_name``: :setting:`BOT_NAME`.
+
+-   ``ProjectName``: *project_name* in camel case.
+
 .. command:: crawl
 
 crawl
