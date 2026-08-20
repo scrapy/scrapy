@@ -148,7 +148,10 @@ class RemoteControl:
             app.router.add_get("/status", self._handle_status, allow_head=False)
             app.router.add_post("/execute", self._handle_execute)
             self._runner = web.AppRunner(
-                app, access_log=None, shutdown_timeout=STOP_TIMEOUT
+                app,
+                access_log=None,
+                shutdown_timeout=STOP_TIMEOUT,
+                handler_cancellation=True,
             )
             await self._runner.setup()
             site = web.TCPSite(self._runner, "127.0.0.1", 0)
