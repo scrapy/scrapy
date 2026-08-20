@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-import sys
 import warnings
 from asyncio import Future
 from collections import deque
@@ -88,21 +87,16 @@ def defer_succeed(result: _T) -> Deferred[_T]:  # pragma: no cover
 
 
 async def _process_pending_io() -> None:
-    """Yield control until the event loop has gone through its readers and writers.
+    """Delay so the event loop has a chance to go through its readers and
+    writers, and cancelled tasks a chance to actually settle, before resuming.
 
-    Yielding twice is what makes that guarantee: the first yield can resume
-    before the callbacks of the file descriptors that the poll found ready, and
-    only the second one is certain to resume after them.
-
-    This guarantee does not hold on Windows, where readers and writers are not
-    processed in the same loop iteration as due timed calls, no matter how many
-    zero-delay yields precede them, so a real delay is used there instead.
+    Do not replace this with a couple of zero-delay yields: those only
+    guarantee resuming after readers and writers that were *already* ready
+    when this was awaited, not after work that a callback running during
+    those yields schedules, such as the cleanup of a task cancelled right
+    before this call.
     """
-    if sys.platform == "win32":
-        await sleep(_DEFER_DELAY)
-        return
-    await sleep(0)
-    await sleep(0)
+    await sleep(_DEFER_DELAY)
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover
