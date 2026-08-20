@@ -19,7 +19,7 @@ from scrapy.utils.reactor import _asyncio_reactor_path
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 from tests.utils.bases.commands import TestProjectBase
-from tests.utils.cmdline import proc
+from tests.utils.cmdline import proc, stop_spawn
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -240,12 +240,7 @@ class TestInteractiveShell:
         p.sendline(f"fetch('{mockserver.url('/')}')")
         p.sendline("type(response)")
         p.expect_exact("HtmlResponse")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -271,8 +266,7 @@ class TestInteractiveShell:
         p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
+        stop_spawn(p)
         logfile.seek(0)
         return logfile.read().decode()
 
@@ -297,8 +291,7 @@ class TestInteractiveShell:
         # shell=python was honored, regardless of platform-specific prompts.
         p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
         p.expect_exact("IPYMODULE False")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -327,8 +320,7 @@ class TestInteractiveShell:
         p.expect_exact("Available Scrapy objects")
         p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
         p.expect_exact("IPYMODULE True")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
