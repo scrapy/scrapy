@@ -536,6 +536,8 @@ class _ScrapyAgent:
         if cast("int", txresponse.length) == 0:
             return {
                 "txresponse": txresponse,
+                "certificate": getattr(txresponse, "_scrapy_certificate", None),
+                "ip_address": getattr(txresponse, "_scrapy_ip_address", None),
             }
 
         maxsize = request.meta.get("download_maxsize", self._maxsize)
@@ -814,6 +816,29 @@ class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
         # creates a parser.
         assert self._parser is not None
         self._parser.__class__ = _LenientHTTPClientParser
+
+        # For responses without a body, twisted.web.client.Response never
+        # hands its transport to a protocol, so the certificate and IP
+        # address cannot be read from it later (see
+        # _ResponseReader.connectionMade). self.transport, however, is the
+        # connection's real transport and outlives any single request, so
+        # read the certificate and IP address from it directly and stash
+        # them on the response.
+        assert self.transport is not None
+        transport = self.transport
+
+        def _attach_connection_info(response: IResponse) -> IResponse:
+            with suppress(AttributeError):
+                response._scrapy_certificate = ssl.Certificate(
+                    transport.getPeerCertificate()
+                )
+            with suppress(AttributeError):
+                response._scrapy_ip_address = ipaddress.ip_address(
+                    transport.getPeer().host
+                )
+            return response
+
+        d.addCallback(_attach_connection_info)
         return d
 
 

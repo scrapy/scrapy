@@ -1367,11 +1367,43 @@ class TestHttpWithCrawlerBase(ABC):
             assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
             assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
+    @coroutine_test
+    async def test_response_ssl_certificate_empty_body(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self.is_secure:
+            pytest.skip("Only applies to HTTPS")
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/status?n=200", is_secure=self.is_secure)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        cert = crawler.spider.meta["responses"][0].certificate
+        assert cert is not None
+        if isinstance(cert, Certificate):  # Twisted
+            assert cert.getSubject().commonName == b"localhost"
+        elif isinstance(cert, bytes):  # DER bytes
+            cert_x509 = load_der_x509_certificate(cert)
+            assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
+
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer) -> None:
         # copy of TestCrawl.test_response_ip_address()
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
+        expected_netloc, _ = urlparse(url).netloc.split(":")
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        ip_address = crawler.spider.meta["responses"][0].ip_address
+        assert isinstance(ip_address, IPv4Address)
+        assert str(ip_address) == socket.gethostbyname(expected_netloc)
+
+    @coroutine_test
+    async def test_response_ip_address_empty_body(self, mockserver: MockServer) -> None:
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/status?n=200", is_secure=self.is_secure)
         expected_netloc, _ = urlparse(url).netloc.split(":")
         await crawler.crawl_async(seed=url, mockserver=mockserver)
         assert isinstance(crawler.spider, SingleRequestSpider)
