@@ -9,6 +9,7 @@ on:
     - master
     - '[0-9]+.[0-9]+'
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
   group: ${{github.workflow}}-${{ github.ref }}
@@ -16,6 +17,7 @@ concurrency:
 
 jobs:
   checks:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     env:
       # Make uv use the interpreter that actions/setup-python installed instead
@@ -68,6 +70,7 @@ jobs:
       run: uvx --with tox-uv tox
 
   pre-commit:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
