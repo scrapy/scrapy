@@ -6,7 +6,8 @@ Downloader Middleware
 
 The downloader middleware is a framework of hooks into Scrapy's
 request/response processing.  It's a light, low-level system for globally
-altering Scrapy's requests and responses.
+altering Scrapy's requests and responses at the HTTP level. See
+:ref:`concepts` for a rundown of other alternatives.
 
 .. _topics-downloader-middleware-setting:
 
@@ -700,14 +701,11 @@ HttpCompressionMiddleware
 
 .. class:: HttpCompressionMiddleware
 
-   This middleware allows compressed (gzip, deflate, `brotli`_) traffic to be
-   sent/received from web sites.
-
-   This middleware also supports decoding `zstd-compressed`_ responses with
-   the :ref:`zstd <extras>` extra.
+   This middleware allows compressed (gzip, deflate, `brotli`_, `zstd`_)
+   traffic to be sent/received from web sites.
 
 .. _brotli: https://www.ietf.org/rfc/rfc7932.txt
-.. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
+.. _zstd: https://www.ietf.org/rfc/rfc8478.txt
 
 
 HttpCompressionMiddleware Settings

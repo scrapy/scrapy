@@ -35,6 +35,8 @@ logger = logging.getLogger(__name__)
 
 
 class ScrapyCommand(ABC):
+    """Base class for all Scrapy commands."""
+
     requires_project: bool = False
     requires_crawler_process: bool = True
     crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
@@ -66,16 +68,12 @@ class ScrapyCommand(ABC):
         self._crawler: Crawler = crawler
 
     def syntax(self) -> str:
-        """
-        Command syntax (preferably one-line). Do not include command name.
-        """
+        """Command syntax (preferably one-line). Do not include command name."""
         return ""
 
     @abstractmethod
     def short_desc(self) -> str:
-        """
-        A short description of the command
-        """
+        """A short description of the command."""
         return ""
 
     def long_desc(self) -> str:
@@ -94,9 +92,7 @@ class ScrapyCommand(ABC):
         return self.long_desc()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
-        """
-        Populate option parse with options available for this command
-        """
+        """Populate the option parser with the options available for this command."""
         assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
         group.add_argument(
@@ -163,6 +159,7 @@ class ScrapyCommand(ABC):
             return []
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        """Set settings based on the command line options."""
         assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
@@ -192,9 +189,7 @@ class ScrapyCommand(ABC):
 
     @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        """
-        Entry point for running commands
-        """
+        """Entry point for running commands."""
         raise NotImplementedError
 
 

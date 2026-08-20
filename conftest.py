@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import pytest
 from twisted.web.http import H2_ENABLED
 
+from scrapy.core.engine import ExecutionEngine
 from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
@@ -69,28 +70,49 @@ def pytest_addoption(parser, pluginmanager):
     )
 
 
+@pytest.fixture(autouse=True)
+def fast_engine_heartbeat(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Shorten the interval at which the engine checks for work while idle.
+
+    Whenever nothing else wakes the engine up, e.g. while a component sleeps,
+    it stays idle until its next heartbeat, so tests that go through that wait
+    pay the whole interval.
+    """
+    monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 0.1)
+
+
 @pytest.fixture(scope="session")
 def mockserver() -> Generator[MockServer]:
     with MockServer() as mockserver:
         yield mockserver
 
 
+@pytest.fixture(scope="session")
+def _mitm_proxies() -> Generator[dict[str, tuple[MitmProxy, str]]]:
+    proxies: dict[str, tuple[MitmProxy, str]] = {}
+    try:
+        yield proxies
+    finally:
+        for proxy, _url in proxies.values():
+            proxy.stop()
+
+
 @pytest.fixture  # function scope because it modifies os.environ
 def proxy_server(
-    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
-) -> Generator[str]:
-    kind = request.param
-    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
-    url = proxy.start()
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+    _mitm_proxies: dict[str, tuple[MitmProxy, str]],
+) -> str:
+    kind: str = request.param
+    if kind not in _mitm_proxies:
+        proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
+        _mitm_proxies[kind] = (proxy, proxy.start())
+    _, url = _mitm_proxies[kind]
     if kind == "https":
         url = url.replace("http://", "https://")
     monkeypatch.setenv("http_proxy", url)
     monkeypatch.setenv("https_proxy", url)
-
-    try:
-        yield kind
-    finally:
-        proxy.stop()
+    return kind
 
 
 @pytest.fixture(scope="session")
@@ -99,11 +121,12 @@ def reactor_pytest(request) -> str:
 
 
 def pytest_configure(config):
-    if config.getoption("--reactor") == "asyncio":
-        # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
-        # If we decide to run tests with both, we will need to add a new option and check it here.
+    if config.getoption("--reactor") in {"asyncio", "none"}:
+        # Needed on Windows to switch from proactor to selector, which supports
+        # add_reader/add_writer (required by the Twisted asyncio reactor, and by
+        # tests that register their own readers) and is what Twisted expects.
         set_asyncio_event_loop_policy()
-    elif config.getoption("--reactor") == "none":
+    if config.getoption("--reactor") == "none":
         install_reactor_import_hook()
 
 

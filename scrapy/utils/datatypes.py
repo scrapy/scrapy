@@ -7,16 +7,12 @@ from __future__ import annotations
 
 import collections
 import contextlib
-import warnings
 import weakref
 from collections import OrderedDict
-from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from scrapy.exceptions import ScrapyDeprecationWarning
-
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable
+    from collections.abc import Container
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -24,85 +20,6 @@ if TYPE_CHECKING:
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
-
-
-class CaselessDict(dict):  # type: ignore[type-arg]
-    __slots__ = ()
-
-    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
-        # circular import
-        from scrapy.http.headers import Headers  # noqa: PLC0415
-
-        if issubclass(cls, CaselessDict) and not issubclass(cls, Headers):
-            warnings.warn(
-                "scrapy.utils.datatypes.CaselessDict is deprecated,"
-                " please use scrapy.utils.datatypes.CaseInsensitiveDict instead",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-        return super().__new__(cls, *args, **kwargs)
-
-    def __init__(
-        self,
-        seq: Mapping[str, Any]
-        | Mapping[bytes, Any]
-        | Iterable[tuple[str | bytes, Any]]
-        | None = None,
-    ):
-        super().__init__()
-        if seq:
-            self.update(seq)
-
-    def __getitem__(self, key: str | bytes) -> Any:
-        return dict.__getitem__(self, self.normkey(key))
-
-    def __setitem__(self, key: str | bytes, value: Any) -> None:
-        dict.__setitem__(self, self.normkey(key), self.normvalue(value))
-
-    def __delitem__(self, key: str | bytes) -> None:
-        dict.__delitem__(self, self.normkey(key))
-
-    def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
-        return dict.__contains__(self, self.normkey(key))
-
-    has_key = __contains__
-
-    def __copy__(self) -> Self:
-        return self.__class__(self)
-
-    copy = __copy__
-
-    def normkey(self, key: str | bytes) -> str | bytes:
-        """Method to normalize dictionary key access"""
-        return key.lower()
-
-    def normvalue(self, value: Any) -> Any:
-        """Method to normalize values prior to be set"""
-        return value
-
-    def get(self, key: str | bytes, def_val: Any = None) -> Any:
-        return dict.get(self, self.normkey(key), self.normvalue(def_val))
-
-    def setdefault(self, key: str | bytes, def_val: Any = None) -> Any:
-        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
-
-    # doesn't fully implement MutableMapping.update()
-    def update(  # type: ignore[override]
-        self,
-        seq: Mapping[str, Any]
-        | Mapping[bytes, Any]
-        | Iterable[tuple[str | bytes, Any]],
-    ) -> None:
-        seq = seq.items() if isinstance(seq, Mapping) else seq
-        iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
-        super().update(iseq)
-
-    @classmethod
-    def fromkeys(cls, keys: Iterable[str | bytes], value: Any = None) -> Self:  # type: ignore[override]
-        return cls((k, value) for k in keys)
-
-    def pop(self, key: str | bytes, *args: Any) -> Any:
-        return dict.pop(self, self.normkey(key), *args)
 
 
 class CaseInsensitiveDict(collections.UserDict[str | bytes, Any]):
