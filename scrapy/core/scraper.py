@@ -24,7 +24,7 @@ from scrapy.http import Request, Response
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io,
     _schedule_coro,
     aiter_errback,
     deferred_from_coro,
@@ -69,7 +69,7 @@ class Slot:
         self.queue: deque[QueueTuple] = deque()
         self.active: set[Request] = set()
         self.active_size: int = 0
-        self.itemproc_size: int = 0  # just for scrapy.utils.engine.get_engine_status()
+        self.itemproc_size: int = 0
         self.closing: Deferred[Spider] | None = None
 
     def add_response_request(
@@ -97,7 +97,7 @@ class Slot:
             self.active_size -= self.MIN_RESPONSE_SIZE
 
     def is_idle(self) -> bool:
-        return not (self.queue or self.active)
+        return not (self.queue or self.active or self.itemproc_size)
 
     def needs_backout(self) -> bool:
         return self.active_size > self.max_active_size
@@ -312,7 +312,7 @@ class Scraper:
 
         .. versionadded:: 2.13
         """
-        await _defer_sleep_async()
+        await _process_pending_io()
         assert self.crawler.spider
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
@@ -475,6 +475,23 @@ class Scraper:
             stacklevel=2,
         )
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
+
+    def _start_itemproc_nowait(self, item: Any) -> None:
+        """Send *item* to the item pipelines without waiting for the outcome.
+
+        The scraper slot counts the item as being processed straight away, so
+        that the spider is not considered idle before the item pipelines have
+        had a chance to run.
+        """
+        assert self.slot is not None  # typing
+        self.slot.itemproc_size += 1
+        _schedule_coro(self._start_itemproc_nowait_async(item))
+
+    async def _start_itemproc_nowait_async(self, item: Any) -> None:
+        assert self.slot is not None  # typing
+        # start_itemproc_async() takes over the count of this item.
+        self.slot.itemproc_size -= 1
+        await self.start_itemproc_async(item, response=None)
 
     async def start_itemproc_async(
         self, item: Any, *, response: Response | Failure | None
