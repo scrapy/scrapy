@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import warnings
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
@@ -38,7 +37,7 @@ from scrapy.core.downloader.contextfactory import (
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
-from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
@@ -85,12 +84,9 @@ class TestDownloaderStopAsync:
         crawler = get_crawler(DefaultSpider)
         downloader = Downloader(crawler)
 
-        async def hang() -> None:
-            await asyncio.Event().wait()
-
         requests = [Request(f"data:,{i}") for i in range(5)]
         for request in requests:
-            download_dfd = deferred_from_coro(hang())
+            download_dfd: Deferred[None] = Deferred()
             download_dfd.addBoth(downloader._download_task_done, request)
             downloader._download_tasks[request] = download_dfd
 
