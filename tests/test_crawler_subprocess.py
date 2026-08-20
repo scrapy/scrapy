@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 import platform
 import re
 import signal
@@ -8,7 +7,6 @@ import subprocess
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-from time import monotonic
 from typing import TYPE_CHECKING
 
 import pytest
@@ -238,37 +236,19 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
         args = self.get_script_args(script, "10")
         p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
-        # DIAGNOSTIC: keep everything read, so that the SIGDIAG lines can be
-        # reported when an expectation is not met.
-        p.logfile_read = io.BytesIO()
-
-        def _sent(n: int) -> None:
-            print(f"SIGDIAG sent-signal-{n} mono={monotonic():.3f}", flush=True)
-
-        try:
-            p.expect_exact("Spider opened")
-            p.expect_exact("Crawled (200)")
-            p.kill(sig)
-            _sent(1)
-            p.expect_exact("shutting down gracefully")
-            # Sending a new signal too fast often causes problems, e.g. on
-            # Windows, where signal delivery is slower and more variable than
-            # on POSIX.
-            await sleep(0.1)
-            p.kill(sig)
-            _sent(2)
-            p.expect_exact("dropping downloader requests")
-            await sleep(0.1)
-            p.kill(sig)
-            _sent(3)
-            p.expect_exact("forcing unclean shutdown", timeout=20)
-        finally:
-            print(
-                "SIGDIAG ===== subprocess output =====\n"
-                + p.logfile_read.getvalue().decode("utf-8", "replace")
-                + "\nSIGDIAG ===== end =====",
-                flush=True,
-            )
+        p.expect_exact("Spider opened")
+        p.expect_exact("Crawled (200)")
+        p.kill(sig)
+        p.expect_exact("shutting down gracefully")
+        # Sending a new signal too fast often causes problems, e.g. on
+        # Windows, where signal delivery is slower and more variable than on
+        # POSIX.
+        await sleep(0.1)
+        p.kill(sig)
+        p.expect_exact("dropping downloader requests")
+        await sleep(0.1)
+        p.kill(sig)
+        p.expect_exact("forcing unclean shutdown", timeout=20)
         stop_spawn(p)
 
     @coroutine_test
