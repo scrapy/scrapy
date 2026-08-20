@@ -66,8 +66,8 @@ class WebSocketDownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
         if not HAS_WEBSOCKETS:
             raise NotConfigured(
-                f"{type(self).__name__} requires the websockets library to be"
-                f" installed."
+                f"{type(self).__name__} requires the websockets extra to be"
+                f" installed (pip install scrapy[websockets])."
             )
         if not is_asyncio_available():  # pragma: no cover
             raise NotConfigured(
