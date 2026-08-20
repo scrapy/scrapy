@@ -12,8 +12,8 @@ Highlights:
 
 -   The Twisted-based HTTP/2 download handler is no longer experimental
 
--   ``brotli`` is now a required dependency, and :ref:`optional extras
-    <extras>` cover the rest of the optional features
+-   ``brotli`` and Zstandard support are now always available, and :ref:`optional
+    extras <extras>` cover the rest of the optional features
 
 -   Late :class:`~scrapy.crawler.Crawler` attributes, such as
     :attr:`~scrapy.crawler.Crawler.stats`, now raise :exc:`RuntimeError`
@@ -29,16 +29,18 @@ Highlights:
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
--   ``brotli`` (``brotlicffi`` on PyPy) is now a required dependency, so ``br``
-    is always included in the ``Accept-Encoding`` header of requests, and
-    Brotli-compressed responses are always decoded. Websites may now serve
-    Brotli-compressed responses to crawls that previously did not advertise
-    support for them.
+-   ``brotli`` (``brotlicffi`` on PyPy) and Zstandard support (the standard
+    library :mod:`compression.zstd` module on Python 3.14 and higher, the
+    ``backports.zstd`` package on earlier versions) are now required, so
+    ``br`` and ``zstd`` are always included in the ``Accept-Encoding`` header
+    of requests, and Brotli- and Zstandard-compressed responses are always
+    decoded. Websites may now serve such responses to crawls that previously
+    did not advertise support for them.
 
-    The minimum required versions are ``brotli`` 1.2.0 and ``brotlicffi``
-    1.2.0.0.
+    The minimum required versions are ``brotli`` 1.2.0, ``brotlicffi``
+    1.2.0.0 and ``backports.zstd`` 1.3.0.
 
-    (:gh:`4698`, :gh:`7929`)
+    (:gh:`4698`, :gh:`6978`, :gh:`7083`, :gh:`7929`, :gh:`8009`)
 
 -   Increased the minimum versions of the following dependencies:
 
@@ -186,10 +188,19 @@ Backward-incompatible changes
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
+-   ``scrapy.utils.misc.md5sum()``, deprecated since Scrapy 2.12.0, is
+    removed.
+    (:gh:`6264`, :gh:`8023`)
+
 -   ``scrapy.utils.iterators.xmliter()``, deprecated since Scrapy 2.11.1
     because it is vulnerable to ReDoS attacks, is removed. Use
     :func:`~scrapy.utils.iterators.xmliter_lxml` instead.
     (:gh:`7765`)
+
+-   ``scrapy.utils.datatypes.CaselessDict``, deprecated since Scrapy 2.10.0,
+    is removed. Use
+    :class:`~scrapy.utils.datatypes.CaseInsensitiveDict` instead.
+    (:gh:`5146`, :gh:`8023`)
 
 Deprecations
 ~~~~~~~~~~~~
@@ -249,8 +260,8 @@ New features
 
 -   Added :ref:`optional extras <extras>` for every optional dependency of
     Scrapy: ``bpython``, ``gcs``, ``httpx``, ``images``, ``ipython``,
-    ``ptpython``, ``robotparser``, ``s3``, ``twisted-http2``, ``uvloop`` and
-    ``zstd``. For example, ``pip install scrapy[s3,images]``.
+    ``ptpython``, ``robotparser``, ``s3``, ``twisted-http2`` and ``uvloop``.
+    For example, ``pip install scrapy[s3,images]``.
     (:gh:`7596`)
 
 -   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` now
@@ -385,7 +396,7 @@ New features
     now warn when :setting:`FEEDS` is set, e.g. through ``-o`` or ``-O``, but
     the :class:`~scrapy.extensions.feedexport.FeedExporter` extension is
     disabled, so that no item is exported.
-    (:gh:`5970`, :gh:`7902`)
+    (:gh:`5970`, :gh:`6082`, :gh:`6373`, :gh:`7902`)
 
 -   Log formatters (:setting:`LOG_FORMATTER`), item processors
     (:setting:`ITEM_PROCESSOR`) and :ref:`robots.txt parsers
@@ -555,6 +566,19 @@ Bug fixes
     checkers.
     (:gh:`7797`)
 
+-   The default download handlers can now download from domains with emoji
+    characters or underscores, which were previously rejected.
+    (:gh:`3321`, :gh:`4330`, :gh:`7846`)
+
+-   Callbacks and media pipeline results no longer wait 100 ms before
+    proceeding.
+    (:gh:`8019`)
+
+-   Shutting down a crawl no longer risks raising an unhandled
+    :exc:`RuntimeError` if the code interrupted by the shutdown signal was
+    itself writing to the log.
+    (:gh:`8022`)
+
 Documentation
 ~~~~~~~~~~~~~
 
@@ -694,10 +718,12 @@ Quality assurance
     (:gh:`5291`, :gh:`6025`, :gh:`7924`, :gh:`7960`)
 
 -   CI and test improvements and fixes.
-    (:gh:`5620`,
+    (:gh:`5049`,
+    :gh:`5620`,
     :gh:`5837`,
     :gh:`6478`,
     :gh:`6794`,
+    :gh:`7262`,
     :gh:`7437`,
     :gh:`7702`,
     :gh:`7720`,
