@@ -115,7 +115,8 @@ class TestCrawl:
         times = crawler.spider.times
         total_time = times[-1] - times[0]
         average = total_time / (len(times) - 1)
-        assert average <= delay / tolerance, "test total or delay values are too small"
+        if average > delay / tolerance:
+            pytest.skip("control run without download delay was too slow")
 
     @coroutine_test
     async def test_timeout_success(self, mockserver: MockServer) -> None:
