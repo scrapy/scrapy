@@ -59,7 +59,7 @@ scrapy.Spider
        :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
        enabled.
 
-       .. versionchanged:: VERSION
+       .. versionchanged:: 2.18.0
           Changes to this attribute during a crawl are now taken into account.
 
        Let's say your target url is ``https://www.example.com/1.html``,
@@ -422,7 +422,7 @@ sends the :signal:`spider_error` signal, and, once the already scheduled
 requests are done, closes the spider with the ``start_error``
 :stat:`finish_reason`.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.18.0
    The close reason used to be ``finished``, and neither the
    :signal:`spider_error` signal nor the :stat:`spider_exceptions/count` stat
    reported the exception.
@@ -624,7 +624,11 @@ XMLFeedSpider
 
            - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds
+             which could be a problem for big feeds. It also parses the feed
+             with an HTML parser, which can silently mangle tags that HTML
+             treats as void elements, such as ``<link>``, dropping their
+             content and closing tag. Use ``xml`` or ``iternodes`` instead
+             for feeds affected by this.
 
            - ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory

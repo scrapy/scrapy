@@ -103,6 +103,13 @@ class Crawler:
     engine: _LateAttribute[ExecutionEngine] = _LateAttribute()
     extensions: _LateAttribute[ExtensionManager] = _LateAttribute()
     logformatter: _LateAttribute[LogFormatter] = _LateAttribute()
+    """The log formatter of this crawler.
+
+    This is used from extensions & middlewares to build the messages that they
+    log about crawling events.
+
+    For the API see the :class:`~scrapy.logformatter.LogFormatter` class.
+    """
     request_fingerprinter: _LateAttribute[RequestFingerprinterProtocol] = (
         _LateAttribute()
     )

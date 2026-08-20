@@ -73,6 +73,13 @@ the project settings. Here is an example:
     [settings]
     default = myproject.settings
 
+The project name also appears elsewhere by default. :setting:`SPIDER_MODULES`
+and :setting:`NEWSPIDER_MODULE` reference the project module itself, so they
+must match its actual location. :setting:`BOT_NAME` defaults to the same name
+but is just an identifier, and the capitalized project-name prefix of class
+names in :file:`middlewares.py` and :file:`pipelines.py` is only a naming
+convention; neither needs to match the module name.
+
 .. _topics-project-envvar:
 
 Sharing the root directory between projects
@@ -254,6 +261,39 @@ This is just a convenient shortcut command for creating spiders based on
 pre-defined templates, but certainly not the only way to create spiders. You
 can just create the spider source code files yourself, instead of using this
 command.
+
+.. _spider-templates:
+
+Custom spider templates
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To define your own spider templates, point :setting:`TEMPLATES_DIR` at a
+directory with a :file:`spiders` subdirectory, and write a :file:`{name}.tmpl`
+file there for every template, where *name* is the value to pass to ``-t``.
+Your templates replace the built-in ones, which live in the :file:`templates`
+directory of the ``scrapy`` package, so copy over any of those that you want to
+keep.
+
+Templates are rendered with :class:`string.Template`: ``$variable`` and
+``${variable}`` are replaced, and ``$$`` renders as a single ``$``, which
+regular expressions often need. Rendering fails on any variable other than the
+following:
+
+-   ``name``: the spider name, as passed to the command.
+
+-   ``module``: *name* as a valid module name, also used as the file name of
+    the generated spider.
+
+-   ``classname``: *module* in camel case, with a ``Spider`` suffix.
+
+-   ``url``: the URL passed to the command, with an ``https`` scheme added if
+    it had none.
+
+-   ``domain``: the domain of *url*.
+
+-   ``project_name``: :setting:`BOT_NAME`.
+
+-   ``ProjectName``: *project_name* in camel case.
 
 .. command:: crawl
 
@@ -648,25 +688,88 @@ Custom project commands
 =======================
 
 You can also add your custom project commands by using the
-:setting:`COMMANDS_MODULE` setting. See the Scrapy commands in
-`scrapy/commands`_ for examples on how to implement your commands.
+:setting:`COMMANDS_MODULE` setting. This allows you to create project-specific
+commands that are automatically discovered and made available through the
+``scrapy`` command-line tool.
 
-.. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
-.. setting:: COMMANDS_MODULE
+Creating custom commands
+------------------------
 
-COMMANDS_MODULE
----------------
+To create a custom command, inherit from the :class:`~scrapy.commands.ScrapyCommand` class
+and implement the required methods. This allows you to extend Scrapy's command-line
+interface with your own functionality, such as project-specific utilities, data
+processing tools, or deployment helpers.
 
-Default: ``''`` (empty string)
+When you create a custom command, you define its behavior by setting class attributes
+and overriding specific methods. Here's what you need to know:
 
-A module to use for looking up custom Scrapy commands. This is used to add custom
-commands for your Scrapy project.
+**Attributes you can set:**
 
-Example:
+* :attr:`~scrapy.commands.ScrapyCommand.requires_project` (bool): If ``True``,
+  the command only runs inside a Scrapy project (default: ``False``).
+* :attr:`~scrapy.commands.ScrapyCommand.requires_crawler_process` (bool): If
+  ``True``, a :class:`~scrapy.crawler.AsyncCrawlerProcess` or
+  :class:`~scrapy.crawler.CrawlerProcess` instance will be created by Scrapy
+  when the command runs and made available in the
+  :attr:`~scrapy.commands.ScrapyCommand.crawler_process` attribute (default:
+  ``True``).
+* :attr:`~scrapy.commands.ScrapyCommand.default_settings` (dict): Settings that
+  will override the default ones when running this command (default: ``{}``).
+* :attr:`~scrapy.commands.ScrapyCommand.exitcode` (int): Process exit code to
+  set when the command completes (default: ``0``).
+
+**Methods you must override:**
+
+* :meth:`~scrapy.commands.ScrapyCommand.short_desc`: Return a short description
+  of the command.
+* :meth:`~scrapy.commands.ScrapyCommand.run`: Main entry point for the command
+  execution.
+
+**Methods you can override:**
+
+* :meth:`~scrapy.commands.ScrapyCommand.syntax`: Return command syntax
+  (preferably one-line, without command name).
+* :meth:`~scrapy.commands.ScrapyCommand.long_desc`: Return a detailed command
+  description.
+* :meth:`~scrapy.commands.ScrapyCommand.add_options`: Add command-specific
+  options to the argument parser.
+* :meth:`~scrapy.commands.ScrapyCommand.process_options`: Process parsed
+  command-line options and set settings before
+  :attr:`~scrapy.commands.ScrapyCommand.crawler_process` is instantiated.
+
+**Example custom command:**
 
 .. code-block:: python
 
-    COMMANDS_MODULE = "mybot.commands"
+    from scrapy.commands import ScrapyCommand
+    import argparse
+
+
+    class MyCustomCommand(ScrapyCommand):
+        requires_project = True
+
+        def syntax(self):
+            return "[options] <spider_name>"
+
+        def short_desc(self):
+            return "Run my custom command"
+
+        def add_options(self, parser):
+            super().add_options(parser)
+            parser.add_argument("--my-option", help="My custom option")
+
+        def run(self, args, opts):
+            # Command implementation here
+            spider_name = args[0] if args else None
+            print(f"Running custom command for spider: {spider_name}")
+
+For real examples, see the built-in Scrapy commands in the `scrapy/commands`_ directory.
+
+.. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
+
+.. autoclass:: scrapy.commands.ScrapyCommand
+   :members:
+   :undoc-members:
 
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
@@ -695,3 +798,19 @@ The following example adds ``my_command`` command:
           ],
       },
   )
+
+.. setting:: COMMANDS_MODULE
+
+COMMANDS_MODULE
+---------------
+
+Default: ``''`` (empty string)
+
+A module to use for looking up custom Scrapy commands. This is used to add custom
+commands for your Scrapy project.
+
+Example:
+
+.. code-block:: python
+
+    COMMANDS_MODULE = "mybot.commands"

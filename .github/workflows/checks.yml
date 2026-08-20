@@ -9,13 +9,15 @@ on:
     - master
     - '[0-9]+.[0-9]+'
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
-  group: ${{github.workflow}}-${{ github.ref }}
+  group: ${{github.workflow}}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   checks:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -69,6 +71,7 @@ jobs:
       run: uvx --with tox-uv tox
 
   pre-commit:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
