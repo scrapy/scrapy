@@ -12,6 +12,7 @@ from twisted.web.server import NOT_DONE_YET
 from twisted.web.util import Redirect, redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
+from tests import get_testdata
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -170,6 +171,27 @@ class Follow(LeafResource):
         s += """</body>"""
         request.write(to_bytes(s))
         request.finish()
+
+
+class Books(LeafResource):
+    """Serve a saved snapshot of two pages of https://books.toscrape.com/.
+
+    Any path directly under this resource, e.g. :file:`/books/1/`, gets the
+    saved listing page, and any path below it, which is where the relative
+    links of that page point, gets the saved book page. Listing paths are
+    interchangeable, so that a crawl can reach the same pair of pages under as
+    many distinct URLs as it needs.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._listing = get_testdata("books", "listing.html")
+        self._book = get_testdata("books", "book.html")
+
+    def render(self, request: Request) -> bytes:
+        assert request.postpath is not None
+        request.setHeader(b"Content-Type", b"text/html; charset=utf-8")
+        return self._book if b"catalogue" in request.postpath else self._listing
 
 
 class Delay(LeafResource):
