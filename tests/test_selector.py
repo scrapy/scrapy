@@ -167,7 +167,7 @@ class TestJMESPath:
         )
         assert resp.jmespath("html").xpath("//div/a/text()").getall() == ["a", "b", "d"]
         assert resp.jmespath("html").css("div > b").getall() == ["<b>f</b>"]
-        assert resp.jmespath("content").jmespath("name.age").get() == "18"
+        assert resp.jmespath("content").jmespath("name.age").get() == 18
 
     def test_html_has_json(self) -> None:
         body = """
@@ -212,7 +212,7 @@ class TestJMESPath:
             "C",
             "D",
         ]
-        assert resp.xpath("//div/content").jmespath("total").get() == "4"
+        assert resp.xpath("//div/content").jmespath("total").get() == 4
 
     def test_jmestpath_with_re(self) -> None:
         body = """
