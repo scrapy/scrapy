@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import sys
 import warnings
 from asyncio import Future
 from collections import deque
@@ -95,6 +96,22 @@ async def _process_pending_io() -> None:
     """
     await sleep(0)
     await sleep(0)
+
+
+async def _process_pending_io_before_callback() -> None:
+    """Same as :func:`_process_pending_io`, for use right before a spider
+    callback.
+
+    On Windows, resuming from this without a real delay leaves the crawler
+    unable to escalate through its shutdown signal sequence, for reasons that
+    have not been root-caused, so a real delay is used there. This is the only
+    place where that has been observed, so everywhere else keeps the cheaper
+    zero-delay version.
+    """
+    if sys.platform == "win32":
+        await sleep(_DEFER_DELAY)
+        return
+    await _process_pending_io()
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover
