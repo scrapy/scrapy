@@ -3,8 +3,62 @@
 Release notes
 =============
 
-Scrapy VERSION (unreleased)
----------------------------
+Scrapy 2.18.0 (unreleased)
+--------------------------
+
+Highlights:
+
+-   ``HttpxDownloadHandler`` now uses `httpx2 <https://httpx2.pydantic.dev/>`__
+
+-   The Twisted-based HTTP/2 download handler is no longer experimental
+
+-   ``brotli`` and Zstandard support are now always available, and :ref:`optional
+    extras <extras>` cover the rest of the optional features
+
+-   Late :class:`~scrapy.crawler.Crawler` attributes, such as
+    :attr:`~scrapy.crawler.Crawler.stats`, now raise :exc:`RuntimeError`
+    instead of being ``None`` before the crawl starts
+
+-   Item exporters now export fields in declaration order
+
+-   New :class:`~scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware`
+
+-   New :ref:`optimization <optimize>` page and :ref:`built-in stats reference
+    <topics-stats-reference>`
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   ``brotli`` (``brotlicffi`` on PyPy) and Zstandard support (the standard
+    library :mod:`compression.zstd` module on Python 3.14 and higher, the
+    ``backports.zstd`` package on earlier versions) are now required, so
+    ``br`` and ``zstd`` are always included in the ``Accept-Encoding`` header
+    of requests, and Brotli- and Zstandard-compressed responses are always
+    decoded. Websites may now serve such responses to crawls that previously
+    did not advertise support for them.
+
+    The minimum required versions are ``brotli`` 1.2.0, ``brotlicffi``
+    1.2.0.0 and ``backports.zstd`` 1.3.0.
+
+    (:gh:`4698`, :gh:`6978`, :gh:`7083`, :gh:`7929`, :gh:`8009`)
+
+-   Increased the minimum versions of the following dependencies:
+
+    - cryptography_: 37.0.0 → 41.0.5
+
+    - pyOpenSSL_: 22.0.0 → 24.3.0
+
+    - queuelib_: 1.4.2 → 1.6.1
+
+    - service_identity_: 23.1.0 → 24.2.0
+
+    - w3lib_: 1.17.0 → 2.1.1
+
+    (:gh:`7841`, :gh:`7874`, :gh:`7879`, :gh:`8001`)
+
+-   The IPython :ref:`shell <topics-shell>` requires IPython 8.15.0 or higher.
+    Install the :ref:`ipython extra <extras>` to get a compatible version.
+    (:gh:`5447`, :gh:`7596`, :gh:`7816`)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -23,7 +77,730 @@ Backward-incompatible changes
       :class:`~scrapy.extensions.feedexport.StdoutFeedStorage` are no longer
       marked as implementing the ``IFeedStorage`` interface.
 
+    - :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` no
+      longer checks that the ``DOWNLOADER_CLIENTCONTEXTFACTORY`` class
+      implements the ``IPolicyForHTTPS`` interface.
+
     (:gh:`6585`, :gh:`7731`)
+
+-   The :attr:`~scrapy.crawler.Crawler.engine`,
+    :attr:`~scrapy.crawler.Crawler.extensions`,
+    :attr:`~scrapy.crawler.Crawler.logformatter`,
+    :attr:`~scrapy.crawler.Crawler.request_fingerprinter` and
+    :attr:`~scrapy.crawler.Crawler.stats` attributes of
+    :class:`~scrapy.crawler.Crawler` raise :exc:`RuntimeError` when read before
+    the crawl starts, instead of being ``None`` until then.
+
+    Code that reads them from the :signal:`spider_opened` signal handler
+    onwards is unaffected, and no longer needs to narrow their type. Code that
+    checked whether they were set, e.g. ``if crawler.stats:``, must be updated,
+    since reading them now raises instead of returning ``None``.
+
+    (:gh:`6136`, :gh:`7882`)
+
+-   :ref:`Item exporters <topics-exporters>` now export the fields of an item
+    in declaration order, i.e. the order in which they are defined in the
+    :ref:`item class <item-types>`, instead of the order in which they were
+    populated, as :class:`~scrapy.exporters.CsvItemExporter` already did.
+    :class:`dict` items, which have no declared fields, keep using the key
+    order of each item.
+    (:gh:`6662`, :gh:`6854`, :gh:`7824`)
+
+-   ``scrapy.utils.serialize.ScrapyJSONEncoder``, used by :ref:`JSON feed
+    exports <topics-feed-format-json>`, the :ref:`telnet console
+    <topics-telnetconsole>` and the
+    :class:`~scrapy.extensions.periodic_log.PeriodicLog` extension, now
+    serializes :class:`~datetime.datetime`, :class:`~datetime.date` and
+    :class:`~datetime.time` objects in ISO 8601 format, e.g.
+    ``2023-08-03T23:24:57.148903+00:00`` instead of ``2023-08-03 23:24:57``,
+    keeping microseconds and time zone information.
+
+    Its ``DATE_FORMAT`` and ``TIME_FORMAT`` attributes are removed.
+
+    (:gh:`2087`, :gh:`7918`)
+
+-   ``scrapy.utils.trackref.live_refs`` is now a
+    :class:`~weakref.WeakKeyDictionary` instead of a
+    :class:`collections.defaultdict`, so that classes defined at run time are
+    released once they are no longer used. Reading the entry of a class with no
+    tracked instances now raises :exc:`KeyError` instead of creating and
+    returning an empty mapping.
+    (:gh:`5995`, :gh:`7922`)
+
+-   The ``MEMDEBUG_NOTIFY`` setting is removed. It had no effect, but code
+    reading it now gets ``None`` instead of its default value, which was an
+    empty list.
+    (:gh:`7737`)
+
+-   ``scrapy.utils.log.logformatter_adapter()`` no longer passes the whole
+    :class:`dict` returned by a :ref:`log formatter <custom-log-formats>`
+    method as logging arguments when that ``dict`` has no ``args`` key, or its
+    ``args`` are empty, and its ``msg`` has no ``%(name)s`` placeholders. Such
+    messages are now logged verbatim, so a literal ``%`` in them no longer
+    breaks logging.
+
+    An ``args`` :class:`tuple` is now expanded into one logging argument per
+    item, so that ``%``-style placeholders work with it as they do with a
+    ``dict``.
+
+    (:gh:`5570`, :gh:`5572`, :gh:`7936`)
+
+-   :setting:`FEEDS` keys and ``FEED_URI`` values that are
+    :class:`pathlib.Path` objects are now used as paths, instead of being
+    converted into ``file://`` URIs. This makes them keep working when they
+    contain :ref:`URI parameters <topics-feed-uri-params>` or characters that
+    URI conversion would percent-encode.
+    (:gh:`5794`, :gh:`6425`, :gh:`6611`, :gh:`7674`)
+
+-   :class:`~scrapy.Selector` and :attr:`TextResponse.selector
+    <scrapy.http.TextResponse.selector>` no longer force the ``html`` selector
+    type for responses that are neither :class:`~scrapy.http.HtmlResponse` nor
+    :class:`~scrapy.http.XmlResponse` objects. A
+    :class:`~scrapy.http.JsonResponse` gets the ``json`` type, and for any
+    other response ``parsel`` determines the type from the body.
+
+    The response class, and hence the selector type, comes from the content
+    type that the website reports. When a website reports the wrong content
+    type, recast the response, e.g. ``response.replace(cls=HtmlResponse)``.
+
+    (:gh:`4627`, :gh:`5291`, :gh:`6025`, :gh:`7924`, :gh:`7972`)
+
+-   :ref:`AutoThrottle <topics-autothrottle>` no longer sets the
+    ``download_delay`` attribute of the running spider to define the starting
+    delay of download slots. The starting delay is still applied, but code
+    that reads that attribute at run time no longer sees it.
+    (:gh:`7167`, :gh:`7175`, :gh:`7833`)
+
+-   The :command:`check` command now ignores :setting:`ITEM_PIPELINES` and
+    :setting:`FEEDS`, since contracts check the output of callbacks instead of
+    sending it to item processing, so a check run no longer triggers their side
+    effects, e.g. writing an empty output file. Use the ``-s`` command-line
+    option to set them back for a check run.
+    (:gh:`3385`, :gh:`7957`)
+
+-   :class:`~scrapy.spiders.XMLFeedSpider` and
+    :class:`~scrapy.spiders.CSVFeedSpider` no longer raise
+    :exc:`~scrapy.exceptions.NotConfigured` when ``parse_node()`` or
+    ``parse_row()`` is not defined; the resulting :exc:`AttributeError` is
+    reported instead.
+    (:gh:`7768`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   ``scrapy.utils.misc.md5sum()``, deprecated since Scrapy 2.12.0, is
+    removed.
+    (:gh:`6264`, :gh:`8023`)
+
+-   ``scrapy.utils.iterators.xmliter()``, deprecated since Scrapy 2.11.1
+    because it is vulnerable to ReDoS attacks, is removed. Use
+    :func:`~scrapy.utils.iterators.xmliter_lxml` instead.
+    (:gh:`7765`)
+
+-   ``scrapy.utils.datatypes.CaselessDict``, deprecated since Scrapy 2.10.0,
+    is removed. Use
+    :class:`~scrapy.utils.datatypes.CaseInsensitiveDict` instead.
+    (:gh:`5146`, :gh:`8023`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   The ``download_delay`` spider attribute is deprecated. Use the
+    :setting:`DOWNLOAD_DELAY` setting, or :setting:`DOWNLOAD_SLOTS` to set a
+    delay for specific domains, instead.
+
+    The ``max_concurrent_requests`` spider attribute, deprecated since Scrapy
+    2.13.0, now sets the :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting,
+    which is what it always mapped to, and warns accordingly.
+
+    Both attributes are ignored, with a different warning, when the
+    corresponding setting is already set at the ``spider`` priority or higher.
+
+    (:gh:`7167`, :gh:`7175`, :gh:`7833`)
+
+-   The ``Spider.log()`` method is deprecated. Use the methods of
+    :attr:`Spider.logger <scrapy.Spider.logger>` instead.
+    (:gh:`7739`)
+
+-   The ``scrapy.interfaces`` module and its ``ISpiderLoader`` interface are
+    deprecated. Custom spider loaders only need to follow
+    :class:`~scrapy.spiderloader.SpiderLoaderProtocol`.
+    (:gh:`6585`, :gh:`7731`)
+
+-   ``scrapy.extensions.feedexport.IFeedStorage`` is deprecated. Custom feed
+    storages only need to follow
+    ``scrapy.extensions.feedexport.FeedStorageProtocol``.
+    (:gh:`6585`, :gh:`7731`)
+
+-   ``scrapy.utils.python.re_rsearch()`` is deprecated.
+    (:gh:`7765`)
+
+-   Importing ``FileException`` from ``scrapy.pipelines.files`` is deprecated.
+    Import it from ``scrapy.pipelines.media`` instead.
+    (:gh:`7544`, :gh:`7673`, :gh:`7973`)
+
+-   Setting ``request.meta["is_secure"]`` to ``False`` to send an ``s3://``
+    request over plaintext HTTP is deprecated. The flag will be ignored in a
+    future Scrapy version.
+    (:gh:`7738`)
+
+-   The unused ``multiplier`` attribute of
+    :class:`~scrapy.extensions.periodic_log.PeriodicLog` is deprecated.
+    (:gh:`7809`, :gh:`7982`)
+
+-   Returning, from a :ref:`log formatter <custom-log-formats>` method, a
+    ``msg`` with ``%(name)s`` placeholders and no ``args`` is deprecated. Those
+    placeholders are still interpolated with the returned :class:`dict`, but in
+    a future Scrapy version the message will be logged verbatim. Return those
+    values under ``args`` instead.
+    (:gh:`5570`, :gh:`7971`)
+
+New features
+~~~~~~~~~~~~
+
+-   Added :ref:`optional extras <extras>` for every optional dependency of
+    Scrapy: ``bpython``, ``gcs``, ``httpx``, ``images``, ``ipython``,
+    ``ptpython``, ``robotparser``, ``s3``, ``twisted-http2`` and ``uvloop``.
+    For example, ``pip install scrapy[s3,images]``.
+    (:gh:`7596`)
+
+-   :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` now
+    uses `httpx2 <https://httpx2.pydantic.dev/>`__, the successor of ``httpx``,
+    which the new :ref:`httpx extra <extras>` installs together with its HTTP/2
+    and SOCKS proxy support. ``httpx`` is still used when ``httpx2`` is not
+    installed, but it is no longer tested.
+    (:gh:`7762`)
+
+-   Added a :signal:`robots_parsed` signal, sent by
+    :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after
+    it parses a :file:`robots.txt` file. It supports :ref:`asynchronous
+    handlers <signal-deferred>`.
+
+    Added a :meth:`~scrapy.robotstxt.RobotParser.crawl_delay` method to
+    :class:`~scrapy.robotstxt.RobotParser`, implemented by all built-in
+    :ref:`robots.txt parsers <topics-dlmw-robots>`.
+
+    (:gh:`7830`)
+
+-   Added a :meth:`Request.to_curl() <scrapy.Request.to_curl>` method, the
+    inverse of :meth:`~scrapy.Request.from_curl`.
+    (:gh:`7743`, :gh:`7746`, :gh:`7802`)
+
+-   Added a :reqmeta:`depth_reset` request meta key that gives a request depth
+    0 instead of the depth of its source response plus 1.
+    (:gh:`891`, :gh:`7913`)
+
+-   Added
+    :class:`~scrapy.spidermiddlewares.metacopy.MetaCopyDetectionMiddleware`,
+    enabled by default, which warns once per crawl when a spider yields a
+    request carrying internal :attr:`~scrapy.Request.meta` keys that were
+    likely copied from ``response.meta``, and a
+    :setting:`META_COPY_WARN_SKIP_KEYS` setting to exclude keys from that
+    check.
+    (:gh:`7588`)
+
+-   Added an :setting:`AWS_MAX_POOL_CONNECTIONS` setting, which defines the
+    connection pool size of the AWS clients of the :ref:`S3 feed storage
+    backend <topics-feed-storage-s3>` and the :ref:`S3 media pipeline storage
+    backend <media-pipelines-s3>`, and defaults to
+    :setting:`REACTOR_THREADPOOL_MAXSIZE`. It is also exposed as a
+    ``max_pool_connections`` parameter of ``S3FeedStorage`` and as an
+    ``AWS_MAX_POOL_CONNECTIONS`` attribute of ``S3FilesStore``.
+    (:gh:`4985`, :gh:`7794`)
+
+-   Added a :func:`scrapy.utils.asyncio.sleep` function, which works both with
+    and without a Twisted reactor.
+    (:gh:`7843`)
+
+-   :setting:`CONCURRENT_REQUESTS` can now be set to ``0`` for no limit.
+    (:gh:`7840`)
+
+-   :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler` is no
+    longer experimental, and it now sends the :signal:`bytes_received` and
+    :signal:`headers_received` signals and supports
+    :exc:`~scrapy.exceptions.StopDownload`.
+    (:gh:`5046`, :gh:`5047`, :gh:`5055`, :gh:`7896`, :gh:`7986`)
+
+-   An exception raised by :meth:`Spider.start() <scrapy.Spider.start>` is now
+    reported through the :signal:`spider_error` signal and the
+    :stat:`spider_exceptions/count` and :stat:`spider_exceptions/{exception}`
+    stats, and closes the spider with the new ``start_error``
+    :stat:`finish_reason` instead of ``finished``. See :ref:`start-error`.
+
+    :exc:`~scrapy.exceptions.CloseSpider` raised from :meth:`Spider.start()
+    <scrapy.Spider.start>` now closes the spider with the given reason, instead
+    of being reported as a start error.
+
+    (:gh:`3463`, :gh:`4058`, :gh:`4182`, :gh:`6148`, :gh:`7884`)
+
+-   :exc:`~scrapy.exceptions.CloseSpider` can now also be raised while the
+    spider is starting, e.g. from a :signal:`spider_opened` signal handler or
+    from the ``open_spider()`` method of an :ref:`item pipeline
+    <topics-item-pipeline>`, to close the spider before it starts crawling.
+    Every component still gets started, and stopped, before the spider is
+    closed with the given reason.
+    (:gh:`3435`, :gh:`7905`)
+
+-   Added an :ref:`FTPS feed storage backend <feed-storage-ftps>`, i.e. support
+    for the ``ftps`` URI scheme in :setting:`FEEDS`, which uploads the feed
+    over a TLS connection, verifying the certificate of the server.
+    (:gh:`4180`, :gh:`7953`)
+
+-   Changes to :attr:`Spider.allowed_domains <scrapy.Spider.allowed_domains>`
+    during a crawl are now taken into account by
+    :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`, whose
+    :meth:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware.should_follow`
+    method is now documented as the way to implement a different offsite
+    policy.
+    (:gh:`3257`, :gh:`3412`, :gh:`7903`, :gh:`7912`)
+
+-   :class:`~scrapy.settings.BaseSettings` methods that take settings, such as
+    :meth:`~scrapy.settings.BaseSettings.update` and the ``settings`` parameter
+    of crawler classes, now also accept an iterable of ``(name, value)``
+    tuples.
+    (:gh:`7759`, :gh:`7763`)
+
+-   The ``cookies`` parameter of :class:`~scrapy.Request` now also accepts
+    :class:`bool`, :class:`float` and :class:`int` values, and the ``formdata``
+    parameter of :class:`~scrapy.FormRequest` now accepts any mapping or
+    iterable of key-value pairs.
+    (:gh:`7858`, :gh:`7864`)
+
+-   Added a ``scrapy.utils.reactorless.uninstall_reactor_import_hook()``
+    function, which :meth:`AsyncCrawlerProcess.start()
+    <scrapy.crawler.AsyncCrawlerProcess.start>` now uses to uninstall the
+    :mod:`twisted.internet.reactor` import hook when it exits.
+    (:gh:`7747`)
+
+-   Added the :stat:`depth/request_ignored_count` and
+    :stat:`httpcache/retrieve_error` stats.
+    (:gh:`1308`, :gh:`2222`, :gh:`7805`, :gh:`7916`)
+
+-   The :meth:`~scrapy.exporters.BaseItemExporter.get_serialized_fields` method
+    of :ref:`item exporters <topics-exporters>`, previously named
+    ``_get_serialized_fields()``, is now public and documented, for
+    :ref:`custom item exporters <custom-exporters>` to use.
+    (:gh:`5706`, :gh:`7931`)
+
+-   Scrapy now writes the session keys of its HTTPS connections to the file
+    that the ``SSLKEYLOGFILE`` environment variable points to, so that traffic
+    analysis tools such as Wireshark can decrypt them. See :ref:`debug-tls`.
+    (:gh:`4368`, :gh:`7948`)
+
+-   Added an :setting:`HTTP2_MAX_FRAME_SIZE` setting, which allows raising the
+    maximum HTTP/2 frame size that servers may send, previously fixed at
+    16384, above which connections failed.
+    (:gh:`5050`, :gh:`7988`)
+
+-   The :command:`crawl`, :command:`parse` and :command:`runspider` commands
+    now warn when :setting:`FEEDS` is set, e.g. through ``-o`` or ``-O``, but
+    the :class:`~scrapy.extensions.feedexport.FeedExporter` extension is
+    disabled, so that no item is exported.
+    (:gh:`5970`, :gh:`6082`, :gh:`6373`, :gh:`7902`)
+
+-   Log formatters (:setting:`LOG_FORMATTER`), item processors
+    (:setting:`ITEM_PROCESSOR`) and :ref:`robots.txt parsers
+    <topics-dlmw-robots>` (:setting:`ROBOTSTXT_PARSER`) are now built as
+    :ref:`components <topics-components>`, so they no longer need a
+    ``from_crawler()`` method.
+    (:gh:`7808`)
+
+Bug fixes
+~~~~~~~~~
+
+-   :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware` now
+    logs a warning and handles the request as a cache miss when reading a cache
+    entry raises an exception, e.g. because the entry is corrupted, instead of
+    letting the exception propagate. It also counts those entries in the new
+    :stat:`httpcache/retrieve_error` stat.
+    (:gh:`2222`, :gh:`7805`)
+
+-   :ref:`Feed URIs <topics-feed-uri-params>` now only expand ``%(...)s``
+    parameters, keeping any other percent character as is, so that
+    percent-encoded URIs, e.g. one with ``%20`` in a path or with
+    percent-encoded FTP credentials, are no longer misinterpreted as
+    printf-style formatting directives.
+    (:gh:`5794`, :gh:`6425`, :gh:`7674`)
+
+-   :ref:`Feed exports <topics-feed-exports>` now start storing a
+    :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` batch as soon as it is complete,
+    instead of waiting until the spider closes.
+    (:gh:`7730`, :gh:`7733`)
+
+-   :class:`~scrapy.exporters.CsvItemExporter` now warns when the fields that
+    it took from the first item do not cover the fields of a later item, i.e.
+    when it silently drops data.
+    (:gh:`4002`, :gh:`4053`, :gh:`7613`, :gh:`7651`)
+
+-   ``GCSFeedStorage`` no longer requires the ``storage.buckets.get``
+    permission.
+    (:gh:`5475`, :gh:`7945`)
+
+-   :ref:`Media pipelines <topics-media-pipeline>` now log media requests that
+    were filtered out, e.g. as offsite requests, at the ``DEBUG`` level and
+    without a traceback, instead of reporting them as download errors.
+    (:gh:`7544`, :gh:`7673`)
+
+-   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` now raises
+    :exc:`~scrapy.exceptions.IgnoreRequest` with a message, e.g. ``Filtered
+    offsite request to 'offsite.example'``, which errbacks and log messages
+    that report that exception now include.
+    (:gh:`7544`, :gh:`7673`)
+
+-   :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` now
+    skips response header lines that have no colon, logging them at the
+    ``DEBUG`` level, as web browsers do, instead of being unable to download
+    such a response at all.
+    (:gh:`210`, :gh:`7806`)
+
+-   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` now sends
+    domain cookies to hosts without a dot in their name and to hosts given as
+    an IP address.
+    (:gh:`6410`, :gh:`7900`)
+
+-   :meth:`TextResponse.json() <scrapy.http.TextResponse.json>` now decodes
+    bodies that are not valid UTF-8, UTF-16 or UTF-32 using
+    :attr:`TextResponse.encoding <scrapy.http.TextResponse.encoding>`, instead
+    of raising :exc:`UnicodeDecodeError`.
+    (:gh:`6456`, :gh:`7897`)
+
+-   ``scrapy.resolver.CachingHostnameResolver`` now caches addresses without a
+    port, and sets the requested port on cache hits, so that a cached address
+    no longer carries the port of the request that populated the cache.
+    (:gh:`6442`, :gh:`7772`)
+
+-   :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` now removes the
+    directory of a download slot from the :setting:`JOBDIR` directory once that
+    slot is drained.
+    (:gh:`5275`, :gh:`7955`)
+
+-   :class:`~scrapy.extensions.telnet.TelnetConsole` no longer raises an
+    exception on shutdown when it could not listen on any of the
+    :setting:`TELNETCONSOLE_PORT` ports.
+    (:gh:`2702`, :gh:`7910`)
+
+-   The :setting:`DOWNLOAD_WARNSIZE` warning is no longer logged twice for a
+    response whose ``Content-Length`` header already exceeded the limit.
+    (:gh:`2476`, :gh:`7963`)
+
+-   :class:`HttpCompressionMiddleware
+    <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>`
+    now logs a warning when it drops a response for exceeding
+    :setting:`DOWNLOAD_MAXSIZE` during decompression.
+    (:gh:`6616`, :gh:`7742`)
+
+-   :class:`~scrapy.spidermiddlewares.depth.DepthMiddleware` now logs only the
+    first request ignored for exceeding :setting:`DEPTH_LIMIT`, and counts them
+    all in the new :stat:`depth/request_ignored_count` stat.
+    (:gh:`1308`, :gh:`7916`)
+
+-   :command:`parse` now sets the callback it uses on the request of the
+    response it passes to that callback.
+    (:gh:`3095`, :gh:`3124`, :gh:`7803`)
+
+-   The IPython :ref:`shell <topics-shell>` now works when an asyncio event
+    loop is already running in the same thread, e.g. when calling
+    ``scrapy.shell.inspect_response()`` from a callback while using the asyncio
+    reactor.
+    (:gh:`5447`, :gh:`7816`)
+
+-   :meth:`Request.from_curl() <scrapy.Request.from_curl>` now merges repeated
+    ``-d``, ``--data`` and ``--data-raw`` options into a single body joined
+    with ``&``, as curl does, instead of keeping only the last one.
+    (:gh:`7728`)
+
+-   The ``copy()`` method and the ``|=`` operator of
+    ``scrapy.utils.datatypes.CaseInsensitiveDict`` no longer leave the internal
+    mapping of original key spellings shared or out of date.
+    (:gh:`7783`)
+
+-   :meth:`ExecutionEngine.download_async()
+    <scrapy.core.engine.ExecutionEngine.download_async>` no longer recurses
+    once per returned request, e.g. once per redirect.
+    (:gh:`7544`, :gh:`7673`)
+
+-   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    now canonicalizes each extracted URL once instead of twice when
+    ``canonicalize`` is ``True``.
+    (:gh:`7961`)
+
+-   Items yielded from :meth:`Spider.start() <scrapy.Spider.start>` now keep
+    the spider busy until the :ref:`item pipelines <topics-item-pipeline>` are
+    done with them, so that a spider that only yields items from
+    :meth:`~scrapy.Spider.start` no longer closes before processing them.
+    (:gh:`7029`, :gh:`7891`)
+
+-   :func:`~scrapy.utils.response.open_in_browser` now also adds its ``base``
+    tag to HTML responses that have no ``head`` element, and it now overrides a
+    ``base`` tag already present in the response, so that relative URLs resolve
+    against the response URL in every case.
+    (:gh:`6550`, :gh:`7879`)
+
+-   :meth:`Spider.start() <scrapy.Spider.start>` implementations that are not
+    asynchronous generators now raise :exc:`TypeError` with a message that says
+    so, instead of failing in a way that does not point at the cause.
+    (:gh:`5426`, :gh:`7946`)
+
+-   The :command:`check`, :command:`fetch` and :command:`parse` commands now
+    return the exit code 1 when a component fails to initialize, as
+    :command:`crawl` and :command:`runspider` already did.
+    (:gh:`4292`, :gh:`7920`)
+
+-   :class:`HttpCompressionMiddleware
+    <scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware>`
+    no longer hangs on a ``deflate`` response body followed by extra bytes.
+    (:gh:`7841`)
+
+-   :func:`scrapy.utils.python.get_func_args` now reports the parameters that a
+    :class:`functools.partial` object binds by position, instead of an empty
+    list.
+    (:gh:`7841`)
+
+-   Fixed :exc:`NameError` exceptions on Python 3.14, where :pep:`649` made
+    annotation evaluation lazy, when inspecting the signature of a callable
+    with annotations imported only for type checking.
+    (:gh:`7796`, :gh:`7818`)
+
+-   ``scrapy.utils.decorators.deprecated`` can now be used both as
+    ``@deprecated`` and as ``@deprecated(...)`` without confusing type
+    checkers.
+    (:gh:`7797`)
+
+-   The default download handlers can now download from domains with emoji
+    characters or underscores, which were previously rejected.
+    (:gh:`3321`, :gh:`4330`, :gh:`7846`)
+
+-   Callbacks and media pipeline results no longer wait 100 ms before
+    proceeding.
+    (:gh:`8019`)
+
+-   Shutting down a crawl no longer risks raising an unhandled
+    :exc:`RuntimeError` if the code interrupted by the shutdown signal was
+    itself writing to the log.
+    (:gh:`8022`)
+
+-   Nested selectors, e.g. the result of calling
+    :meth:`~scrapy.Selector.jmespath` on a selector, now let ``parsel``
+    determine their type instead of forcing the ``html`` type, so that they no
+    longer return the wrong type or value.
+    (:gh:`8038`, :gh:`8040`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Added a :ref:`built-in stats reference <topics-stats-reference>`, covering
+    every stat that Scrapy sets.
+    (:gh:`6351`, :gh:`7814`)
+
+-   Replaced the broad crawls page with a new :ref:`optimization <optimize>`
+    page, about finding the bottleneck of a crawl before changing any setting,
+    which covers :ref:`broad crawls <broad-crawls>` as one of its sections.
+    (:gh:`4737`, :gh:`7938`)
+
+-   Added a :ref:`concepts <concepts>` page, a quick map of Scrapy's main
+    building blocks, what problem each one solves, and when to reach for it.
+    (:gh:`1569`, :gh:`8025`)
+
+-   Added a :ref:`cookies <cookies>` page, which gathers what used to be
+    spread across the request and downloader middleware pages.
+    (:gh:`7947`)
+
+-   Added :ref:`callbacks <callbacks>` and :ref:`errbacks <errbacks>` sections
+    to the request and response page, covering :ref:`callback assignment
+    <callback-assignment>`, :ref:`how to write a callback <writing-callbacks>`
+    and :ref:`supported callback output <callback-output>`.
+    (:gh:`5054`, :gh:`6437`, :gh:`7821`, :gh:`7898`)
+
+-   Documented the :setting:`ITEM_PROCESSOR` setting and the
+    :class:`~scrapy.pipelines.ItemProcessorProtocol` protocol that its value
+    must implement.
+    (:gh:`7983`)
+
+-   Documented :ref:`how to write an item exporter <custom-exporters>`,
+    :ref:`how to test an item pipeline <test-item-pipeline>`, :ref:`how to
+    download a request from a downloader middleware <mw-download>`, :ref:`how
+    to name media files after the response <file-naming-response>`, :ref:`how
+    to add objects to the shell <shell-update-vars>` and :ref:`how to run
+    spiders inside an existing application <run-spiders-in-apps>` or :ref:`in a
+    Jupyter notebook <run-in-notebook>`.
+    (:gh:`915`,
+    :gh:`1199`,
+    :gh:`2594`,
+    :gh:`5706`,
+    :gh:`6554`,
+    :gh:`6594`,
+    :gh:`7751`,
+    :gh:`7872`,
+    :gh:`7876`,
+    :gh:`7889`,
+    :gh:`7909`,
+    :gh:`7931`)
+
+-   Added an :ref:`inspecting live traffic <debug-live-traffic>` section to the
+    debugging page, covering Wireshark and mitmproxy.
+    (:gh:`5222`, :gh:`8007`)
+
+-   Documented how :class:`~scrapy.http.TextResponse` resolves the response
+    encoding, and how to resolve it differently, e.g. to give the encoding
+    declared in the response body precedence over the ``Content-Type`` header.
+    (:gh:`4933`, :gh:`7977`)
+
+-   Documented the :ref:`memory use of response parsing
+    <security-response-size>` and the :ref:`parser limits
+    <security-parser-limits>` that Scrapy lifts, in the security page.
+    (:gh:`5700`, :gh:`7930`)
+
+-   Documented that :ref:`signal handlers run in an undefined order
+    <signal-order>`, that :signal:`scheduler_empty` must only be awaited from
+    :meth:`~scrapy.Spider.start`, that concurrency and politeness settings
+    apply per crawler when :ref:`running multiple spiders in the same process
+    <run-multiple-spiders>`, and that a :setting:`JOBDIR` directory cannot be
+    shared across Scrapy versions.
+    (:gh:`3191`,
+    :gh:`5330`,
+    :gh:`5522`,
+    :gh:`7861`,
+    :gh:`7883`,
+    :gh:`7907`,
+    :gh:`7941`)
+
+-   Documented that the ``html`` iterator of
+    :class:`~scrapy.spiders.XMLFeedSpider` can silently mangle tags that HTML
+    treats as void elements, e.g. ``<link>``, dropping their content and
+    closing tag.
+    (:gh:`4675`, :gh:`8045`)
+
+-   Documented that the ``keep_fragments`` parameter of
+    :func:`~scrapy.utils.request.fingerprint` is not a substitute for
+    rendering JavaScript to reach content that a headless browser loads based
+    on the URL fragment.
+    (:gh:`4789`, :gh:`8033`)
+
+-   Documented :ref:`how to derive the job directory from the spider name
+    <job-dir-spider-name>`.
+    (:gh:`4748`, :gh:`8035`)
+
+-   Documented that the project name from :file:`scrapy.cfg` also appears
+    elsewhere by default, and which of those uses actually require it to
+    match.
+    (:gh:`2484`, :gh:`8044`)
+
+-   Many other corrections and improvements.
+    (:gh:`4589`,
+    :gh:`4796`,
+    :gh:`5532`,
+    :gh:`5548`,
+    :gh:`6053`,
+    :gh:`6184`,
+    :gh:`6627`,
+    :gh:`6787`,
+    :gh:`6943`,
+    :gh:`6989`,
+    :gh:`7710`,
+    :gh:`7725`,
+    :gh:`7737`,
+    :gh:`7767`,
+    :gh:`7769`,
+    :gh:`7771`,
+    :gh:`7774`,
+    :gh:`7775`,
+    :gh:`7777`,
+    :gh:`7779`,
+    :gh:`7780`,
+    :gh:`7817`,
+    :gh:`7832`,
+    :gh:`7835`,
+    :gh:`7862`,
+    :gh:`7871`,
+    :gh:`7875`,
+    :gh:`7880`,
+    :gh:`7890`,
+    :gh:`7903`,
+    :gh:`7913`,
+    :gh:`7917`,
+    :gh:`7939`,
+    :gh:`7940`,
+    :gh:`7962`,
+    :gh:`7965`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Improved and fixed type hints.
+    (:gh:`7712`,
+    :gh:`7785`,
+    :gh:`7858`,
+    :gh:`7864`,
+    :gh:`7865`,
+    :gh:`7867`)
+
+-   Added CPU benchmarks, tracked on CodSpeed, so that performance regressions
+    are caught before they are merged and performance work can be measured.
+    (:gh:`7831`,
+    :gh:`7839`,
+    :gh:`7870`,
+    :gh:`7887`,
+    :gh:`7914`,
+    :gh:`7954`)
+
+-   Added a nightly job that runs the test suite against the development
+    branches of dependencies, so that incompatibilities are found before those
+    dependencies are released.
+    (:gh:`5291`, :gh:`6025`, :gh:`7924`, :gh:`7960`)
+
+-   CI and test improvements and fixes.
+    (:gh:`5049`,
+    :gh:`5620`,
+    :gh:`5837`,
+    :gh:`6478`,
+    :gh:`6794`,
+    :gh:`7262`,
+    :gh:`7437`,
+    :gh:`7702`,
+    :gh:`7720`,
+    :gh:`7724`,
+    :gh:`7727`,
+    :gh:`7736`,
+    :gh:`7741`,
+    :gh:`7749`,
+    :gh:`7753`,
+    :gh:`7755`,
+    :gh:`7768`,
+    :gh:`7778`,
+    :gh:`7782`,
+    :gh:`7792`,
+    :gh:`7793`,
+    :gh:`7795`,
+    :gh:`7797`,
+    :gh:`7798`,
+    :gh:`7809`,
+    :gh:`7829`,
+    :gh:`7834`,
+    :gh:`7836`,
+    :gh:`7838`,
+    :gh:`7841`,
+    :gh:`7844`,
+    :gh:`7848`,
+    :gh:`7853`,
+    :gh:`7854`,
+    :gh:`7857`,
+    :gh:`7859`,
+    :gh:`7863`,
+    :gh:`7895`,
+    :gh:`7906`,
+    :gh:`7928`,
+    :gh:`7935`,
+    :gh:`7966`,
+    :gh:`7968`,
+    :gh:`7974`,
+    :gh:`7979`,
+    :gh:`7985`,
+    :gh:`7990`,
+    :gh:`7993`,
+    :gh:`7995`,
+    :gh:`8000`,
+    :gh:`8001`,
+    :gh:`8002`)
 
 .. _release-2.17.0:
 

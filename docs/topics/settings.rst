@@ -487,7 +487,7 @@ Endpoint URL used for S3-like storage, for example Minio or s3.scality.
 AWS_MAX_POOL_CONNECTIONS
 ------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``None``
 
