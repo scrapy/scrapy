@@ -54,6 +54,17 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times[slot].append(time.time())
 
 
+class NoDelayDownloaderSlotsSpider(DownloaderSlotsSettingsTestSpider):
+    custom_settings = {
+        "DOWNLOAD_SLOTS": {
+            slot: {}
+            for slot in DownloaderSlotsSettingsTestSpider.custom_settings[
+                "DOWNLOAD_SLOTS"
+            ]
+        },
+    }
+
+
 @inline_callbacks_test
 def test_delay(mockserver: MockServer):
     crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
@@ -128,11 +139,11 @@ async def test_none_slot_with_priority_queue(
 ) -> None:
     """Test specific cases for None slot handling with different priority queues."""
     crawler = get_crawler(
-        DownloaderSlotsSettingsTestSpider,
+        NoDelayDownloaderSlotsSpider,
         settings_dict={"SCHEDULER_PRIORITY_QUEUE": priority_queue_class},
     )
     await crawler.crawl_async(mockserver=mockserver)
-    assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
+    assert isinstance(crawler.spider, NoDelayDownloaderSlotsSpider)
 
     assert hasattr(crawler.spider, "times")
     assert None not in crawler.spider.times
