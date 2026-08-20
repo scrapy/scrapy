@@ -73,6 +73,13 @@ the project settings. Here is an example:
     [settings]
     default = myproject.settings
 
+The project name also appears elsewhere by default. :setting:`SPIDER_MODULES`
+and :setting:`NEWSPIDER_MODULE` reference the project module itself, so they
+must match its actual location. :setting:`BOT_NAME` defaults to the same name
+but is just an identifier, and the capitalized project-name prefix of class
+names in :file:`middlewares.py` and :file:`pipelines.py` is only a naming
+convention; neither needs to match the module name.
+
 .. _topics-project-envvar:
 
 Sharing the root directory between projects
