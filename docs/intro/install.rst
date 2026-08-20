@@ -134,8 +134,6 @@ The following extras are available:
      - :ref:`twisted-http2-handler`
    * - ``uvloop``
      - `uvloop <https://github.com/MagicStack/uvloop>`_ event loop
-   * - ``zstd``
-     - :ref:`Zstandard response decompression <http-compression>`
 
 
 .. _intro-install-platform-notes:

@@ -187,12 +187,6 @@ If you want to use this handler you need to replace the default one for the
 Features and limitations
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. warning::
-
-    This handler is experimental, and not yet recommended for production
-    environments. Future Scrapy versions may introduce related changes without
-    a deprecation period or warning.
-
 =========================== ================================================
 HTTP proxies                No (not implemented)
 SOCKS proxies               No (not supported by the library)
@@ -215,12 +209,8 @@ Known limitations of the HTTP/2 support:
 -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
     HTTP/2 unencrypted (refer `http2 faq`_).
 
--   No setting to specify a maximum `frame size`_ larger than the default
-    value, 16384. Connections to servers that send a larger frame will fail.
-
 -   No support for `server pushes`_, which are ignored.
 
-.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
@@ -252,7 +242,7 @@ Per-request ``bindaddress`` Yes
 TLS implementation          ``pyOpenSSL``/``cryptography``
 =========================== ================================================
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.18.0
    Bad header lines with no colon in them are now skipped, instead of making
    the whole response impossible to download.
 

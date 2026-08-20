@@ -9,7 +9,8 @@ own custom functionality into Scrapy.
 
 Unlike other components, extensions do not have a specific role in Scrapy. They
 are “wildcard” components that can be used for anything that does not fit the
-role of any other type of component.
+role of any other type of component, such as collecting stats or enforcing a
+memory limit; see :ref:`concepts` for a rundown of other alternatives.
 
 Loading and activating extensions
 =================================

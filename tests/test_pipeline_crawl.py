@@ -140,7 +140,6 @@ class TestFileDownloadCrawl:
         assert not items[0][self.media_key]
 
         # check that there was 1 successful fetch and 3 other responses with non-200 code
-        assert crawler.stats
         assert crawler.stats.get_value("downloader/request_method_count/GET") == 4
         assert crawler.stats.get_value("downloader/response_count") == 4
         assert crawler.stats.get_value("downloader/response_status_count/200") == 1
@@ -208,7 +207,6 @@ class TestFileDownloadCrawl:
                 mockserver=self.mockserver,
             )
         self._assert_files_downloaded(self.items, caplog.text)
-        assert crawler.stats
         assert crawler.stats.get_value("downloader/response_status_count/302") == 3
 
     @coroutine_test

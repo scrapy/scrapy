@@ -29,7 +29,7 @@ The job directory will store all required data to keep the state of a *single*
 job (i.e. a spider run), so that if stopped cleanly, it can be resumed later.
 
 .. warning:: This directory must *not* be shared by different spiders, or even
-    different jobs of the same spider.
+    different jobs of the same spider. See :ref:`job-dir-spider-name`.
 
 .. warning:: Treat the job directory with the same security care as your
     Scrapy project source code. Do not point ``JOBDIR`` to a path that
@@ -48,6 +48,29 @@ Then you can stop the spider safely at any time (by pressing Ctrl-C or sending
 a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
+
+.. _job-dir-spider-name:
+
+Deriving the job directory from the spider name
+===============================================
+
+One way to keep job directories apart is to build the path in
+:meth:`~scrapy.Spider.update_settings`, so that a group of spiders shares the
+same path except for the spider name:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    from scrapy import Spider
+
+
+    class BaseSpider(Spider):
+        @classmethod
+        def update_settings(cls, settings):
+            super().update_settings(settings)
+            settings.set("JOBDIR", str(Path("crawls", cls.name)), priority="spider")
+
 
 .. _topics-keeping-persistent-state-between-batches:
 

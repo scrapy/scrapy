@@ -205,7 +205,7 @@ FTPS
 The feeds are stored in a FTP server, over a TLS connection, with the
 certificate of the server verified.
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 -   URI scheme: ``ftps``
 -   Example URI: ``ftps://user:pass@ftp.example.com/path/to/export.csv``

@@ -289,7 +289,7 @@ spider_opened
     reserve per-spider resources, but can be used for any task that needs to be
     performed when a spider is opened.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
        Added support for :exc:`~scrapy.exceptions.CloseSpider`.
 
     You may raise a :exc:`~scrapy.exceptions.CloseSpider` exception to close the
@@ -347,7 +347,7 @@ spider_error
     Sent when a spider callback or the :meth:`~scrapy.Spider.start` method of a
     spider generates an error (i.e. raises an exception).
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
        Exceptions from :meth:`~scrapy.Spider.start` are also reported, see
        :ref:`start-error`.
 
@@ -541,7 +541,7 @@ robots_parsed
 .. signal:: robots_parsed
 .. function:: robots_parsed(robotparser, request)
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.18.0
 
     Sent by
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` after it
