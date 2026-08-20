@@ -9,6 +9,7 @@ on:
     - master
     - '[0-9]+.[0-9]+'
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
   group: ${{github.workflow}}-${{ github.ref }}
@@ -16,6 +17,7 @@ concurrency:
 
 jobs:
   tests:
+    if: github.event.action != 'closed'
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: windows-latest
     env:
