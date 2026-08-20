@@ -17,7 +17,7 @@ from scrapy.crawler import AsyncCrawlerProcess, Crawler, CrawlerProcess
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.defer import _DEFER_DELAY, maybe_deferred_to_future
 from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
     configure_logging,
@@ -722,6 +722,11 @@ class TestAsyncCrawlerProcessReactorlessHelpers:
         process._signal_kill_reactorless(signal.SIGINT, None)
         assert log_calls == []
         loop.call_soon_threadsafe.assert_any_call(process._log_kill, signal.SIGINT)
+        # The cancellation itself is delayed, giving the log line above a
+        # moment to actually reach its output before the process exits.
+        loop.call_later.assert_any_call(
+            _DEFER_DELAY, process._reactorless_main_task.cancel
+        )
 
     def test_shutdown_reactorless_main_task_already_done(
         self, monkeypatch: pytest.MonkeyPatch
@@ -832,7 +837,7 @@ class TestCrawlerProcessBaseSignalHandlers:
         process._signal_kill(signal.SIGINT, None)
         assert log_calls == []
         reactor.callFromThread.assert_any_call(process._log_kill, signal.SIGINT)
-        reactor.callFromThread.assert_any_call(process._stop_reactor)
+        reactor.callLater.assert_any_call(_DEFER_DELAY, process._stop_reactor)
 
 
 @pytest.mark.parametrize(

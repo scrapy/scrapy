@@ -21,7 +21,7 @@ from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode
-from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
+from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro, ensure_awaitable
 from scrapy.utils.log import (
     configure_logging,
     get_scrapy_root_handler,
@@ -789,7 +789,9 @@ class CrawlerProcessBase(CrawlerRunnerBase):
 
         install_shutdown_handlers(signal.SIG_IGN)
         reactor.callFromThread(self._log_kill, signum)
-        reactor.callFromThread(self._stop_reactor)
+        # Give the log line a moment to actually reach its output before the
+        # process exits, since nothing else delays that exit past this point.
+        reactor.callLater(_DEFER_DELAY, self._stop_reactor)
 
     # Logging cannot happen in a signal handler: the interrupted code may be
     # in the middle of writing to the same stream, and writing to it again
@@ -1226,7 +1228,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             return
         loop.call_soon_threadsafe(self._log_kill, signum)
         if (task := self._reactorless_main_task) is not None:
-            loop.call_soon_threadsafe(task.cancel)
+            # Give the log line a moment to actually reach its output before
+            # the process exits, since nothing else delays that exit past
+            # this point.
+            loop.call_later(_DEFER_DELAY, task.cancel)
 
     def _start_twisted(
         self, stop_after_crawl: bool, install_signal_handlers: bool
