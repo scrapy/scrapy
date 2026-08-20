@@ -26,6 +26,7 @@ dependencies = [
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    'backports.zstd>=1.3.0; python_version < "3.14"',
     'brotli>=1.2.0; implementation_name != "pypy"',
     'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
@@ -75,7 +76,6 @@ twisted-http2 = ["Twisted[http2]>=21.7.0"]
 uvloop = [
     "uvloop>=0.16.0; platform_system != 'Windows' and implementation_name != 'pypy'",
 ]
-zstd = ["zstandard>=0.16.0; implementation_name != 'pypy'"]
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
@@ -198,8 +198,12 @@ branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
 disable_warnings = ["include-ignored"]
+# Starting a coverage session in every spawned interpreter is what covers the
+# code paths of the command-line interface. It is also the bulk of the run time
+# of the tests that spawn one, so SCRAPY_COVERAGE_PATCH switches it for a cheap
+# patch where that cost is not worth paying; see tox.ini.
 patch = [
-    "subprocess",
+    "${SCRAPY_COVERAGE_PATCH-subprocess}",
 ]
 
 [tool.coverage.paths]
@@ -324,8 +328,11 @@ filterwarnings = [
     # can die within a single collection.
     "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
     # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
-    # files open; the resulting warning surfaces at an arbitrary GC point.
-    "ignore:.*<_io\\.FileIO name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    # files open; the resulting warning surfaces at an arbitrary GC point, as an
+    # unraisable exception or as a plain ResourceWarning, which pytest.warns()
+    # re-emits when it does not match, failing an unrelated test.
+    "ignore:.*<_io\\.\\w+ name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed file <_io\\.\\w+ name=.*queuelib-tests-:ResourceWarning",
     # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
     "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
     # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.

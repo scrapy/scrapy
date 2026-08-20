@@ -700,14 +700,11 @@ HttpCompressionMiddleware
 
 .. class:: HttpCompressionMiddleware
 
-   This middleware allows compressed (gzip, deflate, `brotli`_) traffic to be
-   sent/received from web sites.
-
-   This middleware also supports decoding `zstd-compressed`_ responses with
-   the :ref:`zstd <extras>` extra.
+   This middleware allows compressed (gzip, deflate, `brotli`_, `zstd`_)
+   traffic to be sent/received from web sites.
 
 .. _brotli: https://www.ietf.org/rfc/rfc7932.txt
-.. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
+.. _zstd: https://www.ietf.org/rfc/rfc8478.txt
 
 
 HttpCompressionMiddleware Settings

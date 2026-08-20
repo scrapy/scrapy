@@ -3530,6 +3530,9 @@ Deprecations
     instead call the builder callable directly.
     (:gh:`6540`)
 
+-   ``scrapy.utils.misc.md5sum()`` is now deprecated.
+    (:gh:`6264`)
+
 New features
 ~~~~~~~~~~~~
 
