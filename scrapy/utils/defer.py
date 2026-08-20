@@ -87,14 +87,10 @@ def defer_succeed(result: _T) -> Deferred[_T]:  # pragma: no cover
 
 
 async def _process_pending_io() -> None:
-    """Yield control until the event loop has gone through its readers and writers.
-
-    Yielding twice is what makes that guarantee: the first yield can resume
-    before the callbacks of the file descriptors that the poll found ready, and
-    only the second one is certain to resume after them.
+    """EXPERIMENT: temporarily restored to a real delay to bisect the Windows
+    test_shutdown_forced regression against the sleep(0)-twice version.
     """
-    await sleep(0)
-    await sleep(0)
+    await sleep(_DEFER_DELAY)
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover
