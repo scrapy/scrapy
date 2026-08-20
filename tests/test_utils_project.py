@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -122,6 +123,14 @@ class TestGetProjectSettings:
             settings = get_project_settings()
 
         assert settings.get("SCRAPY_FOO") is None
+
+    def test_envvar_project_dir_in_sys_path(
+        self, proj_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(sys, "path", sys.path.copy())
+        monkeypatch.setenv("SCRAPY_SETTINGS_MODULE", "tests.test_cmdline.settings")
+        get_project_settings()
+        assert str(proj_path) in sys.path
 
     def test_valid_and_invalid_envvars(self):
         value = "tests.test_cmdline.settings"
