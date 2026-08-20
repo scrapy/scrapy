@@ -1,4 +1,6 @@
+import os
 import sys
+import time
 
 from twisted.internet.defer import Deferred
 
@@ -15,9 +17,11 @@ class SleepingSpider(scrapy.Spider):
     async def parse(self, response):
         from twisted.internet import reactor
 
+        os.write(2, f"SIGDIAG parse-start mono={time.monotonic():.3f}\n".encode())
         d: Deferred[None] = Deferred()
         reactor.callLater(int(sys.argv[1]), d.callback, None)
         await maybe_deferred_to_future(d)
+        os.write(2, f"SIGDIAG parse-end mono={time.monotonic():.3f}\n".encode())
 
 
 process = CrawlerProcess(settings={})

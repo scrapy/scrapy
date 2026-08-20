@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-import sys
 import warnings
 from asyncio import Future
 from collections import deque
@@ -108,9 +107,8 @@ async def _process_pending_io_before_callback() -> None:
     place where that has been observed, so everywhere else keeps the cheaper
     zero-delay version.
     """
-    if sys.platform == "win32":
-        await sleep(_DEFER_DELAY)
-        return
+    # DIAGNOSTIC: the Windows delay is disabled on purpose here, so that the
+    # failure the SIGDIAG output is meant to explain reproduces.
     await _process_pending_io()
 
 
