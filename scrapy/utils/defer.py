@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import sys
 import warnings
 from asyncio import Future
 from collections import deque
@@ -87,10 +88,21 @@ def defer_succeed(result: _T) -> Deferred[_T]:  # pragma: no cover
 
 
 async def _process_pending_io() -> None:
-    """EXPERIMENT: temporarily restored to a real delay to bisect the Windows
-    test_shutdown_forced regression against the sleep(0)-twice version.
+    """Yield control until the event loop has gone through its readers and writers.
+
+    Yielding twice is what makes that guarantee: the first yield can resume
+    before the callbacks of the file descriptors that the poll found ready, and
+    only the second one is certain to resume after them.
+
+    This guarantee does not hold on Windows, where readers and writers are not
+    processed in the same loop iteration as due timed calls, no matter how many
+    zero-delay yields precede them, so a real delay is used there instead.
     """
-    await sleep(_DEFER_DELAY)
+    if sys.platform == "win32":
+        await sleep(_DEFER_DELAY)
+        return
+    await sleep(0)
+    await sleep(0)
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover
