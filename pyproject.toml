@@ -7,7 +7,8 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
-    "Twisted>=21.7.0",
+    'backports.zstd>=1.3.0; python_version < "3.14"',
+    "blinker>=1.7.0",
     "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -21,12 +22,10 @@ dependencies = [
     "queuelib>=1.6.1",
     "service_identity>=24.2.0",
     "tldextract",
+    "twisted>=21.7.0",
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
-    'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
-    'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
-    'backports.zstd>=1.3.0; python_version < "3.14"',
     'brotli>=1.2.0; implementation_name != "pypy"',
     'brotlicffi>=1.2.0.0; implementation_name == "pypy"',
 ]
@@ -163,7 +162,6 @@ module = [
     "brotli",
     "brotlicffi",
     "google.*",
-    "pydispatch.*",
     "pyftpdlib.*",
     "pytest_twisted",
     "robotexclusionrulesparser",

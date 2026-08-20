@@ -274,10 +274,6 @@ issues besides installing build dependencies.
 Installing Scrapy with PyPy on Windows is not tested.
 
 You can check that Scrapy is installed correctly by running ``scrapy bench``.
-If this command gives errors such as
-``TypeError: ... got 2 unexpected keyword arguments``, this means
-that the ``PyPyDispatcher`` dependency wasn't installed. To fix this issue, run
-``pip install 'PyPyDispatcher>=2.1.0'``.
 
 
 .. _intro-install-troubleshooting:
