@@ -125,9 +125,11 @@ def get_sources(use_closest: bool = True) -> list[str]:
 
 
 def feed_complete_default_values_from_settings(
-    feed: dict[str, Any], settings: BaseSettings
+    feed: dict[str, Any], settings: BaseSettings, uri: str | None = None
 ) -> dict[str, Any]:
     out = feed.copy()
+    if uri is not None:
+        out.setdefault("format", Path(uri).suffix.removeprefix("."))
     out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
     out.setdefault("fields", settings.getdictorlist("FEED_EXPORT_FIELDS") or None)
