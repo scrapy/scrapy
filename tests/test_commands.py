@@ -173,9 +173,75 @@ class MySpider(scrapy.Spider):
         assert pidfile.read_text(encoding="utf-8").strip().isdigit()
 
     def test_pdb(self, spider_path: Path) -> None:
-        returncode, _, err = proc("runspider", str(spider_path), "--pdb")
+        returncode, out, err = proc("runspider", str(spider_path), "--pdb", input="")
         assert returncode == 0, err
         assert "It works!" in err
+        assert "(Pdb)" not in out
+
+    def test_pdb_on_logged_error(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+
+    async def start(self):
+        raise ValueError("boom")
+        yield
+""",
+            encoding="utf-8",
+        )
+        _, out, err = proc("runspider", str(path), "--pdb", input="")
+        assert "(Pdb)" in out, err
+
+    def test_pdb_on_logged_error_without_exception(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import logging
+import scrapy
+
+logger = logging.getLogger(__name__)
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+
+    async def start(self):
+        logger.error("boom")
+        return
+        yield
+""",
+            encoding="utf-8",
+        )
+        returncode, out, err = proc("runspider", str(path), "--pdb", input="")
+        assert returncode == 0, err
+        assert "(Pdb)" not in out
+
+    def test_pdb_on_handled_failure(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import scrapy
+from scrapy.exceptions import IgnoreRequest
+
+class IgnoreEverything:
+    def process_request(self, request, spider):
+        raise IgnoreRequest
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+    custom_settings = {"DOWNLOADER_MIDDLEWARES": {IgnoreEverything: 500}}
+
+    async def start(self):
+        yield scrapy.Request("https://example.com")
+""",
+            encoding="utf-8",
+        )
+        returncode, out, err = proc("runspider", str(path), "--pdb", input="")
+        assert returncode == 0, err
+        assert "(Pdb)" not in out
 
 
 class TestSettingsCommand:
