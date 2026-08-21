@@ -142,6 +142,12 @@ class CheckSpider(scrapy.Spider):
         assert "OK" in err
         assert ret == 0
 
+    def test_check_invalid_spider_argument(self, proj_path: Path) -> None:
+        self._write_contract(proj_path, "", "pass")
+        ret, _, err = proc("check", "-a", "FOO", cwd=proj_path)
+        assert ret == 2
+        assert "Invalid -a value, use -a NAME=VALUE" in err
+
     def test_check_scrapes_contract(self, proj_path: Path) -> None:
         contracts = """
         @scrapes key1 key2
