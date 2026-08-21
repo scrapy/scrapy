@@ -155,6 +155,8 @@ __all__ = [
     "MAIL_SSL",
     "MAIL_TLS",
     "MAIL_USER",
+    "MEDIA_STORAGES",
+    "MEDIA_STORAGES_BASE",
     "MEMDEBUG_ENABLED",
     "MEMUSAGE_CHECK_INTERVAL_SECONDS",
     "MEMUSAGE_ENABLED",
@@ -473,6 +475,15 @@ MAIL_USER = None
 MAIL_PASS = None
 MAIL_SSL = False
 MAIL_TLS = False
+
+MEDIA_STORAGES = {}
+MEDIA_STORAGES_BASE = {
+    "": "scrapy.pipelines.files.FSFilesStore",
+    "file": "scrapy.pipelines.files.FSFilesStore",
+    "ftp": "scrapy.pipelines.files.FTPFilesStore",
+    "gs": "scrapy.pipelines.files.GCSFilesStore",
+    "s3": "scrapy.pipelines.files.S3FilesStore",
+}
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 

@@ -41,11 +41,12 @@ from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
+from scrapy.utils.misc import load_object
+from scrapy.utils.python import to_bytes, without_none_values
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Callable
     from os import PathLike
 
     from twisted.python.failure import Failure
@@ -54,7 +55,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class StatInfo(TypedDict, total=False):
 
 
 class FilesStoreProtocol(Protocol):
-    def __init__(self, basedir: str): ...
+    def __init__(self, uri: str): ...
 
     def persist_file(
         self,
@@ -162,22 +162,40 @@ class S3FilesStore:
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
     AWS_VERIFY = None
-    # Overridden from settings.AWS_MAX_POOL_CONNECTIONS in
-    # FilesPipeline.from_crawler(); None means the botocore default
+    # None means the botocore default
     AWS_MAX_POOL_CONNECTIONS: int | None = None
 
-    POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
+    POLICY = "private"
     HEADERS: ClassVar[dict[str, str]] = {
         "Cache-Control": "max-age=172800",
     }
 
-    def __init__(self, uri: str):
+    @classmethod
+    def from_crawler(
+        cls, crawler: Crawler, uri: str, *, resolve: Callable[[str], str]
+    ) -> Self:
+        settings = crawler.settings
+        return cls(
+            uri,
+            AWS_ACCESS_KEY_ID=settings["AWS_ACCESS_KEY_ID"],
+            AWS_SECRET_ACCESS_KEY=settings["AWS_SECRET_ACCESS_KEY"],
+            AWS_SESSION_TOKEN=settings["AWS_SESSION_TOKEN"],
+            AWS_ENDPOINT_URL=settings["AWS_ENDPOINT_URL"],
+            AWS_REGION_NAME=settings["AWS_REGION_NAME"],
+            AWS_USE_SSL=settings["AWS_USE_SSL"],
+            AWS_VERIFY=settings["AWS_VERIFY"],
+            AWS_MAX_POOL_CONNECTIONS=_get_max_pool_connections(settings),
+            POLICY=settings[resolve("FILES_STORE_S3_ACL")],
+        )
+
+    def __init__(self, uri: str, **config: Any):
+        self.__dict__.update(config)
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
         import botocore.session  # noqa: PLC0415
         from botocore.config import Config  # noqa: PLC0415
 
-        config = (
+        botocore_config = (
             Config(max_pool_connections=self.AWS_MAX_POOL_CONNECTIONS)
             if self.AWS_MAX_POOL_CONNECTIONS is not None
             else None
@@ -192,7 +210,7 @@ class S3FilesStore:
             region_name=self.AWS_REGION_NAME,
             use_ssl=self.AWS_USE_SSL,
             verify=self.AWS_VERIFY,
-            config=config,
+            config=botocore_config,
         )
         if not uri.startswith("s3://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
@@ -297,10 +315,21 @@ class GCSFilesStore:
     CACHE_CONTROL = "max-age=172800"
 
     # The bucket's default object ACL will be applied to the object.
-    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_crawler().
     POLICY = None
 
-    def __init__(self, uri: str):
+    @classmethod
+    def from_crawler(
+        cls, crawler: Crawler, uri: str, *, resolve: Callable[[str], str]
+    ) -> Self:
+        settings = crawler.settings
+        return cls(
+            uri,
+            GCS_PROJECT_ID=settings["GCS_PROJECT_ID"],
+            POLICY=settings[resolve("FILES_STORE_GCS_ACL")] or None,
+        )
+
+    def __init__(self, uri: str, **config: Any):
+        self.__dict__.update(config)
         from google.cloud import storage  # noqa: PLC0415
 
         client = storage.Client(project=self.GCS_PROJECT_ID)
@@ -375,7 +404,20 @@ class FTPFilesStore:
     FTP_PASSWORD: str | None = None
     USE_ACTIVE_MODE: bool | None = None
 
-    def __init__(self, uri: str):
+    @classmethod
+    def from_crawler(
+        cls, crawler: Crawler, uri: str, *, resolve: Callable[[str], str]
+    ) -> Self:
+        settings = crawler.settings
+        return cls(
+            uri,
+            FTP_USERNAME=settings["FTP_USER"],
+            FTP_PASSWORD=settings["FTP_PASSWORD"],
+            USE_ACTIVE_MODE=settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
+        )
+
+    def __init__(self, uri: str, **config: Any):
+        self.__dict__.update(config)
         if not uri.startswith("ftp://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 'ftp'")
         u = urlparse(uri)
@@ -455,13 +497,7 @@ class FilesPipeline(MediaPipeline):
 
     MEDIA_NAME: str = "file"
     EXPIRES: int = 90
-    STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]] = {
-        "": FSFilesStore,
-        "file": FSFilesStore,
-        "s3": S3FilesStore,
-        "gs": GCSFilesStore,
-        "ftp": FTPFilesStore,
-    }
+    STORE_SCHEMES: ClassVar[dict[str, type[FilesStoreProtocol]]] = {}
     DEFAULT_FILES_URLS_FIELD: str = "file_urls"
     DEFAULT_FILES_RESULT_FIELD: str = "files"
 
@@ -491,8 +527,21 @@ class FilesPipeline(MediaPipeline):
                 f"to enable {self.__class__.__name__}."
             )
 
+        super().__init__(crawler=crawler)
+
         settings = crawler.settings
         cls_name = "FilesPipeline"
+        self._storages: dict[str, Any] = without_none_values(
+            settings.getwithbase("MEDIA_STORAGES")
+        )
+        if self.STORE_SCHEMES:
+            warnings.warn(
+                f"{type(self).__name__} defines STORE_SCHEMES, which is"
+                " deprecated. Use the MEDIA_STORAGES setting instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self._storages.update(self.STORE_SCHEMES)
         self.store: FilesStoreProtocol = self._get_store(store_uri)
         resolve = functools.partial(
             self._key_for_pipe, base_class_name=cls_name, settings=settings
@@ -509,48 +558,25 @@ class FilesPipeline(MediaPipeline):
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
 
-        super().__init__(crawler=crawler)
-
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        settings = crawler.settings
-        cls._update_stores(settings)
-        store_uri = settings["FILES_STORE"]
-        return cls(store_uri, crawler=crawler)
+        return cls(crawler.settings["FILES_STORE"], crawler=crawler)
 
-    @classmethod
-    def _update_stores(cls, settings: BaseSettings) -> None:
-        s3store: type[S3FilesStore] = cast(
-            "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
-        )
-        s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
-        s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
-        s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
-        s3store.AWS_ENDPOINT_URL = settings["AWS_ENDPOINT_URL"]
-        s3store.AWS_REGION_NAME = settings["AWS_REGION_NAME"]
-        s3store.AWS_USE_SSL = settings["AWS_USE_SSL"]
-        s3store.AWS_VERIFY = settings["AWS_VERIFY"]
-        s3store.AWS_MAX_POOL_CONNECTIONS = _get_max_pool_connections(settings)
-        s3store.POLICY = settings["FILES_STORE_S3_ACL"]
-
-        gcs_store: type[GCSFilesStore] = cast(
-            "type[GCSFilesStore]", cls.STORE_SCHEMES["gs"]
-        )
-        gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
-        gcs_store.POLICY = settings["FILES_STORE_GCS_ACL"] or None
-
-        ftp_store: type[FTPFilesStore] = cast(
-            "type[FTPFilesStore]", cls.STORE_SCHEMES["ftp"]
-        )
-        ftp_store.FTP_USERNAME = settings["FTP_USER"]
-        ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
-        ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
+    def _resolve_store_setting(self, setting: str) -> str:
+        return self._key_for_pipe(setting, "FilesPipeline", self.crawler.settings)
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
         # to support win32 paths like: C:\\some\dir
         scheme = "file" if Path(uri).is_absolute() else urlparse(uri).scheme
-        store_cls = self.STORE_SCHEMES[scheme]
-        return store_cls(uri)
+        store_cls = load_object(self._storages[scheme])
+        if hasattr(store_cls, "from_crawler"):
+            return cast(
+                "FilesStoreProtocol",
+                store_cls.from_crawler(
+                    self.crawler, uri, resolve=self._resolve_store_setting
+                ),
+            )
+        return cast("FilesStoreProtocol", store_cls(uri))
 
     def _onsuccess(
         self,
