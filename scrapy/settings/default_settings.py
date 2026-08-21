@@ -545,6 +545,10 @@ SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.UrlContract": 1,
     "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
     "scrapy.contracts.default.MetadataContract": 1,
+    "scrapy.contracts.default.MethodContract": 1,
+    "scrapy.contracts.default.BodyContract": 1,
+    "scrapy.contracts.default.HeaderContract": 1,
+    "scrapy.contracts.default.CookieContract": 1,
     "scrapy.contracts.default.ReturnsContract": 2,
     "scrapy.contracts.default.ScrapesContract": 3,
 }

@@ -63,7 +63,8 @@ class CookiesMiddleware:
             cookie_domain = cookie_domain.removeprefix(".")
 
             hostname = urlparse_cached(request).hostname
-            assert hostname is not None
+            if hostname is None:
+                continue
             request_domain = hostname.lower()
 
             if cookie_domain and _is_public_domain(cookie_domain):
