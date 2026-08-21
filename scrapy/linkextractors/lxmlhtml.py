@@ -18,7 +18,7 @@ from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
-from scrapy.linkextractors import IGNORED_EXTENSIONS, _is_valid_url, _matches
+from scrapy.linkextractors import IGNORED_EXTENSIONS, SUPPORTED_SCHEMES, _matches
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
@@ -202,6 +202,14 @@ class LxmlLinkExtractor:
         :data:`scrapy.linkextractors.IGNORED_EXTENSIONS`.
     :type deny_extensions: list
 
+    :param schemes: a single value or list of strings containing the URL
+        schemes that extracted links may use. If not given, it will default to
+        :data:`scrapy.linkextractors.SUPPORTED_SCHEMES`. Use ``()`` to extract
+        links regardless of their scheme.
+
+        .. versionadded:: VERSION
+    :type schemes: str or list
+
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines
         regions inside the response where links should be extracted from.
         If given, only the text selected by those XPath will be scanned for
@@ -320,6 +328,7 @@ class LxmlLinkExtractor:
         restrict_text: _RegexOrSeveral | None = None,
         deny_tags: str | Iterable[str] = (),
         deny_attrs: str | Iterable[str] = (),
+        schemes: str | Iterable[str] | None = None,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         deny_tags, deny_attrs = (
@@ -347,8 +356,11 @@ class LxmlLinkExtractor:
 
         if deny_extensions is None:
             deny_extensions = IGNORED_EXTENSIONS
+        if schemes is None:
+            schemes = SUPPORTED_SCHEMES
         self.canonicalize: bool = canonicalize
         self.deny_extensions: set[str] = {"." + e for e in arg_to_iter(deny_extensions)}
+        self.schemes: set[str] = set(arg_to_iter(schemes))
         self.restrict_text: list[re.Pattern[str]] = self._compile_regexes(restrict_text)
 
     @staticmethod
@@ -359,13 +371,13 @@ class LxmlLinkExtractor:
         ]
 
     def _link_allowed(self, link: Link) -> bool:
-        if not _is_valid_url(link.url):
+        parsed_url = urlparse(link.url)
+        if self.schemes and parsed_url.scheme not in self.schemes:
             return False
         if self.allow_res and not _matches(link.url, self.allow_res):
             return False
         if self.deny_res and _matches(link.url, self.deny_res):
             return False
-        parsed_url = urlparse(link.url)
         if self.allow_domains and not url_is_from_any_domain(
             parsed_url, self.allow_domains
         ):

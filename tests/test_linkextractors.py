@@ -679,6 +679,33 @@ class TestLxmlLinkExtractor:
             ),
         ]
 
+    def test_schemes(self):
+        body = b"""
+        <html><body>
+        <a href="page.html">Page</a>
+        <a href="data:text/plain,Data">Data</a>
+        <a href="mailto:someone@example.com">Mail</a>
+        </body></html>"""
+        response = HtmlResponse("http://www.example.com/index.html", body=body)
+
+        lx = LxmlLinkExtractor()
+        assert lx.extract_links(response) == [
+            Link(url="http://www.example.com/page.html", text="Page"),
+            Link(url="data:text/plain,Data", text="Data"),
+        ]
+
+        lx = LxmlLinkExtractor(schemes="mailto")
+        assert lx.extract_links(response) == [
+            Link(url="mailto:someone@example.com", text="Mail"),
+        ]
+
+        lx = LxmlLinkExtractor(schemes=())
+        assert lx.extract_links(response) == [
+            Link(url="http://www.example.com/page.html", text="Page"),
+            Link(url="data:text/plain,Data", text="Data"),
+            Link(url="mailto:someone@example.com", text="Mail"),
+        ]
+
     def test_pickle_extractor(self):
         lx = LxmlLinkExtractor()
         assert isinstance(pickle.loads(pickle.dumps(lx)), LxmlLinkExtractor)

@@ -123,8 +123,10 @@ https://user:password@files.example.com/catalogue/page-1.html
 /downloads/catalogue.tar.gz
 /downloads/catalogue.zip
 
-# Schemes that are not crawlable, which are rejected before any parsing.
+# Schemes that Scrapy cannot download, which are rejected before any parsing.
 mailto:orders@example.com
 javascript:void(0)
 tel:+441234567890
+
+# A scheme other than HTTP that Scrapy can download.
 data:text/plain,hello
