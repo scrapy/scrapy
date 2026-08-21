@@ -153,21 +153,56 @@ def mustbe_deferred(
     return defer_result(result)
 
 
+class _ParallelTasks:
+    """Consumes *work* with no more than *count* concurrent cooperative tasks.
+
+    Tasks are started on demand: :meth:`start` must be called every time a new
+    item becomes available, so that a *count* much larger than the amount of
+    work does not cost anything.
+
+    :attr:`finished` fires once *work* is exhausted and every task is done.
+    """
+
+    def __init__(self, work: Iterator[Any], count: int):
+        self._coop = Cooperator()
+        self._work = work
+        self._count = count
+        self._running = 0
+        self.finished: Deferred[None] = Deferred()
+
+    def start(self) -> None:
+        if self._running >= self._count:
+            return
+        self._running += 1
+        self._coop.coiterate(self._work).addBoth(self._task_done)
+
+    def _task_done(self, _: Any) -> None:
+        self._running -= 1
+        # Only a running task can start another one, so once none is left no
+        # more work can come.
+        if not self._running:
+            self.finished.callback(None)
+
+
 def parallel(
     iterable: Iterable[_T],
     count: int,
     callable: Callable[Concatenate[_T, _P], _T2],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[list[tuple[bool, Iterator[_T2]]]]:
+) -> Deferred[None]:
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
-
-    Taken from: https://jcalderone.livejournal.com/24285.html
     """
-    coop = Cooperator()
-    work: Iterator[_T2] = (callable(elem, *args, **named) for elem in iterable)
-    return DeferredList([coop.coiterate(work) for _ in range(count)])
+
+    def work() -> Iterator[_T2]:
+        for elem in iterable:
+            tasks.start()
+            yield callable(elem, *args, **named)
+
+    tasks = _ParallelTasks(work(), count)
+    tasks.start()
+    return tasks.finished
 
 
 class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_T]):
@@ -230,12 +265,16 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_T]):
         self.finished: bool = False
         self.waiting_deferreds: deque[Deferred[Any]] = deque()
         self.anext_deferred: Deferred[_T] | None = None
+        # Called whenever aiterator produces a value, so that parallel_async()
+        # can start a task for it.
+        self.on_value: Callable[[], None] = lambda: None
 
     def _callback(self, result: _T) -> None:
         # This gets called when the result from aiterator.__anext__() is available.
         # It calls the callable on it and sends the result to the oldest waiting Deferred
         # (by chaining if the result is a Deferred too or by firing if not).
         self.anext_deferred = None
+        self.on_value()
         callable_result = self.callable(
             result, *self.callable_args, **self.callable_kwargs
         )
@@ -280,16 +319,13 @@ def parallel_async(
     callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]]:
+) -> Deferred[None]:
     """Like ``parallel`` but for async iterators"""
-    coop = Cooperator()
-    work: Iterator[Deferred[Any]] = _AsyncCooperatorAdapter(
-        async_iterable, callable, *args, **named
-    )
-    dl: Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]] = DeferredList(
-        [coop.coiterate(work) for _ in range(count)]
-    )
-    return dl
+    work = _AsyncCooperatorAdapter(async_iterable, callable, *args, **named)
+    tasks = _ParallelTasks(work, count)
+    work.on_value = tasks.start
+    tasks.start()
+    return tasks.finished
 
 
 def process_chain(
