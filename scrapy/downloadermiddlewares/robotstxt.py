@@ -63,8 +63,52 @@ class RobotsTxtMiddleware:
             return
         if request.url.startswith("data:") or request.url.startswith("file:"):
             return
+        netloc = urlparse_cached(request).netloc
+        if netloc not in self._parsers and self._is_robotstxt_request(request):
+            # Let this request download normally and use its own response as
+            # this host's robots.txt, instead of triggering a second,
+            # separate download of the same URL.
+            self._parsers[netloc] = Deferred()
+            self._stats.inc_value("robotstxt/request_count")
+            return
         rp = await self.robot_parser(request)
         self.process_request_2(rp, request)
+
+    @_warn_spider_arg
+    async def process_response(
+        self, request: Request, response: Response, spider: Spider | None = None
+    ) -> Response:
+        netloc = urlparse_cached(request).netloc
+        parser = self._parsers.get(netloc)
+        if (
+            isinstance(parser, Deferred)
+            and not parser.called
+            and self._is_robotstxt_request(request)
+        ):
+            await self._parse_robots(response, netloc, request)
+        return response
+
+    @_warn_spider_arg
+    async def process_exception(
+        self, request: Request, exception: Exception, spider: Spider | None = None
+    ) -> None:
+        netloc = urlparse_cached(request).netloc
+        parser = self._parsers.get(netloc)
+        if (
+            isinstance(parser, Deferred)
+            and not parser.called
+            and self._is_robotstxt_request(request)
+        ):
+            self._robots_error(exception, netloc, request)
+
+    @staticmethod
+    def _is_robotstxt_request(request: Request) -> bool:
+        # robot_parser() handles its own internal robots.txt request directly,
+        # without going through process_response()/process_exception().
+        if request.meta.get("dont_obey_robotstxt"):
+            return False
+        url = urlparse_cached(request)
+        return request.url == f"{url.scheme}://{url.netloc}/robots.txt"
 
     def process_request_2(self, rp: RobotParser | None, request: Request) -> None:
         if rp is None:
@@ -100,14 +144,7 @@ class RobotsTxtMiddleware:
                 resp = await self.crawler.engine.download_async(robotsreq)
                 await self._parse_robots(resp, netloc, request)
             except Exception as e:
-                if not isinstance(e, IgnoreRequest):
-                    logger.error(
-                        "Error downloading %(request)s: %(f_exception)s",
-                        {"request": request, "f_exception": e},
-                        exc_info=True,
-                        extra={"spider": self.crawler.spider},
-                    )
-                self._robots_error(e, netloc)
+                self._robots_error(e, netloc, request)
             self._stats.inc_value("robotstxt/request_count")
 
         parser = self._parsers[netloc]
@@ -131,8 +168,14 @@ class RobotsTxtMiddleware:
         self._parsers[netloc] = rp
         rp_dfd.callback(rp)
 
-    def _robots_error(self, exc: Exception, netloc: str) -> None:
+    def _robots_error(self, exc: Exception, netloc: str, request: Request) -> None:
         if not isinstance(exc, IgnoreRequest):
+            logger.error(
+                "Error downloading %(request)s: %(f_exception)s",
+                {"request": request, "f_exception": exc},
+                exc_info=exc,
+                extra={"spider": self.crawler.spider},
+            )
             key = f"robotstxt/exception_count/{type(exc)}"
             self._stats.inc_value(key)
         rp_dfd = self._parsers[netloc]
