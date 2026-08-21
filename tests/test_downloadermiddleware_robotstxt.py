@@ -216,6 +216,19 @@ Disallow: /some/randome/page.html
         await self.assertNotIgnored(Request("http://site.local"), middleware)
 
     @coroutine_test
+    async def test_robotstxt_request_download_error(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        self.crawler.settings.set("ROBOTSTXT_OBEY", True)
+        middleware = build_from_crawler(RobotsTxtMiddleware, self.crawler)
+        request = Request("http://site.local/robots.txt")
+        await middleware.process_request(request)
+        err = CannotResolveHostError("Robotstxt address not found")
+        await middleware.process_exception(request, err)
+        assert "Robotstxt address not found" in caplog.text
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+
+    @coroutine_test
     async def test_ignore_robotstxt_request(self):
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
 
