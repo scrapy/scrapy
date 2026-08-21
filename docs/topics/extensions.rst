@@ -503,7 +503,6 @@ Remote control extension
 .. versionadded:: VERSION
 
 .. module:: scrapy.extensions.remote_control
-   :synopsis: Remote control extension
 
 .. autoclass:: RemoteControl
 
