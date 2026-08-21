@@ -93,7 +93,7 @@ class MySpider(scrapy.Spider):
         args = ["-O", "example.json"]
         log = self.get_log(spider_code, proj_path, args=args)
         assert (
-            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
+            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "mode": "overwrite"}}'
             in log
         )
         with j.open(encoding="utf-8") as f2:
