@@ -141,6 +141,27 @@ class TestBaseItemExporter(ABC):
         )
         assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == "24"
 
+    def test_nested_item_field_custom_serializer(self):
+        nested = self.custom_field_item_class(name="Nested\xa3", age="22")
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter()
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == {
+            "name": "Nested\xa3",
+            "age": "24",
+        }
+
+    def test_nested_item_list_field_custom_serializer(self):
+        nested = [
+            self.custom_field_item_class(name="Nested\xa3", age="22"),
+            self.custom_field_item_class(name="Other", age="1"),
+        ]
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter()
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == [
+            {"name": "Nested\xa3", "age": "24"},
+            {"name": "Other", "age": "3"},
+        ]
+
 
 class TestPythonItemExporter(TestBaseItemExporter):
     def _get_exporter(self, **kwargs: Any) -> BaseItemExporter:
@@ -306,6 +327,18 @@ class TestCsvItemExporter(TestBaseItemExporter):
         self.assertCsvEqual(
             to_unicode(self.output.read()), "age,name\r\n22,John\xa3\r\n"
         )
+
+    def test_nested_item_field_custom_serializer(self):
+        nested = self.custom_field_item_class(name="Nested\xa3", age="22")
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter()
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) is nested
+
+    def test_nested_item_list_field_custom_serializer(self):
+        nested = [self.custom_field_item_class(name="Nested\xa3", age="22")]
+        a = ItemAdapter(self.item_class(name="Top", age=nested))
+        ie = self._get_exporter()
+        assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) is nested
 
     def assertExportResult(
         self, item: Any, expected: bytes | str = b"", **kwargs: Any
