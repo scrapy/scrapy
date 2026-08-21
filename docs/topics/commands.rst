@@ -80,6 +80,16 @@ but is just an identifier, and the capitalized project-name prefix of class
 names in :file:`middlewares.py` and :file:`pipelines.py` is only a naming
 convention; neither needs to match the module name.
 
+.. _find-projects:
+
+Finding projects
+----------------
+
+To find the Scrapy projects in a directory tree, e.g. from an editor extension,
+use :func:`~scrapy.utils.project.find_projects`:
+
+.. autofunction:: scrapy.utils.project.find_projects
+
 .. _topics-project-envvar:
 
 Sharing the root directory between projects
