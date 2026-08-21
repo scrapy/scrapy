@@ -121,6 +121,9 @@ The following extras are available:
      - :ref:`Images pipeline <images-pipeline>`
    * - ``ipython``
      - :ref:`IPython shell <shell-config>`
+   * - ``memusage``
+     - :ref:`Memory usage extension <topics-extensions-ref-memusage>` on
+       Windows
    * - ``ptpython``
      - :ref:`ptpython shell <shell-config>`
    * - ``robotparser``
