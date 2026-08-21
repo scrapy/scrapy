@@ -286,6 +286,7 @@ Spiders can access arguments in their `__init__` methods:
 
     class MySpider(scrapy.Spider):
         name = "myspider"
+        allowed_domains = ["www.example.com"]
 
         def __init__(self, category=None, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -303,6 +304,7 @@ The above example can also be written as follows:
 
     class MySpider(scrapy.Spider):
         name = "myspider"
+        allowed_domains = ["www.example.com"]
 
         async def start(self):
             yield scrapy.Request(f"http://www.example.com/categories/{self.category}")
@@ -357,6 +359,7 @@ is automatically converted to an integer:
 
     class BookSpider(Args[MyParams], scrapy.Spider):
         name = "bookspider"
+        allowed_domains = ["books.toscrape.com"]
         start_urls = ["http://books.toscrape.com/catalogue"]
 
         async def start(self):
@@ -928,6 +931,7 @@ Simplest example: process all urls discovered through sitemaps using the
 
 
     class MySpider(SitemapSpider):
+        allowed_domains = ["www.example.com"]
         sitemap_urls = ["http://www.example.com/sitemap.xml"]
 
         def parse(self, response):
@@ -942,6 +946,7 @@ callback:
 
 
     class MySpider(SitemapSpider):
+        allowed_domains = ["www.example.com"]
         sitemap_urls = ["http://www.example.com/sitemap.xml"]
         sitemap_rules = [
             ("/product/", "parse_product"),
@@ -963,6 +968,7 @@ whose url contains ``/sitemap_shop``:
 
 
     class MySpider(SitemapSpider):
+        allowed_domains = ["www.example.com"]
         sitemap_urls = ["http://www.example.com/robots.txt"]
         sitemap_rules = [
             ("/shop/", "parse_shop"),
@@ -981,6 +987,7 @@ Combine SitemapSpider with other sources of urls:
 
 
     class MySpider(SitemapSpider):
+        allowed_domains = ["www.example.com"]
         sitemap_urls = ["http://www.example.com/robots.txt"]
         sitemap_rules = [
             ("/shop/", "parse_shop"),
