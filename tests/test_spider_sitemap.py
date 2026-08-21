@@ -20,6 +20,8 @@ from tests.utils.crawl import crawl_items
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     from tests.mockserver.http import MockServer
 
 
@@ -316,6 +318,75 @@ Sitemap: /sitemap-relative-url.xml
 
         items, _ = await crawl_items(_Spider, mockserver)
         assert items == [{"url": mockserver.url("/text")}]
+
+    @pytest.mark.parametrize(
+        ("entry_keys", "expected_meta"),
+        [
+            ((), {}),
+            (
+                {"lastmod", "changefreq"},
+                {"lastmod": "2005-01-01", "changefreq": "daily"},
+            ),
+            ({"lastmod": "sitemap_lastmod"}, {"sitemap_lastmod": "2005-01-01"}),
+        ],
+    )
+    @coroutine_test
+    async def test_sitemap_meta(
+        self,
+        entry_keys: Mapping[str, str] | Iterable[str],
+        expected_meta: dict[str, str],
+        mockserver: MockServer,
+    ):
+        meta_keys = {"lastmod", "changefreq", "sitemap_lastmod"}
+
+        class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_meta = entry_keys
+
+            def parse(self, response):
+                yield {k: v for k, v in response.meta.items() if k in meta_keys}
+
+            def raw_body(self):
+                loc = self.mockserver.url("/text")
+                return (
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    f"<url><loc>{loc}</loc><lastmod>2005-01-01</lastmod>"
+                    "<changefreq>daily</changefreq><priority>0.8</priority></url>"
+                    "</urlset>"
+                )
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert items == [expected_meta]
+
+    @coroutine_test
+    async def test_sitemap_meta_alternate_links(self, mockserver: MockServer):
+        # Alternate links get the meta of the entry that declares them.
+        class _Spider(RawSitemapSpider, self.spider_class):  # type: ignore[name-defined,misc]
+            sitemap_alternate_links = True
+            sitemap_meta = {"lastmod"}
+
+            def parse(self, response):
+                yield {"url": response.url, "lastmod": response.meta.get("lastmod")}
+
+            def raw_body(self):
+                loc = self.mockserver.url("/text")
+                alt = self.mockserver.url("/text?alt")
+                return (
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+                    ' xmlns:xhtml="http://www.w3.org/1999/xhtml">'
+                    f"<url><loc>{loc}</loc><lastmod>2005-01-01</lastmod>"
+                    f'<xhtml:link rel="alternate" hreflang="de" href="{alt}"/></url>'
+                    f"<url><loc>{self.mockserver.url('/text?no-lastmod')}</loc></url>"
+                    "</urlset>"
+                )
+
+        items, _ = await crawl_items(_Spider, mockserver)
+        assert sorted(items, key=lambda item: item["url"]) == [
+            {"url": mockserver.url("/text"), "lastmod": "2005-01-01"},
+            {"url": mockserver.url("/text?alt"), "lastmod": "2005-01-01"},
+            {"url": mockserver.url("/text?no-lastmod"), "lastmod": None},
+        ]
 
     def test_parse_sitemap_empty_body(self, caplog: pytest.LogCaptureFixture) -> None:
         r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
