@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import gc
 import random
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
+from logging import getLogger
 from time import monotonic
 from typing import TYPE_CHECKING, Any
 
@@ -39,6 +41,8 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
+
+logger = getLogger(__name__)
 
 
 @dataclass(slots=True, eq=False)
@@ -83,6 +87,7 @@ class Slot:
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
     _SLOT_GC_INTERVAL: float = 60.0  # seconds
+    _GC_INTERVAL: float = 1.0  # seconds
 
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
@@ -107,6 +112,12 @@ class Downloader:
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
+        self._stats = crawler.stats
+        # (reason, start_time): current backout reason and when it began, or
+        # (None, None) if not backing out.
+        self._last_backout: tuple[str | None, float | None] = (None, None)
+        self._max_active_size_warned = False
+        self._last_gc: float = 0
 
     @inlineCallbacks
     @_warn_spider_arg
@@ -114,6 +125,7 @@ class Downloader:
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
+        self.middleware._count_rough_size(request)
         try:
             result: Response | Request = yield (
                 deferred_from_coro(
@@ -123,10 +135,51 @@ class Downloader:
             return result
         finally:
             self.active.remove(request)
+            self.middleware._discount_rough_size(request)
+
+    def _record_backout(self, reason: str | None) -> None:
+        last_reason, last_reason_start_time = self._last_backout
+        if last_reason == reason:
+            return
+        current_time = monotonic()
+        if last_reason is not None and self._stats is not None:
+            assert last_reason_start_time is not None
+            last_reason_seconds = current_time - last_reason_start_time
+            self._stats.inc_value("request_backout_seconds/total", last_reason_seconds)
+            self._stats.inc_value(
+                f"request_backout_seconds/{last_reason}", last_reason_seconds
+            )
+        self._last_backout = (reason, current_time)
 
     def needs_backout(self) -> bool:
         # A total concurrency of 0 means no limit.
-        return 0 < self.total_concurrency <= len(self.active)
+        if 0 < self.total_concurrency <= len(self.active):
+            self._record_backout("concurrency")
+            return True
+        max_active_size = self.middleware._max_active_size
+        if max_active_size and self.middleware._total_active_size >= max_active_size:
+            if not self._max_active_size_warned:
+                self._max_active_size_warned = True
+                logger.info(
+                    f"Pausing request processing: the active response size "
+                    f"({self.middleware._total_active_size} B) has reached "
+                    f"RESPONSE_MAX_ACTIVE_SIZE ({max_active_size} B). See "
+                    f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
+                    f"and the request_backout_seconds/response_max_active_size "
+                    f"stat. This message is only logged once."
+                )
+            self._record_backout("response_max_active_size")
+            # Responses are only freed once nothing references them, which for
+            # reference cycles, and for every response on PyPy, requires a
+            # garbage collection. A full collection is expensive, and this runs
+            # once per request while paused, hence the interval.
+            current_time = monotonic()
+            if current_time - self._last_gc >= self._GC_INTERVAL:
+                self._last_gc = current_time
+                gc.collect()
+            return True
+        self._record_backout(None)
+        return False
 
     @_warn_spider_arg
     def _get_slot(
@@ -248,6 +301,7 @@ class Downloader:
         self._stop_slot_gc()
         for slot in self.slots.values():
             slot.close()
+        self._record_backout(None)
 
     def _slot_gc(self, age: float = 60) -> None:
         mintime = monotonic() - age

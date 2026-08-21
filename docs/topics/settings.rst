@@ -1869,6 +1869,56 @@ Adjust redirect request priority relative to original request:
 - **a positive priority adjust (default) means higher priority.**
 - a negative priority adjust means lower priority.
 
+.. setting:: RESPONSE_MAX_ACTIVE_SIZE
+
+RESPONSE_MAX_ACTIVE_SIZE
+------------------------
+
+Default: ``5_000_000``
+
+Soft limit (in bytes) on the total size of responses being kept in memory.
+
+This counts both the size of response bodies that have passed through
+:ref:`downloader middlewares <topics-downloader-middleware>` and remain in
+memory, and the :setting:`rough size <RESPONSE_ROUGH_SIZE>` of requests
+currently being downloaded.
+
+While the total is above this value, Scrapy pauses sending new requests to the
+downloader. A higher value improves crawl speed at the cost of memory usage.
+``0`` disables the limit.
+
+Scrapy logs an info-level message the first time the limit is reached. To see
+how long request processing was paused because of it over a whole crawl, check
+the ``request_backout_seconds/response_max_active_size`` stat.
+
+.. caution::
+
+    Responses that your code keeps a strong reference to, e.g. in the
+    :attr:`.Request.meta` of a scheduled request or in a component
+    attribute, count toward this limit until that reference is gone, so
+    accumulating them can pause a crawl indefinitely. To find out, run
+    ``prefs()`` on the :ref:`telnet console <topics-telnetconsole>` and see
+    whether the count of live :class:`~scrapy.http.Response` objects keeps
+    growing; see :ref:`topics-leaks`.
+
+.. versionadded:: VERSION
+
+.. setting:: RESPONSE_ROUGH_SIZE
+
+RESPONSE_ROUGH_SIZE
+-------------------
+
+Default: ``None``
+
+Estimated size (in bytes) to count toward :setting:`RESPONSE_MAX_ACTIVE_SIZE`
+for each request being downloaded, whose actual response size is not known yet.
+
+``None`` means a quarter of :setting:`RESPONSE_MAX_ACTIVE_SIZE` split among
+:setting:`CONCURRENT_REQUESTS` requests, so that requests being downloaded
+cannot use up the whole limit on their own. ``0`` counts only responses.
+
+.. versionadded:: VERSION
+
 .. setting:: ROBOTSTXT_OBEY
 
 ROBOTSTXT_OBEY
@@ -2020,19 +2070,6 @@ For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
 .. include:: settings.rst
     :start-after: queue-common-starts
     :end-before: queue-common-ends
-
-
-.. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
-
-SCRAPER_SLOT_MAX_ACTIVE_SIZE
-----------------------------
-
-Default: ``5_000_000``
-
-Soft limit (in bytes) for response data being processed.
-
-While the sum of the sizes of all responses being processed is above this value,
-Scrapy does not process new requests.
 
 .. setting:: SPIDER_CONTRACTS
 
