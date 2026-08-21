@@ -111,6 +111,8 @@ The following extras are available:
      - Provides
    * - ``bpython``
      - :ref:`bpython shell <shell-config>`
+   * - ``clipboard``
+     - Reading the system clipboard with :command:`genrequest`
    * - ``gcs``
      - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
        :ref:`feed exports <topics-feed-exports>` and
