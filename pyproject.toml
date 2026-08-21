@@ -45,6 +45,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet :: WWW/HTTP",
@@ -165,6 +166,7 @@ module = [
     "brotli",
     "brotlicffi",
     "google.*",
+    "ipdb",
     "pydispatch.*",
     "pyftpdlib.*",
     "pytest_twisted",
@@ -174,7 +176,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.17.0"
+current_version = "2.18.0"
 commit = true
 tag = true
 tag_name = "{new_version}"

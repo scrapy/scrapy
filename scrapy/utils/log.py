@@ -81,6 +81,9 @@ DEFAULT_LOGGING = {
         "httpx": {
             "level": "WARNING",
         },
+        "parso": {
+            "level": "ERROR",
+        },
         "scrapy": {
             "level": "DEBUG",
         },
