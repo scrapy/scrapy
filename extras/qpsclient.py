@@ -3,7 +3,7 @@ A spider that generate light requests to measure QPS throughput
 
 usage:
 
-    scrapy runspider qpsclient.py --loglevel=INFO --set RANDOMIZE_DOWNLOAD_DELAY=0
+    scrapy runspider qpsclient.py --loglevel=INFO --set DOWNLOAD_DELAY_JITTER=0
      --set CONCURRENT_REQUESTS=50 -a qps=10 -a latency=0.3
 
 """
