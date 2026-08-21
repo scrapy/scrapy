@@ -40,7 +40,9 @@ async def handler(connection: ServerConnection) -> None:
         await connection.close(1011, f"unknown path: {path}")
 
 
-def process_request(connection: ServerConnection, request: Request) -> Response | None:
+async def process_request(
+    connection: ServerConnection, request: Request
+) -> Response | None:
     """Reject the handshake for the paths that test non-101 responses."""
     if request.path == "/unavailable":
         return connection.respond(503, "Service Unavailable")
@@ -48,6 +50,8 @@ def process_request(connection: ServerConnection, request: Request) -> Response 
         response = connection.respond(301, "Moved Permanently")
         response.headers["Location"] = "/echo"
         return response
+    if request.path == "/slow":
+        await asyncio.sleep(10)
     return None
 
 

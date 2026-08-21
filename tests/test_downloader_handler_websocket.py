@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import json
+from contextlib import asynccontextmanager
 from ipaddress import IPv4Address
 from typing import TYPE_CHECKING, Any, TypeAlias
 
@@ -8,13 +10,20 @@ import pytest
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers.websocket import WebSocketDownloadHandler
-from scrapy.exceptions import DownloadFailedError, NotConfigured
+from scrapy.exceptions import (
+    CannotResolveHostError,
+    DownloadConnectionRefusedError,
+    DownloadFailedError,
+    DownloadTimeoutError,
+    NotConfigured,
+    UnsupportedURLSchemeError,
+)
 from scrapy.http import WebSocketResponse
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
-from tests.mockserver.websocket import WebSocketMockServer
+from tests import NON_EXISTING_RESOLVABLE
 from tests.spiders import SingleRequestSpider
 from tests.utils.decorators import coroutine_test
 
@@ -25,6 +34,11 @@ if TYPE_CHECKING:
 
     _Callback: TypeAlias = Callable[[WebSocketResponse], AsyncIterator[Any]]
 
+# tests/mockserver/websocket.py imports the websockets library at module
+# level, so this module cannot be collected without it either.
+pytest.importorskip("websockets")
+
+from tests.mockserver.websocket import WebSocketMockServer
 
 pytestmark = pytest.mark.only_asyncio
 
@@ -56,6 +70,36 @@ async def _close(response: WebSocketResponse) -> AsyncIterator[Any]:
     await response.close()
     return
     yield
+
+
+@asynccontextmanager
+async def _dh(**settings: Any) -> AsyncIterator[WebSocketDownloadHandler]:
+    """Build a :class:`WebSocketDownloadHandler` without going through a crawl."""
+    crawler = get_crawler(Spider, settings)
+    download_handler = build_from_crawler(WebSocketDownloadHandler, crawler)
+    try:
+        yield download_handler
+    finally:
+        await download_handler.close()
+
+
+@asynccontextmanager
+async def _rejecting_proxy(status: int = 403) -> AsyncIterator[str]:
+    """Run a bare HTTP proxy that responds to CONNECT with *status*."""
+
+    async def handle(
+        reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        while await reader.readline() not in (b"\r\n", b""):
+            pass
+        writer.write(f"HTTP/1.1 {status} Forbidden\r\n\r\n".encode())
+        await writer.drain()
+        writer.close()
+
+    server = await asyncio.start_server(handle, "127.0.0.1", 0)
+    host, port = server.sockets[0].getsockname()[:2]
+    async with server:
+        yield f"http://{host}:{port}"
 
 
 class TestWebSocketDownloadHandler:
@@ -241,3 +285,92 @@ class TestWebSocketDownloadHandler:
         )
         with pytest.raises(NotConfigured, match="websockets extra"):
             build_from_crawler(WebSocketDownloadHandler, get_crawler())
+
+    @coroutine_test
+    async def test_timeout(self, ws_server: WebSocketMockServer) -> None:
+        request = Request(ws_server.url("/slow"), meta={"download_timeout": 0.2})
+        async with _dh() as download_handler:
+            with pytest.raises(DownloadTimeoutError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_missing_host(self) -> None:
+        request = Request("ws:///path")
+        async with _dh() as download_handler:
+            with pytest.raises(UnsupportedURLSchemeError):
+                await download_handler.download_request(request)
+
+    @pytest.mark.skipif(
+        NON_EXISTING_RESOLVABLE, reason="Non-existing hosts are resolvable"
+    )
+    @coroutine_test
+    async def test_dns_error(self) -> None:
+        request = Request("ws://dns.resolution.invalid./")
+        async with _dh() as download_handler:
+            with pytest.raises(CannotResolveHostError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_connection_refused(self) -> None:
+        request = Request("ws://127.0.0.1:65432/")
+        async with _dh() as download_handler:
+            with pytest.raises(DownloadConnectionRefusedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_connection_closed_during_handshake(self) -> None:
+        async def handle(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        ) -> None:
+            writer.close()
+
+        server = await asyncio.start_server(handle, "127.0.0.1", 0)
+        host, port = server.sockets[0].getsockname()[:2]
+        async with server:
+            request = Request(f"ws://{host}:{port}/")
+            async with _dh() as download_handler:
+                with pytest.raises(DownloadFailedError):
+                    await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_proxy_rejects_connect(self, ws_server: WebSocketMockServer) -> None:
+        async with _rejecting_proxy() as proxy:
+            request = Request(ws_server.url("/echo"), meta={"proxy": proxy})
+            async with _dh() as download_handler:
+                with pytest.raises(
+                    DownloadConnectionRefusedError, match="proxy rejected connection"
+                ):
+                    await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_proxy_non_basic_auth(self, ws_server: WebSocketMockServer) -> None:
+        request = Request(
+            ws_server.url("/echo"),
+            meta={"proxy": "http://proxy.example:8080"},
+            headers={"Proxy-Authorization": "Digest realm=x"},
+        )
+        async with _dh() as download_handler:
+            with pytest.raises(ValueError, match="Expected Basic auth"):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_https_proxy_verify_certificates_false(self) -> None:
+        """An HTTPS proxy with certificate verification disabled uses an
+        insecure SSL context to connect to the proxy itself."""
+        request = Request("ws://127.0.0.1/", meta={"proxy": "https://127.0.0.1:65432"})
+        async with _dh(DOWNLOAD_VERIFY_CERTIFICATES=False) as download_handler:
+            with pytest.raises(DownloadConnectionRefusedError):
+                await download_handler.download_request(request)
+
+    @coroutine_test
+    async def test_tls_verbose_logging(
+        self, ws_server: WebSocketMockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        request = Request(ws_server.url("/echo", is_secure=True))
+        async with _dh(
+            DOWNLOAD_VERIFY_CERTIFICATES=False,
+            DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING=True,
+        ) as download_handler:
+            with caplog.at_level("DEBUG"):
+                await download_handler.download_request(request)
+        assert "SSL connection to" in caplog.text
