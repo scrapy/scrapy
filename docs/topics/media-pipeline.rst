@@ -445,6 +445,29 @@ and pipeline class MyPipeline will have expiration time set to 180.
 The last modified time from the file is used to determine the age of the file in days,
 which is then compared to the set expiration time to determine if the file is expired.
 
+.. _checksum-algorithm:
+
+Checksum algorithm
+------------------
+
+.. setting:: FILES_CHECKSUM_ALGORITHM
+.. setting:: IMAGES_CHECKSUM_ALGORITHM
+
+.. versionadded:: VERSION
+
+Checksums are `MD5 hashes <MD5 hash_>`_ by default. To use a different
+algorithm, set :setting:`FILES_CHECKSUM_ALGORITHM` (or
+:setting:`IMAGES_CHECKSUM_ALGORITHM`, in case of the Images Pipeline) to the
+name of any algorithm supported by :func:`hashlib.new`:
+
+.. code-block:: python
+
+    FILES_CHECKSUM_ALGORITHM = "sha256"
+
+Amazon S3 and Google Cloud Storage cannot calculate checksums of stored files
+on demand, and only report MD5 hashes, so with a different algorithm files that
+are not downloaded again, because they have not expired yet, get no checksum.
+
 .. _topics-images-thumbnails:
 
 Thumbnail generation for images
@@ -614,7 +637,8 @@ See here the methods that you can override in your custom Files Pipeline:
         * ``path`` - the path (relative to :setting:`FILES_STORE`) where the file
           was stored
 
-        * ``checksum`` - a `MD5 hash`_ of the image contents
+        * ``checksum`` - a `MD5 hash`_ of the file contents, unless a different
+          :ref:`checksum algorithm <checksum-algorithm>` is configured
 
         * ``status`` - the file status indication.
 
