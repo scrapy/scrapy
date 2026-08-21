@@ -67,7 +67,7 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
 gcs = ["google-cloud-storage>=1.29.0"]
-httpx = ["httpx2[http2,socks]>=2.0.0"]
+httpx = ["httpx2[http2,socks]>=2.6.0"]
 images = ["Pillow>=8.3.2"]
 ipython = ["ipython>=8.15.0"]
 ptpython = ["ptpython>=3.0.23"]

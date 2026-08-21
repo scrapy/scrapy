@@ -758,6 +758,15 @@ def test_remove_from_list(before, name, item, after):
     assert settings.getpriority(name) == expected_settings.getpriority(name)
 
 
+def test_default_settings_all():
+    deprecated = {"DNS_RESOLVER"}
+    assert scrapy_default_settings.__all__ == sorted(
+        name
+        for name in vars(scrapy_default_settings)
+        if name.isupper() and name not in deprecated
+    )
+
+
 def test_deprecated_dns_resolver_setting():
     settings = Settings()
     with pytest.warns(

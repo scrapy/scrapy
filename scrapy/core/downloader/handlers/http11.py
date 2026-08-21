@@ -67,6 +67,8 @@ from scrapy.utils.url import add_http_if_no_scheme
 from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
     from twisted.web._newclient import Request as TxRequest
@@ -91,6 +93,160 @@ class _ResultT(TypedDict):
     stop_download: NotRequired[StopDownload | None]
 
 
+class _LenientHTTPClientParser(HTTPClientParser):
+    """Response parser that skips bad response header lines, those with no
+    colon in them, instead of failing to parse the whole response.
+
+    Some servers send such lines, and web browsers skip them and keep parsing
+    the header lines that follow. See
+    https://github.com/scrapy/scrapy/issues/210.
+    """
+
+    def lineReceived(self, line: bytes) -> None:
+        # A copy of twisted.web._newclient.HTTPParser.lineReceived() where the
+        # header name and value are only extracted from header lines that have
+        # a colon.
+
+        # Handle the normal CR LF case.
+        if line[-1:] == b"\r":
+            line = line[:-1]
+
+        if self.state == STATUS:
+            self.statusReceived(line)  # type: ignore[no-untyped-call]
+            self.state = HEADER
+            return
+
+        # HEADER is the only other state in which lines are received, as the
+        # parser switches to raw mode for the response body.
+        if not line or line[0] not in b" \t":
+            if self._partialHeader is not None:
+                header = b"".join(self._partialHeader)
+                if b":" in header:
+                    name, value = header.split(b":", 1)
+                    self.headerReceived(name, value.strip())  # type: ignore[no-untyped-call]
+                else:
+                    logger.debug(
+                        f"Skipping the bad response header line {header!r}, as "
+                        f"it has no colon."
+                    )
+            if not line:
+                # Empty line means the header section is over.
+                self.allHeadersReceived()  # type: ignore[no-untyped-call]
+            else:
+                # Line not beginning with LWS is another header.
+                self._partialHeader = [line]
+        else:
+            # A line beginning with LWS is a continuation of a header begun on
+            # a previous line.
+            self._partialHeader.append(line)  # type: ignore[union-attr]
+
+
+class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
+    """Protocol that parses responses with :class:`_LenientHTTPClientParser`."""
+
+    def request(self, request: TxRequest) -> Deferred[IResponse]:
+        d: Deferred[IResponse] = super().request(request)
+        # HTTP11ClientProtocol.request() hardcodes the parser class, so the
+        # only way to use a different one is to replace the class of the parser
+        # object that it creates. This is safe because
+        # _LenientHTTPClientParser defines no additional state. The parser is
+        # always there because HTTPConnectionPool only reuses connections whose
+        # protocol is in the QUIESCENT state, for which request() always
+        # creates a parser.
+        assert self._parser is not None
+        self._parser.__class__ = _LenientHTTPClientParser
+        return d
+
+
+class _TrackedHTTP11ClientProtocol(_LenientHTTP11ClientProtocol):
+    """Connection that tells the pool that opened it when it closes, whether it
+    was cached at the time or in use."""
+
+    _pool: _BoundedHTTPConnectionPool
+    _pool_key: Any
+
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
+        self._pool._forget(self)
+        super().connectionLost(reason)  # type: ignore[no-untyped-call]
+
+
+class _BoundedHTTP11ClientFactory(_HTTP11ClientFactory):
+    noisy = False
+
+    def __init__(
+        self,
+        quiescentCallback: Callable[[HTTP11ClientProtocol], None],
+        metadata: str,
+        pool: _BoundedHTTPConnectionPool,
+        key: Any,
+    ):
+        super().__init__(quiescentCallback, metadata)  # type: ignore[no-untyped-call]
+        self._pool: _BoundedHTTPConnectionPool = pool
+        self._key: Any = key
+
+    def buildProtocol(self, addr: IAddress | None) -> _TrackedHTTP11ClientProtocol:
+        protocol = _TrackedHTTP11ClientProtocol(self._quiescentCallback)  # type: ignore[no-untyped-call]
+        protocol._pool = self._pool
+        protocol._pool_key = self._key
+        self._pool._open.add(protocol)
+        return protocol
+
+
+class _BoundedHTTPConnectionPool(HTTPConnectionPool):
+    """Connection pool that keeps the number of open connections, cached and in
+    use alike, under *limit*, where 0 means no limit.
+
+    Opening a connection once the limit is reached closes the least recently
+    used cached connection to make room for it. When there is no cached
+    connection left to close, the limit is exceeded rather than requests
+    delayed.
+    """
+
+    _factory = _BoundedHTTP11ClientFactory  # type: ignore[assignment]
+
+    def __init__(self, reactor: ReactorBase, limit: int, keepalive_timeout: float):
+        super().__init__(reactor, persistent=bool(keepalive_timeout))  # type: ignore[no-untyped-call]
+        self.cachedConnectionTimeout = keepalive_timeout  # type: ignore[assignment]
+        self._limit: int = limit
+        self._open: set[_TrackedHTTP11ClientProtocol] = set()
+
+    def _newConnection(
+        self, key: Any, endpoint: TCP4ClientEndpoint
+    ) -> Deferred[HTTP11ClientProtocol]:
+        while self._limit and len(self._open) >= self._limit and self._evict():
+            pass
+
+        def quiescentCallback(protocol: HTTP11ClientProtocol) -> None:
+            self._putConnection(key, protocol)  # type: ignore[no-untyped-call]
+
+        factory = self._factory(quiescentCallback, repr(endpoint), self, key)
+        return endpoint.connect(factory)
+
+    def _forget(self, connection: _TrackedHTTP11ClientProtocol) -> None:
+        self._open.discard(connection)
+
+    def _evict(self) -> bool:
+        """Close the least recently used cached connection, and report whether
+        there was one to close.
+
+        ``_timeouts`` holds cached connections only, and ``getConnection()``
+        drops the ones it hands out, so its insertion order goes from least to
+        most recently used.
+        """
+        connection = next(iter(self._timeouts), None)
+        if connection is None:
+            return False
+        self._timeouts[connection].cancel()
+        # dropped early so that a caller looping on this method sees the room
+        # made by connections that have yet to finish closing
+        self._forget(connection)
+        key = connection._pool_key
+        self._removeConnection(key, connection)  # type: ignore[no-untyped-call]
+        if not self._connections[key]:
+            del self._connections[key]
+        return True
+
+
 class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
@@ -101,11 +257,10 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
 
         from twisted.internet import reactor
 
-        self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
-        self._pool.maxPersistentPerHost = crawler.settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
+        self._pool: _BoundedHTTPConnectionPool = _BoundedHTTPConnectionPool(
+            reactor, self._pool_size_total, self._keepalive_timeout
         )
-        self._pool._factory = _LenientHTTP11ClientFactory
+        self._pool.maxPersistentPerHost = self._pool_size_per_host
 
         self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
             crawler
@@ -147,7 +302,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     async def close(self) -> None:
         from twisted.internet import reactor
 
-        d: Deferred[None] = self._pool.closeCachedConnections()
+        d: Deferred[None] = self._pool.closeCachedConnections()  # type: ignore[no-untyped-call]
         # closeCachedConnections will hang on network or server issues, so
         # we'll manually timeout the deferred.
         #
@@ -750,77 +905,3 @@ class _ResponseReader(Protocol):
             reason = Failure(exc)
 
         self._finished.errback(reason)
-
-
-class _LenientHTTPClientParser(HTTPClientParser):
-    """Response parser that skips bad response header lines, those with no
-    colon in them, instead of failing to parse the whole response.
-
-    Some servers send such lines, and web browsers skip them and keep parsing
-    the header lines that follow. See
-    https://github.com/scrapy/scrapy/issues/210.
-    """
-
-    def lineReceived(self, line: bytes) -> None:
-        # A copy of twisted.web._newclient.HTTPParser.lineReceived() where the
-        # header name and value are only extracted from header lines that have
-        # a colon.
-
-        # Handle the normal CR LF case.
-        if line[-1:] == b"\r":
-            line = line[:-1]
-
-        if self.state == STATUS:
-            self.statusReceived(line)  # type: ignore[no-untyped-call]
-            self.state = HEADER
-            return
-
-        # HEADER is the only other state in which lines are received, as the
-        # parser switches to raw mode for the response body.
-        if not line or line[0] not in b" \t":
-            if self._partialHeader is not None:
-                header = b"".join(self._partialHeader)
-                if b":" in header:
-                    name, value = header.split(b":", 1)
-                    self.headerReceived(name, value.strip())  # type: ignore[no-untyped-call]
-                else:
-                    logger.debug(
-                        f"Skipping the bad response header line {header!r}, as "
-                        f"it has no colon."
-                    )
-            if not line:
-                # Empty line means the header section is over.
-                self.allHeadersReceived()  # type: ignore[no-untyped-call]
-            else:
-                # Line not beginning with LWS is another header.
-                self._partialHeader = [line]
-        else:
-            # A line beginning with LWS is a continuation of a header begun on
-            # a previous line.
-            self._partialHeader.append(line)  # type: ignore[union-attr]
-
-
-class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
-    """Protocol that parses responses with :class:`_LenientHTTPClientParser`."""
-
-    def request(self, request: TxRequest) -> Deferred[IResponse]:
-        d: Deferred[IResponse] = super().request(request)
-        # HTTP11ClientProtocol.request() hardcodes the parser class, so the
-        # only way to use a different one is to replace the class of the parser
-        # object that it creates. This is safe because
-        # _LenientHTTPClientParser defines no additional state. The parser is
-        # always there because HTTPConnectionPool only reuses connections whose
-        # protocol is in the QUIESCENT state, for which request() always
-        # creates a parser.
-        assert self._parser is not None
-        self._parser.__class__ = _LenientHTTPClientParser
-        return d
-
-
-class _LenientHTTP11ClientFactory(_HTTP11ClientFactory):
-    """Factory that builds :class:`_LenientHTTP11ClientProtocol` protocols."""
-
-    noisy = False
-
-    def buildProtocol(self, addr: IAddress | None) -> HTTP11ClientProtocol:
-        return _LenientHTTP11ClientProtocol(self._quiescentCallback)  # type: ignore[no-untyped-call]

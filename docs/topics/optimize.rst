@@ -132,6 +132,10 @@ Raise them to crawl a single website faster, and see
 :ref:`broad-crawls-concurrency` to spread requests across many websites
 instead.
 
+Concurrency also drives how many connections stay open, which is capped
+separately by :setting:`CONCURRENT_CONNECTIONS_PER_HANDLER`. See
+:ref:`faq-too-many-open-files` if a crawl runs out of file descriptors.
+
 The limit that matters, though, is the one the target website tolerates.
 Exceeding it gets you throttled, served errors or banned, all of which make the
 crawl slower than a lower concurrency would have been. To find that limit:
