@@ -80,18 +80,19 @@ class RemoteControl:
 
         The response is a JSON object with the following keys:
 
-        - ``status`` (string): one of ``"ok"``, ``"compile_error"``,
-          ``"error"``, or ``"timeout"``.
-        - ``output`` (string): the output of the code.
+        - ``status`` (string): one of ``"ok"`` (the code was executed
+          successfully), ``"compile_error"`` (the code could not be compiled),
+          ``"error"`` (the code raised an exception), or ``"timeout"`` (the
+          code couldn't finish within the given time).
+        - ``output`` (string): the output produced by ``print()`` calls in the
+          code.
         - ``traceback`` (string or null): the traceback if an exception was
-          raised.
+          raised when executing the code.
         - ``elapsed_sec`` (number): the number of seconds the code took to run.
-        - ``output_truncated`` (boolean, optional): whether the output was
+        - ``output_truncated`` (boolean, optional): whether ``output`` was
           truncated (omitted if ``false``).
-        - ``traceback_truncated`` (boolean, optional): whether the traceback
+        - ``traceback_truncated`` (boolean, optional): whether ``traceback``
           was truncated (omitted if ``false``).
-
-    .. versionadded:: VERSION
     """
 
     def __init__(self, crawler: Crawler):

@@ -500,6 +500,8 @@ setting, and the server will listen in the port specified in
 Remote control extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. versionadded:: VERSION
+
 .. module:: scrapy.extensions.remote_control
    :synopsis: Remote control extension
 
