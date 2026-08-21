@@ -433,6 +433,48 @@ class MySpider(scrapy.Spider):
         self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
 
 
+class TestLogInstallRootHandler(TestProjectBase):
+    """LOG_INSTALL_ROOT_HANDLER=False must let a user-configured root handler
+    be the only one in effect, instead of Scrapy adding its own alongside it."""
+
+    @pytest.fixture(autouse=True)
+    def create_files(self, proj_path: Path) -> None:
+        proj_mod_path = proj_path / self.project_name
+        (proj_mod_path / "spiders" / "sp.py").write_text("""
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'sp'
+
+    async def start(self):
+        self.logger.info('It works!')
+        return
+        yield
+""")
+        self._append_settings(
+            proj_mod_path,
+            "\nimport logging\n"
+            "logging.basicConfig(level=logging.INFO, format='CUSTOM: %(message)s')\n",
+        )
+
+    def test_default(self, proj_path: Path) -> None:
+        """Scrapy installs its own root handler in addition to the
+        user-configured one, so the message is logged twice, once in each
+        format."""
+        _, _, err = proc("crawl", "sp", cwd=proj_path)
+        assert "CUSTOM: It works!" in err
+        assert "[sp] INFO: It works!" in err
+
+    def test_disabled(self, proj_path: Path) -> None:
+        """Scrapy leaves the user-configured root handler alone, so the
+        message is only logged once, in the user's format."""
+        _, _, err = proc(
+            "crawl", "sp", "-s", "LOG_INSTALL_ROOT_HANDLER=False", cwd=proj_path
+        )
+        assert "CUSTOM: It works!" in err
+        assert "[sp] INFO: It works!" not in err
+
+
 class TestMiscCommands(TestProjectBase):
     def test_list(self, proj_path: Path) -> None:
         assert call("list", cwd=proj_path) == 0

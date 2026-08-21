@@ -165,6 +165,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
 * :setting:`LOG_SHORT_NAMES`
+* :setting:`LOG_INSTALL_ROOT_HANDLER`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -174,6 +175,10 @@ messages will be displayed on the standard error. If :setting:`LOG_FILE` is set
 and :setting:`LOG_FILE_APPEND` is ``False``, the file will be overwritten
 (discarding the output from previous runs, if any). Lastly, if
 :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output.
+
+Set :setting:`LOG_INSTALL_ROOT_HANDLER` to ``False`` to prevent Scrapy from
+installing a root logging handler altogether, e.g. to configure the root
+logger yourself.
 
 :setting:`LOG_LEVEL` determines the minimum level of severity to display, those
 messages with lower severity will be filtered out. It ranges through the
@@ -211,7 +216,8 @@ For example, to rotate the log file every day:
     from myproject.spiders.myspider import MySpider
 
     settings = get_project_settings()
-    process = CrawlerProcess(settings, install_root_handler=False)
+    settings.set("LOG_INSTALL_ROOT_HANDLER", False)
+    process = CrawlerProcess(settings)
 
     handler = TimedRotatingFileHandler(
         "scrapy.log",

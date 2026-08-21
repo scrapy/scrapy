@@ -144,6 +144,7 @@ __all__ = [
     "LOG_FILE_APPEND",
     "LOG_FORMAT",
     "LOG_FORMATTER",
+    "LOG_INSTALL_ROOT_HANDLER",
     "LOG_LEVEL",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
@@ -442,6 +443,7 @@ ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 JOBDIR = None
 
 LOG_ENABLED = True
+LOG_INSTALL_ROOT_HANDLER = True
 LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_ENCODING = "utf-8"
 LOG_FILE = None
