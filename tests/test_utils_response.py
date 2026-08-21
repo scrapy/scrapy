@@ -338,3 +338,27 @@ def test_open_in_browser_raises_for_unsupported_response_type():
     response = Response("http://www.example.com", body=b"binary")
     with pytest.raises(TypeError):
         open_in_browser(response, _openfunc=lambda _: True)  # type: ignore[arg-type]
+
+
+def test_open_in_browser_uses_content_type_for_extension():
+    response = Response(
+        "http://www.example.com/file.pdf",
+        body=b"%PDF-1.4 fake pdf content",
+        headers={"Content-Type": "application/pdf"},
+    )
+
+    def check(burl):
+        assert burl.endswith(".pdf")
+        return True
+
+    assert open_in_browser(response, _openfunc=check)
+
+
+def test_open_in_browser_raises_for_unrecognized_content_type():
+    response = Response(
+        "http://www.example.com/file.bin",
+        body=b"binary",
+        headers={"Content-Type": "application/x-not-a-real-type"},
+    )
+    with pytest.raises(TypeError):
+        open_in_browser(response, _openfunc=lambda _: True)  # type: ignore[arg-type]

@@ -5,6 +5,7 @@ scrapy.http.Response objects
 
 from __future__ import annotations
 
+import mimetypes
 import os
 import re
 import tempfile
@@ -105,7 +106,13 @@ def open_in_browser(
     elif isinstance(response, TextResponse):
         ext = ".txt"
     else:
-        raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
+        content_type = to_unicode(
+            response.headers.get(b"Content-Type", b""), encoding="latin-1"
+        )
+        mimetype = content_type.split(";")[0].strip().lower()
+        ext = mimetypes.guess_extension(mimetype) or ""
+        if not ext:
+            raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)
