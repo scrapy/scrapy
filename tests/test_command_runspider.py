@@ -36,6 +36,26 @@ class MySpider(scrapy.Spider):
         yield
 """
 
+    multiple_spiders = """
+import scrapy
+
+class FirstSpider(scrapy.Spider):
+    name = 'spider1'
+
+    async def start(self):
+        self.logger.debug("spider1 Works!")
+        return
+        yield
+
+class SecondSpider(scrapy.Spider):
+    name = 'spider2'
+
+    async def start(self):
+        self.logger.debug("spider2 Works!")
+        return
+        yield
+"""
+
     badspider = """
 import scrapy
 
@@ -136,6 +156,27 @@ class MySpider(scrapy.Spider):
         assert "[myspider] DEBUG: It Works!" in log1
         assert ("[scrapy]" in log1) is value
         assert ("[scrapy.core.engine]" in log1) is not value
+
+    def test_runspider_multiple_spiders(self, tmp_path: Path) -> None:
+        log = self.get_log(tmp_path, self.multiple_spiders)
+        assert "defines more than one spider ('spider1', 'spider2')" in log
+        assert "running 'spider2'" in log
+        assert "DEBUG: spider2 Works!" in log
+        assert "INFO: Spider closed (finished)" in log
+
+    def test_runspider_spider_option(self, tmp_path: Path) -> None:
+        log = self.get_log(
+            tmp_path, self.multiple_spiders, args=("--spider", "spider1")
+        )
+        assert "defines more than one spider" not in log
+        assert "DEBUG: spider1 Works!" in log
+        assert "INFO: Spider closed (finished)" in log
+
+    def test_runspider_spider_option_not_found(self, tmp_path: Path) -> None:
+        log = self.get_log(
+            tmp_path, self.multiple_spiders, args=("--spider", "spider3")
+        )
+        assert "No spider named 'spider3' found in file" in log
 
     def test_runspider_no_spider_found(self, tmp_path: Path) -> None:
         log = self.get_log(tmp_path, "from scrapy.spiders import Spider\n")
