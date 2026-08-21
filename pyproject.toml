@@ -11,6 +11,7 @@ dependencies = [
     "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
+    "formerly>=0.1.0",
     "itemadapter>=0.1.0",
     "itemloaders>=1.0.1",
     "lxml>=4.6.4",
@@ -21,6 +22,7 @@ dependencies = [
     "queuelib>=1.6.1",
     "service_identity>=24.2.0",
     "tldextract",
+    'typing-extensions>=4.5.0; python_version < "3.13"',
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
@@ -243,10 +245,10 @@ disable = [
     "disallowed-name",
     "duplicate-code",  # https://github.com/pylint-dev/pylint/issues/214
     "fixme",
-    "inherit-non-class",  # false positives with create_deprecated_class()
+    "inherit-non-class",  # false positives with formerly.deprecated_class()
     "invalid-name",
     "invalid-overridden-method",
-    "isinstance-second-argument-not-valid-type",  # false positives with create_deprecated_class()
+    "isinstance-second-argument-not-valid-type",  # false positives with formerly.deprecated_class()
     "line-too-long",
     "logging-format-interpolation",
     "logging-fstring-interpolation",
