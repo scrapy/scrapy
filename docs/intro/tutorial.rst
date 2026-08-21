@@ -767,10 +767,10 @@ much because of a programming mistake. This can be configured in the
 Hopefully by now you have a good understanding of how to use the mechanism
 of following links and callbacks with Scrapy.
 
-As yet another example spider that leverages the mechanism of following links,
-check out the :class:`~scrapy.spiders.CrawlSpider` class for a generic
-spider that implements a small rules engine that you can use to write your
-crawlers on top of it.
+If the link following of a crawl can be expressed as a set of declarative
+rules, the :class:`~scrapy.spiders.CrawlSpider` class implements a small rules
+engine that handles it for you. For anything else, keep following links from
+your callbacks, as shown above.
 
 Also, a common pattern is to build an item with data from more than one page,
 using a :ref:`trick to pass additional data to the callbacks

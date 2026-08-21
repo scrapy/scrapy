@@ -38,160 +38,55 @@ scrapy.Spider
 .. class:: scrapy.spiders.Spider
 .. autoclass:: scrapy.Spider
 
-   .. attribute:: name
+    .. autoattribute:: name
 
-       A string which defines the name for this spider. The spider name is how
-       the spider is located (and instantiated) by Scrapy, so it must be
-       unique. However, nothing prevents you from instantiating more than one
-       instance of the same spider. This is the most important spider attribute
-       and it's required.
+    .. attribute:: allowed_domains
+        :type: list[str]
 
-       If the spider scrapes a single domain, a common practice is to name the
-       spider after the domain, with or without the `TLD`_. So, for example, a
-       spider that crawls ``mywebsite.com`` would often be called
-       ``mywebsite``.
+        The domains that this spider is allowed to crawl, if any. Requests for
+        URLs not belonging to the domain names specified in this list (or their
+        subdomains) won't be followed if
+        :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
+        enabled.
 
-   .. attribute:: allowed_domains
+        .. versionchanged:: 2.18.0
+           Changes to this attribute during a crawl are now taken into account.
 
-       An optional list of strings containing domains that this spider is
-       allowed to crawl. Requests for URLs not belonging to the domain names
-       specified in this list (or their subdomains) won't be followed if
-       :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
-       enabled.
+        Let's say your target url is ``https://www.example.com/1.html``,
+        then add ``'example.com'`` to the list.
 
-       .. versionchanged:: 2.18.0
-          Changes to this attribute during a crawl are now taken into account.
+        You may modify this attribute while the spider runs, e.g. to allow
+        domains that you only learn about from an earlier response. The change
+        affects requests scheduled after it.
 
-       Let's say your target url is ``https://www.example.com/1.html``,
-       then add ``'example.com'`` to the list.
+    .. autoattribute:: start_urls
 
-       You may modify this attribute while the spider runs, e.g. to allow
-       domains that you only learn about from an earlier response. The change
-       affects requests scheduled after it.
+    .. autoattribute:: custom_settings
 
-   .. autoattribute:: start_urls
+    .. autoattribute:: crawler
 
-   .. attribute:: custom_settings
+    .. autoattribute:: settings
 
-      A dictionary of settings that will be overridden from the project wide
-      configuration when running this spider. It must be defined as a class
-      attribute since the settings are updated before instantiation.
+    .. autoattribute:: logger
 
-      For a list of available built-in settings see:
-      :ref:`topics-settings-ref`.
+    .. attribute:: state
+        :type: dict[str, Any]
 
-   .. attribute:: crawler
+        Spider state to persist between batches.
+        See :ref:`topics-keeping-persistent-state-between-batches` for details.
 
-      This attribute is set by the :meth:`from_crawler` class method after
-      initializing the class, and links to the
-      :class:`~scrapy.crawler.Crawler` object to which this spider instance is
-      bound.
+    .. automethod:: update_settings
 
-      Crawlers encapsulate a lot of components in the project for their single
-      entry access (such as extensions, middlewares, signals managers, etc).
-      See :ref:`topics-api-crawler` to know more about them.
+    .. automethod:: from_crawler
 
-   .. attribute:: settings
+    .. automethod:: start
 
-      Configuration for running this spider. This is a
-      :class:`~scrapy.settings.Settings` instance, see the
-      :ref:`topics-settings` topic for a detailed introduction on this subject.
+    .. automethod:: parse
 
-   .. attribute:: logger
+    .. method:: closed(reason)
 
-      Python logger created with the Spider's :attr:`name`. You can use it to
-      send log messages through it as described on
-      :ref:`topics-logging-from-spiders`.
-
-   .. attribute:: state
-
-      A dict you can use to persist some spider state between batches.
-      See :ref:`topics-keeping-persistent-state-between-batches` to know more about it.
-
-   .. method:: from_crawler(crawler, *args, **kwargs)
-
-       This is the class method used by Scrapy to create your spiders.
-
-       You probably won't need to override this directly because the default
-       implementation acts as a proxy to the :meth:`__init__` method, calling
-       it with the given arguments ``args`` and named arguments ``kwargs``.
-
-       Nonetheless, this method sets the :attr:`crawler` and :attr:`settings`
-       attributes in the new instance so they can be accessed later inside the
-       spider's code.
-
-       .. versionchanged:: 2.11
-
-           The settings in ``crawler.settings`` can now be modified in this
-           method, which is handy if you want to modify them based on
-           arguments. As a consequence, these settings aren't the final values
-           as they can be modified later by e.g. :ref:`add-ons
-           <topics-addons>`. For the same reason, most of the
-           :class:`~scrapy.crawler.Crawler` attributes aren't initialized at
-           this point.
-
-           The final settings and the initialized
-           :class:`~scrapy.crawler.Crawler` attributes are available in the
-           :meth:`start` method, handlers of the
-           :signal:`engine_started` signal and later.
-
-       :param crawler: crawler to which the spider will be bound
-       :type crawler: :class:`~scrapy.crawler.Crawler` instance
-
-       :param args: arguments passed to the :meth:`__init__` method
-       :type args: list
-
-       :param kwargs: keyword arguments passed to the :meth:`__init__` method
-       :type kwargs: dict
-
-   .. classmethod:: update_settings(settings)
-
-       The ``update_settings()`` method is used to modify the spider's settings
-       and is called during initialization of a spider instance.
-
-       It takes a :class:`~scrapy.settings.Settings` object as a parameter and
-       can add or update the spider's configuration values. This method is a
-       class method, meaning that it is called on the :class:`~scrapy.Spider`
-       class and allows all instances of the spider to share the same
-       configuration.
-
-       While per-spider settings can be set in
-       :attr:`~scrapy.Spider.custom_settings`, using ``update_settings()``
-       allows you to dynamically add, remove or change settings based on other
-       settings, spider attributes or other factors and use setting priorities
-       other than ``'spider'``. Also, it's easy to extend ``update_settings()``
-       in a subclass by overriding it, while doing the same with
-       :attr:`~scrapy.Spider.custom_settings` can be hard.
-
-       For example, suppose a spider needs to modify :setting:`FEEDS`:
-
-       .. code-block:: python
-
-           import scrapy
-
-
-           class MySpider(scrapy.Spider):
-               name = "myspider"
-               custom_feed = {
-                   "/home/user/documents/items.json": {
-                       "format": "json",
-                       "indent": 4,
-                   }
-               }
-
-               @classmethod
-               def update_settings(cls, settings):
-                   super().update_settings(settings)
-                   settings.setdefault("FEEDS", {}).update(cls.custom_feed)
-
-   .. automethod:: start
-
-   .. automethod:: parse
-
-   .. method:: closed(reason)
-
-       Called when the spider closes. This method provides a shortcut to
-       signals.connect() for the :signal:`spider_closed` signal.
+        Called when the spider closes. This method provides a shortcut to
+        signals.connect() for the :signal:`spider_closed` signal.
 
 Let's see an example:
 
@@ -473,83 +368,16 @@ with a ``TestItem`` declared in a ``myproject.items`` module:
 CrawlSpider
 -----------
 
-.. class:: CrawlSpider
+.. autoclass:: CrawlSpider
 
-   This is the most commonly used spider for crawling regular websites, as it
-   provides a convenient mechanism for following links by defining a set of rules.
-   It may not be the best suited for your particular web sites or project, but
-   it's generic enough for several cases, so you can start from it and override it
-   as needed for more custom functionality, or just implement your own spider.
+    .. autoattribute:: rules
 
-   Apart from the attributes inherited from Spider (that you must
-   specify), this class supports a new attribute:
-
-   .. attribute:: rules
-
-       Which is a list of one (or more) :class:`Rule` objects.  Each :class:`Rule`
-       defines a certain behaviour for crawling the site. Rules objects are
-       described below. If multiple rules match the same link, the first one
-       will be used, according to the order they're defined in this attribute.
-
-   This spider also exposes an overridable method:
-
-   .. method:: parse_start_url(response, **kwargs)
-
-      This method is called for each response produced for the URLs in
-      the spider's ``start_urls`` attribute. It allows to parse
-      the initial responses and must return either an
-      :ref:`item object <topics-items>`, a :class:`~scrapy.Request`
-      object, or an iterable containing any of them.
+    .. automethod:: parse_start_url
 
 Crawling rules
 ~~~~~~~~~~~~~~
 
 .. autoclass:: Rule
-
-   ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
-   defines how links will be extracted from each crawled page. Each produced link will
-   be used to generate a :class:`~scrapy.Request` object, which will contain the
-   link's text in its ``meta`` dictionary (under the ``link_text`` key).
-   If omitted, a default link extractor created with no arguments will be used,
-   resulting in all links being extracted.
-
-   ``callback`` is a callable or a string (in which case a method from the spider
-   object with that name will be used) to be called for each link extracted with
-   the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
-   as its first argument and must return either a single instance or an iterable of
-   :ref:`item objects <topics-items>` and/or :class:`~scrapy.Request` objects
-   (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
-   object will contain the text of the link that produced the :class:`~scrapy.Request`
-   in its ``meta`` dictionary (under the ``link_text`` key)
-
-   ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
-   callback function.
-
-   ``follow`` is a boolean which specifies if links should be followed from each
-   response extracted with this rule. If ``callback`` is None ``follow`` defaults
-   to ``True``, otherwise it defaults to ``False``.
-
-   ``process_links`` is a callable, or a string (in which case a method from the
-   spider object with that name will be used) which will be called for each list
-   of links extracted from each response using the specified ``link_extractor``.
-   This is mainly used for filtering purposes.
-
-   ``process_request`` is a callable (or a string, in which case a method from
-   the spider object with that name will be used) which will be called for every
-   :class:`~scrapy.Request` extracted by this rule. This callable should
-   take said request as first argument and the :class:`~scrapy.http.Response`
-   from which the request originated as second argument. It must return a
-   ``Request`` object or ``None`` (to filter out the request).
-
-   ``errback`` is a callable or a string (in which case a method from the spider
-   object with that name will be used) to be called if any exception is
-   raised while processing a request generated by the rule.
-   It receives a :class:`Twisted Failure <twisted.python.failure.Failure>`
-   instance as first parameter.
-
-   .. warning:: Because of its internal implementation, you must explicitly set
-      callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
-      unexpected behaviour can occur otherwise.
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
@@ -604,101 +432,19 @@ a dictionary will be filled with it.
 XMLFeedSpider
 -------------
 
-.. class:: XMLFeedSpider
+.. autoclass:: XMLFeedSpider
 
-    XMLFeedSpider is designed for parsing XML feeds by iterating through them by a
-    certain node name.  The iterator can be chosen from: ``iternodes``, ``xml``,
-    and ``html``.  It's recommended to use the ``iternodes`` iterator for
-    performance reasons, since the ``xml`` and ``html`` iterators generate the
-    whole DOM at once in order to parse it.  However, using ``html`` as the
-    iterator may be useful when parsing XML with bad markup.
+    .. autoattribute:: iterator
 
-    To set the iterator and the tag name, you must define the following class
-    attributes:
+    .. autoattribute:: itertag
 
-    .. attribute:: iterator
+    .. autoattribute:: namespaces
 
-        A string which defines the iterator to use. It can be either:
+    .. automethod:: adapt_response
 
-           - ``'iternodes'`` - a fast iterator based on ``lxml``
+    .. automethod:: parse_node
 
-           - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds. It also parses the feed
-             with an HTML parser, which can silently mangle tags that HTML
-             treats as void elements, such as ``<link>``, dropping their
-             content and closing tag. Use ``xml`` or ``iternodes`` instead
-             for feeds affected by this.
-
-           - ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds
-
-        It defaults to: ``'iternodes'``.
-
-    .. attribute:: itertag
-
-        A string with the name of the node (or element) to iterate in. Example:
-
-        .. code-block:: python
-
-            itertag = "product"
-
-    .. attribute:: namespaces
-
-        A list of ``(prefix, uri)`` tuples which define the namespaces
-        available in that document that will be processed with this spider. The
-        ``prefix`` and ``uri`` will be used to automatically register
-        namespaces using the
-        :meth:`~scrapy.Selector.register_namespace` method.
-
-        You can then specify nodes with namespaces in the :attr:`itertag`
-        attribute.
-
-        Example:
-
-        .. code-block:: python
-
-            from scrapy.spiders import XMLFeedSpider
-
-
-            class YourSpider(XMLFeedSpider):
-
-                namespaces = [("n", "http://www.sitemaps.org/schemas/sitemap/0.9")]
-                itertag = "n:url"
-                # ...
-
-    Apart from these new attributes, this spider has the following overridable
-    methods too:
-
-    .. method:: adapt_response(response)
-
-        A method that receives the response as soon as it arrives from the spider
-        middleware, before the spider starts parsing it. It can be used to modify
-        the response body before parsing it. This method receives a response and
-        also returns a response (it could be the same or another one).
-
-    .. method:: parse_node(response, selector)
-
-        This method is called for the nodes matching the provided tag name
-        (``itertag``).  Receives the response and an
-        :class:`~scrapy.Selector` for each node.  Overriding this
-        method is mandatory. Otherwise, your spider won't work.  This method
-        must return an :ref:`item object <topics-items>`, a
-        :class:`~scrapy.Request` object, or an iterable containing any of
-        them.
-
-    .. method:: process_results(response, results)
-
-        This method is called for each result (item or request) returned by the
-        spider, and it's intended to perform any last time processing required
-        before returning the results to the framework core, for example setting the
-        item IDs. It receives a list of results and the response which originated
-        those results. It must return a list of results (items or requests).
-
-    .. warning:: Because of its internal implementation, you must explicitly set
-       callbacks for new requests when writing :class:`XMLFeedSpider`-based spiders;
-       unexpected behaviour can occur otherwise.
+    .. automethod:: process_results
 
 
 XMLFeedSpider example
@@ -738,32 +484,19 @@ prints them out, and stores some random data in an :class:`~scrapy.Item`.
 CSVFeedSpider
 -------------
 
-.. class:: CSVFeedSpider
+.. autoclass:: CSVFeedSpider
 
-   This spider is very similar to the XMLFeedSpider, except that it iterates
-   over rows, instead of nodes. The method that gets called in each iteration
-   is :meth:`parse_row`.
+    .. autoattribute:: delimiter
 
-   .. attribute:: delimiter
+    .. autoattribute:: quotechar
 
-       A string with the separator character for each field in the CSV file
-       Defaults to ``','`` (comma).
+    .. autoattribute:: headers
 
-   .. attribute:: quotechar
+    .. automethod:: adapt_response
 
-       A string with the enclosure character for each field in the CSV file
-       Defaults to ``'"'`` (quotation mark).
+    .. automethod:: parse_row
 
-   .. attribute:: headers
-
-       A list of the column names in the CSV file.
-
-   .. method:: parse_row(response, row)
-
-       Receives a response and a dict (representing each row) with a key for each
-       provided (or detected) header of the CSV file.  This spider also gives the
-       opportunity to override ``adapt_response`` and ``process_results`` methods
-       for pre- and post-processing purposes.
+    .. automethod:: process_results
 
 CSVFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
@@ -799,121 +532,17 @@ Let's see an example similar to the previous one, but using a
 SitemapSpider
 -------------
 
-.. class:: SitemapSpider
+.. autoclass:: SitemapSpider
 
-    SitemapSpider allows you to crawl a site by discovering the URLs using
-    `Sitemaps`_.
+    .. autoattribute:: sitemap_urls
 
-    It supports nested sitemaps and discovering sitemap urls from
-    `robots.txt`_.
+    .. autoattribute:: sitemap_rules
 
-    .. attribute:: sitemap_urls
+    .. autoattribute:: sitemap_follow
 
-        A list of urls pointing to the sitemaps whose urls you want to crawl.
+    .. autoattribute:: sitemap_alternate_links
 
-        You can also point to a `robots.txt`_ and it will be parsed to extract
-        sitemap urls from it.
-
-    .. attribute:: sitemap_rules
-
-        A list of tuples ``(regex, callback)`` where:
-
-        * ``regex`` is a regular expression to match urls extracted from sitemaps.
-          ``regex`` can be either a str or a compiled regex object.
-
-        * callback is the callback to use for processing the urls that match
-          the regular expression. ``callback`` can be a string (indicating the
-          name of a spider method) or a callable.
-
-        For example:
-
-        .. code-block:: python
-
-            sitemap_rules = [("/product/", "parse_product")]
-
-        Rules are applied in order, and only the first one that matches will be
-        used.
-
-        If you omit this attribute, all urls found in sitemaps will be
-        processed with the ``parse`` callback.
-
-    .. attribute:: sitemap_follow
-
-        A list of regexes of sitemap that should be followed. This is only
-        for sites that use `Sitemap index files`_ that point to other sitemap
-        files.
-
-        By default, all sitemaps are followed.
-
-    .. attribute:: sitemap_alternate_links
-
-        Specifies if alternate links for one ``url`` should be followed. These
-        are links for the same website in another language passed within
-        the same ``url`` block.
-
-        For example:
-
-        .. code-block:: xml
-
-            <url>
-                <loc>http://example.com/</loc>
-                <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
-            </url>
-
-        With ``sitemap_alternate_links`` set, this would retrieve both URLs. With
-        ``sitemap_alternate_links`` disabled, only ``http://example.com/`` would be
-        retrieved.
-
-        Default is ``sitemap_alternate_links`` disabled.
-
-    .. method:: sitemap_filter(entries)
-
-        This is a filter function that could be overridden to select sitemap entries
-        based on their attributes.
-
-        For example:
-
-        .. code-block:: xml
-
-            <url>
-                <loc>http://example.com/</loc>
-                <lastmod>2005-01-01</lastmod>
-            </url>
-
-        We can define a ``sitemap_filter`` function to filter ``entries`` by date:
-
-        .. code-block:: python
-
-            from datetime import datetime
-            from scrapy.spiders import SitemapSpider
-
-
-            class FilteredSitemapSpider(SitemapSpider):
-                name = "filtered_sitemap_spider"
-                allowed_domains = ["example.com"]
-                sitemap_urls = ["http://example.com/sitemap.xml"]
-
-                def sitemap_filter(self, entries):
-                    for entry in entries:
-                        date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
-                        if date_time.year >= 2005:
-                            yield entry
-
-        This would retrieve only ``entries`` modified on 2005 and the following
-        years.
-
-        Entries are dict objects extracted from the sitemap document.
-        Usually, the key is the tag name and the value is the text inside it.
-
-        It's important to notice that:
-
-        - as the loc attribute is required, entries without this tag are discarded
-        - alternate links are stored in a list with the key ``alternate``
-          (see ``sitemap_alternate_links``)
-        - namespaces are removed, so lxml tags named as ``{namespace}tagname`` become only ``tagname``
-
-        If you omit this method, all entries found in sitemaps will be
-        processed, observing other attributes and their settings.
+    .. automethod:: sitemap_filter
 
 
 SitemapSpider examples
@@ -1002,7 +631,5 @@ Combine SitemapSpider with other sources of urls:
 
 .. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/params.html
 .. _Sitemaps: https://www.sitemaps.org/index.html
-.. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
 .. _robots.txt: https://www.robotstxt.org/
-.. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
