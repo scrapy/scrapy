@@ -334,6 +334,12 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
+.. versionchanged:: VERSION
+   :setting:`TWISTED_DNS_RESOLVER`, the settings of the resolver and
+   :setting:`REACTOR_THREADPOOL_MAXSIZE` are now read from the first spider,
+   instead of being read from the project settings and ignored in
+   :ref:`per-spider settings <spider-settings>`.
+
 Because only 1 reactor can be used per process, these settings cannot use a
 different value per spider when :ref:`running multiple spiders in the same
 process <run-multiple-spiders>`.
@@ -363,11 +369,10 @@ These settings are applied when starting the reactor:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
-They are read from the settings of the
-:class:`~scrapy.crawler.CrawlerProcess` or
-:class:`~scrapy.crawler.AsyncCrawlerProcess` object, so setting them from a
-spider or an :ref:`add-on <topics-addons>` has no effect. They are ignored
-altogether when using :class:`~scrapy.crawler.CrawlerRunner` or
+They can also be :ref:`set from a spider <spider-settings>`, but only the
+values from the first spider that runs are used; if a later spider defines a
+different value, a warning is issued. They are ignored altogether when using
+:class:`~scrapy.crawler.CrawlerRunner` or
 :class:`~scrapy.crawler.AsyncCrawlerRunner`, which do not start the reactor.
 
 There is an additional restriction for :setting:`TWISTED_REACTOR` and
