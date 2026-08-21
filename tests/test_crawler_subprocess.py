@@ -240,10 +240,15 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
-        # sending the second signal too fast often causes problems
-        await sleep(0.01)
+        # Sending a new signal too fast often causes problems, e.g. on
+        # Windows, where signal delivery is slower and more variable than on
+        # POSIX.
+        await sleep(0.1)
         p.kill(sig)
-        p.expect_exact("forcing unclean shutdown")
+        p.expect_exact("dropping downloader requests")
+        await sleep(0.1)
+        p.kill(sig)
+        p.expect_exact("forcing unclean shutdown", timeout=20)
         stop_spawn(p)
 
     @coroutine_test
@@ -464,6 +469,9 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
 
     def test_reactorless_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful("reactorless_sleeping.py")
+
+    def test_shutdown_graceful_stop_after_crawl_false(self) -> None:
+        self._test_shutdown_graceful("reactorless_sleeping_no_stop_after_crawl.py")
 
     @coroutine_test
     async def test_reactorless_shutdown_forced(self) -> None:
