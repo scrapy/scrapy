@@ -839,6 +839,7 @@ Those are:
 * :reqmeta:`download_slot`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
+* :reqmeta:`expected_checksum`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * :reqmeta:`give_up_log_level`

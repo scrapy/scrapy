@@ -137,6 +137,15 @@ class UnsupportedURLSchemeError(Exception):
     """Indicates that the URL scheme is not supported."""
 
 
+class ChecksumError(Exception):
+    """Indicates that a response body does not match the checksum expected for
+    it.
+
+    .. versionadded:: VERSION
+
+    See :reqmeta:`expected_checksum`."""
+
+
 # Items
 
 
