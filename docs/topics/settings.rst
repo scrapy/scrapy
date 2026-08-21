@@ -137,6 +137,10 @@ Scrapy projects include a settings module, usually a file called
 ``settings.py``, where you should populate most settings that apply to all your
 spiders.
 
+:func:`scrapy.utils.project.get_project_settings` returns these settings, e.g.
+to pass them to :class:`~scrapy.crawler.AsyncCrawlerProcess` when :ref:`running
+Scrapy from a script <run-from-script>`.
+
 .. seealso:: :ref:`topics-settings-module-envvar`
 
 .. _addon-settings:
