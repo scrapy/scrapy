@@ -15,6 +15,7 @@ from scrapy.http.headers import Headers
 from scrapy.http.request import Request
 from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
+from scrapy.utils.url import _redirect_url
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -276,6 +277,31 @@ class Response(object_ref):
             cb_kwargs=cb_kwargs,
             flags=flags,
         )
+
+    def follow_redirect(self, **kwargs: Any) -> Request:
+        """Return a :class:`~.Request` instance to follow the ``Location``
+        header of this response.
+
+        .. versionadded:: VERSION
+
+        It accepts the same arguments as :meth:`follow`, except ``url``, which
+        comes from the ``Location`` header. Unlike in :meth:`follow`, that URL is
+        always resolved against :attr:`url`, never against the base URL of an
+        HTML document, as the HTTP standard mandates for the ``Location``
+        header.
+
+        It raises :exc:`ValueError` if this response has no ``Location`` header.
+
+        Note that the resulting request uses the GET method and has no body,
+        unless you specify otherwise. To reproduce instead how
+        :class:`~scrapy.downloadermiddlewares.redirect.RedirectMiddleware`
+        follows the ``Location`` header of a given response status, see
+        :setting:`REDIRECT_HTTP_CODES`.
+        """
+        location = self.headers.get("Location")
+        if location is None:
+            raise ValueError(f"{self} has no Location header")
+        return self.follow(_redirect_url(self.url, location), **kwargs)
 
     def follow_all(
         self,

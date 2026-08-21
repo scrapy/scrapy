@@ -270,6 +270,16 @@ class RedirectTo(LeafResource):
         return b"redirecting..."
 
 
+class Created(LeafResource):
+    """Emulate a server that creates a resource on the fly, reporting it with an
+    empty 201 response that points at the created resource through Location."""
+
+    def render(self, request: Request) -> bytes:
+        request.setResponseCode(201)
+        request.setHeader(b"Location", getarg(request, b"goto", b"/"))
+        return b""
+
+
 class Partial(LeafResource):
     def render_GET(self, request: Request) -> int:
         request.setHeader(b"Content-Length", b"1024")
