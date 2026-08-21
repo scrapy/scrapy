@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import base64
 import logging
 import time
 from abc import ABC, abstractmethod
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, NoReturn, TypedDict, TypeVar
-from urllib.parse import quote, urlsplit
 
 from scrapy import Request, signals
 from scrapy.exceptions import (
@@ -20,10 +18,8 @@ from scrapy.utils._download_handlers import (
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
-    normalize_bind_address,
 )
 from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.url import add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
 
@@ -80,10 +76,6 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
             logger.warning(
                 f"{type(self).__name__} is experimental and is not recommended for production use."
             )
-        self._bind_address = normalize_bind_address(
-            crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
-        )
-        self._proxy_auth_encoding: str = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
         # these are useful for many handlers but used in different ways by them
         self._pool_size_total: int = crawler.settings.getint("CONCURRENT_REQUESTS")
         self._pool_size_per_host: int = crawler.settings.getint(
@@ -242,74 +234,9 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         )
 
     @staticmethod
-    def _request_headers(request: Request) -> Headers:
-        """Get a prepared copy of the request headers.
-
-        This removes the Proxy-Authorization header.
-        """
-        headers = request.headers.copy()
-        headers.pop(b"Proxy-Authorization", None)
-        return headers
-
-    def _get_bind_address_host(self) -> str | None:
-        """Return the host portion of the bind address.
-
-        Needed for handlers that don't support the bind port.
-        """
-        if self._bind_address is None:
-            return None
-        host, port = self._bind_address
-        if port != 0:
-            logger.warning(
-                "DOWNLOAD_BIND_ADDRESS specifies a port (%s), but %s does not "
-                "support binding to a specific local port. Ignoring the port "
-                "and binding only to %r.",
-                port,
-                type(self).__name__,
-                host,
-            )
-        return host
-
-    @staticmethod
     def _cancel_maxsize(
         size: int, limit: int, request: Request, *, expected: bool
     ) -> NoReturn:
         warning_msg = get_maxsize_msg(size, limit, request, expected=expected)
         logger.warning(warning_msg)
         raise DownloadCancelledError(warning_msg)
-
-    @staticmethod
-    def _extract_proxy(request: Request) -> tuple[str | None, str | None]:
-        """Return a tuple of the proxy URL with a scheme and the value of the
-        Proxy-Authorization header.
-
-        This is useful for handlers that take the proxy headers separately.
-        """
-        proxy: str | None = request.meta.get("proxy")
-        if not proxy:
-            return None, None
-        proxy = add_http_if_no_scheme(proxy)
-        auth_header: bytes | None = request.headers.get(b"Proxy-Authorization")
-        return proxy, auth_header.decode("ascii") if auth_header else None
-
-    def _extract_proxy_url_with_creds(self, request: Request) -> str | None:
-        """Return the proxy URL with the userinfo added based on the
-        Proxy-Authorization header.
-
-        This is useful for handlers that cannot take the proxy headers
-        separately.
-        """
-        proxy_url, auth_header = self._extract_proxy(request)
-        if proxy_url is None or auth_header is None:
-            return proxy_url
-        scheme, token = auth_header.split(" ", 1)
-        if scheme != "Basic":
-            raise ValueError(
-                f"Expected Basic auth in Proxy-Authorization, got {scheme}"
-            )
-        user, password = (
-            base64.b64decode(token).decode(self._proxy_auth_encoding).split(":", 1)
-        )
-        parts = urlsplit(proxy_url)
-        netloc = f"{quote(user)}:{quote(password)}@{parts.netloc}"
-        return parts._replace(netloc=netloc).geturl()

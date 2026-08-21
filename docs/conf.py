@@ -154,6 +154,11 @@ autodoc_member_order = "bysource"
 
 intersphinx_disabled_reftypes: Sequence[str] = []
 
+# Not in the sphinx-scrapy list of known projects yet.
+intersphinx_mapping = {
+    "websockets": ("https://websockets.readthedocs.io/en/stable/", None),
+}
+
 # sphinx-scrapy ---------------------------------------------------------------
 
 scrapy_intersphinx_enable = [
