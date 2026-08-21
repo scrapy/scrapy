@@ -424,13 +424,16 @@ adjust this retention delay use the :setting:`FILES_EXPIRES` setting (or
 :setting:`IMAGES_EXPIRES`, in case of Images Pipeline), which
 specifies the delay in number of days:
 
+.. versionchanged:: VERSION
+   Fractional numbers of days are now supported.
+
 .. code-block:: python
 
     # 120 days of delay for files expiration
     FILES_EXPIRES = 120
 
-    # 30 days of delay for images expiration
-    IMAGES_EXPIRES = 30
+    # 12 hours of delay for images expiration
+    IMAGES_EXPIRES = 0.5
 
 The default value for both settings is 90 days.
 
