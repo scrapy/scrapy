@@ -839,8 +839,8 @@ Those are:
 * :reqmeta:`download_slot`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`ftp_password`
+* :reqmeta:`ftp_user`
 * :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
@@ -939,6 +939,10 @@ http_auth_domain
 .. versionadded:: 2.17.0
 
 Overrides :setting:`HTTPAUTH_DOMAIN` for this request.
+
+If this key is not set, :reqmeta:`http_user` and :reqmeta:`http_pass` are only
+sent to the origin (scheme, host and port) of the request where they were first
+used, e.g. they are not sent after a cross-origin redirect.
 
 .. reqmeta:: http_pass
 

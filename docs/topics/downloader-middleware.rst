@@ -290,7 +290,10 @@ HttpAuthMiddleware
                 "HTTPAUTH_DOMAIN": "intranet.example.com",
             }
 
-            # .. rest of the spider code omitted ...
+    You can also let
+    :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`
+    fill :reqmeta:`http_user` and :reqmeta:`http_pass` from the credentials in
+    the request URL.
 
     Example using per-request meta:
 
@@ -1203,6 +1206,16 @@ DownloaderStats
 
    To use this middleware you must enable the :setting:`DOWNLOADER_STATS`
    setting.
+
+
+UriUserInfoMiddleware
+---------------------
+
+.. module:: scrapy.downloadermiddlewares.uriuserinfo
+   :synopsis: URI Userinfo Middleware
+
+.. autoclass:: UriUserInfoMiddleware
+
 
 UserAgentMiddleware
 -------------------
