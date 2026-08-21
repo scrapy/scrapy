@@ -76,7 +76,8 @@ class RemoteControl:
 
         - ``code`` (string): Python code to execute.
         - ``timeout_sec`` (number, optional): the maximum number of seconds
-          to allow the code to run.
+          to allow the code to run. This will cancel async operations but not
+          sync ones.
 
         The response is a JSON object with the following keys:
 
