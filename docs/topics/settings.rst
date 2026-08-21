@@ -596,7 +596,7 @@ performed by the Scrapy downloader. Use ``0`` for no limit.
 CONCURRENT_REQUESTS_PER_DOMAIN
 ------------------------------
 
-Default: ``1`` (:ref:`fallback <default-settings>`: ``8``)
+Default: ``1``
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
@@ -948,7 +948,7 @@ Whether to enable downloader stats collection.
 DOWNLOAD_DELAY
 --------------
 
-Default: ``1`` (:ref:`fallback <default-settings>`: ``0``)
+Default: ``1``
 
 Minimum seconds to wait between 2 consecutive requests to the same domain.
 
@@ -1874,16 +1874,10 @@ Adjust redirect request priority relative to original request:
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``True`` (:ref:`fallback <default-settings>`: ``False``)
+Default: ``True``
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
 :ref:`topics-dlmw-robots`.
-
-.. note::
-
-    While the default value is ``False`` for historical reasons,
-    this option is enabled by default in settings.py file generated
-    by ``scrapy startproject`` command.
 
 .. setting:: ROBOTSTXT_PARSER
 
