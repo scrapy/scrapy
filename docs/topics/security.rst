@@ -276,3 +276,31 @@ and a crawl that spans multiple domains can leak them to unintended hosts:
   default :setting:`REFERRER_POLICY` already avoids sending the referrer from
   HTTPS to HTTP, but you can tighten it further (for example, to
   ``same-origin`` or ``no-referrer``) if needed.
+
+.. _security-job-state:
+
+Job state integrity
+===================
+
+When you use :setting:`JOBDIR` to :ref:`pause and resume crawls
+<topics-jobs>`, the default scheduler disk queues
+(:setting:`SCHEDULER_DISK_QUEUE`, :setting:`SCHEDULER_START_DISK_QUEUE`) write
+requests to a compact binary format that is only guaranteed to be complete
+after a clean shutdown. If the process is killed, runs out of disk space, or
+shares its job directory with a second process, those files can be left
+truncated, and resuming the crawl then either fails with an unrecoverable
+error or silently drops the pending requests.
+
+To store the scheduler queues in an SQLite database instead, where each
+request is written within its own transaction:
+
+.. code-block:: python
+
+    SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleLifoSQLiteQueue"
+    SCHEDULER_START_DISK_QUEUE = "scrapy.squeues.PickleFifoSQLiteQueue"
+
+* **Pro:** an interrupted write cannot corrupt the queues or discard pending
+  requests unnoticed.
+
+* **Con:** scheduling requests becomes slower, which can be noticeable in
+  crawls with a high request throughput.
