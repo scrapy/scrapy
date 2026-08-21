@@ -443,6 +443,31 @@ class TestMiscCommands(TestProjectBase):
         subdir.mkdir(exist_ok=True)
         assert call("list", cwd=subdir) == 0
 
+    @pytest.mark.parametrize("require_name", [False, True])
+    def test_list_nameless(self, proj_path: Path, require_name: bool) -> None:
+        (proj_path / self.project_name / "spiders" / "nameless.py").write_text(
+            "from scrapy import Spider\n"
+            "\n"
+            "\n"
+            "class NamelessSpider(Spider):\n"
+            "    pass\n"
+            "\n"
+            "\n"
+            "class NamedSpider(Spider):\n"
+            '    name = "named"\n',
+            encoding="utf-8",
+        )
+        returncode, out, err = proc(
+            "list",
+            "-s",
+            f"SPIDER_LOADER_REQUIRE_NAME={require_name}",
+            cwd=proj_path,
+        )
+        assert returncode == 0, err
+        nameless = f"{self.project_name}.spiders.nameless.NamelessSpider"
+        expected = ["named"] if require_name else ["named", nameless]
+        assert out.split() == expected
+
 
 class TestCommandListing(TestProjectBase):
     """Tests for the command list that ``scrapy`` prints when called without a
