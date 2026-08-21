@@ -108,6 +108,13 @@ Request objects
         A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
         the request headers.
 
+        .. versionchanged:: VERSION
+            Header names keep the case you write them in, instead of being
+            converted to ``Title-Case``.
+
+        Lookups are case-insensitive. Whether your case reaches the server
+        depends on the :ref:`download handler <download-handlers-ref>`.
+
     .. attribute:: Request.body
 
         The request body as bytes.
