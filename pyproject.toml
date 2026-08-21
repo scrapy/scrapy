@@ -163,6 +163,7 @@ module = [
     "brotli",
     "brotlicffi",
     "google.*",
+    "ipdb",
     "pydispatch.*",
     "pyftpdlib.*",
     "pytest_twisted",
