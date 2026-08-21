@@ -34,6 +34,7 @@ from scrapy.core.downloader.contextfactory import (
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.resolver import dnscache
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
@@ -50,7 +51,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from twisted.internet.defer import Deferred
-    from twisted.internet.interfaces import IListeningPort
+    from twisted.internet.interfaces import IConsumer, IListeningPort
     from twisted.web.iweb import IBodyProducer
 
     from scrapy.http import Response
@@ -509,3 +510,64 @@ def test_deprecated_tls_module_names() -> None:
         assert tls.DEFAULT_CIPHERS._ciphers == (
             AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")._ciphers
         )
+
+
+def test_slot_str() -> None:
+    slot = Slot(concurrency=2, delay=0.5, randomize_delay=False)
+    assert str(slot).startswith(
+        "<downloader.Slot concurrency=2 delay=0.50 randomize_delay=False"
+        " len(active)=0 len(queue)=0 len(transferring)=0 lastseen="
+    )
+
+
+def test_get_slot_key_by_ip() -> None:
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=ScrapyDeprecationWarning,
+            message="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
+        )
+        crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS_PER_IP": 1})
+        downloader = Downloader(crawler)
+    dnscache["example.com"] = "127.0.0.1"
+    try:
+        assert downloader.get_slot_key(Request("http://example.com")) == "127.0.0.1"
+    finally:
+        del dnscache["example.com"]
+        downloader.close()
+
+
+@coroutine_test
+async def test_slot_gc() -> None:
+    """Slots that have been idle for long enough are discarded."""
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    try:
+        await maybe_deferred_to_future(downloader.fetch(Request("data:,")))
+        assert set(downloader.slots) == {""}
+        downloader._slot_gc()
+        assert set(downloader.slots) == {""}
+        downloader._slot_gc(age=0)
+        assert not downloader.slots
+    finally:
+        downloader.close()
+
+
+@coroutine_test
+async def test_request_body_producer() -> None:
+    class Consumer:
+        def __init__(self) -> None:
+            self.written: list[bytes] = []
+
+        def write(self, data: bytes) -> None:
+            self.written.append(data)
+
+    producer = _RequestBodyProducer(b"body")
+    assert producer.length == 4
+    consumer = Consumer()
+    await maybe_deferred_to_future(producer.startProducing(cast("IConsumer", consumer)))
+    assert consumer.written == [b"body"]
+    # The body is written in a single call, so there is nothing to pause or stop.
+    producer.pauseProducing()
+    producer.stopProducing()
