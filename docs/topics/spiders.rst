@@ -547,6 +547,16 @@ Crawling rules
    It receives a :class:`Twisted Failure <twisted.python.failure.Failure>`
    instance as first parameter.
 
+   ``name`` is a string that identifies the rule, to be used as a target of
+   other rules' ``from_rules``.
+
+   ``from_rules`` is a string, or an iterable of strings, with the ``name``
+   of other rules. If set, this rule is only applied to responses reached
+   through one of those rules, instead of to every response.
+
+   .. versionadded:: VERSION
+      The ``name`` and ``from_rules`` parameters.
+
    .. warning:: Because of its internal implementation, you must explicitly set
       callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
       unexpected behaviour can occur otherwise.
