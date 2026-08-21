@@ -39,7 +39,7 @@ def test_open_in_browser():
 
     resp = Response(url, body=body)
     with pytest.raises(TypeError):
-        open_in_browser(resp, _openfunc=browser_open)  # type: ignore[arg-type]
+        open_in_browser(resp, _openfunc=browser_open)
 
 
 def test_get_meta_refresh():
@@ -337,7 +337,7 @@ def test_open_in_browser_text_response_uses_txt_extension():
 def test_open_in_browser_raises_for_unsupported_response_type():
     response = Response("http://www.example.com", body=b"binary")
     with pytest.raises(TypeError):
-        open_in_browser(response, _openfunc=lambda _: True)  # type: ignore[arg-type]
+        open_in_browser(response, _openfunc=lambda _: True)
 
 
 def test_open_in_browser_uses_content_type_for_extension():
@@ -361,4 +361,4 @@ def test_open_in_browser_raises_for_unrecognized_content_type():
         headers={"Content-Type": "application/x-not-a-real-type"},
     )
     with pytest.raises(TypeError):
-        open_in_browser(response, _openfunc=lambda _: True)  # type: ignore[arg-type]
+        open_in_browser(response, _openfunc=lambda _: True)

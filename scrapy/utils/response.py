@@ -65,7 +65,7 @@ _DOCTYPE_RE = re.compile(rb"\s*<!doctype[^<>]*>", re.IGNORECASE)
 
 
 def open_in_browser(
-    response: TextResponse,
+    response: Response,
     _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
     """Open *response* in a local web browser, adjusting the `base tag`_ for
@@ -107,7 +107,7 @@ def open_in_browser(
         ext = ".txt"
     else:
         content_type = to_unicode(
-            response.headers.get(b"Content-Type", b""), encoding="latin-1"
+            response.headers.get(b"Content-Type") or b"", encoding="latin-1"
         )
         mimetype = content_type.split(";")[0].strip().lower()
         ext = mimetypes.guess_extension(mimetype) or ""
