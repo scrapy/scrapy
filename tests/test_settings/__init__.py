@@ -428,6 +428,9 @@ class TestBaseSettings:
             pytest.param(1, TypeError, id="type-error"),
             pytest.param("foo", ValueError, id="value-error"),
             pytest.param("csv.gz", NameError, id="name-error"),
+            pytest.param(
+                "nonexistent.module.Component", ImportError, id="import-error"
+            ),
         ],
     )
     def test_get_component_priority_dict_with_base_handles_load_object_exceptions(
@@ -445,6 +448,20 @@ class TestBaseSettings:
 
         assert isinstance(value, BaseSettings)
         assert dict(value) == {key: 1}
+
+    def test_get_component_priority_dict_with_base_disable_unimportable_key(self):
+        """Disabling a component whose module cannot be imported, e.g. one
+        removed from a later Scrapy version, must not break settings
+        resolution."""
+        settings = BaseSettings(
+            {
+                "FOO_BASE": BaseSettings({"csv.excel": 1}),
+                "FOO": BaseSettings({"nonexistent.module.Component": None}),
+            }
+        )
+        value = settings.get_component_priority_dict_with_base("FOO")
+
+        assert dict(value) == {"csv.excel": 1}
 
     def test_get_component_priority_dict_with_base_override_none_by_type(self):
         settings = BaseSettings()
