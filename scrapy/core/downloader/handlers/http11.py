@@ -198,7 +198,9 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
-        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
+        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred(self._cancelTunnel)
+        self._connectDeferred: Deferred[Protocol] | None = None
+        self._protocol: Protocol | None = None
         self._tunneledHost: str = host
         self._tunneledPort: int = port
         self._contextFactory: IPolicyForHTTPS = contextFactory
@@ -221,6 +223,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         created, notifies the client that we are ready to send requests. If not
         raises a TunnelError.
         """
+        assert self._protocol
         assert self._protocol.transport
         self._connectBuffer += data
         # make sure that enough (all) bytes are consumed
@@ -260,9 +263,24 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         """Propagates the errback to the appropriate deferred."""
         self._tunnelReadyDeferred.errback(reason)
 
+    def _cancelTunnel(self, deferred: Deferred[Protocol]) -> None:
+        """Tear down the connection to the proxy when the deferred returned by
+        :meth:`connect` is cancelled, e.g. on a download timeout."""
+        if self._protocol is not None:
+            # The proxy connection is up; drop it, and stop intercepting data
+            # in case the proxy answers the CONNECT after this point.
+            self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
+            assert self._protocol.transport
+            self._protocol.transport.loseConnection()
+        else:
+            # Still connecting to the proxy; stop the connection attempt. This
+            # errbacks _tunnelReadyDeferred through connectFailed().
+            assert self._connectDeferred is not None
+            self._connectDeferred.cancel()
+
     def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
         self._protocolFactory = protocolFactory
-        connectDeferred = super().connect(protocolFactory)
+        self._connectDeferred = connectDeferred = super().connect(protocolFactory)
         connectDeferred.addCallback(self.requestTunnel)
         connectDeferred.addErrback(self.connectFailed)
         return self._tunnelReadyDeferred
