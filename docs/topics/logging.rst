@@ -357,10 +357,7 @@ and hide it without affecting other loggers:
 scrapy.utils.log module
 =======================
 
-.. module:: scrapy.utils.log
-   :synopsis: Logging utils
-
-.. autofunction:: configure_logging
+.. autofunction:: scrapy.utils.log.configure_logging
 
     ``configure_logging`` is automatically called when using Scrapy commands
     or :class:`~scrapy.crawler.CrawlerProcess`, but needs to be called explicitly

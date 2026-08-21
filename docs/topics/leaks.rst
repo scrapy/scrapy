@@ -180,7 +180,6 @@ example, this won't show any live references to spiders:
     >>> prefs(ignore=Spider)
 
 .. module:: scrapy.utils.trackref
-   :synopsis: Track references of live objects
 
 scrapy.utils.trackref module
 ----------------------------

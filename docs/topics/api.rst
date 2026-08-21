@@ -19,7 +19,6 @@ components, and it is the only way for components to access them and hook their
 functionality into Scrapy.
 
 .. module:: scrapy.crawler
-   :synopsis: The Scrapy crawler
 
 The Extension Manager is responsible for loading and keeping track of installed
 extensions and it's configured through the :setting:`EXTENSIONS` setting which
@@ -138,7 +137,6 @@ Settings API
 ============
 
 .. module:: scrapy.settings
-   :synopsis: Settings manager
 
 .. attribute:: SETTINGS_PRIORITIES
 
@@ -181,7 +179,6 @@ SpiderLoader API
 ================
 
 .. module:: scrapy.spiderloader
-   :synopsis: The spider loader
 
 Custom spider loaders can be employed by specifying their path in the
 :setting:`SPIDER_LOADER_CLASS` project setting. They must implement
@@ -201,7 +198,6 @@ Signals API
 ===========
 
 .. automodule:: scrapy.signalmanager
-    :synopsis: The signal manager
     :members:
     :undoc-members:
 
@@ -216,7 +212,6 @@ Collector API defined by the :class:`~scrapy.statscollectors.StatsCollector`
 class (which they all inherit from).
 
 .. module:: scrapy.statscollectors
-   :synopsis: Stats Collectors
 
 .. class:: StatsCollector
 
