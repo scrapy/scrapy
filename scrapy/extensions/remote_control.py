@@ -88,7 +88,7 @@ class RemoteControl:
         - ``output`` (string): the output produced by ``print()`` calls in the
           code.
         - ``traceback`` (string or null): the traceback if an exception was
-          raised when executing the code.
+          raised when compiling or executing the code.
         - ``elapsed_sec`` (number): the number of seconds the code took to run.
         - ``output_truncated`` (boolean, optional): whether ``output`` was
           truncated (omitted if ``false``).
