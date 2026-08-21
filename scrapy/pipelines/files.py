@@ -568,7 +568,7 @@ class FilesPipeline(MediaPipeline):
 
         age_seconds = time.time() - last_modified
         age_days = age_seconds / 60 / 60 / 24
-        if age_days > self.expires:
+        if self.expires >= 0 and age_days > self.expires:
             return None  # returning None force download
 
         referer = referer_str(request)
