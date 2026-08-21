@@ -14,7 +14,7 @@ from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Iterable
 
     from scrapy import Spider
 
@@ -31,6 +31,11 @@ class Command(ScrapyCommand):
             "Fetch a URL using the Scrapy downloader and print its content"
             " to stdout. You may want to use --nolog to disable logging"
         )
+
+    def complete_option(self, dest: str) -> Iterable[str]:
+        if dest == "spider":
+            return self._spider_names()
+        return super().complete_option(dest)
 
     def add_options(self, parser: ArgumentParser) -> None:
         super().add_options(parser)

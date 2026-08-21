@@ -1,5 +1,6 @@
 import argparse
 import json
+from collections.abc import Iterable
 from typing import Any, ClassVar
 
 from scrapy.commands import ScrapyCommand
@@ -15,6 +16,12 @@ class Command(ScrapyCommand):
 
     def short_desc(self) -> str:
         return "Get settings values"
+
+    def complete_option(self, dest: str) -> Iterable[str]:
+        if dest.startswith("get"):
+            assert self.settings is not None
+            return sorted(self.settings)
+        return super().complete_option(dest)
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         super().add_options(parser)

@@ -19,6 +19,7 @@ from twisted.python import failure
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.extensions.feedexport import FeedExporter
+from scrapy.spiderloader import get_spider_loader
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import global_object_name
@@ -128,6 +129,39 @@ class ScrapyCommand(ABC):
             action="store_true",
             help="enable pdb on failure (uses ipdb if installed)",
         )
+
+    def complete_argument(self, args: list[str]) -> Iterable[str]:
+        """Return shell completion candidates for the positional argument
+        being typed, where *args* are the positional arguments typed before
+        it.
+
+        .. versionadded:: VERSION
+
+        See :ref:`completion`.
+        """
+        return ()
+
+    def complete_option(self, dest: str) -> Iterable[str]:
+        """Return shell completion candidates for the value of the option
+        being typed, identified by *dest*, i.e. the name under which its value
+        is available in the ``opts`` parameter of ``run()``.
+
+        .. versionadded:: VERSION
+
+        See :ref:`completion`.
+        """
+        if dest == "loglevel":
+            return ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
+        return ()
+
+    def _spider_names(self) -> list[str]:
+        assert self.settings is not None
+        try:
+            return sorted(get_spider_loader(self.settings).list())
+        except Exception:
+            # Completion runs on incomplete command lines and outside
+            # projects, where loading spiders is expected to fail.
+            return []
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         """Set settings based on the command line options."""
