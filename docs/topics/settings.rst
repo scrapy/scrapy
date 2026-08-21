@@ -1189,6 +1189,9 @@ DOWNLOAD_FAIL_ON_DATALOSS
 
 Default: ``True``
 
+.. versionchanged:: VERSION
+   Added support for HTTP/2 responses.
+
 Whether or not to fail on broken responses, that is, when the declared
 ``Content-Length`` does not match content sent by the server or a chunked
 response was not properly finished. If ``True``, these responses raise a
@@ -1214,15 +1217,6 @@ Optionally, this can be set per-request basis by using the
     Handling of this setting needs to be implemented inside the :ref:`download
     handler <topics-download-handlers>`, so it's not guaranteed to be supported
     by all 3rd-party handlers.
-
-.. warning::
-
-    This setting is ignored by the
-    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    :ref:`download handler <topics-download-handlers>`. In case of a data loss
-    error, the corresponding HTTP/2 connection may be corrupted, affecting other
-    requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
-    failure is always raised for every request that was using that connection.
 
 .. setting:: DOWNLOAD_VERIFY_CERTIFICATES
 
