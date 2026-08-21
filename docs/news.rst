@@ -2698,7 +2698,7 @@ Scrapy 2.13.2 (2025-06-09)
     when it's closed before being fully initialized.
     (:gh:`6857`, :gh:`6867`)
 
--   Improved the README, updated the Scrapy logo in it.
+-   Improved the README and updated the Scrapy logo in it.
     (:gh:`6831`, :gh:`6833`, :gh:`6839`)
 
 -   Restricted the Twisted version used in tests to below 25.5.0, as some tests
@@ -2717,14 +2717,14 @@ Scrapy 2.13.2 (2025-06-09)
 Scrapy 2.13.1 (2025-05-28)
 --------------------------
 
--   Give callback requests precedence over start requests when priority values
+-   Gave callback requests precedence over start requests when priority values
     are the same.
 
-    This makes changes from 2.13.0 to start request handling more intuitive and
-    backward compatible. For scenarios where all requests have the same
+    This makes the changes from 2.13.0 to start request handling more intuitive
+    and backward compatible. For scenarios where all requests have the same
     priorities, in 2.13.0 all start requests were sent before the first
-    callback request. In 2.13.1, same as in 2.12 and lower, start requests are
-    only sent when there are not enough pending callback requests to reach
+    callback request. In 2.13.1, the same as in 2.12 and lower, start requests
+    are only sent when there are not enough pending callback requests to reach
     concurrency limits.
 
     (:gh:`6828`)
