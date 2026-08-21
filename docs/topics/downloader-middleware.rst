@@ -361,6 +361,12 @@ HttpCacheMiddleware
     This middleware provides low-level cache to all HTTP requests and responses.
     It has to be combined with a cache storage backend as well as a cache policy.
 
+    .. versionchanged:: VERSION
+       A request for a resource that another request is already downloading,
+       which requires :attr:`~scrapy.Request.dont_filter` or a custom
+       :setting:`DUPEFILTER_CLASS`, waits for that download to finish and
+       reads its response from the cache.
+
     Scrapy ships with the following HTTP cache storage backends:
 
         * :ref:`httpcache-storage-fs`

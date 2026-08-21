@@ -412,6 +412,16 @@ one per actual value of the placeholder.
 
     Set by :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`.
 
+.. stat:: httpcache/wait
+
+``httpcache/wait``
+    Number of requests that waited for a concurrent request for the same
+    resource to finish downloading.
+
+    .. versionadded:: VERSION
+
+    Set by :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`.
+
 .. stat:: httpcompression/response_bytes
 
 ``httpcompression/response_bytes``
