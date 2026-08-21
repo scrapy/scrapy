@@ -34,6 +34,7 @@ from .http_resources import (
     H2ResetStream,
     HostHeaderResource,
     LargeChunkedFileResource,
+    LargeHeadersResource,
     NoMetaRefreshRedirect,
     Partial,
     PayloadResource,
@@ -98,6 +99,7 @@ class Root(BaseResource):
         put_child(self, b"largechunkedfile", LargeChunkedFileResource())
         put_child(self, b"compress", Compress())
         put_child(self, b"duplicate-header", DuplicateHeaderResource())
+        put_child(self, b"large-headers", LargeHeadersResource())
         put_child(self, b"response-headers", ResponseHeadersResource())
         put_child(self, b"set-cookie", SetCookie())
         put_child(self, b"uri", UriResource())

@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import re
+import sys
 from contextlib import suppress
 from functools import partial
 from io import BytesIO
@@ -45,12 +46,15 @@ from scrapy.exceptions import (
     DownloadTimeoutError,
     NotConfigured,
     ResponseDataLossError,
+    ResponseHeadersTooLargeError,
     StopDownload,
 )
 from scrapy.http import Headers, Response
 from scrapy.utils._download_handlers import (
     check_stop_download,
     get_dataloss_msg,
+    get_headers_maxsize_msg,
+    get_headers_warnsize_msg,
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
@@ -67,6 +71,8 @@ from scrapy.utils.url import add_http_if_no_scheme
 from ._base_http import BaseHttpDownloadHandler
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IAddress, IConsumer
     from twisted.web._newclient import Request as TxRequest
@@ -91,6 +97,116 @@ class _ResultT(TypedDict):
     stop_download: NotRequired[StopDownload | None]
 
 
+def _limit_response_headers(
+    parser: HTTPClientParser, maxsize: int, warnsize: int
+) -> None:
+    """Make *parser* enforce *maxsize* and *warnsize* on the total size of the
+    response head, i.e. the status line plus the header lines plus their line
+    delimiters.
+
+    Twisted limits the length of *individual* lines instead
+    (:attr:`~twisted.protocols.basic.LineReceiver.MAX_LENGTH`, 16 KiB), and
+    silently drops the connection when a line exceeds it, which makes the
+    resulting error impossible to tell apart from an unrelated disconnection.
+    Web browsers instead limit the total size of the response head, which is
+    what this function reproduces. See
+    https://github.com/twisted/twisted/issues/8570.
+
+    Twisted builds its response parser without offering a way to configure it,
+    hence the instance-level overrides below.
+    """
+    url = to_unicode(parser.request.absoluteURI or parser.request.uri)
+    # Keep the Twisted line length limit, which cannot report a meaningful
+    # error, from ever triggering before our own limit does.
+    parser.MAX_LENGTH = maxsize or sys.maxsize
+    delimiter_size = len(parser.delimiter)
+    line_received = parser.lineReceived
+    size = 0
+    warned = False
+
+    def lineReceived(line: bytes) -> None:
+        nonlocal size, warned
+        size += len(line) + delimiter_size
+        if maxsize and size > maxsize:
+            raise ResponseHeadersTooLargeError(
+                get_headers_maxsize_msg(size, maxsize, url)
+            )
+        if warnsize and size > warnsize and not warned:
+            warned = True
+            logger.warning(get_headers_warnsize_msg(size, warnsize, url))
+        line_received(line)  # type: ignore[no-untyped-call]
+
+    def lineLengthExceeded(line: bytes) -> None:
+        # A single line went over MAX_LENGTH, so lineReceived() never saw it.
+        # line holds the whole unparsed remainder of the buffer, so the
+        # reported size is a lower bound.
+        raise ResponseHeadersTooLargeError(
+            get_headers_maxsize_msg(size + len(line), maxsize, url)
+        )
+
+    parser.lineReceived = lineReceived  # type: ignore[method-assign]
+    parser.lineLengthExceeded = lineLengthExceeded  # type: ignore[method-assign]
+
+
+class _ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):
+    """:class:`~twisted.web._newclient.HTTP11ClientProtocol` subclass that
+    parses responses with :class:`_LenientHTTPClientParser` and limits the size
+    of response headers."""
+
+    def __init__(
+        self,
+        quiescentCallback: Callable[[HTTP11ClientProtocol], None],
+        headers_maxsize: int,
+        headers_warnsize: int,
+    ):
+        super().__init__(quiescentCallback)  # type: ignore[no-untyped-call]
+        self._headers_maxsize: int = headers_maxsize
+        self._headers_warnsize: int = headers_warnsize
+
+    def request(self, request: TxRequest) -> Deferred[IResponse]:
+        previous_parser = self._parser
+        deferred = super().request(request)
+        # super() builds a new response parser for every request it accepts, so
+        # the size counter resets as intended on pooled connections. It can also
+        # refuse a request, e.g. on a pooled connection that just died, in which
+        # case it leaves the parser of the previous request in place, and
+        # limiting that one again would reset its counter mid-response.
+        parser = self._parser
+        if parser is not None and parser is not previous_parser:
+            # HTTP11ClientProtocol.request() hardcodes the parser class, so the
+            # only way to use a different one is to replace the class of the
+            # parser object that it creates. This is safe because
+            # _LenientHTTPClientParser defines no additional state.
+            parser.__class__ = _LenientHTTPClientParser
+            _limit_response_headers(
+                parser, self._headers_maxsize, self._headers_warnsize
+            )
+        return deferred
+
+
+class _ScrapyHTTP11ClientFactory(_HTTP11ClientFactory):
+    """:class:`!twisted.web.client._HTTP11ClientFactory` subclass that builds
+    :class:`_ScrapyHTTP11ClientProtocol` instances."""
+
+    noisy = False
+
+    def __init__(
+        self,
+        quiescentCallback: Callable[[HTTP11ClientProtocol], None],
+        metadata: str,
+        headers_maxsize: int,
+        headers_warnsize: int,
+    ):
+        super().__init__(quiescentCallback, metadata)  # type: ignore[no-untyped-call]
+        self._headers_maxsize: int = headers_maxsize
+        self._headers_warnsize: int = headers_warnsize
+
+    def buildProtocol(self, addr: IAddress | None) -> _ScrapyHTTP11ClientProtocol:
+        return _ScrapyHTTP11ClientProtocol(
+            self._quiescentCallback, self._headers_maxsize, self._headers_warnsize
+        )
+
+
 class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
@@ -105,7 +221,11 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         self._pool.maxPersistentPerHost = crawler.settings.getint(
             "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
-        self._pool._factory = _LenientHTTP11ClientFactory
+        self._pool._factory = partial(  # type: ignore[assignment]
+            _ScrapyHTTP11ClientFactory,
+            headers_maxsize=self._headers_maxsize,
+            headers_warnsize=self._headers_warnsize,
+        )
 
         self._contextFactory: IPolicyForHTTPS = _load_context_factory_from_settings(
             crawler
@@ -131,6 +251,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
             warnsize=getattr(
                 self._crawler.spider, "download_warnsize", self._default_warnsize
             ),
+            headers_maxsize=self._headers_maxsize,
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
             tls_verbose_logging=self._tls_verbose_logging,
@@ -195,6 +316,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         contextFactory: IPolicyForHTTPS,
         timeout: float = 30,
         bindAddress: tuple[str, int] | None = None,
+        headersMaxsize: int = 0,
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
@@ -203,6 +325,7 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         self._tunneledPort: int = port
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectBuffer: bytearray = bytearray()
+        self._headersMaxsize: int = headersMaxsize
 
     def requestTunnel(self, protocol: Protocol) -> Protocol:
         """Asks the proxy to open a tunnel."""
@@ -229,6 +352,20 @@ class _TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         #
         # see https://github.com/scrapy/scrapy/issues/2491
         if b"\r\n\r\n" not in self._connectBuffer:
+            if self._headersMaxsize and len(self._connectBuffer) > self._headersMaxsize:
+                # A proxy that never ends its response head would otherwise
+                # make _connectBuffer grow without bound.
+                self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
+                self._protocol.transport.loseConnection()
+                self._tunnelReadyDeferred.errback(
+                    ResponseHeadersTooLargeError(
+                        get_headers_maxsize_msg(
+                            len(self._connectBuffer),
+                            self._headersMaxsize,
+                            f"CONNECT {self._tunneledHost}:{self._tunneledPort}",
+                        )
+                    )
+                )
             return
         self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
         respm = _TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
@@ -308,10 +445,12 @@ class _TunnelingAgent(Agent):
         connectTimeout: float | None = None,
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
+        headersMaxsize: int = 0,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
+        self._headersMaxsize: int = headersMaxsize
 
     def _getEndpoint(self, uri: URI) -> _TunnelingTCP4ClientEndpoint:
         return _TunnelingTCP4ClientEndpoint(
@@ -322,6 +461,7 @@ class _TunnelingAgent(Agent):
             contextFactory=self._contextFactory,
             timeout=self._endpointFactory._connectTimeout,
             bindAddress=self._endpointFactory._bindAddress,
+            headersMaxsize=self._headersMaxsize,
         )
 
     def _requestWithEndpoint(
@@ -401,6 +541,7 @@ class _ScrapyAgent:
         pool: HTTPConnectionPool | None = None,
         maxsize: int = 0,
         warnsize: int = 0,
+        headers_maxsize: int = 0,
         fail_on_dataloss: bool = True,
         crawler: Crawler,
         tls_verbose_logging: bool = False,
@@ -411,6 +552,7 @@ class _ScrapyAgent:
         self._pool: HTTPConnectionPool | None = pool
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
+        self._headers_maxsize: int = headers_maxsize
         self._fail_on_dataloss: bool = fail_on_dataloss
         self._txresponse: TxResponse | None = None
         self._crawler: Crawler = crawler
@@ -444,6 +586,7 @@ class _ScrapyAgent:
                     connectTimeout=timeout,
                     bindAddress=bindaddress,
                     pool=self._pool,
+                    headersMaxsize=self._headers_maxsize,
                 )
             return _ScrapyProxyAgent(
                 reactor=reactor,
@@ -798,29 +941,3 @@ class _LenientHTTPClientParser(HTTPClientParser):
             # A line beginning with LWS is a continuation of a header begun on
             # a previous line.
             self._partialHeader.append(line)  # type: ignore[union-attr]
-
-
-class _LenientHTTP11ClientProtocol(HTTP11ClientProtocol):
-    """Protocol that parses responses with :class:`_LenientHTTPClientParser`."""
-
-    def request(self, request: TxRequest) -> Deferred[IResponse]:
-        d: Deferred[IResponse] = super().request(request)
-        # HTTP11ClientProtocol.request() hardcodes the parser class, so the
-        # only way to use a different one is to replace the class of the parser
-        # object that it creates. This is safe because
-        # _LenientHTTPClientParser defines no additional state. The parser is
-        # always there because HTTPConnectionPool only reuses connections whose
-        # protocol is in the QUIESCENT state, for which request() always
-        # creates a parser.
-        assert self._parser is not None
-        self._parser.__class__ = _LenientHTTPClientParser
-        return d
-
-
-class _LenientHTTP11ClientFactory(_HTTP11ClientFactory):
-    """Factory that builds :class:`_LenientHTTP11ClientProtocol` protocols."""
-
-    noisy = False
-
-    def buildProtocol(self, addr: IAddress | None) -> HTTP11ClientProtocol:
-        return _LenientHTTP11ClientProtocol(self._quiescentCallback)  # type: ignore[no-untyped-call]
