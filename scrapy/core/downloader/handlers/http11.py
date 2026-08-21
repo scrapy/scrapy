@@ -7,7 +7,6 @@ import logging
 import re
 from contextlib import suppress
 from functools import partial
-from io import BytesIO
 from time import monotonic
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
@@ -49,6 +48,7 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Headers, Response
 from scrapy.utils._download_handlers import (
+    _BodySink,
     check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
@@ -534,6 +534,9 @@ class _ScrapyAgent:
 
         # deliverBody hangs for responses without body
         if cast("int", txresponse.length) == 0:
+            # No reader is created below, so the body file, if any, is created
+            # here, empty, as it would be for any other response.
+            _BodySink(request).close()
             return {
                 "txresponse": txresponse,
             }
@@ -643,7 +646,7 @@ class _ResponseReader(Protocol):
         self._finished: Deferred[_ResultT] = finished
         self._txresponse: TxResponse = txresponse
         self._request: Request = request
-        self._bodybuf: BytesIO = BytesIO()
+        self._bodybuf: _BodySink = _BodySink(request)
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
         self._fail_on_dataloss: bool = fail_on_dataloss
@@ -657,10 +660,12 @@ class _ResponseReader(Protocol):
     def _finish_response(
         self, flags: list[str] | None = None, stop_download: StopDownload | None = None
     ) -> None:
+        body = self._bodybuf.getvalue()
+        self._bodybuf.close()
         self._finished.callback(
             {
                 "txresponse": self._txresponse,
-                "body": self._bodybuf.getvalue(),
+                "body": body,
                 "flags": flags,
                 "certificate": self._certificate,
                 "ip_address": self._ip_address,
@@ -709,8 +714,8 @@ class _ResponseReader(Protocol):
                     self._bytes_received, self._maxsize, self._request, expected=False
                 )
             )
-            # Clear buffer earlier to avoid keeping data in memory for a long time.
-            self._bodybuf.truncate(0)
+            self._bodybuf.truncate()
+            self._bodybuf.close()
             self._finished.cancel()
 
         if (
@@ -749,6 +754,7 @@ class _ResponseReader(Protocol):
             exc.__cause__ = reason.value
             reason = Failure(exc)
 
+        self._bodybuf.close()
         self._finished.errback(reason)
 
 
