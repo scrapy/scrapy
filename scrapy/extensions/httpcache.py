@@ -12,11 +12,11 @@ from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 
-from scrapy.http import Headers, Response
-from scrapy.responsetypes import responsetypes
+from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.response import response_from_dict
 
 if TYPE_CHECKING:
     import os
@@ -272,24 +272,13 @@ class DbmCacheStorage:
         data = self._read_data(spider, request)
         if data is None:
             return None  # not cached
-        url = data["url"]
-        status = data["status"]
-        headers = Headers(data["headers"])
-        body = data["body"]
-        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        return respcls(url=url, headers=headers, status=status, body=body)
+        return response_from_dict(data)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
     ) -> None:
         key = self._fingerprinter.fingerprint(request).hex()
-        data = {
-            "status": response.status,
-            "url": response.url,
-            "headers": dict(response.headers),
-            "body": response.body,
-        }
-        self.db[f"{key}_data"] = pickle.dumps(data, protocol=4)
+        self.db[f"{key}_data"] = pickle.dumps(response.to_dict(), protocol=4)
         self.db[f"{key}_time"] = str(time())
 
     def _read_data(self, spider: Spider, request: Request) -> dict[str, Any] | None:
@@ -340,11 +329,17 @@ class FilesystemCacheStorage:
             body = f.read()
         with self._open(rpath / "response_headers", "rb") as f:
             rawheaders = f.read()
-        url = metadata["response_url"]
-        status = metadata["status"]
-        headers = Headers(headers_raw_to_dict(rawheaders))
-        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        return respcls(url=url, headers=headers, status=status, body=body)
+        data = {
+            "url": metadata["response_url"],
+            "status": metadata["status"],
+            "headers": headers_raw_to_dict(rawheaders),
+            "body": body,
+        }
+        datapath = rpath / "response_data"
+        if datapath.exists():
+            with self._open(datapath, "rb") as f:
+                data.update(pickle.load(f))  # noqa: S301
+        return response_from_dict(data)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
@@ -368,6 +363,13 @@ class FilesystemCacheStorage:
             f.write(headers_dict_to_raw(response.headers))
         with self._open(rpath / "response_body", "wb") as f:
             f.write(response.body)
+        data = {
+            key: value
+            for key, value in response.to_dict().items()
+            if key not in {"url", "status", "headers", "body"}
+        }
+        with self._open(rpath / "response_data", "wb") as f:
+            pickle.dump(data, f, protocol=4)
         with self._open(rpath / "request_headers", "wb") as f:
             f.write(headers_dict_to_raw(request.headers))
         with self._open(rpath / "request_body", "wb") as f:
