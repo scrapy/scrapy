@@ -23,9 +23,6 @@ from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
-from tests import NON_EXISTING_RESOLVABLE
-from tests.spiders import SingleRequestSpider
-from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Generator
@@ -38,7 +35,10 @@ if TYPE_CHECKING:
 # level, so this module cannot be collected without it either.
 pytest.importorskip("websockets")
 
+from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver.websocket import WebSocketMockServer
+from tests.spiders import SingleRequestSpider
+from tests.utils.decorators import coroutine_test
 
 pytestmark = pytest.mark.only_asyncio
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import ipaddress
 import ssl
 import time
@@ -122,7 +123,9 @@ class WebSocketDownloadHandler(BaseHttpDownloadHandler):
             )
         except InvalidStatus as e:
             return self._make_rejection_response(request, e)
-        except TimeoutError as e:
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            # asyncio.TimeoutError is a separate class from the builtin
+            # TimeoutError on Python < 3.11.
             raise DownloadTimeoutError(
                 f"Getting {request.url} took longer than {timeout} seconds."
             ) from e
