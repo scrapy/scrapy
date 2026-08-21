@@ -209,6 +209,36 @@ the resulting path. A path that depends on the response can never match that
 check, and :setting:`FILES_EXPIRES` set to ``0`` disables it, at the cost of
 downloading every file on every run.
 
+.. _media-request-headers:
+
+Setting request headers
+-----------------------
+
+Media requests are built from the item, not from the response that yielded
+it, so features like :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware`
+do not apply to them. To send a header such as ``Referer``, store the value
+on the item in your spider, and read it back from the item in
+``get_media_requests`` of your custom media pipeline:
+
+.. code-block:: python
+
+    from scrapy import Request, Spider
+    from scrapy.pipelines.files import FilesPipeline
+
+
+    class MySpider(Spider):
+        def parse(self, response):
+            yield {
+                "file_urls": response.css("a.file::attr(href)").getall(),
+                "referrer": response.url,
+            }
+
+
+    class MyFilesPipeline(FilesPipeline):
+        def get_media_requests(self, item, info):
+            for file_url in item["file_urls"]:
+                yield Request(file_url, headers={"Referer": item["referrer"]})
+
 .. _topics-supported-storage:
 
 Supported Storage
@@ -594,6 +624,8 @@ See here the methods that you can override in your custom Files Pipeline:
              adapter = ItemAdapter(item)
              for file_url in adapter["file_urls"]:
                  yield scrapy.Request(file_url)
+
+      You can also use it to set request headers, see :ref:`media-request-headers`.
 
       Those requests will be processed by the pipeline and, when they have finished
       downloading, the results will be sent to the
