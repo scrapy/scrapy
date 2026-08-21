@@ -79,6 +79,9 @@ class Root(BaseResource):
             b"enc-gb18030",
             Data(b"<p>gb18030 encoding</p>", "text/html; charset=gb18030"),
         )
+        put_child(
+            self, b"robots.txt", Data(b"User-agent: *\nDisallow: /deny\n", "text/plain")
+        )
         put_child(self, b"redirect", Redirect(b"/redirected"))
         put_child(
             self, b"redirect-no-meta-refresh", NoMetaRefreshRedirect(b"/redirected")

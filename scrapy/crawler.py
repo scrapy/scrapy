@@ -99,6 +99,7 @@ class _LateAttribute(Generic[_T]):
 
 
 class Crawler:
+    #: Running instance of :class:`~scrapy.core.engine.ExecutionEngine`.
     engine: _LateAttribute[ExecutionEngine] = _LateAttribute()
     extensions: _LateAttribute[ExtensionManager] = _LateAttribute()
     logformatter: _LateAttribute[LogFormatter] = _LateAttribute()

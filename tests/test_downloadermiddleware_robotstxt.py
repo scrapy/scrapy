@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python import failure
 
-from scrapy import signals
+from scrapy import Spider, signals
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
 from scrapy.exceptions import CannotResolveHostError, IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
@@ -16,8 +17,14 @@ from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 from tests.utils.robotstxt import rerp_available
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from tests.mockserver.http import MockServer
 
 
 class TestRobotsTxtMiddleware:
@@ -281,6 +288,81 @@ Disallow: /some/randome/page.html
         request = calls[0][0][0]
         assert request.url == f"{base_url}/robots.txt"
         assert request.callback == NO_CALLBACK
+
+
+class _IgnoreSpider(Spider):
+    name = "test"
+
+    def parse(self, response: Response) -> None:
+        pass
+
+
+class _FollowSpider(Spider):
+    name = "test"
+
+    def parse(self, response: Response) -> Iterable[Request]:
+        yield response.follow("/deny/a")
+
+
+class TestRobotsTxtDeniedCloseReason:
+    @staticmethod
+    async def _finish_reason(
+        spider_cls: type[Spider], settings: dict[str, Any] | None = None, **kwargs: Any
+    ) -> Any:
+        crawler = get_crawler(
+            spider_cls, settings_dict={"ROBOTSTXT_OBEY": True, **(settings or {})}
+        )
+        await crawler.crawl_async(**kwargs)
+        assert crawler.stats
+        return crawler.stats.get_value("finish_reason")
+
+    @coroutine_test
+    async def test_all_denied(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/deny/b")],
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_all_denied_low_concurrency(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            settings={"CONCURRENT_REQUESTS": 1},
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/deny/b")],
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_all_denied_after_redirect(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider, start_urls=[mockserver.url("/redirect-to?goto=/deny/a")]
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_denied_and_download_failure(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            settings={"RETRY_ENABLED": False},
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/drop")],
+        )
+        assert reason == "robotstxt_denied"
+
+    @coroutine_test
+    async def test_some_denied(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _IgnoreSpider,
+            start_urls=[mockserver.url("/deny/a"), mockserver.url("/text")],
+        )
+        assert reason == "finished"
+
+    @coroutine_test
+    async def test_denied_follow_up_request(self, mockserver: MockServer) -> None:
+        reason = await self._finish_reason(
+            _FollowSpider, start_urls=[mockserver.url("/text")]
+        )
+        assert reason == "finished"
 
 
 @pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")
