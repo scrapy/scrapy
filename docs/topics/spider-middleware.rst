@@ -233,6 +233,8 @@ DepthMiddleware
 .. module:: scrapy.spidermiddlewares.depth
    :synopsis: Depth Spider Middleware
 
+.. reqmeta:: depth
+
 .. autoclass:: DepthMiddleware
 
 HttpErrorMiddleware

@@ -827,6 +827,19 @@ redirect. For example, :class:`RedirectMiddleware` indicates the triggering
 response status code as an integer, while :class:`MetaRefreshMiddleware`
 always uses the ``'meta refresh'`` string as reason.
 
+.. reqmeta:: redirect_times
+
+The number of redirects that a request has gone through so far can be found in
+the ``redirect_times`` :attr:`Request.meta <scrapy.Request.meta>` key.
+
+.. reqmeta:: redirect_ttl
+
+The number of redirects that a request may still go through is tracked in the
+``redirect_ttl`` :attr:`Request.meta <scrapy.Request.meta>` key, which is
+initialized from :setting:`REDIRECT_MAX_TIMES` and decreased on every redirect.
+Set it on a request to allow fewer redirects for that request;
+:setting:`REDIRECT_MAX_TIMES` still applies as an upper bound.
+
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
@@ -949,6 +962,18 @@ RetryMiddleware
 If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_retry`` key
 set to True, the request will be ignored by this middleware.
 
+.. reqmeta:: retry_times
+
+The number of times that a request has been retried so far can be found in the
+``retry_times`` :attr:`Request.meta <scrapy.Request.meta>` key. Since it counts
+against :setting:`RETRY_TIMES`, copying it into a follow-up request lowers the
+number of retries allowed for that request.
+
+.. reqmeta:: priority_adjust
+
+The ``priority_adjust`` :attr:`Request.meta <scrapy.Request.meta>` key
+overrides :setting:`RETRY_PRIORITY_ADJUST` for a request.
+
 To retry requests from a spider callback, you can use the
 :func:`get_retry_request` function:
 
@@ -1052,6 +1077,8 @@ Adjust retry request priority relative to original request:
 
 - a positive priority adjust means higher priority.
 - **a negative priority adjust (default) means lower priority.**
+
+See also: :reqmeta:`priority_adjust`.
 
 
 .. _topics-dlmw-robots:
