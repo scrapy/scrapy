@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from scrapy.http import Response
 
 
-HAS_WEBSOCKETS = True
+_HAS_WEBSOCKETS = True
 
 try:
     from websockets.asyncio.client import ClientConnection, connect
@@ -45,7 +45,7 @@ try:
         WebSocketException,
     )
 except ImportError:
-    HAS_WEBSOCKETS = False
+    _HAS_WEBSOCKETS = False
 else:
 
     class _Connect(connect):
@@ -64,7 +64,7 @@ class WebSocketDownloadHandler(BaseHttpDownloadHandler):
     _DEFAULT_CONNECT_TIMEOUT: ClassVar[float] = 10
 
     def __init__(self, crawler: Crawler):
-        if not HAS_WEBSOCKETS:
+        if not _HAS_WEBSOCKETS:
             raise NotConfigured(
                 f"{type(self).__name__} requires the websockets extra to be"
                 f" installed (pip install scrapy[websockets])."
@@ -151,7 +151,7 @@ class WebSocketDownloadHandler(BaseHttpDownloadHandler):
             certificate=self._get_certificate(connection),
             ip_address=self._get_ip_address(connection),
             protocol="http/1.1",
-            connection=connection,
+            _connection=connection,
         )
 
     @staticmethod

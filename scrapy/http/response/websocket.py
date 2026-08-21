@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 
 
 class WebSocketResponse(Response):
-    """Response to a WebSocket handshake request, which gives access to the
-    WebSocket connection that the handshake established.
+    """Response to a WebSocket handshake request, with methods to send and
+    receive messages over the connection that the handshake established.
 
     .. versionadded:: VERSION
 
@@ -37,26 +37,22 @@ class WebSocketResponse(Response):
     See :ref:`websockets`.
     """
 
-    attributes: tuple[str, ...] = (*Response.attributes, "connection")
+    attributes: tuple[str, ...] = (*Response.attributes, "_connection")
 
-    __slots__ = ("_connection_closed", "connection")
+    __slots__ = ("_connection", "_connection_closed")
 
-    def __init__(self, *args: Any, connection: ClientConnection, **kwargs: Any):
+    def __init__(self, *args: Any, _connection: ClientConnection, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.connection: ClientConnection = connection
-        """The underlying :class:`websockets.asyncio.client.ClientConnection`
-        object, for features that this class does not expose, such as
-        :meth:`~websockets.asyncio.client.ClientConnection.recv_streaming` or
-        :attr:`~websockets.asyncio.client.ClientConnection.subprotocol`."""
+        self._connection: ClientConnection = _connection
         # The downloader reads this to know when the connection stops
         # occupying its slot.
         self._connection_closed: Deferred[None] = deferred_from_coro(
-            connection.wait_closed()
+            _connection.wait_closed()
         )
 
     async def send(self, message: str | bytes) -> None:
         """Send *message* to the server."""
-        await self.connection.send(message)
+        await self._connection.send(message)
 
     async def receive(self) -> str | bytes:
         """Return the next message from the server.
@@ -68,13 +64,13 @@ class WebSocketResponse(Response):
         from websockets.exceptions import ConnectionClosed  # noqa: PLC0415
 
         try:
-            return await self.connection.recv()
+            return await self._connection.recv()
         except ConnectionClosed as e:
             raise DownloadFailedError(str(e)) from e
 
     async def close(self) -> None:
         """Close the connection."""
-        await self.connection.close()
+        await self._connection.close()
 
     async def _release(self) -> None:
         await self.close()
@@ -86,7 +82,7 @@ class WebSocketResponse(Response):
         from websockets.exceptions import ConnectionClosedError  # noqa: PLC0415
 
         try:
-            async for message in self.connection:
+            async for message in self._connection:
                 yield message
         except ConnectionClosedError as e:
             raise DownloadFailedError(str(e)) from e

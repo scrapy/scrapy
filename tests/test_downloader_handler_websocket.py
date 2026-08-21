@@ -237,7 +237,7 @@ class TestWebSocketDownloadHandler:
 
     def test_no_websockets_library(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "scrapy.core.downloader.handlers.websocket.HAS_WEBSOCKETS", False
+            "scrapy.core.downloader.handlers.websocket._HAS_WEBSOCKETS", False
         )
-        with pytest.raises(NotConfigured, match="websockets library"):
+        with pytest.raises(NotConfigured, match="websockets extra"):
             build_from_crawler(WebSocketDownloadHandler, get_crawler())
