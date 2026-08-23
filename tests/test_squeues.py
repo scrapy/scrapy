@@ -18,6 +18,12 @@ from scrapy.squeues import (
     _serializable_queue,
 )
 
+# The disk queue classes are built at run time, so they are untyped.
+_MarshalFifoQueue: Any = _MarshalFifoSerializationDiskQueue
+_MarshalLifoQueue: Any = _MarshalLifoSerializationDiskQueue
+_PickleFifoQueue: Any = _PickleFifoSerializationDiskQueue
+_PickleLifoQueue: Any = _PickleLifoSerializationDiskQueue
+
 
 class MyItem(Item):
     name = Field()
@@ -71,6 +77,9 @@ def nonserializable_object_test(self):
 
 
 class FifoDiskQueueTestMixin:
+    def queue(self) -> Any:
+        raise NotImplementedError
+
     def test_serialize(self):
         q = self.queue()
         q.push("a")
@@ -87,8 +96,8 @@ class FifoDiskQueueTestMixin:
 class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
     chunksize = 100000
 
-    def queue(self):
-        return _MarshalFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
+    def queue(self) -> Any:
+        return _MarshalFifoQueue(self.qpath, chunksize=self.chunksize)
 
 
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
@@ -110,8 +119,8 @@ class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
 class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
     chunksize = 100000
 
-    def queue(self):
-        return _PickleFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
+    def queue(self) -> Any:
+        return _PickleFifoQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -180,6 +189,9 @@ class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
 
 
 class LifoDiskQueueTestMixin:
+    def queue(self) -> Any:
+        raise NotImplementedError
+
     def test_serialize(self):
         q = self.queue()
         q.push("a")
@@ -194,13 +206,13 @@ class LifoDiskQueueTestMixin:
 
 
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
-    def queue(self):
-        return _MarshalLifoSerializationDiskQueue(self.qpath)
+    def queue(self) -> Any:
+        return _MarshalLifoQueue(self.qpath)
 
 
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
-    def queue(self):
-        return _PickleLifoSerializationDiskQueue(self.qpath)
+    def queue(self) -> Any:
+        return _PickleLifoQueue(self.qpath)
 
     def test_serialize_item(self):
         q = self.queue()
