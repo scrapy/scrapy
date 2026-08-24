@@ -855,6 +855,41 @@ allow on a per-request basis. You can also set the meta key
 ``handle_httpstatus_all`` to ``True`` if you want to allow any response code
 for a request.
 
+To decide whether to follow a redirect based on its target URL, subclass
+:class:`RedirectMiddleware` and override
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`:
+
+.. code-block:: python
+
+    import re
+
+    from scrapy import Request
+    from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
+    from scrapy.exceptions import IgnoreRequest
+
+
+    class AllowedRedirectMiddleware(RedirectMiddleware):
+        def process_response(self, request, response, spider):
+            result = super().process_response(request, response, spider)
+            if isinstance(result, Request) and not re.search(r"/product/", result.url):
+                raise IgnoreRequest(f"Redirect target not allowed: {result.url}")
+            return result
+
+Enable it in place of :class:`RedirectMiddleware`, using the same priority:
+
+.. code-block:: python
+
+    from scrapy import Spider
+
+
+    class MySpider(Spider):
+        custom_settings = {
+            "DOWNLOADER_MIDDLEWARES": {
+                "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": None,
+                "myproject.middlewares.AllowedRedirectMiddleware": 600,
+            }
+        }
+
 
 RedirectMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

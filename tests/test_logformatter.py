@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from twisted.python.failure import Failure
@@ -63,7 +63,7 @@ class TestLogFormatter:
         )
 
     def test_dropped(self):
-        item = {}
+        item: dict[str, Any] = {}
         exception = Exception("\u2018")
         response = Response("http://www.example.com")
         logkws = self.formatter.dropped(item, exception, response, self.spider)
@@ -73,7 +73,7 @@ class TestLogFormatter:
         assert lines == ["Dropped: \u2018", "{}"]
 
     def test_dropitem_default_log_level(self):
-        item = {}
+        item: dict[str, Any] = {}
         exception = DropItem("Test drop")
         response = Response("http://www.example.com")
         spider = Spider.from_crawler(get_crawler(Spider), "foo")
@@ -116,7 +116,7 @@ class TestLogFormatter:
             logging.log(logkws["level"], "message")  # noqa: LOG015
 
     def test_dropitem_custom_log_level(self):
-        item = {}
+        item: dict[str, Any] = {}
         response = Response("http://www.example.com")
 
         exception = DropItem("Test drop", log_level="INFO")
@@ -187,7 +187,7 @@ class LogFormatterSubclass(LogFormatter):
     def crawled(self, request, response, spider):
         kwargs = super().crawled(request, response, spider)
         CRAWLEDMSG = "Crawled (%(status)s) %(request)s (referer: %(referer)s) %(flags)s"
-        log_args = kwargs["args"]
+        log_args = cast("dict[str, Any]", kwargs["args"])
         log_args["flags"] = str(request.flags)
         return {
             "level": kwargs["level"],
@@ -259,7 +259,7 @@ class DropSomeItemsPipeline:
 
 class TestShowOrSkipMessages:
     def setup_method(self):
-        self.base_settings = {
+        self.base_settings: dict[str, Any] = {
             "LOG_LEVEL": "DEBUG",
             "ITEM_PIPELINES": {
                 DropSomeItemsPipeline: 300,
