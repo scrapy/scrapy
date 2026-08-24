@@ -229,6 +229,23 @@ Disallow: /some/randome/page.html
         await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
 
     @coroutine_test
+    async def test_robotstxt_process_exception_ignores_unrelated_request(
+        self,
+    ) -> None:
+        middleware = build_from_crawler(
+            RobotsTxtMiddleware, self._get_successful_crawler()
+        )
+        await self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
+        err = CannotResolveHostError("Unrelated request failed")
+        with mock.patch(
+            "scrapy.downloadermiddlewares.robotstxt.logger"
+        ) as mw_module_logger:
+            await middleware.process_exception(
+                Request("http://site.local/allowed"), err
+            )
+            assert not mw_module_logger.error.called
+
+    @coroutine_test
     async def test_ignore_robotstxt_request(self):
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
 
