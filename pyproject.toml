@@ -302,20 +302,24 @@ filterwarnings = [
     # Twisted leaves the listening socket open after a failed bind
     # (CannotListenError): https://github.com/twisted/twisted/issues/6108
     # The asyncio reactor likewise leaves client sockets and transports open on
-    # teardown. These surface as unraisable exceptions during finalization; the
-    # message wording varies across Python implementations and versions
-    # (PyPy leaves the prefix empty), so match on the object repr.
+    # teardown. These surface as unraisable exceptions during finalization when
+    # collected outside any warnings-catching block, or as a plain
+    # ResourceWarning, re-emitted by pytest.warns() with the outer filters
+    # applied, when GC instead runs while a pytest.warns() block for an
+    # unrelated warning is active, failing that unrelated test. The message
+    # wording varies across Python implementations and versions (PyPy leaves
+    # the prefix empty), so match on the object repr.
     "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed <socket\\.socket fd=:ResourceWarning",
     "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed transport <:ResourceWarning",
     # PyDispatcher iterates its connection registry while a weakref callback
     # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
     # can die within a single collection.
     "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
     # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
-    # files and SQLite connections open; the resulting warning surfaces at an
-    # arbitrary GC point, as an unraisable exception or as a plain
-    # ResourceWarning, which pytest.warns() re-emits when it does not match,
-    # failing an unrelated test. sqlite3's warning message has no path to
+    # files and SQLite connections open; see the comment above about the two
+    # forms this can surface as. sqlite3's warning message has no path to
     # match on, so it cannot be scoped to queuelib's temporary directories the
     # way the file one is.
     "ignore:.*<_io\\.\\w+ name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
