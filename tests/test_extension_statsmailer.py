@@ -68,11 +68,12 @@ def test_from_crawler_connects_spider_closed_signal(monkeypatch):
     monkeypatch.setattr(MailSender, "from_crawler", lambda _: mailer)
 
     ext = build_from_crawler(statsmailer.StatsMailer, crawler)
+    assert ext.mail is mailer
 
     crawler.signals.send_catch_log(
         signals.spider_closed, spider=DefaultSpider(name="dummy")
     )
-    assert ext.mail.send.call_count == 1
+    assert mailer.send.call_count == 1
 
 
 def test_spider_closed_sends_email(dummy_stats):
