@@ -277,6 +277,9 @@ Your templates replace the built-in ones, which live in the :file:`templates`
 directory of the ``scrapy`` package, so copy over any of those that you want to
 keep.
 
+Alternatively, pass ``-t`` a path to a :file:`.tmpl` file instead of a name,
+to use it without touching :setting:`TEMPLATES_DIR`.
+
 Templates are rendered with :class:`string.Template`: ``$variable`` and
 ``${variable}`` are replaced, and ``$$`` renders as a single ``$``, which
 regular expressions often need. Rendering fails on any variable other than the

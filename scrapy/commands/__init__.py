@@ -8,6 +8,7 @@ import argparse
 import builtins
 import logging
 import os
+import sys
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -122,7 +123,11 @@ class ScrapyCommand(ABC):
             metavar="NAME=VALUE",
             help="set/override setting (may be repeated)",
         )
-        group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
+        group.add_argument(
+            "--pdb",
+            action="store_true",
+            help="enable pdb on failure (uses ipdb if installed)",
+        )
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         """Set settings based on the command line options."""
@@ -151,6 +156,12 @@ class ScrapyCommand(ABC):
             )
 
         if opts.pdb:
+            try:
+                import ipdb  # noqa: T100,PLC0415
+            except ImportError:
+                pass
+            else:
+                sys.modules["pdb"] = ipdb
             failure.startDebugMode()
 
     @abstractmethod

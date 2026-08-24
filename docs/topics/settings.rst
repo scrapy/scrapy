@@ -137,6 +137,10 @@ Scrapy projects include a settings module, usually a file called
 ``settings.py``, where you should populate most settings that apply to all your
 spiders.
 
+:func:`scrapy.utils.project.get_project_settings` returns these settings, e.g.
+to pass them to :class:`~scrapy.crawler.AsyncCrawlerProcess` when :ref:`running
+Scrapy from a script <run-from-script>`.
+
 .. seealso:: :ref:`topics-settings-module-envvar`
 
 .. _addon-settings:
@@ -1376,6 +1380,7 @@ Default:
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
+        "scrapy.extensions.remote_control.RemoteControl": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
