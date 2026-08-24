@@ -19,9 +19,15 @@ class DroppingFifoMemoryQueue(FifoMemoryQueue):  # type: ignore[valid-type,misc]
     """Queue that drops requests marked with ``drop`` in their metadata, the
     way a custom queue class could drop requests it does not want to store."""
 
-    def push(self, request):
+    def __init__(self) -> None:
+        super().__init__()
+        # queuelib < 1.7 sets push as an instance attribute in __init__,
+        # which would otherwise shadow this override.
+        self.push = self._push
+
+    def _push(self, request: Request) -> None:
         if not request.meta.get("drop"):
-            super().push(request)
+            self.q.append(request)
 
 
 def _pop(queue: ScrapyPriorityQueue | DownloaderAwarePriorityQueue) -> Request:
@@ -120,10 +126,10 @@ class TestPriorityQueue:
         # a higher priority, i.e. in a separate, non-start queue.
         queue.push(Request("https://example.org/redirect", priority=2))
 
-        assert queue.peek().url == "https://example.org/redirect"
-        assert queue.pop().url == "https://example.org/redirect"
-        assert queue.peek().url == start_request.url
-        assert queue.pop().url == start_request.url
+        assert _peek(queue).url == "https://example.org/redirect"
+        assert _pop(queue).url == "https://example.org/redirect"
+        assert _peek(queue).url == start_request.url
+        assert _pop(queue).url == start_request.url
         assert queue.peek() is None
         queue.close()
 
@@ -146,8 +152,8 @@ class TestPriorityQueue:
         queue.push(Request("https://example.org/other"))
 
         while len(queue):
-            peeked = queue.peek()
-            assert queue.pop().url == peeked.url
+            peeked = _peek(queue)
+            assert _pop(queue).url == peeked.url
         queue.close()
 
     def test_peek_and_pop_skip_an_empty_queue_left_by_a_failed_push(self):
@@ -166,7 +172,10 @@ class TestPriorityQueue:
         )
         with pytest.raises(ValueError, match="is not an instance method"):
             queue.push(
-                Request("https://example.org/lambda", callback=lambda response: None)
+                Request(
+                    "https://example.org/lambda",
+                    callback=lambda response: None,  # type: ignore[misc]
+                )
             )
         assert queue.queues[0] is not None  # the empty leftover
         assert len(queue) == 0
@@ -176,8 +185,8 @@ class TestPriorityQueue:
         )
         queue.push(start_request)
         assert len(queue) == 1
-        assert queue.peek().url == start_request.url
-        assert queue.pop().url == start_request.url
+        assert _peek(queue).url == start_request.url
+        assert _pop(queue).url == start_request.url
         assert len(queue) == 0
         assert queue.peek() is None
         assert queue.pop() is None
@@ -193,13 +202,16 @@ class TestPriorityQueue:
         )
         with pytest.raises(ValueError, match="is not an instance method"):
             queue.push(
-                Request("https://example.org/lambda", callback=lambda response: None)
+                Request(
+                    "https://example.org/lambda",
+                    callback=lambda response: None,  # type: ignore[misc]
+                )
             )
         assert set(queue.queues) == {0}  # the empty leftover
         # A request at a different priority, whose queue emptying is what
         # triggers the refresh.
         queue.push(Request("https://example.org/1", priority=1))
-        assert queue.pop().url == "https://example.org/1"
+        assert _pop(queue).url == "https://example.org/1"
         assert queue.queues == {}
         assert queue.curprio is None
         assert queue.pop() is None
@@ -224,8 +236,8 @@ class TestPriorityQueue:
         queue.push(kept)
 
         assert len(queue) == 1
-        assert queue.peek().url == kept.url
-        assert queue.pop().url == kept.url
+        assert _peek(queue).url == kept.url
+        assert _pop(queue).url == kept.url
         assert queue.peek() is None
         assert queue.pop() is None
         assert not queue.close()
@@ -240,7 +252,10 @@ class TestPriorityQueue:
         )
         with pytest.raises(ValueError, match="is not an instance method"):
             queue.push(
-                Request("https://example.org/lambda", callback=lambda response: None)
+                Request(
+                    "https://example.org/lambda",
+                    callback=lambda response: None,  # type: ignore[misc]
+                )
             )
         startprios = queue.close()
         assert startprios == [0]
