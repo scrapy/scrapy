@@ -22,6 +22,8 @@ StatsT = dict[str, Any]
 
 
 class StatsCollector:
+    """The base stats collector that other stats collectors are based on."""
+
     def __init__(self, crawler: Crawler):
         self._dump: bool = crawler.settings.getbool("STATS_DUMP")
         self._stats: StatsT = {}
@@ -57,38 +59,50 @@ class StatsCollector:
     def get_value(
         self, key: str, default: Any = None, spider: Spider | None = None
     ) -> Any:
+        """Return the value of the *key* stat, or *default* if it is not set."""
         return self._stats.get(key, default)
 
     def get_stats(self, spider: Spider | None = None) -> StatsT:
+        """Return all stats as a dict."""
         return self._stats
 
     def set_value(self, key: str, value: Any, spider: Spider | None = None) -> None:
+        """Set the *key* stat to *value*."""
         self._stats[key] = value
 
     def set_stats(self, stats: StatsT, spider: Spider | None = None) -> None:
+        """Replace all stats with *stats*."""
         self._stats = stats
 
     def inc_value(
         self, key: str, count: int = 1, start: int = 0, spider: Spider | None = None
     ) -> None:
+        """Increment the *key* stat by *count*, or set it to *start* if it is
+        not set."""
         d = self._stats
         d[key] = d.setdefault(key, start) + count
 
     def max_value(self, key: str, value: Any, spider: Spider | None = None) -> None:
+        """Set the *key* stat to *value* if it is not set or lower than
+        *value*."""
         self._stats[key] = max(self._stats.setdefault(key, value), value)
 
     def min_value(self, key: str, value: Any, spider: Spider | None = None) -> None:
+        """Set the *key* stat to *value* if it is not set or higher than
+        *value*."""
         self._stats[key] = min(self._stats.setdefault(key, value), value)
 
     def clear_stats(self, spider: Spider | None = None) -> None:
+        """Clear all stats."""
         self._stats.clear()
 
     def open_spider(self, spider: Spider | None = None) -> None:
-        pass
+        """Called when the spider is opened."""
 
     def close_spider(
         self, spider: Spider | None = None, reason: str | None = None
     ) -> None:
+        """Called when the spider is closed."""
         if self._dump:
             logger.info(
                 "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),

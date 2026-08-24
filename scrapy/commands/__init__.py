@@ -8,10 +8,10 @@ import argparse
 import builtins
 import logging
 import os
+import sys
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from pdb import post_mortem
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from scrapy import signals
@@ -38,10 +38,14 @@ class _PdbHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         if record.exc_info and record.exc_info[2]:
-            post_mortem(record.exc_info[2])
+            import pdb  # noqa: T100,PLC0415
+
+            pdb.post_mortem(record.exc_info[2])
 
 
 class ScrapyCommand(ABC):
+    """Base class for all Scrapy commands."""
+
     requires_project: bool = False
     requires_crawler_process: bool = True
     crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
@@ -73,16 +77,12 @@ class ScrapyCommand(ABC):
         self._crawler: Crawler = crawler
 
     def syntax(self) -> str:
-        """
-        Command syntax (preferably one-line). Do not include command name.
-        """
+        """Command syntax (preferably one-line). Do not include command name."""
         return ""
 
     @abstractmethod
     def short_desc(self) -> str:
-        """
-        A short description of the command
-        """
+        """A short description of the command."""
         return ""
 
     def long_desc(self) -> str:
@@ -101,9 +101,7 @@ class ScrapyCommand(ABC):
         return self.long_desc()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
-        """
-        Populate option parse with options available for this command
-        """
+        """Populate the option parser with the options available for this command."""
         assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
         group.add_argument(
@@ -134,9 +132,14 @@ class ScrapyCommand(ABC):
             metavar="NAME=VALUE",
             help="set/override setting (may be repeated)",
         )
-        group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
+        group.add_argument(
+            "--pdb",
+            action="store_true",
+            help="enable pdb on failure (uses ipdb if installed)",
+        )
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        """Set settings based on the command line options."""
         assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
@@ -162,13 +165,17 @@ class ScrapyCommand(ABC):
             )
 
         if opts.pdb:
+            try:
+                import ipdb  # noqa: T100,PLC0415
+            except ImportError:
+                pass
+            else:
+                sys.modules["pdb"] = ipdb
             logging.root.addHandler(_PdbHandler(level=logging.ERROR))
 
     @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        """
-        Entry point for running commands
-        """
+        """Entry point for running commands."""
         raise NotImplementedError
 
 

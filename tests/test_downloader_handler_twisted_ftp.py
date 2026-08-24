@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import mkstemp
@@ -171,13 +170,8 @@ class TestFTP(TestFTPBase):
 
     @deferred_f_from_coro_f
     async def test_invalid_credentials(
-        self, server_url: str, dh: FTPDownloadHandler, reactor_pytest: str
+        self, server_url: str, dh: FTPDownloadHandler
     ) -> None:
-        if reactor_pytest == "asyncio" and sys.platform == "win32":
-            pytest.skip(
-                "This test produces DirtyReactorAggregateError on Windows with asyncio"
-            )
-
         from twisted.protocols.ftp import ConnectionLost
 
         meta = dict(self.req_meta)
