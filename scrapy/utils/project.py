@@ -64,6 +64,12 @@ def data_path(path: str | os.PathLike[str], createdir: bool = False) -> str:
 
 
 def get_project_settings() -> Settings:
+    """Return a :class:`~scrapy.settings.Settings` object with the
+    :ref:`project settings <project-settings>` of the current project.
+
+    Settings from sources with a higher precedence, such as :ref:`spider
+    settings <spider-settings>`, are applied when a crawl starts.
+    """
     init_env(os.environ.get("SCRAPY_PROJECT", "default"))
 
     settings = Settings()

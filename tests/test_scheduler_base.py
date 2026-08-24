@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import pytest
@@ -59,13 +59,15 @@ class PathsSpider(Spider):
 
     def __init__(self, mockserver, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.start_urls = map(mockserver.url, PATHS)
+        self.start_urls = [mockserver.url(path) for path in PATHS]
 
     def parse(self, response):
         return {"path": urlparse_cached(response).path}
 
 
 class InterfaceCheckMixin:
+    scheduler: Any
+
     def test_scheduler_class(self):
         assert isinstance(self.scheduler, BaseScheduler)
         assert issubclass(self.scheduler.__class__, BaseScheduler)
@@ -73,7 +75,7 @@ class InterfaceCheckMixin:
 
 class TestBaseScheduler(InterfaceCheckMixin):
     def setup_method(self):
-        self.scheduler = BaseScheduler()
+        self.scheduler = BaseScheduler()  # type: ignore[abstract]
 
     def test_methods(self):
         assert self.scheduler.open(Spider("foo")) is None
