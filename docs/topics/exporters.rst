@@ -281,7 +281,7 @@ BaseItemExporter
           :class:`dict` items, which have no declared fields, the key order of
           each item is used instead.
 
-          .. versionchanged:: VERSION
+          .. versionchanged:: 2.18.0
              Fields of non-\ :class:`dict` items used to be exported in the
              order in which they had been populated, except in
              :class:`CsvItemExporter`, which has always used declaration order.

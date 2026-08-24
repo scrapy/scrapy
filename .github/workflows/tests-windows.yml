@@ -9,13 +9,15 @@ on:
     - master
     - '[0-9]+.[0-9]+'
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
-  group: ${{github.workflow}}-${{ github.ref }}
+  group: ${{github.workflow}}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   tests:
+    if: github.event.action != 'closed'
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: windows-latest
     env:
@@ -49,6 +51,17 @@ jobs:
         - python-version: "3.14"
           env:
             TOXENV: extra-deps
+
+        # 3.15 pre-release
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: py
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: default-reactor
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: no-reactor
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

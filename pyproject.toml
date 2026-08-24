@@ -8,6 +8,7 @@ dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
+    "aiohttp>=3.13.3",
     "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -16,6 +17,7 @@ dependencies = [
     "lxml>=4.6.4",
     "packaging",
     "parsel>=1.5.0",
+    "platformdirs>=2.0.0",
     "protego>=0.1.15",
     "pyOpenSSL>=24.3.0",
     "queuelib>=1.6.1",
@@ -43,6 +45,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet :: WWW/HTTP",
@@ -113,26 +116,6 @@ module = "tests.*"
 allow_untyped_defs = true
 allow_incomplete_defs = true # 59 errors
 
-# TODO
-[[tool.mypy.overrides]]
-module = [
-    "tests.test_cmdline",
-    "tests.test_downloaderslotssettings",
-    "tests.test_dupefilters",
-    "tests.test_extension_statsmailer",
-    "tests.test_extension_throttle",
-    "tests.test_linkextractors",
-    "tests.test_logformatter",
-    "tests.test_mail",
-    "tests.test_pqueues",
-    "tests.test_scheduler_base",
-    "tests.test_settings",
-    "tests.test_squeues",
-    "tests.test_squeues_request",
-    "tests.test_stats",
-]
-check_untyped_defs = false
-
 # Interface classes are hard to support
 [[tool.mypy.overrides]]
 module = "twisted.internet.interfaces"
@@ -163,6 +146,7 @@ module = [
     "brotli",
     "brotlicffi",
     "google.*",
+    "ipdb",
     "pydispatch.*",
     "pyftpdlib.*",
     "pytest_twisted",
@@ -172,7 +156,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.17.0"
+current_version = "2.18.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -198,8 +182,12 @@ branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
 disable_warnings = ["include-ignored"]
+# Starting a coverage session in every spawned interpreter is what covers the
+# code paths of the command-line interface. It is also the bulk of the run time
+# of the tests that spawn one, so SCRAPY_COVERAGE_PATCH switches it for a cheap
+# patch where that cost is not worth paying; see tox.ini.
 patch = [
-    "subprocess",
+    "${SCRAPY_COVERAGE_PATCH-subprocess}",
 ]
 
 [tool.coverage.paths]
@@ -324,8 +312,11 @@ filterwarnings = [
     # can die within a single collection.
     "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
     # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
-    # files open; the resulting warning surfaces at an arbitrary GC point.
-    "ignore:.*<_io\\.FileIO name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    # files open; the resulting warning surfaces at an arbitrary GC point, as an
+    # unraisable exception or as a plain ResourceWarning, which pytest.warns()
+    # re-emits when it does not match, failing an unrelated test.
+    "ignore:.*<_io\\.\\w+ name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed file <_io\\.\\w+ name=.*queuelib-tests-:ResourceWarning",
     # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
     "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
     # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.

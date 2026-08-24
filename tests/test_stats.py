@@ -179,13 +179,13 @@ class TestStatsCollector:
     @coroutine_test
     async def test_deprecated_spider_arg_custom_collector_subclass(self) -> None:
         class CustomStatsCollector(StatsCollector):
-            def open_spider(self, spider):  # pylint: disable=signature-differs
+            def open_spider(self, spider):  # type: ignore[override]  # pylint: disable=signature-differs
                 super().open_spider(spider)
 
             def inc_value(self, key, count=1, start=0, spider=None):  # pylint: disable=useless-parent-delegation
                 super().inc_value(key, count, start, spider)
 
-            def close_spider(self, spider, reason):  # pylint: disable=signature-differs
+            def close_spider(self, spider, reason):  # type: ignore[override]  # pylint: disable=signature-differs
                 super().close_spider(spider, reason)
 
         crawler = get_crawler(SimpleSpider, {"STATS_CLASS": CustomStatsCollector})

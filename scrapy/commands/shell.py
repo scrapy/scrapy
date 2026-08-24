@@ -28,6 +28,7 @@ class Command(ScrapyCommand):
     default_settings: ClassVar[dict[str, Any]] = {
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "LOGSTATS_INTERVAL": 0,
+        "REMOTE_CONTROL_ENABLED": False,
     }
 
     def syntax(self) -> str:
