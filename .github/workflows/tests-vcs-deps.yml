@@ -20,7 +20,7 @@ jobs:
     env:
       # A development branch of a dependency can make a test hang forever, so
       # tests get a time limit here that they do not need elsewhere.
-      PYTEST_ADDOPTS: -n auto --no-cov --timeout=120
+      PYTEST_ADDOPTS: -n logical --no-cov --timeout=120
       TOXENV: vcs-deps
       UV_PYTHON_PREFERENCE: only-system
     steps:
