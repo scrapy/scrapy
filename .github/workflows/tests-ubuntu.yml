@@ -20,8 +20,9 @@ jobs:
     if: github.event.action != 'closed'
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
       # Make uv use the interpreter that actions/setup-python installed instead
       # of downloading one of its own.
       UV_PYTHON_PREFERENCE: only-system
