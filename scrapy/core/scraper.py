@@ -24,7 +24,7 @@ from scrapy.http import Request, Response
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io,
     _schedule_coro,
     aiter_errback,
     deferred_from_coro,
@@ -36,7 +36,11 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
-from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
+from scrapy.utils.misc import (
+    build_from_crawler,
+    load_object,
+    warn_on_generator_with_return_value,
+)
 from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iterate_spider_output
 
@@ -65,7 +69,7 @@ class Slot:
         self.queue: deque[QueueTuple] = deque()
         self.active: set[Request] = set()
         self.active_size: int = 0
-        self.itemproc_size: int = 0  # just for scrapy.utils.engine.get_engine_status()
+        self.itemproc_size: int = 0
         self.closing: Deferred[Spider] | None = None
 
     def add_response_request(
@@ -93,7 +97,7 @@ class Slot:
             self.active_size -= self.MIN_RESPONSE_SIZE
 
     def is_idle(self) -> bool:
-        return not (self.queue or self.active)
+        return not (self.queue or self.active or self.itemproc_size)
 
     def needs_backout(self) -> bool:
         return self.active_size > self.max_active_size
@@ -102,13 +106,13 @@ class Slot:
 class Scraper:
     def __init__(self, crawler: Crawler) -> None:
         self.slot: Slot | None = None
-        self.spidermw: SpiderMiddlewareManager = SpiderMiddlewareManager.from_crawler(
-            crawler
+        self.spidermw: SpiderMiddlewareManager = build_from_crawler(
+            SpiderMiddlewareManager, crawler
         )
         itemproc_cls: type[ItemPipelineManager] = load_object(
             crawler.settings["ITEM_PROCESSOR"]
         )
-        self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
+        self.itemproc: ItemPipelineManager = build_from_crawler(itemproc_cls, crawler)
         self._itemproc_has_async: dict[str, bool] = {}
         for method in [
             "open_spider",
@@ -120,7 +124,6 @@ class Scraper:
         self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
-        assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
 
     def _check_deprecated_itemproc_method(self, method: str) -> None:
@@ -309,7 +312,7 @@ class Scraper:
 
         .. versionadded:: 2.13
         """
-        await _defer_sleep_async()
+        await _process_pending_io()
         assert self.crawler.spider
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
@@ -355,7 +358,6 @@ class Scraper:
         assert self.crawler.spider
         exc = _failure.value
         if isinstance(exc, CloseSpider):
-            assert self.crawler.engine is not None  # typing
             _schedule_coro(
                 self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
             )
@@ -374,11 +376,9 @@ class Scraper:
             response=response,
             spider=self.crawler.spider,
         )
-        assert self.crawler.stats
-        self.crawler.stats.inc_value("spider_exceptions/count")
-        self.crawler.stats.inc_value(
-            f"spider_exceptions/{_failure.value.__class__.__name__}"
-        )
+        stats = self.crawler.stats
+        stats.inc_value("spider_exceptions/count")
+        stats.inc_value(f"spider_exceptions/{_failure.value.__class__.__name__}")
 
     def handle_spider_output(
         self,
@@ -456,7 +456,6 @@ class Scraper:
         Items are sent to the item pipelines, requests are scheduled.
         """
         if isinstance(output, Request):
-            assert self.crawler.engine is not None  # typing
             self.crawler.engine.crawl(request=output)
             return
         if output is not None:
@@ -476,6 +475,23 @@ class Scraper:
             stacklevel=2,
         )
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
+
+    def _start_itemproc_nowait(self, item: Any) -> None:
+        """Send *item* to the item pipelines without waiting for the outcome.
+
+        The scraper slot counts the item as being processed straight away, so
+        that the spider is not considered idle before the item pipelines have
+        had a chance to run.
+        """
+        assert self.slot is not None  # typing
+        self.slot.itemproc_size += 1
+        _schedule_coro(self._start_itemproc_nowait_async(item))
+
+    async def _start_itemproc_nowait_async(self, item: Any) -> None:
+        assert self.slot is not None  # typing
+        # start_itemproc_async() takes over the count of this item.
+        self.slot.itemproc_size -= 1
+        await self.start_itemproc_async(item, response=None)
 
     async def start_itemproc_async(
         self, item: Any, *, response: Response | Failure | None

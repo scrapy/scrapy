@@ -69,9 +69,10 @@ Example::
 precedence and override the project ones.
 
 .. note:: :ref:`Pre-crawler settings <pre-crawler-settings>` cannot be defined
-    per spider, and :ref:`reactor settings <reactor-settings>` should not have
-    a different value per spider when :ref:`running multiple spiders in the
-    same process <run-multiple-spiders>`.
+    per spider, and :ref:`reactor settings <reactor-settings>` and
+    :ref:`logging settings <logging-settings>` are subject to restrictions when
+    :ref:`running multiple spiders in the same process
+    <run-multiple-spiders>`.
 
 One way to do so is by setting their :attr:`~scrapy.Spider.custom_settings`
 attribute:
@@ -135,6 +136,10 @@ arguments <spiderargs>` or other logic:
 Scrapy projects include a settings module, usually a file called
 ``settings.py``, where you should populate most settings that apply to all your
 spiders.
+
+:func:`scrapy.utils.project.get_project_settings` returns these settings, e.g.
+to pass them to :class:`~scrapy.crawler.AsyncCrawlerProcess` when :ref:`running
+Scrapy from a script <run-from-script>`.
 
 .. seealso:: :ref:`topics-settings-module-envvar`
 
@@ -329,19 +334,28 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
-These settings can be defined from a spider. However, because only 1 reactor
-can be used per process, these settings cannot use a different value per spider
-when :ref:`running multiple spiders in the same process
-<run-multiple-spiders>`.
+Because only 1 reactor can be used per process, these settings cannot use a
+different value per spider when :ref:`running multiple spiders in the same
+process <run-multiple-spiders>`.
 
-In general, if different spiders define different values, the first defined
-value is used. However, if two spiders request a different reactor, an
-exception is raised.
-
-These settings are:
+These settings are used upon installing the reactor:
 
 -   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
     :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
+
+-   :setting:`TWISTED_REACTOR` (ignored when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
+
+They can be :ref:`set from a spider <spider-settings>`, but only the values
+from the first spider that runs are used, since that is when the reactor is
+installed. If a later spider asks for a different reactor or a different event
+loop, an exception is raised. With
+:class:`~scrapy.crawler.CrawlerRunner` and
+:class:`~scrapy.crawler.AsyncCrawlerRunner` the reactor must be installed
+beforehand, so these settings are only used to check that the installed reactor
+and event loop match them.
+
+These settings are applied when starting the reactor:
 
 -   :setting:`TWISTED_DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
@@ -349,12 +363,12 @@ These settings are:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
--   :setting:`TWISTED_REACTOR` (ignored when using
-    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
-
-:setting:`ASYNCIO_EVENT_LOOP` and :setting:`TWISTED_REACTOR` are used upon
-installing the reactor. The rest of the settings are applied when starting
-the reactor.
+They are read from the settings of the
+:class:`~scrapy.crawler.CrawlerProcess` or
+:class:`~scrapy.crawler.AsyncCrawlerProcess` object, so setting them from a
+spider or an :ref:`add-on <topics-addons>` has no effect. They are ignored
+altogether when using :class:`~scrapy.crawler.CrawlerRunner` or
+:class:`~scrapy.crawler.AsyncCrawlerRunner`, which do not start the reactor.
 
 There is an additional restriction for :setting:`TWISTED_REACTOR` and
 :setting:`ASYNCIO_EVENT_LOOP` when using
@@ -477,7 +491,7 @@ Endpoint URL used for S3-like storage, for example Minio or s3.scality.
 AWS_MAX_POOL_CONNECTIONS
 ------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``None``
 
@@ -575,7 +589,7 @@ CONCURRENT_REQUESTS
 Default: ``16``
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed by the Scrapy downloader.
+performed by the Scrapy downloader. Use ``0`` for no limit.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
@@ -654,9 +668,13 @@ The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
 
 .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-    :ref:`cookies-mw`. If you need to set cookies for a request, use the
-    :class:`Request.cookies <scrapy.Request>` parameter. This is a known
-    current limitation that is being worked on.
+    :ref:`cookie middleware <cookies>`. If you need to set cookies for a
+    request, use the :class:`Request.cookies <scrapy.Request>` parameter.
+
+.. caution:: A ``Referer`` header defined here only reaches requests for which
+    :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` does not set
+    one, such as start requests. To send it on every request, set
+    :setting:`REFERRER_POLICY` to ``"no-referrer"``.
 
 .. setting:: DEPTH_LIMIT
 
@@ -748,6 +766,11 @@ DNS_TIMEOUT
 Default: ``60``
 
 Timeout for processing of DNS queries in seconds. Float is supported.
+
+The timeout starts when the query is queued into the Twisted reactor thread
+pool, not when it is sent. If that thread pool is saturated, queries can time
+out before being sent, in which case increasing
+:setting:`REACTOR_THREADPOOL_MAXSIZE` helps more than increasing this setting.
 
 .. note::
     This setting is only used by
@@ -952,10 +975,6 @@ and only increase :setting:`DOWNLOAD_DELAY` once
 desired.
 
 .. _spider-download_delay-attribute:
-
-.. note::
-
-    This delay can be set per spider using :attr:`download_delay` spider attribute.
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
@@ -1361,6 +1380,7 @@ Default:
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
+        "scrapy.extensions.remote_control.RemoteControl": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -1378,7 +1398,7 @@ FEED_TEMPDIR
 Default: ``None``
 
 The Feed Temp dir allows you to set a custom folder to save crawler
-temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
+temporary files before uploading with :ref:`FTP feed storage <feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
 .. setting:: FEED_STORAGE_GCS_ACL
@@ -1484,6 +1504,28 @@ Default: ``None``
 
 The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
+.. setting:: HTTP2_MAX_FRAME_SIZE
+
+HTTP2_MAX_FRAME_SIZE
+--------------------
+
+.. versionadded:: VERSION
+
+Default: ``16384``
+
+Maximum `frame size`_, in bytes, that servers may send, between ``16384`` and
+``16777215``. Connections to servers that send a larger frame fail.
+
+Raise it for servers that send larger frames regardless of this value. Note
+that :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` are checked
+once per received frame, so a higher value allows a response to exceed them by
+more before being caught.
+
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` ignores
+this setting, as ``httpx`` does not allow configuring the frame size.
+
+.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
@@ -1513,6 +1555,20 @@ Default: ``{}``
 
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
+
+.. setting:: ITEM_PROCESSOR
+
+ITEM_PROCESSOR
+--------------
+
+Default: ``"scrapy.pipelines.ItemPipelineManager"``
+
+The :ref:`component <topics-components>` that builds the :ref:`item pipeline
+<topics-item-pipeline>` from :setting:`ITEM_PIPELINES` and runs scraped items
+through it. It must implement :class:`~scrapy.pipelines.ItemProcessorProtocol`.
+
+.. autoclass:: scrapy.pipelines.ItemProcessorProtocol
+    :members:
 
 
 .. setting:: JOBDIR
@@ -1907,6 +1963,7 @@ Type of in-memory queue used by the scheduler. Other available type is:
 
 
 .. setting:: SCHEDULER_PRIORITY_QUEUE
+.. _broad-crawls-scheduler-priority-queue:
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
@@ -2136,7 +2193,7 @@ Default: ``templates`` dir inside scrapy module
 
 The directory where to look for templates when creating new projects with
 :command:`startproject` command and new spiders with :command:`genspider`
-command.
+command. See :ref:`spider-templates`.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
@@ -2331,6 +2388,11 @@ The default User-Agent to use when crawling, unless overridden. This user agent 
 also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
+
+Set it to a value that identifies you, including a URL or an email address
+where website owners can reach you, e.g. ``"MyProject
+(+https://example.com/bot)"``, so that they can ask you to adjust your crawler
+rather than block it.
 
 .. setting:: WARN_ON_GENERATOR_RETURN_VALUE
 

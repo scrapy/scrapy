@@ -9,17 +9,22 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import pytest
 
 from scrapy import Request
-from scrapy.core.downloader.handlers._httpx import (
+from scrapy.core.downloader.handlers._httpx import (  # type: ignore[attr-defined]
     HAS_HTTP2,
     HAS_SOCKS,
     HttpxDownloadHandler,
+    httpx,
 )
 from scrapy.exceptions import DownloadFailedError
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
+from tests import IDNA_REJECTED_HOSTNAMES
 from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
     TestHttpsBase,
     TestHttpsCustomCiphersBase,
+    TestHttpsDefaultCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
     TestHttpsTLSVersionBase,
@@ -32,14 +37,29 @@ from tests.utils.bases.download_handlers_http import (
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
+    from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
 
 pytestmark = pytest.mark.only_asyncio
 
 if find_spec("httpx2") is None and find_spec("httpx") is None:
     pytest.skip("Neither httpx2 nor httpx are installed", allow_module_level=True)
+
+# httpx2 < 2.4.0 reads URL.host through idna.decode() without display=True when
+# building the Host header, which raises for punycode labels that IDNA 2008
+# rejects. https://github.com/pydantic/httpx2/pull/1018
+# This check can be dropped once the httpx2 requirement is bumped to >= 2.4.0.
+try:
+    for _hostname in IDNA_REJECTED_HOSTNAMES:
+        _ = httpx.URL(f"http://{_hostname}").host
+except Exception:
+    HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES = False
+else:
+    HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES = True
 
 
 class HttpxDownloadHandlerMixin:
@@ -59,6 +79,8 @@ class HttpxDownloadHandlerMixin:
 
 class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
     handler_supports_bindaddress_meta = False
+    handler_bad_header_handling = "fail"
+    handler_supports_idna_rejected_hostnames = HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES
 
     @pytest.mark.skipif(
         sys.platform == "darwin",
@@ -80,6 +102,8 @@ class TestHttp(HttpxDownloadHandlerMixin, TestHttpBase):
 
 class TestHttps(HttpxDownloadHandlerMixin, TestHttpsBase):
     handler_supports_bindaddress_meta = False
+    handler_bad_header_handling = "fail"
+    handler_supports_idna_rejected_hostnames = HTTPX_SUPPORTS_IDNA_REJECTED_HOSTNAMES
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
 
     @pytest.mark.skip(reason="The check is Twisted-specific")
@@ -133,6 +157,10 @@ class TestHttpsCustomCiphers(HttpxDownloadHandlerMixin, TestHttpsCustomCiphersBa
     pass
 
 
+class TestHttpsDefaultCiphers(HttpxDownloadHandlerMixin, TestHttpsDefaultCiphersBase):
+    pass
+
+
 class TestHttpsTLSVersion(HttpxDownloadHandlerMixin, TestHttpsTLSVersionBase):
     pass
 
@@ -152,6 +180,22 @@ class TestHttpProxy(HttpxDownloadHandlerMixin, TestHttpProxyBase):
 class TestHttpsProxy(TestHttpProxy):
     is_secure = True
 
+    @coroutine_test
+    async def test_keylog(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        proxy_mockserver: ProxyEchoMockServer,
+        tmp_path: Path,
+    ) -> None:
+        keylog_file = tmp_path / "keylog"
+        monkeypatch.setenv("SSLKEYLOGFILE", str(keylog_file))
+        http_proxy = proxy_mockserver.url("", is_secure=True)
+        request = Request("http://example.com", meta={"proxy": http_proxy})
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == self.expected_http_proxy_request_body
+        assert keylog_file.read_text()
+
 
 @pytest.mark.requires_mitmproxy
 class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
@@ -161,3 +205,15 @@ class TestMitmProxy(HttpxDownloadHandlerMixin, TestMitmProxyBase):
 @pytest.mark.requires_internet
 class TestRealWebsite(HttpxDownloadHandlerMixin, TestRealWebsiteBase):
     pass
+
+
+@pytest.mark.parametrize(("concurrency", "expected"), [(16, 16), (0, None)])
+@coroutine_test
+async def test_pool_limits(concurrency: int, expected: int | None) -> None:
+    crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS": concurrency})
+    handler = build_from_crawler(HttpxDownloadHandler, crawler)
+    try:
+        assert handler._limits.max_connections == expected
+        assert handler._limits.max_keepalive_connections == expected
+    finally:
+        await handler.close()

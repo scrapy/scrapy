@@ -157,7 +157,7 @@ class TestMailSender:
         mailsender = MailSender(debug=False, smtphost="smtp.testhost.com")
 
         factory = mailsender._create_sender_factory(
-            to_addrs=["test@scrapy.org"], msg="test", d=defer.Deferred()
+            to_addrs=["test@scrapy.org"], msg=BytesIO(b"test"), d=defer.Deferred()
         )
 
         context = factory.buildProtocol("test@scrapy.org").context

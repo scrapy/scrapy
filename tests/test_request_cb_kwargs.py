@@ -49,6 +49,7 @@ class InjectArgumentsSpiderMiddleware:
         async for element in result:
             if (
                 isinstance(element, Request)
+                and element.callback
                 and element.callback.__name__ == "parse_spider_mw_2"
             ):
                 element.cb_kwargs["from_process_spider_output"] = True
@@ -68,7 +69,11 @@ class KeywordArgumentsSpider(MockServerSpider):
 
     checks: list[bool] = []
 
+    def _inc_checks(self, count: int = 1) -> None:
+        self.crawler.stats.inc_value("boolean_checks", count)
+
     async def start(self):
+        assert self.mockserver
         data = {"key": "value", "number": 123, "callback": "some_callback"}
         yield Request(self.mockserver.url("/first"), self.parse_first, cb_kwargs=data)
         yield Request(
@@ -89,9 +94,10 @@ class KeywordArgumentsSpider(MockServerSpider):
         yield Request(self.mockserver.url("/spider_mw"), self.parse_spider_mw)
 
     def parse_first(self, response, key, number):
+        assert self.mockserver
         self.checks.append(key == "value")
         self.checks.append(number == 123)
-        self.crawler.stats.inc_value("boolean_checks", 2)
+        self._inc_checks(2)
         yield response.follow(
             self.mockserver.url("/two"),
             self.parse_second,
@@ -100,28 +106,28 @@ class KeywordArgumentsSpider(MockServerSpider):
 
     def parse_second(self, response, new_key):
         self.checks.append(new_key == "new_value")
-        self.crawler.stats.inc_value("boolean_checks")
+        self._inc_checks()
 
     def parse_general(self, response, **kwargs):
         if response.url.endswith("/general_with"):
             self.checks.append(kwargs["key"] == "value")
             self.checks.append(kwargs["number"] == 123)
             self.checks.append(kwargs["callback"] == "some_callback")
-            self.crawler.stats.inc_value("boolean_checks", 3)
+            self._inc_checks(3)
         elif response.url.endswith("/general_without"):
             self.checks.append(kwargs == {})
-            self.crawler.stats.inc_value("boolean_checks")
+            self._inc_checks()
 
     def parse_no_kwargs(self, response):
         self.checks.append(response.url.endswith("/no_kwargs"))
-        self.crawler.stats.inc_value("boolean_checks")
+        self._inc_checks()
 
     def parse_default(self, response, key, number=None, default=99):
         self.checks.append(response.url.endswith("/default"))
         self.checks.append(key == "value")
         self.checks.append(number == 123)
         self.checks.append(default == 99)
-        self.crawler.stats.inc_value("boolean_checks", 4)
+        self._inc_checks(4)
 
     def parse_takes_less(self, response, key, callback):
         """
@@ -140,17 +146,18 @@ class KeywordArgumentsSpider(MockServerSpider):
     ):
         self.checks.append(bool(from_process_request))
         self.checks.append(bool(from_process_response))
-        self.crawler.stats.inc_value("boolean_checks", 2)
+        self._inc_checks(2)
 
     def parse_spider_mw(self, response, from_process_spider_input, from_process_start):
+        assert self.mockserver
         self.checks.append(bool(from_process_spider_input))
         self.checks.append(bool(from_process_start))
-        self.crawler.stats.inc_value("boolean_checks", 2)
+        self._inc_checks(2)
         return Request(self.mockserver.url("/spider_mw_2"), self.parse_spider_mw_2)
 
     def parse_spider_mw_2(self, response, from_process_spider_output):
         self.checks.append(bool(from_process_spider_output))
-        self.crawler.stats.inc_value("boolean_checks", 1)
+        self._inc_checks()
 
 
 class TestCallbackKeywordArguments:
@@ -163,7 +170,6 @@ class TestCallbackKeywordArguments:
             await crawler.crawl_async(mockserver=mockserver)
         assert isinstance(crawler.spider, KeywordArgumentsSpider)
         assert all(crawler.spider.checks)
-        assert crawler.stats
         assert len(crawler.spider.checks) == crawler.stats.get_value("boolean_checks")
         # check exceptions for argument mismatch
         exceptions = {}

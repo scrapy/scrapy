@@ -37,6 +37,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times: dict[str, list[float]] = {}
 
     async def start(self):
+        assert self.mockserver
         slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
@@ -44,6 +45,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
             yield Request(url, callback=self.parse, meta={"download_slot": slot})
 
     def parse(self, response):
+        assert self.mockserver
         slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
@@ -54,36 +56,37 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times[slot].append(time.time())
 
 
-class TestCrawl:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
+class NoDelayDownloaderSlotsSpider(DownloaderSlotsSettingsTestSpider):
+    custom_settings = {
+        "DOWNLOAD_SLOTS": {
+            slot: {}
+            for slot in DownloaderSlotsSettingsTestSpider.custom_settings[
+                "DOWNLOAD_SLOTS"
+            ]
+        },
+    }
 
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
 
-    @inline_callbacks_test
-    def test_delay(self):
-        crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
-        yield crawler.crawl(mockserver=self.mockserver)
-        slots = crawler.engine.downloader.slots
-        times = crawler.spider.times
-        tolerance = 0.3
+@inline_callbacks_test
+def test_delay(mockserver: MockServer):
+    crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
+    yield crawler.crawl(mockserver=mockserver)
+    assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
+    slots = crawler.engine.downloader.slots
+    times = crawler.spider.times
+    # Downloading and processing a response add a roughly constant amount
+    # of time on top of the configured delay, so the margin is absolute.
+    # It stays well below the 1 second that separates the delays being
+    # compared, so a slot using the delay of another one still fails.
+    tolerance = 0.75
 
-        delays_real = {k: v[1] - v[0] for k, v in times.items()}
-        error_delta = {
-            k: 1 - min(delays_real[k], v.delay) / max(delays_real[k], v.delay)
-            for k, v in slots.items()
-        }
-
-        assert max(list(error_delta.values())) < tolerance
+    for slot, (first, second) in times.items():
+        assert abs((second - first) - slots[slot].delay) < tolerance
 
 
 @coroutine_test
 async def test_params():
-    params = {
+    params: dict[str, Any] = {
         "concurrency": 1,
         "delay": 2,
         "randomize_delay": False,
@@ -138,18 +141,17 @@ async def test_none_slot_with_priority_queue(
 ) -> None:
     """Test specific cases for None slot handling with different priority queues."""
     crawler = get_crawler(
-        DownloaderSlotsSettingsTestSpider,
+        NoDelayDownloaderSlotsSpider,
         settings_dict={"SCHEDULER_PRIORITY_QUEUE": priority_queue_class},
     )
     await crawler.crawl_async(mockserver=mockserver)
-    assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
+    assert isinstance(crawler.spider, NoDelayDownloaderSlotsSpider)
 
     assert hasattr(crawler.spider, "times")
     assert None not in crawler.spider.times
     assert crawler.spider.default_slot in crawler.spider.times
     assert len(crawler.spider.times[crawler.spider.default_slot]) == 2
 
-    assert crawler.stats
     stats = crawler.stats
     assert stats.get_value("spider_exceptions", 0) == 0
     assert stats.get_value("downloader/exception_count", 0) == 0

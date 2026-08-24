@@ -35,6 +35,13 @@ how you :ref:`configure the downloader middlewares
     :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
 
+    The :attr:`engine`, :attr:`extensions`, :attr:`logformatter`,
+    :attr:`request_fingerprinter` and :attr:`stats` attributes get their value
+    when the crawl starts, and raise :exc:`RuntimeError` when read before that.
+
+    .. versionchanged:: 2.18.0
+        Those attributes used to be ``None`` before getting their value.
+
     .. attribute:: request_fingerprinter
 
         The request fingerprint builder of this crawler.
@@ -74,6 +81,8 @@ how you :ref:`configure the downloader middlewares
         For an introduction on stats collection see :ref:`topics-stats`.
 
         For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
+
+    .. autoattribute:: logformatter
 
     .. attribute:: extensions
 
@@ -156,6 +165,8 @@ Settings API
     :ref:`topics-settings`.
 
 .. autofunction:: get_settings_priority
+
+.. autofunction:: scrapy.utils.project.get_project_settings
 
 .. autoclass:: Settings
    :show-inheritance:

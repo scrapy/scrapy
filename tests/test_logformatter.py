@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from twisted.python.failure import Failure
@@ -11,6 +11,7 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.logformatter import LogFormatter
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.spiders import ItemSpider
 from tests.utils.decorators import coroutine_test
@@ -28,9 +29,9 @@ class CustomItem(Item):
 
 class TestLogFormatter:
     def setup_method(self):
-        self.formatter = LogFormatter()
-        self.spider = Spider("default")
-        self.spider.crawler = get_crawler()
+        crawler = get_crawler()
+        self.formatter = build_from_crawler(LogFormatter, crawler)
+        self.spider = Spider.from_crawler(crawler, "default")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
@@ -62,7 +63,7 @@ class TestLogFormatter:
         )
 
     def test_dropped(self):
-        item = {}
+        item: dict[str, Any] = {}
         exception = Exception("\u2018")
         response = Response("http://www.example.com")
         logkws = self.formatter.dropped(item, exception, response, self.spider)
@@ -72,11 +73,10 @@ class TestLogFormatter:
         assert lines == ["Dropped: \u2018", "{}"]
 
     def test_dropitem_default_log_level(self):
-        item = {}
+        item: dict[str, Any] = {}
         exception = DropItem("Test drop")
         response = Response("http://www.example.com")
-        spider = Spider("foo")
-        spider.crawler = get_crawler(Spider)
+        spider = Spider.from_crawler(get_crawler(Spider), "foo")
 
         logkws = self.formatter.dropped(item, exception, response, spider)
         assert logkws["level"] == logging.WARNING
@@ -116,7 +116,7 @@ class TestLogFormatter:
             logging.log(logkws["level"], "message")  # noqa: LOG015
 
     def test_dropitem_custom_log_level(self):
-        item = {}
+        item: dict[str, Any] = {}
         response = Response("http://www.example.com")
 
         exception = DropItem("Test drop", log_level="INFO")
@@ -187,7 +187,7 @@ class LogFormatterSubclass(LogFormatter):
     def crawled(self, request, response, spider):
         kwargs = super().crawled(request, response, spider)
         CRAWLEDMSG = "Crawled (%(status)s) %(request)s (referer: %(referer)s) %(flags)s"
-        log_args = kwargs["args"]
+        log_args = cast("dict[str, Any]", kwargs["args"])
         log_args["flags"] = str(request.flags)
         return {
             "level": kwargs["level"],
@@ -198,9 +198,9 @@ class LogFormatterSubclass(LogFormatter):
 
 class TestLogformatterSubclass(TestLogFormatter):
     def setup_method(self):
-        self.formatter = LogFormatterSubclass()
-        self.spider = Spider("default")
-        self.spider.crawler = get_crawler(Spider)
+        crawler = get_crawler(Spider)
+        self.formatter = build_from_crawler(LogFormatterSubclass, crawler)
+        self.spider = Spider.from_crawler(crawler, "default")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com")
@@ -259,7 +259,7 @@ class DropSomeItemsPipeline:
 
 class TestShowOrSkipMessages:
     def setup_method(self):
-        self.base_settings = {
+        self.base_settings: dict[str, Any] = {
             "LOG_LEVEL": "DEBUG",
             "ITEM_PIPELINES": {
                 DropSomeItemsPipeline: 300,

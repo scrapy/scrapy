@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from contextlib import suppress
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, cast
 
 from scrapy.utils.misc import build_from_crawler
@@ -258,7 +260,6 @@ class ScrapyPriorityQueue:
 
 class DownloaderInterface:
     def __init__(self, crawler: Crawler):
-        assert crawler.engine
         self.downloader: Downloader = crawler.engine.downloader
 
     def stats(self, possible_slots: Iterable[str]) -> list[tuple[int, str]]:
@@ -404,6 +405,11 @@ class DownloaderAwarePriorityQueue:
         request = queue.pop()
         if len(queue) == 0:
             del self.pqueues[slot]
+            if self.key:
+                # Reclaim the slot directory; rmdir leaves it alone if the
+                # downstream queues did not remove all their files.
+                with suppress(OSError):
+                    Path(self.key, _path_safe(slot)).rmdir()
         return request
 
     def push(self, request: Request) -> None:

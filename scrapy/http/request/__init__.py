@@ -50,7 +50,9 @@ class VerboseCookie(TypedDict):
     secure: NotRequired[bool]
 
 
-CookiesT: TypeAlias = dict[str | bytes, str | bytes] | list[VerboseCookie]
+CookiesT: TypeAlias = (
+    dict[str | bytes, str | bytes | bool | float | int] | list[VerboseCookie]
+)
 
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
@@ -394,7 +396,7 @@ class Request(object_ref):
         Inverse of :meth:`from_curl`. See also
         :func:`scrapy.utils.request.request_to_curl`.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.18.0
         """
         # Imported here to avoid a circular import.
         from scrapy.utils.request import request_to_curl  # noqa: PLC0415

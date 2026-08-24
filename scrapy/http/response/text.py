@@ -84,9 +84,21 @@ class TextResponse(Response):
         )
 
     def json(self) -> Any:
-        """Deserialize a JSON document to a Python object."""
+        """Deserialize a JSON document to a Python object.
+
+        .. versionchanged:: 2.18.0
+           Bodies that cannot be decoded as UTF-8, UTF-16 or UTF-32, as the
+           JSON specification requires, are now decoded using
+           :attr:`TextResponse.encoding` instead of raising
+           :exc:`UnicodeDecodeError`.
+
+        The result is cached after the first call.
+        """
         if self._cached_decoded_json is _NONE:
-            self._cached_decoded_json = json.loads(self.body)
+            try:
+                self._cached_decoded_json = json.loads(self.body)
+            except UnicodeDecodeError:
+                self._cached_decoded_json = json.loads(self.text)
         return self._cached_decoded_json
 
     @property
@@ -264,6 +276,9 @@ class TextResponse(Response):
         using the ``css`` or ``xpath`` parameters, this method will not produce requests for
         selectors from which links cannot be obtained (for instance, anchor tags without an
         ``href`` attribute)
+
+        .. seealso:: :meth:`.Response.follow_all`, for a caution about mutable
+            *meta* and *cb_kwargs* values.
         """
         arguments = [x for x in (urls, css, xpath) if x is not None]
         if len(arguments) != 1:

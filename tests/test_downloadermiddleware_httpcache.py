@@ -17,6 +17,7 @@ from scrapy.exceptions import IgnoreRequest
 from scrapy.extensions.httpcache import DummyPolicy
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -71,7 +72,6 @@ class TestBase:
         settings = self._get_settings(**new_settings)
         crawler = get_crawler(Spider, settings)
         crawler.spider = crawler._create_spider("example.com")
-        assert crawler.stats
         crawler.stats.open_spider()
         try:
             yield crawler
@@ -87,21 +87,21 @@ class TestBase:
     def _middleware(self, **new_settings: Any) -> Generator[HttpCacheMiddleware]:
         with self._get_crawler(**new_settings) as crawler:
             assert crawler.spider
-            mw = HttpCacheMiddleware.from_crawler(crawler)
+            mw = build_from_crawler(HttpCacheMiddleware, crawler)
             mw.spider_opened(crawler.spider)
             try:
                 yield mw
             finally:
                 mw.spider_closed(crawler.spider)
 
-    def assertEqualResponse(self, response1, response2):
+    def assertEqualResponse(self, response1: Response, response2: Response) -> None:
         assert response1.url == response2.url
         assert response1.status == response2.status
         assert response1.headers == response2.headers
         assert response1.body == response2.body
 
 
-class StorageTestMixin:
+class StorageTestMixin(TestBase):
     """Mixin containing storage-specific test methods."""
 
     def _corrupt_cache_entry(
@@ -111,7 +111,7 @@ class StorageTestMixin:
         raise NotImplementedError
 
     def test_storage(self):
-        with self._storage(HTTPCACHE_EXPIRATION_SECS=1) as (storage, crawler):
+        with self._storage(HTTPCACHE_EXPIRATION_SECS=100) as (storage, crawler):
             request2 = self.request.copy()
             assert storage.retrieve_response(crawler.spider, request2) is None
 
@@ -135,6 +135,7 @@ class StorageTestMixin:
     def test_corrupted_cache_entry_is_a_miss(self, caplog):
         with self._middleware() as mw:
             spider = mw.crawler.spider
+            assert spider
             mw.storage.store_response(spider, self.request, self.response)
             self._corrupt_cache_entry(mw.storage, spider, self.request)
 
@@ -155,6 +156,7 @@ class StorageTestMixin:
     def test_corrupted_cache_entry_ignore_missing(self):
         with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
             spider = mw.crawler.spider
+            assert spider
             mw.storage.store_response(spider, self.request, self.response)
             self._corrupt_cache_entry(mw.storage, spider, self.request)
 
@@ -180,7 +182,7 @@ class StorageTestMixin:
             self.assertEqualResponse(response, cached_response)
 
 
-class PolicyTestMixin:
+class PolicyTestMixin(TestBase):
     """Mixin containing policy-specific test methods."""
 
     def test_dont_cache(self):
@@ -302,6 +304,7 @@ class DummyPolicyTestMixin(PolicyTestMixin):
             assert mw.process_request(self.request) is None
             fresh_response = self.response.replace(body=b"new body")
             response = mw.process_response(self.request, fresh_response)
+            assert isinstance(response, Response)
             self.assertEqualResponse(self.response, response)
             assert "cached" in response.flags
             assert mw.stats.get_value("httpcache/revalidate") == 1
@@ -313,12 +316,12 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
     @staticmethod
     def _process_requestresponse(
         mw: HttpCacheMiddleware, request: Request, response: Response | None
-    ) -> Response | Request:
-        result = None
+    ) -> Response:
+        result: Request | Response | None = None
         try:
             result = mw.process_request(request)
             if result:
-                assert isinstance(result, (Request, Response))
+                assert isinstance(result, Response)
                 return result
             assert response is not None
             result = mw.process_response(request, response)
@@ -346,6 +349,7 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
             res2 = self._process_requestresponse(mw, req0, res0)
             assert "cached" not in res2.flags
             res3 = mw.process_request(req0)
+            assert isinstance(res3, Response)
             assert "cached" in res3.flags
             self.assertEqualResponse(res2, res3)
             # request with no-cache directive must not return cached response
@@ -634,6 +638,7 @@ class RFC2616PolicyTestMixin(PolicyTestMixin):
                 assert mw.process_request(req0) is None
                 res1 = mw.process_exception(req0, e("foo"))
                 # Use cached response as recovery
+                assert isinstance(res1, Response)
                 assert "cached" in res1.flags
                 self.assertEqualResponse(res0, res1)
             # Do not use cached response for unhandled exceptions
@@ -684,26 +689,22 @@ class DbmStorageTestMixin(StorageTestMixin):
 
 
 class TestFilesystemStorageWithDummyPolicy(
-    TestBase, FilesystemStorageTestMixin, DummyPolicyTestMixin
+    FilesystemStorageTestMixin, DummyPolicyTestMixin
 ):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
 
 class TestFilesystemStorageWithRFC2616Policy(
-    TestBase, FilesystemStorageTestMixin, RFC2616PolicyTestMixin
+    FilesystemStorageTestMixin, RFC2616PolicyTestMixin
 ):
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
 
-class TestDbmStorageWithDummyPolicy(
-    TestBase, DbmStorageTestMixin, DummyPolicyTestMixin
-):
+class TestDbmStorageWithDummyPolicy(DbmStorageTestMixin, DummyPolicyTestMixin):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
 
-class TestDbmStorageWithRFC2616Policy(
-    TestBase, DbmStorageTestMixin, RFC2616PolicyTestMixin
-):
+class TestDbmStorageWithRFC2616Policy(DbmStorageTestMixin, RFC2616PolicyTestMixin):
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
 
