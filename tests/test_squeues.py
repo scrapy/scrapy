@@ -22,6 +22,16 @@ from scrapy.squeues import (
     _serializable_queue,
 )
 
+# The disk and SQLite queue classes are built at run time, so they are untyped.
+_MarshalFifoQueue: Any = _MarshalFifoSerializationDiskQueue
+_MarshalLifoQueue: Any = _MarshalLifoSerializationDiskQueue
+_PickleFifoQueue: Any = _PickleFifoSerializationDiskQueue
+_PickleLifoQueue: Any = _PickleLifoSerializationDiskQueue
+_MarshalFifoSQLiteQueue: Any = _MarshalFifoSerializationSQLiteQueue
+_MarshalLifoSQLiteQueue: Any = _MarshalLifoSerializationSQLiteQueue
+_PickleFifoSQLiteQueue: Any = _PickleFifoSerializationSQLiteQueue
+_PickleLifoSQLiteQueue: Any = _PickleLifoSerializationSQLiteQueue
+
 
 class MyItem(Item):
     name = Field()
@@ -75,6 +85,9 @@ def nonserializable_object_test(self):
 
 
 class FifoQueueTestMixin:
+    def queue(self) -> Any:
+        raise NotImplementedError
+
     def test_serialize(self):
         q = self.queue()
         q.push("a")
@@ -91,8 +104,8 @@ class FifoQueueTestMixin:
 class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest, FifoQueueTestMixin):
     chunksize = 100000
 
-    def queue(self):
-        return _MarshalFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
+    def queue(self) -> Any:
+        return _MarshalFifoQueue(self.qpath, chunksize=self.chunksize)
 
 
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
@@ -114,8 +127,8 @@ class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
 class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoQueueTestMixin):
     chunksize = 100000
 
-    def queue(self):
-        return _PickleFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
+    def queue(self) -> Any:
+        return _PickleFifoQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -184,6 +197,9 @@ class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
 
 
 class LifoQueueTestMixin:
+    def queue(self) -> Any:
+        raise NotImplementedError
+
     def test_serialize(self):
         q = self.queue()
         q.push("a")
@@ -198,13 +214,13 @@ class LifoQueueTestMixin:
 
 
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoQueueTestMixin):
-    def queue(self):
-        return _MarshalLifoSerializationDiskQueue(self.qpath)
+    def queue(self) -> Any:
+        return _MarshalLifoQueue(self.qpath)
 
 
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoQueueTestMixin):
-    def queue(self):
-        return _PickleLifoSerializationDiskQueue(self.qpath)
+    def queue(self) -> Any:
+        return _PickleLifoQueue(self.qpath)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -238,20 +254,20 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoQueueTestMixin):
 
 
 class MarshalFifoSQLiteQueueTest(t.FifoSQLiteQueueTest, FifoQueueTestMixin):
-    def queue(self):
-        return _MarshalFifoSerializationSQLiteQueue(self.qpath)
+    def queue(self) -> Any:
+        return _MarshalFifoSQLiteQueue(self.qpath)
 
 
 class PickleFifoSQLiteQueueTest(t.FifoSQLiteQueueTest, FifoQueueTestMixin):
-    def queue(self):
-        return _PickleFifoSerializationSQLiteQueue(self.qpath)
+    def queue(self) -> Any:
+        return _PickleFifoSQLiteQueue(self.qpath)
 
 
 class MarshalLifoSQLiteQueueTest(t.LifoSQLiteQueueTest, LifoQueueTestMixin):
-    def queue(self):
-        return _MarshalLifoSerializationSQLiteQueue(self.qpath)
+    def queue(self) -> Any:
+        return _MarshalLifoSQLiteQueue(self.qpath)
 
 
 class PickleLifoSQLiteQueueTest(t.LifoSQLiteQueueTest, LifoQueueTestMixin):
-    def queue(self):
-        return _PickleLifoSerializationSQLiteQueue(self.qpath)
+    def queue(self) -> Any:
+        return _PickleLifoSQLiteQueue(self.qpath)

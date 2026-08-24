@@ -137,6 +137,10 @@ Scrapy projects include a settings module, usually a file called
 ``settings.py``, where you should populate most settings that apply to all your
 spiders.
 
+:func:`scrapy.utils.project.get_project_settings` returns these settings, e.g.
+to pass them to :class:`~scrapy.crawler.AsyncCrawlerProcess` when :ref:`running
+Scrapy from a script <run-from-script>`.
+
 .. seealso:: :ref:`topics-settings-module-envvar`
 
 .. _addon-settings:
@@ -487,7 +491,7 @@ Endpoint URL used for S3-like storage, for example Minio or s3.scality.
 AWS_MAX_POOL_CONNECTIONS
 ------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``None``
 
@@ -1376,6 +1380,7 @@ Default:
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
+        "scrapy.extensions.remote_control.RemoteControl": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -2199,7 +2204,7 @@ Default: ``templates`` dir inside scrapy module
 
 The directory where to look for templates when creating new projects with
 :command:`startproject` command and new spiders with :command:`genspider`
-command.
+command. See :ref:`spider-templates`.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from scrapy import Spider, signals
+from scrapy.utils.asyncio import sleep as scrapy_sleep
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
@@ -22,18 +23,26 @@ ITEM_B = {"id": "b"}
 
 
 async def _test_spider(
-    spider: type[Spider], expected_items: list[Any] | None = None
+    spider: type[Spider],
+    expected_items: list[Any] | None = None,
+    settings: dict[str, Any] | None = None,
+    *,
+    ordered: bool = True,
 ) -> None:
-    actual_items = []
+    actual_items: list[Any] = []
     expected_items = [] if expected_items is None else expected_items
 
-    def track_item(item, response, spider):
+    def track_item(item: Any, response: Any, spider: Spider) -> None:
         actual_items.append(item)
 
-    crawler = get_crawler(spider)
+    crawler = get_crawler(spider, settings)
     crawler.signals.connect(track_item, signals.item_scraped)
     await crawler.crawl_async()
     assert crawler.stats.get_value("finish_reason") == "finished"
+    if not ordered:
+        actual_items = sorted(actual_items, key=repr)
+        expected_items = sorted(expected_items, key=repr)
+
     assert actual_items == expected_items
 
 
@@ -101,3 +110,25 @@ async def test_twisted_delayed() -> None:
         yield ITEM_A
 
     await _test_start(start, [ITEM_A])
+
+
+@coroutine_test
+async def test_slow_pipeline() -> None:
+    class SlowPipeline:
+        async def process_item(self, item):
+            await scrapy_sleep(SLEEP_SECONDS)
+            return item
+
+    class TestSpider(Spider):
+        name = "test"
+
+        async def start(self):
+            yield ITEM_A
+            yield ITEM_B
+
+    await _test_spider(
+        TestSpider,
+        [ITEM_A, ITEM_B],
+        {"ITEM_PIPELINES": {SlowPipeline: 0}},
+        ordered=False,
+    )

@@ -147,8 +147,8 @@ class TestPickleFifoSQLiteQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        queue = PickleFifoSQLiteQueue.from_crawler(
-            crawler=crawler, key=str(tmp_path / "pickle" / "fifo")
+        queue = build_from_crawler(
+            PickleFifoSQLiteQueue, crawler, key=str(tmp_path / "pickle" / "fifo")
         )
         try:
             yield queue
@@ -161,8 +161,8 @@ class TestPickleLifoSQLiteQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        queue = PickleLifoSQLiteQueue.from_crawler(
-            crawler=crawler, key=str(tmp_path / "pickle" / "lifo")
+        queue = build_from_crawler(
+            PickleLifoSQLiteQueue, crawler, key=str(tmp_path / "pickle" / "lifo")
         )
         try:
             yield queue
@@ -175,8 +175,8 @@ class TestMarshalFifoSQLiteQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        queue = MarshalFifoSQLiteQueue.from_crawler(
-            crawler=crawler, key=str(tmp_path / "marshal" / "fifo")
+        queue = build_from_crawler(
+            MarshalFifoSQLiteQueue, crawler, key=str(tmp_path / "marshal" / "fifo")
         )
         try:
             yield queue
@@ -189,8 +189,8 @@ class TestMarshalLifoSQLiteQueueRequest(TestRequestQueueBase):
 
     @pytest.fixture
     def q(self, crawler, tmp_path):
-        queue = MarshalLifoSQLiteQueue.from_crawler(
-            crawler=crawler, key=str(tmp_path / "marshal" / "lifo")
+        queue = build_from_crawler(
+            MarshalLifoSQLiteQueue, crawler, key=str(tmp_path / "marshal" / "lifo")
         )
         try:
             yield queue
