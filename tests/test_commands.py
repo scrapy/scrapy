@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import pdb  # noqa: T100
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
+from twisted.python import failure
 
 import scrapy
 from scrapy.cmdline import _pop_command_name, execute
@@ -96,6 +98,15 @@ class TestCommandSettings:
         assert self.command.settings is not None
         assert isinstance(self.command.settings["FEEDS"], scrapy.settings.BaseSettings)
         assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
+
+    def test_pdb_uses_ipdb_if_installed(self, monkeypatch):
+        monkeypatch.setattr(failure, "startDebugMode", lambda: None)
+        fake_ipdb: Any = argparse.Namespace(post_mortem=lambda tb: None)
+        monkeypatch.setitem(sys.modules, "pdb", pdb)
+        monkeypatch.setitem(sys.modules, "ipdb", fake_ipdb)
+        opts, args = self.parser.parse_known_args(args=["--pdb", "spider.py"])
+        self.command.process_options(args, opts)
+        assert sys.modules["pdb"] is fake_ipdb
 
     def test_help_formatter(self):
         formatter = ScrapyHelpFormatter(prog="scrapy")
