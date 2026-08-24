@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import pdb  # noqa: T100
 import sys
 from pathlib import Path
@@ -103,8 +104,12 @@ class TestCommandSettings:
         monkeypatch.setitem(sys.modules, "pdb", pdb)
         monkeypatch.setitem(sys.modules, "ipdb", fake_ipdb)
         opts, args = self.parser.parse_known_args(args=["--pdb", "spider.py"])
-        self.command.process_options(args, opts)
-        assert sys.modules["pdb"] is fake_ipdb
+        handlers = logging.root.handlers[:]
+        try:
+            self.command.process_options(args, opts)
+            assert sys.modules["pdb"] is fake_ipdb
+        finally:
+            logging.root.handlers[:] = handlers
 
     def test_help_formatter(self):
         formatter = ScrapyHelpFormatter(prog="scrapy")
