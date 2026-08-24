@@ -73,7 +73,18 @@ class BaseItemExporter(ABC):
 
     def _serialize_value(self, value: Any) -> Any:
         if is_item(value):
-            return dict(self.get_serialized_fields(value))
+            adapter = ItemAdapter(value)
+            field_names = (
+                adapter.field_names()
+                if self.export_empty_fields
+                else self._get_populated_field_names(adapter)
+            )
+            return {
+                name: self.serialize_field(
+                    adapter.get_field_meta(name), name, adapter[name]
+                )
+                for name in field_names
+            }
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
         return value
@@ -297,6 +308,7 @@ class CsvItemExporter(BaseItemExporter):
         return serializer(value)
 
     def _join_if_needed(self, value: Any) -> Any:
+        value = self._serialize_value(value)
         if isinstance(value, (list, tuple)):
             try:
                 return self._join_multivalued.join(value)
