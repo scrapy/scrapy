@@ -35,6 +35,8 @@ pytestmark = pytest.mark.requires_reactor  # HTTP11DownloadHandler requires a re
 
 
 class HTTP11DownloadHandlerMixin:
+    handler_supports_partial_response_on_timeout = True
+
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP11DownloadHandler
