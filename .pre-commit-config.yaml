@@ -27,7 +27,7 @@ repos:
   hooks:
     - id: sphinx-lint
 - repo: https://github.com/scrapy/sphinx-scrapy
-  rev: 0.8.11
+  rev: 0.8.12
   hooks:
     - id: sphinx-scrapy
 - repo: https://github.com/zizmorcore/zizmor-pre-commit

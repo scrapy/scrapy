@@ -6,7 +6,8 @@ Downloader Middleware
 
 The downloader middleware is a framework of hooks into Scrapy's
 request/response processing.  It's a light, low-level system for globally
-altering Scrapy's requests and responses.
+altering Scrapy's requests and responses at the HTTP level. See
+:ref:`concepts` for a rundown of other alternatives.
 
 .. _topics-downloader-middleware-setting:
 
@@ -700,14 +701,11 @@ HttpCompressionMiddleware
 
 .. class:: HttpCompressionMiddleware
 
-   This middleware allows compressed (gzip, deflate, `brotli`_) traffic to be
-   sent/received from web sites.
-
-   This middleware also supports decoding `zstd-compressed`_ responses with
-   the :ref:`zstd <extras>` extra.
+   This middleware allows compressed (gzip, deflate, `brotli`_, `zstd`_)
+   traffic to be sent/received from web sites.
 
 .. _brotli: https://www.ietf.org/rfc/rfc7932.txt
-.. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
+.. _zstd: https://www.ietf.org/rfc/rfc8478.txt
 
 
 HttpCompressionMiddleware Settings
@@ -856,6 +854,41 @@ The ``handle_httpstatus_list`` key of :attr:`Request.meta
 allow on a per-request basis. You can also set the meta key
 ``handle_httpstatus_all`` to ``True`` if you want to allow any response code
 for a request.
+
+To decide whether to follow a redirect based on its target URL, subclass
+:class:`RedirectMiddleware` and override
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`:
+
+.. code-block:: python
+
+    import re
+
+    from scrapy import Request
+    from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
+    from scrapy.exceptions import IgnoreRequest
+
+
+    class AllowedRedirectMiddleware(RedirectMiddleware):
+        def process_response(self, request, response, spider):
+            result = super().process_response(request, response, spider)
+            if isinstance(result, Request) and not re.search(r"/product/", result.url):
+                raise IgnoreRequest(f"Redirect target not allowed: {result.url}")
+            return result
+
+Enable it in place of :class:`RedirectMiddleware`, using the same priority:
+
+.. code-block:: python
+
+    from scrapy import Spider
+
+
+    class MySpider(Spider):
+        custom_settings = {
+            "DOWNLOADER_MIDDLEWARES": {
+                "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": None,
+                "myproject.middlewares.AllowedRedirectMiddleware": 600,
+            }
+        }
 
 
 RedirectMiddleware settings

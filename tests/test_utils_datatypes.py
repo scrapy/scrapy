@@ -1,31 +1,23 @@
 from __future__ import annotations
 
 import copy
-from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, MutableMapping
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.datatypes import (
     CaseInsensitiveDict,
-    CaselessDict,
     LocalCache,
     LocalWeakReferencedCache,
     SequenceExclude,
 )
 from scrapy.utils.python import garbage_collect
 
-_DictT = TypeVar("_DictT", bound="CaselessDict | CaseInsensitiveDict")
 
-
-class TestCaseInsensitiveDictBase(ABC, Generic[_DictT]):
-    @property
-    @abstractmethod
-    def dict_class(self) -> type[_DictT]:
-        raise NotImplementedError
+class TestCaseInsensitiveDict:
+    dict_class = CaseInsensitiveDict
 
     def test_init_dict(self):
         seq = {"red": 1, "black": 3}
@@ -101,16 +93,14 @@ class TestCaseInsensitiveDictBase(ABC, Generic[_DictT]):
         with pytest.raises(KeyError):
             d["key_lower"]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_getdefault(self):
-        d = CaselessDict()
+        d = self.dict_class()
         assert d.get("c", 5) == 5
         d["c"] = 10
         assert d.get("c", 5) == 10
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_setdefault(self):
-        d = CaselessDict({"a": 1, "b": 2})
+        d = self.dict_class({"a": 1, "b": 2})
 
         r = d.setdefault("A", 5)
         assert r == 1
@@ -157,8 +147,6 @@ class TestCaseInsensitiveDictBase(ABC, Generic[_DictT]):
             def _normkey(self, key):
                 return key.title()
 
-            normkey = _normkey  # deprecated CaselessDict class
-
         d = MyDict()
         d["key-one"] = 2
         assert list(d.keys()) == ["Key-One"]
@@ -169,8 +157,6 @@ class TestCaseInsensitiveDictBase(ABC, Generic[_DictT]):
                 if value is not None:
                     return value + 1
                 return None
-
-            normvalue = _normvalue  # deprecated CaselessDict class
 
         d = MyDict({"key": 1})
         assert d["key"] == 2
@@ -217,10 +203,6 @@ class TestCaseInsensitiveDictBase(ABC, Generic[_DictT]):
             assert "header3" not in h1
             assert dict(h1) == {"header1": "value1", "header2": "value2"}
 
-
-class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase[CaseInsensitiveDict]):
-    dict_class = CaseInsensitiveDict
-
     def test_repr(self):
         d1 = self.dict_class({"foo": "bar"})
         assert repr(d1) == "<CaseInsensitiveDict: {'foo': 'bar'}>"
@@ -254,18 +236,6 @@ class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase[CaseInsensitiveDict]):
         d |= self.dict_class({"HEADER1": "value2"})
         assert len(d) == 1
         assert d["HeAdEr1"] == "value2"
-
-
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestCaselessDict(TestCaseInsensitiveDictBase[CaselessDict]):
-    dict_class = CaselessDict
-
-    def test_deprecation_message(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"scrapy.utils.datatypes.CaselessDict is deprecated",
-        ):
-            self.dict_class({"foo": "bar"})
 
 
 class TestSequenceExclude:

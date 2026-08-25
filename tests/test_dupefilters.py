@@ -6,7 +6,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -39,6 +39,8 @@ def _get_dupefilter(
 
 
 class FromCrawlerRFPDupeFilter(RFPDupeFilter):
+    method: str
+
     @classmethod
     def from_crawler(cls, crawler):
         df = super().from_crawler(crawler)
@@ -58,8 +60,9 @@ class TestRFPDupeFilter:
         }
         crawler = get_crawler(settings_dict=settings)
         scheduler = build_from_crawler(Scheduler, crawler)
-        assert scheduler.df.debug
-        assert scheduler.df.method == "from_crawler"
+        dupefilter = cast("FromCrawlerRFPDupeFilter", scheduler.df)
+        assert dupefilter.debug
+        assert dupefilter.method == "from_crawler"
 
     def test_df_direct_scheduler(self):
         settings = {
@@ -67,7 +70,7 @@ class TestRFPDupeFilter:
         }
         crawler = get_crawler(settings_dict=settings)
         scheduler = build_from_crawler(Scheduler, crawler)
-        assert scheduler.df.method == "n/a"
+        assert cast("DirectDupeFilter", scheduler.df).method == "n/a"
 
     def test_filter(self):
         dupefilter = _get_dupefilter()
@@ -179,7 +182,6 @@ class TestRFPDupeFilter:
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-        assert crawler.stats
         assert crawler.stats.get_value("dupefilter/filtered") == 2
         assert (
             "scrapy.dupefilters",
@@ -213,7 +215,6 @@ class TestRFPDupeFilter:
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-        assert crawler.stats
         assert crawler.stats.get_value("dupefilter/filtered") == 2
         assert (
             "scrapy.dupefilters",
@@ -239,4 +240,4 @@ class TestBaseDupeFilter:
             ScrapyDeprecationWarning,
             match=r"Calling BaseDupeFilter\.log\(\) is deprecated.",
         ):
-            dupefilter.log(None, None)
+            dupefilter.log(None, None)  # type: ignore[arg-type]

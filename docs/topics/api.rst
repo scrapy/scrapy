@@ -40,7 +40,7 @@ how you :ref:`configure the downloader middlewares
     get their value when the crawl starts, and raise :exc:`RuntimeError` when
     read before that.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.18.0
         Those attributes used to be ``None`` before getting their value.
 
     .. attribute:: request_fingerprinter
@@ -84,6 +84,8 @@ how you :ref:`configure the downloader middlewares
         For an introduction on stats collection see :ref:`topics-stats`.
 
         For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
+
+    .. autoattribute:: logformatter
 
     .. attribute:: extensions
 
@@ -166,6 +168,8 @@ Settings API
     :ref:`topics-settings`.
 
 .. autofunction:: get_settings_priority
+
+.. autofunction:: scrapy.utils.project.get_project_settings
 
 .. autoclass:: Settings
    :show-inheritance:

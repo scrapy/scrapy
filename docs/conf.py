@@ -165,6 +165,7 @@ scrapy_intersphinx_enable = [
     "form2request",
     "itemloaders",
     "parsel",
+    "platformdirs",
     "pytest",
     "pypug",
     "scrapy-lint",

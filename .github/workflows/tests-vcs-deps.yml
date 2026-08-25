@@ -20,7 +20,7 @@ jobs:
     env:
       # A development branch of a dependency can make a test hang forever, so
       # tests get a time limit here that they do not need elsewhere.
-      PYTEST_ADDOPTS: -n auto --no-cov --timeout=120
+      PYTEST_ADDOPTS: -n logical --no-cov --timeout=120
       TOXENV: vcs-deps
       UV_PYTHON_PREFERENCE: only-system
     steps:
@@ -31,7 +31,8 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
-        python-version: "3.14"
+        python-version: "3.15"
+        allow-prereleases: true
 
     # Dependencies that ship wheels on PyPI are built from source here, so
     # their build dependencies are needed: libxml2 and libxslt for lxml,

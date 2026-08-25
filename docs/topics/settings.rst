@@ -137,6 +137,10 @@ Scrapy projects include a settings module, usually a file called
 ``settings.py``, where you should populate most settings that apply to all your
 spiders.
 
+:func:`scrapy.utils.project.get_project_settings` returns these settings, e.g.
+to pass them to :class:`~scrapy.crawler.AsyncCrawlerProcess` when :ref:`running
+Scrapy from a script <run-from-script>`.
+
 .. seealso:: :ref:`topics-settings-module-envvar`
 
 .. _addon-settings:
@@ -487,7 +491,7 @@ Endpoint URL used for S3-like storage, for example Minio or s3.scality.
 AWS_MAX_POOL_CONNECTIONS
 ------------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``None``
 
@@ -1376,6 +1380,7 @@ Default:
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
         "scrapy.extensions.throttle.AutoThrottle": 0,
+        "scrapy.extensions.remote_control.RemoteControl": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -1499,6 +1504,28 @@ Default: ``None``
 
 The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
+.. setting:: HTTP2_MAX_FRAME_SIZE
+
+HTTP2_MAX_FRAME_SIZE
+--------------------
+
+.. versionadded:: VERSION
+
+Default: ``16384``
+
+Maximum `frame size`_, in bytes, that servers may send, between ``16384`` and
+``16777215``. Connections to servers that send a larger frame fail.
+
+Raise it for servers that send larger frames regardless of this value. Note
+that :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` are checked
+once per received frame, so a higher value allows a response to exceed them by
+more before being caught.
+
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` ignores
+this setting, as ``httpx`` does not allow configuring the frame size.
+
+.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
@@ -1528,6 +1555,20 @@ Default: ``{}``
 
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
+
+.. setting:: ITEM_PROCESSOR
+
+ITEM_PROCESSOR
+--------------
+
+Default: ``"scrapy.pipelines.ItemPipelineManager"``
+
+The :ref:`component <topics-components>` that builds the :ref:`item pipeline
+<topics-item-pipeline>` from :setting:`ITEM_PIPELINES` and runs scraped items
+through it. It must implement :class:`~scrapy.pipelines.ItemProcessorProtocol`.
+
+.. autoclass:: scrapy.pipelines.ItemProcessorProtocol
+    :members:
 
 
 .. setting:: JOBDIR
@@ -2153,7 +2194,7 @@ Default: ``templates`` dir inside scrapy module
 
 The directory where to look for templates when creating new projects with
 :command:`startproject` command and new spiders with :command:`genspider`
-command.
+command. See :ref:`spider-templates`.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
