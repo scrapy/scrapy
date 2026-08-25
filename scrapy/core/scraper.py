@@ -517,7 +517,8 @@ class Scraper:
             logkws = self.logformatter.dropped(item, ex, response, self.crawler.spider)
             if logkws is not None:
                 logger.log(
-                    *logformatter_adapter(logkws), extra={"spider": self.crawler.spider}
+                    *logformatter_adapter(logkws),
+                    extra={"spider": self.crawler.spider, "item": item},
                 )
             await self.signals.send_catch_log_async(
                 signal=signals.item_dropped,
@@ -532,7 +533,7 @@ class Scraper:
             )
             logger.log(
                 *logformatter_adapter(logkws),
-                extra={"spider": self.crawler.spider},
+                extra={"spider": self.crawler.spider, "item": item},
                 exc_info=True,
             )
             await self.signals.send_catch_log_async(
@@ -546,7 +547,8 @@ class Scraper:
             logkws = self.logformatter.scraped(output, response, self.crawler.spider)
             if logkws is not None:
                 logger.log(
-                    *logformatter_adapter(logkws), extra={"spider": self.crawler.spider}
+                    *logformatter_adapter(logkws),
+                    extra={"spider": self.crawler.spider, "item": output},
                 )
             await self.signals.send_catch_log_async(
                 signal=signals.item_scraped,
