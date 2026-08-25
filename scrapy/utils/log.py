@@ -65,6 +65,19 @@ class TopLevelFormatter(logging.Filter):
         return True
 
 
+class _SpiderRecordDefaultFilter(logging.Filter):
+    """Default the ``spider`` log record attribute to ``"-"``.
+
+    This lets :setting:`LOG_FORMAT` reference ``%(spider)s`` even for log
+    records that were not given a ``spider`` via ``extra``.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "spider"):
+            record.spider = "-"
+        return True
+
+
 DEFAULT_LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -186,6 +199,7 @@ def _get_handler(settings: Settings) -> logging.Handler:
     )
     handler.setFormatter(formatter)
     handler.setLevel(settings.get("LOG_LEVEL"))
+    handler.addFilter(_SpiderRecordDefaultFilter())
     if settings.getbool("LOG_SHORT_NAMES"):
         handler.addFilter(TopLevelFormatter(["scrapy"]))
     return handler

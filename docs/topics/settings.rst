@@ -1636,7 +1636,9 @@ Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
 String for formatting log messages. Refer to the
 :ref:`Python logging documentation <logrecord-attributes>` for the whole
-list of available placeholders.
+list of available placeholders, plus ``%(spider)s`` for the name of the
+spider that triggered the log message, or ``"-"`` for messages not tied to
+a spider (see :ref:`topics-logging-from-spiders`).
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
