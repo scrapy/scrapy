@@ -294,7 +294,7 @@ class CallLaterResult:
 async def sleep(seconds: float) -> None:
     """Sleep for *seconds*.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.18.0
 
     This uses either :func:`asyncio.sleep` or
     :func:`~twisted.internet.task.deferLater`, depending on whether asyncio

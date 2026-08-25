@@ -9,17 +9,20 @@ on:
     - master
     - '[0-9]+.[0-9]+'
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
-  group: ${{github.workflow}}-${{ github.ref }}
+  group: ${{github.workflow}}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   tests:
+    if: github.event.action != 'closed'
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: macos-latest
+    timeout-minutes: 15
     env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
       # Make uv use the interpreter that actions/setup-python installed instead
       # of downloading one of its own.
       UV_PYTHON_PREFERENCE: only-system
@@ -35,6 +38,14 @@ jobs:
             TOXENV: py
           coverage: true
         - python-version: "3.14"
+          env:
+            TOXENV: no-reactor
+
+          # 3.15 pre-release
+        - python-version: "3.15.0-rc.1"
+          env:
+            TOXENV: py
+        - python-version: "3.15.0-rc.1"
           env:
             TOXENV: no-reactor
 
