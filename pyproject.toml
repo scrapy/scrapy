@@ -134,11 +134,6 @@ follow_imports = "skip"
 module = "twisted"
 implicit_reexport = true
 
-# TODO
-[[tool.mypy.overrides]]
-module = "scrapy.settings.default_settings"
-ignore_errors = true
-
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
