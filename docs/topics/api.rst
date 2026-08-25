@@ -166,6 +166,8 @@ Settings API
 
 .. autofunction:: get_settings_priority
 
+.. autofunction:: scrapy.utils.project.get_project_settings
+
 .. autoclass:: Settings
    :show-inheritance:
    :members:

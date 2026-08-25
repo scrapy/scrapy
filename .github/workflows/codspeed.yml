@@ -24,6 +24,7 @@ jobs:
     benchmark:
         if: github.event.action != 'closed'
         runs-on: ubuntu-latest
+        timeout-minutes: 15
         env:
             # Make uv use the interpreter that actions/setup-python installed
             # instead of downloading one of its own.
