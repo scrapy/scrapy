@@ -17,8 +17,10 @@ Run Scrapy from a script
 You can use the :ref:`API <topics-api>` to run Scrapy from a script, instead of
 the typical way of running Scrapy via ``scrapy crawl``.
 
-Remember that Scrapy is built on top of the Twisted
-asynchronous networking library, so you need to run it inside the Twisted reactor.
+Remember that Scrapy requires a Twisted reactor or (with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``) an asyncio event loop, so
+you need to run one of those in your script for it to work (helpers described
+below can do it for you).
 
 The first utility you can use to run your spiders is
 :class:`scrapy.crawler.AsyncCrawlerProcess` or
@@ -245,6 +247,110 @@ Using :func:`asyncio.run` with :class:`~scrapy.crawler.AsyncCrawlerRunner`:
 
     asyncio.run(main())
 
+.. _run-spiders-in-apps:
+
+Running spiders inside existing applications
+============================================
+
+You may want to run Scrapy spiders inside an existing application. In simple
+cases (e.g. task queues that spawn a process for every task, or applications
+that can execute tasks synchronously in the same process) you can use the same
+approach as for standalone scripts (see :ref:`run-from-script`). More complex
+cases, e.g. asynchronous web applications, have additional caveats and
+limitations.
+
+If the application runs its own Twisted reactor, you can use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerRunner` to run spiders using this reactor, see
+:ref:`run-from-script` for examples.
+
+If the application doesn't run a Twisted reactor or an asyncio event loop (for
+example, a Django web app deployed with a WSGI server such as uWSGI), you can
+use :class:`~scrapy.crawler.AsyncCrawlerProcess` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``, so that Scrapy starts and
+stops an asyncio event loop for every spider run:
+
+.. code-block:: python
+
+    import scrapy
+    from django.http import HttpResponse
+    from scrapy.crawler import AsyncCrawlerProcess
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    def crawl_view(request):
+        process = AsyncCrawlerProcess(settings={"TWISTED_REACTOR_ENABLED": False})
+        process.crawl(MySpider)
+        process.start()  # returns when the spider finishes
+        return HttpResponse("Crawling finished")
+
+If the application runs its own asyncio event loop (for example, a Django web
+app deployed with an ASGI server such as uvicorn), you can use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``, so that Scrapy uses the
+existing event loop:
+
+.. code-block:: python
+
+    import scrapy
+    from django.http import HttpResponse
+    from scrapy.crawler import AsyncCrawlerRunner
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    async def crawl_view(request):
+        runner = AsyncCrawlerRunner(settings={"TWISTED_REACTOR_ENABLED": False})
+        await runner.crawl(MySpider)  # completes when the spider finishes
+        return HttpResponse("Crawling finished")
+
+.. note:: Running Scrapy without a Twisted reactor is experimental and has
+    some limitations, described in :ref:`asyncio-without-reactor`.
+
+.. _run-in-notebook:
+
+Running spiders in Jupyter notebooks
+====================================
+
+You can run Scrapy spiders in Jupyter notebooks. You need to use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False`` for this, so that Scrapy
+uses the event loop provided by the notebook kernel. As
+:class:`~scrapy.crawler.AsyncCrawlerRunner` doesn't configure logging, and you
+most likely want to see the spider log in the notebook, you should call
+:func:`scrapy.utils.log.configure_logging`. Here is a full example, which
+supports rerunning both as a single cell and as separate cells:
+
+.. code-block:: python
+
+    from scrapy import Spider
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+
+    configure_logging()
+
+
+    class BooksSpider(Spider):
+        name = "books"
+        start_urls = ["https://books.toscrape.com"]
+
+        def parse(self, response):
+            for book in response.css("h3"):
+                yield {"title": book.css("a::attr(title)").get()}
+
+
+    runner = AsyncCrawlerRunner({"TWISTED_REACTOR_ENABLED": False})
+    await runner.crawl(BooksSpider)
+
+.. note:: Running Scrapy without a Twisted reactor is experimental and has
+    some limitations, described in :ref:`asyncio-without-reactor`.
 
 .. _run-multiple-spiders:
 
@@ -254,6 +360,12 @@ Running multiple spiders in the same process
 By default, Scrapy runs a single spider per process when you run ``scrapy
 crawl``. However, Scrapy supports running multiple spiders per process using
 the :ref:`internal API <topics-api>`.
+
+Each call to ``crawl()`` creates its own :class:`~scrapy.crawler.Crawler`,
+with its own instances of the downloader and spider middlewares and its own
+resolved :ref:`settings <topics-settings>`, including :ref:`spider settings
+<spider-settings>`. Nothing from one of these is shared with the other
+spiders running in the same process.
 
 Here is an example that runs multiple spiders simultaneously:
 
@@ -352,6 +464,18 @@ finishes before starting the next one:
     should not have a different value per spider, and :ref:`pre-crawler
     settings <pre-crawler-settings>` cannot be defined per spider.
 
+Every other setting applies to each crawler separately. This includes
+concurrency and politeness settings, such as :setting:`CONCURRENT_REQUESTS`,
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`, and
+:ref:`AutoThrottle <topics-autothrottle>` also throttles each crawler
+separately. When crawling simultaneously, divide those values by the number of
+crawlers to keep the combined load on your hardware and on target websites
+unchanged.
+
+Because of this, running the same spider several times in the same process
+multiplies those limits instead of increasing crawling capacity. To crawl
+faster, raise :setting:`CONCURRENT_REQUESTS` on a single crawler.
+
 .. seealso:: :ref:`run-from-script`.
 
 .. skip: end
@@ -412,33 +536,41 @@ modules by separating them with commas.
 Avoiding getting banned
 =======================
 
-Some websites implement certain measures to prevent bots from crawling them,
-with varying degrees of sophistication. Getting around those measures can be
-difficult and tricky, and may sometimes require special infrastructure. Please
-consider contacting `commercial support`_ if in doubt.
+Websites tell regular visitors and crawlers apart by how their traffic looks:
+the headers it carries, how fast it arrives, how many requests come from the
+same place. Traffic that stands out can be blocked even when the crawling
+itself would be welcome.
 
-Here are some tips to keep in mind when dealing with these kinds of sites:
+Where the website allows crawling, the most effective thing you can do is make
+yourself known: set :setting:`USER_AGENT` to a value that identifies you and
+lets its owners reach you, so that they can ask you to adjust your crawler
+rather than block it.
 
-* rotate your user agent from a pool of well-known ones from browsers (Google
-  around to get a list of them)
-* disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
-  cookies to spot bot behaviour
-* use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
-* if possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
-  directly
-* use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
-  super proxy that you can attach your own proxies to.
-* for HTTPS websites, if blocking appears related to TLS behavior, consider
-  adjusting the :setting:`DOWNLOAD_TLS_MIN_VERSION` and
-  :setting:`DOWNLOAD_TLS_MAX_VERSION` settings, since some websites may respond
-  differently depending on the TLS method used by the client.
-* use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
-  plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
+Where that is not enough, the following make your traffic resemble that of a
+regular visitor:
+
+* rotate your user agent among those of common browsers, so that your requests
+  do not all look alike (search the web for an up-to-date list)
+* disable cookies (see :setting:`COOKIES_ENABLED`), so that a session
+  identifier does not tie all your requests together
+* space out your requests, 2 seconds apart or more, with the
+  :setting:`DOWNLOAD_DELAY` setting, to keep your pace closer to that of a
+  person browsing
+* where possible, read pages from `Common Crawl`_, which sends no traffic to
+  the website at all
+* spread your requests over a pool of IP addresses, so that none of them
+  accounts for your whole crawl. For example, the free `Tor project`_ or paid
+  services like `ProxyMesh`_.
+* match the TLS behavior of a browser: some websites respond differently
+  depending on the TLS version of the client, which you can adjust with the
+  :setting:`DOWNLOAD_TLS_MIN_VERSION` and :setting:`DOWNLOAD_TLS_MAX_VERSION`
+  settings.
+* let a service take care of all of the above, such as `Zyte API`_, which
+  provides a `Scrapy plugin
+  <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
   features, like `AI web scraping <https://www.zyte.com/ai-web-scraping/>`__
 
-If you are still unable to prevent your bot getting banned, consider contacting
-`commercial support`_.
+If your crawler still gets blocked, consider contacting `commercial support`_.
 
 .. _static-analysis:
 
@@ -453,5 +585,4 @@ projects that detects common mistakes and anti-patterns.
 .. _ProxyMesh: https://proxymesh.com/
 .. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _scrapoxy: https://scrapoxy.io/
 .. _Zyte API: https://docs.zyte.com/zyte-api/get-started.html

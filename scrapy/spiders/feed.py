@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from scrapy.exceptions import NotConfigured, NotSupported
+from scrapy.exceptions import NotSupported
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.spiders import Spider
@@ -69,11 +69,6 @@ class XMLFeedSpider(Spider):
             yield from self.process_results(response, ret)
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
-        if not hasattr(self, "parse_node"):
-            raise NotConfigured(
-                "You must define parse_node method in order to scrape this XML feed"
-            )
-
         response = self.adapt_response(response)
         nodes: Iterable[Selector]
         if self.iterator == "iternodes":
@@ -151,9 +146,5 @@ class CSVFeedSpider(Spider):
             yield from self.process_results(response, ret)
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
-        if not hasattr(self, "parse_row"):
-            raise NotConfigured(
-                "You must define parse_row method in order to scrape this CSV feed"
-            )
         response = self.adapt_response(response)
         return self.parse_rows(response)

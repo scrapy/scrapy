@@ -24,7 +24,7 @@ Having trouble? We'd like to help!
 * Ask or search questions in `StackOverflow using the scrapy tag`_.
 * Ask or search questions in the `Scrapy subreddit`_.
 * Search for questions on the archives of the `scrapy-users mailing list`_.
-* Ask a question in the `#scrapy IRC channel`_,
+* Ask a question in the `#scrapy IRC channel`_.
 * Report bugs with Scrapy in our `issue tracker`_.
 * Join the Discord community `Scrapy Discord`_.
 
@@ -69,6 +69,7 @@ Basic concepts
    :caption: Basic concepts
    :hidden:
 
+   topics/concepts
    topics/commands
    topics/spiders
    topics/selectors
@@ -78,9 +79,13 @@ Basic concepts
    topics/item-pipeline
    topics/feed-exports
    topics/request-response
+   topics/cookies
    topics/link-extractors
    topics/settings
    topics/exceptions
+
+:doc:`topics/concepts`
+    Get a quick map of Scrapy's main concepts and when to use each.
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
@@ -91,14 +96,14 @@ Basic concepts
 :doc:`topics/selectors`
     Extract the data from web pages using XPath.
 
-:doc:`topics/shell`
-    Test your extraction code in an interactive environment.
-
 :doc:`topics/items`
     Define the data you want to scrape.
 
 :doc:`topics/loaders`
     Populate your items with the extracted data.
+
+:doc:`topics/shell`
+    Test your extraction code in an interactive environment.
 
 :doc:`topics/item-pipeline`
     Post-process and store your scraped data.
@@ -108,6 +113,9 @@ Basic concepts
 
 :doc:`topics/request-response`
     Understand the classes used to represent HTTP requests and responses.
+
+:doc:`topics/cookies`
+    Send and receive cookies.
 
 :doc:`topics/link-extractors`
     Convenient classes to extract links to follow from pages.
@@ -152,7 +160,7 @@ Solving specific problems
    topics/contracts
    topics/practices
    topics/security
-   topics/broad-crawls
+   topics/optimize
    topics/developer-tools
    topics/dynamic-content
    topics/leaks
@@ -180,8 +188,8 @@ Solving specific problems
     Understand the security implications of Scrapy defaults and how to harden
     them.
 
-:doc:`topics/broad-crawls`
-    Tune Scrapy for crawling a lot domains in parallel.
+:doc:`topics/optimize`
+    Find the bottleneck of your crawls and learn how to address it.
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.

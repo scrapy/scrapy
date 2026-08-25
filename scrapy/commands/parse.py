@@ -41,7 +41,7 @@ class Command(BaseRunSpiderCommand):
     spider: Spider | None = None
     items: ClassVar[dict[int, list[Any]]] = {}
     requests: ClassVar[dict[int, list[Request]]] = {}
-    spidercls: type[Spider] | None
+    spidercls: type[Spider] | None = None
 
     first_response = None
 
@@ -266,9 +266,11 @@ class Command(BaseRunSpiderCommand):
     def start_parsing(self, url: str, opts: argparse.Namespace) -> None:
         assert self.crawler_process
         assert self.spidercls
-        self.crawler_process.crawl(self.spidercls, **opts.spargs)
-        self.pcrawler = next(iter(self.crawler_process.crawlers))
+        self.pcrawler = self._create_crawler(self.spidercls)
+        self.crawler_process.crawl(self.pcrawler, **opts.spargs)
         self.crawler_process.start()
+        if self.crawler_process.bootstrap_failed:
+            self.exitcode = 1
 
         if not self.first_response:
             logger.error("No response downloaded for: %(url)s", {"url": url})
@@ -281,7 +283,6 @@ class Command(BaseRunSpiderCommand):
     ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
-            assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
             if hasattr(itemproc, "process_item_async"):
                 for item in items:
@@ -346,6 +347,8 @@ class Command(BaseRunSpiderCommand):
                 self.first_response = response
 
             cb = self._get_callback(spider=spider, opts=opts, response=response)
+            assert response.request
+            response.request.callback = cb
 
             # parse items and requests
             depth: int = response.meta["_depth"]

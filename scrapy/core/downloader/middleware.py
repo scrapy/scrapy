@@ -9,7 +9,7 @@ from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io,
     deferred_from_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
@@ -75,7 +75,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 request, download_func
             )
         except Exception as ex:
-            await _defer_sleep_async()
+            await _process_pending_io()
             # either returns a request or response (which we pass to process_response())
             # or reraises the exception
             result = await self._process_exception(ex, request)

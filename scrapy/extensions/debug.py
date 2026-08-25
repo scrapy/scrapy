@@ -39,7 +39,6 @@ class StackTraceDump:
         return cls(crawler)
 
     def dump_stacktrace(self, signum: int, frame: FrameType | None) -> None:
-        assert self.crawler.engine
         log_args = {
             "stackdumps": self._thread_stacks(),
             "enginestatus": format_engine_status(self.crawler.engine),

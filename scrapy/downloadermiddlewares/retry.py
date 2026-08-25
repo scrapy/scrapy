@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import _warn_spider_arg
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import _load_objects
 from scrapy.utils.python import global_object_name
 from scrapy.utils.response import response_status_message
 
@@ -78,11 +78,13 @@ def get_retry_request(
     message logged when a request exceeds its retries. See
     :setting:`RETRY_GIVE_UP_LOG_LEVEL` for details.
 
+    .. versionadded:: 2.17.0
+       The *give_up_log_level* parameter.
+
     *stats_base_key* is a string to be used as the base key for the
     retry-related job stats
     """
     settings = spider.crawler.settings
-    assert spider.crawler.stats
     stats = spider.crawler.stats
     retry_times = request.meta.get("retry_times", 0) + 1
     if max_retry_times is None:
@@ -137,10 +139,7 @@ class RetryMiddleware:
         self.retry_http_codes = {int(x) for x in settings.getlist("RETRY_HTTP_CODES")}
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
         self.give_up_log_level = settings["RETRY_GIVE_UP_LOG_LEVEL"]
-        self.exceptions_to_retry = tuple(
-            load_object(x) if isinstance(x, str) else x
-            for x in settings.getlist("RETRY_EXCEPTIONS")
-        )
+        self.exceptions_to_retry = _load_objects(settings.getlist("RETRY_EXCEPTIONS"))
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import logging
 import marshal
 import pickle
 import pprint
@@ -19,6 +20,8 @@ from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
     from json import JSONEncoder
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "BaseItemExporter",
@@ -67,11 +70,27 @@ class BaseItemExporter(ABC):
     def finish_exporting(self) -> None:  # noqa: B027
         pass
 
-    def _get_serialized_fields(
+    @staticmethod
+    def _get_populated_field_names(adapter: ItemAdapter) -> Iterable[str]:
+        """Return the populated field names of *adapter*, in declaration order.
+
+        Populated fields that are not declared, which some item types allow,
+        come last, in item order.
+        """
+        populated = set(adapter.keys())
+        declared = (name for name in adapter.field_names() if name in populated)
+        return dict.fromkeys([*declared, *adapter.keys()])
+
+    def get_serialized_fields(
         self, item: Any, default_value: Any = None, include_empty: bool | None = None
     ) -> Iterable[tuple[str, Any]]:
-        """Return the fields to export as an iterable of tuples
-        (name, serialized_value)
+        """Return the fields of *item* to export, as an iterable of
+        ``(name, serialized_value)`` tuples, taking :attr:`fields_to_export`
+        into account and applying :meth:`serialize_field` to every value.
+
+        Fields missing from *item* are exported with *default_value*.
+
+        *include_empty* overrides :attr:`export_empty_fields`.
         """
         item = ItemAdapter(item)
 
@@ -79,7 +98,11 @@ class BaseItemExporter(ABC):
             include_empty = self.export_empty_fields
 
         if self.fields_to_export is None:
-            field_iter = item.field_names() if include_empty else item.keys()
+            field_iter = (
+                item.field_names()
+                if include_empty
+                else self._get_populated_field_names(item)
+            )
         elif isinstance(self.fields_to_export, Mapping):
             if include_empty:
                 field_iter = self.fields_to_export.items()
@@ -114,7 +137,7 @@ class JsonLinesItemExporter(BaseItemExporter):
         self.encoder: JSONEncoder = ScrapyJSONEncoder(**self._kwargs)
 
     def export_item(self, item: Any) -> None:
-        itemdict = dict(self._get_serialized_fields(item))
+        itemdict = dict(self.get_serialized_fields(item))
         data = self.encoder.encode(itemdict) + "\n"
         self.file.write(to_bytes(data, self.encoding))
 
@@ -154,7 +177,7 @@ class JsonItemExporter(BaseItemExporter):
         self.file.write(b"]")
 
     def export_item(self, item: Any) -> None:
-        itemdict = dict(self._get_serialized_fields(item))
+        itemdict = dict(self.get_serialized_fields(item))
         data = to_bytes(self.encoder.encode(itemdict), self.encoding)
         self._add_comma_after_first()
         self.file.write(data)
@@ -194,7 +217,7 @@ class XmlItemExporter(BaseItemExporter):
         self._beautify_indent(depth=1)
         self.xg.startElement(self.item_element, AttributesImpl({}))
         self._beautify_newline()
-        for name, value in self._get_serialized_fields(item, default_value=""):
+        for name, value in self.get_serialized_fields(item, default_value=""):
             self._export_xml_field(name, value, depth=2)
         self._beautify_indent(depth=1)
         self.xg.endElement(self.item_element)
@@ -250,6 +273,8 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
+        self._autodetected_fields = False
+        self._data_loss_warned = False
 
     def serialize_field(
         self, field: Mapping[str, Any] | Field, name: str, value: Any
@@ -270,7 +295,23 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
-        fields = self._get_serialized_fields(item, default_value="", include_empty=True)
+        if (
+            self._autodetected_fields
+            and self.fields_to_export is not None
+            and not self._data_loss_warned
+        ):
+            item_fields = ItemAdapter(item).field_names()
+            dropped_fields = set(item_fields) - set(self.fields_to_export)
+
+            if dropped_fields:
+                dropped_fields_display = sorted(dropped_fields)
+                logger.warning(
+                    f"CSVExporter dropped fields {dropped_fields_display}. "
+                    f"To avoid this, fully configure your FEED_EXPORT_FIELDS setting. "
+                    f"See: https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-fields",
+                )
+                self._data_loss_warned = True
+        fields = self.get_serialized_fields(item, default_value="", include_empty=True)
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
 
@@ -289,6 +330,7 @@ class CsvItemExporter(BaseItemExporter):
             if not self.fields_to_export:
                 # use declared field names, or keys if the item is a dict
                 self.fields_to_export = ItemAdapter(item).field_names()
+                self._autodetected_fields = True
             fields: Iterable[str]
             if isinstance(self.fields_to_export, Mapping):
                 fields = self.fields_to_export.values()
@@ -306,7 +348,7 @@ class PickleItemExporter(BaseItemExporter):
         self.protocol: int = protocol
 
     def export_item(self, item: Any) -> None:
-        d = dict(self._get_serialized_fields(item))
+        d = dict(self.get_serialized_fields(item))
         pickle.dump(d, self.file, self.protocol)
 
 
@@ -324,7 +366,7 @@ class MarshalItemExporter(BaseItemExporter):
         self.file: BytesIO = file
 
     def export_item(self, item: Any) -> None:
-        marshal.dump(dict(self._get_serialized_fields(item)), self.file)
+        marshal.dump(dict(self.get_serialized_fields(item)), self.file)
 
 
 class PprintItemExporter(BaseItemExporter):
@@ -333,7 +375,7 @@ class PprintItemExporter(BaseItemExporter):
         self.file: BytesIO = file
 
     def export_item(self, item: Any) -> None:
-        itemdict = dict(self._get_serialized_fields(item))
+        itemdict = dict(self.get_serialized_fields(item))
         self.file.write(to_bytes(pprint.pformat(itemdict) + "\n"))
 
 
@@ -376,5 +418,5 @@ class PythonItemExporter(BaseItemExporter):
             yield key, self._serialize_value(value)
 
     def export_item(self, item: Any) -> dict[str | bytes, Any]:  # type: ignore[override]
-        result: dict[str | bytes, Any] = dict(self._get_serialized_fields(item))
+        result: dict[str | bytes, Any] = dict(self.get_serialized_fields(item))
         return result

@@ -29,7 +29,7 @@ The job directory will store all required data to keep the state of a *single*
 job (i.e. a spider run), so that if stopped cleanly, it can be resumed later.
 
 .. warning:: This directory must *not* be shared by different spiders, or even
-    different jobs of the same spider.
+    different jobs of the same spider. See :ref:`job-dir-spider-name`.
 
 .. warning:: Treat the job directory with the same security care as your
     Scrapy project source code. Do not point ``JOBDIR`` to a path that
@@ -48,6 +48,29 @@ Then, you can stop the spider safely at any time (by pressing Ctrl-C or sending
 a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
+
+.. _job-dir-spider-name:
+
+Deriving the job directory from the spider name
+===============================================
+
+One way to keep job directories apart is to build the path in
+:meth:`~scrapy.Spider.update_settings`, so that a group of spiders shares the
+same path except for the spider name:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    from scrapy import Spider
+
+
+    class BaseSpider(Spider):
+        @classmethod
+        def update_settings(cls, settings):
+            super().update_settings(settings)
+            settings.set("JOBDIR", str(Path("crawls", cls.name)), priority="spider")
+
 
 .. _topics-keeping-persistent-state-between-batches:
 
@@ -83,6 +106,14 @@ stopping it cleanly. Forced, sudden or otherwise unclean shutdown can lead to
 data corruption in the job directory, which may prevent the spider from
 resuming correctly.
 
+Scrapy version changes
+----------------------
+
+The contents of a job directory are an implementation detail of the Scrapy
+version that wrote them. A job must be resumed with the same Scrapy version
+that paused it; after upgrading or downgrading Scrapy, start a new job with a
+new job directory.
+
 Cookies expiration
 ------------------
 
@@ -96,9 +127,13 @@ Request serialization
 ---------------------
 
 For persistence to work, :class:`~scrapy.Request` objects must be
-serializable with :mod:`pickle`, except for the ``callback`` and ``errback``
-values passed to their ``__init__`` method, which must be methods of the
-running :class:`~scrapy.Spider` class.
+serializable with :mod:`pickle`, except for the :ref:`callback
+<callbacks>` and :ref:`errback
+<errbacks>` values passed to their ``__init__``
+method, which must be methods of the running :class:`~scrapy.Spider` class.
+
+Requests that cannot be serialized are kept in memory only: they are still
+sent, but they are lost when the crawl is paused.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
@@ -151,8 +186,8 @@ Where:
 -   :class:`~scrapy.pqueues.ScrapyPriorityQueue` creates the ``{priority}{s?}``
     directories.
 
--   :class:`scrapy.squeues.PickleLifoDiskQueue`, a subclass of
-    :class:`queuelib.LifoDiskQueue` that uses :mod:`pickle` to serialize
+-   :class:`scrapy.squeues.PickleFifoDiskQueue`, a subclass of
+    :class:`queuelib.FifoDiskQueue` that uses :mod:`pickle` to serialize
     :class:`dict` representations of :class:`scrapy.Request` objects, creates
     the ``info.json`` and ``q{00000}`` files.
 

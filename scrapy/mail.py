@@ -1,3 +1,5 @@
+# pragma: no file cover
+
 from __future__ import annotations
 
 import logging

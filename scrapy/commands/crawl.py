@@ -16,7 +16,7 @@ class Command(BaseRunSpiderCommand):
         return "[options] <spider>"
 
     def short_desc(self) -> str:
-        return "Run a spider"
+        return "Run a spider of the current project, by name"
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) < 1:
@@ -28,7 +28,7 @@ class Command(BaseRunSpiderCommand):
         spname = args[0]
 
         assert self.crawler_process
-        self.crawler_process.crawl(spname, **opts.spargs)
+        self.crawler_process.crawl(self._create_crawler(spname), **opts.spargs)
         self.crawler_process.start()
         if self.crawler_process.bootstrap_failed:
             self.exitcode = 1

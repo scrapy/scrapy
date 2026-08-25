@@ -10,6 +10,7 @@ class CachingHostnameResolverSpider(scrapy.Spider):
     """
 
     name = "caching_hostname_resolver_spider"
+    url: str
 
     async def start(self):
         yield scrapy.Request(self.url)

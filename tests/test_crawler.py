@@ -10,22 +10,14 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from unittest.mock import MagicMock
 
 import pytest
-from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
 from scrapy import Spider
-from scrapy.crawler import (
-    AsyncCrawlerProcess,
-    AsyncCrawlerRunner,
-    Crawler,
-    CrawlerProcess,
-    CrawlerRunner,
-    CrawlerRunnerBase,
-)
+from scrapy.crawler import AsyncCrawlerProcess, Crawler, CrawlerProcess
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
-from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
     configure_logging,
@@ -33,6 +25,8 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
+from tests.spiders import NoRequestsSpider
+from tests.utils import assert_option_is_default
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -52,14 +46,7 @@ def get_raw_crawler(
     return Crawler(spidercls or DefaultSpider, settings)
 
 
-class TestBaseCrawler:
-    @staticmethod
-    def assertOptionIsDefault(settings: Settings, key: str) -> None:
-        assert isinstance(settings, Settings)
-        assert settings[key] == getattr(default_settings, key)
-
-
-class TestCrawler(TestBaseCrawler):
+class TestCrawler:
     def test_populate_spidercls_settings(self) -> None:
         spider_settings: dict[str, Any] = {
             "TEST1": "spider",
@@ -87,14 +74,72 @@ class TestCrawler(TestBaseCrawler):
         assert not settings.frozen
         assert crawler.settings.frozen
 
+    @pytest.mark.parametrize(
+        "attr",
+        ["extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_before_apply_settings(self, attr: str) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        with pytest.raises(RuntimeError, match=rf"Crawler\.{attr} is not set yet"):
+            getattr(crawler, attr)
+        crawler._apply_settings()
+        assert getattr(crawler, attr) is not None
+
+    @pytest.mark.parametrize(
+        "attr",
+        ["engine", "extensions", "logformatter", "request_fingerprinter", "stats"],
+    )
+    def test_late_attr_on_class(self, attr: str) -> None:
+        # Introspection tools such as help() read these off the class.
+        assert getattr(Crawler, attr) is getattr(Crawler, attr)
+
+    def test_late_attr_engine_before_crawl(self) -> None:
+        crawler = get_raw_crawler(DefaultSpider)
+        crawler._apply_settings()
+        with pytest.raises(RuntimeError, match=r"Crawler\.engine is not set yet"):
+            _ = crawler.engine
+
+    @pytest.mark.parametrize(
+        ("attr", "setting"),
+        [
+            ("download_delay", "DOWNLOAD_DELAY"),
+            ("max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"),
+        ],
+    )
+    def test_deprecated_spider_attr(self, attr: str, setting: str) -> None:
+        crawler = get_raw_crawler(type("_Spider", (DefaultSpider,), {attr: 2}))
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=f"The {attr!r} spider attribute is deprecated. Use the {setting} ",
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getint(setting) == 2
+
+    @pytest.mark.parametrize(
+        ("attr", "setting"),
+        [
+            ("download_delay", "DOWNLOAD_DELAY"),
+            ("max_concurrent_requests", "CONCURRENT_REQUESTS_PER_DOMAIN"),
+        ],
+    )
+    def test_deprecated_spider_attr_ignored(self, attr: str, setting: str) -> None:
+        crawler = get_raw_crawler(type("_Spider", (DefaultSpider,), {attr: 2}))
+        crawler.settings.set(setting, 3, priority="spider")
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=f"The {attr!r} spider attribute is deprecated. It is also being ",
+        ):
+            crawler._apply_settings()
+        assert crawler.settings.getint(setting) == 3
+
     def test_crawler_accepts_dict(self) -> None:
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         assert crawler.settings["foo"] == "bar"
-        self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
+        assert_option_is_default(crawler.settings, "RETRY_ENABLED")
 
     def test_crawler_accepts_None(self) -> None:
         crawler = Crawler(DefaultSpider)
-        self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
+        assert_option_is_default(crawler.settings, "RETRY_ENABLED")
 
     def test_crawler_rejects_spider_objects(self) -> None:
         with pytest.raises(ValueError, match="spidercls argument must be a class"):
@@ -491,7 +536,6 @@ class TestSpiderSettings:
             custom_settings = {"AUTOTHROTTLE_ENABLED": True}
 
         crawler = get_crawler(MySpider)
-        assert crawler.extensions
         enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
         assert AutoThrottle in enabled_exts
 
@@ -555,7 +599,6 @@ class TestCrawlerLogging:
         assert "info message" in logged
         assert "warning message" in logged
         assert "error message" in logged
-        assert crawler.stats
         assert crawler.stats.get_value("log_count/ERROR") == 1
         assert crawler.stats.get_value("log_count/WARNING") == 1
         assert info_count == 1
@@ -583,78 +626,6 @@ class TestCrawlerLogging:
 
         assert "previous message" not in logged
         assert "debug message" in logged
-
-
-class SpiderLoaderWithWrongInterface:
-    def unneeded_method(self) -> None:
-        pass
-
-
-class TestCrawlerRunner(TestBaseCrawler):
-    def test_spider_manager_verify_interface(self) -> None:
-        settings = Settings(
-            {
-                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
-            }
-        )
-        with pytest.raises(MultipleInvalid):
-            CrawlerRunner(settings)
-
-    def test_crawler_runner_accepts_dict(self) -> None:
-        runner = CrawlerRunner({"foo": "bar"})
-        assert runner.settings["foo"] == "bar"
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    def test_crawler_runner_accepts_None(self) -> None:
-        runner = CrawlerRunner()
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-
-class TestAsyncCrawlerRunner(TestBaseCrawler):
-    def test_spider_manager_verify_interface(self) -> None:
-        settings = Settings(
-            {
-                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
-            }
-        )
-        with pytest.raises(MultipleInvalid):
-            AsyncCrawlerRunner(settings)
-
-    def test_crawler_runner_accepts_dict(self) -> None:
-        runner = AsyncCrawlerRunner({"foo": "bar"})
-        assert runner.settings["foo"] == "bar"
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    def test_crawler_runner_accepts_None(self) -> None:
-        runner = AsyncCrawlerRunner()
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-
-class TestCrawlerProcess(TestBaseCrawler):
-    def test_crawler_process_accepts_dict(self) -> None:
-        runner = CrawlerProcess({"foo": "bar"}, install_root_handler=False)
-        assert runner.settings["foo"] == "bar"
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    def test_crawler_process_accepts_None(self) -> None:
-        runner = CrawlerProcess(install_root_handler=False)
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-
-@pytest.mark.only_asyncio
-class TestAsyncCrawlerProcess(TestBaseCrawler):
-    def test_crawler_process_accepts_dict(self, reactor_pytest: str) -> None:
-        runner = AsyncCrawlerProcess(
-            {"foo": "bar", "TWISTED_REACTOR_ENABLED": reactor_pytest != "none"},
-            install_root_handler=False,
-        )
-        assert runner.settings["foo"] == "bar"
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    @pytest.mark.requires_reactor  # can't pass TWISTED_REACTOR_ENABLED=False
-    def test_crawler_process_accepts_None(self) -> None:
-        runner = AsyncCrawlerProcess(install_root_handler=False)
-        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
 
 class TestAsyncCrawlerProcessReactorlessHelpers:
@@ -716,10 +687,40 @@ class TestAsyncCrawlerProcessReactorlessHelpers:
         loop = MagicMock()
         process._reactorless_loop = loop
         process._reactorless_main_task = None
-        # No main task to cancel, so nothing is scheduled on the loop.
+        # No main task to cancel, only the log message is scheduled.
         process._signal_kill_reactorless(signal.SIGINT, None)
         assert installed_handlers == [signal.SIG_IGN]
-        loop.call_soon_threadsafe.assert_not_called()
+        loop.call_soon_threadsafe.assert_called_once_with(
+            process._log_kill, signal.SIGINT
+        )
+
+    def test_signal_shutdown_reactorless_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        loop = MagicMock()
+        process._reactorless_loop = loop
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_shutdown", log_calls.append)
+        # A signal can land while the interrupted code is itself writing to
+        # the log stream, so logging from the handler would reenter that
+        # write; it must be scheduled on the loop instead of called directly.
+        process._signal_shutdown_reactorless(signal.SIGINT, None)
+        assert log_calls == []
+        loop.call_soon_threadsafe.assert_any_call(process._log_shutdown, signal.SIGINT)
+
+    def test_signal_kill_reactorless_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        process, _ = self._bare_process(monkeypatch)
+        loop = MagicMock()
+        process._reactorless_loop = loop
+        process._reactorless_main_task = MagicMock()
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_kill", log_calls.append)
+        process._signal_kill_reactorless(signal.SIGINT, None)
+        assert log_calls == []
+        loop.call_soon_threadsafe.assert_any_call(process._log_kill, signal.SIGINT)
 
     def test_shutdown_graceful_reactorless_main_task_already_done(
         self, monkeypatch: pytest.MonkeyPatch
@@ -796,159 +797,53 @@ class TestAsyncCrawlerProcessReactorlessHelpers:
         )
 
 
-@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
-def test_runner_settings_applied_to_crawler_instance(
-    runner_cls: type[CrawlerRunnerBase],
-) -> None:
-    runner = runner_cls({"FOO": "runner"})
-    crawler = Crawler(DefaultSpider)
-    result = runner.create_crawler(crawler)
-    assert result is crawler
-    assert result.settings["FOO"] == "runner"
-
-
-@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
-def test_spider_custom_settings_override_runner(
-    runner_cls: type[CrawlerRunnerBase],
-) -> None:
-    class MySpider(DefaultSpider):
-        custom_settings = {"FOO": "spider"}
-
-    runner = runner_cls({"FOO": "runner"})
-    crawler = Crawler(MySpider)
-    runner.create_crawler(crawler)
-    assert crawler.settings["FOO"] == "spider"
-
-
-def test_create_crawler_instance_consistent_with_spider_class() -> None:
-    runner = AsyncCrawlerRunner({"FOO": "runner"})
-
-    crawler_from_class = runner.create_crawler(DefaultSpider)
-
-    pre_built = Crawler(DefaultSpider)
-    runner.create_crawler(pre_built)
-
-    assert crawler_from_class.settings["FOO"] == "runner"
-    assert pre_built.settings["FOO"] == "runner"
-
-
-@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
-def test_create_crawler_rejects_spider_object(
-    runner_cls: type[CrawlerRunnerBase],
-) -> None:
-    runner = runner_cls()
-    with pytest.raises(ValueError, match="cannot be a spider object"):
-        runner.create_crawler(DefaultSpider())  # type: ignore[arg-type]
-
-
-@pytest.mark.parametrize("runner_cls", [AsyncCrawlerRunner, CrawlerRunner])
-def test_crawl_rejects_spider_object(runner_cls: type[CrawlerRunnerBase]) -> None:
-    runner = runner_cls()
-    with pytest.raises(ValueError, match="cannot be a spider object"):
-        runner.crawl(DefaultSpider())  # type: ignore[arg-type]
-
-
-class ExceptionSpider(scrapy.Spider):
-    name = "exception"
-
-    @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        raise ValueError("Exception in from_crawler method")
-
-
-class NoRequestsSpider(scrapy.Spider):
-    name = "no_request"
-
-    async def start(self):
-        return
-        yield
-
-
-@pytest.mark.requires_reactor  # CrawlerRunner requires a reactor
-class TestCrawlerRunnerHasSpider:
-    @pytest.fixture
-    def runner(self) -> CrawlerRunnerBase:
-        return CrawlerRunner(get_reactor_settings())
+class TestCrawlerProcessBaseSignalHandlers:
+    """Unit tests for the Twisted-reactor shutdown handlers shared by
+    CrawlerProcess and AsyncCrawlerProcess.
+    """
 
     @staticmethod
-    async def _crawl(runner: CrawlerRunnerBase, spider: type[Spider]) -> None:
-        await ensure_awaitable(runner.crawl(spider))
+    def _bare_process(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> tuple[CrawlerProcess, list[Any]]:
+        installed_handlers: list[Any] = []
+        monkeypatch.setattr(
+            "scrapy.crawler.install_shutdown_handlers",
+            lambda handler, *args, **kwargs: installed_handlers.append(handler),
+        )
+        return CrawlerProcess.__new__(CrawlerProcess), installed_handlers
 
-    @coroutine_test
-    async def test_crawler_runner_bootstrap_successful(
-        self, runner: CrawlerRunnerBase
+    def test_signal_shutdown_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        await self._crawl(runner, NoRequestsSpider)
-        assert not runner.bootstrap_failed
+        process, _ = self._bare_process(monkeypatch)
+        reactor = MagicMock()
+        # No reactor may be installed yet in the test process, so
+        # twisted.internet may not have a "reactor" attribute to patch over.
+        monkeypatch.setattr("twisted.internet.reactor", reactor, raising=False)
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_shutdown", log_calls.append)
+        # A signal can land while the interrupted code is itself writing to
+        # the log stream, so logging from the handler would reenter that
+        # write and raise, aborting the handler before it schedules the
+        # graceful stop; it must be scheduled on the reactor instead.
+        process._signal_shutdown(signal.SIGINT, None)
+        assert log_calls == []
+        reactor.callFromThread.assert_any_call(process._log_shutdown, signal.SIGINT)
+        reactor.callFromThread.assert_any_call(process._graceful_stop_reactor)
 
-    @coroutine_test
-    async def test_crawler_runner_bootstrap_successful_for_several(
-        self, runner: CrawlerRunnerBase
+    def test_signal_kill_does_not_log_inline(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        await self._crawl(runner, NoRequestsSpider)
-        await self._crawl(runner, NoRequestsSpider)
-        assert not runner.bootstrap_failed
-
-    @coroutine_test
-    async def test_crawler_runner_bootstrap_failed(
-        self, runner: CrawlerRunnerBase
-    ) -> None:
-        try:
-            await self._crawl(runner, ExceptionSpider)
-        except ValueError:
-            pass
-        else:
-            pytest.fail("Exception should be raised from spider")
-
-        assert runner.bootstrap_failed
-
-    @coroutine_test
-    async def test_crawler_runner_bootstrap_failed_for_several(
-        self, runner: CrawlerRunnerBase
-    ) -> None:
-        try:
-            await self._crawl(runner, ExceptionSpider)
-        except ValueError:
-            pass
-        else:
-            pytest.fail("Exception should be raised from spider")
-
-        await self._crawl(runner, NoRequestsSpider)
-
-        assert runner.bootstrap_failed
-
-    @coroutine_test
-    async def test_crawler_runner_asyncio_enabled_true(
-        self, reactor_pytest: str
-    ) -> None:
-        if reactor_pytest != "asyncio":
-            runner = CrawlerRunner(
-                settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                }
-            )
-            with pytest.raises(
-                Exception,
-                match=r"The installed reactor \(.*?\) does not match the requested one \(.*?\)",
-            ):
-                await self._crawl(runner, NoRequestsSpider)
-        else:
-            runner = CrawlerRunner(
-                settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                }
-            )
-            await self._crawl(runner, NoRequestsSpider)
-
-
-@pytest.mark.only_asyncio
-class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
-    @pytest.fixture
-    def runner(self) -> CrawlerRunnerBase:
-        return AsyncCrawlerRunner(get_reactor_settings())
-
-    def test_crawler_runner_asyncio_enabled_true(self) -> None:  # type: ignore[override]
-        pytest.skip("This test is only for CrawlerRunner")
+        process, _ = self._bare_process(monkeypatch)
+        reactor = MagicMock()
+        monkeypatch.setattr("twisted.internet.reactor", reactor, raising=False)
+        log_calls: list[int] = []
+        monkeypatch.setattr(process, "_log_kill", log_calls.append)
+        process._signal_kill(signal.SIGINT, None)
+        assert log_calls == []
+        reactor.callFromThread.assert_any_call(process._log_kill, signal.SIGINT)
+        reactor.callFromThread.assert_any_call(process._stop_reactor)
 
 
 @pytest.mark.parametrize(

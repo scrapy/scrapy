@@ -17,8 +17,12 @@ from .utils import ssl_context_factory
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from types import TracebackType
 
     from twisted.web import resource
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class BaseMockServer(ABC):
@@ -39,13 +43,14 @@ class BaseMockServer(ABC):
         self.http_port: int | None = None
         self.https_port: int | None = None
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.proc = Popen(
             [sys.executable, "-u", "-m", self.module_name, *self.get_additional_args()],
             stdout=PIPE,
             env=get_script_run_env(),
             text=True,
         )
+        assert self.proc.stdout is not None
         if self.listen_http:
             http_address = self.proc.stdout.readline().strip()
             http_parsed = urlparse(http_address)
@@ -56,7 +61,12 @@ class BaseMockServer(ABC):
             self.https_port = https_parsed.port
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         if self.proc:
             self.proc.kill()
             self.proc.communicate()
@@ -131,7 +141,7 @@ def main_factory(
             context_factory = ssl_context_factory(**context_factory_kw)
             https_port = reactor.listenSSL(0, factory, context_factory)
 
-        def print_listening():
+        def print_listening() -> None:
             if listen_http:
                 http_host = http_port.getHost()
                 http_address = f"http://{http_host.host}:{http_host.port}"

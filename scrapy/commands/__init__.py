@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import builtins
+import logging
 import os
+import sys
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -10,7 +12,9 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from twisted.python import failure
 
+from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.extensions.feedexport import FeedExporter
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.python import global_object_name
@@ -18,11 +22,17 @@ from scrapy.utils.python import global_object_name
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from scrapy import Spider
     from scrapy.crawler import Crawler, CrawlerProcessBase
     from scrapy.settings import Settings
 
 
+logger = logging.getLogger(__name__)
+
+
 class ScrapyCommand(ABC):
+    """Base class for all Scrapy commands."""
+
     requires_project: bool = False
     requires_crawler_process: bool = True
     crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
@@ -54,16 +64,12 @@ class ScrapyCommand(ABC):
         self._crawler: Crawler = crawler
 
     def syntax(self) -> str:
-        """
-        Command syntax (preferably one-line). Do not include command name.
-        """
+        """Command syntax (preferably one-line). Do not include command name."""
         return ""
 
     @abstractmethod
     def short_desc(self) -> str:
-        """
-        A short description of the command
-        """
+        """A short description of the command."""
         return ""
 
     def long_desc(self) -> str:
@@ -82,9 +88,7 @@ class ScrapyCommand(ABC):
         return self.long_desc()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
-        """
-        Populate option parse with options available for this command
-        """
+        """Populate the option parser with the options available for this command."""
         assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
         group.add_argument(
@@ -115,9 +119,14 @@ class ScrapyCommand(ABC):
             metavar="NAME=VALUE",
             help="set/override setting (may be repeated)",
         )
-        group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
+        group.add_argument(
+            "--pdb",
+            action="store_true",
+            help="enable pdb on failure (uses ipdb if installed)",
+        )
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        """Set settings based on the command line options."""
         assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
@@ -143,13 +152,17 @@ class ScrapyCommand(ABC):
             )
 
         if opts.pdb:
+            try:
+                import ipdb  # noqa: T100,PLC0415
+            except ImportError:
+                pass
+            else:
+                sys.modules["pdb"] = ipdb
             failure.startDebugMode()
 
     @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        """
-        Entry point for running commands
-        """
+        """Entry point for running commands."""
         raise NotImplementedError
 
 
@@ -201,6 +214,24 @@ class BaseRunSpiderCommand(ScrapyCommand):
                 overwrite_output=opts.overwrite_output,
             )
             self.settings.set("FEEDS", feeds, priority="cmdline")
+
+    def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
+        assert self.crawler_process is not None
+        crawler = self.crawler_process.create_crawler(spidercls)
+        crawler.signals.connect(
+            self._warn_if_feeds_unused, signal=signals.engine_started
+        )
+        return crawler
+
+    def _warn_if_feeds_unused(self, sender: Crawler, **kwargs: Any) -> None:
+        if (
+            sender.settings.getdict("FEEDS")
+            and sender.get_extension(FeedExporter) is None
+        ):
+            logger.warning(
+                "The FeedExporter extension is not enabled, so no item will be "
+                "exported to the configured feeds (FEEDS, -o, -O)."
+            )
 
 
 class ScrapyHelpFormatter(argparse.HelpFormatter):

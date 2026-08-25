@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
@@ -39,16 +41,6 @@ def test_url_is_from_any_domain():
 
 
 def test_url_is_from_spider():
-    class MySpider(Spider):
-        name = "example.com"
-
-    assert url_is_from_spider("http://www.example.com/some/page.html", MySpider)
-    assert url_is_from_spider("http://sub.example.com/some/page.html", MySpider)
-    assert not url_is_from_spider("http://www.example.org/some/page.html", MySpider)
-    assert not url_is_from_spider("http://www.example.net/some/page.html", MySpider)
-
-
-def test_url_is_from_spider_class_attributes():
     class MySpider(Spider):
         name = "example.com"
 
@@ -201,7 +193,7 @@ def test_guess_scheme(url: str, expected: str):
         ),
     ],
 )
-def test_guess_scheme_skipped(url: str, expected: str, reason: str):
+def test_guess_scheme_skipped(url: str, expected: str, reason: str) -> None:
     pytest.skip(reason)
 
 

@@ -107,11 +107,11 @@ class TestAddonManager:
         addonlist = []
         for i in range(3):
             addon = get_addon_cls({"KEY1": i})
-            addon.number = i
+            addon.number = i  # type: ignore[attr-defined]
             addonlist.append(addon)
         # Test for every possible ordering
         for ordered_addons in itertools.permutations(addonlist):
-            expected_order = [a.number for a in ordered_addons]
+            expected_order = [a.number for a in ordered_addons]  # type: ignore[attr-defined]
             settings = {"ADDONS": {a: i for i, a in enumerate(ordered_addons)}}
             crawler = get_crawler(settings_dict=settings)
             manager = crawler.addons
@@ -177,7 +177,7 @@ class TestAddonManager:
                     )
                 settings["SCHEDULER"] = "AddonScheduler"
 
-        settings_dict = {
+        settings_dict: dict[str, Any] = {
             "ADDONS": {AddonWithFallback: 1},
         }
         crawler = get_crawler(settings_dict=settings_dict)

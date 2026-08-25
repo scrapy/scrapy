@@ -2,25 +2,18 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import marshal
 import pickle
-import random
-import shutil
 import tempfile
-from abc import ABC, abstractmethod
 from logging import getLogger
 from pathlib import Path
-from string import ascii_letters, digits
 from typing import IO, TYPE_CHECKING, Any
 from unittest import mock
-from urllib.parse import urljoin
-from urllib.request import pathname2url
 
 import lxml.etree
 import pytest
-from testfixtures import LogCapture
 from w3lib.url import file_uri_to_path
-from zope.interface import implementer
 
 import scrapy
 from scrapy import Spider, signals
@@ -31,24 +24,19 @@ from scrapy.extensions.feedexport import (
     FeedExporter,
     FeedSlot,
     FileFeedStorage,
-    IFeedStorage,
+    ItemFilter,
+    apply_uri_params,
 )
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
-from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
+from tests.utils.bases.feedexport import TestFeedExportBase
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+from tests.utils.feedexport import MyItem, MyItem2, path_to_url, printf_escape
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
-
-
-def path_to_url(path: str | Path) -> str:
-    return urljoin("file:", pathname2url(str(path)))
-
-
-def printf_escape(s: str) -> str:
-    return s.replace("%", "%%")
 
 
 class FromCrawlerMixin:
@@ -91,7 +79,6 @@ class FailingBlockingFeedStorage(DummyBlockingFeedStorage):
         raise OSError("Cannot store")
 
 
-@implementer(IFeedStorage)
 class LogOnStoreFileStorage:
     """
     This storage logs inside `store` method.
@@ -110,153 +97,11 @@ class LogOnStoreFileStorage:
         file.close()
 
 
-class TestFeedExportBase(ABC):
-    mockserver: MockServer
-
-    class MyItem(scrapy.Item):
-        foo = scrapy.Field()
-        egg = scrapy.Field()
-        baz = scrapy.Field()
-
-    class MyItem2(scrapy.Item):
-        foo = scrapy.Field()
-        hello = scrapy.Field()
-
-    def _random_temp_filename(self, inter_dir="") -> Path:
-        chars = [random.choice(ascii_letters + digits) for _ in range(15)]
-        filename = "".join(chars)
-        return Path(self.temp_dir, inter_dir, filename)
-
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    def setup_method(self):
-        self.temp_dir = tempfile.mkdtemp()
-
-    def teardown_method(self):
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-    async def exported_data(
-        self, items: Iterable[Any], settings: dict[str, Any]
-    ) -> dict[str, Any]:
-        """
-        Return exported data which a spider yielding ``items`` would return.
-        """
-
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                yield from items
-
-        return await self.run_and_export(TestSpider, settings)
-
-    async def exported_no_data(self, settings: dict[str, Any]) -> dict[str, Any]:
-        """
-        Return exported data which a spider yielding no ``items`` would return.
-        """
-
-        class TestSpider(scrapy.Spider):
-            name = "testspider"
-
-            def parse(self, response):
-                pass
-
-        return await self.run_and_export(TestSpider, settings)
-
-    async def assertExported(
-        self,
-        items: Iterable[Any],
-        header: Iterable[str],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        await self.assertExportedCsv(items, header, rows, settings)
-        await self.assertExportedJsonLines(items, rows, settings)
-        await self.assertExportedXml(items, rows, settings)
-        await self.assertExportedPickle(items, rows, settings)
-        await self.assertExportedMarshal(items, rows, settings)
-        await self.assertExportedMultiple(items, rows, settings)
-
-    async def assertExportedCsv(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        header: Iterable[str],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedJsonLines(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedXml(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedMultiple(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedPickle(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    async def assertExportedMarshal(  # noqa: B027
-        self,
-        items: Iterable[Any],
-        rows: Iterable[dict[str, Any]],
-        settings: dict[str, Any] | None = None,
-    ) -> None:
-        pass
-
-    @abstractmethod
-    async def run_and_export(
-        self, spider_cls: type[Spider], settings: dict[str, Any]
-    ) -> dict[str, Any]:
-        pass
-
-    def _load_until_eof(
-        self, data: bytes, load_func: Callable[[IO[bytes]], Any]
-    ) -> list[Any]:
-        result: list[Any] = []
-        with tempfile.TemporaryFile() as temp:
-            temp.write(data)
-            temp.seek(0)
-            while True:
-                try:
-                    result.append(load_func(temp))
-                except EOFError:
-                    break
-        return result
-
-
 class InstrumentedFeedSlot(FeedSlot):
     """Instrumented FeedSlot subclass for keeping track of calls to
     start_exporting and finish_exporting."""
+
+    update_listener: Callable[[str], None]
 
     def start_exporting(self):
         self.update_listener("start")
@@ -267,7 +112,7 @@ class InstrumentedFeedSlot(FeedSlot):
         super().finish_exporting()
 
     @classmethod
-    def subscribe__listener(cls, listener):
+    def subscribe__listener(cls, listener: IsExportingListener) -> None:
         cls.update_listener = listener.update
 
 
@@ -277,7 +122,7 @@ class IsExportingListener:
     finish_exporting and when a call to finish_exporting has been made
     before a call to start_exporting."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.start_without_finish = False
         self.finish_without_start = False
 
@@ -516,15 +361,100 @@ class TestFeedExport(TestFeedExportBase):
     async def test_export_items(self):
         # feed exporters use field names from Item
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
         ]
         rows = [
             {"egg": "spam1", "foo": "bar1", "baz": ""},
             {"egg": "spam2", "foo": "bar2", "baz": "quux2"},
         ]
-        header = self.MyItem.fields.keys()
+        header = MyItem.fields.keys()
         await self.assertExported(items, header, rows)
+
+    @coroutine_test
+    async def test_pathlib_uri_with_placeholders(self):
+        feed_dir = Path(self.temp_dir, "pathlib_placeholders")
+        feed_dir.mkdir()
+        items = [MyItem({"foo": "bar1", "egg": "spam1"})]
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+
+            def parse(self, response):
+                yield from items
+
+        TestSpider.start_urls = [self.mockserver.url("/")]
+        settings = {
+            "FEEDS": {
+                feed_dir / "%(time)s.json": {"format": "json"},
+            },
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        files = list(feed_dir.iterdir())
+        assert len(files) == 1
+        assert "%(time)s" not in files[0].name
+        assert files[0].suffix == ".json"
+
+    @coroutine_test
+    async def test_pathlib_uri_with_spaces_and_unicode(self):
+        # A pathlib.Path key with spaces and non-ASCII characters must be kept
+        # verbatim (not percent-encoded), while %()s placeholders are still
+        # substituted. %(name)s resolves to the spider name deterministically,
+        # so the resulting file name can be asserted exactly.
+        feed_dir = Path(self.temp_dir, "pathlib_spaces_unicode")
+        feed_dir.mkdir()
+        items = [MyItem({"foo": "bar1", "egg": "spam1"})]
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+
+            def parse(self, response):
+                yield from items
+
+        TestSpider.start_urls = [self.mockserver.url("/")]
+        settings = {
+            "FEEDS": {
+                feed_dir / "out %(name)s ünïcode.json": {"format": "json"},
+            },
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        files = list(feed_dir.iterdir())
+        assert len(files) == 1
+        assert files[0].name == "out testspider ünïcode.json"
+
+    @coroutine_test
+    async def test_str_uri_with_percent_encoding_and_placeholder(self):
+        # A percent-encoded string URI (e.g. %20 for a space) must reach
+        # storage verbatim rather than being misinterpreted as a printf
+        # directive, while %()s placeholders are still substituted. See #6425
+        # and #5794.
+        feed_dir = Path(self.temp_dir, "dir with spaces")
+        feed_dir.mkdir()
+        items = [MyItem({"foo": "bar1", "egg": "spam1"})]
+
+        class TestSpider(scrapy.Spider):
+            name = "testspider"
+
+            def parse(self, response):
+                yield from items
+
+        TestSpider.start_urls = [self.mockserver.url("/")]
+        settings = {
+            "FEEDS": {
+                f"{feed_dir.as_uri()}/%(time)s.json": {"format": "json"},
+            },
+        }
+        crawler = get_crawler(TestSpider, settings)
+        await crawler.crawl_async()
+
+        files = list(feed_dir.iterdir())
+        assert len(files) == 1
+        assert "%(time)s" not in files[0].name
+        assert files[0].suffix == ".json"
 
     @coroutine_test
     async def test_export_no_items_not_store_empty(self):
@@ -541,7 +471,7 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_start_finish_exporting_items(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
         ]
         settings = {
             "FEEDS": {
@@ -560,7 +490,7 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_start_finish_exporting_no_items(self):
-        items = []
+        items: list[Any] = []
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -579,7 +509,7 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_start_finish_exporting_items_exception(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
         ]
         settings = {
             "FEEDS": {
@@ -599,7 +529,7 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_start_finish_exporting_no_items_exception(self):
-        items = []
+        items: list[Any] = []
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -637,8 +567,10 @@ class TestFeedExport(TestFeedExportBase):
             assert expctd == data[fmt]
 
     @coroutine_test
-    async def test_export_no_items_multiple_feeds(self):
-        """Make sure that `storage.store` is called for every feed."""
+    async def test_export_no_items_multiple_feeds(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Make sure that `storage.store` is not called."""
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -649,23 +581,23 @@ class TestFeedExport(TestFeedExportBase):
             "FEED_STORE_EMPTY": False,
         }
 
-        with LogCapture() as log:
+        with caplog.at_level(logging.INFO):
             await self.exported_no_data(settings)
 
-        assert str(log).count("Storage.store is called") == 0
+        assert caplog.text.count("Storage.store is called") == 0
 
     @coroutine_test
     async def test_export_multiple_item_classes(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem2({"hello": "world2", "foo": "bar2"}),
-            self.MyItem({"foo": "bar3", "egg": "spam3", "baz": "quux3"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem2({"hello": "world2", "foo": "bar2"}),
+            MyItem({"foo": "bar3", "egg": "spam3", "baz": "quux3"}),
             {"hello": "world4", "egg": "spam4"},
         ]
 
         # by default, Scrapy uses fields of the first Item for CSV and
         # all fields for JSON Lines
-        header = self.MyItem.fields.keys()
+        header = MyItem.fields.keys()
         rows_csv = [
             {"egg": "spam1", "foo": "bar1", "baz": ""},
             {"egg": "", "foo": "bar2", "baz": ""},
@@ -682,7 +614,7 @@ class TestFeedExport(TestFeedExportBase):
         items = [{"foo": "bar"}]
         header = ["foo"]
         rows = [{"foo": "bar"}]
-        settings = {"FEED_EXPORT_FIELDS": []}
+        settings: dict[str, Any] = {"FEED_EXPORT_FIELDS": []}
         await self.assertExportedCsv(items, header, rows)
         await self.assertExportedJsonLines(items, rows, settings)
 
@@ -740,21 +672,21 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_export_based_on_item_classes(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem2({"hello": "world2", "foo": "bar2"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem2({"hello": "world2", "foo": "bar2"}),
             {"hello": "world3", "egg": "spam3"},
         ]
 
         formats = {
             "csv": b"foo,egg,baz\r\nbar1,spam1,\r\n",
-            "json": b'[\n{"hello": "world2", "foo": "bar2"}\n]',
+            "json": b'[\n{"foo": "bar2", "hello": "world2"}\n]',
             "jsonlines": (
-                b'{"foo": "bar1", "egg": "spam1"}\n{"hello": "world2", "foo": "bar2"}\n'
+                b'{"foo": "bar1", "egg": "spam1"}\n{"foo": "bar2", "hello": "world2"}\n'
             ),
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
-                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>"
-                b"world2</hello><foo>bar2</foo></item>\n<item><hello>world3"
+                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><foo>"
+                b"bar2</foo><hello>world2</hello></item>\n<item><hello>world3"
                 b"</hello><egg>spam3</egg></item>\n</items>"
             ),
         }
@@ -763,15 +695,15 @@ class TestFeedExport(TestFeedExportBase):
             "FEEDS": {
                 self._random_temp_filename(): {
                     "format": "csv",
-                    "item_classes": [self.MyItem],
+                    "item_classes": [MyItem],
                 },
                 self._random_temp_filename(): {
                     "format": "json",
-                    "item_classes": [self.MyItem2],
+                    "item_classes": [MyItem2],
                 },
                 self._random_temp_filename(): {
                     "format": "jsonlines",
-                    "item_classes": [self.MyItem, self.MyItem2],
+                    "item_classes": [MyItem, MyItem2],
                 },
                 self._random_temp_filename(): {
                     "format": "xml",
@@ -786,12 +718,10 @@ class TestFeedExport(TestFeedExportBase):
     @coroutine_test
     async def test_export_based_on_custom_filters(self):
         items = [
-            self.MyItem({"foo": "bar1", "egg": "spam1"}),
-            self.MyItem2({"hello": "world2", "foo": "bar2"}),
+            MyItem({"foo": "bar1", "egg": "spam1"}),
+            MyItem2({"hello": "world2", "foo": "bar2"}),
             {"hello": "world3", "egg": "spam3"},
         ]
-
-        MyItem = self.MyItem
 
         class CustomFilter1:
             def __init__(self, feed_options):
@@ -800,22 +730,22 @@ class TestFeedExport(TestFeedExportBase):
             def accepts(self, item):
                 return isinstance(item, MyItem)
 
-        class CustomFilter2(scrapy.extensions.feedexport.ItemFilter):
+        class CustomFilter2(ItemFilter):
             def accepts(self, item):
                 return "foo" in item.fields
 
-        class CustomFilter3(scrapy.extensions.feedexport.ItemFilter):
+        class CustomFilter3(ItemFilter):
             def accepts(self, item):
                 return (
-                    isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1"
+                    isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1"  # type: ignore[index]
                 )
 
         formats = {
             "json": b'[\n{"foo": "bar1", "egg": "spam1"}\n]',
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
-                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>"
-                b"world2</hello><foo>bar2</foo></item>\n</items>"
+                b"<foo>bar1</foo><egg>spam1</egg></item>\n<item><foo>"
+                b"bar2</foo><hello>world2</hello></item>\n</items>"
             ),
             "jsonlines": b'{"foo": "bar1", "egg": "spam1"}\n',
         }
@@ -832,7 +762,7 @@ class TestFeedExport(TestFeedExportBase):
                 },
                 self._random_temp_filename(): {
                     "format": "jsonlines",
-                    "item_classes": [self.MyItem, self.MyItem2],
+                    "item_classes": [MyItem, MyItem2],
                     "item_filter": CustomFilter3,
                 },
             },
@@ -871,7 +801,7 @@ class TestFeedExport(TestFeedExportBase):
         # FEED_EXPORT_FIELDS option allows to order export fields
         # and to select a subset of fields to export, both for Items and dicts.
 
-        for item_cls in [self.MyItem, dict]:
+        for item_cls in [MyItem, dict]:
             items = [
                 item_cls({"foo": "bar1", "egg": "spam1"}),
                 item_cls({"foo": "bar2", "egg": "spam2", "baz": "quux2"}),
@@ -907,7 +837,7 @@ class TestFeedExport(TestFeedExportBase):
         }
 
         for fmt, expected in formats.items():
-            settings = {
+            settings: dict[str, Any] = {
                 "FEEDS": {
                     self._random_temp_filename(): {"format": fmt},
                 },
@@ -984,7 +914,7 @@ class TestFeedExport(TestFeedExportBase):
             {"key": "value"},
         ]
 
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             # JSON
             {
                 "format": "json",
@@ -1156,7 +1086,9 @@ class TestFeedExport(TestFeedExportBase):
         assert data["csv"] == b""
 
     @coroutine_test
-    async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
+    async def test_multiple_feeds_success_logs_blocking_feed_storage(
+        self, caplog: pytest.LogCaptureFixture
+    ):
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1169,14 +1101,16 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar1", "baz": ""},
             {"foo": "bar2", "baz": "quux"},
         ]
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             await self.exported_data(items, settings)
 
         for fmt in ["json", "xml", "csv"]:
-            assert f"Stored {fmt} feed (2 items)" in str(log)
+            assert f"Stored {fmt} feed (2 items)" in caplog.text
 
     @coroutine_test
-    async def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
+    async def test_multiple_feeds_failing_logs_blocking_feed_storage(
+        self, caplog: pytest.LogCaptureFixture
+    ):
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "json"},
@@ -1189,11 +1123,11 @@ class TestFeedExport(TestFeedExportBase):
             {"foo": "bar1", "baz": ""},
             {"foo": "bar2", "baz": "quux"},
         ]
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             await self.exported_data(items, settings)
 
         for fmt in ["json", "xml", "csv"]:
-            assert f"Error storing {fmt} feed (2 items)" in str(log)
+            assert f"Error storing {fmt} feed (2 items)" in caplog.text
 
     @coroutine_test
     async def test_extend_kwargs(self):
@@ -1201,7 +1135,7 @@ class TestFeedExport(TestFeedExportBase):
 
         expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
         expected_without_title_csv = b"FOO,BAR\r\n"
-        test_cases = [
+        test_cases: list[dict[str, Any]] = [
             # with title
             {
                 "options": {
@@ -1234,8 +1168,10 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_storage_file_no_postprocessing(self):
-        @implementer(IFeedStorage)
         class Storage:
+            open_file: IO[bytes]
+            store_file: IO[bytes]
+
             def __init__(self, uri, *, feed_options=None):
                 pass
 
@@ -1256,8 +1192,11 @@ class TestFeedExport(TestFeedExportBase):
 
     @coroutine_test
     async def test_storage_file_postprocessing(self):
-        @implementer(IFeedStorage)
         class Storage:
+            open_file: IO[bytes]
+            store_file: IO[bytes]
+            file_was_closed: bool
+
             def __init__(self, uri, *, feed_options=None):
                 pass
 
@@ -1321,9 +1260,8 @@ class TestFeedExporterSignals:
         feed_slot_signal_handler: Callable[[Any], Awaitable[None] | None],
     ) -> None:
         crawler = get_crawler(settings_dict=self.settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
+        feed_exporter = build_from_crawler(FeedExporter, crawler)
+        spider = scrapy.Spider.from_crawler(crawler, "default")
         crawler.signals.connect(
             feed_exporter_signal_handler,
             signal=signals.feed_exporter_closed,
@@ -1361,16 +1299,41 @@ class TestFeedExporterSignals:
         assert self.feed_exporter_closed_received
 
 
+class TestItemFilter:
+    def test_no_feed_options(self):
+        item_filter = ItemFilter(None)
+        assert item_filter.item_classes == ()
+        assert item_filter.accepts(MyItem({"foo": "bar"}))
+
+
 class TestFeedExportInit:
     def test_unsupported_storage(self):
-        settings = {
+        settings: dict[str, Any] = {
             "FEEDS": {
                 "unsupported://uri": {},
             },
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
+
+    def test_disabled_storage(self, caplog: pytest.LogCaptureFixture):
+        class DisabledFeedStorage:
+            def __init__(self, uri, *, feed_options=None):
+                raise NotConfigured("not today")
+
+        settings = {
+            "FEED_STORAGES": {"disabled": DisabledFeedStorage},
+            "FEEDS": {
+                "disabled://uri": {},
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        with caplog.at_level(logging.ERROR), pytest.raises(NotConfigured):
+            build_from_crawler(FeedExporter, crawler)
+        assert (
+            "Disabled feed storage scheme: disabled. Reason: not today" in caplog.text
+        )
 
     def test_unsupported_format(self):
         settings = {
@@ -1382,7 +1345,7 @@ class TestFeedExportInit:
         }
         crawler = get_crawler(settings_dict=settings)
         with pytest.raises(NotConfigured):
-            FeedExporter.from_crawler(crawler)
+            build_from_crawler(FeedExporter, crawler)
 
     def test_absolute_pathlib_as_uri(self):
         with tempfile.NamedTemporaryFile(suffix="json") as tmp:
@@ -1394,7 +1357,7 @@ class TestFeedExportInit:
                 },
             }
             crawler = get_crawler(settings_dict=settings)
-            exporter = FeedExporter.from_crawler(crawler)
+            exporter = build_from_crawler(FeedExporter, crawler)
             assert isinstance(exporter, FeedExporter)
 
     def test_relative_pathlib_as_uri(self):
@@ -1406,5 +1369,36 @@ class TestFeedExportInit:
             },
         }
         crawler = get_crawler(settings_dict=settings)
-        exporter = FeedExporter.from_crawler(crawler)
+        exporter = build_from_crawler(FeedExporter, crawler)
         assert isinstance(exporter, FeedExporter)
+
+
+class TestApplyUriParams:
+    params = {
+        "name": "myspider",
+        "time": "2020-01-01T00-00-00",
+        "batch_id": 2,
+        "batch_time": "2020-01-01T00-00-00",
+    }
+
+    @pytest.mark.parametrize(
+        ("uri_template", "expected"),
+        [
+            # Placeholders are substituted, including width/flags.
+            ("/data/%(name)s/%(time)s.json", "/data/myspider/2020-01-01T00-00-00.json"),
+            ("/data/%(batch_id)05d.json", "/data/00002.json"),
+            # Percent-encoding is kept verbatim (#6425, #5794).
+            (
+                "file:///path%20with%20spaces/%(name)s.json",
+                "file:///path%20with%20spaces/myspider.json",
+            ),
+            (
+                "ftp://user:2%23um25%21M%23JZ@ftp.example.com/%(name)s.csv",
+                "ftp://user:2%23um25%21M%23JZ@ftp.example.com/myspider.csv",
+            ),
+            # A lone percent character next to a placeholder stays literal.
+            ("/100%/%(name)s.json", "/100%/myspider.json"),
+        ],
+    )
+    def test_apply_uri_params(self, uri_template, expected):
+        assert apply_uri_params(uri_template, self.params) == expected

@@ -23,7 +23,7 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.asyncio import is_asyncio_available, sleep
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
@@ -82,18 +82,15 @@ def defer_succeed(result: _T) -> Deferred[_T]:  # pragma: no cover
     return d
 
 
-async def _defer_sleep_async() -> None:
-    """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
-    before attending pending delayed calls, so do not set delay to zero.
-    """
-    if is_asyncio_available():
-        await asyncio.sleep(_DEFER_DELAY)
-    else:
-        from twisted.internet import reactor
+async def _process_pending_io() -> None:
+    """Yield control until the event loop has gone through its readers and writers.
 
-        d: Deferred[None] = Deferred()
-        reactor.callLater(_DEFER_DELAY, d.callback, None)
-        await d
+    Yielding twice is what makes that guarantee: the first yield can resume
+    before the callbacks of the file descriptors that the poll found ready, and
+    only the second one is certain to resume after them.
+    """
+    await sleep(0)
+    await sleep(0)
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover

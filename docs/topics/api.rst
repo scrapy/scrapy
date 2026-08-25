@@ -35,6 +35,13 @@ how you :ref:`configure the downloader middlewares
     :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
 
+    The :attr:`engine`, :attr:`extensions`, :attr:`logformatter`,
+    :attr:`request_fingerprinter` and :attr:`stats` attributes get their value
+    when the crawl starts, and raise :exc:`RuntimeError` when read before that.
+
+    .. versionchanged:: 2.18.0
+        Those attributes used to be ``None`` before getting their value.
+
     .. attribute:: request_fingerprinter
 
         The request fingerprint builder of this crawler.
@@ -74,6 +81,8 @@ how you :ref:`configure the downloader middlewares
         For an introduction on stats collection see :ref:`topics-stats`.
 
         For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
+
+    .. autoattribute:: logformatter
 
     .. attribute:: extensions
 
@@ -157,6 +166,8 @@ Settings API
 
 .. autofunction:: get_settings_priority
 
+.. autofunction:: scrapy.utils.project.get_project_settings
+
 .. autoclass:: Settings
    :show-inheritance:
    :members:
@@ -172,46 +183,15 @@ SpiderLoader API
 .. module:: scrapy.spiderloader
    :synopsis: The spider loader
 
-.. class:: SpiderLoader
+Custom spider loaders can be employed by specifying their path in the
+:setting:`SPIDER_LOADER_CLASS` project setting. They must implement
+:class:`SpiderLoaderProtocol`.
 
-    This class is in charge of retrieving and handling the spider classes
-    defined across the project.
+.. autoclass:: SpiderLoaderProtocol
+    :members:
 
-    Custom spider loaders can be employed by specifying their path in the
-    :setting:`SPIDER_LOADER_CLASS` project setting. They must fully implement
-    the :class:`scrapy.interfaces.ISpiderLoader` interface to guarantee an
-    errorless execution.
-
-    .. method:: from_settings(settings)
-
-       This class method is used by Scrapy to create an instance of the class.
-       It's called with the current project settings, and it loads the spiders
-       found recursively in the modules of the :setting:`SPIDER_MODULES`
-       setting.
-
-       :param settings: project settings
-       :type settings: :class:`~scrapy.settings.Settings` instance
-
-    .. method:: load(spider_name)
-
-       Get the Spider class with the given name. It'll look into the previously
-       loaded spiders for a spider class with name ``spider_name`` and will raise
-       a KeyError if not found.
-
-       :param spider_name: spider class name
-       :type spider_name: str
-
-    .. method:: list()
-
-       Get the names of the available spiders in the project.
-
-    .. method:: find_by_request(request)
-
-       List the spiders' names that can handle the given request. Will try to
-       match the request's url against the domains of the spiders.
-
-       :param request: queried request
-       :type request: :class:`~scrapy.Request` instance
+.. autoclass:: SpiderLoader
+    :members:
 
 .. autoclass:: DummySpiderLoader
 
