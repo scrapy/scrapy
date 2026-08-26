@@ -19,6 +19,7 @@ from scrapy.utils.log import (
     SpiderLoggerAdapter,
     StreamLogger,
     TopLevelFormatter,
+    _get_formatter,
     _uninstall_scrapy_root_handler,
     configure_logging,
     failure_to_exc_info,
@@ -140,6 +141,72 @@ class TestStreamLogger:
         finally:
             logger.removeHandler(handler)
         assert handler.flushes == 1
+
+
+class _TTYStringIO(StringIO):
+    def isatty(self) -> bool:
+        return True
+
+
+class TestGetFormatter:
+    @staticmethod
+    def _settings(**overrides: Any) -> Settings:
+        values = {
+            "LOG_FORMAT": "%(levelname)s: %(message)s",
+            "LOG_DATEFORMAT": "%Y-%m-%d",
+            "LOG_COLOR": True,
+        }
+        values.update(overrides)
+        return Settings(values)
+
+    def test_colored_when_tty_and_enabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        pytest.importorskip("colorlog")
+        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        stream = _TTYStringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(_get_formatter(handler, self._settings()))
+        logger = logging.getLogger("test_get_formatter_colored")
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+        try:
+            logger.error("boom")
+        finally:
+            logger.removeHandler(handler)
+        output = stream.getvalue()
+        assert "\x1b[" in output
+        assert "boom" in output
+
+    def test_plain_when_not_a_tty(self) -> None:
+        handler = logging.StreamHandler(StringIO())
+        formatter = _get_formatter(handler, self._settings())
+        assert type(formatter) is logging.Formatter
+
+    def test_plain_when_log_color_disabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        handler = logging.StreamHandler(_TTYStringIO())
+        formatter = _get_formatter(handler, self._settings(LOG_COLOR=False))
+        assert type(formatter) is logging.Formatter
+
+    def test_plain_for_file_handler(self, tmp_path: Any) -> None:
+        handler = logging.FileHandler(tmp_path / "log.txt")
+        try:
+            formatter = _get_formatter(handler, self._settings())
+        finally:
+            handler.close()
+        assert type(formatter) is logging.Formatter
+
+    def test_plain_when_colorlog_not_installed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        monkeypatch.setitem(sys.modules, "colorlog", None)
+        handler = logging.StreamHandler(_TTYStringIO())
+        formatter = _get_formatter(handler, self._settings())
+        assert type(formatter) is logging.Formatter
 
 
 class TestConfigureLogging:

@@ -448,6 +448,7 @@ ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
 
+LOG_COLOR = True
 LOG_ENABLED = True
 LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_ENCODING = "utf-8"
