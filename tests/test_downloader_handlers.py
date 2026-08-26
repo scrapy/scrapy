@@ -377,7 +377,7 @@ class TestDataURI:
         request = Request("data:,A%20brief%20note")
         response = await self.download_request(request)
         assert response.text == "A brief note"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "US-ASCII"
 
@@ -386,7 +386,7 @@ class TestDataURI:
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "iso-8859-7"
 
@@ -408,7 +408,7 @@ class TestDataURI:
         )
         response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
-        assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+        assert type(response) is responsetypes.from_mimetype("text/plain")
         assert isinstance(response, TextResponse)
         assert response.encoding == "utf-8"
 
