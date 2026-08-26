@@ -115,6 +115,25 @@ class TestRedirectBase(ABC):
         assert req2.meta["redirect_reasons"] == [self.reason]
         assert req3.meta["redirect_reasons"] == [self.reason, self.reason]
 
+    def test_downloader_assigned_slot_dropped(self):
+        req = Request("http://a.example/")
+        req.meta["download_slot"] = "a.example"
+        req.meta["_auto_download_slot"] = True
+        redirected = self.mw.process_response(
+            req, self.get_response(req, "http://b.example/")
+        )
+        assert isinstance(redirected, Request)
+        assert "download_slot" not in redirected.meta
+        assert "_auto_download_slot" not in redirected.meta
+
+    def test_user_assigned_slot_kept(self):
+        req = Request("http://a.example/", meta={"download_slot": "custom"})
+        redirected = self.mw.process_response(
+            req, self.get_response(req, "http://b.example/")
+        )
+        assert isinstance(redirected, Request)
+        assert redirected.meta["download_slot"] == "custom"
+
     def test_cross_origin_header_dropping(self):
         safe_headers = {"A": "B"}
         cookie_header = {"Cookie": "a=b"}

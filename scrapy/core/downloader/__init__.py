@@ -120,6 +120,8 @@ class Downloader:
                     self.middleware.download_async(self._enqueue_request, request)
                 )
             )
+            if not isinstance(result, Request):
+                request.meta.pop("_auto_download_slot", None)
             return result
         finally:
             self.active.remove(request)
@@ -159,6 +161,8 @@ class Downloader:
 
     # passed as download_func into self.middleware.download() in self.fetch()
     async def _enqueue_request(self, request: Request) -> Response:
+        if request.meta.get(self.DOWNLOAD_SLOT) is None:
+            request.meta["_auto_download_slot"] = True
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)

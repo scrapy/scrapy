@@ -913,6 +913,24 @@ started, i.e. HTTP message sent over the network. This meta key only becomes
 available when the response has been downloaded. While most other meta keys are
 used to control Scrapy behavior, this one is supposed to be read-only.
 
+.. reqmeta:: download_slot
+
+download_slot
+-------------
+
+The download slot of this request. Requests that share a slot share concurrency
+and delay limits (see :setting:`DOWNLOAD_SLOTS` and
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`).
+
+By default the slot is the request hostname. Set this key to assign a request to
+a specific slot.
+
+.. versionchanged:: VERSION
+
+    When the downloader assigned the slot because this key was not set, a
+    redirect drops it so the redirected request is slotted by its own hostname.
+    A user-set value is kept across redirects.
+
 .. reqmeta:: download_fail_on_dataloss
 
 download_fail_on_dataloss

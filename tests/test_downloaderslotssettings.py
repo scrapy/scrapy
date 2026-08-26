@@ -6,11 +6,46 @@ import pytest
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http import Response
+from scrapy.spiders import Spider
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider
 from tests.utils.decorators import coroutine_test, inline_callbacks_test
+
+
+class _RedirectSlotDownloadHandler:
+    lazy = False
+
+    async def download_request(self, request: Request) -> Response:
+        if request.url == "http://a.example/":
+            return Response(
+                request.url,
+                status=302,
+                headers={"Location": "http://b.example/"},
+                request=request,
+            )
+        return Response(request.url, request=request)
+
+
+class CrossDomainRedirectSpider(Spider):
+    name = "cross_domain_redirect"
+    custom_settings = {
+        "DOWNLOAD_HANDLERS": {"http": _RedirectSlotDownloadHandler},
+    }
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.slots: list[str] = []
+        self.auto_flag: object = None
+
+    async def start(self):
+        yield Request("http://a.example/", callback=self.parse)
+
+    def parse(self, response: Response):
+        self.slots.append(response.meta["download_slot"])
+        self.auto_flag = response.meta.get("_auto_download_slot")
 
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
@@ -67,6 +102,31 @@ class NoDelayDownloaderSlotsSpider(DownloaderSlotsSettingsTestSpider):
     }
 
 
+class FollowFromResponseMetaSpider(MetaSpider):
+    name = "follow_from_response_meta"
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.slots: list[str] = []
+        self.auto_flags: list[bool] = []
+
+    async def start(self):
+        assert self.mockserver
+        yield Request(self.mockserver.url("/text"), callback=self.parse)
+
+    def parse(self, response: Response):
+        self.auto_flags.append("_auto_download_slot" in response.meta)
+        meta = dict(response.meta)
+        meta["download_slot"] = "custom"
+        yield Request(
+            response.url, callback=self.not_parse, meta=meta, dont_filter=True
+        )
+
+    def not_parse(self, response: Response):
+        self.slots.append(response.meta["download_slot"])
+        self.auto_flags.append("_auto_download_slot" in response.meta)
+
+
 @inline_callbacks_test
 def test_delay(mockserver: MockServer):
     crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
@@ -82,6 +142,24 @@ def test_delay(mockserver: MockServer):
 
     for slot, (first, second) in times.items():
         assert abs((second - first) - slots[slot].delay) < tolerance
+
+
+@inline_callbacks_test
+def test_redirect_to_other_host_changes_slot():
+    crawler = get_crawler(CrossDomainRedirectSpider)
+    yield crawler.crawl()
+    assert isinstance(crawler.spider, CrossDomainRedirectSpider)
+    assert crawler.spider.slots == ["b.example"]
+    assert crawler.spider.auto_flag is None
+
+
+@inline_callbacks_test
+def test_user_slot_from_response_meta_is_kept(mockserver: MockServer):
+    crawler = get_crawler(FollowFromResponseMetaSpider)
+    yield crawler.crawl(mockserver=mockserver)
+    assert isinstance(crawler.spider, FollowFromResponseMetaSpider)
+    assert crawler.spider.auto_flags == [False, False]
+    assert crawler.spider.slots == ["custom"]
 
 
 @coroutine_test
