@@ -564,6 +564,7 @@ SPIDER_CONTRACTS_BASE = {
 }
 
 SPIDER_LOADER_CLASS = "scrapy.spiderloader.SpiderLoader"
+SPIDER_LOADER_REQUIRE_NAME = True
 SPIDER_LOADER_WARN_ONLY = False
 
 SPIDER_MIDDLEWARES: dict[str, int] = {}

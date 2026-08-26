@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.http import Request, Response, XmlResponse
-from scrapy.spiders import Spider
+from scrapy.spiders import Spider, ignore_spider
 from scrapy.utils._compression import _DecompressionMaxSizeExceeded
 from scrapy.utils.gz import gunzip, gzip_magic_number
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@ignore_spider
 class SitemapSpider(Spider):
     sitemap_urls: Sequence[str] = ()
     sitemap_rules: Sequence[tuple[re.Pattern[str] | str, str | CallbackT]] = [

@@ -28,7 +28,10 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
 
 
 def _spider_domains(spider: type[Spider]) -> Iterable[str]:
-    yield spider.name
+    # Spiders that get their name from their import path have no class-level
+    # name, and an import path is never a domain anyway.
+    if name := getattr(spider, "name", None):
+        yield name
     if allowed_domains := getattr(spider, "allowed_domains", None):
         yield from allowed_domains
 

@@ -111,7 +111,7 @@ class Command(ScrapyCommand):
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
                 if opts.list:
                     for method in tested_methods:
-                        contract_reqs[spidercls.name].append(method)
+                        contract_reqs[spidername].append(method)
                 elif tested_methods:
                     self.crawler_process.crawl(spidercls)
 
