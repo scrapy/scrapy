@@ -157,7 +157,7 @@ sphinx-rtd-theme==3.1.0
     # via
     #   -r requirements.in
     #   sphinx-rtd-dark-mode
-sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@ce45c95eaad3d89ac0e4d1bc36c93010f9e7e253
+sphinx-scrapy @ git+https://github.com/scrapy/sphinx-scrapy.git@788b5a281d1e73dcd1e055ffa8021510114cd08b
     # via -r requirements.in
 sphinx-sitemap==2.9.0
     # via sphinx-scrapy
@@ -185,6 +185,7 @@ typing-extensions==4.15.0
     # via
     #   pydantic
     #   pydantic-core
+    #   pyopenssl
     #   twisted
     #   typing-inspection
 typing-inspection==0.4.2
