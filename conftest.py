@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -120,7 +121,27 @@ def reactor_pytest(request) -> str:
     return request.config.getoption("--reactor")
 
 
+# Throwaway instrumentation for the CI runner-minutes roadmap's collection/
+# xdist spin-up measurement. Not meant to be merged.
+_spinup_t0 = time.time()
+_spinup_is_worker = False
+_spinup_reported = False
+
+
+def pytest_runtest_logstart(nodeid, location):
+    global _spinup_reported
+    if _spinup_is_worker or _spinup_reported:
+        return
+    _spinup_reported = True
+    print(
+        f"\n[SPINUP] {time.time() - _spinup_t0:.2f}s from process start to first test\n",
+        flush=True,
+    )
+
+
 def pytest_configure(config):
+    global _spinup_is_worker
+    _spinup_is_worker = hasattr(config, "workerinput")
     if config.getoption("--reactor") in {"asyncio", "none"}:
         # Needed on Windows to switch from proactor to selector, which supports
         # add_reader/add_writer (required by the Twisted asyncio reactor, and by
