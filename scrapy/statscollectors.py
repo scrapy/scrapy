@@ -105,13 +105,16 @@ class StatsCollector:
         """Called when the spider is closed."""
         if self._dump:
             logger.info(
-                "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
+                f"Dumping Scrapy stats:\n{self}",
                 extra={"spider": self._crawler.spider},
             )
         self._persist_stats(self._stats)
 
     def _persist_stats(self, stats: StatsT) -> None:
         pass
+
+    def __str__(self) -> str:
+        return pprint.pformat(self._stats)
 
 
 class MemoryStatsCollector(StatsCollector):
