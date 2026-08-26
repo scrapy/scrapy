@@ -137,6 +137,7 @@ __all__ = [
     "ITEM_PROCESSOR",
     "JOBDIR",
     "LOGSTATS_INTERVAL",
+    "LOG_COLOR",
     "LOG_DATEFORMAT",
     "LOG_ENABLED",
     "LOG_ENCODING",
