@@ -6,6 +6,7 @@ library.
 from __future__ import annotations
 
 import re
+import warnings
 from typing import TYPE_CHECKING, TypeAlias
 from urllib.parse import ParseResult, urlparse, urlunparse
 
@@ -29,7 +30,19 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
 
 def _spider_domains(spider: type[Spider]) -> Iterable[str]:
     yield spider.name
-    if allowed_domains := getattr(spider, "allowed_domains", None):
+    allowed_domains = getattr(spider, "allowed_domains", None)
+    if isinstance(allowed_domains, property):
+        warnings.warn(
+            f"{spider.__name__}.allowed_domains is a property. Properties "
+            "cannot be evaluated on a spider class, only on a spider "
+            "instance, so it will be ignored here. This affects matching "
+            "URLs to spiders, e.g. in the shell, fetch and parse commands. "
+            "Define allowed_domains as a plain class attribute instead.",
+            stacklevel=2,
+            category=UserWarning,
+        )
+        return
+    if allowed_domains:
         yield from allowed_domains
 
 
