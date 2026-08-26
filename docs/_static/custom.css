@@ -1,0 +1,56 @@
+/* Move lists closer to their introducing paragraph */
+.rst-content .section ol p, .rst-content .section ul p {
+    margin-bottom: 0px;
+}
+.rst-content p + ol, .rst-content p + ul {
+    margin-top: -18px; /* Compensates margin-top: 24px of p  */
+}
+.rst-content dl p + ol, .rst-content dl p + ul {
+    margin-top: -6px; /* Compensates margin-top: 12px of p  */
+}
+
+/*override some styles in
+sphinx-rtd-dark-mode/static/dark_mode_css/general.css*/
+.theme-switcher {
+    right: 0.4em !important;
+    top: 0.6em !important;
+    -webkit-box-shadow: 0px 3px 14px 4px rgba(0, 0, 0, 0.30) !important;
+    box-shadow: 0px 3px 14px 4px rgba(0, 0, 0, 0.30) !important;
+    height: 2em !important;
+    width: 2em !important;
+}
+
+/*place the toggle button for dark mode
+at the bottom right corner on small screens*/
+@media (max-width: 768px) {
+    .theme-switcher {
+        right: 0.4em !important;
+        bottom: 2.6em !important;
+        top: auto !important;
+    }
+}
+
+/*persist blue color at the top left used in
+default rtd theme*/
+html[data-theme="dark"] .wy-side-nav-search,
+html[data-theme="dark"] .wy-nav-top {
+    background-color: #1d577d !important;
+}
+
+/*all the styles below used to present
+API objects nicely in dark mode*/
+html[data-theme="dark"] .sig.sig-object {
+    border-left-color: #3e4446 !important;
+    background-color: #202325 !important
+}
+
+html[data-theme="dark"] .sig-name,
+html[data-theme="dark"] .sig-prename,
+html[data-theme="dark"] .property,
+html[data-theme="dark"] .sig-param,
+html[data-theme="dark"] .sig-paren,
+html[data-theme="dark"] .sig-return-icon,
+html[data-theme="dark"] .sig-return-typehint,
+html[data-theme="dark"] .optional {
+    color: #e8e6e3 !important
+}

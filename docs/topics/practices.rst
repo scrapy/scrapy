@@ -7,6 +7,8 @@ Common Practices
 This section documents common practices when using Scrapy. These are things
 that cover many topics and don't often fall into any other specific section.
 
+.. skip: start
+
 .. _run-from-script:
 
 Run Scrapy from a script
@@ -15,92 +17,340 @@ Run Scrapy from a script
 You can use the :ref:`API <topics-api>` to run Scrapy from a script, instead of
 the typical way of running Scrapy via ``scrapy crawl``.
 
-Remember that Scrapy is built on top of the Twisted
-asynchronous networking library, so you need to run it inside the Twisted reactor.
+Remember that Scrapy requires a Twisted reactor or (with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``) an asyncio event loop, so
+you need to run one of those in your script for it to work (helpers described
+below can do it for you).
 
 The first utility you can use to run your spiders is
-:class:`scrapy.crawler.CrawlerProcess`. This class will start a Twisted reactor
-for you, configuring the logging and setting shutdown handlers. This class is
-the one used by all Scrapy commands.
+:class:`scrapy.crawler.AsyncCrawlerProcess` or
+:class:`scrapy.crawler.CrawlerProcess`. These classes will start a Twisted
+reactor for you, configuring the logging and setting shutdown handlers. These
+classes are the ones used by all Scrapy commands. They have similar
+functionality, differing in their asynchronous API style:
+:class:`~scrapy.crawler.AsyncCrawlerProcess` returns coroutines from its
+asynchronous methods while :class:`~scrapy.crawler.CrawlerProcess` returns
+:class:`~twisted.internet.defer.Deferred` objects.
 
 Here's an example showing how to run a single spider with it.
 
-::
+.. code-block:: python
 
     import scrapy
-    from scrapy.crawler import CrawlerProcess
+    from scrapy.crawler import AsyncCrawlerProcess
+
 
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
 
-    process = CrawlerProcess({
-        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
-    })
+
+    process = AsyncCrawlerProcess(
+        settings={
+            "FEEDS": {
+                "items.json": {"format": "json"},
+            },
+        }
+    )
 
     process.crawl(MySpider)
-    process.start() # the script will block here until the crawling is finished
+    process.start()  # the script will block here until the crawling is finished
 
-Make sure to check :class:`~scrapy.crawler.CrawlerProcess` documentation to get
-acquainted with its usage details.
+You can define :ref:`settings <topics-settings>` within the dictionary passed
+to :class:`~scrapy.crawler.AsyncCrawlerProcess`. Make sure to check the
+:class:`~scrapy.crawler.AsyncCrawlerProcess`
+documentation to get acquainted with its usage details.
 
 If you are inside a Scrapy project there are some additional helpers you can
 use to import those components within the project. You can automatically import
-your spiders passing their name to :class:`~scrapy.crawler.CrawlerProcess`, and
-use ``get_project_settings`` to get a :class:`~scrapy.settings.Settings`
-instance with your project settings.
+your spiders passing their name to
+:class:`~scrapy.crawler.AsyncCrawlerProcess`, and use
+:func:`scrapy.utils.project.get_project_settings` to get a
+:class:`~scrapy.settings.Settings` instance with your project settings.
 
 What follows is a working example of how to do that, using the `testspiders`_
 project as example.
 
-::
+.. code-block:: python
 
-    from scrapy.crawler import CrawlerProcess
+    from scrapy.crawler import AsyncCrawlerProcess
     from scrapy.utils.project import get_project_settings
 
-    process = CrawlerProcess(get_project_settings())
+    process = AsyncCrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
-    process.crawl('followall', domain='scrapinghub.com')
-    process.start() # the script will block here until the crawling is finished
+    process.crawl("followall", domain="scrapy.org")
+    process.start()  # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
-process: :class:`scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
-that encapsulates some simple helpers to run multiple crawlers, but it won't
-start or interfere with existing reactors in any way.
+process: :class:`scrapy.crawler.AsyncCrawlerRunner` or
+:class:`scrapy.crawler.CrawlerRunner`. These classes are thin wrappers
+that encapsulate some simple helpers to run multiple crawlers, but they won't
+start or interfere with existing reactors in any way. Just like
+:class:`scrapy.crawler.AsyncCrawlerProcess` and
+:class:`scrapy.crawler.CrawlerProcess` they differ in their asynchronous API
+style.
 
-Using this class the reactor should be explicitly run after scheduling your
-spiders. It's recommended you use :class:`~scrapy.crawler.CrawlerRunner`
-instead of :class:`~scrapy.crawler.CrawlerProcess` if your application is
-already using Twisted and you want to run Scrapy in the same reactor.
+When using these classes the reactor should be explicitly run after scheduling
+your spiders. It's recommended that you use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerRunner` instead of
+:class:`~scrapy.crawler.AsyncCrawlerProcess` or
+:class:`~scrapy.crawler.CrawlerProcess` if your application is already using
+Twisted and you want to run Scrapy in the same reactor.
 
-Note that you will also have to shutdown the Twisted reactor yourself after the
-spider is finished. This can be achieved by adding callbacks to the deferred
-returned by the :meth:`CrawlerRunner.crawl
-<scrapy.crawler.CrawlerRunner.crawl>` method.
+If you want to stop the reactor or run any other code right after the spider
+finishes you can do that after the task returned from
+:meth:`AsyncCrawlerRunner.crawl() <scrapy.crawler.AsyncCrawlerRunner.crawl>`
+completes (or the Deferred returned from :meth:`CrawlerRunner.crawl()
+<scrapy.crawler.CrawlerRunner.crawl>` fires). In the simplest case you can also
+use :func:`twisted.internet.task.react` to start and stop the reactor, though
+it may be easier to just use :class:`~scrapy.crawler.AsyncCrawlerProcess` or
+:class:`~scrapy.crawler.CrawlerProcess` instead.
 
-Here's an example of its usage, along with a callback to manually stop the
-reactor after `MySpider` has finished running.
+Here's an example of using :class:`~scrapy.crawler.AsyncCrawlerRunner` together
+with simple reactor management code:
 
-::
+.. code-block:: python
 
-    from twisted.internet import reactor
     import scrapy
-    from scrapy.crawler import CrawlerRunner
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.defer import deferred_f_from_coro_f
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+    from twisted.internet.task import react
+
 
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
 
-    configure_logging({'LOG_FORMAT': '%(levelname)s: %(message)s'})
-    runner = CrawlerRunner()
 
-    d = runner.crawl(MySpider)
-    d.addBoth(lambda _: reactor.stop())
-    reactor.run() # the script will block here until the crawling is finished
+    async def crawl(_):
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = AsyncCrawlerRunner()
+        await runner.crawl(MySpider)  # completes when the spider finishes
 
-.. seealso:: `Twisted Reactor Overview`_.
+
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    react(deferred_f_from_coro_f(crawl))
+
+Same example but using :class:`~scrapy.crawler.CrawlerRunner` and a
+different reactor (:class:`~scrapy.crawler.AsyncCrawlerRunner` only works
+with :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`):
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import CrawlerRunner
+    from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+    from twisted.internet.task import react
+
+
+    class MySpider(scrapy.Spider):
+        custom_settings = {
+            "TWISTED_REACTOR": "twisted.internet.epollreactor.EPollReactor",
+        }
+        # Your spider definition
+        ...
+
+
+    def crawl(_):
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = CrawlerRunner()
+        d = runner.crawl(MySpider)
+        return d  # this Deferred fires when the spider finishes
+
+
+    install_reactor("twisted.internet.epollreactor.EPollReactor")
+    react(crawl)
+
+.. seealso:: :doc:`twisted:core/howto/reactor-basics`
+
+And here are examples of using these classes with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``.
+
+Simple usage of :class:`~scrapy.crawler.AsyncCrawlerProcess`:
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerProcess
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    process = AsyncCrawlerProcess(
+        settings={
+            "TWISTED_REACTOR_ENABLED": False,
+        }
+    )
+
+    process.crawl(MySpider)
+    process.start()  # the script will block here until the crawling is finished
+
+With ``TWISTED_REACTOR_ENABLED=False`` you can use several instances of
+:class:`~scrapy.crawler.AsyncCrawlerProcess` in the same process:
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerProcess
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    process1 = AsyncCrawlerProcess(
+        settings={
+            "TWISTED_REACTOR_ENABLED": False,
+        }
+    )
+    process1.crawl(MySpider)
+    process1.start()
+
+    process2 = AsyncCrawlerProcess(
+        settings={
+            "TWISTED_REACTOR_ENABLED": False,
+        }
+    )
+    process2.crawl(MySpider)
+    process2.start()
+
+Using :func:`asyncio.run` with :class:`~scrapy.crawler.AsyncCrawlerRunner`:
+
+.. code-block:: python
+
+    import asyncio
+
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    async def main():
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = AsyncCrawlerRunner(settings={"TWISTED_REACTOR_ENABLED": False})
+        await runner.crawl(MySpider)  # completes when the spider finishes
+
+
+    asyncio.run(main())
+
+.. _run-spiders-in-apps:
+
+Running spiders inside existing applications
+============================================
+
+You may want to run Scrapy spiders inside an existing application. In simple
+cases (e.g. task queues that spawn a process for every task, or applications
+that can execute tasks synchronously in the same process) you can use the same
+approach as for standalone scripts (see :ref:`run-from-script`). More complex
+cases, e.g. asynchronous web applications, have additional caveats and
+limitations.
+
+If the application runs its own Twisted reactor, you can use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerRunner` to run spiders using this reactor, see
+:ref:`run-from-script` for examples.
+
+If the application doesn't run a Twisted reactor or an asyncio event loop (for
+example, a Django web app deployed with a WSGI server such as uWSGI), you can
+use :class:`~scrapy.crawler.AsyncCrawlerProcess` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``, so that Scrapy starts and
+stops an asyncio event loop for every spider run:
+
+.. code-block:: python
+
+    import scrapy
+    from django.http import HttpResponse
+    from scrapy.crawler import AsyncCrawlerProcess
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    def crawl_view(request):
+        process = AsyncCrawlerProcess(settings={"TWISTED_REACTOR_ENABLED": False})
+        process.crawl(MySpider)
+        process.start()  # returns when the spider finishes
+        return HttpResponse("Crawling finished")
+
+If the application runs its own asyncio event loop (for example, a Django web
+app deployed with an ASGI server such as uvicorn), you can use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False``, so that Scrapy uses the
+existing event loop:
+
+.. code-block:: python
+
+    import scrapy
+    from django.http import HttpResponse
+    from scrapy.crawler import AsyncCrawlerRunner
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    async def crawl_view(request):
+        runner = AsyncCrawlerRunner(settings={"TWISTED_REACTOR_ENABLED": False})
+        await runner.crawl(MySpider)  # completes when the spider finishes
+        return HttpResponse("Crawling finished")
+
+.. note:: Running Scrapy without a Twisted reactor is experimental and has
+    some limitations, described in :ref:`asyncio-without-reactor`.
+
+.. _run-in-notebook:
+
+Running spiders in Jupyter notebooks
+====================================
+
+You can run Scrapy spiders in Jupyter notebooks. You need to use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` with
+:setting:`TWISTED_REACTOR_ENABLED` set to ``False`` for this, so that Scrapy
+uses the event loop provided by the notebook kernel. As
+:class:`~scrapy.crawler.AsyncCrawlerRunner` doesn't configure logging, and you
+most likely want to see the spider log in the notebook, you should call
+:func:`scrapy.utils.log.configure_logging`. Here is a full example, which
+supports rerunning both as a single cell and as separate cells:
+
+.. code-block:: python
+
+    from scrapy import Spider
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+
+    configure_logging()
+
+
+    class BooksSpider(Spider):
+        name = "books"
+        start_urls = ["https://books.toscrape.com"]
+
+        def parse(self, response):
+            for book in response.css("h3"):
+                yield {"title": book.css("a::attr(title)").get()}
+
+
+    runner = AsyncCrawlerRunner({"TWISTED_REACTOR_ENABLED": False})
+    await runner.crawl(BooksSpider)
+
+.. note:: Running Scrapy without a Twisted reactor is experimental and has
+    some limitations, described in :ref:`asyncio-without-reactor`.
 
 .. _run-multiple-spiders:
 
@@ -111,88 +361,131 @@ By default, Scrapy runs a single spider per process when you run ``scrapy
 crawl``. However, Scrapy supports running multiple spiders per process using
 the :ref:`internal API <topics-api>`.
 
+Each call to ``crawl()`` creates its own :class:`~scrapy.crawler.Crawler`,
+with its own instances of the downloader and spider middlewares and its own
+resolved :ref:`settings <topics-settings>`, including :ref:`spider settings
+<spider-settings>`. Nothing from one of these is shared with the other
+spiders running in the same process.
+
 Here is an example that runs multiple spiders simultaneously:
 
-::
+.. code-block:: python
 
     import scrapy
-    from scrapy.crawler import CrawlerProcess
+    from scrapy.crawler import AsyncCrawlerProcess
+    from scrapy.utils.project import get_project_settings
+
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
+
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
-    process = CrawlerProcess()
+
+    settings = get_project_settings()
+    process = AsyncCrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
-    process.start() # the script will block here until all crawling jobs are finished
+    process.start()  # the script will block here until all crawling jobs are finished
 
-Same example using :class:`~scrapy.crawler.CrawlerRunner`:
+Same example using :class:`~scrapy.crawler.AsyncCrawlerRunner`:
 
-::
+.. code-block:: python
 
     import scrapy
-    from twisted.internet import reactor
-    from scrapy.crawler import CrawlerRunner
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.defer import deferred_f_from_coro_f
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+    from twisted.internet.task import react
+
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
+
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
-    configure_logging()
-    runner = CrawlerRunner()
-    runner.crawl(MySpider1)
-    runner.crawl(MySpider2)
-    d = runner.join()
-    d.addBoth(lambda _: reactor.stop())
 
-    reactor.run() # the script will block here until all crawling jobs are finished
+    async def crawl(_):
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = AsyncCrawlerRunner()
+        runner.crawl(MySpider1)
+        runner.crawl(MySpider2)
+        await runner.join()  # completes when both spiders finish
 
-Same example but running the spiders sequentially by chaining the deferreds:
 
-::
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    react(deferred_f_from_coro_f(crawl))
 
-    from twisted.internet import reactor, defer
-    from scrapy.crawler import CrawlerRunner
+
+Same example but running the spiders sequentially by awaiting until each one
+finishes before starting the next one:
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.defer import deferred_f_from_coro_f
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+    from twisted.internet.task import react
+
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
+
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
-    configure_logging()
-    runner = CrawlerRunner()
 
-    @defer.inlineCallbacks
-    def crawl():
-        yield runner.crawl(MySpider1)
-        yield runner.crawl(MySpider2)
-        reactor.stop()
+    async def crawl(_):
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = AsyncCrawlerRunner()
+        await runner.crawl(MySpider1)
+        await runner.crawl(MySpider2)
 
-    crawl()
-    reactor.run() # the script will block here until the last crawl call is finished
+
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    react(deferred_f_from_coro_f(crawl))
+
+.. note:: When running multiple spiders in the same process, :ref:`logging
+    settings <logging-settings>` and :ref:`reactor settings <reactor-settings>`
+    should not have a different value per spider, and :ref:`pre-crawler
+    settings <pre-crawler-settings>` cannot be defined per spider.
+
+Every other setting applies to each crawler separately. This includes
+concurrency and politeness settings, such as :setting:`CONCURRENT_REQUESTS`,
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`, and
+:ref:`AutoThrottle <topics-autothrottle>` also throttles each crawler
+separately. When crawling simultaneously, divide those values by the number of
+crawlers to keep the combined load on your hardware and on target websites
+unchanged.
+
+Because of this, running the same spider several times in the same process
+multiplies those limits instead of increasing crawling capacity. To crawl
+faster, raise :setting:`CONCURRENT_REQUESTS` on a single crawler.
 
 .. seealso:: :ref:`run-from-script`.
+
+.. skip: end
 
 .. _distributed-crawls:
 
 Distributed crawls
 ==================
 
-Scrapy doesn't provide any built-in facility for running crawls in a distribute
+Scrapy doesn't provide any built-in facility for running crawls in a distributed
 (multi-server) manner. However, there are some ways to distribute crawls, which
 vary depending on how you plan to distribute them.
 
@@ -200,10 +493,10 @@ If you have many spiders, the obvious way to distribute the load is to setup
 many Scrapyd instances and distribute spider runs among those.
 
 If you instead want to run a single (big) spider through many machines, what
-you usually do is partition the urls to crawl and send them to each separate
+you usually do is partition the URLs to crawl and send them to each separate
 spider. Here is a concrete example:
 
-First, you prepare the list of urls to crawl and put them into separate
+First, you prepare the list of URLs to crawl and put them into separate
 files/urls::
 
     http://somedomain.com/urls-to-crawl/spider1/part1.list
@@ -218,40 +511,78 @@ crawl::
     curl http://scrapy2.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=2
     curl http://scrapy3.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=3
 
+.. _large-project-startup:
+
+Reducing startup time in large projects
+=======================================
+
+When running a spider with ``scrapy crawl``, Scrapy loads all modules listed in
+:setting:`SPIDER_MODULES` to find the target spider. In large projects with
+many spiders, this can noticeably increase startup time and memory usage.
+
+To avoid loading every spider module, override :setting:`SPIDER_MODULES` on the
+command line to point only to the module that contains the spider you want to
+run:
+
+.. code-block:: shell
+
+    scrapy crawl myspider -s SPIDER_MODULES=myproject.spiders.myspider
+
+Because :setting:`SPIDER_MODULES` is a list setting, you can include multiple
+modules by separating them with commas.
+
 .. _bans:
 
 Avoiding getting banned
 =======================
 
-Some websites implement certain measures to prevent bots from crawling them,
-with varying degrees of sophistication. Getting around those measures can be
-difficult and tricky, and may sometimes require special infrastructure. Please
-consider contacting `commercial support`_ if in doubt.
+Websites tell regular visitors and crawlers apart by how their traffic looks:
+the headers it carries, how fast it arrives, how many requests come from the
+same place. Traffic that stands out can be blocked even when the crawling
+itself would be welcome.
 
-Here are some tips to keep in mind when dealing with these kinds of sites:
+Where the website allows crawling, the most effective thing you can do is make
+yourself known: set :setting:`USER_AGENT` to a value that identifies you and
+lets its owners reach you, so that they can ask you to adjust your crawler
+rather than block it.
 
-* rotate your user agent from a pool of well-known ones from browsers (google
-  around to get a list of them)
-* disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
-  cookies to spot bot behaviour
-* use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
-* if possible, use `Google cache`_ to fetch pages, instead of hitting the sites
-  directly
-* use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
-  super proxy that you can attach your own proxies to.
-* use a highly distributed downloader that circumvents bans internally, so you
-  can just focus on parsing clean pages. One example of such downloaders is
-  `Crawlera`_
+Where that is not enough, the following make your traffic resemble that of a
+regular visitor:
 
-If you are still unable to prevent your bot getting banned, consider contacting
-`commercial support`_.
+* rotate your user agent among those of common browsers, so that your requests
+  do not all look alike (search the web for an up-to-date list)
+* disable cookies (see :setting:`COOKIES_ENABLED`), so that a session
+  identifier does not tie all your requests together
+* space out your requests, 2 seconds apart or more, with the
+  :setting:`DOWNLOAD_DELAY` setting, to keep your pace closer to that of a
+  person browsing
+* where possible, read pages from `Common Crawl`_, which sends no traffic to
+  the website at all
+* spread your requests over a pool of IP addresses, so that none of them
+  accounts for your whole crawl. For example, the free `Tor project`_ or paid
+  services like `ProxyMesh`_.
+* match the TLS behavior of a browser: some websites respond differently
+  depending on the TLS version of the client, which you can adjust with the
+  :setting:`DOWNLOAD_TLS_MIN_VERSION` and :setting:`DOWNLOAD_TLS_MAX_VERSION`
+  settings.
+* let a service take care of all of the above, such as `Zyte API`_, which
+  provides a `Scrapy plugin
+  <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
+  features, like `AI web scraping <https://www.zyte.com/ai-web-scraping/>`__
+
+If your crawler still gets blocked, consider contacting `commercial support`_.
+
+.. _static-analysis:
+
+Static analysis
+===============
+
+Consider using :doc:`scrapy-lint <scrapy-lint:index>`, a linter for Scrapy
+projects that detects common mistakes and anti-patterns.
 
 .. _Tor project: https://www.torproject.org/
-.. _commercial support: http://scrapy.org/support/
-.. _ProxyMesh: http://proxymesh.com/
-.. _Google cache: http://www.googleguide.com/cached_pages.html
+.. _commercial support: https://www.scrapy.org/companies
+.. _ProxyMesh: https://proxymesh.com/
+.. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _Twisted Reactor Overview: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
-.. _Crawlera: http://scrapinghub.com/crawlera
-.. _scrapoxy: http://scrapoxy.io/
+.. _Zyte API: https://docs.zyte.com/zyte-api/get-started.html

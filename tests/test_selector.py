@@ -1,211 +1,279 @@
-import warnings
 import weakref
-from twisted.trial import unittest
-from scrapy.http import TextResponse, HtmlResponse, XmlResponse
+
+import pytest
+
+from scrapy.http import HtmlResponse, JsonResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
-from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, XPathSelector
-from lxml import etree
+from scrapy.utils._deps_compat import PARSEL_SUPPORTS_JMESPATH
 
 
-class SelectorTestCase(unittest.TestCase):
-
+class TestSelector:
     def test_simple_selection(self):
         """Simple selector tests"""
         body = b"<p><input name='a'value='1'/><input name='b'value='2'/></p>"
-        response = TextResponse(url="http://example.com", body=body, encoding='utf-8')
+        response = TextResponse(url="http://example.com", body=body, encoding="utf-8")
         sel = Selector(response)
 
-        xl = sel.xpath('//input')
-        self.assertEqual(2, len(xl))
+        xl = sel.xpath("//input")
+        assert len(xl) == 2
         for x in xl:
             assert isinstance(x, Selector)
 
-        self.assertEqual(sel.xpath('//input').extract(),
-                         [x.extract() for x in sel.xpath('//input')])
-
-        self.assertEqual([x.extract() for x in sel.xpath("//input[@name='a']/@name")],
-                         [u'a'])
-        self.assertEqual([x.extract() for x in sel.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
-                         [u'12.0'])
-
-        self.assertEqual(sel.xpath("concat('xpath', 'rules')").extract(),
-                         [u'xpathrules'])
-        self.assertEqual([x.extract() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
-                         [u'12'])
+        assert sel.xpath("//input").getall() == [x.get() for x in sel.xpath("//input")]
+        assert [x.get() for x in sel.xpath("//input[@name='a']/@name")] == ["a"]
+        assert [
+            x.get()
+            for x in sel.xpath(
+                "number(concat(//input[@name='a']/@value, //input[@name='b']/@value))"
+            )
+        ] == ["12.0"]
+        assert sel.xpath("concat('xpath', 'rules')").getall() == ["xpathrules"]
+        assert [
+            x.get()
+            for x in sel.xpath(
+                "concat(//input[@name='a']/@value, //input[@name='b']/@value)"
+            )
+        ] == ["12"]
 
     def test_root_base_url(self):
         body = b'<html><form action="/path"><input name="a" /></form></html>'
         url = "http://example.com"
-        response = TextResponse(url=url, body=body, encoding='utf-8')
+        response = TextResponse(url=url, body=body, encoding="utf-8")
         sel = Selector(response)
-        self.assertEqual(url, sel.root.base)
-
-    def test_deprecated_root_argument(self):
-        with warnings.catch_warnings(record=True) as w:
-            root = etree.fromstring(u'<html/>')
-            sel = Selector(_root=root)
-            self.assertIs(root, sel.root)
-            self.assertEqual(str(w[-1].message),
-                             'Argument `_root` is deprecated, use `root` instead')
-
-    def test_deprecated_root_argument_ambiguous(self):
-        with warnings.catch_warnings(record=True) as w:
-            _root = etree.fromstring(u'<xml/>')
-            root = etree.fromstring(u'<html/>')
-            sel = Selector(_root=_root, root=root)
-            self.assertIs(root, sel.root)
-            self.assertIn('Ignoring deprecated `_root` argument', str(w[-1].message))
+        assert url == sel.root.base
 
     def test_flavor_detection(self):
         text = b'<div><img src="a.jpg"><p>Hello</div>'
-        sel = Selector(XmlResponse('http://example.com', body=text, encoding='utf-8'))
-        self.assertEqual(sel.type, 'xml')
-        self.assertEqual(sel.xpath("//div").extract(),
-                         [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
+        sel = Selector(XmlResponse("http://example.com", body=text, encoding="utf-8"))
+        assert sel.type == "xml"
+        assert sel.xpath("//div").getall() == [
+            '<div><img src="a.jpg"><p>Hello</p></img></div>'
+        ]
 
-        sel = Selector(HtmlResponse('http://example.com', body=text, encoding='utf-8'))
-        self.assertEqual(sel.type, 'html')
-        self.assertEqual(sel.xpath("//div").extract(),
-                         [u'<div><img src="a.jpg"><p>Hello</p></div>'])
+        sel = Selector(HtmlResponse("http://example.com", body=text, encoding="utf-8"))
+        assert sel.type == "html"
+        assert sel.xpath("//div").getall() == [
+            '<div><img src="a.jpg"><p>Hello</p></div>'
+        ]
+
+    @pytest.mark.skipif(
+        not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support json"
+    )
+    def test_flavor_detection_json(self) -> None:
+        response = JsonResponse(
+            "http://example.com", body=b'{"a": "b"}', encoding="utf-8"
+        )
+        assert Selector(response).type == "json"
+        assert response.jmespath("a").get() == "b"
+
+    @pytest.mark.skipif(
+        not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support json"
+    )
+    def test_flavor_detection_json_with_html_body(self) -> None:
+        body = b"<div><p>Hello</p></div>"
+        response = JsonResponse("http://example.com", body=body, encoding="utf-8")
+        assert Selector(response).type == "json"
+
+        html_response = response.replace(cls=HtmlResponse)
+        assert Selector(html_response).type == "html"
+        assert html_response.css("p::text").get() == "Hello"
+
+    def test_flavor_detection_text(self) -> None:
+        response = TextResponse(
+            "http://example.com", body=b"<div><p>Hello</p></div>", encoding="utf-8"
+        )
+        assert Selector(response).type == "html"
 
     def test_http_header_encoding_precedence(self):
-        # u'\xa3'     = pound symbol in unicode
-        # u'\xc2\xa3' = pound symbol in utf-8
-        # u'\xa3'     = pound symbol in latin-1 (iso-8859-1)
+        # '\xa3'     = pound symbol in unicode
+        # '\xc2\xa3' = pound symbol in utf-8
+        # '\xa3'     = pound symbol in latin-1 (iso-8859-1)
 
-        meta = u'<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">'
-        head = u'<head>' + meta + u'</head>'
-        body_content = u'<span id="blank">\xa3</span>'
-        body = u'<body>' + body_content + u'</body>'
-        html = u'<html>' + head + body + u'</html>'
-        encoding = 'utf-8'
+        meta = (
+            '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">'
+        )
+        head = f"<head>{meta}</head>"
+        body_content = '<span id="blank">\xa3</span>'
+        body = f"<body>{body_content}</body>"
+        html = f"<html>{head}{body}</html>"
+        encoding = "utf-8"
         html_utf8 = html.encode(encoding)
 
-        headers = {'Content-Type': ['text/html; charset=utf-8']}
-        response = HtmlResponse(url="http://example.com", headers=headers, body=html_utf8)
+        headers = {"Content-Type": ["text/html; charset=utf-8"]}
+        response = HtmlResponse(
+            url="http://example.com", headers=headers, body=html_utf8
+        )
         x = Selector(response)
-        self.assertEquals(x.xpath("//span[@id='blank']/text()").extract(),
-                          [u'\xa3'])
+        assert x.xpath("//span[@id='blank']/text()").getall() == ["\xa3"]
 
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence
-        r1 = TextResponse('http://www.example.com', \
-                          body=b'<html><p>an Jos\xe9 de</p><html>', \
-                          encoding='utf-8')
-        Selector(r1).xpath('//text()').extract()
+        r1 = TextResponse(
+            "http://www.example.com",
+            body=b"<html><p>an Jos\xe9 de</p><html>",
+            encoding="utf-8",
+        )
+        Selector(r1).xpath("//text()").getall()
 
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""
-        x = Selector(text='')
+        x = Selector(text="")
         weakref.ref(x)
-        assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
-            x.__class__.__name__
-
-    def test_deprecated_selector_methods(self):
-        sel = Selector(TextResponse(url="http://example.com", body=b'<p>some text</p>'))
-
-        with warnings.catch_warnings(record=True) as w:
-            sel.select('//p')
-            self.assertSubstring('Use .xpath() instead', str(w[-1].message))
-
-        with warnings.catch_warnings(record=True) as w:
-            sel.extract_unquoted()
-            self.assertSubstring('Use .extract() instead', str(w[-1].message))
-
-    def test_deprecated_selectorlist_methods(self):
-        sel = Selector(TextResponse(url="http://example.com", body=b'<p>some text</p>'))
-
-        with warnings.catch_warnings(record=True) as w:
-            sel.xpath('//p').select('.')
-            self.assertSubstring('Use .xpath() instead', str(w[-1].message))
-
-        with warnings.catch_warnings(record=True) as w:
-            sel.xpath('//p').extract_unquoted()
-            self.assertSubstring('Use .extract() instead', str(w[-1].message))
+        assert not hasattr(x, "__dict__"), (
+            f"{x.__class__.__name__} does not use __slots__"
+        )
 
     def test_selector_bad_args(self):
-        with self.assertRaisesRegexp(ValueError, 'received both response and text'):
-            Selector(TextResponse(url='http://example.com', body=b''), text=u'')
+        with pytest.raises(ValueError, match="received both response and text"):
+            Selector(TextResponse(url="http://example.com", body=b""), text="")
 
 
-class DeprecatedXpathSelectorTest(unittest.TestCase):
+@pytest.mark.skipif(
+    not PARSEL_SUPPORTS_JMESPATH, reason="parsel < 1.8 doesn't support jmespath"
+)
+class TestJMESPath:
+    def test_json_has_html(self) -> None:
+        """Sometimes the information is returned in a json wrapper"""
 
-    text = '<div><img src="a.jpg"><p>Hello</div>'
+        body = """
+        {
+            "content": [
+                {
+                    "name": "A",
+                    "value": "a"
+                },
+                {
+                    "name": {
+                        "age": 18
+                    },
+                    "value": "b"
+                },
+                {
+                    "name": "C",
+                    "value": "c"
+                },
+                {
+                    "name": "<a>D</a>",
+                    "value": "<div>d</div>"
+                }
+            ],
+            "html": "<div><a>a<br>b</a>c</div><div><a>d</a>e<b>f</b></div>"
+        }
+        """
+        resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
+        assert (
+            resp.jmespath("html").get()
+            == "<div><a>a<br>b</a>c</div><div><a>d</a>e<b>f</b></div>"
+        )
+        assert resp.jmespath("html").xpath("//div/a/text()").getall() == ["a", "b", "d"]
+        assert resp.jmespath("html").css("div > b").getall() == ["<b>f</b>"]
+        assert resp.jmespath("content").jmespath("name.age").get() == 18  # type: ignore[comparison-overlap]
 
-    def test_warnings_xpathselector(self):
-        cls = XPathSelector
-        with warnings.catch_warnings(record=True) as w:
-            class UserClass(cls):
-                pass
+    def test_html_has_json(self) -> None:
+        body = """
+        <div>
+            <h1>Information</h1>
+            <content>
+            {
+              "user": [
+                        {
+                                  "name": "A",
+                                  "age": 18
+                        },
+                        {
+                                  "name": "B",
+                                  "age": 32
+                        },
+                        {
+                                  "name": "C",
+                                  "age": 22
+                        },
+                        {
+                                  "name": "D",
+                                  "age": 25
+                        }
+              ],
+              "total": 4,
+              "status": "ok"
+            }
+            </content>
+        </div>
+        """
+        resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
+        assert resp.xpath("//div/content/text()").jmespath("user[*].name").getall() == [
+            "A",
+            "B",
+            "C",
+            "D",
+        ]
+        assert resp.xpath("//div/content").jmespath("user[*].name").getall() == [
+            "A",
+            "B",
+            "C",
+            "D",
+        ]
+        assert resp.xpath("//div/content").jmespath("total").get() == 4  # type: ignore[comparison-overlap]
 
-            # subclassing must issue a warning
-            self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.Selector', str(w[0].message))
+    def test_jmestpath_with_re(self) -> None:
+        body = """
+            <div>
+                <h1>Information</h1>
+                <content>
+                {
+                  "user": [
+                            {
+                                      "name": "A",
+                                      "age": 18
+                            },
+                            {
+                                      "name": "B",
+                                      "age": 32
+                            },
+                            {
+                                      "name": "C",
+                                      "age": 22
+                            },
+                            {
+                                      "name": "D",
+                                      "age": 25
+                            }
+                  ],
+                  "total": 4,
+                  "status": "ok"
+                }
+                </content>
+            </div>
+            """
+        resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
+        assert resp.xpath("//div/content/text()").jmespath("user[*].name").re(
+            r"(\w+)"
+        ) == ["A", "B", "C", "D"]
+        assert resp.xpath("//div/content").jmespath("user[*].name").re(r"(\w+)") == [
+            "A",
+            "B",
+            "C",
+            "D",
+        ]
 
-            # subclass instance doesn't issue a warning
-            usel = UserClass(text=self.text)
-            self.assertEqual(len(w), 1)
+        assert resp.xpath("//div/content").jmespath("unavailable").re(r"(\d+)") == []
 
-            # class instance must issue a warning
-            sel = cls(text=self.text)
-            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.Selector', str(w[1].message))
+        assert (
+            resp.xpath("//div/content").jmespath("unavailable").re_first(r"(\d+)")
+            is None
+        )
 
-            # subclass and instance checks
-            self.assertTrue(issubclass(cls, Selector))
-            self.assertTrue(isinstance(sel, Selector))
-            self.assertTrue(isinstance(usel, Selector))
+        assert resp.xpath("//div/content").jmespath("user[*].age.to_string(@)").re(
+            r"(\d+)"
+        ) == ["18", "32", "22", "25"]
 
-    def test_warnings_xmlxpathselector(self):
-        cls = XmlXPathSelector
-        with warnings.catch_warnings(record=True) as w:
-            class UserClass(cls):
-                pass
 
-            # subclassing must issue a warning
-            self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.Selector', str(w[0].message))
-
-            # subclass instance doesn't issue a warning
-            usel = UserClass(text=self.text)
-            self.assertEqual(len(w), 1)
-
-            # class instance must issue a warning
-            sel = cls(text=self.text)
-            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.Selector', str(w[1].message))
-
-            # subclass and instance checks
-            self.assertTrue(issubclass(cls, Selector))
-            self.assertTrue(issubclass(cls, XPathSelector))
-            self.assertTrue(isinstance(sel, Selector))
-            self.assertTrue(isinstance(usel, Selector))
-            self.assertTrue(isinstance(sel, XPathSelector))
-            self.assertTrue(isinstance(usel, XPathSelector))
-
-    def test_warnings_htmlxpathselector(self):
-        cls = HtmlXPathSelector
-        with warnings.catch_warnings(record=True) as w:
-            class UserClass(cls):
-                pass
-
-            # subclassing must issue a warning
-            self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.Selector', str(w[0].message))
-
-            # subclass instance doesn't issue a warning
-            usel = UserClass(text=self.text)
-            self.assertEqual(len(w), 1)
-
-            # class instance must issue a warning
-            sel = cls(text=self.text)
-            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.Selector', str(w[1].message))
-
-            # subclass and instance checks
-            self.assertTrue(issubclass(cls, Selector))
-            self.assertTrue(issubclass(cls, XPathSelector))
-            self.assertTrue(isinstance(sel, Selector))
-            self.assertTrue(isinstance(usel, Selector))
-            self.assertTrue(isinstance(sel, XPathSelector))
-            self.assertTrue(isinstance(usel, XPathSelector))
+@pytest.mark.skipif(PARSEL_SUPPORTS_JMESPATH, reason="parsel >= 1.8 supports jmespath")
+def test_jmespath_not_available() -> None:
+    body = """
+    {
+        "website": {"name": "Example"}
+    }
+    """
+    resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
+    with pytest.raises(AttributeError):
+        resp.jmespath("website.name").get()

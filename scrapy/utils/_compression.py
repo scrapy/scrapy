@@ -1,0 +1,92 @@
+import sys
+import zlib
+from io import BytesIO
+
+try:
+    import brotli
+except ImportError:
+    import brotlicffi as brotli
+
+if sys.version_info >= (3, 14):
+    from compression import zstd
+else:
+    from backports import zstd
+
+
+_CHUNK_SIZE = 65536  # 64 KiB
+
+
+class _DecompressionMaxSizeExceeded(ValueError):
+    def __init__(self, decompressed_size: int, max_size: int) -> None:
+        self.decompressed_size = decompressed_size
+        self.max_size = max_size
+
+    def __str__(self) -> str:
+        return (
+            f"The number of bytes decompressed so far "
+            f"({self.decompressed_size} B) exceeded the specified maximum "
+            f"({self.max_size} B)."
+        )
+
+
+def _check_max_size(decompressed_size: int, max_size: int) -> None:
+    if max_size and decompressed_size > max_size:
+        raise _DecompressionMaxSizeExceeded(decompressed_size, max_size)
+
+
+def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
+    decompressor = zlib.decompressobj()
+    try:
+        first_chunk = decompressor.decompress(data, max_length=_CHUNK_SIZE)
+    except zlib.error:
+        # to work with raw deflate content that may be sent by microsoft servers.
+        decompressor = zlib.decompressobj(wbits=-15)
+        first_chunk = decompressor.decompress(data, max_length=_CHUNK_SIZE)
+    decompressed_size = len(first_chunk)
+    _check_max_size(decompressed_size, max_size)
+    output_stream = BytesIO()
+    output_stream.write(first_chunk)
+    # Anything left in unconsumed_tail once the stream has ended is not part of
+    # it, and feeding it back would neither consume it nor produce output.
+    while decompressor.unconsumed_tail and not decompressor.eof:
+        output_chunk = decompressor.decompress(
+            decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
+        )
+        decompressed_size += len(output_chunk)
+        _check_max_size(decompressed_size, max_size)
+        output_stream.write(output_chunk)
+    return output_stream.getvalue()
+
+
+def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
+    decompressor = brotli.Decompressor()
+    first_chunk = decompressor.process(data, output_buffer_limit=_CHUNK_SIZE)
+    decompressed_size = len(first_chunk)
+    _check_max_size(decompressed_size, max_size)
+    output_stream = BytesIO()
+    output_stream.write(first_chunk)
+    while not decompressor.is_finished():
+        output_chunk = decompressor.process(b"", output_buffer_limit=_CHUNK_SIZE)
+        if not output_chunk:
+            break
+        decompressed_size += len(output_chunk)
+        _check_max_size(decompressed_size, max_size)
+        output_stream.write(output_chunk)
+    return output_stream.getvalue()
+
+
+def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
+    stream_reader = zstd.ZstdFile(BytesIO(data))
+    output_stream = BytesIO()
+    output_chunk = b"."
+    decompressed_size = 0
+    while output_chunk:
+        try:
+            output_chunk = stream_reader.read(_CHUNK_SIZE)
+        except EOFError:
+            # Return as much data as possible out of a truncated response.
+            break
+        decompressed_size += len(output_chunk)
+        _check_max_size(decompressed_size, max_size)
+        output_stream.write(output_chunk)
+    return output_stream.getvalue()

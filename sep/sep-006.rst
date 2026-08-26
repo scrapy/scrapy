@@ -10,13 +10,14 @@ Status   Obsolete (discarded)
 SEP-006: Rename of Selectors to Extractors
 ==========================================
 
-This SEP proposes a more meaningful naming of XPathSelectors or "Selectors" and their `x` method.
+This SEP proposes a more meaningful naming of XPathSelectors or "Selectors" and
+their ``x`` method.
 
 Motivation
 ==========
 
 When you use Selectors in Scrapy, your final goal is to "extract" the data that
-you've selected, as the [http://doc.scrapy.org/en/latest/topics/selectors.html
+you've selected, as the [https://docs.scrapy.org/en/latest/topics/selectors.html
 XPath Selectors documentation] says (bolding by me):
 
    When you’re scraping web pages, the most common task you need to perform is
@@ -57,8 +58,8 @@ Additional changes
 As the name of the method for performing selection (the ``x`` method) is not
 descriptive nor mnemotechnic enough and clearly clashes with ``extract`` method
 (x sounds like a short for extract in english), we propose to rename it to
-`select`, `sel` (is shortness if required), or `xpath` after `lxml's
-<http://codespeak.net/lxml/xpathxslt.html>`_ ``xpath`` method.
+``select``, ``sel`` (is shortness if required), or ``xpath`` after `lxml's
+<http://lxml.de/xpathxslt.html>`_ ``xpath`` method.
 
 Bonus (ItemBuilder)
 ===================
@@ -71,5 +72,5 @@ webpage or set of pages.
 References
 ==========
 
- 1. XPath Selectors (http://doc.scrapy.org/topics/selectors.html)
- 2. XPath and XSLT with lxml (http://codespeak.net/lxml/xpathxslt.html)
+ 1. XPath Selectors (https://docs.scrapy.org/topics/selectors.html)
+ 2. XPath and XSLT with lxml (http://lxml.de/xpathxslt.html)

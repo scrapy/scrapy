@@ -2,10 +2,15 @@
 Some pipelines used for testing
 """
 
-class ZeroDivisionErrorPipeline(object):
 
-    def open_spider(self, spider):
-        a = 1/0
+class ZeroDivisionErrorPipeline:
+    def open_spider(self):
+        1 / 0
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         return item
+
+
+class ProcessWithZeroDivisionErrorPipeline:
+    def process_item(self, item):
+        1 / 0

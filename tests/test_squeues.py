@@ -1,150 +1,245 @@
-from queuelib.tests import test_queue as t
-from scrapy.squeues import MarshalFifoDiskQueue, MarshalLifoDiskQueue, PickleFifoDiskQueue, PickleLifoDiskQueue
-from scrapy.item import Item, Field
-from scrapy.http import Request
-from scrapy.loader import ItemLoader
+import pickle
+import sys
+from typing import Any, cast
 
-class TestItem(Item):
+import pytest
+from queuelib.tests import test_queue as t
+
+from scrapy.http import Request
+from scrapy.item import Field, Item
+from scrapy.loader import ItemLoader
+from scrapy.selector import Selector
+from scrapy.squeues import (
+    _MarshalFifoSerializationDiskQueue,
+    _MarshalLifoSerializationDiskQueue,
+    _PickleFifoSerializationDiskQueue,
+    _PickleLifoSerializationDiskQueue,
+    _scrapy_non_serialization_queue,
+    _serializable_queue,
+)
+
+# The disk queue classes are built at run time, so they are untyped.
+_MarshalFifoQueue: Any = _MarshalFifoSerializationDiskQueue
+_MarshalLifoQueue: Any = _MarshalLifoSerializationDiskQueue
+_PickleFifoQueue: Any = _PickleFifoSerializationDiskQueue
+_PickleLifoQueue: Any = _PickleLifoSerializationDiskQueue
+
+
+class MyItem(Item):
     name = Field()
+
+
+class NoPeekQueue:
+    """Queue class without the optional peek method."""
+
+
+_no_peek_queue = cast("Any", NoPeekQueue)
+
+
+@pytest.mark.parametrize(
+    "queue_class",
+    [
+        _serializable_queue(_no_peek_queue, pickle.dumps, pickle.loads),
+        _scrapy_non_serialization_queue(_no_peek_queue),
+    ],
+)
+def test_peek_unsupported(queue_class):
+    with pytest.raises(
+        NotImplementedError,
+        match="The underlying queue class does not implement 'peek'",
+    ):
+        queue_class().peek()
+
 
 def _test_procesor(x):
     return x + x
 
-class TestLoader(ItemLoader):
-    default_item_class = TestItem
+
+class MyLoader(ItemLoader):
+    default_item_class = MyItem
     name_out = staticmethod(_test_procesor)
 
-class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
 
-    chunksize = 100000
+def nonserializable_object_test(self):
+    q = self.queue()
+    with pytest.raises(
+        ValueError,
+        match=r"unmarshallable object|Can't (get|pickle) local object|Can't pickle .*: it's not found as",
+    ):
+        q.push(lambda x: x)
+    # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
+    sel = Selector(text="<html><body><p>some text</p></body></html>")
+    with pytest.raises(
+        ValueError, match=r"unmarshallable object|can't pickle Selector objects"
+    ):
+        q.push(sel)
+    q.close()
 
-    def queue(self):
-        return MarshalFifoDiskQueue(self.qpath, chunksize=self.chunksize)
+
+class FifoDiskQueueTestMixin:
+    def queue(self) -> Any:
+        raise NotImplementedError
 
     def test_serialize(self):
         q = self.queue()
-        q.push('a')
+        q.push("a")
         q.push(123)
-        q.push({'a': 'dict'})
-        self.assertEqual(q.pop(), 'a')
-        self.assertEqual(q.pop(), 123)
-        self.assertEqual(q.pop(), {'a': 'dict'})
+        q.push({"a": "dict"})
+        assert q.pop() == "a"
+        assert q.pop() == 123
+        assert q.pop() == {"a": "dict"}
+        q.close()
 
-    def test_nonserializable_object(self):
-        # Trigger Twisted bug #7989
-        import twisted.persisted.styles  # NOQA
-        q = self.queue()
-        self.assertRaises(ValueError, q.push, lambda x: x)
+    test_nonserializable_object = nonserializable_object_test
+
+
+class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
+    chunksize = 100000
+
+    def queue(self) -> Any:
+        return _MarshalFifoQueue(self.qpath, chunksize=self.chunksize)
+
 
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 1
 
+
 class ChunkSize2MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 2
 
+
 class ChunkSize3MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 3
+
 
 class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 4
 
 
-class PickleFifoDiskQueueTest(MarshalFifoDiskQueueTest):
-
+class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
     chunksize = 100000
 
-    def queue(self):
-        return PickleFifoDiskQueue(self.qpath, chunksize=self.chunksize)
+    def queue(self) -> Any:
+        return _PickleFifoQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize_item(self):
         q = self.queue()
-        i = TestItem(name='foo')
+        i = MyItem(name="foo")
         q.push(i)
         i2 = q.pop()
-        assert isinstance(i2, TestItem)
-        self.assertEqual(i, i2)
+        assert isinstance(i2, MyItem)
+        assert i == i2
+        q.close()
 
     def test_serialize_loader(self):
         q = self.queue()
-        l = TestLoader()
-        q.push(l)
-        l2 = q.pop()
-        assert isinstance(l2, TestLoader)
-        assert l2.default_item_class is TestItem
-        self.assertEqual(l2.name_out('x'), 'xx')
+        loader = MyLoader()
+        q.push(loader)
+        loader2 = q.pop()
+        assert isinstance(loader2, MyLoader)
+        assert loader2.default_item_class is MyItem
+        assert loader2.name_out("x") == "xx"
+        q.close()
 
     def test_serialize_request_recursive(self):
         q = self.queue()
-        r = Request('http://www.example.com')
-        r.meta['request'] = r
+        r = Request("http://www.example.com")
+        r.meta["request"] = r
         q.push(r)
         r2 = q.pop()
         assert isinstance(r2, Request)
-        self.assertEqual(r.url, r2.url)
-        assert r2.meta['request'] is r2
+        assert r.url == r2.url
+        assert r2.meta["request"] is r2
+        q.close()
+
+    def test_non_pickable_object(self):
+        q = self.queue()
+        with pytest.raises(
+            ValueError,
+            match=r"Can't (get|pickle) local object|Can't pickle .*: it's not found as",
+        ) as exc_info:
+            q.push(lambda x: x)
+        if sys.version_info >= (3, 14) or hasattr(sys, "pypy_version_info"):
+            assert isinstance(exc_info.value.__context__, pickle.PicklingError)
+        else:
+            assert isinstance(exc_info.value.__context__, AttributeError)
+        sel = Selector(text="<html><body><p>some text</p></body></html>")
+        with pytest.raises(
+            ValueError, match="can't pickle Selector objects"
+        ) as exc_info:
+            q.push(sel)
+        assert isinstance(exc_info.value.__context__, TypeError)
+        q.close()
+
 
 class ChunkSize1PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 1
 
+
 class ChunkSize2PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 2
 
+
 class ChunkSize3PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 3
+
 
 class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 4
 
 
-class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest):
-
-    def queue(self):
-        return MarshalLifoDiskQueue(self.qpath)
+class LifoDiskQueueTestMixin:
+    def queue(self) -> Any:
+        raise NotImplementedError
 
     def test_serialize(self):
         q = self.queue()
-        q.push('a')
+        q.push("a")
         q.push(123)
-        q.push({'a': 'dict'})
-        self.assertEqual(q.pop(), {'a': 'dict'})
-        self.assertEqual(q.pop(), 123)
-        self.assertEqual(q.pop(), 'a')
+        q.push({"a": "dict"})
+        assert q.pop() == {"a": "dict"}
+        assert q.pop() == 123
+        assert q.pop() == "a"
+        q.close()
 
-    def test_nonserializable_object(self):
-        # Trigger Twisted bug #7989
-        import twisted.persisted.styles  # NOQA
-        q = self.queue()
-        self.assertRaises(ValueError, q.push, lambda x: x)
+    test_nonserializable_object = nonserializable_object_test
 
 
-class PickleLifoDiskQueueTest(MarshalLifoDiskQueueTest):
+class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
+    def queue(self) -> Any:
+        return _MarshalLifoQueue(self.qpath)
 
-    def queue(self):
-        return PickleLifoDiskQueue(self.qpath)
+
+class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
+    def queue(self) -> Any:
+        return _PickleLifoQueue(self.qpath)
 
     def test_serialize_item(self):
         q = self.queue()
-        i = TestItem(name='foo')
+        i = MyItem(name="foo")
         q.push(i)
         i2 = q.pop()
-        assert isinstance(i2, TestItem)
-        self.assertEqual(i, i2)
+        assert isinstance(i2, MyItem)
+        assert i == i2
+        q.close()
 
     def test_serialize_loader(self):
         q = self.queue()
-        l = TestLoader()
-        q.push(l)
-        l2 = q.pop()
-        assert isinstance(l2, TestLoader)
-        assert l2.default_item_class is TestItem
-        self.assertEqual(l2.name_out('x'), 'xx')
+        loader = MyLoader()
+        q.push(loader)
+        loader2 = q.pop()
+        assert isinstance(loader2, MyLoader)
+        assert loader2.default_item_class is MyItem
+        assert loader2.name_out("x") == "xx"
+        q.close()
 
     def test_serialize_request_recursive(self):
         q = self.queue()
-        r = Request('http://www.example.com')
-        r.meta['request'] = r
+        r = Request("http://www.example.com")
+        r.meta["request"] = r
         q.push(r)
         r2 = q.pop()
         assert isinstance(r2, Request)
-        self.assertEqual(r.url, r2.url)
-        assert r2.meta['request'] is r2
+        assert r.url == r2.url
+        assert r2.meta["request"] is r2
+        q.close()

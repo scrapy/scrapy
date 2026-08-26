@@ -1,15 +1,19 @@
-from __future__ import absolute_import
-from .http10 import HTTP10DownloadHandler
-from .http11 import HTTP11DownloadHandler as HTTPDownloadHandler
+# pragma: no file cover
+import warnings
 
+from scrapy.core.downloader.handlers.http11 import (
+    HTTP11DownloadHandler as HTTPDownloadHandler,
+)
+from scrapy.exceptions import ScrapyDeprecationWarning
 
-# backwards compatibility
-class HttpDownloadHandler(HTTP10DownloadHandler):
+warnings.warn(
+    "The scrapy.core.downloader.handlers.http module is deprecated,"
+    " please import scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler"
+    " instead of its deprecated alias scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
-    def __init__(self, *args, **kwargs):
-        import warnings
-        from scrapy.exceptions import ScrapyDeprecationWarning
-        warnings.warn('HttpDownloadHandler is deprecated, import scrapy.core.downloader'
-                      '.handlers.http10.HTTP10DownloadHandler instead',
-                      category=ScrapyDeprecationWarning, stacklevel=1)
-        super(HttpDownloadHandler, self).__init__(*args, **kwargs)
+__all__ = [
+    "HTTPDownloadHandler",
+]

@@ -4,28 +4,33 @@ Scrapy Telnet Console extension
 See documentation in docs/topics/telnetconsole.rst
 """
 
-import pprint
+from __future__ import annotations
+
+import binascii
 import logging
+import os
+import pprint
+from typing import TYPE_CHECKING, Any
 
+from twisted.conch import telnet
+from twisted.conch.insults import insults
 from twisted.internet import protocol
-try:
-    from twisted.conch import manhole, telnet
-    from twisted.conch.insults import insults
-    TWISTED_CONCH_AVAILABLE = True
-except ImportError:
-    TWISTED_CONCH_AVAILABLE = False
+from twisted.internet.defer import fail, succeed
 
-from scrapy.exceptions import NotConfigured
 from scrapy import signals
-from scrapy.utils.trackref import print_live_refs
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
+from scrapy.utils.trackref import print_live_refs
 
-try:
-    import guppy
-    hpy = guppy.hpy()
-except ImportError:
-    hpy = None
+if TYPE_CHECKING:
+    from twisted.internet.tcp import Port
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,54 +40,86 @@ update_telnet_vars = object()
 
 
 class TelnetConsole(protocol.ServerFactory):
+    def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("TELNETCONSOLE_ENABLED"):
+            raise NotConfigured
 
-    def __init__(self, crawler):
-        if not crawler.settings.getbool('TELNETCONSOLE_ENABLED'):
-            raise NotConfigured
-        if not TWISTED_CONCH_AVAILABLE:
-            raise NotConfigured
-        self.crawler = crawler
-        self.noisy = False
-        self.portrange = [int(x) for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
-        self.host = crawler.settings['TELNETCONSOLE_HOST']
+        if not crawler.settings.getbool("TWISTED_REACTOR_ENABLED"):
+            raise NotConfigured(
+                "The TelnetConsole extension requires a Twisted reactor."
+                " You can set the TELNETCONSOLE_ENABLED setting to False to remove this warning."
+            )
+
+        self.crawler: Crawler = crawler
+        self.noisy: bool = False
+        self.port: Port | None = None
+        self.portrange: list[int] = [
+            int(x) for x in crawler.settings.getlist("TELNETCONSOLE_PORT")
+        ]
+        self.host: str = crawler.settings["TELNETCONSOLE_HOST"]
+        self.username: str = crawler.settings["TELNETCONSOLE_USERNAME"]
+        self.password: str = crawler.settings["TELNETCONSOLE_PASSWORD"]
+
+        if not self.password:
+            self.password = binascii.hexlify(os.urandom(8)).decode("utf8")
+            logger.info("Telnet Password: %s", self.password)
+
         self.crawler.signals.connect(self.start_listening, signals.engine_started)
         self.crawler.signals.connect(self.stop_listening, signals.engine_stopped)
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
-    def start_listening(self):
+    def start_listening(self) -> None:
         self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
-        logger.debug("Telnet console listening on %(host)s:%(port)d",
-                     {'host': h.host, 'port': h.port},
-                     extra={'crawler': self.crawler})
+        logger.info(
+            "Telnet console listening on %(host)s:%(port)d",
+            {"host": h.host, "port": h.port},
+            extra={"crawler": self.crawler},
+        )
 
-    def stop_listening(self):
-        self.port.stopListening()
+    def stop_listening(self) -> None:
+        # The port is unset if start_listening() failed, e.g. because every
+        # port in TELNETCONSOLE_PORT was taken.
+        if self.port is not None:
+            self.port.stopListening()
 
-    def protocol(self):
-        telnet_vars = self._get_telnet_vars()
-        return telnet.TelnetTransport(telnet.TelnetBootstrapProtocol,
-            insults.ServerProtocol, manhole.Manhole, telnet_vars)
+    def protocol(self) -> telnet.TelnetTransport:
+        class Portal:
+            """An implementation of IPortal"""
 
-    def _get_telnet_vars(self):
+            def login(self_, credentials, mind, *interfaces):  # type: ignore[no-untyped-def]  # pylint: disable=no-self-argument
+                if not (
+                    credentials.username == self.username.encode("utf8")
+                    and credentials.checkPassword(self.password.encode("utf8"))
+                ):
+                    return fail(ValueError("Invalid credentials"))
+
+                from twisted.conch import manhole
+
+                protocol = telnet.TelnetBootstrapProtocol(
+                    insults.ServerProtocol, manhole.Manhole, self._get_telnet_vars()
+                )
+                return succeed((interfaces[0], protocol, lambda: None))
+
+        return telnet.TelnetTransport(telnet.AuthenticatingTelnetProtocol, Portal())
+
+    def _get_telnet_vars(self) -> dict[str, Any]:
         # Note: if you add entries here also update topics/telnetconsole.rst
-        telnet_vars = {
-            'engine': self.crawler.engine,
-            'spider': self.crawler.engine.spider,
-            'slot': self.crawler.engine.slot,
-            'crawler': self.crawler,
-            'extensions': self.crawler.extensions,
-            'stats': self.crawler.stats,
-            'settings': self.crawler.settings,
-            'est': lambda: print_engine_status(self.crawler.engine),
-            'p': pprint.pprint,
-            'prefs': print_live_refs,
-            'hpy': hpy,
-            'help': "This is Scrapy telnet console. For more info see: " \
-                "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
+        telnet_vars: dict[str, Any] = {
+            "engine": self.crawler.engine,
+            "spider": self.crawler.engine.spider,
+            "crawler": self.crawler,
+            "extensions": self.crawler.extensions,
+            "stats": self.crawler.stats,
+            "settings": self.crawler.settings,
+            "est": lambda: print_engine_status(self.crawler.engine),
+            "p": pprint.pprint,
+            "prefs": print_live_refs,
+            "help": "This is Scrapy telnet console. For more info see: "
+            "https://docs.scrapy.org/en/latest/topics/telnetconsole.html",
         }
         self.crawler.signals.send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars

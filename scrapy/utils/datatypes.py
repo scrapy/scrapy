@@ -1,316 +1,137 @@
 """
 This module contains data types used by Scrapy which are not included in the
 Python Standard Library.
-
-This module must not depend on any module outside the Standard Library.
 """
 
-import copy
-import six
-import warnings
-from collections import OrderedDict, Mapping
+from __future__ import annotations
 
-from scrapy.exceptions import ScrapyDeprecationWarning
+import collections
+import contextlib
+import weakref
+from collections import OrderedDict
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
+if TYPE_CHECKING:
+    from collections.abc import Container
 
-class MultiValueDictKeyError(KeyError):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "scrapy.utils.datatypes.MultiValueDictKeyError is deprecated "
-            "and will be removed in future releases.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2
-        )
-        super(MultiValueDictKeyError, self).__init__(*args, **kwargs)
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
-class MultiValueDict(dict):
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
+
+
+class CaseInsensitiveDict(collections.UserDict[str | bytes, Any]):
+    """A dict-like structure that accepts strings or bytes
+    as keys and allows case-insensitive lookups.
     """
-    A subclass of dictionary customized to handle multiple values for the same key.
 
-    >>> d = MultiValueDict({'name': ['Adrian', 'Simon'], 'position': ['Developer']})
-    >>> d['name']
-    'Simon'
-    >>> d.getlist('name')
-    ['Adrian', 'Simon']
-    >>> d.get('lastname', 'nonexistent')
-    'nonexistent'
-    >>> d.setlist('lastname', ['Holovaty', 'Willison'])
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._keys: dict[str | bytes, Any] = {}
+        super().__init__(*args, **kwargs)
 
-    This class exists to solve the irritating problem raised by cgi.parse_qs,
-    which returns a list for every key, even though most Web forms submit
-    single name-value pairs.
-    """
-    def __init__(self, key_to_list_mapping=()):
-        warnings.warn("scrapy.utils.datatypes.MultiValueDict is deprecated "
-                      "and will be removed in future releases.",
-                      category=ScrapyDeprecationWarning,
-                      stacklevel=2)
-        dict.__init__(self, key_to_list_mapping)
+    def __getitem__(self, key: str | bytes) -> Any:
+        normalized_key = self._normkey(key)
+        return super().__getitem__(self._keys[normalized_key.lower()])
 
-    def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, dict.__repr__(self))
-
-    def __getitem__(self, key):
-        """
-        Returns the last data value for this key, or [] if it's an empty list;
-        raises KeyError if not found.
-        """
+    def __setitem__(self, key: str | bytes, value: Any) -> None:
+        normalized_key = self._normkey(key)
         try:
-            list_ = dict.__getitem__(self, key)
+            lower_key = self._keys[normalized_key.lower()]
+            del self[lower_key]
         except KeyError:
-            raise MultiValueDictKeyError("Key %r not found in %r" % (key, self))
-        try:
-            return list_[-1]
-        except IndexError:
-            return []
+            pass
+        super().__setitem__(normalized_key, self._normvalue(value))
+        self._keys[normalized_key.lower()] = normalized_key
 
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, key, [value])
+    def __delitem__(self, key: str | bytes) -> None:
+        normalized_key = self._normkey(key)
+        stored_key = self._keys.pop(normalized_key.lower())
+        super().__delitem__(stored_key)
 
-    def __copy__(self):
-        return self.__class__(dict.items(self))
+    def __contains__(self, key: str | bytes) -> bool:  # type: ignore[override]
+        normalized_key = self._normkey(key)
+        return normalized_key.lower() in self._keys
 
-    def __deepcopy__(self, memo=None):
-        if memo is None:
-            memo = {}
-        result = self.__class__()
-        memo[id(self)] = result
-        for key, value in dict.items(self):
-            dict.__setitem__(result, copy.deepcopy(key, memo), copy.deepcopy(value, memo))
-        return result
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: {super().__repr__()}>"
 
-    def get(self, key, default=None):
-        "Returns the default value if the requested data doesn't exist"
-        try:
-            val = self[key]
-        except KeyError:
-            return default
-        if val == []:
-            return default
-        return val
+    # UserDict.copy() shallow-copies the instance, which would share self._keys
+    # between the copy and the original.
+    def __copy__(self) -> Self:
+        new = self.__class__()
+        new.data = self.data.copy()
+        new._keys = self._keys.copy()
+        return new
 
-    def getlist(self, key):
-        "Returns an empty list if the requested data doesn't exist"
-        try:
-            return dict.__getitem__(self, key)
-        except KeyError:
-            return []
-
-    def setlist(self, key, list_):
-        dict.__setitem__(self, key, list_)
-
-    def setdefault(self, key, default=None):
-        if key not in self:
-            self[key] = default
-        return self[key]
-
-    def setlistdefault(self, key, default_list=()):
-        if key not in self:
-            self.setlist(key, default_list)
-        return self.getlist(key)
-
-    def appendlist(self, key, value):
-        "Appends an item to the internal list associated with key"
-        self.setlistdefault(key, [])
-        dict.__setitem__(self, key, self.getlist(key) + [value])
-
-    def items(self):
-        """
-        Returns a list of (key, value) pairs, where value is the last item in
-        the list associated with the key.
-        """
-        return [(key, self[key]) for key in self.keys()]
-
-    def lists(self):
-        "Returns a list of (key, list) pairs."
-        return dict.items(self)
-
-    def values(self):
-        "Returns a list of the last value on every key list."
-        return [self[key] for key in self.keys()]
-
-    def copy(self):
-        "Returns a copy of this object."
-        return self.__deepcopy__()
-
-    def update(self, *args, **kwargs):
-        "update() extends rather than replaces existing key lists. Also accepts keyword args."
-        if len(args) > 1:
-            raise TypeError("update expected at most 1 arguments, got %d" % len(args))
-        if args:
-            other_dict = args[0]
-            if isinstance(other_dict, MultiValueDict):
-                for key, value_list in other_dict.lists():
-                    self.setlistdefault(key, []).extend(value_list)
-            else:
-                try:
-                    for key, value in other_dict.items():
-                        self.setlistdefault(key, []).append(value)
-                except TypeError:
-                    raise ValueError("MultiValueDict.update() takes either a MultiValueDict or dictionary")
-        for key, value in six.iteritems(kwargs):
-            self.setlistdefault(key, []).append(value)
-
-
-class SiteNode(object):
-    """Class to represent a site node (page, image or any other file)"""
-
-    def __init__(self, url):
-        warnings.warn(
-            "scrapy.utils.datatypes.SiteNode is deprecated "
-            "and will be removed in future releases.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2
-        )
-
-        self.url = url
-        self.itemnames = []
-        self.children = []
-        self.parent = None
-
-    def add_child(self, node):
-        self.children.append(node)
-        node.parent = self
-
-    def to_string(self, level=0):
-        s = "%s%s\n" % ('  '*level, self.url)
-        if self.itemnames:
-            for n in self.itemnames:
-                s += "%sScraped: %s\n" % ('  '*(level+1), n)
-        for node in self.children:
-            s += node.to_string(level+1)
-        return s
-
-
-class CaselessDict(dict):
-
-    __slots__ = ()
-
-    def __init__(self, seq=None):
-        super(CaselessDict, self).__init__()
-        if seq:
-            self.update(seq)
-
-    def __getitem__(self, key):
-        return dict.__getitem__(self, self.normkey(key))
-
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, self.normkey(key), self.normvalue(value))
-
-    def __delitem__(self, key):
-        dict.__delitem__(self, self.normkey(key))
-
-    def __contains__(self, key):
-        return dict.__contains__(self, self.normkey(key))
-    has_key = __contains__
-
-    def __copy__(self):
-        return self.__class__(self)
     copy = __copy__
 
-    def normkey(self, key):
-        """Method to normalize dictionary key access"""
-        return key.lower()
+    # UserDict.__ior__ updates self.data directly, which would leave self._keys
+    # out of date.
+    def __ior__(self, other: Any) -> Self:  # type: ignore[override,misc]
+        self.update(other)
+        return self
 
-    def normvalue(self, value):
-        """Method to normalize values prior to be setted"""
+    def _normkey(self, key: str | bytes) -> str | bytes:
+        return key
+
+    def _normvalue(self, value: Any) -> Any:
         return value
 
-    def get(self, key, def_val=None):
-        return dict.get(self, self.normkey(key), self.normvalue(def_val))
 
-    def setdefault(self, key, def_val=None):
-        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
-
-    def update(self, seq):
-        seq = seq.items() if isinstance(seq, Mapping) else seq
-        iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
-        super(CaselessDict, self).update(iseq)
-
-    @classmethod
-    def fromkeys(cls, keys, value=None):
-        return cls((k, value) for k in keys)
-
-    def pop(self, key, *args):
-        return dict.pop(self, self.normkey(key), *args)
-
-
-class MergeDict(object):
-    """
-    A simple class for creating new "virtual" dictionaries that actually look
-    up values in more than one dictionary, passed in the constructor.
-
-    If a key appears in more than one of the given dictionaries, only the
-    first occurrence will be used.
-    """
-    def __init__(self, *dicts):
-        self.dicts = dicts
-
-    def __getitem__(self, key):
-        for dict_ in self.dicts:
-            try:
-                return dict_[key]
-            except KeyError:
-                pass
-        raise KeyError
-
-    def __copy__(self):
-        return self.__class__(*self.dicts)
-
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-    def getlist(self, key):
-        for dict_ in self.dicts:
-            if key in dict_.keys():
-                return dict_.getlist(key)
-        return []
-
-    def items(self):
-        item_list = []
-        for dict_ in self.dicts:
-            item_list.extend(dict_.items())
-        return item_list
-
-    def has_key(self, key):
-        for dict_ in self.dicts:
-            if key in dict_:
-                return True
-        return False
-
-    __contains__ = has_key
-
-    def copy(self):
-        """Returns a copy of this object."""
-        return self.__copy__()
-
-
-class LocalCache(OrderedDict):
+class LocalCache(OrderedDict[_KT, _VT]):
     """Dictionary with a finite number of keys.
 
     Older items expires first.
-
     """
 
-    def __init__(self, limit=None):
-        super(LocalCache, self).__init__()
-        self.limit = limit
+    def __init__(self, limit: int | None = None):
+        super().__init__()
+        self.limit: int | None = limit
 
-    def __setitem__(self, key, value):
-        while len(self) >= self.limit:
-            self.popitem(last=False)
-        super(LocalCache, self).__setitem__(key, value)
+    def __setitem__(self, key: _KT, value: _VT) -> None:
+        if self.limit is not None:
+            if self.limit == 0:
+                return
+            while len(self) >= self.limit:
+                self.popitem(last=False)
+        super().__setitem__(key, value)
 
 
-class SequenceExclude(object):
+class LocalWeakReferencedCache(weakref.WeakKeyDictionary[_KT, _VT | None]):
+    """
+    A weakref.WeakKeyDictionary implementation that uses LocalCache as its
+    underlying data structure, making it ordered and capable of being size-limited.
+
+    Useful for memoization, while avoiding keeping received
+    arguments in memory only because of the cached references.
+
+    Note: like LocalCache and unlike weakref.WeakKeyDictionary,
+    it cannot be instantiated with an initial dictionary.
+    """
+
+    def __init__(self, limit: int | None = None):
+        super().__init__()
+        self.data: LocalCache[_KT, _VT] = LocalCache(limit=limit)
+
+    def __setitem__(self, key: _KT, value: _VT | None) -> None:
+        # if raised, key is not weak-referenceable, skip caching
+        with contextlib.suppress(TypeError):
+            super().__setitem__(key, value)
+
+    def __getitem__(self, key: _KT) -> _VT | None:
+        try:
+            return cast("_VT", super().__getitem__(key))
+        except (TypeError, KeyError):
+            return None  # key is either not weak-referenceable or not cached
+
+
+class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
-    def __init__(self, seq):
-        self.seq = seq
+    def __init__(self, seq: Container[Any]):
+        self.seq: Container[Any] = seq
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any) -> bool:
         return item not in self.seq

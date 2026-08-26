@@ -11,7 +11,7 @@ SEP-004: Library API
 ====================
 .. note:: the library API has been implemented, but slightly different from
           proposed in this SEP. You can run a Scrapy crawler inside a Twisted
-          reactor, but not outside it. 
+          reactor, but not outside it.
 
 Introduction
 ============
@@ -26,7 +26,7 @@ Proposed API
 
 Here's a simple proof-of-concept code of such script:
 
-::
+.. code-block:: python
 
    #!/usr/bin/env python
    from scrapy.http import Request
@@ -35,25 +35,28 @@ Here's a simple proof-of-concept code of such script:
    # a container to hold scraped items
    scraped_items = []
 
+
    def parse_start_page(response):
        # collect urls to follow into urls_to_follow list
        requests = [Request(url, callback=parse_other_page) for url in urls_to_follow]
        return requests
 
+
    def parse_other_page(response):
        # ... parse items from response content ...
        scraped_items.extend(parsed_items)
 
+
    start_urls = ["http://www.example.com/start_page.html"]
 
    cr = Crawler(start_urls, callback=parse_start_page)
-   cr.run() # blocking call - this populates scraped_items
+   cr.run()  # blocking call - this populates scraped_items
 
-   print "%d items scraped" % len(scraped_items)
+   print("%d items scraped" % len(scraped_items))
    # ... do something more interesting with scraped_items ...
 
 The behaviour of the Scrapy crawler would be controller by the Scrapy settings,
-naturally, just like any typical scrapy project. But the default settings
+naturally, just like any typical Scrapy project. But the default settings
 should be sufficient so as to not require adding any specific setting. But, at
 the same time, you could do it if you need to, say, for specifying a custom
 middleware.

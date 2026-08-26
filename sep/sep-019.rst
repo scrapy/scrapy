@@ -15,10 +15,11 @@ consistent way, while taking the chance to refactor the settings population
 and whole crawl workflow.
 
 In short, you will be able to overwrite settings (on a per-spider basis) by
-implementing a class method in your spider::
+implementing a class method in your spider:
+
+.. code-block:: python
 
     class MySpider(Spider):
-
         @classmethod
         def custom_settings(cls):
             return {
@@ -185,7 +186,7 @@ These ideas translate to the following changes on the ``SpiderManager`` class:
   will return a spider class, not an instance. It's basically a ``__get__``
   to ``self._spiders``.
 
-- All remaining functions should be deprecated or remove accordantly, since a
+- All remaining functions should be deprecated or remove accordingly, since a
   crawler reference is no longer needed.
 
 - New helper ``get_spider_manager_class_from_scrapycfg`` in
@@ -197,10 +198,11 @@ Spiders
 
 A new class method ``custom_settings`` is proposed, that could be use to
 override project and default settings before they're used to instantiate the
-crawler::
+crawler:
+
+.. code-block:: python
 
     class MySpider(Spider):
-
         @classmethod
         def custom_settings(cls):
             return {

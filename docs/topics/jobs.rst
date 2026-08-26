@@ -17,20 +17,30 @@ facilities:
 * an extension that keeps some spider state (key/value pairs) persistent
   between batches
 
+.. _job-dir:
+
 Job directory
 =============
 
-To enable persistence support you just need to define a *job directory* through
-the ``JOBDIR`` setting. This directory will be for storing all required data to
-keep the state of a single job (ie. a spider run).  It's important to note that
-this directory must not be shared by different spiders, or even different
-jobs/runs of the same spider, as it's meant to be used for storing the state of
-a *single* job.
+To enable persistence support, define a *job directory* through the
+:setting:`JOBDIR` setting.
+
+The job directory will store all required data to keep the state of a *single*
+job (i.e. a spider run), so that if stopped cleanly, it can be resumed later.
+
+.. warning:: This directory must *not* be shared by different spiders, or even
+    different jobs of the same spider. See :ref:`job-dir-spider-name`.
+
+.. warning:: Treat the job directory with the same security care as your
+    Scrapy project source code. Do not point ``JOBDIR`` to a path that
+    untrusted parties can write to.
+
+See also :ref:`job-dir-contents`.
 
 How to use it
 =============
 
-To start a spider with persistence supported enabled, run it like this::
+To start a spider with persistence support enabled, run it like this::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
@@ -39,21 +49,48 @@ a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
+.. _job-dir-spider-name:
+
+Deriving the job directory from the spider name
+===============================================
+
+One way to keep job directories apart is to build the path in
+:meth:`~scrapy.Spider.update_settings`, so that a group of spiders shares the
+same path except for the spider name:
+
+.. code-block:: python
+
+    from pathlib import Path
+
+    from scrapy import Spider
+
+
+    class BaseSpider(Spider):
+        @classmethod
+        def update_settings(cls, settings):
+            super().update_settings(settings)
+            settings.set("JOBDIR", str(Path("crawls", cls.name)), priority="spider")
+
+
+.. _topics-keeping-persistent-state-between-batches:
+
 Keeping persistent state between batches
 ========================================
 
 Sometimes you'll want to keep some persistent spider state between pause/resume
 batches. You can use the ``spider.state`` attribute for that, which should be a
-dict. There's a built-in extension that takes care of serializing, storing and
-loading that attribute from the job directory, when the spider starts and
-stops.
+dict. There's :ref:`a built-in extension <topics-extensions-ref-spiderstate>`
+that takes care of serializing, storing and loading that attribute from the job
+directory, when the spider starts and stops.
 
 Here's an example of a callback that uses the spider state (other spider code
-is omitted for brevity)::
+is omitted for brevity):
+
+.. code-block:: python
 
     def parse_item(self, response):
         # parse item here
-        self.state['items_count'] = self.state.get('items_count', 0) + 1
+        self.state["items_count"] = self.state.get("items_count", 0) + 1
 
 Persistence gotchas
 ===================
@@ -61,43 +98,101 @@ Persistence gotchas
 There are a few things to keep in mind if you want to be able to use the Scrapy
 persistence support:
 
+Pause limitations
+-----------------
+
+Job pausing and resuming is only supported when the spider is paused by
+stopping it cleanly. Forced, sudden or otherwise unclean shutdown can lead to
+data corruption in the job directory, which may prevent the spider from
+resuming correctly.
+
+Scrapy version changes
+----------------------
+
+The contents of a job directory are an implementation detail of the Scrapy
+version that wrote them. A job must be resumed with the same Scrapy version
+that paused it; after upgrading or downgrading Scrapy, start a new job with a
+new job directory.
+
 Cookies expiration
 ------------------
 
 Cookies may expire. So, if you don't resume your spider quickly the requests
-scheduled may no longer work. This won't be an issue if you spider doesn't rely
+scheduled may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
+
+.. _request-serialization:
 
 Request serialization
 ---------------------
 
-Requests must be serializable by the `pickle` module, in order for persistence
-to work, so you should make sure that your requests are serializable.
+For persistence to work, :class:`~scrapy.Request` objects must be
+serializable with :mod:`pickle`, except for the :ref:`callback
+<callbacks>` and :ref:`errback
+<errbacks>` values passed to their ``__init__``
+method, which must be methods of the running :class:`~scrapy.Spider` class.
 
-The most common issue here is to use ``lambda`` functions on request callbacks that
-can't be persisted.
-
-So, for example, this won't work::
-
-    def some_callback(self, response):
-        somearg = 'test'
-        return scrapy.Request('http://www.example.com', callback=lambda r: self.other_callback(r, somearg))
-
-    def other_callback(self, response, somearg):
-        print "the argument passed is:", somearg
-
-But this will::
-
-    def some_callback(self, response):
-        somearg = 'test'
-        return scrapy.Request('http://www.example.com', callback=self.other_callback, meta={'somearg': somearg})
-
-    def other_callback(self, response):
-        somearg = response.meta['somearg']
-        print "the argument passed is:", somearg
+Requests that cannot be serialized are kept in memory only: they are still
+sent, but they are lost when the crawl is paused.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
 
-.. _pickle: http://docs.python.org/library/pickle.html
+.. note:: Because requests are serialized with :mod:`pickle`, the objects you
+    store on a request, such as the values of its
+    :attr:`~scrapy.Request.cb_kwargs` and :attr:`~scrapy.Request.meta`
+    dictionaries, are deep-copied when the request is written to and later read
+    back from the job directory. As a result, the callback receives a *copy* of
+    those objects rather than the original ones, and changes made to the copy are
+    not reflected in the original object. Keep this in mind if you rely on
+    sharing mutable state through ``cb_kwargs`` or ``meta``.
+
+.. _job-dir-contents:
+
+Job directory contents
+======================
+
+The contents of a job directory depend on the components used during the job.
+Components known to write in the job directory include the :ref:`scheduler
+<topics-scheduler>` and the :class:`~scrapy.extensions.spiderstate.SpiderState`
+extension. See the reference documentation of the corresponding components for
+details.
+
+For example, with default settings, the job directory may look like this:
+
+.. code-block:: none
+
+    ├── requests.queue
+    |   ├── active.json
+    |   └── {hostname}-{hash}
+    |       └── {priority}{s?}
+    |           ├── q{00000}
+    |           └── info.json
+    ├── requests.seen
+    └── spider.state
+
+Where:
+
+-   :class:`~scrapy.core.scheduler.Scheduler` creates the ``requests.queue/``
+    directory and the ``active.json`` file, the latter containing the state
+    data returned by :meth:`DownloaderAwarePriorityQueue.close()
+    <scrapy.pqueues.DownloaderAwarePriorityQueue.close>` the last time the job
+    was paused.
+
+-   :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` creates the
+    ``{hostname}-{hash}`` directories.
+
+-   :class:`~scrapy.pqueues.ScrapyPriorityQueue` creates the ``{priority}{s?}``
+    directories.
+
+-   :class:`scrapy.squeues.PickleFifoDiskQueue`, a subclass of
+    :class:`queuelib.FifoDiskQueue` that uses :mod:`pickle` to serialize
+    :class:`dict` representations of :class:`scrapy.Request` objects, creates
+    the ``info.json`` and ``q{00000}`` files.
+
+-   :class:`~scrapy.dupefilters.RFPDupeFilter` creates the ``requests.seen``
+    file.
+
+-   :class:`~scrapy.extensions.spiderstate.SpiderState` creates the
+    ``spider.state`` file.

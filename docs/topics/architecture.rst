@@ -63,11 +63,11 @@ this:
    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`).
 
 8. The :ref:`Engine <component-engine>` sends processed items to
-   :ref:`Item Pipelines <component-pipelines>`, then send processed Requests to
+   :ref:`Item Pipelines <component-pipelines>`, then sends processed Requests to
    the :ref:`Scheduler <component-scheduler>` and asks for possible next Requests
    to crawl.
 
-9. The process repeats (from step 1) until there are no more requests from the
+9. The process repeats (from step 3) until there are no more requests from the
    :ref:`Scheduler <component-scheduler>`.
 
 Components
@@ -87,8 +87,9 @@ of the system, and triggering events when certain actions occur. See the
 Scheduler
 ---------
 
-The Scheduler receives requests from the engine and enqueues them for feeding
-them later (also to the engine) when the engine requests them.
+The :ref:`scheduler <topics-scheduler>` receives requests from the engine and
+enqueues them for feeding them later (also to the engine) when the engine
+requests them.
 
 .. _component-downloader:
 
@@ -104,7 +105,7 @@ Spiders
 -------
 
 Spiders are custom classes written by Scrapy users to parse responses and
-extract items (aka scraped items) from them or additional requests to
+extract :ref:`items <topics-items>` from them or additional requests to
 follow. For more information see :ref:`topics-spiders`.
 
 .. _component-pipelines:
@@ -124,18 +125,9 @@ Downloader middlewares
 
 Downloader middlewares are specific hooks that sit between the Engine and the
 Downloader and process requests when they pass from the Engine to the
-Downloader, and responses that pass from Downloader to the Engine.
-
-Use a Downloader middleware if you need to do one of the following:
-
-* process a request just before it is sent to the Downloader
-  (i.e. right before Scrapy sends the request to the website);
-* change received response before passing it to a spider;
-* send a new Request instead of passing received response to a spider;
-* pass response to a spider without fetching a web page;
-* silently drop some requests.
-
-For more information see :ref:`topics-downloader-middleware`.
+Downloader, and responses that pass from Downloader to the Engine. See
+:ref:`concepts` for when to use one, and :ref:`topics-downloader-middleware`
+for more information.
 
 .. _component-spider-middleware:
 
@@ -144,17 +136,17 @@ Spider middlewares
 
 Spider middlewares are specific hooks that sit between the Engine and the
 Spiders and are able to process spider input (responses) and output (items and
-requests).
+requests). See :ref:`concepts` for when to use one, and
+:ref:`topics-spider-middleware` for more information.
 
-Use a Spider middleware if you need to
+.. _component-extensions:
 
-* post-process output of spider callbacks - change/add/remove requests or items;
-* post-process start_requests;
-* handle spider exceptions;
-* call errback instead of callback for some of the requests based on response
-  content.
+Extensions
+----------
 
-For more information see :ref:`topics-spider-middleware`.
+Extensions do not have a specific role in the data flow like the other
+components above. See :ref:`concepts` for when to use one, and
+:ref:`topics-extensions` for more information.
 
 Event-driven networking
 =======================
@@ -166,11 +158,8 @@ for concurrency.
 For more information about asynchronous programming and Twisted see these
 links:
 
-* `Introduction to Deferreds in Twisted`_
-* `Twisted - hello, asynchronous programming`_
+* :doc:`twisted:core/howto/defer-intro`
 * `Twisted Introduction - Krondo`_
 
-.. _Twisted: https://twistedmatrix.com/trac/
-.. _Introduction to Deferreds in Twisted: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
-.. _Twisted - hello, asynchronous programming: http://jessenoller.com/2009/02/11/twisted-hello-asynchronous-programming/
-.. _Twisted Introduction - Krondo: http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/
+.. _Twisted: https://twisted.org/
+.. _Twisted Introduction - Krondo: https://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/

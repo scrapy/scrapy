@@ -1,0 +1,7 @@
+# .git-blame-ignore-revs
+# adding black formatter to all the code
+e211ec0aa26ecae0da8ae55d064ea60e1efe4d0d
+# reapplying black to the code with default line length
+303f0a70fcf8067adf0a909c2096a5009162383a
+# reapplying black again and removing line length on pre-commit black config
+c5cdd0d30ceb68ccba04af0e71d1b8e6678e2962

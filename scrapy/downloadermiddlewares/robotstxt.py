@@ -4,107 +4,138 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 """
 
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
-from six.moves.urllib import robotparser
+from twisted.internet.defer import Deferred
 
-from twisted.internet.defer import Deferred, maybeDeferred
-from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.http import Request
+from scrapy import signals
+from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.http import Request, Response
+from scrapy.http.request import NO_CALLBACK
+from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_native_str
+from scrapy.utils.misc import build_from_crawler, load_object
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy import Spider
+    from scrapy.crawler import Crawler
+    from scrapy.robotstxt import RobotParser
+    from scrapy.statscollectors import StatsCollector
+
 
 logger = logging.getLogger(__name__)
 
 
-class RobotsTxtMiddleware(object):
-    DOWNLOAD_PRIORITY = 1000
+class RobotsTxtMiddleware:
+    DOWNLOAD_PRIORITY: int = 1000
 
-    def __init__(self, crawler):
-        if not crawler.settings.getbool('ROBOTSTXT_OBEY'):
+    def __init__(self, crawler: Crawler):
+        if not crawler.settings.getbool("ROBOTSTXT_OBEY"):
             raise NotConfigured
+        self._default_useragent: str = crawler.settings["USER_AGENT"]
+        self._robotstxt_useragent: str | None = crawler.settings["ROBOTSTXT_USER_AGENT"]
+        self.crawler: Crawler = crawler
+        self._stats: StatsCollector = crawler.stats
+        self._parsers: dict[str, RobotParser | Deferred[RobotParser | None] | None] = {}
+        self._parserimpl: RobotParser = load_object(
+            crawler.settings.get("ROBOTSTXT_PARSER")
+        )
 
-        self.crawler = crawler
-        self._useragent = crawler.settings.get('USER_AGENT')
-        self._parsers = {}
+        # check if parser dependencies are met, this should throw an error otherwise.
+        build_from_crawler(self._parserimpl, self.crawler, b"")
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
-    def process_request(self, request, spider):
-        if request.meta.get('dont_obey_robotstxt'):
+    @_warn_spider_arg
+    async def process_request(
+        self, request: Request, spider: Spider | None = None
+    ) -> None:
+        if request.meta.get("dont_obey_robotstxt"):
             return
-        d = maybeDeferred(self.robot_parser, request, spider)
-        d.addCallback(self.process_request_2, request, spider)
-        return d
+        if request.url.startswith("data:") or request.url.startswith("file:"):
+            return
+        rp = await self.robot_parser(request)
+        self.process_request_2(rp, request)
 
-    def process_request_2(self, rp, request, spider):
-        if rp is not None and not rp.can_fetch(
-                 to_native_str(self._useragent), request.url):
-            logger.debug("Forbidden by robots.txt: %(request)s",
-                         {'request': request}, extra={'spider': spider})
-            raise IgnoreRequest()
+    def process_request_2(self, rp: RobotParser | None, request: Request) -> None:
+        if rp is None:
+            return
 
-    def robot_parser(self, request, spider):
+        useragent: str | bytes | None = self._robotstxt_useragent
+        if not useragent:
+            useragent = request.headers.get(b"User-Agent", self._default_useragent)
+            assert useragent is not None
+        if not rp.allowed(request.url, useragent):
+            logger.debug(
+                "Forbidden by robots.txt: %(request)s",
+                {"request": request},
+                extra={"spider": self.crawler.spider},
+            )
+            self._stats.inc_value("robotstxt/forbidden")
+            raise IgnoreRequest("Forbidden by robots.txt")
+
+    async def robot_parser(self, request: Request) -> RobotParser | None:
         url = urlparse_cached(request)
         netloc = url.netloc
 
         if netloc not in self._parsers:
             self._parsers[netloc] = Deferred()
-            robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
+            robotsurl = f"{url.scheme}://{url.netloc}/robots.txt"
             robotsreq = Request(
                 robotsurl,
                 priority=self.DOWNLOAD_PRIORITY,
-                meta={'dont_obey_robotstxt': True}
+                meta={"dont_obey_robotstxt": True},
+                callback=NO_CALLBACK,
             )
-            dfd = self.crawler.engine.download(robotsreq, spider)
-            dfd.addCallback(self._parse_robots, netloc)
-            dfd.addErrback(self._logerror, robotsreq, spider)
-            dfd.addErrback(self._robots_error, netloc)
-
-        if isinstance(self._parsers[netloc], Deferred):
-            d = Deferred()
-            def cb(result):
-                d.callback(result)
-                return result
-            self._parsers[netloc].addCallback(cb)
-            return d
-        else:
-            return self._parsers[netloc]
-
-    def _logerror(self, failure, request, spider):
-        if failure.type is not IgnoreRequest:
-            logger.error("Error downloading %(request)s: %(f_exception)s",
-                         {'request': request, 'f_exception': failure.value},
-                         exc_info=failure_to_exc_info(failure),
-                         extra={'spider': spider})
-        return failure
-
-    def _parse_robots(self, response, netloc):
-        rp = robotparser.RobotFileParser(response.url)
-        body = ''
-        if hasattr(response, 'text'):
-            body = response.text
-        else: # last effort try
             try:
-                body = response.body.decode('utf-8')
-            except UnicodeDecodeError:
-                # If we found garbage, disregard it:,
-                # but keep the lookup cached (in self._parsers)
-                # Running rp.parse() will set rp state from
-                # 'disallow all' to 'allow any'.
-                pass
-        # stdlib's robotparser expects native 'str' ;
-        # with unicode input, non-ASCII encoded bytes decoding fails in Python2
-        rp.parse(to_native_str(body).splitlines())
+                resp = await self.crawler.engine.download_async(robotsreq)
+                await self._parse_robots(resp, netloc, request)
+            except Exception as e:
+                if not isinstance(e, IgnoreRequest):
+                    logger.error(
+                        "Error downloading %(request)s: %(f_exception)s",
+                        {"request": request, "f_exception": e},
+                        exc_info=True,
+                        extra={"spider": self.crawler.spider},
+                    )
+                self._robots_error(e, netloc)
+            self._stats.inc_value("robotstxt/request_count")
 
+        parser = self._parsers[netloc]
+        if isinstance(parser, Deferred):
+            return await maybe_deferred_to_future(parser)
+        return parser
+
+    async def _parse_robots(
+        self, response: Response, netloc: str, request: Request
+    ) -> None:
+        self._stats.inc_value("robotstxt/response_count")
+        self._stats.inc_value(f"robotstxt/response_status_count/{response.status}")
+        rp = build_from_crawler(self._parserimpl, self.crawler, response.body)
+        await self.crawler.signals.send_catch_log_async(
+            signal=signals.robots_parsed,
+            robotparser=rp,
+            request=request,
+        )
         rp_dfd = self._parsers[netloc]
+        assert isinstance(rp_dfd, Deferred)
         self._parsers[netloc] = rp
         rp_dfd.callback(rp)
 
-    def _robots_error(self, failure, netloc):
+    def _robots_error(self, exc: Exception, netloc: str) -> None:
+        if not isinstance(exc, IgnoreRequest):
+            key = f"robotstxt/exception_count/{type(exc)}"
+            self._stats.inc_value(key)
         rp_dfd = self._parsers[netloc]
+        assert isinstance(rp_dfd, Deferred)
         self._parsers[netloc] = None
         rp_dfd.callback(None)

@@ -1,0 +1,262 @@
+from __future__ import annotations
+
+import datetime
+import json
+import logging
+from typing import TYPE_CHECKING, Any
+
+import pytest
+
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.extensions.periodic_log import PeriodicLog
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
+
+from .spiders import MetaSpider
+from .utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+
+stats_dump_1 = {
+    "log_count/INFO": 10,
+    "log_count/WARNING": 1,
+    "start_time": datetime.datetime(2023, 6, 16, 8, 59, 18, 993170),
+    "scheduler/enqueued/memory": 190,
+    "scheduler/enqueued": 190,
+    "scheduler/dequeued/memory": 166,
+    "scheduler/dequeued": 166,
+    "downloader/request_count": 166,
+    "downloader/request_method_count/GET": 166,
+    "downloader/request_bytes": 56803,
+    "downloader/response_count": 150,
+    "downloader/response_status_count/200": 150,
+    "downloader/response_bytes": 595698,
+    "httpcompression/response_bytes": 3186068,
+    "httpcompression/response_count": 150,
+    "response_received_count": 150,
+    "request_depth_max": 9,
+    "dupefilter/filtered": 180,
+    "item_scraped_count": 140,
+}
+stats_dump_2 = {
+    "log_count/INFO": 12,
+    "log_count/WARNING": 1,
+    "start_time": datetime.datetime(2023, 6, 16, 8, 59, 18, 993170),
+    "scheduler/enqueued/memory": 337,
+    "scheduler/enqueued": 337,
+    "scheduler/dequeued/memory": 280,
+    "scheduler/dequeued": 280,
+    "downloader/request_count": 280,
+    "downloader/request_method_count/GET": 280,
+    "downloader/request_bytes": 95754,
+    "downloader/response_count": 264,
+    "downloader/response_status_count/200": 264,
+    "downloader/response_bytes": 1046274,
+    "httpcompression/response_bytes": 5614484,
+    "httpcompression/response_count": 264,
+    "response_received_count": 264,
+    "request_depth_max": 16,
+    "dupefilter/filtered": 320,
+    "item_scraped_count": 248,
+}
+
+
+class CustomPeriodicLog(PeriodicLog):
+    def set_a(self) -> None:
+        self.stats._stats = stats_dump_1
+
+    def set_b(self) -> None:
+        self.stats._stats = stats_dump_2
+
+
+def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
+    crawler = get_crawler(MetaSpider, settings)
+    return build_from_crawler(CustomPeriodicLog, crawler)
+
+
+def test_extension_enabled() -> None:
+    # Expected that settings for this extension loaded successfully
+
+    # "PERIODIC_LOG_STATS": True -> set to {"enabled": True}
+    # due to TypeError exception from settings.getdict
+    assert extension({"PERIODIC_LOG_STATS": True, "LOGSTATS_INTERVAL": 60})
+
+    # "PERIODIC_LOG_STATS": "True" -> set to {"enabled": True}
+    # due to JSONDecodeError(ValueError) exception from settings.getdict
+    assert extension({"PERIODIC_LOG_STATS": "True", "LOGSTATS_INTERVAL": 60})
+
+    # The ame for PERIODIC_LOG_DELTA:
+    assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
+    assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
+
+
+def test_no_interval() -> None:
+    with pytest.raises(NotConfigured):
+        extension({"PERIODIC_LOG_STATS": True, "LOGSTATS_INTERVAL": 0})
+
+
+def test_nothing_enabled() -> None:
+    with pytest.raises(NotConfigured):
+        extension({"LOGSTATS_INTERVAL": 60})
+
+
+@coroutine_test
+async def test_log_delta() -> None:
+    def emulate(
+        settings: dict[str, Any] | None = None,
+    ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
+        spider = MetaSpider()
+        ext = extension(settings)
+        ext.spider_opened(spider)
+        ext.set_a()
+        a = ext.log_delta()
+        ext.set_b()
+        b = ext.log_delta()
+        ext.spider_closed(spider, reason="finished")
+        return ext, a, b
+
+    def check(settings: dict[str, Any], condition: Callable[[str, Any], bool]) -> None:
+        ext, a, b = emulate(settings)
+        assert list(a["delta"].keys()) == [
+            k for k, v in ext.stats._stats.items() if condition(k, v)
+        ]
+        assert list(b["delta"].keys()) == [
+            k for k, v in ext.stats._stats.items() if condition(k, v)
+        ]
+
+    # Including all
+    check({"PERIODIC_LOG_DELTA": True}, lambda k, v: isinstance(v, (int, float)))
+
+    # include:
+    check(
+        {"PERIODIC_LOG_DELTA": {"include": ["downloader/"]}},
+        lambda k, v: isinstance(v, (int, float)) and "downloader/" in k,
+    )
+
+    # include multiple
+    check(
+        {"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}},
+        lambda k, v: (
+            isinstance(v, (int, float)) and ("downloader/" in k or "scheduler/" in k)
+        ),
+    )
+
+    # exclude
+    check(
+        {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}},
+        lambda k, v: isinstance(v, (int, float)) and "downloader/" not in k,
+    )
+
+    # exclude multiple
+    check(
+        {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/", "scheduler/"]}},
+        lambda k, v: (
+            isinstance(v, (int, float))
+            and ("downloader/" not in k and "scheduler/" not in k)
+        ),
+    )
+
+    # include exclude combined
+    check(
+        {"PERIODIC_LOG_DELTA": {"include": ["downloader/"], "exclude": ["bytes"]}},
+        lambda k, v: (
+            isinstance(v, (int, float)) and ("downloader/" in k and "bytes" not in k)
+        ),
+    )
+
+
+@coroutine_test
+async def test_log_stats() -> None:
+    def emulate(
+        settings: dict[str, Any] | None = None,
+    ) -> tuple[PeriodicLog, dict[str, Any], dict[str, Any]]:
+        spider = MetaSpider()
+        ext = extension(settings)
+        ext.spider_opened(spider)
+        ext.set_a()
+        a = ext.log_crawler_stats()
+        ext.set_b()
+        b = ext.log_crawler_stats()
+        ext.spider_closed(spider, reason="finished")
+        return ext, a, b
+
+    def check(settings: dict[str, Any], condition: Callable[[str, Any], bool]) -> None:
+        ext, a, b = emulate(settings)
+        assert list(a["stats"].keys()) == [
+            k for k, v in ext.stats._stats.items() if condition(k, v)
+        ]
+        assert list(b["stats"].keys()) == [
+            k for k, v in ext.stats._stats.items() if condition(k, v)
+        ]
+
+    # Including all
+    check({"PERIODIC_LOG_STATS": True}, lambda k, v: True)
+
+    # include:
+    check(
+        {"PERIODIC_LOG_STATS": {"include": ["downloader/"]}},
+        lambda k, v: "downloader/" in k,
+    )
+
+    # include multiple
+    check(
+        {"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}},
+        lambda k, v: "downloader/" in k or "scheduler/" in k,
+    )
+
+    # exclude
+    check(
+        {"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}},
+        lambda k, v: "downloader/" not in k,
+    )
+
+    # exclude multiple
+    check(
+        {"PERIODIC_LOG_STATS": {"exclude": ["downloader/", "scheduler/"]}},
+        lambda k, v: "downloader/" not in k and "scheduler/" not in k,
+    )
+
+    # include exclude combined
+    check(
+        {"PERIODIC_LOG_STATS": {"include": ["downloader/"], "exclude": ["bytes"]}},
+        lambda k, v: "downloader/" in k and "bytes" not in k,
+    )
+
+
+@coroutine_test
+async def test_log_timing(caplog: pytest.LogCaptureFixture) -> None:
+    settings = {
+        "EXTENSIONS": {"scrapy.extensions.periodic_log.PeriodicLog": 0},
+        "PERIODIC_LOG_TIMING_ENABLED": True,
+        "LOGSTATS_INTERVAL": 30,
+    }
+    crawler = get_crawler(MetaSpider, settings)
+    with caplog.at_level(logging.INFO, logger="scrapy.extensions.periodic_log"):
+        await crawler.crawl_async()
+
+    records = [r for r in caplog.records if r.name == "scrapy.extensions.periodic_log"]
+    assert records, "PeriodicLog logged nothing"
+    # Only the timing section is enabled, and it is logged on spider close.
+    data = json.loads(records[-1].getMessage())
+    assert list(data) == ["time"]
+    assert data["time"]["log_interval"] == 30
+    assert data["time"]["log_interval_real"] >= 0
+    assert data["time"]["elapsed"] >= 0
+    assert data["time"]["start_time"] <= data["time"]["utcnow"]
+
+
+def test_multiplier_deprecated() -> None:
+    crawler = get_crawler(
+        MetaSpider,
+        {"PERIODIC_LOG_TIMING_ENABLED": True, "LOGSTATS_INTERVAL": 30},
+    )
+    crawler._apply_settings()
+    ext = build_from_crawler(PeriodicLog, crawler)
+    with pytest.warns(ScrapyDeprecationWarning):
+        assert ext.multiplier == 2.0
+    with pytest.warns(ScrapyDeprecationWarning):
+        ext.multiplier = 3.0
+    with pytest.warns(ScrapyDeprecationWarning):
+        assert ext.multiplier == 3.0

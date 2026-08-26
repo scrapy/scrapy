@@ -4,87 +4,47 @@
 Extensions
 ==========
 
-The extensions framework provides a mechanism for inserting your own
-custom functionality into Scrapy.
+Extensions are :ref:`components <topics-components>` that allow inserting your
+own custom functionality into Scrapy.
 
-Extensions are just regular classes that are instantiated at Scrapy startup,
-when extensions are initialized.
+Unlike other components, extensions do not have a specific role in Scrapy. They
+are “wildcard” components that can be used for anything that does not fit the
+role of any other type of component, such as collecting stats or enforcing a
+memory limit; see :ref:`concepts` for a rundown of other alternatives.
 
-Extension settings
-==================
+Loading and activating extensions
+=================================
 
-Extensions use the :ref:`Scrapy settings <topics-settings>` to manage their
-settings, just like any other Scrapy code.
+Extensions are loaded at startup by creating a single instance of the extension
+class per spider being run.
 
-It is customary for extensions to prefix their settings with their own name, to
-avoid collision with existing (and future) extensions. For example, a
-hypothetic extension to handle `Google Sitemaps`_ would use settings like
-`GOOGLESITEMAP_ENABLED`, `GOOGLESITEMAP_DEPTH`, and so on.
+To enable an extension, add it to the :setting:`EXTENSIONS` setting. For
+example:
 
-.. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
-
-Loading & activating extensions
-===============================
-
-Extensions are loaded and activated at startup by instantiating a single
-instance of the extension class. Therefore, all the extension initialization
-code must be performed in the class constructor (``__init__`` method).
-
-To make an extension available, add it to the :setting:`EXTENSIONS` setting in
-your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
-by a string: the full Python path to the extension's class name. For example::
+.. code-block:: python
 
     EXTENSIONS = {
-        'scrapy.extensions.corestats.CoreStats': 500,
-        'scrapy.extensions.telnet.TelnetConsole': 500,
+        "scrapy.extensions.corestats.CoreStats": 500,
+        "scrapy.extensions.telnet.TelnetConsole": 500,
     }
 
-
-As you can see, the :setting:`EXTENSIONS` setting is a dict where the keys are
-the extension paths, and their values are the orders, which define the
-extension *loading* order. The :setting:`EXTENSIONS` setting is merged with the
-:setting:`EXTENSIONS_BASE` setting defined in Scrapy (and not meant to be
-overridden) and then sorted by order to get the final sorted list of enabled
-extensions.
+:setting:`EXTENSIONS` is merged with :setting:`EXTENSIONS_BASE` (not meant to
+be overridden), and the priorities in the resulting value determine the
+*loading* order.
 
 As extensions typically do not depend on each other, their loading order is
 irrelevant in most cases. This is why the :setting:`EXTENSIONS_BASE` setting
-defines all extensions with the same order (``0``). However, this feature can
-be exploited if you need to add an extension which depends on other extensions
-already loaded.
-
-Available, enabled and disabled extensions
-==========================================
-
-Not all available extensions will be enabled. Some of them usually depend on a
-particular setting. For example, the HTTP Cache extension is available by default
-but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
-
-Disabling an extension
-======================
-
-In order to disable an extension that comes enabled by default (ie. those
-included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
-``None``. For example::
-
-    EXTENSIONS = {
-        'scrapy.extensions.corestats.CoreStats': None,
-    }
+defines all extensions with the same order (``0``). However, you may need to
+carefully use priorities if you add an extension that depends on other
+extensions being already loaded.
 
 Writing your own extension
 ==========================
 
-Each extension is a Python class. The main entry point for a Scrapy extension
-(this also includes middlewares and pipelines) is the ``from_crawler``
-class method which receives a ``Crawler`` instance. Through the Crawler object
-you can access settings, signals, stats, and also control the crawling behaviour.
+Each extension is a :ref:`component <topics-components>`.
 
 Typically, extensions connect to :ref:`signals <topics-signals>` and perform
 tasks triggered by them.
-
-Finally, if the ``from_crawler`` method raises the
-:exc:`~scrapy.exceptions.NotConfigured` exception, the extension will be
-disabled. Otherwise, the extension will be enabled.
 
 Sample extension
 ----------------
@@ -99,7 +59,9 @@ in the previous section. This extension will log a message every time:
 The extension will be enabled through the ``MYEXT_ENABLED`` setting and the
 number of items will be specified through the ``MYEXT_ITEMCOUNT`` setting.
 
-Here is the code of such extension::
+Here is the code of such extension:
+
+.. code-block:: python
 
     import logging
     from scrapy import signals
@@ -107,8 +69,8 @@ Here is the code of such extension::
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging(object):
 
+    class SpiderOpenCloseLogging:
         def __init__(self, item_count):
             self.item_count = item_count
             self.items_scraped = 0
@@ -117,11 +79,11 @@ Here is the code of such extension::
         def from_crawler(cls, crawler):
             # first check if the extension should be enabled and raise
             # NotConfigured otherwise
-            if not crawler.settings.getbool('MYEXT_ENABLED'):
+            if not crawler.settings.getbool("MYEXT_ENABLED"):
                 raise NotConfigured
 
             # get the number of items from settings
-            item_count = crawler.settings.getint('MYEXT_ITEMCOUNT', 1000)
+            item_count = crawler.settings.getint("MYEXT_ITEMCOUNT", 1000)
 
             # instantiate the extension object
             ext = cls(item_count)
@@ -175,22 +137,18 @@ Core Stats extension
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
 
-.. _topics-extensions-ref-telnetconsole:
+The following stats are collected: :stat:`elapsed_time_seconds`,
+:stat:`finish_reason`, :stat:`finish_time`, :stat:`item_dropped_count`,
+:stat:`item_dropped_reasons_count/{exception}`, :stat:`item_scraped_count`,
+:stat:`response_received_count`, :stat:`start_time`.
 
-Telnet console extension
-~~~~~~~~~~~~~~~~~~~~~~~~
+Log Count extension
+~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.telnet
-   :synopsis: Telnet console
+.. module:: scrapy.extensions.logcount
+   :synopsis: Basic stats logging
 
-.. class:: scrapy.extensions.telnet.TelnetConsole
-
-Provides a telnet console for getting into a Python interpreter inside the
-currently running Scrapy process, which can be very useful for debugging.
-
-The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
-setting, and the server will listen in the port specified in
-:setting:`TELNETCONSOLE_PORT`.
+.. autoclass:: LogCount
 
 .. _topics-extensions-ref-memusage:
 
@@ -200,26 +158,22 @@ Memory usage extension
 .. module:: scrapy.extensions.memusage
    :synopsis: Memory usage extension
 
-.. class:: scrapy.extensions.memusage.MemoryUsage
+.. class:: MemoryUsage
 
 .. note:: This extension does not work in Windows.
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 
-1. sends a notification e-mail when it exceeds a certain value
-2. closes the spider when it exceeds a certain value
-
-The notification e-mails can be triggered when a certain warning value is
-reached (:setting:`MEMUSAGE_WARNING_MB`) and when the maximum value is reached
-(:setting:`MEMUSAGE_LIMIT_MB`) which will also cause the spider to be closed
-and the Scrapy process to be terminated.
+1. sends a :signal:`memusage_warning_reached` signal when it exceeds
+   :setting:`MEMUSAGE_WARNING_MB`
+2. closes the spider with the ``"memusage_exceeded"`` reason when it exceeds
+   :setting:`MEMUSAGE_LIMIT_MB`
 
 This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
 can be configured with the following settings:
 
 * :setting:`MEMUSAGE_LIMIT_MB`
 * :setting:`MEMUSAGE_WARNING_MB`
-* :setting:`MEMUSAGE_NOTIFY_MAIL`
 * :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
 
 Memory debugger extension
@@ -228,7 +182,7 @@ Memory debugger extension
 .. module:: scrapy.extensions.memdebug
    :synopsis: Memory debugger extension
 
-.. class:: scrapy.extensions.memdebug.MemoryDebugger
+.. class:: MemoryDebugger
 
 An extension for debugging memory usage. It collects information about:
 
@@ -236,7 +190,34 @@ An extension for debugging memory usage. It collects information about:
 * objects left alive that shouldn't. For more info, see :ref:`topics-leaks-trackrefs`
 
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
-info will be stored in the stats.
+info will be stored in the :stat:`memdebug/gc_garbage_count` and
+:stat:`memdebug/live_refs/{cls}` stats.
+
+.. _topics-extensions-ref-spiderstate:
+
+Spider state extension
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.spiderstate
+   :synopsis: Spider state extension
+
+.. class:: SpiderState
+
+Manages spider state data by loading it before a crawl and saving it after.
+
+Give a value to the :setting:`JOBDIR` setting to enable this extension.
+When enabled, this extension manages the :attr:`~scrapy.Spider.state`
+attribute of your :class:`~scrapy.Spider` instance:
+
+-   When your spider closes (:signal:`spider_closed`), the contents of its
+    :attr:`~scrapy.Spider.state` attribute are serialized into a file named
+    ``spider.state`` in the :setting:`JOBDIR` folder.
+-   When your spider opens (:signal:`spider_opened`), if a previously-generated
+    ``spider.state`` file exists in the :setting:`JOBDIR` folder, it is loaded
+    into the :attr:`~scrapy.Spider.state` attribute.
+
+
+For an example, see :ref:`topics-keeping-persistent-state-between-batches`.
 
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -244,7 +225,7 @@ Close spider extension
 .. module:: scrapy.extensions.closespider
    :synopsis: Close spider extension
 
-.. class:: scrapy.extensions.closespider.CloseSpider
+.. class:: CloseSpider
 
 Closes a spider automatically when some conditions are met, using a specific
 closing reason for each condition.
@@ -253,21 +234,40 @@ The conditions for closing a spider can be configured through the following
 settings:
 
 * :setting:`CLOSESPIDER_TIMEOUT`
+* :setting:`CLOSESPIDER_TIMEOUT_NO_ITEM`
 * :setting:`CLOSESPIDER_ITEMCOUNT`
 * :setting:`CLOSESPIDER_PAGECOUNT`
+* :setting:`CLOSESPIDER_PAGECOUNT_NO_ITEM`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
+
+.. note::
+
+   When a certain closing condition is met, requests which are
+   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS`
+   requests) are still processed.
 
 .. setting:: CLOSESPIDER_TIMEOUT
 
 CLOSESPIDER_TIMEOUT
 """""""""""""""""""
 
+Default: ``0.0``
+
+If the spider remains open for more than this number of seconds, it will be
+automatically closed with the reason ``closespider_timeout``. If zero (or non
+set), spiders won't be closed by timeout.
+
+.. setting:: CLOSESPIDER_TIMEOUT_NO_ITEM
+
+CLOSESPIDER_TIMEOUT_NO_ITEM
+"""""""""""""""""""""""""""
+
 Default: ``0``
 
-An integer which specifies a number of seconds. If the spider remains open for
-more than that number of second, it will be automatically closed with the
-reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
-timeout.
+An integer which specifies a number of seconds. If the spider has not produced
+any items in the last number of seconds, it will be closed with the reason
+``closespider_timeout_no_item``. If zero (or non set), spiders won't be closed
+regardless if it hasn't produced any items.
 
 .. setting:: CLOSESPIDER_ITEMCOUNT
 
@@ -277,16 +277,14 @@ CLOSESPIDER_ITEMCOUNT
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
-that amount if items and those items are passed by the item pipeline, the
-spider will be closed with the reason ``closespider_itemcount``. If zero (or
-non set), spiders won't be closed by number of passed items.
+that amount and those items are passed by the item pipeline, the
+spider will be closed with the reason ``closespider_itemcount``.
+If zero (or non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
 
 CLOSESPIDER_PAGECOUNT
 """""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -295,12 +293,23 @@ crawls more than that, the spider will be closed with the reason
 ``closespider_pagecount``. If zero (or non set), spiders won't be closed by
 number of crawled responses.
 
+.. setting:: CLOSESPIDER_PAGECOUNT_NO_ITEM
+
+CLOSESPIDER_PAGECOUNT_NO_ITEM
+"""""""""""""""""""""""""""""
+
+Default: ``0``
+
+An integer which specifies the maximum number of consecutive responses to crawl
+without items scraped. If the spider crawls more consecutive responses than that
+and no items are scraped in the meantime, the spider will be closed with the
+reason ``closespider_pagecount_no_item``. If zero (or not set), spiders won't be
+closed by number of crawled responses with no items.
+
 .. setting:: CLOSESPIDER_ERRORCOUNT
 
 CLOSESPIDER_ERRORCOUNT
 """"""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -309,29 +318,132 @@ closing the spider. If the spider generates more than that number of errors,
 it will be closed with the reason ``closespider_errorcount``. If zero (or non
 set), spiders won't be closed by number of errors.
 
-StatsMailer extension
-~~~~~~~~~~~~~~~~~~~~~
+.. module:: scrapy.extensions.periodic_log
+   :synopsis: Periodic stats logging
 
-.. module:: scrapy.extensions.statsmailer
-   :synopsis: StatsMailer extension
+Periodic log extension
+~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: scrapy.extensions.statsmailer.StatsMailer
+.. class:: PeriodicLog
 
-This simple extension can be used to send a notification e-mail every time a
-domain has finished scraping, including the Scrapy stats collected. The email
-will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
-setting.
+This extension periodically logs rich stat data as a JSON object::
 
-.. module:: scrapy.extensions.debug
-   :synopsis: Extensions for debugging Scrapy
+    2023-08-04 02:30:57 [scrapy.extensions.logstats] INFO: Crawled 976 pages (at 162 pages/min), scraped 925 items (at 161 items/min)
+    2023-08-04 02:30:57 [scrapy.extensions.periodic_log] INFO: {
+        "delta": {
+            "downloader/request_bytes": 55582,
+            "downloader/request_count": 162,
+            "downloader/request_method_count/GET": 162,
+            "downloader/response_bytes": 618133,
+            "downloader/response_count": 162,
+            "downloader/response_status_count/200": 162,
+            "item_scraped_count": 161
+        },
+        "stats": {
+            "downloader/request_bytes": 338243,
+            "downloader/request_count": 992,
+            "downloader/request_method_count/GET": 992,
+            "downloader/response_bytes": 3836736,
+            "downloader/response_count": 976,
+            "downloader/response_status_count/200": 976,
+            "item_scraped_count": 925,
+            "log_count/INFO": 21,
+            "log_count/WARNING": 1,
+            "scheduler/dequeued": 992,
+            "scheduler/dequeued/memory": 992,
+            "scheduler/enqueued": 1050,
+            "scheduler/enqueued/memory": 1050
+        },
+        "time": {
+            "elapsed": 360.008903,
+            "log_interval": 60.0,
+            "log_interval_real": 60.006694,
+            "start_time": "2023-08-03T23:24:57.148903+00:00",
+            "utcnow": "2023-08-03T23:30:57.157806+00:00"
+        }
+    }
+
+This extension logs the following configurable sections:
+
+-   ``"delta"`` shows how some numeric stats have changed since the last stats
+    log message.
+
+    The :setting:`PERIODIC_LOG_DELTA` setting determines the target stats. They
+    must have ``int`` or ``float`` values.
+
+-   ``"stats"`` shows the current value of some stats.
+
+    The :setting:`PERIODIC_LOG_STATS` setting determines the target stats.
+
+-   ``"time"`` shows detailed timing data.
+
+    The :setting:`PERIODIC_LOG_TIMING_ENABLED` setting determines whether or
+    not to show this section.
+
+This extension logs data at the start, then on a fixed time interval
+configurable through the :setting:`LOGSTATS_INTERVAL` setting, and finally
+right before the crawl ends.
+
+
+Example extension configuration:
+
+.. code-block:: python
+
+    custom_settings = {
+        "LOG_LEVEL": "INFO",
+        "PERIODIC_LOG_STATS": {
+            "include": ["downloader/", "scheduler/", "log_count/", "item_scraped_count"],
+        },
+        "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
+        "PERIODIC_LOG_TIMING_ENABLED": True,
+        "EXTENSIONS": {
+            "scrapy.extensions.periodic_log.PeriodicLog": 0,
+        },
+    }
+
+.. setting:: PERIODIC_LOG_DELTA
+
+PERIODIC_LOG_DELTA
+""""""""""""""""""
+
+Default: ``None``
+
+* ``"PERIODIC_LOG_DELTA": True`` - show deltas for all ``int`` and ``float`` stat values.
+* ``"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}`` - show deltas for stats with names containing any configured substring.
+* ``"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}`` - show deltas for all stats with names not containing any configured substring.
+
+.. setting:: PERIODIC_LOG_STATS
+
+PERIODIC_LOG_STATS
+""""""""""""""""""
+
+Default: ``None``
+
+* ``"PERIODIC_LOG_STATS": True`` - show the current value of all stats.
+* ``"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}`` - show current values for stats with names containing any configured substring.
+* ``"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}`` - show current values for all stats with names not containing any configured substring.
+
+
+.. setting:: PERIODIC_LOG_TIMING_ENABLED
+
+PERIODIC_LOG_TIMING_ENABLED
+"""""""""""""""""""""""""""
+
+Default: ``False``
+
+``True`` enables logging of timing data (i.e. the ``"time"`` section).
+
 
 Debugging extensions
 --------------------
 
+.. module:: scrapy.extensions.debug
+   :synopsis: Extensions for debugging Scrapy
+
 Stack trace dump extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: scrapy.extensions.debug.StackTraceDump
+.. class:: StackTraceDump
 
 Dumps information about the running process when a `SIGQUIT`_ or `SIGUSR2`_
 signal is received. The information dumped is the following:
@@ -343,7 +455,7 @@ signal is received. The information dumped is the following:
 After the stack trace and engine status is dumped, the Scrapy process continues
 running normally.
 
-This extension only works on POSIX-compliant platforms (ie. not Windows),
+This extension only works on POSIX-compliant platforms (i.e. not Windows),
 because the `SIGQUIT`_ and `SIGUSR2`_ signals are not available on Windows.
 
 There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
@@ -360,15 +472,102 @@ There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
 Debugger extension
 ~~~~~~~~~~~~~~~~~~
 
-.. class:: scrapy.extensions.debug.Debugger
+.. class:: Debugger
 
-Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
+Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
-For more info see `Debugging in Python`.
+This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
-This extension only works on POSIX-compliant platforms (ie. not Windows).
+.. _topics-extensions-ref-telnetconsole:
 
-.. _Python debugger: https://docs.python.org/2/library/pdb.html
-.. _Debugging in Python: http://www.ferg.org/papers/debugging_in_python.html
+Telnet console extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.telnet
+   :synopsis: Telnet console
+
+.. class:: TelnetConsole
+
+Provides a telnet console for getting into a Python interpreter inside the
+currently running Scrapy process, which can be very useful for debugging.
+
+The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
+setting, and the server will listen in the port specified in
+:setting:`TELNETCONSOLE_PORT`.
+
+Remote control extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: VERSION
+
+.. module:: scrapy.extensions.remote_control
+
+.. autoclass:: RemoteControl
+
+.. setting:: REMOTE_CONTROL_ENABLED
+
+REMOTE_CONTROL_ENABLED
+""""""""""""""""""""""
+
+Default: ``True``
+
+Whether to enable the :class:`RemoteControl` extension.
+
+.. setting:: REMOTE_CONTROL_JOBS_DIR
+
+REMOTE_CONTROL_JOBS_DIR
+"""""""""""""""""""""""
+
+Default: ``None``
+
+The directory for storing :class:`RemoteControl` job files. When this is set to
+``None``, a ``scrapy/jobfiles`` subdirectory in
+:func:`platformdirs.user_state_dir` is used.
+
+As job files contain authentication tokens necessary to connect to Scrapy
+processes, this directory should not be exposed to untrusted environments.
+
+.. setting:: REMOTE_CONTROL_TIMEOUT_DEFAULT
+
+REMOTE_CONTROL_TIMEOUT_DEFAULT
+""""""""""""""""""""""""""""""
+
+Default: ``30.0``
+
+The default timeout in seconds for running a single code snippet sent to the
+:class:`RemoteControl` ``/execute`` endpoint. You can override it for a single
+request via the ``timeout_sec`` request field.
+
+.. setting:: REMOTE_CONTROL_TIMEOUT_MAX
+
+REMOTE_CONTROL_TIMEOUT_MAX
+""""""""""""""""""""""""""
+
+Default: ``600.0``
+
+The maximum allowed value for the ``timeout_sec`` field of
+:class:`RemoteControl` ``/execute`` endpoint requests. Higher values will be
+clamped to this value.
+
+.. setting:: REMOTE_CONTROL_OUTPUT_MAX_BYTES
+
+REMOTE_CONTROL_OUTPUT_MAX_BYTES
+"""""""""""""""""""""""""""""""
+
+Default: ``65536``
+
+The maximum size of the ``output`` field in responses of :class:`RemoteControl`
+``/execute`` endpoint requests. Longer ones will be truncated.
+
+.. setting:: REMOTE_CONTROL_TRACEBACK_MAX_BYTES
+
+REMOTE_CONTROL_TRACEBACK_MAX_BYTES
+""""""""""""""""""""""""""""""""""
+
+Default: ``16384``
+
+The maximum size of the ``traceback`` field in responses of
+:class:`RemoteControl` ``/execute`` endpoint requests. Longer ones will be
+truncated.
