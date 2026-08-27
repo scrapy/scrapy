@@ -136,6 +136,14 @@ example:
                     f"of Scrapy for more information."
                 )
 
+.. warning::
+
+    :func: cannot be reliably used
+    in the __init__ method of a :ref:, because
+    extensions are instantiated in :meth:, before the
+    asyncio event loop is set up. Call it from a method that runs later in the
+    component lifecycle (e.g. spider_opened) instead.
+
 .. autofunction:: scrapy.utils.asyncio.is_asyncio_available
 .. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
 
