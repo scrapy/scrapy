@@ -801,6 +801,24 @@ class TestFormRequest(TestRequestBase):
         fs = _qs(req)
         assert fs == {b"i1": [b"i1v1"], b"i2": [b""], b"i4": [b"i4v1"]}
 
+    def test_from_response_disabled_controls(self):
+        res = _buildresponse(
+            """<form>
+            <input type="text" name="i1" value="i1v1" disabled>
+            <input type="hidden" name="i2" value="i2v1" disabled>
+            <textarea name="i3" disabled>i3v1</textarea>
+            <select name="i4" disabled>
+                <option value="i4v1" selected>option 1</option>
+            </select>
+            <input type="text" name="i5" value="i5v1">
+            <input type="submit" name="i6" value="i6v1" disabled>
+            <input type="submit" name="i7" value="i7v1">
+            </form>"""
+        )
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        assert fs == {b"i5": [b"i5v1"], b"i7": [b"i7v1"]}
+
     def test_from_response_input_hidden(self):
         res = _buildresponse(
             """<form>

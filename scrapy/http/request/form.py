@@ -229,12 +229,12 @@ def _get_inputs(
     if not formdata:
         formdata = []
     inputs = form.xpath(
-        "descendant::textarea"
-        "|descendant::select"
-        "|descendant::input[not(@type) or @type["
+        "descendant::textarea[not(@disabled)]"
+        "|descendant::select[not(@disabled)]"
+        "|descendant::input[not(@disabled) and (not(@type) or @type["
         ' not(re:test(., "^(?:submit|image|reset)$", "i"))'
         " and (../@checked or"
-        '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
+        '  not(re:test(., "^(?:checkbox|radio)$", "i")))])]',
         namespaces={"re": "http://exslt.org/regular-expressions"},
     )
     values: list[FormdataKVType] = [
@@ -285,8 +285,10 @@ def _get_clickable(
     """
     clickables = list(
         form.xpath(
-            'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
-            '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
+            "descendant::input[not(@disabled) and"
+            ' re:test(@type, "^(submit|image)$", "i")]'
+            "|descendant::button[not(@disabled) and"
+            ' (not(@type) or re:test(@type, "^submit$", "i"))]',
             namespaces={"re": "http://exslt.org/regular-expressions"},
         )
     )
