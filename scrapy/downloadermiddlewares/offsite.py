@@ -134,4 +134,4 @@ class OffsiteMiddleware:
                 continue
             domains.append(re.escape(domain))
         regex = rf"^(.*\.)?({'|'.join(domains)})$"
-        return re.compile(regex)
+        return re.compile(regex, re.IGNORECASE)

@@ -17,6 +17,8 @@ UNSET = object()
     ("allowed_domain", "url", "allowed"),
     [
         ("example.com", "http://example.com/1", True),
+        ("EXAMPLE.COM", "http://example.com/1", True),
+        ("EXAMPLE.COM", "http://sub.example.com/1", True),
         ("example.com", "http://example.org/1", False),
         ("example.com", "http://sub.example.com/1", True),
         ("sub.example.com", "http://sub.example.com/1", True),
@@ -136,6 +138,8 @@ def test_process_request_invalid_domains():
     ("allowed_domain", "url", "allowed"),
     [
         ("example.com", "http://example.com/1", True),
+        ("EXAMPLE.COM", "http://example.com/1", True),
+        ("EXAMPLE.COM", "http://sub.example.com/1", True),
         ("example.com", "http://example.org/1", False),
         ("example.com", "http://sub.example.com/1", True),
         ("sub.example.com", "http://sub.example.com/1", True),
