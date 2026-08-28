@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
+from unittest.mock import patch
 
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
+from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.endpoints import HostnameEndpoint
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol as TxProtocol
@@ -33,7 +35,7 @@ from scrapy.core.downloader.contextfactory import (
     _ScrapyClientContextFactory,
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
@@ -49,8 +51,8 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from twisted.internet.defer import Deferred
     from twisted.internet.interfaces import IListeningPort
+    from twisted.python.failure import Failure
     from twisted.web.iweb import IBodyProducer
 
     from scrapy.http import Response
@@ -68,6 +70,29 @@ class TestSlot:
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
         assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
+
+
+class TestDownloaderStopAsync:
+    @coroutine_test
+    async def test_waits_for_cancelled_downloads_to_settle(self) -> None:
+        """stop_async() cancels in-flight downloads before returning.
+
+        The engine relies on their cleanup (removal from ``_download_tasks``)
+        having already happened by the time it returns, or it may consider the
+        crawl finished while a download is still being torn down.
+        """
+        crawler = get_crawler(DefaultSpider)
+        downloader = Downloader(crawler)
+
+        requests = [Request(f"data:,{i}") for i in range(5)]
+        for request in requests:
+            download_dfd: Deferred[None] = Deferred()
+            download_dfd.addBoth(downloader._download_task_done, request)
+            downloader._download_tasks[request] = download_dfd
+
+        await downloader.stop_async()
+
+        assert not downloader._download_tasks
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
@@ -489,6 +514,119 @@ async def test_fetch_deprecated_spider_arg():
         match=r"The fetch\(\) method of .+\.CustomDownloader requires a spider argument",
     ):
         await crawler.crawl_async()
+
+
+@coroutine_test
+async def test_stop_async_drops_queued_requests() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    slot = Slot(concurrency=1, delay=0, randomize_delay=False)
+    downloader.slots["example.com"] = slot
+
+    request = Request("https://example.com")
+    queue_dfd: Deferred[Any] = Deferred()
+    failures: list[Failure] = []
+    queue_dfd.addErrback(failures.append)
+    slot.queue.append((request, queue_dfd))
+
+    dropped = await downloader.stop_async()
+    assert dropped == 1
+    assert len(failures) == 1
+    assert failures[0].check(DownloadCancelledError)
+
+
+@coroutine_test
+async def test_stop_async_rejects_new_requests() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+
+    await downloader.stop_async()
+
+    with pytest.raises(
+        DownloadCancelledError,
+        match="not accepting new requests",
+    ):
+        await downloader._enqueue_request(Request("https://example.com"))
+
+
+@coroutine_test
+async def test_wait_for_download_errbacks_queue_deferred_on_error() -> None:
+    crawler = get_crawler(DefaultSpider)
+    downloader = Downloader(crawler)
+    slot = Slot(concurrency=1, delay=0, randomize_delay=False)
+
+    queue_dfd: Deferred[Any] = Deferred()
+    failures: list[Failure] = []
+    queue_dfd.addErrback(failures.append)
+
+    with patch.object(downloader, "_download", side_effect=RuntimeError("boom")):
+        await downloader._wait_for_download(
+            slot,
+            Request("https://example.com"),
+            queue_dfd,
+        )
+
+    assert len(failures) == 1
+    assert failures[0].check(RuntimeError)
+
+
+@coroutine_test
+async def test_wait_for_download_keeps_called_queue_deferred_on_error() -> None:
+    crawler = get_crawler(DefaultSpider)
+    downloader = Downloader(crawler)
+    slot = Slot(concurrency=1, delay=0, randomize_delay=False)
+
+    queue_dfd: Deferred[Any] = Deferred()
+    queue_dfd.callback(None)
+
+    with patch.object(downloader, "_download", side_effect=RuntimeError("boom")):
+        await downloader._wait_for_download(
+            slot,
+            Request("https://example.com"),
+            queue_dfd,
+        )
+
+    assert queue_dfd.called
+
+
+@coroutine_test
+async def test_stop_async_skips_called_queued_deferred() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    slot = Slot(concurrency=1, delay=0, randomize_delay=False)
+    downloader.slots["example.com"] = slot
+
+    queue_dfd: Deferred[Any] = Deferred()
+    queue_dfd.callback(None)
+    slot.queue.append((Request("https://example.com"), queue_dfd))
+
+    dropped = await downloader.stop_async()
+    assert dropped == 1
+
+
+@coroutine_test
+async def test_stop_async_cancels_pending_download_tasks() -> None:
+    crawler = get_crawler(DefaultSpider)
+    downloader = Downloader(crawler)
+
+    done_dfd: Deferred[None] = Deferred()
+    done_dfd.callback(None)
+
+    pending_dfd: Deferred[None] = Deferred()
+    failures: list[Failure] = []
+    pending_dfd.addErrback(failures.append)
+
+    downloader._download_tasks[Request("https://done.example")] = done_dfd
+    downloader._download_tasks[Request("https://pending.example")] = pending_dfd
+
+    dropped = await downloader.stop_async()
+
+    assert dropped == 1
+    assert len(failures) == 1
+    assert failures[0].check(CancelledError)
 
 
 def test_deprecated_tls_module_names() -> None:
