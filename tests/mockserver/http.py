@@ -18,6 +18,7 @@ from .http_resources import (
     ChunkedResource,
     ClientIPResource,
     Compress,
+    ConnectionId,
     ContentLengthHeaderResource,
     Delay,
     Drop,
@@ -66,6 +67,7 @@ class Root(BaseResource):
         put_child(self, b"static", File(str(Path(tests_datadir, "test_site/"))))
         put_child(self, b"redirect-to", RedirectTo())
         put_child(self, b"text", Data(b"Works", "text/plain"))
+        put_child(self, b"connection-id", ConnectionId())
         put_child(
             self,
             b"html",

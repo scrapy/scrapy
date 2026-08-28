@@ -413,6 +413,23 @@ inline within web pages, similar to external resources. The "data:" scheme with 
 content (",") essentially creates a request to a data URL without any specific content.
 
 
+.. _faq-too-many-open-files:
+
+I get ``too many file descriptors in select()`` or ``Too many open files``
+--------------------------------------------------------------------------
+
+The crawl is opening more sockets than the system allows. On Windows
+:func:`select.select` handles at most 512 sockets; elsewhere the ceiling is the
+maximum number of open files allowed for the process, which sockets, log files
+and feed exports all count towards.
+
+Lower :setting:`CONCURRENT_CONNECTIONS_PER_HANDLER`, keeping in mind that every
+:ref:`download handler <topics-download-handlers>` applies it on its own, so a
+crawl of both ``http://`` and ``https://`` URLs can open twice as many
+connections. Raising the limit of the operating system works as well on
+platforms other than Windows.
+
+
 Running ``runspider`` I get ``error: No spider found in file: <filename>``
 --------------------------------------------------------------------------
 
