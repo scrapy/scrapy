@@ -1648,6 +1648,38 @@ class TestMitmProxyBase(ABC):
         self._assert_got_response_code(200, caplog.text)
         self._assert_headers(responses[0].headers, https_dest)
 
+    @pytest.mark.parametrize("proxy_server", ["http", "https"], indirect=True)
+    @pytest.mark.parametrize(
+        "https_dest", [False, True], ids=["HTTP dest", "HTTPS dest"]
+    )
+    @coroutine_test
+    async def test_proxy_headers(
+        self,
+        proxy_server: str,
+        mockserver: MockServer,
+        https_dest: bool,
+    ) -> None:
+        """HTTP/HTTPS proxy, HTTP or HTTPS destination, headers for the proxy.
+
+        The proxy echoes the X-Proxy-Echo header that it receives into the
+        response, and /echo reports the headers that the target server got.
+        """
+        self._maybe_skip(proxy_server, https_dest)
+        request = Request(
+            mockserver.url("/echo", is_secure=https_dest),
+            meta={"proxy_headers": {"X-Proxy-Echo": "foo"}},
+        )
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        await crawler.crawl_async(seed=request)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        response = crawler.spider.meta["responses"][0]
+        assert response.headers.get(b"X-Proxy-Echo") == b"foo"
+        if https_dest:
+            # the tunnel keeps the headers for the proxy away from the target
+            # server; without one that is up to the proxy, and mitmproxy, which
+            # knows nothing about this header, does pass it on
+            assert "X-Proxy-Echo" not in json.loads(response.text)["headers"]
+
     @staticmethod
     def _assert_headers(headers: Headers, https_dest: bool) -> None:
         assert b"X-Via-Mitmproxy" in headers

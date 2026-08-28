@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import ipaddress
+import logging
 import ssl
 from contextlib import asynccontextmanager
 from socket import gaierror
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, TypeAlias
 
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -17,7 +18,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers
-from scrapy.utils._download_handlers import NullCookieJar
+from scrapy.utils._download_handlers import NullCookieJar, get_proxy_headers
 from scrapy.utils.python import _iter_exc_causes
 from scrapy.utils.ssl import (
     _log_sslobj_debug_info,
@@ -35,6 +36,11 @@ if TYPE_CHECKING:
     from scrapy import Request
     from scrapy.crawler import Crawler
 
+
+logger = logging.getLogger(__name__)
+
+# a proxy URL and the headers to send to that proxy
+_ProxyKey: TypeAlias = tuple[str, tuple[tuple[str, str], ...]]
 
 HAS_SOCKS = HAS_HTTP2 = False
 
@@ -101,8 +107,9 @@ class HttpxDownloadHandler(_Base):
 
         self._default_client: httpx.AsyncClient = self._make_client()
         # httpx2 doesn't support per-request proxies: https://github.com/pydantic/httpx2/issues/818,
-        # so we keep a pool of clients per proxy URL. LRU eviction can be added here if needed.
-        self._proxy_clients: dict[str, httpx.AsyncClient] = {}
+        # so we keep a pool of clients per proxy URL and set of proxy headers.
+        # LRU eviction can be added here if needed.
+        self._proxy_clients: dict[_ProxyKey, httpx.AsyncClient] = {}
 
     @staticmethod
     def _check_deps_installed() -> None:
@@ -111,13 +118,27 @@ class HttpxDownloadHandler(_Base):
                 "HttpxDownloadHandler requires the httpx2 library to be installed."
             )
 
-    def _make_client(self, proxy_url: str | None = None) -> httpx.AsyncClient:
+    def _make_client(
+        self,
+        proxy_url: str | None = None,
+        proxy_headers: tuple[tuple[str, str], ...] = (),
+    ) -> httpx.AsyncClient:
         if proxy_url:
             if proxy_url.startswith("https:") and not self._verify_certificates:
                 proxy_ssl_context = _make_insecure_ssl_ctx()
             else:
                 proxy_ssl_context = None
-            proxy = httpx.Proxy(proxy_url, ssl_context=proxy_ssl_context)
+            if proxy_headers and proxy_url.startswith("socks"):
+                logger.warning(
+                    f"Ignoring the proxy_headers request metadata key for "
+                    f"{proxy_url}, as the SOCKS protocol has no headers."
+                )
+                proxy_headers = ()
+            proxy = httpx.Proxy(
+                proxy_url,
+                ssl_context=proxy_ssl_context,
+                headers=list(proxy_headers),
+            )
         else:
             proxy = None
 
@@ -137,13 +158,18 @@ class HttpxDownloadHandler(_Base):
             client.headers.pop(header_name, None)
         return client
 
-    def _get_client(self, proxy_url: str | None) -> httpx.AsyncClient:
+    def _get_client(
+        self,
+        proxy_url: str | None,
+        proxy_headers: tuple[tuple[str, str], ...] = (),
+    ) -> httpx.AsyncClient:
         if proxy_url is None:
             return self._default_client
-        if cached := self._proxy_clients.get(proxy_url):
+        key = (proxy_url, proxy_headers)
+        if cached := self._proxy_clients.get(key):
             return cached
-        client = self._make_client(proxy_url)
-        self._proxy_clients[proxy_url] = client
+        client = self._make_client(proxy_url, proxy_headers)
+        self._proxy_clients[key] = client
         return client
 
     @asynccontextmanager
@@ -155,7 +181,7 @@ class HttpxDownloadHandler(_Base):
             raise ValueError(
                 f"SOCKS proxy support in {type(self).__name__} requires the 'httpx2[socks]' extra to be installed."
             )
-        client = self._get_client(proxy)
+        client = self._get_client(proxy, get_proxy_headers(request))
         headers = self._request_headers(request).to_tuple_list()
 
         try:

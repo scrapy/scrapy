@@ -7,11 +7,17 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from scrapy import Spider
-from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
+from scrapy import Request, Spider
+from scrapy.core.downloader.contextfactory import _load_context_factory_from_settings
+from scrapy.core.downloader.handlers.http11 import (
+    HTTP11DownloadHandler,
+    _ScrapyAgent,
+    _TunnelingAgent,
+)
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
@@ -53,6 +59,53 @@ def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
         build_from_crawler(HTTP11DownloadHandler, crawler)
+
+
+@pytest.mark.parametrize(
+    ("proxy_headers", "proxy_auth", "expected"),
+    [
+        (None, None, ()),
+        ({"X-B": "2", "X-A": "1"}, None, (("X-A", "1"), ("X-B", "2"))),
+        (None, "Basic Zm9v", (("Proxy-Authorization", "Basic Zm9v"),)),
+        (
+            {"X-A": "1"},
+            "Basic Zm9v",
+            (("Proxy-Authorization", "Basic Zm9v"), ("X-A", "1")),
+        ),
+        (
+            {"Proxy-Authorization": "Custom foo"},
+            "Basic Zm9v",
+            (("Proxy-Authorization", "Custom foo"),),
+        ),
+    ],
+    ids=[
+        "no headers",
+        "sorted headers",
+        "auth header",
+        "auth header and headers",
+        "auth header overridden",
+    ],
+)
+def test_tunnel_proxy_headers(
+    proxy_headers: dict[str, str] | None,
+    proxy_auth: str | None,
+    expected: tuple[tuple[str, str], ...],
+) -> None:
+    meta: dict[str, Any] = {"proxy": "http://proxy.example:8080"}
+    if proxy_headers is not None:
+        meta["proxy_headers"] = proxy_headers
+    request = Request(
+        "https://example.com",
+        meta=meta,
+        headers={"Proxy-Authorization": proxy_auth} if proxy_auth else None,
+    )
+    crawler = get_crawler(Spider)
+    agent = _ScrapyAgent(
+        contextFactory=_load_context_factory_from_settings(crawler), crawler=crawler
+    )
+    tunneling_agent = agent._get_agent(request, 10)
+    assert isinstance(tunneling_agent, _TunnelingAgent)
+    assert tunneling_agent._proxyConf == ("proxy.example", 8080, expected)
 
 
 class TestHttp(HTTP11DownloadHandlerMixin, TestHttpBase):

@@ -850,6 +850,7 @@ Those are:
 * :reqmeta:`is_start_request`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
+* :reqmeta:`proxy_headers`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
@@ -966,6 +967,40 @@ max_retry_times
 The meta key is used set retry times per request. When set, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: proxy_headers
+
+proxy_headers
+-------------
+
+.. versionadded:: VERSION
+
+Headers for the proxy set in the :reqmeta:`proxy` metadata key, as a mapping,
+e.g. ``{"X-Proxy-Country": "us"}``.
+
+.. code-block:: python
+
+    Request(
+        "https://example.com",
+        meta={
+            "proxy": "http://proxy.example:8080",
+            "proxy_headers": {"X-Proxy-Country": "us"},
+        },
+    )
+
+For HTTPS URLs these headers are sent in the ``CONNECT`` request that opens the
+tunnel through the proxy, which the target server cannot see. For other URLs
+there is no tunnel, so they are sent among the request headers, and it is up to
+the proxy to consume them instead of passing them on to the target server.
+
+.. note::
+
+    Handling of this metadata key needs to be implemented inside the
+    :ref:`download handler <topics-download-handlers>`, so it's not guaranteed
+    to be supported by all 3rd-party handlers. Among the built-in handlers,
+    :class:`~scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`
+    support it for HTTP and HTTPS proxies.
 
 .. reqmeta:: verbatim_url
 

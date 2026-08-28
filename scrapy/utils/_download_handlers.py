@@ -24,6 +24,7 @@ from scrapy.exceptions import (
     StopDownload,
     UnsupportedURLSchemeError,
 )
+from scrapy.http import Headers
 from scrapy.utils.log import logger
 
 if TYPE_CHECKING:
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
 
     from scrapy import Request
     from scrapy.crawler import Crawler
-    from scrapy.http import Headers, Response
+    from scrapy.http import Response
 
 
 class NullCookieJar(CookieJar):  # pragma: no cover
@@ -151,3 +152,16 @@ def normalize_bind_address(
     if isinstance(value, str):
         return (value, 0)
     return value
+
+
+def get_proxy_headers(request: Request) -> tuple[tuple[str, str], ...]:
+    """Return the headers to send to the proxy, from the ``proxy_headers``
+    request metadata key, as name-value pairs.
+
+    Pairs are sorted so that handlers that key their connections on them treat
+    header sets that only differ in order as the same set.
+    """
+    proxy_headers = request.meta.get("proxy_headers")
+    if not proxy_headers:
+        return ()
+    return tuple(sorted(Headers(proxy_headers).to_tuple_list()))
