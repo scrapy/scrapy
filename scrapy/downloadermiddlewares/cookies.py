@@ -68,6 +68,9 @@ class CookiesMiddleware:
 
             if cookie_domain and _is_public_domain(cookie_domain):
                 if cookie_domain != request_domain:
+                    # Still store the cookie in the jar for future requests
+                    # to its own domain (#5841).
+                    jar.set_cookie(cookie)
                     continue
                 cookie.domain = request_domain
 
