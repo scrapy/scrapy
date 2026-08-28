@@ -41,6 +41,7 @@ from scrapy.utils.test import get_crawler
 from tests import IDNA_REJECTED_HOSTNAMES, NON_EXISTING_RESOLVABLE
 from tests.mockserver.mitm_proxy import wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
+from tests.mockserver.proxy_stalling import StallingProxy
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import (
     BytesReceivedCallbackSpider,
@@ -1503,6 +1504,26 @@ class TestHttpProxyBase(ABC):
             with pytest.raises(DownloadTimeoutError) as exc_info:
                 await download_handler.download_request(request)
         assert domain in str(exc_info.value)
+
+    @coroutine_test
+    async def test_download_with_proxy_stalled_connect(self) -> None:
+        """A download that times out while the proxy is being asked to open a
+        tunnel must not leave the connection to the proxy open."""
+        if self.is_secure:
+            pytest.skip("The stalling proxy only speaks plain HTTP")
+        with StallingProxy() as proxy:
+            request = Request(
+                "https://example.com",
+                meta={"proxy": proxy.url, "download_timeout": 0.2},
+            )
+            async with self.get_dh() as download_handler:
+                with pytest.raises(DownloadTimeoutError):
+                    await download_handler.download_request(request)
+                connection = await proxy.wait_for_connection()
+                assert connection.request.startswith(b"CONNECT example.com:443")
+                assert await connection.wait_closed(), (
+                    "The connection to the proxy was left open"
+                )
 
     @coroutine_test
     async def test_download_with_proxy_without_http_scheme(
