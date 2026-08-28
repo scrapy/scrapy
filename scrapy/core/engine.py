@@ -163,6 +163,14 @@ class ExecutionEngine:
             )
         return scheduler_cls
 
+    @property
+    def scheduler(self) -> BaseScheduler | None:
+        """The scheduler in use, or ``None`` before the spider has started.
+
+        .. versionadded:: VERSION
+        """
+        return self._slot.scheduler if self._slot is not None else None
+
     def start(
         self, _start_request_processing: bool = True
     ) -> Deferred[None]:  # pragma: no cover

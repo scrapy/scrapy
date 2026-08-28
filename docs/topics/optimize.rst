@@ -39,7 +39,7 @@ what every part of the engine is doing at a given moment:
 .. code-block:: text
 
     len(engine.downloader.active)                   : 16
-    len(engine._slot.scheduler.mqs)                 : 92
+    len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.active)                 : 0
     engine.scraper.slot.active_size                 : 0
     engine.scraper.slot.needs_backout()             : False
@@ -66,9 +66,9 @@ Take a few readings at different points of the crawl:
     callbacks and :ref:`item pipelines <topics-item-pipeline>` handle them. The
     bottleneck is your own code.
 
--   ``len(engine._slot.scheduler.mqs)`` grows without settling: the crawl
-    discovers requests faster than it downloads them. This is what makes long
-    crawls run out of memory.
+-   ``len(engine.scheduler.mqs)`` grows without settling: the crawl discovers
+    requests faster than it downloads them. This is what makes long crawls run
+    out of memory.
 
 
 Reading resource usage
@@ -92,9 +92,9 @@ Memory
     far above :stat:`memusage/startup` is expected; what matters is whether it
     keeps growing for as long as the crawl runs.
 
-    Growth that tracks ``len(engine._slot.scheduler.mqs)`` is a scheduling
-    problem, covered in :ref:`optimize-memory`. Growth that does not is a
-    :ref:`memory leak <topics-leaks>`.
+    Growth that tracks ``len(engine.scheduler.mqs)`` is a scheduling problem,
+    covered in :ref:`optimize-memory`. Growth that does not is a :ref:`memory
+    leak <topics-leaks>`.
 
 Network
     Compare :stat:`downloader/response_bytes` over the crawl time against your
