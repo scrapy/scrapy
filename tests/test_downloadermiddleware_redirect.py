@@ -273,6 +273,16 @@ class TestRedirectMiddleware(TestRedirectBase):
         assert isinstance(req2, Request)
         assert req2.url == "http://www.example.com/redirected#target"
 
+    def test_redirect_target_has_empty_fragment(self):
+        url = "http://www.example.com/302#original"
+        url2 = "http://www.example.com/redirected#"
+        req = Request(url)
+        rsp = Response(url, headers={"Location": url2}, status=302)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == "http://www.example.com/redirected"
+
     def test_redirect_302_head(self):
         url = "http://www.example.com/302"
         url2 = "http://www.example.com/redirected2"
