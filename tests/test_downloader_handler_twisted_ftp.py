@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import mkstemp
@@ -156,25 +155,23 @@ class TestFTP(TestFTPBase):
         for filename, content in self.test_files:
             (userdir / filename).write_bytes(content)
 
-    def _get_factory(self, root):
+    def _get_factory(self, root: Path) -> FTPFactory:
         from twisted.protocols.ftp import FTPFactory, FTPRealm
 
         realm = FTPRealm(anonymousRoot=str(root), userHome=str(root))
-        p = portal.Portal(realm)
+        # zope.interface has no type hints, so mypy cannot tell that these
+        # objects provide the interfaces that Portal expects.
+        p = portal.Portal(realm)  # type: ignore[arg-type]
         users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
-        users_checker.addUser(self.username, self.password)
-        p.registerChecker(users_checker, credentials.IUsernamePassword)
+        # the FTP protocol authenticates with str credentials
+        users_checker.addUser(self.username, self.password)  # type: ignore[arg-type]
+        p.registerChecker(users_checker, credentials.IUsernamePassword)  # type: ignore[arg-type]
         return FTPFactory(portal=p)
 
     @deferred_f_from_coro_f
     async def test_invalid_credentials(
-        self, server_url: str, dh: FTPDownloadHandler, reactor_pytest: str
+        self, server_url: str, dh: FTPDownloadHandler
     ) -> None:
-        if reactor_pytest == "asyncio" and sys.platform == "win32":
-            pytest.skip(
-                "This test produces DirtyReactorAggregateError on Windows with asyncio"
-            )
-
         from twisted.protocols.ftp import ConnectionLost
 
         meta = dict(self.req_meta)
@@ -192,16 +189,21 @@ class TestAnonymousFTP(TestFTPBase):
         for filename, content in self.test_files:
             (root / filename).write_bytes(content)
 
-    def _get_factory(self, tmp_path):
+    def _get_factory(self, tmp_path: Path) -> FTPFactory:
         from twisted.protocols.ftp import FTPFactory, FTPRealm
 
         realm = FTPRealm(anonymousRoot=str(tmp_path))
-        p = portal.Portal(realm)
-        p.registerChecker(checkers.AllowAnonymousAccess(), credentials.IAnonymous)
+        # zope.interface has no type hints, so mypy cannot tell that these
+        # objects provide the interfaces that Portal expects.
+        p = portal.Portal(realm)  # type: ignore[arg-type]
+        p.registerChecker(
+            checkers.AllowAnonymousAccess(),  # type: ignore[arg-type]
+            credentials.IAnonymous,
+        )
         return FTPFactory(portal=p, userAnonymous=self.username)
 
 
 def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
     with pytest.raises(NotConfigured):
-        FTPDownloadHandler.from_crawler(crawler)
+        build_from_crawler(FTPDownloadHandler, crawler)

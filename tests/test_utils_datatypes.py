@@ -1,15 +1,14 @@
+from __future__ import annotations
+
 import copy
-from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, MutableMapping
 from typing import Any
 
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.datatypes import (
     CaseInsensitiveDict,
-    CaselessDict,
     LocalCache,
     LocalWeakReferencedCache,
     SequenceExclude,
@@ -17,11 +16,8 @@ from scrapy.utils.datatypes import (
 from scrapy.utils.python import garbage_collect
 
 
-class TestCaseInsensitiveDictBase(ABC):
-    @property
-    @abstractmethod
-    def dict_class(self) -> type[MutableMapping[str, Any]]:
-        raise NotImplementedError
+class TestCaseInsensitiveDict:
+    dict_class = CaseInsensitiveDict
 
     def test_init_dict(self):
         seq = {"red": 1, "black": 3}
@@ -36,17 +32,17 @@ class TestCaseInsensitiveDictBase(ABC):
         assert d["black"] == 3
 
     def test_init_mapping(self):
-        class MyMapping(Mapping):
-            def __init__(self, **kwargs):
+        class MyMapping(Mapping[str, int]):
+            def __init__(self, **kwargs: int) -> None:
                 self._d = kwargs
 
-            def __getitem__(self, key):
+            def __getitem__(self, key: str) -> int:
                 return self._d[key]
 
-            def __iter__(self):
+            def __iter__(self) -> Iterator[str]:
                 return iter(self._d)
 
-            def __len__(self):
+            def __len__(self) -> int:
                 return len(self._d)
 
         seq = MyMapping(red=1, black=3)
@@ -55,23 +51,23 @@ class TestCaseInsensitiveDictBase(ABC):
         assert d["black"] == 3
 
     def test_init_mutable_mapping(self):
-        class MyMutableMapping(MutableMapping):
-            def __init__(self, **kwargs):
+        class MyMutableMapping(MutableMapping[str, int]):
+            def __init__(self, **kwargs: int) -> None:
                 self._d = kwargs
 
-            def __getitem__(self, key):
+            def __getitem__(self, key: str) -> int:
                 return self._d[key]
 
-            def __setitem__(self, key, value):
+            def __setitem__(self, key: str, value: int) -> None:
                 self._d[key] = value
 
-            def __delitem__(self, key):
+            def __delitem__(self, key: str) -> None:
                 del self._d[key]
 
-            def __iter__(self):
+            def __iter__(self) -> Iterator[str]:
                 return iter(self._d)
 
-            def __len__(self):
+            def __len__(self) -> int:
                 return len(self._d)
 
         seq = MyMutableMapping(red=1, black=3)
@@ -97,16 +93,14 @@ class TestCaseInsensitiveDictBase(ABC):
         with pytest.raises(KeyError):
             d["key_lower"]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_getdefault(self):
-        d = CaselessDict()
+        d = self.dict_class()
         assert d.get("c", 5) == 5
         d["c"] = 10
         assert d.get("c", 5) == 10
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_setdefault(self):
-        d = CaselessDict({"a": 1, "b": 2})
+        d = self.dict_class({"a": 1, "b": 2})
 
         r = d.setdefault("A", 5)
         assert r == 1
@@ -149,24 +143,20 @@ class TestCaseInsensitiveDictBase(ABC):
             d.pop("A")
 
     def test_normkey(self):
-        class MyDict(self.dict_class):
+        class MyDict(self.dict_class):  # type: ignore[misc,name-defined]
             def _normkey(self, key):
                 return key.title()
-
-            normkey = _normkey  # deprecated CaselessDict class
 
         d = MyDict()
         d["key-one"] = 2
         assert list(d.keys()) == ["Key-One"]
 
     def test_normvalue(self):
-        class MyDict(self.dict_class):
+        class MyDict(self.dict_class):  # type: ignore[misc,name-defined]
             def _normvalue(self, value):
                 if value is not None:
                     return value + 1
                 return None
-
-            normvalue = _normvalue  # deprecated CaselessDict class
 
         d = MyDict({"key": 1})
         assert d["key"] == 2
@@ -204,9 +194,14 @@ class TestCaseInsensitiveDictBase(ABC):
         assert h1.get("header1") == h3.get("header1")
         assert h1.get("header1") == h3.get("HEADER1")
 
-
-class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
-    dict_class = CaseInsensitiveDict  # type: ignore[assignment]
+    def test_copy_is_independent(self):
+        h1 = self.dict_class({"header1": "value1", "header2": "value2"})
+        for h2 in (copy.copy(h1), h1.copy()):
+            del h2["header1"]
+            h2["header3"] = "value3"
+            assert "header1" in h1
+            assert "header3" not in h1
+            assert dict(h1) == {"header1": "value1", "header2": "value2"}
 
     def test_repr(self):
         d1 = self.dict_class({"foo": "bar"})
@@ -220,17 +215,27 @@ class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
         assert isinstance(iterkeys, Iterator)
         assert list(iterkeys) == ["AsDf", "FoO"]
 
+    def test_copy_keeps_values(self):
+        class MyDict(self.dict_class):  # type: ignore[misc,name-defined]
+            def _normvalue(self, value):
+                return value + 1
 
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestCaselessDict(TestCaseInsensitiveDictBase):
-    dict_class = CaselessDict
+        d = MyDict({"key": 1})
+        for copied in (copy.copy(d), d.copy()):
+            assert copied["key"] == 2
 
-    def test_deprecation_message(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"scrapy.utils.datatypes.CaselessDict is deprecated",
-        ):
-            self.dict_class({"foo": "bar"})
+    def test_ior(self):
+        d = self.dict_class({"header1": "value1"})
+        d |= {"HEADER1": "value2", "header2": "value3"}
+        assert len(d) == 2
+        assert d["HeAdEr1"] == "value2"
+        assert d["HeAdEr2"] == "value3"
+
+    def test_ior_mapping(self):
+        d = self.dict_class({"header1": "value1"})
+        d |= self.dict_class({"HEADER1": "value2"})
+        assert len(d) == 1
+        assert d["HeAdEr1"] == "value2"
 
 
 class TestSequenceExclude:
@@ -288,7 +293,7 @@ class TestSequenceExclude:
 
 class TestLocalCache:
     def test_cache_with_limit(self):
-        cache = LocalCache(limit=2)
+        cache: LocalCache[str, int] = LocalCache(limit=2)
         cache["a"] = 1
         cache["b"] = 2
         cache["c"] = 3
@@ -301,7 +306,7 @@ class TestLocalCache:
 
     def test_cache_without_limit(self):
         maximum = 10**4
-        cache = LocalCache()
+        cache: LocalCache[str, int] = LocalCache()
         for x in range(maximum):
             cache[str(x)] = x
         assert len(cache) == maximum
@@ -310,7 +315,7 @@ class TestLocalCache:
             assert cache[str(x)] == x
 
     def test_cache_with_zero_limit(self):
-        cache = LocalCache(limit=0)
+        cache: LocalCache[str, int] = LocalCache(limit=0)
         cache["a"] = 1
         cache["b"] = 2
         cache["c"] = 3
@@ -322,7 +327,9 @@ class TestLocalCache:
 
 class TestLocalWeakReferencedCache:
     def test_cache_with_limit(self):
-        cache = LocalWeakReferencedCache(limit=2)
+        cache: LocalWeakReferencedCache[Request, int] = LocalWeakReferencedCache(
+            limit=2
+        )
         r1 = Request("https://example.org")
         r2 = Request("https://example.com")
         r3 = Request("https://example.net")
@@ -344,7 +351,7 @@ class TestLocalWeakReferencedCache:
         assert len(cache) == 1
 
     def test_cache_non_weak_referenceable_objects(self):
-        cache = LocalWeakReferencedCache()
+        cache: LocalWeakReferencedCache[Any, int] = LocalWeakReferencedCache()
         k1 = None
         k2 = 1
         k3 = [1, 2, 3]
@@ -358,7 +365,7 @@ class TestLocalWeakReferencedCache:
 
     def test_cache_without_limit(self):
         maximum = 10**4
-        cache = LocalWeakReferencedCache()
+        cache: LocalWeakReferencedCache[Request, int] = LocalWeakReferencedCache()
         refs = []
         for x in range(maximum):
             refs.append(Request(f"https://example.org/{x}"))

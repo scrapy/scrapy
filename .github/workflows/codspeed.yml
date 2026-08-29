@@ -1,0 +1,62 @@
+---
+name: codspeed
+
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        types: [opened, synchronize, reopened, closed]
+        paths:
+            - scrapy/**
+            - tests/benchmarks/**
+            - .github/workflows/codspeed.yml
+            - tox.ini
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+    cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+    benchmark:
+        if: github.event.action != 'closed'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        env:
+            # Make uv use the interpreter that actions/setup-python installed
+            # instead of downloading one of its own.
+            UV_PYTHON_PREFERENCE: only-system
+        permissions:
+            contents: read
+            id-token: write  # OIDC authentication with CodSpeed
+
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                persist-credentials: false
+
+            - name: Set up Python 3.14
+              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+              with:
+                  python-version: '3.14'
+
+            - name: Set up uv
+              uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+              with:
+                  cache-dependency-glob: |
+                      pyproject.toml
+                      tox.ini
+
+            - name: Install dependencies
+              # tox must stay on PATH for the CodSpeed action to invoke it.
+              run: |
+                  uv tool install --with tox-uv tox
+                  tox -n -e benchmark
+            - name: Run benchmarks
+              uses: CodSpeedHQ/action@0ca9cbbf4623b599a6c3ed4fc8a922942705d9f1 # v5.0.2
+              with:
+                  mode: simulation
+                  run: tox -e benchmark

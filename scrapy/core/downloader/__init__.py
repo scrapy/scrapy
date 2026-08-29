@@ -22,13 +22,13 @@ from scrapy.utils.asyncio import (
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io,
     _schedule_coro,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
-from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -80,22 +80,6 @@ class Slot:
         )
 
 
-def _get_concurrency_delay(
-    concurrency: int, spider: Spider, settings: BaseSettings
-) -> tuple[int, float]:
-    delay: float = settings.getfloat("DOWNLOAD_DELAY")
-    if hasattr(spider, "download_delay"):
-        delay = spider.download_delay
-
-    if hasattr(spider, "max_concurrent_requests"):  # pragma: no cover
-        warn_on_deprecated_spider_attribute(
-            "max_concurrent_requests", "CONCURRENT_REQUESTS"
-        )
-        concurrency = spider.max_concurrent_requests
-
-    return concurrency, delay
-
-
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
     _SLOT_GC_INTERVAL: float = 60.0  # seconds
@@ -112,9 +96,12 @@ class Downloader:
             "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
         self.ip_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS_PER_IP")
+        # Default delay of new slots. AutoThrottle overrides it to apply
+        # AUTOTHROTTLE_START_DELAY.
+        self._delay: float = self.settings.getfloat("DOWNLOAD_DELAY")
         self.randomize_delay: bool = self.settings.getbool("RANDOMIZE_DOWNLOAD_DELAY")
-        self.middleware: DownloaderMiddlewareManager = (
-            DownloaderMiddlewareManager.from_crawler(crawler)
+        self.middleware: DownloaderMiddlewareManager = build_from_crawler(
+            DownloaderMiddlewareManager, crawler
         )
         self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
@@ -138,7 +125,8 @@ class Downloader:
             self.active.remove(request)
 
     def needs_backout(self) -> bool:
-        return len(self.active) >= self.total_concurrency
+        # A total concurrency of 0 means no limit.
+        return 0 < self.total_concurrency <= len(self.active)
 
     @_warn_spider_arg
     def _get_slot(
@@ -146,16 +134,11 @@ class Downloader:
     ) -> tuple[str, Slot]:
         key = self.get_slot_key(request)
         if key not in self.slots:
-            assert self.crawler.spider
             slot_settings = self.per_slot_settings.get(key, {})
-            conc = self.ip_concurrency or self.domain_concurrency
-            conc, delay = _get_concurrency_delay(
-                conc, self.crawler.spider, self.settings
+            conc = slot_settings.get(
+                "concurrency", self.ip_concurrency or self.domain_concurrency
             )
-            conc, delay = (
-                slot_settings.get("concurrency", conc),
-                slot_settings.get("delay", delay),
-            )
+            delay = slot_settings.get("delay", self._delay)
             randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
             new_slot = Slot(conc, delay, randomize_delay)
             self.slots[key] = new_slot
@@ -236,7 +219,7 @@ class Downloader:
             )
             return response
         except Exception:
-            await _defer_sleep_async()
+            await _process_pending_io()
             raise
         finally:
             # 3. After response arrives, remove the request from transferring

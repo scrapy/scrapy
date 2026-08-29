@@ -160,7 +160,7 @@ class TestBaseSettings:
             lowercase_var = "anothervalue"
 
         self.settings.attributes = {}
-        self.settings.setmodule(ModuleMock(), 10)
+        self.settings.setmodule(ModuleMock(), 10)  # type: ignore[arg-type]
         assert "UPPERCASE_VAR" in self.settings.attributes
         assert "MIXEDcase_VAR" not in self.settings.attributes
         assert "lowercase_var" not in self.settings.attributes
@@ -219,15 +219,13 @@ class TestBaseSettings:
     )
     def test_update_kwargs(self):
         settings = BaseSettings({"key": 0})
-        settings.update(key=1)  # pylint: disable=unexpected-keyword-arg
+        settings.update(key=1)  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg
 
-    @pytest.mark.xfail(
-        raises=AttributeError,
-        reason="BaseSettings.update doesn't support iterable input",
-    )
     def test_update_iterable(self):
-        settings = BaseSettings({"key": 0})
-        settings.update([("key", 1)])
+        settings = BaseSettings({"key": 0}, priority=0)
+        settings.update([("key", 1)], priority=10)
+        assert settings["key"] == 1
+        assert settings.getpriority("key") == 10
 
     def test_update_jsonstring(self):
         settings = BaseSettings({"number": 0, "dict": BaseSettings({"key": "val"})})
@@ -339,13 +337,13 @@ class TestBaseSettings:
     def test_getwithbase(self):
         s = BaseSettings(
             {
-                "TEST_BASE": BaseSettings({1: 1, 2: 2}, "project"),
-                "TEST": BaseSettings({1: 10, 3: 30}, "default"),
-                "HASNOBASE": BaseSettings({3: 3000}, "default"),
+                "TEST_BASE": BaseSettings({"1": 1, "2": 2}, "project"),
+                "TEST": BaseSettings({"1": 10, "3": 30}, "default"),
+                "HASNOBASE": BaseSettings({"3": 3000}, "default"),
             }
         )
-        s["TEST"].set(2, 200, "cmdline")
-        assert set(s.getwithbase("TEST")) == {1, 2, 3}
+        s["TEST"].set("2", 200, "cmdline")
+        assert set(s.getwithbase("TEST")) == {"1", "2", "3"}
         assert set(s.getwithbase("HASNOBASE")) == set(s["HASNOBASE"])
         assert s.getwithbase("NONEXISTENT") == {}
 
@@ -529,7 +527,7 @@ class TestBaseSettings:
     ):
         settings = BaseSettings()
         settings["FOO"] = BaseSettings(
-            {Component1: 1, "tests.test_settings.Component1": 2}
+            {Component1: 1, "tests.test_settings.Component1": 2}  # type: ignore[arg-type]
         )
         with caplog.at_level(logging.WARNING):
             value = settings.get_component_priority_dict_with_base("FOO")
@@ -594,14 +592,14 @@ class TestBaseSettings:
         with pytest.raises(
             ValueError, match="Base setting key must be a string, got 123"
         ):
-            settings.getwithbase(123)
+            settings.getwithbase(123)  # type: ignore[arg-type]
 
     def test_get_component_priority_dict_with_base_invalid_setting_name(self):
         settings = BaseSettings()
         with pytest.raises(
             ValueError, match="Base setting key must be a string, got 123"
         ):
-            settings.get_component_priority_dict_with_base(123)
+            settings.get_component_priority_dict_with_base(123)  # type: ignore[arg-type]
 
 
 class TestSettings:
@@ -758,6 +756,15 @@ def test_remove_from_list(before, name, item, after):
         f"{settings[name]=} != {expected_settings[name]=}"
     )
     assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+def test_default_settings_all():
+    deprecated = {"DNS_RESOLVER"}
+    assert scrapy_default_settings.__all__ == sorted(
+        name
+        for name in vars(scrapy_default_settings)
+        if name.isupper() and name not in deprecated
+    )
 
 
 def test_deprecated_dns_resolver_setting():

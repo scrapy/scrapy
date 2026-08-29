@@ -1,4 +1,5 @@
 from abc import ABCMeta
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -7,9 +8,6 @@ from scrapy.item import Field, Item, ItemMeta
 
 
 class TestItem:
-    def assertSortedEqual(self, first, second, msg=None):
-        assert sorted(first) == sorted(second), msg
-
     def test_simple(self):
         class TestItem(Item):
             name = Field()
@@ -98,16 +96,16 @@ class TestItem:
 
         i = TestItem()
         with pytest.raises(AttributeError):
-            i.name = "john"
+            i.name = "john"  # type: ignore[assignment]
 
     def test_custom_methods(self):
         class TestItem(Item):
             name = Field()
 
-            def get_name(self):
+            def get_name(self) -> Any:
                 return self["name"]
 
-            def change_name(self, name):
+            def change_name(self, name: str) -> None:
                 self["name"] = name
 
         i = TestItem()
@@ -121,40 +119,40 @@ class TestItem:
     def test_metaclass(self):
         class TestItem(Item):
             name = Field()
-            keys = Field()
-            values = Field()
+            keys = Field()  # type: ignore[assignment]
+            values = Field()  # type: ignore[assignment]
 
         i = TestItem()
         i["name"] = "John"
-        assert list(i.keys()) == ["name"]
-        assert list(i.values()) == ["John"]
+        assert list(i.keys()) == ["name"]  # type: ignore[operator]
+        assert list(i.values()) == ["John"]  # type: ignore[operator]
 
         i["keys"] = "Keys"
         i["values"] = "Values"
-        self.assertSortedEqual(list(i.keys()), ["keys", "values", "name"])
-        self.assertSortedEqual(list(i.values()), ["Keys", "Values", "John"])
+        assert sorted(i.keys()) == ["keys", "name", "values"]  # type: ignore[operator]
+        assert sorted(i.values()) == ["John", "Keys", "Values"]  # type: ignore[operator]
 
     def test_metaclass_with_fields_attribute(self):
         class TestItem(Item):
             fields = {"new": Field(default="X")}
 
         item = TestItem(new="New")
-        self.assertSortedEqual(list(item.keys()), ["new"])
-        self.assertSortedEqual(list(item.values()), ["New"])
+        assert list(item.keys()) == ["new"]
+        assert list(item.values()) == ["New"]
 
     def test_fields_order(self):
         class TestItem(Item):
             name = Field()
-            keys = Field()
-            values = Field()
+            keys = Field()  # type: ignore[assignment]
+            values = Field()  # type: ignore[assignment]
 
         assert list(TestItem.fields) == ["name", "keys", "values"]
 
     def test_fields_order_inheritance(self):
         class ParentItem(Item):
             name = Field()
-            keys = Field()
-            values = Field()
+            keys = Field()  # type: ignore[assignment]
+            values = Field()  # type: ignore[assignment]
 
         class TestItem(ParentItem):
             extra = Field()
@@ -169,16 +167,16 @@ class TestItem:
     def test_metaclass_inheritance(self):
         class ParentItem(Item):
             name = Field()
-            keys = Field()
-            values = Field()
+            keys = Field()  # type: ignore[assignment]
+            values = Field()  # type: ignore[assignment]
 
         class TestItem(ParentItem):
             keys = Field()
 
         i = TestItem()
         i["keys"] = 3
-        assert list(i.keys()) == ["keys"]
-        assert list(i.values()) == [3]
+        assert list(i.keys()) == ["keys"]  # type: ignore[operator]
+        assert list(i.values()) == [3]  # type: ignore[operator]
 
     def test_metaclass_multiple_inheritance_simple(self):
         class A(Item):
@@ -314,7 +312,7 @@ class TestItemMeta:
                 def f(self):
                     # For rationale of this see:
                     # https://github.com/python/cpython/blob/ee1a81b77444c6715cbe610e951c655b6adab88b/Lib/test/test_super.py#L222
-                    return __class__
+                    return __class__  # type: ignore[name-defined]
 
             MyItem()
 

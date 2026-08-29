@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from parsel import Selector as _ParselSelector
 
-from scrapy.http import HtmlResponse, TextResponse, XmlResponse
+from scrapy.http import HtmlResponse, JsonResponse, TextResponse, XmlResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import get_base_url
 from scrapy.utils.trackref import object_ref
@@ -34,6 +34,11 @@ class Selector(_ParselSelector, object_ref):
     An instance of :class:`Selector` is a wrapper over response to select
     certain parts of its content.
 
+    .. versionchanged:: VERSION
+       The type of a :class:`~scrapy.http.JsonResponse` selector is now
+       ``json``, and the type of the selector of any other response that is
+       neither HTML nor XML is determined from the response body.
+
     ``response`` is an :class:`~scrapy.http.HtmlResponse` or an
     :class:`~scrapy.http.XmlResponse` object that will be used for selecting
     and extracting data.
@@ -46,8 +51,19 @@ class Selector(_ParselSelector, object_ref):
     ``"json"``, ``"text"`` or ``None`` (default). It's passed to
     :class:`parsel.Selector` and its meaning is defined there. However, when
     ``type`` is ``None``, it is set to ``"xml"`` for an
-    :class:`~scrapy.http.XmlResponse` and to ``"html"`` otherwise before
-    passing it to :class:`parsel.Selector`.
+    :class:`~scrapy.http.XmlResponse`, to ``"json"`` for a
+    :class:`~scrapy.http.JsonResponse` and to ``"html"`` for an
+    :class:`~scrapy.http.HtmlResponse` or for ``text`` before passing it to
+    :class:`parsel.Selector`, which for any other response is left to
+    determine the type from the response body.
+
+    The response class, and hence the selector type, comes from the content
+    type that the website reports. When a website reports the wrong content
+    type, recast the response into the right class:
+
+    .. code-block:: python
+
+        response = response.replace(cls=HtmlResponse)
 
     .. note:: JSON selector support requires ``parsel`` 1.8.0 or higher. With
        older versions setting ``type`` to ``"json"`` or ``"text"`` is not
@@ -70,8 +86,15 @@ class Selector(_ParselSelector, object_ref):
                 f"{self.__class__.__name__}.__init__() received both response and text"
             )
 
-        if type is None:
-            type = "xml" if isinstance(response, XmlResponse) else "html"  # noqa: A001
+        # Any other response, e.g. a plain-text one, keeps type unset, so that
+        # parsel determines it from the body.
+        if type is None and root is _NOT_SET:
+            if isinstance(response, XmlResponse):
+                type = "xml"  # noqa: A001
+            elif isinstance(response, JsonResponse):
+                type = "json"  # noqa: A001
+            elif response is None or isinstance(response, HtmlResponse):
+                type = "html"  # noqa: A001
 
         if text is not None:
             response = _response_from_text(text, type)

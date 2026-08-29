@@ -9,7 +9,7 @@ from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
-from twisted.internet.task import LoopingCall
+from twisted.internet.task import LoopingCall, deferLater
 from twisted.internet.threads import deferToThread
 
 from scrapy.utils.asyncgen import as_async_generator
@@ -291,6 +291,24 @@ class CallLaterResult:
         elif self._delayed_call and self._delayed_call.active():
             self._delayed_call.cancel()
             self._delayed_call = None
+
+
+async def sleep(seconds: float) -> None:
+    """Sleep for *seconds*.
+
+    .. versionadded:: 2.18.0
+
+    This uses either :func:`asyncio.sleep` or
+    :func:`~twisted.internet.task.deferLater`, depending on whether asyncio
+    support is available.
+    """
+    if is_asyncio_available():
+        await asyncio.sleep(seconds)
+        return
+
+    from twisted.internet import reactor
+
+    await deferLater(reactor, seconds)
 
 
 async def run_in_thread(

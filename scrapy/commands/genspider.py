@@ -32,10 +32,7 @@ def sanitize_module_name(module_name: str) -> str:
 
 def extract_domain(url: str) -> str:
     """Extract domain name from URL string"""
-    o = urlparse(url)
-    if o.scheme == "" and o.netloc == "":
-        o = urlparse("//" + url.lstrip("/"))
-    return o.netloc
+    return urlparse(url).netloc
 
 
 def verify_url_scheme(url: str) -> str:
@@ -84,7 +81,7 @@ class Command(ScrapyCommand):
             "--template",
             dest="template",
             default="basic",
-            help="Uses a custom template.",
+            help="Uses a custom template, given by name or by path to a .tmpl file.",
         )
         parser.add_argument(
             "--force",
@@ -174,9 +171,10 @@ class Command(ScrapyCommand):
         return Path(spider_file)
 
     def _find_template(self, template: str) -> Path | None:
-        template_file = Path(self.templates_dir, f"{template}.tmpl")
-        if template_file.exists():
-            return template_file
+        filename = template if template.endswith(".tmpl") else f"{template}.tmpl"
+        for template_file in (Path(filename), Path(self.templates_dir, filename)):
+            if template_file.exists():
+                return template_file
         print(
             f"Unable to find template: {template}\n",
             'Use "scrapy genspider --list" to see all available templates.',

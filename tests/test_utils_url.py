@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
@@ -71,6 +73,18 @@ def test_url_is_from_spider_with_allowed_domains():
         allowed_domains = ("example.com", "example.net")
 
     assert url_is_from_spider("http://www.example.com/some/page.html", MySpider3)
+
+
+def test_url_is_from_spider_with_allowed_domains_property():
+    class MySpider(Spider):
+        name = "myspider"
+
+        @property
+        def allowed_domains(self):
+            return ["example.org"]
+
+    with pytest.warns(UserWarning, match="allowed_domains is a property"):
+        assert not url_is_from_spider("http://www.example.org/some/page.html", MySpider)
 
 
 @pytest.mark.parametrize(
@@ -191,7 +205,7 @@ def test_guess_scheme(url: str, expected: str):
         ),
     ],
 )
-def test_guess_scheme_skipped(url: str, expected: str, reason: str):
+def test_guess_scheme_skipped(url: str, expected: str, reason: str) -> None:
     pytest.skip(reason)
 
 

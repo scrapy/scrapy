@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 import pprint
+import re
 import sys
+import warnings
 from collections.abc import MutableMapping
 from logging.config import dictConfig
 from typing import TYPE_CHECKING, Any, cast
@@ -12,6 +14,7 @@ from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.versions import get_versions
 
@@ -77,6 +80,9 @@ DEFAULT_LOGGING = {
         },
         "httpx": {
             "level": "WARNING",
+        },
+        "parso": {
+            "level": "ERROR",
         },
         "scrapy": {
             "level": "DEBUG",
@@ -239,13 +245,15 @@ class LogCounterHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         sname = f"log_count/{record.levelname}"
-        assert self.crawler.stats
         self.crawler.stats.inc_value(sname)
+
+
+_MSG_MAPPING_PLACEHOLDER = re.compile(r"%\(\w+\)")
 
 
 def logformatter_adapter(
     logkws: LogFormatterResult,
-) -> tuple[int, str, dict[str, Any] | tuple[Any, ...]]:
+) -> tuple[Any, ...]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
     and adapts it into a tuple of positional arguments for logger.log calls.
@@ -253,10 +261,28 @@ def logformatter_adapter(
 
     level = logkws.get("level", logging.INFO)
     message = logkws.get("msg") or ""
-    # NOTE: This also handles 'args' being an empty dict, that case doesn't
-    # play well in logger.log calls
-    args = cast("dict[str, Any]", logkws) if not logkws.get("args") else logkws["args"]
-
+    args = logkws.get("args")
+    # logging interpolates the message whenever it receives any positional
+    # argument, so empty args are left out. Tuple args become one positional
+    # argument each, while a dict is a single positional argument.
+    if not args:
+        if _MSG_MAPPING_PLACEHOLDER.search(message):
+            # The log formatter method has already returned, so there is no
+            # frame of it left in the stack to point at. msg is part of the
+            # warning message instead, so that each offending method gets its
+            # own warning.
+            warnings.warn(
+                f"A log formatter method returned msg {message!r} with "
+                f"%(name)s placeholders and no args. Interpolating msg with "
+                f"the returned dict is deprecated, return those values under "
+                f"args instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=1,
+            )
+            return (level, message, logkws)
+        return (level, message)
+    if isinstance(args, tuple):
+        return (level, message, *args)
     return (level, message, args)
 
 

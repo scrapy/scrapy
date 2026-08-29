@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
@@ -18,7 +19,11 @@ from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownloa
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.engine import format_engine_status, get_engine_status
+from scrapy.utils.engine import (
+    format_engine_status,
+    get_engine_status,
+    print_engine_status,
+)
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
@@ -41,6 +46,7 @@ from tests.spiders import (
     CrawlSpiderWithAsyncCallback,
     CrawlSpiderWithAsyncGeneratorCallback,
     CrawlSpiderWithErrback,
+    CrawlSpiderWithoutErrback,
     CrawlSpiderWithParseMethod,
     CrawlSpiderWithProcessRequestCallbackKeywordArguments,
     DelaySpider,
@@ -70,11 +76,11 @@ class TestCrawl:
 
     @coroutine_test
     async def test_fixed_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.2)
+        await self._test_delay(mockserver, total=10, delay=0.2)
 
     @coroutine_test
     async def test_randomized_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.1, randomize=True)
+        await self._test_delay(mockserver, total=10, delay=0.1, randomize=True)
 
     @staticmethod
     async def _test_delay(
@@ -358,7 +364,6 @@ with multiples lines
         est: list[list[tuple[str, Any]]] = []
 
         def cb(response):
-            assert crawler.engine
             est.append(get_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -372,11 +377,27 @@ with multiples lines
         assert s["len(engine.scraper.slot.active)"] == 1
 
     @coroutine_test
+    async def test_print_engine_status(
+        self, mockserver: MockServer, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        def cb(response):
+            assert crawler.engine
+            print_engine_status(crawler.engine)
+
+        crawler = get_crawler(SingleRequestSpider)
+        await crawler.crawl_async(
+            seed=mockserver.url("/"), callback_func=cb, mockserver=mockserver
+        )
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        out = capsys.readouterr().out
+        assert out.startswith("Execution engine status")
+        assert re.search(rf"engine\.spider\.name +: {crawler.spider.name}\n", out)
+
+    @coroutine_test
     async def test_format_engine_status(self, mockserver: MockServer) -> None:
         est: list[str] = []
 
         def cb(response):
-            assert crawler.engine
             est.append(format_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
@@ -451,7 +472,6 @@ class TestCrawlSpider:
         await crawler.crawl_async(
             mockserver.url("/status?n=200"), mockserver=mockserver
         )
-        assert crawler.stats
         return items, crawler.stats
 
     @coroutine_test
@@ -504,6 +524,20 @@ class TestCrawlSpider:
         assert "[errback] status 404" in caplog.text
         assert "[errback] status 500" in caplog.text
         assert "[errback] status 501" in caplog.text
+
+    @coroutine_test
+    async def test_crawlspider_without_errback(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(CrawlSpiderWithoutErrback)
+        with caplog.at_level(logging.INFO):
+            await crawler.crawl_async(mockserver=mockserver)
+
+        # The failing request (404) is followed by a rule without an errback,
+        # so the failure is dropped silently and the crawl finishes normally.
+        assert "[parse] status 200 (foo: None)" in caplog.text
+        assert "[errback]" not in caplog.text
+        assert crawler.stats.get_value("downloader/response_status_count/404") == 1
 
     @coroutine_test
     async def test_crawlspider_process_request_cb_kwargs(

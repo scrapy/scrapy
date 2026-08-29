@@ -261,7 +261,6 @@ class DbmCacheStorage:
             extra={"spider": spider},
         )
 
-        assert spider.crawler.request_fingerprinter
         self._fingerprinter: RequestFingerprinterProtocol = (
             spider.crawler.request_fingerprinter
         )
@@ -326,7 +325,6 @@ class FilesystemCacheStorage:
             extra={"spider": spider},
         )
 
-        assert spider.crawler.request_fingerprinter
         self._fingerprinter = spider.crawler.request_fingerprinter
 
     def close_spider(self, spider: Spider) -> None:
