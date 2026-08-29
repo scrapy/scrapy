@@ -22,12 +22,16 @@ from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
     configure_logging,
     failure_to_exc_info,
+    get_log_crawler,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
+    log_crawler,
+    log_crawler_awaitable,
     logformatter_adapter,
 )
 from scrapy.utils.test import get_crawler
 from tests.spiders import LogSpider
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping, MutableMapping
@@ -106,6 +110,64 @@ class TestLogCounterHandler:
     def test_accepted_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.error("test log msg")
         assert crawler.stats.get_value("log_count/ERROR") == 1
+
+    def test_other_crawler(self, crawler: Crawler, logger: logging.Logger) -> None:
+        other_crawler = get_crawler(settings_dict={"LOG_LEVEL": "WARNING"})
+        logger.error("test log msg", extra={"crawler": other_crawler})
+        assert crawler.stats.get_value("log_count/ERROR") is None
+
+    def test_other_spider(self, crawler: Crawler, logger: logging.Logger) -> None:
+        other_crawler = get_crawler(settings_dict={"LOG_LEVEL": "WARNING"})
+        other_spider = other_crawler._create_spider(name="other")
+        logger.error("test log msg", extra={"spider": other_spider})
+        assert crawler.stats.get_value("log_count/ERROR") is None
+
+    def test_log_crawler_context(self, crawler: Crawler) -> None:
+        other_crawler = get_crawler(settings_dict={"LOG_LEVEL": "WARNING"})
+        logger = logging.getLogger("test")
+        logger.setLevel(logging.DEBUG)
+        handler = LogCounterHandler(crawler, level=crawler.settings.get("LOG_LEVEL"))
+        other_handler = LogCounterHandler(
+            other_crawler, level=other_crawler.settings.get("LOG_LEVEL")
+        )
+        logging.root.addHandler(handler)
+        logging.root.addHandler(other_handler)
+        try:
+            with log_crawler(crawler):
+                logger.error("test log msg")
+        finally:
+            logging.root.removeHandler(handler)
+            logging.root.removeHandler(other_handler)
+        assert crawler.stats.get_value("log_count/ERROR") == 1
+        assert other_crawler.stats.get_value("log_count/ERROR") is None
+
+    @coroutine_test
+    async def test_log_crawler_awaitable(self, crawler: Crawler) -> None:
+        async def get_crawler_from_context() -> Crawler | None:
+            return get_log_crawler()
+
+        assert get_log_crawler() is None
+        assert (
+            await log_crawler_awaitable(crawler, get_crawler_from_context()) is crawler
+        )
+        assert get_log_crawler() is None
+
+    def test_ambiguous_record(self, crawler: Crawler) -> None:
+        other_crawler = get_crawler(settings_dict={"LOG_LEVEL": "WARNING"})
+        logger = logging.getLogger("test")
+        handler = LogCounterHandler(crawler, level=crawler.settings.get("LOG_LEVEL"))
+        other_handler = LogCounterHandler(
+            other_crawler, level=other_crawler.settings.get("LOG_LEVEL")
+        )
+        logging.root.addHandler(handler)
+        logging.root.addHandler(other_handler)
+        try:
+            logger.error("test log msg")
+        finally:
+            logging.root.removeHandler(handler)
+            logging.root.removeHandler(other_handler)
+        assert crawler.stats.get_value("log_count/ERROR") is None
+        assert other_crawler.stats.get_value("log_count/ERROR") is None
 
     def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
         logger.debug("test log msg")

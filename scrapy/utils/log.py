@@ -5,9 +5,11 @@ import pprint
 import re
 import sys
 import warnings
-from collections.abc import MutableMapping
+from collections.abc import Awaitable, Iterator, MutableMapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from logging.config import dictConfig
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
@@ -26,6 +28,32 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
+
+_log_crawler: ContextVar[Crawler | None] = ContextVar("log_crawler", default=None)
+
+
+@contextmanager
+def log_crawler(crawler: Crawler) -> Iterator[None]:
+    token = _log_crawler.set(crawler)
+    try:
+        yield
+    finally:
+        _log_crawler.reset(token)
+
+
+async def log_crawler_awaitable(crawler: Crawler, awaitable: Awaitable[_T]) -> _T:
+    previous_crawler = get_log_crawler()
+    _log_crawler.set(crawler)
+    try:
+        return await awaitable
+    finally:
+        _log_crawler.set(previous_crawler)
+
+
+def get_log_crawler() -> Crawler | None:
+    return _log_crawler.get()
 
 
 def failure_to_exc_info(
@@ -244,6 +272,28 @@ class LogCounterHandler(logging.Handler):
         self.crawler: Crawler = crawler
 
     def emit(self, record: logging.LogRecord) -> None:
+        record_crawler = getattr(record, "crawler", None)
+
+        record_spider = getattr(record, "spider", None)
+        if record_crawler is None:
+            record_crawler = getattr(record_spider, "crawler", None)
+
+        if record_crawler is None:
+            record_crawler = get_log_crawler()
+
+        if record_crawler is not None and record_crawler is not self.crawler:
+            return
+
+        if (
+            record_crawler is None
+            and sum(
+                isinstance(handler, LogCounterHandler)
+                for handler in logging.root.handlers
+            )
+            > 1
+        ):
+            return
+
         sname = f"log_count/{record.levelname}"
         self.crawler.stats.inc_value(sname)
 
