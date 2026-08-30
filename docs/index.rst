@@ -288,6 +288,7 @@ All the rest
    news
    contributing
    versioning
+   license
 
 :doc:`news`
     See what has changed in recent Scrapy versions.
@@ -297,3 +298,6 @@ All the rest
 
 :doc:`versioning`
     Understand Scrapy versioning and API stability.
+
+:doc:`license`
+    Read licenses of Scrapy software and artwork.
