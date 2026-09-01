@@ -60,3 +60,46 @@ jobs:
               with:
                   mode: simulation
                   run: tox -e benchmark
+
+    benchmark-walltime:
+        # Only benchmarks marked "walltime" (ones where a real concurrency
+        # win can't be shown by instruction counting) run here, on
+        # CodSpeed's dedicated, minutes-limited macro runner; everything
+        # else runs above, on a regular GitHub-hosted runner.
+        if: github.event.action != 'closed'
+        runs-on: codspeed-macro
+        env:
+            UV_PYTHON_PREFERENCE: only-system
+        permissions:
+            contents: read
+            id-token: write  # OIDC authentication with CodSpeed
+
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                persist-credentials: false
+
+            - name: Set up Python 3.14
+              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+              with:
+                  python-version: '3.14'
+
+            - name: Set up uv
+              uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+              with:
+                  cache-dependency-glob: |
+                      pyproject.toml
+                      tox.ini
+
+            - name: Install dependencies
+              run: |
+                  uv tool install --with tox-uv tox
+                  tox -n -e benchmark
+            - name: Run benchmarks
+              uses: CodSpeedHQ/action@0ca9cbbf4623b599a6c3ed4fc8a922942705d9f1 # v5.0.2
+              with:
+                  mode: walltime
+                  # No benchmark is walltime-marked on some branches (e.g.
+                  # this one), which would otherwise fail the step.
+                  allow-empty: true
+                  run: tox -e benchmark -- tests/benchmarks -m walltime

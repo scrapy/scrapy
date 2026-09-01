@@ -289,6 +289,7 @@ markers = [
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_mitmproxy: marks tests that need a mitmdump executable",
     "requires_internet: marks tests that need real Internet access",
+    "walltime: marks benchmarks that need CodSpeed's walltime mode to be meaningful",
 ]
 filterwarnings = [
     # Envs with pinned old dependencies opt out of this, see tox.ini.
