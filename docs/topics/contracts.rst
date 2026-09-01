@@ -65,9 +65,7 @@ create and load your own contracts in the project by using the
 Each contract must inherit from :class:`~scrapy.contracts.Contract` and can
 override three methods:
 
-.. module:: scrapy.contracts
-
-.. autoclass:: Contract
+.. autoclass:: scrapy.contracts.Contract
 
     .. automethod:: adjust_request_args
 
