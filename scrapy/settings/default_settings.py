@@ -200,6 +200,7 @@ __all__ = [
     "SCHEDULER_START_DISK_QUEUE",
     "SCHEDULER_START_MEMORY_QUEUE",
     "SCRAPER_SLOT_MAX_ACTIVE_SIZE",
+    "SESSIONS_MAX",
     "SPIDER_CONTRACTS",
     "SPIDER_CONTRACTS_BASE",
     "SPIDER_LOADER_CLASS",
@@ -554,6 +555,8 @@ SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
+SESSIONS_MAX = 1000
+
 SPIDER_CONTRACTS: dict[str, int] = {}
 SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.UrlContract": 1,
@@ -571,6 +574,7 @@ SPIDER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 25,
     "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
+    "scrapy.spidermiddlewares.sessions.SessionsSpiderMiddleware": 375,
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,

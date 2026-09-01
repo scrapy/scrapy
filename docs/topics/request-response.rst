@@ -827,9 +827,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
-* :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
-* :reqmeta:`dont_merge_cookies`
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
@@ -853,6 +851,7 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`session`
 * :reqmeta:`verbatim_url`
 
 .. reqmeta:: bindaddress
