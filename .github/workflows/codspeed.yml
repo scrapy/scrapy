@@ -44,7 +44,7 @@ jobs:
                   python-version: '3.14'
 
             - name: Set up uv
-              uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+              uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
               with:
                   cache-dependency-glob: |
                       pyproject.toml
@@ -56,7 +56,7 @@ jobs:
                   uv tool install --with tox-uv tox
                   tox -n -e benchmark
             - name: Run benchmarks
-              uses: CodSpeedHQ/action@0ca9cbbf4623b599a6c3ed4fc8a922942705d9f1 # v5.0.2
+              uses: CodSpeedHQ/action@373d6868929f444bc08d901fd0eb0ad52a8875ea # v5.2.1
               with:
                   mode: simulation
                   run: tox -e benchmark
@@ -85,7 +85,7 @@ jobs:
                   python-version: '3.14'
 
             - name: Set up uv
-              uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+              uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
               with:
                   cache-dependency-glob: |
                       pyproject.toml
@@ -96,7 +96,7 @@ jobs:
                   uv tool install --with tox-uv tox
                   tox -n -e benchmark
             - name: Run benchmarks
-              uses: CodSpeedHQ/action@0ca9cbbf4623b599a6c3ed4fc8a922942705d9f1 # v5.0.2
+              uses: CodSpeedHQ/action@373d6868929f444bc08d901fd0eb0ad52a8875ea # v5.2.1
               with:
                   mode: walltime
                   # No benchmark is walltime-marked on some branches (e.g.
