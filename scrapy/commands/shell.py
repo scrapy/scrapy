@@ -10,10 +10,12 @@ import asyncio
 from threading import Thread
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import ScrapyCommand, _add_curl_option, _request_from_curl
 from scrapy.crawler import AsyncCrawlerProcess, Crawler
+from scrapy.exceptions import UsageError
 from scrapy.http import Request
 from scrapy.shell import Shell
+from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
@@ -45,6 +47,7 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser: ArgumentParser) -> None:
         super().add_options(parser)
+        _add_curl_option(parser)
         parser.add_argument(
             "-c",
             dest="code",
@@ -66,7 +69,19 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: Namespace) -> None:
         url = args[0] if args else None
-        if url:
+        request: Request | None = None
+        if opts.curl:
+            if url:
+                raise UsageError("--curl cannot be combined with a URL argument")
+            request = _request_from_curl(opts.curl, dont_filter=True)
+            if opts.no_redirect:
+                request.meta["handle_httpstatus_all"] = True
+            else:
+                request.meta["handle_httpstatus_list"] = SequenceExclude(
+                    range(300, 400)
+                )
+            url = request.url
+        elif url:
             # first argument may be a local file
             url = guess_scheme(url)
 
@@ -76,6 +91,10 @@ class Command(ScrapyCommand):
         spidercls: type[Spider] = DefaultSpider
         if opts.spider:
             spidercls = spider_loader.load(opts.spider)
+        elif request is not None:
+            spidercls = spidercls_for_request(
+                spider_loader, request, spidercls, log_multiple=True
+            )
         elif url:
             spidercls = spidercls_for_request(
                 spider_loader, Request(url), spidercls, log_multiple=True
@@ -92,7 +111,10 @@ class Command(ScrapyCommand):
             self._init_without_reactor(crawler)
             loop = self._get_reactorless_loop()
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code, loop=loop)
-        shell.start(url=url, redirect=not opts.no_redirect)
+        if request is not None:
+            shell.start(request=request, redirect=not opts.no_redirect)
+        else:
+            shell.start(url=url, redirect=not opts.no_redirect)
 
     def _init_with_reactor(self, crawler: Crawler) -> None:
         # Create the engine and run start_async() in the main thread
