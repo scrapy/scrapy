@@ -1,9 +1,5 @@
-"""
-Module for processing Sitemaps.
-
-Note: The main purpose of this module is to provide support for the
-SitemapSpider, its API is subject to change without notice.
-"""
+# The main purpose of this module is to provide support for the SitemapSpider,
+# its API is subject to change without notice.
 
 from __future__ import annotations
 

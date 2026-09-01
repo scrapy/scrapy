@@ -1,8 +1,3 @@
-"""
-This module implements a class which returns the appropriate Response class
-based on different criteria.
-"""
-
 from __future__ import annotations
 
 from io import StringIO

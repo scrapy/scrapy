@@ -1,5 +1,3 @@
-"""Helper functions for working with signals"""
-
 from __future__ import annotations
 
 import asyncio

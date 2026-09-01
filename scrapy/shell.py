@@ -1,9 +1,3 @@
-"""Scrapy Shell
-
-See documentation in docs/topics/shell.rst
-
-"""
-
 from __future__ import annotations
 
 import asyncio

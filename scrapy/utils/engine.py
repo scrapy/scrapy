@@ -1,5 +1,3 @@
-"""Some debugging functions for working with the Scrapy engine"""
-
 from __future__ import annotations
 
 # used in global tests code

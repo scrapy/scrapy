@@ -1,5 +1,3 @@
-"""Utils for built-in HTTP download handlers."""
-
 from __future__ import annotations
 
 from contextlib import contextmanager

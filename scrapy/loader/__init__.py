@@ -1,9 +1,3 @@
-"""
-Item Loader
-
-See documentation in docs/topics/loaders.rst
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

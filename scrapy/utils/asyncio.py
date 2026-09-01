@@ -1,5 +1,3 @@
-"""Utilities related to asyncio and its support in Scrapy."""
-
 from __future__ import annotations
 
 import asyncio

@@ -1,9 +1,3 @@
-"""
-Downloader Middleware manager
-
-See documentation in docs/topics/downloader-middleware.rst
-"""
-
 from __future__ import annotations
 
 import warnings

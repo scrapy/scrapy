@@ -1,5 +1,3 @@
-"""Helper functions for working with templates"""
-
 from __future__ import annotations
 
 import re

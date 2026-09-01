@@ -1,5 +1,3 @@
-"""Some helpers for deprecation messages"""
-
 from __future__ import annotations
 
 import inspect

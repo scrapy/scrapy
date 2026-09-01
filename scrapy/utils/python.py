@@ -1,7 +1,3 @@
-"""
-This module contains essential stuff that should've come with Python itself ;)
-"""
-
 from __future__ import annotations
 
 import gc

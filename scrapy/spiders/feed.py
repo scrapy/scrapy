@@ -1,10 +1,3 @@
-"""
-This module implements the XMLFeedSpider which is the recommended spider to use
-for scraping from an XML feed.
-
-See documentation in docs/topics/spiders.rst
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

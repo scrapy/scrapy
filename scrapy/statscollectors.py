@@ -1,7 +1,3 @@
-"""
-Scrapy extension for collecting scraping stats
-"""
-
 from __future__ import annotations
 
 import logging

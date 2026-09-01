@@ -1,7 +1,3 @@
-"""
-Item Exporters are used to export/serialize items into different formats.
-"""
-
 from __future__ import annotations
 
 import csv

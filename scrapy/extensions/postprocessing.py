@@ -1,7 +1,3 @@
-"""
-Extension for processing data before they are exported to feeds.
-"""
-
 from bz2 import BZ2File
 from gzip import GzipFile
 from io import IOBase

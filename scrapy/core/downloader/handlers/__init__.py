@@ -1,5 +1,3 @@
-"""Download handlers for different schemes"""
-
 from __future__ import annotations
 
 import inspect

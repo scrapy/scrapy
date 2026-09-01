@@ -1,5 +1,3 @@
-"""Helper functions which don't fit anywhere else"""
-
 from __future__ import annotations
 
 import ast

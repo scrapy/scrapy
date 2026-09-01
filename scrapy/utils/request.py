@@ -1,8 +1,3 @@
-"""
-This module provides some useful functions for working with
-scrapy.Request objects
-"""
-
 from __future__ import annotations
 
 import hashlib

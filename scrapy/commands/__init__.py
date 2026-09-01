@@ -1,7 +1,3 @@
-"""
-Base class for Scrapy commands
-"""
-
 from __future__ import annotations
 
 import argparse

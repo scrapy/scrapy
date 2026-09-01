@@ -1,5 +1,3 @@
-"""Download handlers for http and https schemes"""
-
 from __future__ import annotations
 
 import ipaddress
