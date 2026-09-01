@@ -768,6 +768,49 @@ See here the methods that you can override in your custom Images Pipeline:
       By default, the :meth:`item_completed` method returns the item.
 
 
+.. _media-pipeline-failed-downloads:
+
+Accessing the response of a failed download
+===========================================
+
+When a download fails, :meth:`~item_completed` receives it as a
+:exc:`~twisted.python.failure.Failure` whose ``value`` is the exception
+raised from :meth:`~media_downloaded`. For a non-2xx response, that
+exception is a :exc:`~scrapy.pipelines.media.FileException` built from just
+a message, without a reference to the response. To access the response, for
+example to record its ``status`` on the item, override
+:meth:`~media_downloaded` to attach it to a custom exception:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import FilesPipeline
+    from scrapy.pipelines.media import FileException
+
+
+    class ResponseFileException(FileException):
+        def __init__(self, response):
+            super().__init__(f"download-error ({response.status})")
+            self.response = response
+
+
+    class MyFilesPipeline(FilesPipeline):
+        async def media_downloaded(self, response, request, info, *, item=None):
+            try:
+                return await super().media_downloaded(response, request, info, item=item)
+            except FileException:
+                raise ResponseFileException(response)
+
+        def item_completed(self, results, item, info):
+            errors = [
+                value.value.response.status
+                for ok, value in results
+                if not ok and value.check(ResponseFileException)
+            ]
+            if errors:
+                item["download_errors"] = errors
+            return super().item_completed(results, item, info)
+
+
 .. _media-pipeline-example:
 
 Custom Images pipeline example
