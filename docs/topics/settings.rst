@@ -1085,6 +1085,19 @@ handler (without replacement), place this in your ``settings.py``:
     :ref:`security-local-resources`
 
 
+.. setting:: DOWNLOAD_HANDLERS_BY_NAME
+
+DOWNLOAD_HANDLERS_BY_NAME
+-------------------------
+
+.. versionadded:: VERSION
+
+Default: ``{}``
+
+A dict mapping names to :ref:`download handlers <topics-download-handlers>`
+that requests can ask for by name. See :ref:`download-handler-ids`.
+
+
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS

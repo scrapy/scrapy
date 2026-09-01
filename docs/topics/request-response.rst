@@ -895,6 +895,17 @@ This meta key is not supported by
 :class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
 :setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
 
+.. reqmeta:: download_handler
+
+download_handler
+----------------
+
+.. versionadded:: VERSION
+
+ID of the :ref:`download handler <topics-download-handlers>` to use for this
+request, either a name from :setting:`DOWNLOAD_HANDLERS_BY_NAME` or a URL
+scheme from :setting:`DOWNLOAD_HANDLERS`. See :ref:`download-handler-ids`.
+
 .. reqmeta:: download_timeout
 
 download_timeout
@@ -957,6 +968,18 @@ http_user
 .. versionadded:: 2.17.0
 
 Overrides :setting:`HTTPAUTH_USER` for this request.
+
+.. reqmeta:: is_robotstxt_request
+
+is_robotstxt_request
+--------------------
+
+.. versionadded:: VERSION
+
+``True`` on the ``robots.txt`` requests that
+:class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` sends, so
+that :ref:`downloader middlewares <topics-downloader-middleware>` can tell them
+apart from other requests.
 
 .. reqmeta:: max_retry_times
 

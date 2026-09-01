@@ -43,6 +43,48 @@ for additional schemes and to replace or disable default ones:
     :ref:`security-local-resources`, for the security implications of the
     default ``http``, ``ftp``, ``file`` and ``data`` handlers.
 
+.. _download-handler-ids:
+
+Choosing a download handler per request
+---------------------------------------
+
+.. versionadded:: VERSION
+
+The :setting:`DOWNLOAD_HANDLERS_BY_NAME` setting registers handlers under a
+name instead of a URL scheme. Such handlers are only used by requests that ask
+for them through the :reqmeta:`download_handler` metadata key:
+
+.. code-block:: python
+
+    DOWNLOAD_HANDLERS_BY_NAME = {
+        "playwright": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    }
+
+.. invisible-code-block: python
+
+    from scrapy import Request
+
+.. code-block:: python
+
+    Request("https://example.com", meta={"download_handler": "playwright"})
+
+:reqmeta:`download_handler` also accepts a URL scheme, e.g. ``"https"``, to use
+a handler from :setting:`DOWNLOAD_HANDLERS` on a request whose URL uses a
+different scheme.
+
+Requests keep their :reqmeta:`download_handler` across redirects and retries,
+and :ref:`robots.txt <topics-dlmw-robots>` requests inherit it from the request
+that triggers them. To fetch ``robots.txt`` differently, use a :ref:`downloader
+middleware <topics-downloader-middleware>` that acts on requests with the
+:reqmeta:`is_robotstxt_request` metadata key:
+
+.. code-block:: python
+
+    class DirectRobotsTxtMiddleware:
+        def process_request(self, request):
+            if request.meta.get("is_robotstxt_request"):
+                request.meta.pop("download_handler", None)
+
 Replacing HTTP(S) download handlers
 -----------------------------------
 
