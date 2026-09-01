@@ -231,7 +231,7 @@ class TestRFPDupeFilter:
         dupefilter.close("finished")
 
     def test_fingerprints_deprecation(self):
-        dupefilter = _get_dupefilter()
+        dupefilter = cast("RFPDupeFilter", _get_dupefilter())
         request = Request("http://scrapytest.org/index.html")
         dupefilter.request_seen(request)
         with pytest.warns(
