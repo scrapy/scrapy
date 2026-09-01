@@ -20,6 +20,7 @@ from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import signals
+from scrapy.core.downloader import _start_delay_countdown
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import (
@@ -454,6 +455,7 @@ class ExecutionEngine:
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request) -> None:
+        _start_delay_countdown(request)
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
