@@ -8,6 +8,10 @@ Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
 
+.. versionchanged:: VERSION
+   Added support for callbacks defined with ``async def``, including
+   :term:`asynchronous generators <asynchronous generator>`.
+
 This allows you to test each callback of your spider by hardcoding a sample url
 and check various constraints for how the callback processes the response. Each
 contract is prefixed with an ``@`` and included in the docstring. See the
