@@ -419,6 +419,14 @@ class TestDataURI:
         assert response.text == "Hello, world."
 
     @coroutine_test
+    async def test_binary_mediatype(self):
+        request = Request("data:image/png;base64,iVBORw0KGgo%3D")
+        response = await self.download_request(request)
+        assert response.body == b"\x89PNG\r\n\x1a\n"
+        assert type(response) is responsetypes.from_mimetype("image/png")  # pylint: disable=unidiomatic-typecheck
+        assert not isinstance(response, TextResponse)
+
+    @coroutine_test
     async def test_protocol(self):
         request = Request("data:,")
         response = await self.download_request(request)

@@ -92,10 +92,9 @@ class _Slot:
 
     def _maybe_fire_closing(self) -> None:
         if self.closing is not None and not self.inprogress:
-            if self.nextcall:
-                self.nextcall.cancel()
-                if self.heartbeat.running:
-                    self.heartbeat.stop()
+            self.nextcall.cancel()
+            if self.heartbeat.running:
+                self.heartbeat.stop()
             self.closing.callback(None)
 
 
@@ -265,7 +264,7 @@ class ExecutionEngine:
             await self.stop_async()  # will also close spider and downloader
         elif self.spider is not None:
             await self.close_spider_async(reason=reason)  # will also close downloader
-        elif hasattr(self, "downloader"):
+        else:
             self.downloader.close()
 
     def pause(self) -> None:
@@ -421,11 +420,6 @@ class ExecutionEngine:
     def _handle_downloader_output(
         self, result: Request | Response | Failure, request: Request
     ) -> Generator[Deferred[Any], Any, None]:
-        if not isinstance(result, (Request, Response, Failure)):
-            raise TypeError(
-                f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}"
-            )
-
         # downloader middleware can return requests (for example, redirects)
         if isinstance(result, Request):
             self.crawl(result)
