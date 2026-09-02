@@ -283,6 +283,21 @@ class TestFilesPipeline:
         assert result["files"][0]["status"] == "downloaded"
 
     @coroutine_test
+    async def test_file_created_status(self) -> None:
+        """Any successful (2xx) status is treated as a download, e.g. 201."""
+        item_url = "http://example.com/created.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url, status=201)],
+            ),
+        ):
+            result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+
+    @coroutine_test
     async def test_file_empty_content(self, caplog: pytest.LogCaptureFixture) -> None:
         item_url = "http://example.com/empty.pdf"
         item = _create_item_with_files(item_url)
@@ -1192,12 +1207,13 @@ def _prepare_request_object(
     item_url: str,
     flags: list[str] | None = None,
     headers: dict[str, str] | None = None,
+    status: int = 200,
 ) -> Request:
     return Request(
         item_url,
         meta={
             "response": Response(
-                item_url, status=200, body=b"data", flags=flags, headers=headers
+                item_url, status=status, body=b"data", flags=flags, headers=headers
             )
         },
     )
