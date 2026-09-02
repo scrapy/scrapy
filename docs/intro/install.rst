@@ -134,6 +134,8 @@ The following extras are available:
      - :ref:`twisted-http2-handler`
    * - ``uvloop``
      - `uvloop <https://github.com/MagicStack/uvloop>`_ event loop
+   * - ``websockets``
+     - :ref:`websockets`
 
 
 .. _intro-install-platform-notes:

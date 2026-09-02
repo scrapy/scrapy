@@ -234,7 +234,14 @@ class RedirectMiddleware(BaseRedirectMiddleware):
                 redirected_url = urljoin(redirected_url, f"#{fragment}")
 
         redirected = self._build_redirect_request(request, response, url=redirected_url)
-        if urlparse_cached(redirected).scheme not in {"http", "https"}:
+        # A redirect may not take a request out of its protocol family, so that
+        # e.g. an HTTP request cannot end up downloaded as a local file, and the
+        # callback of a WebSocket request always gets a WebSocket connection.
+        if urlparse_cached(request).scheme in {"ws", "wss"}:
+            allowed_schemes = {"ws", "wss"}
+        else:
+            allowed_schemes = {"http", "https"}
+        if urlparse_cached(redirected).scheme not in allowed_schemes:
             return response
 
         if (response.status in {301, 302} and request.method == "POST") or (

@@ -194,6 +194,12 @@ class Response(object_ref):
             cls = self.__class__
         return cls(*args, **kwargs)
 
+    async def _release(self) -> None:
+        """Free any resource that this response holds.
+
+        The scraper calls this once it is done with the response.
+        """
+
     def urljoin(self, url: str) -> str:
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""
