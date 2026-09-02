@@ -169,6 +169,7 @@ __all__ = [
     "PERIODIC_LOG_STATS",
     "PERIODIC_LOG_TIMING_ENABLED",
     "RANDOMIZE_DOWNLOAD_DELAY",
+    "REACTORLAG_WARNING_THRESHOLD",
     "REACTOR_THREADPOOL_MAXSIZE",
     "REDIRECT_ENABLED",
     "REDIRECT_MAX_TIMES",
@@ -361,6 +362,7 @@ EXTENSIONS_BASE = {
     "scrapy.extensions.spiderstate.SpiderState": 0,
     "scrapy.extensions.throttle.AutoThrottle": 0,
     "scrapy.extensions.remote_control.RemoteControl": 0,
+    "scrapy.extensions.reactorlag.ReactorLagMonitor": 0,
 }
 
 FEEDS: dict[str | Path, dict[str, Any]] = {}
@@ -500,6 +502,8 @@ PERIODIC_LOG_STATS = None
 PERIODIC_LOG_TIMING_ENABLED = False
 
 RANDOMIZE_DOWNLOAD_DELAY = True
+
+REACTORLAG_WARNING_THRESHOLD = 10.0
 
 REACTOR_THREADPOOL_MAXSIZE = 10
 

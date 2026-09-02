@@ -80,6 +80,10 @@ CPU
     is the ceiling; a process sitting at 100% of a core is CPU-bound no matter
     how many cores the machine has.
 
+    The :ref:`reactor lag monitor <reactorlag>` logs a warning when CPU-bound
+    code blocks that single thread for too long; lower
+    :setting:`REACTORLAG_WARNING_THRESHOLD` to catch shorter stalls.
+
     Use a sampling profiler, such as py-spy_, to find out which code is
     spending that CPU. :ref:`Selectors <topics-selectors>` and item pipelines
     are the usual answer.

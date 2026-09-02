@@ -1853,6 +1853,25 @@ It is possible to change this setting per domain by using
 
 .. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
+.. setting:: REACTORLAG_WARNING_THRESHOLD
+
+REACTORLAG_WARNING_THRESHOLD
+----------------------------
+
+Default: ``10.0``
+
+Scope: ``scrapy.extensions.reactorlag.ReactorLagMonitor``
+
+The number of seconds that the reactor loop may take to run an iteration
+before a warning is logged. CPU-bound code running in a callback, such as a
+spider callback, blocks the reactor loop and delays every other pending
+callback and I/O operation, including downloads, for as long as it runs.
+
+If zero, the extension is disabled. Move CPU-bound code to a thread with
+:func:`scrapy.utils.asyncio.run_in_thread` to avoid triggering this warning.
+
+See :ref:`reactorlag`.
+
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 
 REACTOR_THREADPOOL_MAXSIZE
