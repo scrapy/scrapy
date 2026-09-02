@@ -704,6 +704,13 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate, `brotli`_, `zstd`_)
    traffic to be sent/received from web sites.
 
+   .. versionchanged:: VERSION
+      When all ``Content-Encoding`` transfer encodings are decoded, the
+      original ``Content-Encoding`` header value is now preserved on the
+      response instead of being removed. Responses where at least one
+      encoding is unsupported (and therefore left undecoded) still carry
+      only the remaining, undecoded encodings in the header.
+
 .. _brotli: https://www.ietf.org/rfc/rfc7932.txt
 .. _zstd: https://www.ietf.org/rfc/rfc8478.txt
 
