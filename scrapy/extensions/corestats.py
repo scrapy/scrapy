@@ -1,7 +1,3 @@
-"""
-Extension for collecting core stats like items scraped and start/finish times
-"""
-
 from __future__ import annotations
 
 from datetime import datetime, timezone
