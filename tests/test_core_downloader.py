@@ -22,7 +22,7 @@ from twisted.web.client import (
 from twisted.web.client import Response as TxResponse
 
 from scrapy import Request, Spider
-from scrapy.core.downloader import Downloader, Slot, tls
+from scrapy.core.downloader import Downloader, tls
 from scrapy.core.downloader._idna_patch import (
     _install_twisted_idna_fallbacks,
     _safe_hostname_bytes,
@@ -63,12 +63,6 @@ def _twisted_idna_fallbacks() -> None:
     """The download handlers install these when built; the tests below exercise
     the patched Twisted helpers directly, so they need them installed too."""
     _install_twisted_idna_fallbacks()
-
-
-class TestSlot:
-    def test_repr(self):
-        slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
