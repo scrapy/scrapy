@@ -391,12 +391,13 @@ is ``True``.
 Logging settings
 ----------------
 
-**Logging settings** are settings that configure the global root logging
-handler installed by :func:`~scrapy.utils.log.configure_logging`.
+**Logging settings** are settings that configure logging process-wide, mostly
+through the global root logging handler installed by
+:func:`~scrapy.utils.log.configure_logging`.
 
-These settings can be defined from a spider. However, because only 1 root
-logging handler is active per process, these settings cannot use a different
-value per spider when :ref:`running multiple spiders in the same process
+These settings can be defined from a spider. However, because logging
+configuration is global, these settings cannot use a different value per
+spider when :ref:`running multiple spiders in the same process
 <run-multiple-spiders>`.
 
 These settings are:
@@ -408,6 +409,7 @@ These settings are:
 -   :setting:`LOG_FILE_APPEND`
 -   :setting:`LOG_FORMAT`
 -   :setting:`LOG_LEVEL`
+-   :setting:`LOG_LEVELS`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
 
@@ -1702,6 +1704,30 @@ Default: ``'DEBUG'``
 
 Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING,
 INFO, DEBUG. For more info see :ref:`topics-logging`.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
+
+.. setting:: LOG_LEVELS
+
+LOG_LEVELS
+----------
+
+Default: ``{}``
+
+.. versionadded:: VERSION
+
+Minimum level to log for specific loggers.
+
+It takes precedence over the levels that Scrapy sets by default::
+
+    {
+        "filelock": "ERROR",
+        "hpack": "ERROR",
+        "httpcore": "ERROR",
+        "httpx": "WARNING",
+        "scrapy": "DEBUG",
+        "twisted": "ERROR",
+    }
 
 .. note:: This is a :ref:`logging setting <logging-settings>`.
 
