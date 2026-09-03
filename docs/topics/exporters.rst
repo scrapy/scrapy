@@ -240,10 +240,15 @@ BaseItemExporter
       method (in your custom Item Exporters) if you want to control how a
       particular field or value will be serialized/exported.
 
+      .. versionchanged:: VERSION
+         Nested items, and lists of them, are now serialized recursively
+         using their own declared serializers, instead of unchanged.
+
       By default, this method looks for a serializer :ref:`declared in the item
       field <topics-exporters-serializers>` and returns the result of applying
-      that serializer to the value. If no serializer is found, it returns the
-      value unchanged.
+      that serializer to the value. If no serializer is found and the value is
+      a nested item, or a list of them, each of them is serialized the same
+      way; otherwise, the value is returned unchanged.
 
       :param field: the field being serialized. If the source :ref:`item object
           <item-types>` does not define field metadata, *field* is an empty
