@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import OpenSSL.SSL
 import pytest
@@ -67,8 +67,94 @@ def _twisted_idna_fallbacks() -> None:
 
 class TestSlot:
     def test_repr(self):
-        slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
+        slot = Slot(concurrency=8, delay=0.1, jitter=0.5)
+        assert repr(slot) == "Slot(concurrency=8, delay=0.1, jitter=0.5)"
+
+    def test_download_delay_without_jitter(self):
+        slot = Slot(concurrency=8, delay=2.0, jitter=0)
+        assert slot.download_delay() == 2.0
+
+    def test_download_delay_with_jitter(self):
+        slot = Slot(concurrency=8, delay=2.0, jitter=0.25)
+        assert all(1.5 <= slot.download_delay() <= 2.5 for _ in range(100))
+
+    def test_download_delay_with_jitter_above_one(self):
+        slot = Slot(concurrency=8, delay=2.0, jitter=3.0)
+        assert all(slot.download_delay() >= 0 for _ in range(100))
+
+    @pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+    @pytest.mark.parametrize("positional", [False, True])
+    def test_deprecated_randomize_delay_param(
+        self, positional: bool, value: bool, expected: float
+    ):
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="The randomize_delay parameter of Slot is deprecated",
+        ):
+            slot = (
+                Slot(8, 2.0, value)
+                if positional
+                else Slot(concurrency=8, delay=2.0, randomize_delay=value)
+            )
+        assert slot.jitter == expected
+
+    @pytest.mark.parametrize(("jitter", "expected"), [(0, False), (0.2, True)])
+    def test_deprecated_randomize_delay(self, jitter: float, expected: bool):
+        slot = Slot(concurrency=8, delay=2.0, jitter=jitter)
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="Slot.randomize_delay is deprecated"
+        ):
+            assert slot.randomize_delay is expected
+
+    @pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+    def test_deprecated_randomize_delay_setter(self, value: bool, expected: float):
+        slot = Slot(concurrency=8, delay=2.0, jitter=0.2)
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="Slot.randomize_delay is deprecated"
+        ):
+            slot.randomize_delay = value
+        assert slot.jitter == expected
+
+
+class TestJitterSetting:
+    @staticmethod
+    def _jitter(**settings: Any) -> float:
+        crawler = get_crawler(settings_dict=settings)
+        downloader = Downloader(crawler)
+        downloader.close()
+        return downloader._jitter
+
+    def test_default(self):
+        assert self._jitter() == 0.5
+
+    @pytest.mark.parametrize(("value", "expected"), [(0, 0.0), ("0.2", 0.2), (1, 1.0)])
+    def test_value(self, value: Any, expected: float):
+        assert self._jitter(DOWNLOAD_DELAY_JITTER=value) == pytest.approx(expected)
+
+    @pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+    def test_deprecated_setting(self, value: bool, expected: float):
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="The RANDOMIZE_DOWNLOAD_DELAY setting is deprecated",
+        ):
+            assert self._jitter(RANDOMIZE_DOWNLOAD_DELAY=value) == expected
+
+    @pytest.mark.parametrize(("jitter", "expected"), [(0, False), (0.2, True)])
+    def test_deprecated_downloader_attribute(self, jitter: float, expected: bool):
+        crawler = get_crawler(settings_dict={"DOWNLOAD_DELAY_JITTER": jitter})
+        downloader = Downloader(crawler)
+        downloader.close()
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="Downloader.randomize_delay is deprecated"
+        ):
+            assert downloader.randomize_delay is expected
+
+    def test_deprecated_setting_loses_on_tie(self):
+        with pytest.warns(ScrapyDeprecationWarning):
+            jitter = self._jitter(
+                RANDOMIZE_DOWNLOAD_DELAY=False, DOWNLOAD_DELAY_JITTER=0.2
+            )
+        assert jitter == pytest.approx(0.2)
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
