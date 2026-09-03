@@ -957,6 +957,32 @@ class TestHttpBase(ABC):
                 "The 'bindaddress' request meta key is not supported by" in caplog.text
             )
 
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="127.0.0.2 is not available on macOS by default",
+    )
+    @coroutine_test
+    async def test_download_bind_address_meta_pool_reuse(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # A pooled connection opened for one bindaddress must not be reused
+        # for a request with a different bindaddress.
+        url = mockserver.url("/client-ip", is_secure=self.is_secure)
+        async with self.get_dh() as download_handler:
+            response1 = await download_handler.download_request(
+                Request(url, meta={"bindaddress": "127.0.0.1"})
+            )
+            response2 = await download_handler.download_request(
+                Request(url, meta={"bindaddress": "127.0.0.2"})
+            )
+        if self.handler_supports_bindaddress_meta:
+            assert response1.body == b"127.0.0.1"
+            assert response2.body == b"127.0.0.2"
+        else:
+            assert (
+                "The 'bindaddress' request meta key is not supported by" in caplog.text
+            )
+
     @coroutine_test
     async def test_verbatim_url(self, mockserver: MockServer) -> None:
         # Square brackets are encoded by safe_url_string (w3lib).
