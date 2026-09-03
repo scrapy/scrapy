@@ -1288,6 +1288,10 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. automethod:: Response.to_dict
+
+    .. automethod:: Response.from_dict
+
 
 .. _topics-request-response-ref-response-subclasses:
 
@@ -1478,3 +1482,9 @@ JsonResponse objects
     that is used when the response has a `JSON MIME type
     <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type`
     header.
+
+
+Other functions related to responses
+====================================
+
+.. autofunction:: scrapy.utils.response.response_from_dict
