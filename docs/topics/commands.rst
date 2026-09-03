@@ -646,6 +646,50 @@ bench
 
 Run a quick benchmark test. :ref:`benchmarking`.
 
+.. command:: complete
+
+complete
+--------
+
+* Syntax: ``scrapy complete <bash|fish|zsh>``
+* Requires project: *no*
+
+.. versionadded:: VERSION
+
+Print a shell completion script. See :ref:`completion`.
+
+.. _completion:
+
+Shell completion
+================
+
+.. versionadded:: VERSION
+
+The :command:`complete` command prints a completion script for Bash, fish or
+Zsh.
+
+For Bash, add the following to your ``~/.bashrc``:
+
+.. code-block:: bash
+
+    eval "$(scrapy complete bash)"
+
+For Zsh, add the following to your ``~/.zshrc``, after ``compinit`` is called:
+
+.. code-block:: bash
+
+    eval "$(scrapy complete zsh)"
+
+For fish:
+
+.. code-block:: bash
+
+    scrapy complete fish > ~/.config/fish/completions/scrapy.fish
+
+Completion candidates are computed by Scrapy every time you press :kbd:`Tab`,
+so they cover the spiders, settings and templates of the project you are in, as
+well as any :ref:`custom command <custom-commands>`.
+
 .. _topics-commands-crawlerprocess:
 
 Commands that run a crawl
@@ -686,6 +730,8 @@ project-level setting is set to :ref:`the asyncio reactor <install-asyncio>`
 In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
 ``True`` (at the project level or via the command line) so that Scrapy uses
 :class:`~scrapy.crawler.CrawlerProcess` which supports all reactors.
+
+.. _custom-commands:
 
 Custom project commands
 =======================
@@ -769,6 +815,29 @@ and overriding specific methods. Here's what you need to know:
 For real examples, see the built-in Scrapy commands in the `scrapy/commands`_ directory.
 
 .. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
+
+To make a command support :ref:`shell completion <completion>`, override
+:meth:`~scrapy.commands.ScrapyCommand.complete_argument`,
+:meth:`~scrapy.commands.ScrapyCommand.complete_option` or both:
+
+.. code-block:: python
+
+    from collections.abc import Iterable
+
+    from scrapy.commands import ScrapyCommand
+
+
+    class Command(ScrapyCommand):
+        def complete_argument(self, args: list[str]) -> Iterable[str]:
+            return ["report", "summary"] if not args else []
+
+        def complete_option(self, dest: str) -> Iterable[str]:
+            if dest == "format":
+                return ["csv", "json"]
+            return super().complete_option(dest)
+
+Candidates are filtered by the word being typed, and options that define
+``choices`` are completed without any code on your side.
 
 .. autoclass:: scrapy.commands.ScrapyCommand
    :members:
