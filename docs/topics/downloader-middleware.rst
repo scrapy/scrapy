@@ -811,6 +811,9 @@ RedirectMiddleware
 
    This middleware handles redirection of requests based on response status.
 
+Requests are redirected to the URL from the ``Location`` header of responses
+whose status is in :setting:`REDIRECT_HTTP_CODES`.
+
 .. reqmeta:: redirect_urls
 
 The urls which the request goes through (while being redirected) can be found
@@ -844,12 +847,20 @@ The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
 * :setting:`REDIRECT_ENABLED`
+* :setting:`REDIRECT_HTTP_CODES`
 * :setting:`REDIRECT_MAX_TIMES`
 
 .. reqmeta:: dont_redirect
 
 If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_redirect``
 key set to True, the request will be ignored by this middleware.
+
+.. reqmeta:: redirect_http_codes
+
+.. versionadded:: VERSION
+
+The ``redirect_http_codes`` key of :attr:`Request.meta <scrapy.Request.meta>`
+overrides the :setting:`REDIRECT_HTTP_CODES` setting for a single request.
 
 If you want to handle some redirect status codes in your spider, you can
 specify these in the ``handle_httpstatus_list`` spider attribute.
@@ -915,6 +926,53 @@ REDIRECT_ENABLED
 Default: ``True``
 
 Whether the Redirect middleware will be enabled.
+
+.. setting:: REDIRECT_HTTP_CODES
+
+REDIRECT_HTTP_CODES
+^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: VERSION
+
+Default: ``[301, 302, 303, 307, 308]``
+
+Response status codes whose ``Location`` header is followed.
+
+The default value contains the status codes for which the HTTP standard defines
+redirection handling. Add other status codes that may report a ``Location``
+header to have it followed as well.
+
+For example, an HTTP 201 (Created) response reports that the request created a
+resource, and its ``Location`` header identifies that resource. Because that is
+not a redirection target, it is not followed by default, matching the behavior
+of web browsers. However, servers that create resources on the fly, e.g. to
+serve an image that they generate on demand, sometimes send an empty 201
+response and expect a separate request for the ``Location`` URL:
+
+.. code-block:: python
+
+    REDIRECT_HTTP_CODES = [201, 301, 302, 303, 307, 308]
+
+Status codes other than the ones in the default value get conservative
+handling, because their redirection semantics are unknown:
+
+-   Their ``Location`` header is only followed if the response has an empty
+    body, as a response that carries a resource would otherwise be discarded.
+
+-   They are followed like 303 responses, i.e. with a GET request without a
+    body, unless the original request used the GET or HEAD method, which is
+    kept.
+
+Use the :reqmeta:`redirect_http_codes` :attr:`Request.meta
+<scrapy.Request.meta>` key to override this setting for a single request, and
+:meth:`Response.follow_redirect() <scrapy.http.Response.follow_redirect>` to
+follow a ``Location`` header from a spider callback instead.
+
+To stop following a status code, you can also use the ``handle_httpstatus_list``
+spider attribute or :attr:`Request.meta <scrapy.Request.meta>` key, which
+additionally lets your spider callbacks receive the affected responses.
+
+For media pipelines, see also :setting:`MEDIA_ALLOW_REDIRECTS`.
 
 .. setting:: REDIRECT_MAX_TIMES
 
