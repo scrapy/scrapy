@@ -432,7 +432,8 @@ specifies the delay in number of days:
     # 30 days of delay for images expiration
     IMAGES_EXPIRES = 30
 
-The default value for both settings is 90 days.
+The default value for both settings is 90 days. A negative value disables
+expiration, i.e. files are never re-downloaded once fetched.
 
 If you have pipeline that subclasses FilesPipeline and you'd like to have
 different setting for it you can set setting keys preceded by uppercase
