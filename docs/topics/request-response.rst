@@ -845,8 +845,7 @@ Those are:
 * :reqmeta:`ftp_password`
 * :reqmeta:`ftp_user`
 * :reqmeta:`give_up_log_level`
-* :reqmeta:`handle_httpstatus_all`
-* :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`handle_http_codes`
 * :reqmeta:`http_auth_domain`
 * :reqmeta:`http_pass`
 * :reqmeta:`http_user`

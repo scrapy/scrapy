@@ -77,10 +77,9 @@ class Command(ScrapyCommand):
         )
         # by default, let the framework handle redirects,
         # i.e. command handles all codes expect 3xx
-        if not opts.no_redirect:
-            request.meta["handle_httpstatus_list"] = SequenceExclude(range(300, 400))
-        else:
-            request.meta["handle_httpstatus_all"] = True
+        request.meta["handle_http_codes"] = (
+            True if opts.no_redirect else SequenceExclude(range(300, 400))
+        )
 
         spidercls: type[Spider] = DefaultSpider
         assert self.crawler_process

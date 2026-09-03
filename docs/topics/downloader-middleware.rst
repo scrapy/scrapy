@@ -851,8 +851,9 @@ settings (see the settings documentation for more info):
 If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_redirect``
 key set to True, the request will be ignored by this middleware.
 
-If you want to handle some redirect status codes in your spider, you can
-specify these in the ``handle_httpstatus_list`` spider attribute.
+If you want to handle some redirect status codes in your spider, declare them
+through the :setting:`HANDLE_HTTP_CODES` setting or the
+:reqmeta:`handle_http_codes` request meta key.
 
 For example, if you want the redirect middleware to ignore 301 and 302
 responses (and pass them through to your spider) you can do this:
@@ -860,13 +861,7 @@ responses (and pass them through to your spider) you can do this:
 .. code-block:: python
 
     class MySpider(CrawlSpider):
-        handle_httpstatus_list = [301, 302]
-
-The ``handle_httpstatus_list`` key of :attr:`Request.meta
-<scrapy.Request.meta>` can also be used to specify which response codes to
-allow on a per-request basis. You can also set the meta key
-``handle_httpstatus_all`` to ``True`` if you want to allow any response code
-for a request.
+        custom_settings = {"HANDLE_HTTP_CODES": [301, 302]}
 
 To decide whether to follow a redirect based on its target URL, subclass
 :class:`RedirectMiddleware` and override
