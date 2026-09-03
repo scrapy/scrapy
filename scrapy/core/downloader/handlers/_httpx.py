@@ -184,7 +184,7 @@ class HttpxDownloadHandler(_Base):
 
     @staticmethod
     def _extract_headers(response: httpx.Response) -> Headers:
-        return Headers(response.headers.multi_items())
+        return Headers(response.headers.raw)
 
     @staticmethod
     def _build_base_response_args(
