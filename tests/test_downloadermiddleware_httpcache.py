@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest import mock
+from urllib.parse import urlparse
 
 import pytest
 
@@ -17,7 +18,7 @@ from scrapy.exceptions import IgnoreRequest
 from scrapy.extensions.httpcache import DummyPolicy
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
-from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -759,3 +760,80 @@ class TestFilesystemStorageGzipWithDummyPolicy(TestFilesystemStorageWithDummyPol
         # A spider killed while writing a gzip file leaves it truncated.
         body_path = Path(storage._get_request_path(spider, request), "response_body")
         body_path.write_bytes(body_path.read_bytes()[:-5])
+
+
+class ScopeTestMixin(TestBase):
+    policy_class = "scrapy.extensions.httpcache.DummyPolicy"
+
+    @contextmanager
+    def _spider_storage(self, crawler: Crawler, name: str) -> Generator[Any]:
+        spider = crawler._create_spider(name)
+        storage = load_object(self.storage_class)(crawler.settings)
+        storage.open_spider(spider)
+        try:
+            yield storage, spider
+        finally:
+            storage.close_spider(spider)
+
+    def _cross_spider_retrieval(self, scope: str) -> Any:
+        # Storages are opened one at a time because a DBM database shared by
+        # two spiders does not support concurrent access.
+        with self._get_crawler(HTTPCACHE_SCOPE=scope) as crawler:
+            with self._spider_storage(crawler, "a") as (storage, spider):
+                storage.store_response(spider, self.request, self.response)
+            with self._spider_storage(crawler, "b") as (storage, spider):
+                return storage.retrieve_response(spider, self.request)
+
+    def test_spider_scope(self):
+        assert self._cross_spider_retrieval("spider") is None
+
+    def test_no_scope(self):
+        assert self._cross_spider_retrieval("none") is not None
+
+    def test_unknown_scope(self):
+        with (
+            self._get_crawler(HTTPCACHE_SCOPE="unknown") as crawler,
+            pytest.raises(ValueError, match="Unsupported HTTPCACHE_SCOPE"),
+        ):
+            load_object(self.storage_class)(crawler.settings)
+
+
+class TestFilesystemStorageScope(ScopeTestMixin):
+    storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+
+    def test_domain_scope(self):
+        assert self._cross_spider_retrieval("domain") is not None
+
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            ("http://user:pass@WWW.Example.com:8080/", "www.example.com"),
+            pytest.param(
+                "http://[::1]/",
+                "%3A%3A1",
+                marks=pytest.mark.skipif(
+                    urlparse(Request("http://[::1]/").url).hostname != "::1",
+                    reason="w3lib strips the brackets of IPv6 hosts",
+                ),
+            ),
+            ("file:///tmp/t.txt", "_"),
+        ],
+    )
+    def test_domain_scope_path(self, url, expected):
+        with (
+            self._get_crawler(HTTPCACHE_SCOPE="domain") as crawler,
+            self._spider_storage(crawler, "a") as (storage, spider),
+        ):
+            path = Path(storage._get_request_path(spider, Request(url)))
+            assert path.relative_to(self.tmpdir).parts[0] == expected
+
+
+class TestDbmStorageScope(ScopeTestMixin):
+    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+
+    def test_domain_scope_unsupported(self):
+        with (
+            self._get_crawler(HTTPCACHE_SCOPE="domain") as crawler,
+            pytest.raises(ValueError, match="Unsupported HTTPCACHE_SCOPE"),
+        ):
+            load_object(self.storage_class)(crawler.settings)
