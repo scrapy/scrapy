@@ -28,7 +28,11 @@ class Command(BaseRunSpiderCommand):
         spname = args[0]
 
         assert self.crawler_process
-        self.crawler_process.crawl(self._create_crawler(spname), **opts.spargs)
+        crawler = self._create_crawler(spname)
+        self.crawler_process.crawl(crawler, **opts.spargs)
         self.crawler_process.start()
-        if self.crawler_process.bootstrap_failed:
+        if (
+            self.crawler_process.bootstrap_failed
+            or crawler.stats.get_value("finish_reason") == "closespider_errorcount"
+        ):
             self.exitcode = 1
