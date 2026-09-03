@@ -23,6 +23,7 @@ dependencies = [
     "queuelib>=1.6.1",
     "service_identity>=24.2.0",
     "tldextract",
+    "tomli>=2.0.1; python_version < '3.11'",
     "w3lib>=2.1.1",
     "zope.interface>=5.1.0",
     # Platform-specific dependencies
