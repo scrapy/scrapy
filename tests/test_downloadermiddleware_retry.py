@@ -731,3 +731,27 @@ class TestGetRetryRequest:
             f"{stats_key}/reason_count/{expected_reason}",
         ):
             assert spider.crawler.stats.get_value(stat) == 1
+
+    def test_flags(self, caplog: pytest.LogCaptureFixture) -> None:
+        flags = ["foo", "bar"]
+        request = Request("https://example.com", flags=flags)
+        spider = self.get_spider()
+        with caplog.at_level(logging.DEBUG):
+            get_retry_request(request, spider=spider)
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.DEBUG,
+            f"Retrying {request} {flags} (failed 1 times): unspecified",
+        ) in caplog.record_tuples
+
+    def test_flags_max_retries_reached(self, caplog: pytest.LogCaptureFixture) -> None:
+        flags = ["foo", "bar"]
+        request = Request("https://example.com", flags=flags)
+        spider = self.get_spider()
+        with caplog.at_level(logging.DEBUG):
+            get_retry_request(request, spider=spider, max_retry_times=0)
+        assert (
+            "scrapy.downloadermiddlewares.retry",
+            logging.ERROR,
+            f"Gave up retrying {request} {flags} (failed 1 times): unspecified",
+        ) in caplog.record_tuples
