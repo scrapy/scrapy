@@ -17,6 +17,7 @@ from typing import (
     Concatenate,
     Generic,
     ParamSpec,
+    Protocol,
     TypeVar,
     cast,
     overload,
@@ -34,6 +35,16 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
     from twisted.python.failure import Failure
+
+    from scrapy.http.request import Request
+
+    class FailureWithRequest(Protocol):
+        """A :class:`~twisted.python.failure.Failure` that has had a
+        *request* attribute attached, identifying the request whose
+        processing raised it.
+        """
+
+        request: Request
 
 
 _T = TypeVar("_T")
