@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 import sys
 import warnings
 from io import StringIO
@@ -19,6 +18,7 @@ from scrapy.utils.log import (
     SpiderLoggerAdapter,
     StreamLogger,
     TopLevelFormatter,
+    _get_handler,
     _uninstall_scrapy_root_handler,
     configure_logging,
     failure_to_exc_info,
@@ -74,6 +74,32 @@ class TestTopLevelFormatter:
         logger = logging.getLogger("different")
         logger.warning("test log msg")
         assert ("different", logging.WARNING, "test log msg") in caplog.record_tuples
+
+
+class TestSpiderPlaceholderInLogFormat:
+    def _log(self, log_format: str, extra: dict[str, Any] | None) -> str:
+        stream = StringIO()
+        settings = Settings({"LOG_FORMAT": log_format})
+        handler = _get_handler(settings)
+        assert isinstance(handler, logging.StreamHandler)
+        handler.stream = stream
+        logger = logging.getLogger("test_spider_placeholder")
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+        try:
+            logger.info("test log msg", extra=extra)
+        finally:
+            logger.removeHandler(handler)
+        return stream.getvalue()
+
+    def test_default_placeholder(self) -> None:
+        assert self._log("%(spider)s %(message)s", None) == "- test log msg\n"
+
+    def test_spider_name(self) -> None:
+        spider = LogSpider()
+        assert self._log("%(spider)s %(message)s", {"spider": spider}) == (
+            "log_spider test log msg\n"
+        )
 
 
 class TestLogCounterHandler:
@@ -284,8 +310,6 @@ class TestLogging:
 
 
 class TestLoggingWithExtra:
-    regex_pattern = re.compile(r"^<LogSpider\s'log_spider'\sat\s[^>]+>$")
-
     @pytest.fixture
     def log_stream(self) -> StringIO:
         return StringIO()
@@ -318,7 +342,7 @@ class TestLoggingWithExtra:
 
         assert log_contents["levelname"] == "DEBUG"
         assert log_contents["message"] == log_message
-        assert self.regex_pattern.match(log_contents["spider"])
+        assert log_contents["spider"] == "log_spider"
         assert log_contents["important_info"] == extra["important_info"]
 
     def test_info_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
@@ -330,7 +354,7 @@ class TestLoggingWithExtra:
 
         assert log_contents["levelname"] == "INFO"
         assert log_contents["message"] == log_message
-        assert self.regex_pattern.match(log_contents["spider"])
+        assert log_contents["spider"] == "log_spider"
         assert log_contents["important_info"] == extra["important_info"]
 
     def test_warning_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
@@ -342,7 +366,7 @@ class TestLoggingWithExtra:
 
         assert log_contents["levelname"] == "WARNING"
         assert log_contents["message"] == log_message
-        assert self.regex_pattern.match(log_contents["spider"])
+        assert log_contents["spider"] == "log_spider"
         assert log_contents["important_info"] == extra["important_info"]
 
     def test_error_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
@@ -354,7 +378,7 @@ class TestLoggingWithExtra:
 
         assert log_contents["levelname"] == "ERROR"
         assert log_contents["message"] == log_message
-        assert self.regex_pattern.match(log_contents["spider"])
+        assert log_contents["spider"] == "log_spider"
         assert log_contents["important_info"] == extra["important_info"]
 
     def test_critical_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
@@ -366,7 +390,7 @@ class TestLoggingWithExtra:
 
         assert log_contents["levelname"] == "CRITICAL"
         assert log_contents["message"] == log_message
-        assert self.regex_pattern.match(log_contents["spider"])
+        assert log_contents["spider"] == "log_spider"
         assert log_contents["important_info"] == extra["important_info"]
 
     def test_overwrite_spider_extra(
@@ -380,7 +404,7 @@ class TestLoggingWithExtra:
 
         assert log_contents["levelname"] == "ERROR"
         assert log_contents["message"] == log_message
-        assert self.regex_pattern.match(log_contents["spider"])
+        assert log_contents["spider"] == "log_spider"
         assert log_contents["important_info"] == extra["important_info"]
 
 
