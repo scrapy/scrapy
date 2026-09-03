@@ -106,6 +106,23 @@ class BaseRedirectMiddleware:
                 reason,
             ]
             redirected.dont_filter = request.dont_filter
+            if not redirected.dont_filter and self._is_redirect_chain_duplicate(
+                redirected, request
+            ):
+                # The dupe filter marks a request's fingerprint as seen as
+                # soon as it is scheduled, before its response (and any
+                # resulting redirect) is known. If this redirect chain loops
+                # back to a URL that fingerprints the same as an earlier
+                # request in this *same* chain -- a literal self-redirect, a
+                # redirect whose query string is just reordered (which the
+                # fingerprinter canonicalizes away), or a longer
+                # A -> B -> C -> A style loop -- the redirected request would
+                # otherwise be treated as an already-seen duplicate and
+                # silently dropped instead of followed. Bypass the filter for
+                # that specific case only, so normal cross-request dedup
+                # (unrelated pages redirecting to the same canonical URL)
+                # still works as before.
+                redirected.dont_filter = True
             redirected.priority = request.priority + self.priority_adjust
             logger.debug(
                 "Redirecting (%(reason)s) to %(redirected)s from %(request)s",
@@ -119,6 +136,24 @@ class BaseRedirectMiddleware:
             extra={"spider": self.crawler.spider},
         )
         raise IgnoreRequest("max redirections reached")
+
+    def _is_redirect_chain_duplicate(
+        self, redirected: Request, request: Request
+    ) -> bool:
+        """Whether *redirected* fingerprints the same as *request* or as any
+        earlier request in the same redirect chain as *request*.
+
+        The set of fingerprints accumulated so far in the chain is carried
+        forward in ``request.meta["redirect_fingerprints"]``, bounded by
+        :setting:`REDIRECT_MAX_TIMES` since it grows by at most one entry per
+        hop.
+        """
+        assert self.crawler.request_fingerprinter
+        fingerprint = self.crawler.request_fingerprinter.fingerprint
+        seen_fingerprints = set(request.meta.get("redirect_fingerprints", ()))
+        seen_fingerprints.add(fingerprint(request))
+        redirected.meta["redirect_fingerprints"] = seen_fingerprints
+        return fingerprint(redirected) in seen_fingerprints
 
     def _build_redirect_request(
         self, source_request: Request, response: Response, *, url: str, **kwargs: Any
