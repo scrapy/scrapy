@@ -278,6 +278,22 @@ class TestShowOrSkipMessages:
         assert "Dropped: Ignoring item" in caplog.text
 
     @coroutine_test
+    async def test_item_in_extra(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        crawler = get_crawler(ItemSpider, self.base_settings)
+        with caplog.at_level(logging.DEBUG):
+            await crawler.crawl_async(mockserver=mockserver)
+        scraped_record = next(
+            r for r in caplog.records if r.message.startswith("Scraped from")
+        )
+        dropped_record = next(
+            r for r in caplog.records if r.message.startswith("Dropped: Ignoring item")
+        )
+        assert hasattr(scraped_record, "item")
+        assert isinstance(cast("Any", dropped_record).item, (Item, dict))
+
+    @coroutine_test
     async def test_skip_messages(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
