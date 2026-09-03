@@ -401,6 +401,7 @@ value per spider when :ref:`running multiple spiders in the same process
 
 These settings are:
 
+-   :setting:`LOG_COLOR`
 -   :setting:`LOG_DATEFORMAT`
 -   :setting:`LOG_ENABLED`
 -   :setting:`LOG_ENCODING`
@@ -1611,6 +1612,22 @@ Default: ``None``
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
+
+.. setting:: LOG_COLOR
+
+LOG_COLOR
+---------
+
+Default: ``True``
+
+Whether to colorize log output by log level when logging to a terminal.
+Requires the ``color`` extra:
+
+.. code-block:: bash
+
+    pip install scrapy[color]
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_ENABLED
 

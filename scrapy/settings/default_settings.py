@@ -138,6 +138,7 @@ __all__ = [
     "ITEM_PROCESSOR",
     "JOBDIR",
     "LOGSTATS_INTERVAL",
+    "LOG_COLOR",
     "LOG_DATEFORMAT",
     "LOG_ENABLED",
     "LOG_ENCODING",
@@ -450,6 +451,7 @@ ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
 
+LOG_COLOR = True
 LOG_ENABLED = True
 LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_ENCODING = "utf-8"
