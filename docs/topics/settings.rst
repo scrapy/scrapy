@@ -407,6 +407,7 @@ These settings are:
 -   :setting:`LOG_FILE`
 -   :setting:`LOG_FILE_APPEND`
 -   :setting:`LOG_FORMAT`
+-   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
@@ -1692,6 +1693,20 @@ LOG_FORMATTER
 Default: :class:`scrapy.logformatter.LogFormatter`
 
 The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
+
+.. setting:: LOG_INSTALL_ROOT_HANDLER
+
+LOG_INSTALL_ROOT_HANDLER
+-------------------------
+
+Default: ``True``
+
+Whether to install a handler for the root logger, configured according to the
+other :ref:`logging settings <logging-settings>`. Set this to ``False`` to
+manage the root logger yourself, e.g. from a custom command or from a
+:file:`settings.py` module executed before Scrapy configures logging.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_LEVEL
 

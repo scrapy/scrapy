@@ -96,7 +96,7 @@ DEFAULT_LOGGING = {
 
 def configure_logging(
     settings: Settings | dict[str, Any] | None = None,
-    install_root_handler: bool = True,
+    install_root_handler: bool | None = None,
 ) -> None:
     """
     Initialize logging defaults for Scrapy.
@@ -106,7 +106,7 @@ def configure_logging(
     :type settings: dict, :class:`~scrapy.settings.Settings` object or ``None``
 
     :param install_root_handler: whether to install root logging handler
-        (default: True)
+        (default: the :setting:`LOG_INSTALL_ROOT_HANDLER` setting)
     :type install_root_handler: bool
 
     This function does:
@@ -115,12 +115,25 @@ def configure_logging(
     - Assign DEBUG and ERROR level to Scrapy and Twisted loggers respectively
     - Route stdout to log if LOG_STDOUT setting is True
 
-    When ``install_root_handler`` is True (default), this function also
-    creates a handler for the root logger according to given settings
-    (see :ref:`topics-logging-settings`). You can override default options
-    using ``settings`` argument. When ``settings`` is empty or None, defaults
-    are used.
+    When installing a root logging handler, this function also creates a
+    handler for the root logger according to given settings (see
+    :ref:`topics-logging-settings`). You can override default options using
+    ``settings`` argument. When ``settings`` is empty or None, defaults are
+    used.
     """
+    if isinstance(settings, dict) or settings is None:
+        settings = Settings(settings)
+
+    if install_root_handler is None:
+        install_root_handler = settings.getbool("LOG_INSTALL_ROOT_HANDLER")
+    else:
+        warnings.warn(
+            "The install_root_handler parameter is deprecated. Set the "
+            "LOG_INSTALL_ROOT_HANDLER setting instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
     if not sys.warnoptions:
         # Route warnings through python logging
         logging.captureWarnings(True)
@@ -129,9 +142,6 @@ def configure_logging(
     observer.start()
 
     dictConfig(DEFAULT_LOGGING)
-
-    if isinstance(settings, dict) or settings is None:
-        settings = Settings(settings)
 
     if settings.getbool("LOG_STDOUT"):
         sys.stdout = StreamLogger(logging.getLogger("stdout"))
