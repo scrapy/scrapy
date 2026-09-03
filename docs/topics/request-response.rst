@@ -827,6 +827,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
 * :reqmeta:`depth`
 * :reqmeta:`dont_cache`

@@ -269,14 +269,16 @@ class DbmCacheStorage:
         self.db.close()
 
     def retrieve_response(self, spider: Spider, request: Request) -> Response | None:
-        data = self._read_data(spider, request)
-        if data is None:
+        result = self._read_data(spider, request)
+        if result is None:
             return None  # not cached
+        data, ts = result
         url = data["url"]
         status = data["status"]
         headers = Headers(data["headers"])
         body = data["body"]
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
+        request.meta["cache_timestamp"] = ts
         return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
@@ -292,18 +294,21 @@ class DbmCacheStorage:
         self.db[f"{key}_data"] = pickle.dumps(data, protocol=4)
         self.db[f"{key}_time"] = str(time())
 
-    def _read_data(self, spider: Spider, request: Request) -> dict[str, Any] | None:
+    def _read_data(
+        self, spider: Spider, request: Request
+    ) -> tuple[dict[str, Any], float] | None:
         key = self._fingerprinter.fingerprint(request).hex()
         db = self.db
         tkey = f"{key}_time"
         if tkey not in db:
             return None  # not found
 
-        ts = db[tkey]
-        if 0 < self.expiration_secs < time() - float(ts):
+        ts = float(db[tkey])
+        if 0 < self.expiration_secs < time() - ts:
             return None  # expired
 
-        return cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
+        data = cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
+        return data, ts
 
 
 class FilesystemCacheStorage:
@@ -344,6 +349,7 @@ class FilesystemCacheStorage:
         status = metadata["status"]
         headers = Headers(headers_raw_to_dict(rawheaders))
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
+        request.meta["cache_timestamp"] = metadata["timestamp"]
         return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(

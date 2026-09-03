@@ -381,6 +381,15 @@ HttpCacheMiddleware
 
     You can also avoid caching a response on every policy using :reqmeta:`dont_cache` meta key equals ``True``.
 
+    .. reqmeta:: cache_timestamp
+
+    .. versionadded:: VERSION
+
+    When a response comes from the cache, its :attr:`~scrapy.http.Response.meta`
+    exposes the :reqmeta:`cache_timestamp` key: the Unix timestamp of when the
+    response was stored, useful e.g. to interpret dates relative to the time
+    the page was downloaded rather than to the current time.
+
 .. module:: scrapy.extensions.httpcache
    :noindex:
 
@@ -533,6 +542,10 @@ defines the methods described below.
 
       :param request: the request to find cached response for
       :type request: :class:`~scrapy.Request` object
+
+      On a cache hit, set ``request.meta["cache_timestamp"]`` (see
+      :reqmeta:`cache_timestamp`) to the Unix timestamp of when the response
+      was stored.
 
     .. method:: store_response(spider, request, response)
 
