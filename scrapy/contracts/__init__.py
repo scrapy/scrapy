@@ -78,6 +78,14 @@ class Contract:
     """
 
     request_cls: type[Request] | None = None
+    generates_request: ClassVar[bool] = False
+    """Whether each usage of this contract in a batch produces its own
+    sample request, instead of adjusting a single, shared one.
+
+    :class:`~scrapy.contracts.default.UrlContract` is the only built-in
+    contract that sets this to ``True``, which is what allows a batch to
+    include more than one ``@url`` line.
+    """
     name: str
 
     def __init__(self, method: Callable[..., Any], *args: Any):
@@ -183,8 +191,11 @@ class ContractsManager:
 
         return methods
 
-    def extract_contracts(self, method: Callable[..., Any]) -> list[Contract]:
-        contracts: list[Contract] = []
+    def extract_contracts(self, method: Callable[..., Any]) -> list[list[Contract]]:
+        """Group the contracts of a callback docstring into batches, one per
+        blank line found after the first contract line.
+        """
+        batches: list[list[Contract]] = [[]]
         assert method.__doc__ is not None
         for line_ in method.__doc__.split("\n"):
             line = line_.strip()
@@ -196,16 +207,18 @@ class ContractsManager:
                 name, args = m.groups()
                 args = re.split(r"\s+", args)
 
-                contracts.append(self.contracts[name](method, *args))
+                batches[-1].append(self.contracts[name](method, *args))
+            elif not line and batches[-1]:
+                batches.append([])
 
-        return contracts
+        return [batch for batch in batches if batch]
 
-    def from_spider(self, spider: Spider, results: TestResult) -> list[Request | None]:
-        requests: list[Request | None] = []
+    def from_spider(self, spider: Spider, results: TestResult) -> list[Request]:
+        requests: list[Request] = []
         for method in self.tested_methods_from_spidercls(type(spider)):
             bound_method = getattr(spider, method)
             try:
-                requests.append(self.from_method(bound_method, results))
+                requests.extend(self.from_method(bound_method, results))
             except Exception:
                 case = _create_testcase(bound_method, "contract")
                 results.addError(case, sys.exc_info())
@@ -214,40 +227,63 @@ class ContractsManager:
 
     def from_method(
         self, method: Callable[..., Any], results: TestResult
-    ) -> Request | None:
-        contracts = self.extract_contracts(method)
-        if contracts:
-            request_cls = Request
+    ) -> list[Request]:
+        requests: list[Request] = []
+        for batch in self.extract_contracts(method):
+            requests.extend(self._requests_from_batch(batch, method, results))
+        return requests
+
+    def _requests_from_batch(
+        self,
+        contracts: list[Contract],
+        method: Callable[..., Any],
+        results: TestResult,
+    ) -> list[Request]:
+        request_cls = Request
+        for contract in contracts:
+            if contract.request_cls is not None:
+                request_cls = contract.request_cls
+
+        # calculate request args
+        arg_names, base_kwargs = get_spec(request_cls.__init__)
+        arg_names.remove("self")
+
+        # Don't filter requests to allow
+        # testing different callbacks on the same URL.
+        base_kwargs["dont_filter"] = True
+        base_kwargs["callback"] = method
+
+        # Contracts that opt into generating their own request (@url) each
+        # get their own request, built from every other contract in the
+        # batch; other batches only ever build a single, shared request.
+        generators = [contract for contract in contracts if contract.generates_request]
+
+        candidates: list[Contract | None] = list(generators) if generators else [None]
+
+        requests = []
+        for candidate in candidates:
+            kwargs = dict(base_kwargs)
             for contract in contracts:
-                if contract.request_cls is not None:
-                    request_cls = contract.request_cls
-
-            # calculate request args
-            args, kwargs = get_spec(request_cls.__init__)
-
-            # Don't filter requests to allow
-            # testing different callbacks on the same URL.
-            kwargs["dont_filter"] = True
-            kwargs["callback"] = method
-
-            for contract in contracts:
+                if contract in generators and contract is not candidate:
+                    continue
                 kwargs = contract.adjust_request_args(kwargs)
 
-            args.remove("self")
-
             # check if all positional arguments are defined in kwargs
-            if set(args).issubset(set(kwargs)):
-                request = request_cls(**kwargs)
+            if not set(arg_names).issubset(set(kwargs)):
+                continue
 
-                # execute pre and post hooks in order
-                for contract in reversed(contracts):
-                    request = contract.add_pre_hook(request, results)
-                for contract in contracts:
-                    request = contract.add_post_hook(request, results)
+            request = request_cls(**kwargs)
 
-                self._clean_req(request, method, results)
-                return request
-        return None
+            # execute pre and post hooks in order
+            for contract in reversed(contracts):
+                request = contract.add_pre_hook(request, results)
+            for contract in contracts:
+                request = contract.add_post_hook(request, results)
+
+            self._clean_req(request, method, results)
+            requests.append(request)
+
+        return requests
 
     def _clean_req(
         self, request: Request, method: Callable[..., Any], results: TestResult

@@ -45,7 +45,7 @@ class CheckSpider(scrapy.Spider):
     def parse(self, response, **cb_kwargs):
         \"\"\"
         @url data:,
-        {contracts}
+        {contracts.strip()}
         \"\"\"
         {parse_def}
         """,
