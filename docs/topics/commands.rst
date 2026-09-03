@@ -618,7 +618,15 @@ runspider
 
 Run the spider defined in the given Python file, without requiring a project.
 
-Supported options: the same as :command:`crawl`.
+If the file defines more than one spider, the last one is run, and a warning
+is logged. Use ``--spider`` to run a different one.
+
+Supported options: the same as :command:`crawl`, plus:
+
+* ``--spider=NAME``: run the spider with the given
+  :attr:`~scrapy.Spider.name`
+
+  .. versionadded:: VERSION
 
 Example usage::
 
