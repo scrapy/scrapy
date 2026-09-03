@@ -160,7 +160,8 @@ Memory usage extension
 
 .. class:: MemoryUsage
 
-.. note:: This extension does not work in Windows.
+.. note:: On Windows, this extension requires the ``memusage``
+   :ref:`extra <extras>`.
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 
