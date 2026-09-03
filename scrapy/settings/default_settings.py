@@ -92,6 +92,7 @@ __all__ = [
     "FEED_EXPORT_FIELDS",
     "FEED_EXPORT_INDENT",
     "FEED_FORMAT",
+    "FEED_MODE",
     "FEED_STORAGES",
     "FEED_STORAGES_BASE",
     "FEED_STORAGE_FTP_ACTIVE",
@@ -382,6 +383,7 @@ FEED_EXPORTERS_BASE = {
     "pickle": "scrapy.exporters.PickleItemExporter",
 }
 FEED_FORMAT = "jsonlines"
+FEED_MODE = None
 FEED_STORE_EMPTY = True
 FEED_STORAGES: dict[str, str] = {}
 FEED_STORAGES_BASE = {
