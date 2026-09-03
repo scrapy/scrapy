@@ -599,9 +599,9 @@ def test_deprecated_tls_module_names() -> None:
 
 
 def test_slot_str() -> None:
-    slot = Slot(concurrency=2, delay=0.5, randomize_delay=False)
+    slot = Slot(concurrency=2, delay=0.5, jitter=0)
     assert str(slot).startswith(
-        "<downloader.Slot concurrency=2 delay=0.50 randomize_delay=False"
+        "<downloader.Slot concurrency=2 delay=0.50 jitter=0"
         " len(active)=0 len(queue)=0 len(transferring)=0 lastseen="
     )
 
