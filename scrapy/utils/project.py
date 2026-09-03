@@ -70,9 +70,7 @@ def get_project_settings() -> Settings:
     Settings from sources with a higher precedence, such as :ref:`spider
     settings <spider-settings>`, are applied when a crawl starts.
     """
-    if ENVVAR not in os.environ:
-        project = os.environ.get("SCRAPY_PROJECT", "default")
-        init_env(project)
+    init_env(os.environ.get("SCRAPY_PROJECT", "default"))
 
     settings = Settings()
     settings_module_path = os.environ.get(ENVVAR)
