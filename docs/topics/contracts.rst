@@ -40,6 +40,14 @@ You can use the following contracts:
 
 .. autoclass:: MetadataContract
 
+.. autoclass:: MethodContract
+
+.. autoclass:: BodyContract
+
+.. autoclass:: HeaderContract
+
+.. autoclass:: CookieContract
+
 .. autoclass:: ReturnsContract
 
 .. autoclass:: ScrapesContract

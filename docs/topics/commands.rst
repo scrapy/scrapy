@@ -341,6 +341,9 @@ check
 
 Run contract checks.
 
+.. versionadded:: VERSION
+   The ``-a`` option, to pass spider arguments, as in :command:`crawl`.
+
 .. skip: start
 
 Usage examples::
