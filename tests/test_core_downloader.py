@@ -638,6 +638,7 @@ async def test_slot_gc() -> None:
         assert not downloader.slots
     finally:
         downloader.close()
+        await downloader.handlers._close()
 
 
 @coroutine_test

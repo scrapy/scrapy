@@ -102,6 +102,7 @@ async def test_params():
     request = Request("https://example.com")
     _, actual = downloader._get_slot(request)
     downloader.close()
+    await downloader.handlers._close()
     expected = Slot(**params)
     for param in params:
         assert getattr(expected, param) == getattr(actual, param), (
@@ -122,6 +123,7 @@ async def test_deprecated_randomize_delay_param(value: bool, expected: float):
     ):
         _, slot = downloader._get_slot(Request("https://example.com"))
     downloader.close()
+    await downloader.handlers._close()
     assert slot.jitter == expected
 
 
@@ -139,6 +141,7 @@ async def test_get_slot_deprecated_spider_arg():
         key1, slot1 = downloader._get_slot(request, spider=crawler.spider)
     key2, slot2 = downloader._get_slot(request)
     downloader.close()
+    await downloader.handlers._close()
 
     assert key1 == key2
     assert slot1 == slot2

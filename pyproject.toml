@@ -311,6 +311,9 @@ filterwarnings = [
     "ignore:unclosed <socket\\.socket fd=:ResourceWarning",
     "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
     "ignore:unclosed transport <:ResourceWarning",
+    # These are triggered by garbage collecting an unclosed AiohttpDownloadHandler.
+    "ignore:.*<function (ClientSession|BaseConnector)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    "ignore:Unclosed (client session|connector) <aiohttp\\.:ResourceWarning",
     # PyDispatcher iterates its connection registry while a weakref callback
     # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
     # can die within a single collection.

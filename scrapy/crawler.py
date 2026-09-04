@@ -249,7 +249,7 @@ class Crawler:
         self.settings.set("TELNETCONSOLE_ENABLED", False, priority="default")
         for scheme in ("http", "https"):
             self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
-                "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler"
+                "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler"
             )
         self.settings["DOWNLOAD_HANDLERS_BASE"]["ftp"] = None
 
