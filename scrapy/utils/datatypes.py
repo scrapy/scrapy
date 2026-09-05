@@ -94,8 +94,11 @@ class LocalCache(OrderedDict[_KT, _VT]):
         if self.limit is not None:
             if self.limit == 0:
                 return
-            while len(self) >= self.limit:
-                self.popitem(last=False)
+            # Only evict to make room when inserting a *new* key. Updating an
+            # existing key must not evict another entry or shrink the cache.
+            if key not in self:
+                while len(self) >= self.limit:
+                    self.popitem(last=False)
         super().__setitem__(key, value)
 
 
