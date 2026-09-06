@@ -446,6 +446,29 @@ class TestBaseSettings:
         assert isinstance(value, BaseSettings)
         assert dict(value) == {key: 1}
 
+    def test_get_component_priority_dict_with_base_handles_import_error_with_none_value(
+        self,
+    ):
+        # Test for issue #7820: ImportError should be caught when normalizing keys
+        # with None values (which represent disabled components)
+        nonexistent_module = "scrapy.nonexistent.module.that.does.not.exist"
+
+        with pytest.raises(ImportError):
+            load_object(nonexistent_module)
+
+        settings = BaseSettings(
+            {
+                "FOO_BASE": BaseSettings({}),
+                "FOO": BaseSettings({nonexistent_module: None}),
+            }
+        )
+        # This should not raise ImportError; the None value means the component is disabled
+        value = settings.get_component_priority_dict_with_base("FOO")
+
+        assert isinstance(value, BaseSettings)
+        # The None-valued key should be filtered out from the result
+        assert dict(value) == {}
+
     def test_get_component_priority_dict_with_base_override_none_by_type(self):
         settings = BaseSettings()
         setting_names = set()
