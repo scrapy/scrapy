@@ -86,8 +86,9 @@ class BaseSpiderMiddleware:
         :type request: :class:`~scrapy.Request` object
 
         :param response: the response being processed
-        :type response: :class:`~scrapy.http.Response` object or ``None`` for
-            start requests
+        :type response: :class:`~scrapy.http.Response` object, or ``None`` for
+            start requests and for the output of a request errback called
+            because a download failed
 
         :return: the processed request or ``None``
         """
@@ -104,8 +105,9 @@ class BaseSpiderMiddleware:
         :type item: item object
 
         :param response: the response being processed
-        :type response: :class:`~scrapy.http.Response` object or ``None`` for
-            start items
+        :type response: :class:`~scrapy.http.Response` object, or ``None`` for
+            start items and for the output of a request errback called because
+            a download failed
 
         :return: the processed item or ``None``
         """

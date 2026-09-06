@@ -255,6 +255,51 @@ class GeneratorOutputChainSpider(MockServerSpider):
 
 
 # ================================================================================
+# (5) errback output after a download error
+class LogOutputMiddleware(_BaseSpiderMiddleware):
+    async def process_spider_output(self, response, result):
+        async for o in result:
+            self.crawler.spider.logger.info(
+                f"Middleware: output {o} with response {response}"
+            )
+            yield o
+
+    def process_spider_exception(self, response, exception):
+        self.crawler.spider.logger.info(
+            f"Middleware: {exception.__class__.__name__} exception caught"
+            f" with response {response}"
+        )
+        return []
+
+
+class DownloadErrorSpider(Spider):
+    name = "DownloadErrorSpider"
+    custom_settings = {
+        "SPIDER_MIDDLEWARES": {
+            LogOutputMiddleware: 10,
+        },
+    }
+
+    async def start(self):
+        yield Request(self.mockserver.url("/drop?abort=1"), errback=self.errback)
+
+    def errback(self, failure):
+        yield {"from": "errback"}
+        yield Request(self.mockserver.url("/status?n=200"), callback=self.parse)
+
+    def parse(self, response):
+        self.logger.info(f"is_start_request: {response.meta.get('is_start_request')}")
+
+
+class DownloadErrorFailSpider(DownloadErrorSpider):
+    name = "DownloadErrorFailSpider"
+
+    def errback(self, failure):
+        yield {"from": "errback"}
+        raise LookupError
+
+
+# ================================================================================
 class TestSpiderMiddleware:
     mockserver: MockServer
 
@@ -437,3 +482,30 @@ class TestSpiderMiddleware:
         assert str(item_from_callback) in log4
         assert str(item_recovered) in log4
         assert "parse-second-item" not in log4
+
+    @coroutine_test
+    async def test_download_error_errback_output(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """
+        (5.1) The output of an errback called because a download failed goes
+        through the process_spider_output chain, with None as the response.
+        """
+        log5 = await self.crawl_log(DownloadErrorSpider, caplog)
+        assert "Middleware: output {'from': 'errback'} with response None" in log5
+        assert "'item_scraped_count': 1" in log5
+        assert "Crawled (200)" in log5
+        assert "is_start_request: None" in log5
+
+    @coroutine_test
+    async def test_download_error_errback_exception(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """
+        (5.2) An exception from such an errback goes through the
+        process_spider_exception chain.
+        """
+        log5 = await self.crawl_log(DownloadErrorFailSpider, caplog)
+        assert "Middleware: output {'from': 'errback'} with response None" in log5
+        assert "Middleware: LookupError exception caught with response None" in log5
+        assert "'item_scraped_count': 1" in log5
