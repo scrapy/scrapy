@@ -269,7 +269,7 @@ class ThirdUnhandledMiddleware(_GeneratorDoNothingMiddleware):
     pass
 
 
-class UnhandledExceptionSpider(Spider):
+class UnhandledExceptionSpider(MockServerSpider):
     name = "UnhandledExceptionSpider"
     custom_settings = {
         "SPIDER_MIDDLEWARES": {
@@ -280,6 +280,7 @@ class UnhandledExceptionSpider(Spider):
     }
 
     async def start(self):
+        assert self.mockserver
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
