@@ -1,4 +1,5 @@
 import asyncio
+import gc
 import warnings
 from typing import Any
 
@@ -6,10 +7,11 @@ import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider
+from scrapy.core.engine import ExecutionEngine
 from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
-from scrapy.utils.asyncio import sleep
+from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
@@ -418,6 +420,48 @@ class TestRequestBackout:
             "request_backout_seconds/total": gt(0),
         }
         assert _backout_stats(crawler) == expected_stats
+
+    @coroutine_test
+    async def test_response_size_reference_cycle(self, monkeypatch):
+        """Responses that only the cyclic garbage collector can free, such as
+        those with a cached selector, are collected as soon as nothing else can
+        make progress, without waiting for the engine heartbeat."""
+        collections = 0
+
+        def garbage_collect():
+            nonlocal collections
+            collections += 1
+            gc.collect()
+
+        monkeypatch.setattr("scrapy.core.downloader.garbage_collect", garbage_collect)
+        # Keep the heartbeat from masking a stall.
+        monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 60)
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = [f"data:text/html,<a>{n}</a>" for n in range(3)]
+            custom_settings = {"RESPONSE_MAX_ACTIVE_SIZE": 1}
+
+            def parse(self, response):
+                response.css("a")
+
+        crawler = get_crawler(TestSpider)
+        # Leave the forced collection as the only one that can free responses.
+        gc.disable()
+        try:
+            crawl_deferred = crawler.crawl()
+            # A stall would otherwise hang the test.
+            timeout = call_later(10, crawl_deferred.cancel)
+            try:
+                await maybe_deferred_to_future(crawl_deferred)
+            finally:
+                timeout.cancel()
+        finally:
+            gc.enable()
+
+        assert crawler.stats
+        assert crawler.stats.get_value("response_received_count") == 3
+        assert 0 < collections <= 3
 
     @coroutine_test
     async def test_response_size_process_request(self):

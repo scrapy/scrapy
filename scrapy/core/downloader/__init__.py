@@ -216,6 +216,7 @@ class Downloader:
         self._last_backout: tuple[str | None, float | None] = (None, None)
         self._max_active_size_warned = False
         self._last_gc: float = 0
+        self._active_size_at_last_gc: int | None = None
 
     @property
     def randomize_delay(self) -> bool:
@@ -264,30 +265,61 @@ class Downloader:
         if 0 < self.total_concurrency <= len(self.active):
             self._record_backout("concurrency")
             return True
-        max_active_size = self.middleware._max_active_size
-        if max_active_size and self.middleware._total_active_size >= max_active_size:
-            if not self._max_active_size_warned:
-                self._max_active_size_warned = True
-                logger.info(
-                    f"Pausing request processing: the active response size "
-                    f"({self.middleware._total_active_size} B) has reached "
-                    f"RESPONSE_MAX_ACTIVE_SIZE ({max_active_size} B). See "
-                    f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
-                    f"and the request_backout_seconds/response_max_active_size "
-                    f"stat. This message is only logged once."
-                )
+        if self._exceeds_max_active_size():
             self._record_backout("response_max_active_size")
-            # A response with a cached selector (e.g. after response.css() or
-            # response.xpath()) holds a reference cycle with it, so freeing
-            # it requires an actual garbage collection. A full collection is
-            # expensive, hence the interval.
-            current_time = monotonic()
-            if current_time - self._last_gc >= self._GC_INTERVAL:
-                self._last_gc = current_time
-                garbage_collect()
-            return True
+            self._maybe_garbage_collect()
+            if self._exceeds_max_active_size():
+                if not self._max_active_size_warned:
+                    self._max_active_size_warned = True
+                    logger.info(
+                        f"Pausing request processing: the active response size "
+                        f"({self.middleware._total_active_size} B) has reached "
+                        f"RESPONSE_MAX_ACTIVE_SIZE "
+                        f"({self.middleware._max_active_size} B). See "
+                        f"https://docs.scrapy.org/en/latest/topics/settings.html#response-max-active-size "
+                        f"and the request_backout_seconds/response_max_active_size "
+                        f"stat. This message is only logged once."
+                    )
+                return True
         self._record_backout(None)
         return False
+
+    def _exceeds_max_active_size(self) -> bool:
+        max_active_size = self.middleware._max_active_size
+        return (
+            bool(max_active_size)
+            and self.middleware._total_active_size >= max_active_size
+        )
+
+    def _maybe_garbage_collect(self) -> None:
+        # A response with a cached selector (e.g. after response.css() or
+        # response.xpath()) holds a reference cycle with it, so freeing it
+        # requires an actual garbage collection. A full collection is
+        # expensive, so it only runs when it is the only way to make progress:
+        # when nothing is in flight that could free responses on its own, and
+        # only if the tracked size changed since the last collection or a full
+        # interval passed; or when the backout has lasted a full interval.
+        current_time = monotonic()
+        total_active_size = self.middleware._total_active_size
+        stale = current_time - self._last_gc >= self._GC_INTERVAL
+        if self._is_idle():
+            collect = stale or total_active_size != self._active_size_at_last_gc
+        else:
+            backout_start = self._last_backout[1]
+            assert backout_start is not None
+            collect = stale and current_time - backout_start >= self._GC_INTERVAL
+        if not collect:
+            return
+        self._last_gc = current_time
+        garbage_collect()
+        self._active_size_at_last_gc = self.middleware._total_active_size
+
+    def _is_idle(self) -> bool:
+        if self.active:
+            return False
+        engine = self.crawler.engine
+        slot = engine.scraper.slot if engine is not None else None
+        return slot is None or slot.is_idle()
 
     @_warn_spider_arg
     def _get_slot(
