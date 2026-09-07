@@ -92,7 +92,9 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
     be able to locate the project module.
     """
     cfg = get_config()
-    if cfg.has_option("settings", project):
+    if "SCRAPY_SETTINGS_MODULE" not in os.environ and cfg.has_option(
+        "settings", project
+    ):
         os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
     closest = closest_scrapy_cfg()
     if closest:
