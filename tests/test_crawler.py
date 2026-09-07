@@ -858,7 +858,7 @@ def test_log_scrapy_info(
     settings: dict[str, Any], items: list[str] | None, caplog: pytest.LogCaptureFixture
 ) -> None:
     with caplog.at_level("INFO"):
-        CrawlerProcess(settings, install_root_handler=False)
+        CrawlerProcess({**settings, "LOG_INSTALL_ROOT_HANDLER": False})
     assert (
         caplog.records[0].getMessage()
         == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
