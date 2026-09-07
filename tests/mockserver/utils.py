@@ -7,11 +7,9 @@ from typing import TYPE_CHECKING, cast
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509 import load_pem_x509_certificate
 from OpenSSL import SSL
-from OpenSSL.crypto import FILETYPE_PEM, load_certificate, load_privatekey
 from twisted.internet.ssl import CertificateOptions, ContextFactory
 
 from scrapy.core.downloader.tls import _TWISTED_VERSION_MAP
-from scrapy.utils._deps_compat import PYOPENSSL_X509_DEPRECATED
 from scrapy.utils.python import to_bytes
 from scrapy.utils.ssl import _get_cert_options_version_kwargs
 
@@ -37,12 +35,8 @@ def ssl_context_factory(
     keyfile_path = Path(__file__).parent.parent / keyfile
     certfile_path = Path(__file__).parent.parent / certfile
 
-    if PYOPENSSL_X509_DEPRECATED:
-        cert = load_pem_x509_certificate(certfile_path.read_bytes())
-        key = load_pem_private_key(keyfile_path.read_bytes(), password=None)
-    else:
-        cert = load_certificate(FILETYPE_PEM, certfile_path.read_bytes())  # type: ignore[assignment]
-        key = load_privatekey(FILETYPE_PEM, keyfile_path.read_bytes())  # type: ignore[assignment]
+    cert = load_pem_x509_certificate(certfile_path.read_bytes())
+    key = load_pem_private_key(keyfile_path.read_bytes(), password=None)
 
     tls_min = _TWISTED_VERSION_MAP.get(tls_min_version) if tls_min_version else None
     tls_max = _TWISTED_VERSION_MAP.get(tls_max_version) if tls_max_version else None

@@ -153,6 +153,78 @@ available in all future runs should they be necessary again:
 
 For more information, check the :ref:`topics-logging` section.
 
+.. _debug-live-traffic:
+
+Inspecting live traffic
+=======================
+
+Sometimes it's important to see what exactly was sent to the server or received
+from it, such as header values, formatting and order (Scrapy cannot log this,
+as underlying HTTP libraries produce the final values for request headers and
+canonicalize response ones) or TLS handshake details. There are two ways to see
+and log the real traffic of a running spider:
+
+-   Capture the traffic with a tool such as Wireshark_. As your requests likely
+    use TLS, you will need to decrypt the traffic (see the `Wireshark TLS
+    documentation`_ for detailed instructions). You will need the encryption
+    key which you can save as described in :ref:`debug-tls`. As this way of
+    capturing traffic is passive, it cannot interfere with the spider.
+
+-   Use mitmproxy_ between the spider and the server, as described below. This
+    is easier to set up and in addition to inspecting the traffic allows
+    modifying it, but it's not passive: there is now a connection between
+    Scrapy and mitmproxy and another one between mitmproxy and the server
+    instead of a direct connection between Scrapy and the server. Due to this,
+    low-level connection behavior is different from normal crawls, which may
+    change the server behavior, and you cannot easily use mitmproxy and regular
+    proxies in the same crawl.
+
+Using mitmdump
+--------------
+
+You should refer to the mitmproxy documentation for more details, additional
+interception modes and advanced features but here is one simple way to use it.
+First, run a ``mitmdump`` instance (it will use the port 8080 by default),
+asking it to log the traffic details on the terminal (``--flow-detail 2`` will
+log headers but not bodies):
+
+.. code-block:: shell
+
+    mitmdump --flow-detail 2
+
+Then configure ``http://127.0.0.1:8080`` as a proxy in your spider using
+:class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`:
+
+.. code-block:: shell
+
+    https_proxy=http://127.0.0.1:8080 scrapy crawl myspider
+
+To inspect only some requests, set their :reqmeta:`proxy` meta key instead.
+
+.. _mitmproxy: https://mitmproxy.org/
+.. _Wireshark: https://www.wireshark.org/
+.. _Wireshark TLS documentation: https://wiki.wireshark.org/TLS
+
+.. _debug-tls:
+
+Decrypting TLS traffic
+======================
+
+Scrapy writes the session keys of its HTTPS connections to the file that the
+``SSLKEYLOGFILE`` environment variable points to, using the `NSS key log
+format`_ that traffic analysis tools such as Wireshark understand.
+
+.. versionadded:: VERSION
+
+.. code-block:: shell
+
+    SSLKEYLOGFILE=/tmp/sslkeylog scrapy crawl myspider
+
+.. _NSS key log format: https://firefox-source-docs.mozilla.org/security/nss/legacy/key_log_format/index.html
+
+.. warning:: Anyone who can read the key log file can decrypt the traffic of
+    the connections recorded in it, including any credentials that they carry.
+
 .. _debug-vscode:
 
 Visual Studio Code

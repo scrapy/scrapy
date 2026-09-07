@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 
 class MetaCopyDetectionMiddleware(BaseSpiderMiddleware):
     """Warn when a spider yields a request with internal meta keys that should
-    not be copied from response.meta, or when two requests share the same meta
-    dict object.
+    not be copied from response.meta.
 
     Each warning is emitted at most once per crawl.
     """

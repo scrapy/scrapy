@@ -10,6 +10,7 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.python import _signature
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine
@@ -108,12 +109,23 @@ def _warn_spider_arg(
     | Callable[_P, AsyncGenerator[_T]]
 ):
     """Decorator to warn if a ``spider`` argument is passed to a function."""
+    parameters = _signature(func).parameters
+    spider_parameter = parameters.get("spider")
+    spider_index = (
+        list(parameters).index("spider")
+        if spider_parameter is not None
+        and spider_parameter.kind
+        in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        )
+        else None
+    )
 
-    sig = inspect.signature(func)
-
-    def check_args(*args: _P.args, **kwargs: _P.kwargs) -> None:
-        bound = sig.bind(*args, **kwargs)
-        if "spider" in bound.arguments:
+    def check_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
+        if "spider" in kwargs or (
+            spider_index is not None and len(args) > spider_index
+        ):
             warnings.warn(
                 f"Passing a 'spider' argument to {func.__qualname__}() is deprecated and "
                 "the argument will be removed in a future Scrapy version.",
@@ -125,7 +137,7 @@ def _warn_spider_arg(
 
         @wraps(func)
         async def async_inner(*args: _P.args, **kwargs: _P.kwargs) -> _T:
-            check_args(*args, **kwargs)
+            check_args(args, kwargs)
             return cast("_T", await func(*args, **kwargs))
 
         return async_inner
@@ -136,7 +148,7 @@ def _warn_spider_arg(
         async def asyncgen_inner(
             *args: _P.args, **kwargs: _P.kwargs
         ) -> AsyncGenerator[_T]:
-            check_args(*args, **kwargs)
+            check_args(args, kwargs)
             async for item in func(*args, **kwargs):
                 yield item
 
@@ -144,7 +156,7 @@ def _warn_spider_arg(
 
     @wraps(func)
     def sync_inner(*args: _P.args, **kwargs: _P.kwargs) -> _T:
-        check_args(*args, **kwargs)
+        check_args(args, kwargs)
         return func(*args, **kwargs)
 
     return sync_inner

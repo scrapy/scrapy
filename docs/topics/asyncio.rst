@@ -267,6 +267,7 @@ Here are some examples of APIs and patterns that need a replacement:
 
 Scrapy provides unified helpers for some of these examples:
 
+.. autofunction:: scrapy.utils.asyncio.sleep
 .. autofunction:: scrapy.utils.asyncio.call_later
 .. autofunction:: scrapy.utils.asyncio.create_looping_call
 .. autoclass:: scrapy.utils.asyncio.AsyncioLoopingCall

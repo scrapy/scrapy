@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import code
 from collections.abc import Callable
-from functools import wraps
+from functools import partial, wraps
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -16,16 +17,8 @@ def _embed_ipython_shell(
     namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start an IPython Shell"""
-    try:
-        from IPython.terminal.embed import InteractiveShellEmbed  # noqa: T100,PLC0415
-        from IPython.terminal.ipapp import load_default_config  # noqa: PLC0415
-    except ImportError:
-        from IPython.frontend.terminal.embed import (  # type: ignore[import-not-found,no-redef]  # noqa: T100,PLC0415
-            InteractiveShellEmbed,
-        )
-        from IPython.frontend.terminal.ipapp import (  # type: ignore[import-not-found,no-redef]  # noqa: PLC0415
-            load_default_config,
-        )
+    from IPython.terminal.embed import InteractiveShellEmbed  # noqa: T100,PLC0415
+    from IPython.terminal.ipapp import load_default_config  # noqa: PLC0415
 
     @wraps(_embed_ipython_shell)
     def wrapper(namespace: dict[str, Any] = namespace or {}, banner: str = "") -> None:
@@ -38,6 +31,19 @@ def _embed_ipython_shell(
         shell = InteractiveShellEmbed.instance(
             banner1=banner, user_ns=namespace, config=config
         )
+        # If an asyncio event loop is already running in this thread, e.g. when
+        # inspect_response() is called from a spider callback while using the
+        # asyncio reactor, prompt_toolkit cannot run its own event loop here, so
+        # ask it to run the prompt in a separate thread instead. pt_app is None
+        # when IPython falls back to its simple prompt, which needs no event loop.
+        # See https://github.com/scrapy/scrapy/issues/5447
+        if (pt_app := getattr(shell, "pt_app", None)) is not None:
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                pass
+            else:
+                pt_app.prompt = partial(pt_app.prompt, in_thread=True)
         shell()
 
     return wrapper

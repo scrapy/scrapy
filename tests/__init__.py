@@ -27,6 +27,11 @@ except socket.gaierror:
     NON_EXISTING_RESOLVABLE = False
 
 
+# Hostnames rejected by the idna package but resolvable in practice: the
+# punycode form of an emoji domain (i❤.ws) and a domain with an underscore.
+IDNA_REJECTED_HOSTNAMES = ["xn--i-7iq.ws", "foo_bar.example"]
+
+
 def get_testdata(*paths: str) -> bytes:
     """Return test data"""
     return Path(tests_datadir, *paths).read_bytes()

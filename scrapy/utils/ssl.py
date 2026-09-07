@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import logging
+import os
 import ssl
+import sys
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
 
 import OpenSSL._util as pyOpenSSLutil
@@ -11,10 +14,7 @@ import OpenSSL.version
 from twisted.internet.ssl import CertificateOptions, TLSVersion
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils._deps_compat import (
-    PYOPENSSL_X509_DEPRECATED,
-    TWISTED_TLS_LIMITS_OFFBY1,
-)
+from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
@@ -53,6 +53,22 @@ def _get_tls_version_limits(
     )
 
 
+def _get_keylog_filename() -> str | None:
+    """Return the path where TLS session keys should be logged, or ``None``."""
+    if sys.flags.ignore_environment:
+        return None
+    filename = os.environ.get("SSLKEYLOGFILE")
+    if not filename:
+        return None
+    try:
+        with Path(filename).open("ab"):
+            pass
+    except OSError as ex:
+        logger.warning(f"Cannot write TLS session keys to {filename}: {ex}")
+        return None
+    return filename
+
+
 # stdlib ssl module utils
 
 _STDLIB_VERSION_MAP: dict[str, ssl.TLSVersion] = {
@@ -89,6 +105,8 @@ def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
         ctx.maximum_version = tls_max_ver
     if ciphers_setting:
         ctx.set_ciphers(ciphers_setting)
+    if keylog_filename := _get_keylog_filename():
+        ctx.keylog_filename = keylog_filename
     return ctx
 
 
@@ -101,6 +119,8 @@ def _make_insecure_ssl_ctx() -> ssl.SSLContext:
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
+    if keylog_filename := _get_keylog_filename():
+        ctx.keylog_filename = keylog_filename
     return ctx
 
 
@@ -121,22 +141,35 @@ def _log_sslobj_debug_info(sslobj: ssl.SSLObject) -> None:
 # pyOpenSSL utils
 
 
+def _set_keylog_callback(ctx: OpenSSL.SSL.Context) -> None:
+    """Make *ctx* write TLS session keys to the key log file, if enabled."""
+    keylog_filename = _get_keylog_filename()
+    if not keylog_filename:
+        return
+    keylog_path = Path(keylog_filename)
+
+    def write_keylog_line(connection: OpenSSL.SSL.Connection, line: bytes) -> None:
+        with keylog_path.open("ab") as f:
+            f.write(line + b"\n")
+
+    ctx.set_keylog_callback(write_keylog_line)
+
+
 def _ffi_buf_to_string(buf: Any) -> str:
     return to_unicode(pyOpenSSLutil.ffi.string(buf))
 
 
-def ffi_buf_to_string(buf: Any) -> str:  # pragma: no cover
+def ffi_buf_to_string(buf: Any) -> str:
     warnings.warn(
         "ffi_buf_to_string() is deprecated.",
         ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    return ffi_buf_to_string(buf)
+    return _ffi_buf_to_string(buf)
 
 
 def _x509name_to_string(x509name: X509Name) -> str:
     # from OpenSSL.crypto.X509Name.__repr__
-    # only used on pyOpenSSL < 24.3.0
     result_buffer: Any = pyOpenSSLutil.ffi.new("char[]", 512)
     pyOpenSSLutil.lib.X509_NAME_oneline(
         x509name._name, result_buffer, len(result_buffer)
@@ -144,7 +177,7 @@ def _x509name_to_string(x509name: X509Name) -> str:
     return _ffi_buf_to_string(result_buffer)
 
 
-def x509name_to_string(x509name: X509Name) -> str:  # pragma: no cover
+def x509name_to_string(x509name: X509Name) -> str:
     warnings.warn(
         "x509name_to_string() is deprecated.",
         ScrapyDeprecationWarning,
@@ -153,48 +186,15 @@ def x509name_to_string(x509name: X509Name) -> str:  # pragma: no cover
     return _x509name_to_string(x509name)
 
 
-def _get_temp_key_info(ssl_object: Any) -> str | None:
-    # adapted from OpenSSL apps/s_cb.c::ssl_print_tmp_key()
-    if not hasattr(pyOpenSSLutil.lib, "SSL_get_server_tmp_key"):
-        # removed in cryptography 40.0.0 (required starting from pyOpenSSL 23.1.0)
-        return None
-    temp_key_p = pyOpenSSLutil.ffi.new("EVP_PKEY **")
-    if not pyOpenSSLutil.lib.SSL_get_server_tmp_key(ssl_object, temp_key_p):
-        return None
-    temp_key = temp_key_p[0]
-    if temp_key == pyOpenSSLutil.ffi.NULL:
-        return None
-    temp_key = pyOpenSSLutil.ffi.gc(temp_key, pyOpenSSLutil.lib.EVP_PKEY_free)
-    key_info = []
-    key_type = pyOpenSSLutil.lib.EVP_PKEY_id(temp_key)
-    if key_type == pyOpenSSLutil.lib.EVP_PKEY_RSA:
-        key_info.append("RSA")
-    elif key_type == pyOpenSSLutil.lib.EVP_PKEY_DH:
-        key_info.append("DH")
-    elif key_type == pyOpenSSLutil.lib.EVP_PKEY_EC:
-        key_info.append("ECDH")
-        ec_key = pyOpenSSLutil.lib.EVP_PKEY_get1_EC_KEY(temp_key)
-        ec_key = pyOpenSSLutil.ffi.gc(ec_key, pyOpenSSLutil.lib.EC_KEY_free)
-        nid = pyOpenSSLutil.lib.EC_GROUP_get_curve_name(
-            pyOpenSSLutil.lib.EC_KEY_get0_group(ec_key)
-        )
-        cname = pyOpenSSLutil.lib.EC_curve_nid2nist(nid)
-        if cname == pyOpenSSLutil.ffi.NULL:
-            cname = pyOpenSSLutil.lib.OBJ_nid2sn(nid)
-        key_info.append(_ffi_buf_to_string(cname))
-    else:
-        key_info.append(_ffi_buf_to_string(pyOpenSSLutil.lib.OBJ_nid2sn(key_type)))
-    key_info.append(f"{pyOpenSSLutil.lib.EVP_PKEY_bits(temp_key)} bits")
-    return ", ".join(key_info)
-
-
-def get_temp_key_info(ssl_object: Any) -> str | None:  # pragma: no cover
+def get_temp_key_info(ssl_object: Any) -> str | None:
+    # A no-op: it read the negotiated ephemeral key through a binding that
+    # cryptography 40.0.0 removed.
     warnings.warn(
         "get_temp_key_info() is deprecated. It's also a no-op with cryptography 40.0.0+.",
         ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    return _get_temp_key_info(ssl_object)
+    return None
 
 
 def get_openssl_version() -> str:
@@ -210,23 +210,12 @@ def _log_ssl_conn_debug_info(hostname: str, connection: OpenSSL.SSL.Connection) 
         connection.get_protocol_version_name(),
         connection.get_cipher_name(),
     )
-    if PYOPENSSL_X509_DEPRECATED:
-        if server_cert := connection.get_peer_certificate(as_cryptography=True):
-            logger.debug(
-                'SSL connection certificate: issuer "%s", subject "%s"',
-                server_cert.issuer.rfc4514_string(),
-                server_cert.subject.rfc4514_string(),
-            )
-    else:  # noqa: PLR5501
-        if server_cert_pyopenssl := connection.get_peer_certificate():
-            logger.debug(
-                'SSL connection certificate: issuer "%s", subject "%s"',
-                _x509name_to_string(server_cert_pyopenssl.get_issuer()),
-                _x509name_to_string(server_cert_pyopenssl.get_subject()),
-            )
-    key_info = _get_temp_key_info(connection._ssl)
-    if key_info:
-        logger.debug("SSL temp key: %s", key_info)
+    if server_cert := connection.get_peer_certificate(as_cryptography=True):
+        logger.debug(
+            'SSL connection certificate: issuer "%s", subject "%s"',
+            server_cert.issuer.rfc4514_string(),
+            server_cert.subject.rfc4514_string(),
+        )
 
 
 # Twisted-specific

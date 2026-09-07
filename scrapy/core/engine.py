@@ -92,10 +92,9 @@ class _Slot:
 
     def _maybe_fire_closing(self) -> None:
         if self.closing is not None and not self.inprogress:
-            if self.nextcall:
-                self.nextcall.cancel()
-                if self.heartbeat.running:
-                    self.heartbeat.stop()
+            self.nextcall.cancel()
+            if self.heartbeat.running:
+                self.heartbeat.stop()
             self.closing.callback(None)
 
 
@@ -112,7 +111,6 @@ class ExecutionEngine:
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
         self.signals: SignalManager = crawler.signals
-        assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
         self._slot: _Slot | None = None
         self.spider: Spider | None = None
@@ -125,6 +123,9 @@ class ExecutionEngine:
         ] = spider_closed_callback
         self.start_time: float | None = None
         self._start: AsyncIterator[Any] | None = None
+        # Whether Spider.start() raised, i.e. some start items or requests may
+        # never have reached the engine.
+        self._start_error: bool = False
         self._closewait: Deferred[None] | None = None
         self._start_request_processing_awaitable: (
             asyncio.Future[None] | Deferred[None] | None
@@ -160,6 +161,14 @@ class ExecutionEngine:
                 " does not fully implement the scheduler interface"
             )
         return scheduler_cls
+
+    @property
+    def scheduler(self) -> BaseScheduler | None:
+        """The scheduler in use, or ``None`` before the spider has started.
+
+        .. versionadded:: VERSION
+        """
+        return self._slot.scheduler if self._slot is not None else None
 
     def start(
         self, _start_request_processing: bool = True
@@ -246,7 +255,7 @@ class ExecutionEngine:
         )
         return deferred_from_coro(self.close_async())
 
-    async def close_async(self) -> None:
+    async def close_async(self, *, reason: str = "shutdown") -> None:
         """
         Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close the spider and the downloader.
@@ -254,10 +263,8 @@ class ExecutionEngine:
         if self.running:
             await self.stop_async()  # will also close spider and downloader
         elif self.spider is not None:
-            await self.close_spider_async(
-                reason="shutdown"
-            )  # will also close downloader
-        elif hasattr(self, "downloader"):
+            await self.close_spider_async(reason=reason)  # will also close downloader
+        else:
             self.downloader.close()
 
     def pause(self) -> None:
@@ -277,12 +284,28 @@ class ExecutionEngine:
             item_or_request = await anext(self._start)
         except StopAsyncIteration:
             self._start = None
+        except CloseSpider as exception:
+            self._start = None
+            _schedule_coro(
+                self.close_spider_async(reason=exception.reason or "cancelled")
+            )
         except Exception as exception:
             self._start = None
+            self._start_error = True
             exception_traceback = format_exc()
             logger.error(
                 f"Error while reading start items and requests: {exception}.\n{exception_traceback}",
                 exc_info=True,
+            )
+            self.signals.send_catch_log(
+                signal=signals.spider_error,
+                failure=Failure(),
+                response=None,
+                spider=self.spider,
+            )
+            self.crawler.stats.inc_value("spider_exceptions/count")
+            self.crawler.stats.inc_value(
+                f"spider_exceptions/{type(exception).__name__}"
             )
         else:
             if not self.spider:
@@ -291,9 +314,7 @@ class ExecutionEngine:
                 self.crawl(item_or_request)
             else:
                 assert self._slot is not None
-                _schedule_coro(
-                    self.scraper.start_itemproc_async(item_or_request, response=None)
-                )
+                self.scraper._start_itemproc_nowait(item_or_request)
                 self._slot.nextcall.schedule()
 
     async def _start_request_processing(self) -> None:
@@ -399,11 +420,6 @@ class ExecutionEngine:
     def _handle_downloader_output(
         self, result: Request | Response | Failure, request: Request
     ) -> Generator[Deferred[Any], Any, None]:
-        if not isinstance(result, (Request, Response, Failure)):
-            raise TypeError(
-                f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}"
-            )
-
         # downloader middleware can return requests (for example, redirects)
         if isinstance(result, Request):
             self.crawl(result)
@@ -539,24 +555,39 @@ class ExecutionEngine:
         nextcall = CallLaterOnce(self._start_scheduled_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
-        self._start = await self.scraper.spidermw.process_start()
-        if hasattr(scheduler, "open") and (d := scheduler.open(self.crawler.spider)):
-            await maybe_deferred_to_future(d)
-        await self.scraper.open_spider_async()
-        assert self.crawler.stats
-        if argument_is_required(self.crawler.stats.open_spider, "spider"):
+        # A component that fails to start can ask for the spider to be closed.
+        # The rest of the startup runs anyway, so that components that are
+        # started also get stopped, and the request is honored once the spider
+        # is open.
+        close_spider_exc: CloseSpider | None = None
+        try:
+            self._start = await self.scraper.spidermw.process_start()
+            if hasattr(scheduler, "open") and (
+                d := scheduler.open(self.crawler.spider)
+            ):
+                await maybe_deferred_to_future(d)
+            await self.scraper.open_spider_async()
+        except CloseSpider as exc:
+            close_spider_exc = exc
+        stats = self.crawler.stats
+        if argument_is_required(stats.open_spider, "spider"):
             warnings.warn(
-                f"The open_spider() method of {global_object_name(type(self.crawler.stats))} requires a spider argument,"
+                f"The open_spider() method of {global_object_name(type(stats))} requires a spider argument,"
                 f" this is deprecated and the argument will not be passed in future Scrapy versions.",
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            self.crawler.stats.open_spider(spider=self.crawler.spider)
+            stats.open_spider(spider=self.crawler.spider)
         else:
-            self.crawler.stats.open_spider()
-        await self.signals.send_catch_log_async(
-            signals.spider_opened, spider=self.crawler.spider
+            stats.open_spider()
+        results = await self.signals.send_catch_log_async(
+            signals.spider_opened, spider=self.crawler.spider, dont_log=CloseSpider
         )
+        for _, result in results:
+            if isinstance(result, CloseSpider):
+                close_spider_exc = close_spider_exc or result
+        if close_spider_exc is not None:
+            raise close_spider_exc
 
     def _spider_idle(self) -> None:
         """
@@ -579,7 +610,8 @@ class ExecutionEngine:
         if DontCloseSpider in detected_ex:
             return
         if self.spider_is_idle():
-            ex = detected_ex.get(CloseSpider, CloseSpider(reason="finished"))
+            default_reason = "start_error" if self._start_error else "finished"
+            ex = detected_ex.get(CloseSpider, CloseSpider(reason=default_reason))
             assert isinstance(ex, CloseSpider)  # typing
             _schedule_coro(self.close_spider_async(reason=ex.reason))
 
@@ -655,20 +687,18 @@ class ExecutionEngine:
                 extra={"spider": spider},
             )
 
-        assert self.crawler.stats
         try:
-            if argument_is_required(self.crawler.stats.close_spider, "spider"):
+            stats = self.crawler.stats
+            if argument_is_required(stats.close_spider, "spider"):
                 warnings.warn(
-                    f"The close_spider() method of {global_object_name(type(self.crawler.stats))} requires a spider argument,"
+                    f"The close_spider() method of {global_object_name(type(stats))} requires a spider argument,"
                     f" this is deprecated and the argument will not be passed in future Scrapy versions.",
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
-                self.crawler.stats.close_spider(
-                    spider=self.crawler.spider, reason=reason
-                )
+                stats.close_spider(spider=self.crawler.spider, reason=reason)
             else:
-                self.crawler.stats.close_spider(reason=reason)
+                stats.close_spider(reason=reason)
         except Exception:
             logger.error("Stats close failure")
 

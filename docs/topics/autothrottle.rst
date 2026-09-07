@@ -106,10 +106,9 @@ delay of its download slot:
     Request("https://example.com", meta={"autothrottle_dont_adjust_delay": True})
 
 Note, however, that AutoThrottle still determines the starting delay of every
-download slot by setting the ``download_delay`` attribute on the running
-spider. If you want AutoThrottle not to impact a download slot at all, in
-addition to setting this meta key in all requests that use that download slot,
-you might want to set a custom value for the ``delay`` attribute of that
+download slot. If you want AutoThrottle not to impact a download slot at all,
+in addition to setting this meta key in all requests that use that download
+slot, you might want to set a custom value for the ``delay`` attribute of that
 download slot, e.g. using :setting:`DOWNLOAD_SLOTS`.
 
 Settings

@@ -5,6 +5,7 @@ scrapy.http.Response objects
 
 from __future__ import annotations
 
+import mimetypes
 import os
 import re
 import tempfile
@@ -15,6 +16,8 @@ from weakref import WeakKeyDictionary
 from twisted.web import http
 from w3lib import html
 
+from scrapy.http.headers import Headers
+from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
@@ -53,6 +56,30 @@ def get_meta_refresh(
     return _metaref_cache[response]
 
 
+def response_from_dict(d: dict[str, Any]) -> Response:
+    """Return a response built from the *d* dict, as returned by
+    :meth:`Response.to_dict() <scrapy.http.Response.to_dict>`.
+
+    .. versionadded:: VERSION
+
+    If *d* does not indicate a response class, e.g. because it comes from a
+    plain :class:`~scrapy.http.Response` object or predates :meth:`~scrapy.http.Response.to_dict`,
+    the class is guessed with :attr:`~scrapy.responsetypes.responsetypes`.
+    """
+    # Imported here to avoid a circular import.
+    from scrapy.responsetypes import responsetypes  # noqa: PLC0415
+
+    d = {**d, "headers": Headers(d.get("headers") or {})}
+    response_cls: type[Response] = (
+        load_object(d["_class"])
+        if "_class" in d
+        else responsetypes.from_args(
+            headers=d["headers"], url=d["url"], body=d.get("body")
+        )
+    )
+    return response_cls.from_dict(d)
+
+
 def response_status_message(status: bytes | float | str) -> str:
     """Return status code plus status text descriptive message"""
     status_int = int(status)
@@ -60,19 +87,11 @@ def response_status_message(status: bytes | float | str) -> str:
     return f"{status_int} {to_unicode(message)}"
 
 
-def _remove_html_comments(body: bytes) -> bytes:
-    start = body.find(b"<!--")
-    while start != -1:
-        end = body.find(b"-->", start + 1)
-        if end == -1:
-            return body[:start]
-        body = body[:start] + body[end + 3 :]
-        start = body.find(b"<!--")
-    return body
+_DOCTYPE_RE = re.compile(rb"\s*<!doctype[^<>]*>", re.IGNORECASE)
 
 
 def open_in_browser(
-    response: TextResponse,
+    response: Response,
     _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
     """Open *response* in a local web browser, adjusting the `base tag`_ for
@@ -90,21 +109,36 @@ def open_in_browser(
         def parse_details(self, response):
             if "item name" not in response.text:
                 open_in_browser(response)
+
+    On the Windows Subsystem for Linux, set the ``BROWSER`` environment
+    variable to `wslview <https://github.com/wslutilities/wslu>`_ to open the
+    response in a Windows browser, which cannot read Linux paths otherwise.
     """
     # circular imports
     from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
 
-    # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
-        if b"<base" not in _remove_html_comments(body):
-            repl = rf'\g<0><base href="{response.url}">'
-            body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
+        # Web browsers move a base tag that precedes the head element into it,
+        # so the head element does not need to be found, which is not always
+        # possible. The base tag must come after the doctype declaration, if
+        # any, to keep the browser out of quirks mode. It takes precedence over
+        # any base tag of the response, and matches it when there is one.
+        doctype = _DOCTYPE_RE.match(body)
+        index = doctype.end() if doctype else 0
+        base_tag = to_bytes(f'<base href="{get_base_url(response)}">')
+        body = body[:index] + base_tag + body[index:]
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"
     else:
-        raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
+        content_type = to_unicode(
+            response.headers.get(b"Content-Type") or b"", encoding="latin-1"
+        )
+        mimetype = content_type.split(";")[0].strip().lower()
+        ext = mimetypes.guess_extension(mimetype) or ""
+        if not ext:
+            raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

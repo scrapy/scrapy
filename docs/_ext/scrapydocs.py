@@ -137,14 +137,6 @@ def source_role(
     return [node], []
 
 
-def issue_role(
-    name, rawtext, text: str, lineno, inliner, options=None, content=None
-) -> tuple[list[Any], list[Any]]:
-    ref = "https://github.com/scrapy/scrapy/issues/" + text
-    node = nodes.reference(rawtext, "issue " + text, refuri=ref)
-    return [node], []
-
-
 def commit_role(
     name, rawtext, text: str, lineno, inliner, options=None, content=None
 ) -> tuple[list[Any], list[Any]]:
@@ -164,7 +156,6 @@ def rev_role(
 def setup(app: Sphinx) -> dict[str, Any]:
     app.add_role("source", source_role)
     app.add_role("commit", commit_role)
-    app.add_role("issue", issue_role)
     app.add_role("rev", rev_role)
 
     app.add_node(

@@ -43,7 +43,6 @@ class DownloaderStats:
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("DOWNLOADER_STATS"):
             raise NotConfigured
-        assert crawler.stats
         return cls(crawler.stats)
 
     @_warn_spider_arg

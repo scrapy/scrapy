@@ -9,7 +9,7 @@ from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
-from twisted.internet.task import LoopingCall
+from twisted.internet.task import LoopingCall, deferLater
 from twisted.internet.threads import deferToThread
 
 from scrapy.utils.asyncgen import as_async_generator
@@ -92,6 +92,17 @@ def is_asyncio_available() -> bool:
     return is_asyncio_reactor_installed()
 
 
+class _QueueEnd:
+    """Marks the end of the work queue of :func:`_parallel_asyncio`.
+
+    A dedicated type is needed because any value, ``None`` included, can be an
+    item of the iterable being worked on.
+    """
+
+
+_QUEUE_END = _QueueEnd()
+
+
 async def _parallel_asyncio(
     iterable: Iterable[_T] | AsyncIterator[_T],
     count: int,
@@ -107,12 +118,12 @@ async def _parallel_asyncio(
     assumes that neither *callable* nor iterating *iterable* will raise an
     exception.
     """
-    queue: asyncio.Queue[_T | None] = asyncio.Queue(count * 2)
+    queue: asyncio.Queue[_T | _QueueEnd] = asyncio.Queue(count * 2)
 
     async def worker() -> None:
         while True:
             item = await queue.get()
-            if item is None:
+            if isinstance(item, _QueueEnd):
                 break
             try:
                 await callable_(item, *args, **kwargs)
@@ -123,7 +134,7 @@ async def _parallel_asyncio(
         async for item in as_async_generator(iterable):
             await queue.put(item)
         for _ in range(count):
-            await queue.put(None)
+            await queue.put(_QUEUE_END)
 
     fill_task = asyncio.create_task(fill_queue())
     work_tasks = [asyncio.create_task(worker()) for _ in range(count)]
@@ -291,6 +302,24 @@ class CallLaterResult:
         elif self._delayed_call and self._delayed_call.active():
             self._delayed_call.cancel()
             self._delayed_call = None
+
+
+async def sleep(seconds: float) -> None:
+    """Sleep for *seconds*.
+
+    .. versionadded:: 2.18.0
+
+    This uses either :func:`asyncio.sleep` or
+    :func:`~twisted.internet.task.deferLater`, depending on whether asyncio
+    support is available.
+    """
+    if is_asyncio_available():
+        await asyncio.sleep(seconds)
+        return
+
+    from twisted.internet import reactor
+
+    await deferLater(reactor, seconds)
 
 
 async def run_in_thread(

@@ -1,0 +1,255 @@
+name: Flag PRs for triage
+# Labels pull requests whose author's public activity suggests that an LLM is
+# writing them without supervision, and records the evidence in the workflow
+# run summary so that triaging one does not require reading a user profile.
+#
+# Four independent signals, any of which is enough to label. Each one abstains
+# when the data it needs is unavailable, so a missing signal never counts
+# against an author:
+#
+# - Rejection burst: pull requests of theirs closed unmerged elsewhere within
+#   the last month. Volume of rejections in absolute terms separates spraying
+#   from ordinary contribution far better than a merge ratio does, since
+#   ratios reward authors who accumulate merges in trivial repositories.
+# - Spray breadth: unrelated repositories they open pull requests against
+#   within one week. Breadth catches an agent on its first day, before any of
+#   its pull requests have been closed, and it comes from the event feed, so it
+#   also covers authors that the search API refuses to return.
+# - Assistant voice: their recent comments across GitHub read as assistant
+#   output rather than as a developer talking, by section headings, bullet
+#   lists, em dash density or stock acknowledgement phrases.
+# - Agent branch: the branch name carries an agent prefix.
+#
+# Authors that the organisations behind this repository already trust are left
+# alone before any of that runs: public members of those organisations, and
+# authors with a track record of pull requests merged into their repositories.
+# Trust from a merge record rather than from a list of names keeps the exemption
+# in step with who is actually contributing.
+#
+# Deliberately not used: account age, fork age, follower count, total pull
+# request count and cross-repository merge ratio. All of them were measured
+# against hand-labelled pull requests and either failed to separate or, in the
+# case of the merge ratio, inverted on held-out data.
+#
+# The label is advisory, and it says the author's history is worth a look
+# before reviewing in depth; it does not say the pull request is bad.
+#
+# The workflow only reads pull request and public activity metadata through the
+# API, it never checks out or runs pull request code, so pull_request_target is
+# safe here.
+on:  # zizmor: ignore[dangerous-triggers]
+  pull_request_target:
+    types: [opened]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  flag-pr-for-triage:
+    name: Label PR if the author's activity suggests unsupervised LLM use
+    runs-on: ubuntu-latest
+    steps:
+      - name: Score the author and label the PR
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const LABEL = 'needs triage';
+            const RETRIES = 5;
+            const RETRY_WAIT_MS = 60000;
+            const REJECTION_WINDOW_DAYS = 30;
+            const MIN_REJECTIONS = 1;
+            const MIN_COMMENTS = 2;
+            const MAX_REPOS_PER_WEEK = 2;
+            const VOICE = { structure: 0.10, emDashPerKChar: 0.30, acknowledgement: 0.40 };
+            const EVENT_PAGES = 3;
+            const TRUSTED_ORGS = ['scrapy', 'scrapy-plugins', 'scrapinghub', 'zytedata'];
+            const MIN_TRUSTED_MERGES = 10;
+            const AGENT_BRANCH = /^(agent|codex|claude|cursor|devin|copilot|jules|bot)[\/_-]/i;
+
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+
+            if (pr.user.type === 'Bot'
+                || ['MEMBER', 'OWNER', 'COLLABORATOR'].includes(pr.author_association)) {
+              core.info(`Skipping PR #${pr.number} by ${author} (${pr.user.type}, ${pr.author_association}).`);
+              return;
+            }
+
+            // Rate and abuse limits reset on the order of a minute, so waiting
+            // is enough; other errors are not worth retrying.
+            const retriable = new Set([403, 429, 500, 502, 503, 504]);
+            const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+            async function withRetries(description, call) {
+              for (let attempt = 1; ; attempt++) {
+                try {
+                  return await call();
+                } catch (error) {
+                  if (!retriable.has(error.status) || attempt > RETRIES) throw error;
+                  const reset = Number(error.response?.headers?.['x-ratelimit-reset']) * 1000 - Date.now();
+                  const after = Number(error.response?.headers?.['retry-after']) * 1000;
+                  const wait = Math.min(Math.max(after || reset || RETRY_WAIT_MS, RETRY_WAIT_MS), 15 * RETRY_WAIT_MS);
+                  core.info(`${description} failed with ${error.status}, retrying in ${Math.round(wait / 1000)}s (attempt ${attempt}/${RETRIES}).`);
+                  await sleep(wait);
+                }
+              }
+            }
+            // Accounts excluded from search, deleted users and the like leave a
+            // signal unmeasurable rather than negative.
+            const orNull = promise => promise.catch(error => {
+              if ([404, 410, 422].includes(error.status)) return null;
+              throw error;
+            });
+
+            // author_association only reports membership of the organisation
+            // that owns this repository, and only when it is public, so trust
+            // in the author is established here instead.
+            const trustedOrg = (await Promise.all(TRUSTED_ORGS.map(org =>
+              orNull(withRetries(`Checking public membership of ${org}`, () =>
+                github.rest.orgs.checkPublicMembershipForUser({ org, username: author }),
+              )).then(response => response && org),
+            ))).find(Boolean);
+            if (trustedOrg) {
+              core.info(`Skipping PR #${pr.number} by ${author} (public member of ${trustedOrg}).`);
+              return;
+            }
+            // Repeating a qualifier narrows the search instead of widening it,
+            // hence the explicit disjunction.
+            const trustedMerges = await orNull(withRetries('Counting merged PRs in trusted organisations', () =>
+              github.rest.search.issuesAndPullRequests({
+                q: `author:${author} type:pr is:merged`
+                  + ` (${TRUSTED_ORGS.map(org => `org:${org}`).join(' OR ')})`,
+                advanced_search: 'true', per_page: 1,
+              }).then(response => response.data.total_count),
+            ));
+            if (trustedMerges >= MIN_TRUSTED_MERGES) {
+              core.info(`Skipping PR #${pr.number} by ${author}`
+                + ` (${trustedMerges} PR(s) merged into ${TRUSTED_ORGS.join(', ')}).`);
+              return;
+            }
+
+            const opened = new Date(pr.created_at);
+            const daysBefore = date => (opened - new Date(date)) / 86400000;
+
+            // Signal 1: pull requests closed unmerged elsewhere, recently.
+            const search = await orNull(withRetries('Searching for PRs by the author', () =>
+              github.rest.search.issuesAndPullRequests({
+                q: `author:${author} type:pr`, advanced_search: 'true',
+                sort: 'created', order: 'desc', per_page: 100,
+              }).then(response => response.data),
+            ));
+            let rejections = null;
+            if (search) {
+              rejections = search.items.filter(item => {
+                const itemOwner = item.repository_url.split('/repos/')[1].split('/')[0].toLowerCase();
+                return itemOwner !== author.toLowerCase()
+                  && item.state === 'closed' && !item.pull_request?.merged_at
+                  && daysBefore(item.created_at) >= 0
+                  && daysBefore(item.created_at) <= REJECTION_WINDOW_DAYS;
+              }).map(item => item.html_url);
+            }
+
+            // Signal 2: how their recent comments across GitHub read.
+            const events = [];
+            for (let page = 1; page <= EVENT_PAGES; page++) {
+              const batch = await orNull(withRetries(`Reading public events page ${page}`, () =>
+                github.rest.activity.listPublicEventsForUser({
+                  username: author, per_page: 100, page,
+                }).then(response => response.data),
+              ));
+              if (!batch?.length) break;
+              events.push(...batch);
+              if (batch.length < 100) break;
+            }
+            const comments = events
+              .filter(event => ['IssueCommentEvent', 'PullRequestReviewCommentEvent'].includes(event.type))
+              .map(event => event.payload?.comment?.body)
+              .filter(Boolean);
+
+            // Signal 3: how many unrelated projects they open pull requests
+            // against in a single week. Breadth rather than volume: a focused
+            // contributor sends many pull requests to few repositories, while
+            // an unattended agent sprays a few across many. Taken from the
+            // event feed, which unlike search covers authors that search
+            // refuses to return.
+            const weeks = {};
+            for (const event of events) {
+              if (event.type !== 'PullRequestEvent' || event.payload?.action !== 'opened') continue;
+              const name = event.repo?.name;
+              if (!name || name.toLowerCase().startsWith(`${author.toLowerCase()}/`)) continue;
+              const week = Math.floor(new Date(event.created_at) / (7 * 86400000));
+              (weeks[week] ??= new Set()).add(name);
+            }
+            const breadth = events.length
+              ? Math.max(0, ...Object.values(weeks).map(repos => repos.size))
+              : null;
+            const STRUCTURE = [/^\s*#{2,3}\s/m, /^\s*[-*]\s.+\n\s*[-*]\s/m, /\*\*[^*]+\*\*/, /```/];
+            const ACKNOWLEDGEMENT = [
+              /thanks for (the )?(review|feedback|pointing|catching|flagging|clarif)/i,
+              /you'?re (absolutely )?right/i, /great catch/i, /that makes sense/i,
+              /i'?ll (continue|investigate|update|submit|look into|make sure)/i,
+              /let me know (if|whether)/i, /happy to (update|adjust|revise|change)/i,
+              /i understand that/i, /thanks for your time/i, /just following up/i,
+              /hope (this|that) helps/i, /please let me know/i, /i'?ve (updated|addressed|fixed)/i,
+            ];
+            let voice = null;
+            if (comments.length >= MIN_COMMENTS) {
+              const chars = comments.reduce((total, body) => total + body.length, 0);
+              const rate = patterns => comments.filter(body => patterns.some(re => re.test(body))).length / comments.length;
+              voice = {
+                comments: comments.length,
+                structure: rate(STRUCTURE),
+                acknowledgement: rate(ACKNOWLEDGEMENT),
+                emDashPerKChar: 1000 * comments.reduce((total, body) => total + (body.match(/—/g) || []).length, 0) / chars,
+              };
+            }
+
+            const reasons = [];
+            if (rejections && rejections.length >= MIN_REJECTIONS) {
+              reasons.push(`${rejections.length} PR(s) of theirs closed unmerged elsewhere in the last`
+                + ` ${REJECTION_WINDOW_DAYS} days: ${rejections.slice(0, 10).join(' ')}`);
+            }
+            if (voice && (voice.structure > VOICE.structure
+                          || voice.emDashPerKChar > VOICE.emDashPerKChar
+                          || voice.acknowledgement > VOICE.acknowledgement)) {
+              reasons.push(`comment style over ${voice.comments} recent comments:`
+                + ` ${(100 * voice.structure).toFixed(0)}% structured,`
+                + ` ${(100 * voice.acknowledgement).toFixed(0)}% stock acknowledgements,`
+                + ` ${voice.emDashPerKChar.toFixed(2)} em dashes per 1000 characters`);
+            }
+            if (breadth !== null && breadth > MAX_REPOS_PER_WEEK) {
+              reasons.push(`opened pull requests against ${breadth} unrelated repositories within a week`);
+            }
+            if (AGENT_BRANCH.test(pr.head?.ref || '')) {
+              reasons.push(`branch name carries an agent prefix: ${pr.head.ref}`);
+            }
+
+            await core.summary
+              .addHeading(`PR #${pr.number} by ${author}`, 3)
+              .addList([
+                rejections === null
+                  ? 'recent rejections elsewhere: unmeasurable, the author cannot be searched'
+                  : `recent rejections elsewhere: ${rejections.length}`,
+                voice === null
+                  ? `comment style: unmeasurable, fewer than ${MIN_COMMENTS} recent comments found`
+                  : `comment style: ${(100 * voice.structure).toFixed(0)}% structured,`
+                    + ` ${(100 * voice.acknowledgement).toFixed(0)}% stock acknowledgements,`
+                    + ` ${voice.emDashPerKChar.toFixed(2)} em dashes per 1000 characters`
+                    + ` over ${voice.comments} comments`,
+                breadth === null
+                  ? 'repositories per week: unmeasurable, no public events found'
+                  : `repositories per week, at most: ${breadth}`,
+                `branch: ${pr.head?.ref ?? 'unknown'}`,
+                `verdict: ${reasons.length ? `labelled "${LABEL}"` : 'not labelled'}`,
+              ])
+              .addRaw(reasons.length ? `\n${reasons.map(reason => `- ${reason}`).join('\n')}\n` : '')
+              .write();
+
+            if (!reasons.length) {
+              core.info(`Not labelling PR #${pr.number}.`);
+              return;
+            }
+            await withRetries('Adding the label', () =>
+              github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [LABEL] }),
+            );
+            core.info(`Labelled PR #${pr.number}: ${reasons.join(' | ')}`);

@@ -7,6 +7,7 @@ from twisted.internet.address import IPv4Address, IPv6Address
 
 from scrapy.resolver import CachingHostnameResolver, CachingThreadedResolver, dnscache
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -22,7 +23,7 @@ def reset_dnscache():
 
 def test_caching_threaded_resolver_dnscache_disabled():
     crawler = get_crawler(settings_dict={"DNSCACHE_ENABLED": False})
-    CachingThreadedResolver.from_crawler(crawler, Mock())
+    build_from_crawler(CachingThreadedResolver, crawler, Mock())
     assert dnscache.limit == 0
 
 
@@ -37,7 +38,7 @@ async def test_caching_threaded_resolver_getHostByName_cache_hit():
 
 def test_caching_hostname_resolver_dnscache_disabled():
     crawler = get_crawler(settings_dict={"DNSCACHE_ENABLED": False})
-    CachingHostnameResolver.from_crawler(crawler, Mock())
+    build_from_crawler(CachingHostnameResolver, crawler, Mock())
     assert dnscache.limit == 0
 
 

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 import pprint
+import re
 import sys
+import warnings
 from collections.abc import MutableMapping
 from logging.config import dictConfig
 from typing import TYPE_CHECKING, Any, cast
@@ -12,7 +14,9 @@ from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
+from scrapy.utils.display import _tty_supports_color
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
@@ -77,6 +81,9 @@ DEFAULT_LOGGING = {
         },
         "httpx": {
             "level": "WARNING",
+        },
+        "parso": {
+            "level": "ERROR",
         },
         "scrapy": {
             "level": "DEBUG",
@@ -162,6 +169,25 @@ def get_scrapy_root_handler() -> logging.Handler | None:
     return _scrapy_root_handler
 
 
+def _get_formatter(handler: logging.Handler, settings: Settings) -> logging.Formatter:
+    fmt = settings.get("LOG_FORMAT")
+    datefmt = settings.get("LOG_DATEFORMAT")
+    if (
+        isinstance(handler, logging.StreamHandler)
+        and not isinstance(handler, logging.FileHandler)
+        and settings.getbool("LOG_COLOR")
+        and handler.stream.isatty()
+        and _tty_supports_color()
+    ):
+        try:
+            from colorlog import ColoredFormatter  # noqa: PLC0415
+        except ImportError:
+            pass
+        else:
+            return ColoredFormatter(fmt=f"%(log_color)s{fmt}", datefmt=datefmt)
+    return logging.Formatter(fmt=fmt, datefmt=datefmt)
+
+
 def _get_handler(settings: Settings) -> logging.Handler:
     """Return a log handler object according to settings"""
     filename = settings.get("LOG_FILE")
@@ -175,10 +201,7 @@ def _get_handler(settings: Settings) -> logging.Handler:
     else:
         handler = logging.NullHandler()
 
-    formatter = logging.Formatter(
-        fmt=settings.get("LOG_FORMAT"), datefmt=settings.get("LOG_DATEFORMAT")
-    )
-    handler.setFormatter(formatter)
+    handler.setFormatter(_get_formatter(handler, settings))
     handler.setLevel(settings.get("LOG_LEVEL"))
     if settings.getbool("LOG_SHORT_NAMES"):
         handler.addFilter(TopLevelFormatter(["scrapy"]))
@@ -239,13 +262,15 @@ class LogCounterHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         sname = f"log_count/{record.levelname}"
-        assert self.crawler.stats
         self.crawler.stats.inc_value(sname)
+
+
+_MSG_MAPPING_PLACEHOLDER = re.compile(r"%\(\w+\)")
 
 
 def logformatter_adapter(
     logkws: LogFormatterResult,
-) -> tuple[int, str, dict[str, Any] | tuple[Any, ...]]:
+) -> tuple[Any, ...]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
     and adapts it into a tuple of positional arguments for logger.log calls.
@@ -253,10 +278,28 @@ def logformatter_adapter(
 
     level = logkws.get("level", logging.INFO)
     message = logkws.get("msg") or ""
-    # NOTE: This also handles 'args' being an empty dict, that case doesn't
-    # play well in logger.log calls
-    args = cast("dict[str, Any]", logkws) if not logkws.get("args") else logkws["args"]
-
+    args = logkws.get("args")
+    # logging interpolates the message whenever it receives any positional
+    # argument, so empty args are left out. Tuple args become one positional
+    # argument each, while a dict is a single positional argument.
+    if not args:
+        if _MSG_MAPPING_PLACEHOLDER.search(message):
+            # The log formatter method has already returned, so there is no
+            # frame of it left in the stack to point at. msg is part of the
+            # warning message instead, so that each offending method gets its
+            # own warning.
+            warnings.warn(
+                f"A log formatter method returned msg {message!r} with "
+                f"%(name)s placeholders and no args. Interpolating msg with "
+                f"the returned dict is deprecated, return those values under "
+                f"args instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=1,
+            )
+            return (level, message, logkws)
+        return (level, message)
+    if isinstance(args, tuple):
+        return (level, message, *args)
     return (level, message, args)
 
 

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import builtins
+import sys
 from io import StringIO
 from typing import TYPE_CHECKING
 from unittest import mock
 
-from scrapy.utils.display import pformat, pprint
+import pytest
+
+from scrapy.utils.display import _enable_windows_terminal_processing, pformat, pprint
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -79,6 +82,14 @@ def test_pformat_windows(
     version.return_value = "10.0.14393"
     terminal_processing.return_value = True
     assert pformat(value) in colorized_strings
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only console API")
+def test_enable_windows_terminal_processing() -> None:
+    # The tests above mock this out, so this is the only place the real
+    # kernel32 calls run. Whether they succeed depends on whether stdout is a
+    # console, which pytest does not guarantee.
+    assert isinstance(_enable_windows_terminal_processing(), bool)
 
 
 @mock.patch("sys.platform", "linux")

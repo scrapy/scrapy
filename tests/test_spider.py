@@ -41,7 +41,7 @@ class TestXMLFeedSpider(TestSpiderBase):
         </urlset>"""
         response = XmlResponse(url="http://example.com/sitemap.xml", body=body)
 
-        class _XMLSpider(self.spider_class):
+        class _XMLSpider(self.spider_class):  # type: ignore[name-defined,misc]
             itertag = "url"
             namespaces = (
                 ("a", "http://www.google.com/schemas/sitemap/0.84"),
@@ -100,7 +100,6 @@ class TestXMLFeedSpider(TestSpiderBase):
 
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
-        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
 
     @coroutine_test
@@ -135,7 +134,6 @@ class TestXMLFeedSpider(TestSpiderBase):
 
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
-        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotSupported") == 1
 
     @pytest.mark.parametrize("feed_iterator", ["xml", "html"])
@@ -155,7 +153,6 @@ class TestXMLFeedSpider(TestSpiderBase):
 
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
-        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/ValueError") == 1
 
 
@@ -166,7 +163,7 @@ class TestCSVFeedSpider(TestSpiderBase):
         body = get_testdata("feeds", "feed-sample6.csv")
         response = Response("http://example.org/dummy.csv", body=body)
 
-        class _CrawlSpider(self.spider_class):
+        class _CrawlSpider(self.spider_class):  # type: ignore[name-defined,misc]
             name = "test"
             delimiter = ","
             quotechar = "'"
@@ -206,7 +203,6 @@ class TestCSVFeedSpider(TestSpiderBase):
 
         items, crawler = await crawl_items(_Spider, mockserver)
         assert items == []
-        assert crawler.stats
         assert crawler.stats.get_value("spider_exceptions/NotImplementedError") == 1
 
 

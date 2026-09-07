@@ -17,6 +17,7 @@ from .utils import ssl_context_factory
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from types import TracebackType
 
     from twisted.web import resource
 
@@ -77,7 +78,12 @@ class BaseMockServer(ABC):
             self.https_port = https_parsed.port
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         if self.proc:
             self.proc.kill()
             self.proc.communicate()
@@ -162,7 +168,7 @@ def main_factory(
                 0, factory, context_factory, interface=args.host
             )
 
-        def print_listening():
+        def print_listening() -> None:
             def address(scheme: str, listening_port) -> str:
                 listening_host = listening_port.getHost()
                 host = listening_host.host

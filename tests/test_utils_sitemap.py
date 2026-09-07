@@ -41,6 +41,21 @@ def test_sitemap():
     ]
 
 
+def test_sitemap_str():
+    xmltext = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
+<url><loc>http://www.example.com/</loc></url>
+</urlset>"""
+
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="Passing `str` type as `xmltext` is deprecated",
+    ):
+        s = Sitemap(xmltext)
+    assert s.type == "urlset"
+    assert list(s) == [{"loc": "http://www.example.com/"}]
+
+
 def test_sitemap_index():
     s = Sitemap(
         b"""<?xml version="1.0" encoding="UTF-8"?>

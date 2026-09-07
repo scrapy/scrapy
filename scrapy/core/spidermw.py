@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
+from contextlib import suppress
 from functools import wraps
-from inspect import isasyncgenfunction
+from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 from warnings import warn
@@ -23,7 +24,7 @@ from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
-    _defer_sleep_async,
+    _process_pending_io,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
@@ -108,6 +109,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             async for r in iterable:
                 yield r
         except Exception as ex:
+            if getattr(ex, "_spidermw_unhandled", False):
+                raise
             exception_result: MutableAsyncChain[_T] = self._process_spider_exception(
                 response, ex, exception_processor_index
             )
@@ -147,6 +150,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"or an iterable, got {type(result)}"
             )
             raise _InvalidOutput(msg)
+        # Every remaining middleware declined to handle the exception, so the
+        # outer process_spider_output layers must let it through instead of
+        # offering it to those middlewares again.
+        with suppress(AttributeError):
+            exception._spidermw_unhandled = True  # type: ignore[attr-defined]
         raise exception
 
     def _process_spider_output(
@@ -224,7 +232,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             ait = it if isinstance(it, AsyncIterator) else as_async_generator(it)
             return await self._process_callback_output(response, ait)
         except Exception as ex:
-            await _defer_sleep_async()
+            await _process_pending_io()
             return self._process_spider_exception(response, ex)
 
     async def process_start(
@@ -244,7 +252,19 @@ class SpiderMiddlewareManager(MiddlewareManager):
             warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
             self._set_compat_spider(spider)
         start = self._spider.start()
+        if not hasattr(start, "__aiter__"):
+            if iscoroutine(start):
+                start.close()
+            start = self._reject_start(start)
         return await self._process_chain("process_start", start)
+
+    async def _reject_start(self, start: Any) -> AsyncIterator[Any]:
+        raise TypeError(
+            f"{global_object_name(type(self._spider))}.start() must be an"
+            f" asynchronous generator, i.e. an async def method with yield"
+            f" statements, got {type(start)}"
+        )
+        yield  # pylint: disable=unreachable  # makes this method an asynchronous generator
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod

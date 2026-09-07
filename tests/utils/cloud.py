@@ -14,7 +14,6 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
 
     bucket_mock = mock.create_autospec(Bucket)
     client_mock.bucket.return_value = bucket_mock
-    client_mock.get_bucket.return_value = bucket_mock
 
     blob_mock = mock.create_autospec(Blob)
     bucket_mock.blob.return_value = blob_mock
