@@ -20,8 +20,9 @@ jobs:
     if: github.event.action != 'closed'
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
-      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n auto' || '-n auto --no-cov' }}
+      PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
       # Make uv use the interpreter that actions/setup-python installed instead
       # of downloading one of its own.
       UV_PYTHON_PREFERENCE: only-system
@@ -122,7 +123,7 @@ jobs:
         sudo apt-get install libxml2-dev libxslt-dev
 
     - name: Set up uv
-      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       with:
         cache-dependency-glob: |
           pyproject.toml

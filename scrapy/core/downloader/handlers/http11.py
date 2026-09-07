@@ -163,7 +163,9 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         try:
             await maybe_deferred_to_future(d)
         finally:
-            if delayed_call.active():
+            # Only inactive if the timeout above won the race, which the tests
+            # cannot force.
+            if delayed_call.active():  # pragma: no branch
                 delayed_call.cancel()
 
 
@@ -591,11 +593,8 @@ class _ScrapyAgent:
 
     def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
-        try:
-            version = result["txresponse"].version
-            protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
-        except (AttributeError, TypeError, IndexError):
-            protocol = None
+        version = result["txresponse"].version
+        protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
         return make_response(
             url=url,
             status=int(result["txresponse"].code),
@@ -670,16 +669,11 @@ class _ResponseReader(Protocol):
 
     def connectionMade(self) -> None:
         assert self.transport
-        if self._certificate is None:
-            with suppress(AttributeError):
-                self._certificate = ssl.Certificate(
-                    self.transport._producer.getPeerCertificate()
-                )
-
-        if self._ip_address is None:
-            self._ip_address = ipaddress.ip_address(
-                self.transport._producer.getPeer().host
+        with suppress(AttributeError):
+            self._certificate = ssl.Certificate(
+                self.transport._producer.getPeerCertificate()
             )
+        self._ip_address = ipaddress.ip_address(self.transport._producer.getPeer().host)
 
         if self._tls_verbose_logging:
             connection = self.transport._producer.getHandle()
@@ -737,18 +731,21 @@ class _ResponseReader(Protocol):
             self._finish_response(flags=["partial"])
             return
 
-        if reason.check(ResponseFailed) and any(
+        # Twisted ends a response body in one of three ways: ResponseDone,
+        # PotentialDataLoss, or a ResponseFailed wrapping _DataLoss. See
+        # twisted.web._newclient.HTTPClientParser.connectionLost().
+        assert reason.check(ResponseFailed)
+        assert any(
             r.check(_DataLoss)
             for r in reason.value.reasons  # type: ignore[union-attr]
-        ):
-            if not self._fail_on_dataloss:
-                self._finish_response(flags=["dataloss"])
-                return
+        )
+        if not self._fail_on_dataloss:
+            self._finish_response(flags=["dataloss"])
+            return
 
-            exc = ResponseDataLossError()
-            exc.__cause__ = reason.value
-            reason = Failure(exc)
-
+        exc = ResponseDataLossError()
+        exc.__cause__ = reason.value
+        reason = Failure(exc)
         self._finished.errback(reason)
 
 

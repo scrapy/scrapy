@@ -410,6 +410,7 @@ class DownloaderAwarePriorityQueue:
         request = queue.pop()
         if len(queue) == 0:
             del self.pqueues[slot]
+            queue.close()
             if self.key:
                 # Reclaim the slot directory; rmdir leaves it alone if the
                 # downstream queues did not remove all their files.

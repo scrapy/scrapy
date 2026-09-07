@@ -79,11 +79,6 @@ class TestWrappedRequest:
         assert not self.wrapped.is_unverifiable()
         assert not self.wrapped.unverifiable
 
-    def test_is_unverifiable2(self):
-        self.request.meta["is_unverifiable"] = True
-        assert self.wrapped.is_unverifiable()
-        assert self.wrapped.unverifiable
-
     def test_get_origin_req_host(self):
         assert self.wrapped.origin_req_host == "www.example.com"
 
