@@ -41,8 +41,7 @@ what every part of the engine is doing at a given moment:
     len(engine.downloader.active)                   : 16
     len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.active)                 : 0
-    engine.scraper.slot.active_size                 : 0
-    engine.scraper.slot.needs_backout()             : False
+    engine.downloader.middleware._total_active_size : 1310720
 
 Take a few readings at different points of the crawl:
 
@@ -61,10 +60,12 @@ Take a few readings at different points of the crawl:
     page at a time cannot use more concurrency than it creates. See
     :ref:`optimize-requests`.
 
--   ``needs_backout()`` is ``True``, or ``active_size`` approaches
-    :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`: responses arrive faster than your
-    callbacks and :ref:`item pipelines <topics-item-pipeline>` handle them. The
-    bottleneck is your own code.
+-   ``engine.downloader.middleware._total_active_size`` approaches
+    :setting:`RESPONSE_MAX_ACTIVE_SIZE`, or the
+    ``request_backout_seconds/response_max_active_size`` stat grows (see
+    :ref:`crawl-bottlenecks`): responses arrive faster than your callbacks and
+    :ref:`item pipelines <topics-item-pipeline>` handle them, or your code keeps
+    responses in memory. The bottleneck is your own code.
 
 -   ``len(engine.scheduler.mqs)`` grows without settling: the crawl discovers
     requests faster than it downloads them. This is what makes long crawls run
@@ -200,7 +201,7 @@ Lowering resource usage
 Lowering memory usage
 ---------------------
 
--   Lower :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`.
+-   Lower :setting:`RESPONSE_MAX_ACTIVE_SIZE`.
 
 -   Lower :setting:`DOWNLOAD_MAXSIZE`, which allows a single response to take up
     to 1 GiB of memory by default, multiplied by your concurrency. Set
@@ -314,7 +315,7 @@ For broad crawls, consider these adjustments:
         (e.g. 8 × 10 domains = 80 concurrent requests) as your CPU and memory
         allow.
 
-    -   Increase :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE` when increasing
+    -   Increase :setting:`RESPONSE_MAX_ACTIVE_SIZE` when increasing
         :setting:`CONCURRENT_REQUESTS` stops making a difference.
 
 -   .. _broad-crawls-bfo:

@@ -301,11 +301,11 @@ class Downloader:
         # flight. When nothing is in flight, it is the only way to make
         # progress, so it also runs whenever the tracked size changed since the
         # last collection.
-        in_use = len(self.active)
         engine = self.crawler.engine
-        slot = engine.scraper.slot if engine is not None else None
-        if slot is not None:
-            in_use += len(slot.queue) + len(slot.active)
+        assert engine is not None
+        slot = engine.scraper.slot
+        assert slot is not None
+        in_use = len(self.active) + len(slot.queue) + len(slot.active)
         if len(self.middleware._tracked_responses) <= in_use:
             return
         current_time = perf_counter()
