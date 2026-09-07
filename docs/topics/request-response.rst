@@ -713,10 +713,14 @@ Errbacks
 ========
 
 The errback of a request is a function that will be called when an exception
-is raise while processing it.
+is raised while processing it.
 
 It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
 be used to track connection establishment timeouts, DNS errors etc.
+
+Scrapy sets the ``request`` attribute of that
+:exc:`~twisted.python.failure.Failure` object to the :class:`~scrapy.Request`
+object being processed.
 
 If an errback raises an exception, Scrapy logs it and sends the
 :signal:`spider_error` signal, unless the exception is the one that the errback
