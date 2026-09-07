@@ -295,31 +295,27 @@ class Downloader:
         # A response with a cached selector (e.g. after response.css() or
         # response.xpath()) holds a reference cycle with it, so freeing it
         # requires an actual garbage collection. A full collection is
-        # expensive, so it only runs when it is the only way to make progress:
-        # when nothing is in flight that could free responses on its own, and
-        # only if the tracked size changed since the last collection or a full
-        # interval passed; or when the backout has lasted a full interval.
+        # expensive, so it only runs when there are tracked responses that
+        # neither the downloader nor the scraper holds, i.e. ones that may be
+        # unreachable, and at most once per interval while something is in
+        # flight. When nothing is in flight, it is the only way to make
+        # progress, so it also runs whenever the tracked size changed since the
+        # last collection.
+        in_use = len(self.active)
+        engine = self.crawler.engine
+        slot = engine.scraper.slot if engine is not None else None
+        if slot is not None:
+            in_use += len(slot.queue) + len(slot.active)
+        if len(self.middleware._tracked_responses) <= in_use:
+            return
         current_time = perf_counter()
-        total_active_size = self.middleware._total_active_size
         stale = current_time - self._last_gc >= self._GC_INTERVAL
-        if self._is_idle():
-            collect = stale or total_active_size != self._active_size_at_last_gc
-        else:
-            backout_start = self._last_backout[1]
-            assert backout_start is not None
-            collect = stale and current_time - backout_start >= self._GC_INTERVAL
-        if not collect:
+        changed = self.middleware._total_active_size != self._active_size_at_last_gc
+        if not (stale or (changed and not in_use)):
             return
         self._last_gc = current_time
         garbage_collect()
         self._active_size_at_last_gc = self.middleware._total_active_size
-
-    def _is_idle(self) -> bool:
-        if self.active:
-            return False
-        engine = self.crawler.engine
-        slot = engine.scraper.slot if engine is not None else None
-        return slot is None or slot.is_idle()
 
     @_warn_spider_arg
     def _get_slot(
