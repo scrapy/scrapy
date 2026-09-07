@@ -16,6 +16,8 @@ from weakref import WeakKeyDictionary
 from twisted.web import http
 from w3lib import html
 
+from scrapy.http.headers import Headers
+from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
@@ -52,6 +54,30 @@ def get_meta_refresh(
             text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
         )
     return _metaref_cache[response]
+
+
+def response_from_dict(d: dict[str, Any]) -> Response:
+    """Return a response built from the *d* dict, as returned by
+    :meth:`Response.to_dict() <scrapy.http.Response.to_dict>`.
+
+    .. versionadded:: VERSION
+
+    If *d* does not indicate a response class, e.g. because it comes from a
+    plain :class:`~scrapy.http.Response` object or predates :meth:`~scrapy.http.Response.to_dict`,
+    the class is guessed with :attr:`~scrapy.responsetypes.responsetypes`.
+    """
+    # Imported here to avoid a circular import.
+    from scrapy.responsetypes import responsetypes  # noqa: PLC0415
+
+    d = {**d, "headers": Headers(d.get("headers") or {})}
+    response_cls: type[Response] = (
+        load_object(d["_class"])
+        if "_class" in d
+        else responsetypes.from_args(
+            headers=d["headers"], url=d["url"], body=d.get("body")
+        )
+    )
+    return response_cls.from_dict(d)
 
 
 def response_status_message(status: bytes | float | str) -> str:
