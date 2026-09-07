@@ -9,6 +9,7 @@ description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
     "aiohttp>=3.13.3",
+    "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
