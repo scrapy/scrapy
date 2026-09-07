@@ -130,9 +130,9 @@ using different handlers.
 Here is a comparison of some features of the built-in HTTP handlers, see the
 individual handler docs for more differences:
 
-=================== ================= ===================== ====================
+=================== ================= ===================== ===========================
 Feature             H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
-=================== ================= ===================== ====================
+=================== ================= ===================== ===========================
 Requires asyncio    No                No                    Yes
 Requires a reactor  Yes               Yes                   No
 HTTP/1.1            No                Yes                   Yes
@@ -140,8 +140,21 @@ HTTP/2              Yes               No                    Yes
 TLS implementation  ``cryptography``  ``cryptography``      Stdlib ``ssl``
 HTTP proxies        No                Yes                   Yes
 SOCKS proxies       No                No                    Yes
+IPv6 addresses      Needs a setting   Needs a setting       Yes, except through a proxy
 Bad header handling Not applicable    Skip bad              Fail
-=================== ================= ===================== ====================
+=================== ================= ===================== ===========================
+
+About the IPv6 row: the Twisted-based handlers reach every host, including hosts
+given as an IPv6 address literal such as ``https://[::1]/``, through the
+resolver configured with :setting:`TWISTED_DNS_RESOLVER`. Its default value only
+returns IPv4 addresses, so IPv6 requires setting it to
+``scrapy.resolver.CachingHostnameResolver``. That applies to proxy hosts as well
+as to target hosts.
+
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` does not
+use the Twisted resolver, so it needs no setting for IPv6. However, IPv6
+address literals `do not work through a proxy
+<https://github.com/pydantic/httpx2/pull/1091>`__.
 
 Bad header handling is what a handler does when a response has a bad header
 line, e.g. one with no colon in it, which some servers send. Handlers that skip
@@ -310,6 +323,15 @@ Other limitations:
 -   The handler creates a separate connection pool for each proxy URL (due to
     limitations of ``httpx``) which may lead to higher resource usage when
     using proxy rotation.
+
+-   Requests to a URL with an IPv6 address literal, such as
+    ``https://[::1]/``, `do not work through a proxy
+    <https://github.com/pydantic/httpx2/pull/1091>`__.
+
+Unlike the Twisted-based handlers, this handler does not use the resolver
+configured with :setting:`TWISTED_DNS_RESOLVER`, so it resolves IPv6 hosts
+without needing that setting changed, and it is not affected by
+:setting:`DNS_TIMEOUT` or by the :setting:`DNSCACHE_ENABLED` cache.
 
 .. setting:: HTTPX_HTTP2_ENABLED
 
