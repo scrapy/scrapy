@@ -314,7 +314,7 @@ def test_overhead_delay(benchmark: BenchmarkFixture) -> None:
     The delay is not randomized, so that wall time, and hence the number of
     reactor iterations that the crawl needs, does not change between runs.
     """
-    settings = {"DOWNLOAD_DELAY": DELAY, "RANDOMIZE_DOWNLOAD_DELAY": False}
+    settings = {"DOWNLOAD_DELAY": DELAY, "DOWNLOAD_DELAY_JITTER": 0}
     benchmark(lambda: _crawl_tree(settings, domains=1, pages=DELAYED_REQUESTS))
 
 
