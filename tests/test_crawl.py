@@ -76,11 +76,11 @@ class TestCrawl:
 
     @coroutine_test
     async def test_fixed_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.2)
+        await self._test_delay(mockserver, total=10, delay=0.2)
 
     @coroutine_test
     async def test_randomized_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.1, randomize=True)
+        await self._test_delay(mockserver, total=10, delay=0.1, randomize=True)
 
     @staticmethod
     async def _test_delay(
@@ -93,7 +93,10 @@ class TestCrawl:
         }
         tolerance = 1 - (0.6 if randomize else 0.2)
 
-        settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
+        settings = {
+            "DOWNLOAD_DELAY": delay,
+            "DOWNLOAD_DELAY_JITTER": 0.5 if randomize else 0,
+        }
         crawler = get_crawler(FollowAllSpider, settings)
         await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider

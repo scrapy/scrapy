@@ -93,6 +93,12 @@ available in Scrapy which extend the basic Stats Collector. You can select
 which Stats Collector to use through the :setting:`STATS_CLASS` setting. The
 default Stats Collector used is the :class:`MemoryStatsCollector`.
 
+StatsCollector
+--------------
+
+.. autoclass:: StatsCollector
+   :members:
+
 MemoryStatsCollector
 --------------------
 

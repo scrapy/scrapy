@@ -166,6 +166,8 @@ Settings API
 
 .. autofunction:: get_settings_priority
 
+.. autofunction:: scrapy.utils.project.get_project_settings
+
 .. autoclass:: Settings
    :show-inheritance:
    :members:
@@ -271,4 +273,4 @@ Engine API
 ==========
 
 .. autoclass:: scrapy.core.engine.ExecutionEngine()
-   :members: needs_backout
+   :members: needs_backout, scheduler

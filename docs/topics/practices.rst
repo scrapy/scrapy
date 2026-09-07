@@ -361,6 +361,12 @@ By default, Scrapy runs a single spider per process when you run ``scrapy
 crawl``. However, Scrapy supports running multiple spiders per process using
 the :ref:`internal API <topics-api>`.
 
+Each call to ``crawl()`` creates its own :class:`~scrapy.crawler.Crawler`,
+with its own instances of the downloader and spider middlewares and its own
+resolved :ref:`settings <topics-settings>`, including :ref:`spider settings
+<spider-settings>`. Nothing from one of these is shared with the other
+spiders running in the same process.
+
 Here is an example that runs multiple spiders simultaneously:
 
 .. code-block:: python

@@ -8,12 +8,11 @@ import argparse
 import builtins
 import logging
 import os
+import sys
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
-
-from twisted.python import failure
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
@@ -31,6 +30,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+class _PdbHandler(logging.Handler):
+    """Start a post-mortem debugging session on every logged record that comes
+    with an exception traceback."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.exc_info and record.exc_info[2]:
+            import pdb  # noqa: T100,PLC0415
+
+            pdb.post_mortem(record.exc_info[2])
 
 
 class ScrapyCommand(ABC):
@@ -122,7 +132,11 @@ class ScrapyCommand(ABC):
             metavar="NAME=VALUE",
             help="set/override setting (may be repeated)",
         )
-        group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
+        group.add_argument(
+            "--pdb",
+            action="store_true",
+            help="enable pdb on failure (uses ipdb if installed)",
+        )
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         """Set settings based on the command line options."""
@@ -151,7 +165,13 @@ class ScrapyCommand(ABC):
             )
 
         if opts.pdb:
-            failure.startDebugMode()
+            try:
+                import ipdb  # noqa: T100,PLC0415
+            except ImportError:
+                pass
+            else:
+                sys.modules["pdb"] = ipdb
+            logging.root.addHandler(_PdbHandler(level=logging.ERROR))
 
     @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
