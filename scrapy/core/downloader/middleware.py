@@ -197,7 +197,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     self._count_response_size(response, request)
                 return response
         response = await download_func(request)
-        self._count_response_size(response, request)
+        if response is not None:
+            self._count_response_size(response, request)
         return response
 
     async def _process_response(
