@@ -139,6 +139,9 @@ class HttpCacheMiddleware:
 
         if self.policy.is_cached_response_valid(cachedresponse, response, request):
             self.stats.inc_value("httpcache/revalidate")
+            if response.status == 304:
+                self._freshen_cached_response(cachedresponse, response)
+                self._cache_response(cachedresponse, request)
             return cachedresponse
 
         self.stats.inc_value("httpcache/invalidate")
@@ -156,6 +159,22 @@ class HttpCacheMiddleware:
             self.stats.inc_value("httpcache/errorrecovery")
             return cachedresponse
         return None
+
+    def _freshen_cached_response(
+        self, cachedresponse: Response, response: Response
+    ) -> None:
+        # RFC 7234, section 4.3.4: update the stored response with the
+        # header fields from a successful revalidation (304) response.
+        warnings = [
+            warning
+            for warning in cachedresponse.headers.getlist(b"Warning")
+            if warning.split(None, 1)[0].startswith(b"2")
+        ]
+        cachedresponse.headers.update(response.headers)
+        if warnings:
+            cachedresponse.headers[b"Warning"] = warnings
+        else:
+            cachedresponse.headers.pop(b"Warning", None)
 
     def _cache_response(self, response: Response, request: Request) -> None:
         if self.policy.should_cache_response(response, request):

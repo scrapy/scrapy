@@ -80,6 +80,16 @@ but is just an identifier, and the capitalized project-name prefix of class
 names in :file:`middlewares.py` and :file:`pipelines.py` is only a naming
 convention; neither needs to match the module name.
 
+.. _find-projects:
+
+Finding projects
+----------------
+
+To find the Scrapy projects in a directory tree, e.g. from an editor extension,
+use :func:`~scrapy.utils.project.find_projects`:
+
+.. autofunction:: scrapy.utils.project.find_projects
+
 .. _topics-project-envvar:
 
 Sharing the root directory between projects
@@ -275,6 +285,9 @@ Your templates replace the built-in ones, which live in the :file:`templates`
 directory of the ``scrapy`` package, so copy over any of those that you want to
 keep.
 
+Alternatively, pass ``-t`` a path to a :file:`.tmpl` file instead of a name,
+to use it without touching :setting:`TEMPLATES_DIR`.
+
 Templates are rendered with :class:`string.Template`: ``$variable`` and
 ``${variable}`` are replaced, and ``$$`` renders as a single ``$``, which
 regular expressions often need. Rendering fails on any variable other than the
@@ -338,6 +351,9 @@ check
 * Requires project: *yes*
 
 Run contract checks.
+
+.. versionadded:: VERSION
+   The ``-a`` option, to pass spider arguments, as in :command:`crawl`.
 
 .. skip: start
 

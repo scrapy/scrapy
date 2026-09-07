@@ -161,7 +161,7 @@ Request objects
 
         A common use of request metadata is to define request-specific
         parameters for Scrapy components (extensions, middlewares, etc.). For
-        example, if you set ``dont_retry`` to ``True``,
+        example, if you set :reqmeta:`dont_retry` to ``True``,
         :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` will never
         retry that request, even if it fails. See :ref:`topics-request-meta`.
 
@@ -169,15 +169,15 @@ Request objects
         example, to keep request state information relevant to your component.
         For example,
         :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` uses the
-        ``retry_times`` metadata key to keep track of how many times a request
-        has been retried so far.
+        :reqmeta:`retry_times` metadata key to keep track of how many times a
+        request has been retried so far.
 
         Copying all the metadata of a previous request into a new, follow-up
         request in a spider callback is a bad practice, because request
         metadata may include metadata set by Scrapy components that is not
         meant to be copied into other requests. For example, copying the
-        ``retry_times`` metadata key into follow-up requests can lower the
-        amount of retries allowed for those follow-up requests.
+        :reqmeta:`retry_times` metadata key into follow-up requests can lower
+        the amount of retries allowed for those follow-up requests.
 
         You should only copy all request metadata from one request to another
         if the new request is meant to replace the old request, as is often the
@@ -713,10 +713,14 @@ Errbacks
 ========
 
 The errback of a request is a function that will be called when an exception
-is raise while processing it.
+is raised while processing it.
 
 It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
 be used to track connection establishment timeouts, DNS errors etc.
+
+Scrapy sets the ``request`` attribute of that
+:exc:`~twisted.python.failure.Failure` object to the :class:`~scrapy.Request`
+object being processed.
 
 If an errback raises an exception, Scrapy logs it and sends the
 :signal:`spider_error` signal, unless the exception is the one that the errback
@@ -828,6 +832,7 @@ Those are:
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
+* :reqmeta:`depth`
 * :reqmeta:`dont_cache`
 * :reqmeta:`dont_merge_cookies`
 * :reqmeta:`dont_obey_robotstxt`
@@ -837,10 +842,12 @@ Those are:
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_slot`
-* :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`download_warnsize`
+* :reqmeta:`ftp_local_filename`
+* :reqmeta:`ftp_passive`
+* :reqmeta:`ftp_password`
+* :reqmeta:`ftp_user`
 * :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
@@ -848,12 +855,21 @@ Those are:
 * :reqmeta:`http_pass`
 * :reqmeta:`http_user`
 * :reqmeta:`is_start_request`
+* :reqmeta:`link_text`
 * :reqmeta:`max_retry_times`
+* :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
+* :reqmeta:`redirect_times`
+* :reqmeta:`redirect_ttl`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`retry_times`
+* :reqmeta:`rule`
 * :reqmeta:`verbatim_url`
+
+Scrapy components also use meta keys whose name starts with an underscore, such
+as ``_auth_proxy``. Those are internal, and may change or disappear at any time.
 
 .. reqmeta:: bindaddress
 
@@ -920,6 +936,15 @@ download_fail_on_dataloss
 
 Whether or not to fail on broken responses. See:
 :setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
+
+.. reqmeta:: ftp_local_filename
+
+ftp_local_filename
+------------------
+
+Path, as :class:`bytes`, of the file where to write the response body of an
+``ftp://`` request. If set, :attr:`Response.body <scrapy.http.Response.body>`
+holds this path instead of the file contents.
 
 .. reqmeta:: give_up_log_level
 
@@ -1267,6 +1292,10 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. automethod:: Response.to_dict
+
+    .. automethod:: Response.from_dict
+
 
 .. _topics-request-response-ref-response-subclasses:
 
@@ -1457,3 +1486,9 @@ JsonResponse objects
     that is used when the response has a `JSON MIME type
     <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type`
     header.
+
+
+Other functions related to responses
+====================================
+
+.. autofunction:: scrapy.utils.response.response_from_dict

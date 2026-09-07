@@ -113,6 +113,8 @@ The following extras are available:
      - :ref:`bpython shell <shell-config>`
    * - ``clipboard``
      - Reading the system clipboard with :command:`genrequest`
+   * - ``color``
+     - :setting:`LOG_COLOR`
    * - ``gcs``
      - :ref:`Google Cloud Storage <topics-feed-storage-gcs>` for
        :ref:`feed exports <topics-feed-exports>` and

@@ -150,23 +150,6 @@ Log Count extension
 
 .. autoclass:: LogCount
 
-.. _topics-extensions-ref-telnetconsole:
-
-Telnet console extension
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.extensions.telnet
-   :synopsis: Telnet console
-
-.. class:: TelnetConsole
-
-Provides a telnet console for getting into a Python interpreter inside the
-currently running Scrapy process, which can be very useful for debugging.
-
-The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
-setting, and the server will listen in the port specified in
-:setting:`TELNETCONSOLE_PORT`.
-
 .. _topics-extensions-ref-memusage:
 
 Memory usage extension
@@ -496,3 +479,95 @@ signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
+
+.. _topics-extensions-ref-telnetconsole:
+
+Telnet console extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.telnet
+   :synopsis: Telnet console
+
+.. class:: TelnetConsole
+
+Provides a telnet console for getting into a Python interpreter inside the
+currently running Scrapy process, which can be very useful for debugging.
+
+The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
+setting, and the server will listen in the port specified in
+:setting:`TELNETCONSOLE_PORT`.
+
+Remote control extension
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: VERSION
+
+.. module:: scrapy.extensions.remote_control
+
+.. autoclass:: RemoteControl
+
+.. setting:: REMOTE_CONTROL_ENABLED
+
+REMOTE_CONTROL_ENABLED
+""""""""""""""""""""""
+
+Default: ``True``
+
+Whether to enable the :class:`RemoteControl` extension.
+
+.. setting:: REMOTE_CONTROL_JOBS_DIR
+
+REMOTE_CONTROL_JOBS_DIR
+"""""""""""""""""""""""
+
+Default: ``None``
+
+The directory for storing :class:`RemoteControl` job files. When this is set to
+``None``, a ``scrapy/jobfiles`` subdirectory in
+:func:`platformdirs.user_state_dir` is used.
+
+As job files contain authentication tokens necessary to connect to Scrapy
+processes, this directory should not be exposed to untrusted environments.
+
+.. setting:: REMOTE_CONTROL_TIMEOUT_DEFAULT
+
+REMOTE_CONTROL_TIMEOUT_DEFAULT
+""""""""""""""""""""""""""""""
+
+Default: ``30.0``
+
+The default timeout in seconds for running a single code snippet sent to the
+:class:`RemoteControl` ``/execute`` endpoint. You can override it for a single
+request via the ``timeout_sec`` request field.
+
+.. setting:: REMOTE_CONTROL_TIMEOUT_MAX
+
+REMOTE_CONTROL_TIMEOUT_MAX
+""""""""""""""""""""""""""
+
+Default: ``600.0``
+
+The maximum allowed value for the ``timeout_sec`` field of
+:class:`RemoteControl` ``/execute`` endpoint requests. Higher values will be
+clamped to this value.
+
+.. setting:: REMOTE_CONTROL_OUTPUT_MAX_BYTES
+
+REMOTE_CONTROL_OUTPUT_MAX_BYTES
+"""""""""""""""""""""""""""""""
+
+Default: ``65536``
+
+The maximum size of the ``output`` field in responses of :class:`RemoteControl`
+``/execute`` endpoint requests. Longer ones will be truncated.
+
+.. setting:: REMOTE_CONTROL_TRACEBACK_MAX_BYTES
+
+REMOTE_CONTROL_TRACEBACK_MAX_BYTES
+""""""""""""""""""""""""""""""""""
+
+Default: ``16384``
+
+The maximum size of the ``traceback`` field in responses of
+:class:`RemoteControl` ``/execute`` endpoint requests. Longer ones will be
+truncated.
