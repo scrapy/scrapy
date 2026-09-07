@@ -437,11 +437,6 @@ class ExecutionEngine:
     def _handle_downloader_output(
         self, result: Request | Response | Failure, request: Request
     ) -> Generator[Deferred[Any], Any, None]:
-        if not isinstance(result, (Request, Response, Failure)):
-            raise TypeError(
-                f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}"
-            )
-
         if (
             isinstance(result, Failure)
             and self._stop_mode == "fast"
