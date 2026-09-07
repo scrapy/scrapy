@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import gc
 import random
 import warnings
 from collections import deque
@@ -34,6 +33,7 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.python import garbage_collect
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -277,14 +277,14 @@ class Downloader:
                     f"stat. This message is only logged once."
                 )
             self._record_backout("response_max_active_size")
-            # Responses are only freed once nothing references them, which for
-            # reference cycles, and for every response on PyPy, requires a
-            # garbage collection. A full collection is expensive, and this runs
-            # once per request while paused, hence the interval.
+            # A response with a cached selector (e.g. after response.css() or
+            # response.xpath()) holds a reference cycle with it, so freeing
+            # it requires an actual garbage collection. A full collection is
+            # expensive, hence the interval.
             current_time = monotonic()
             if current_time - self._last_gc >= self._GC_INTERVAL:
                 self._last_gc = current_time
-                gc.collect()
+                garbage_collect()
             return True
         self._record_backout(None)
         return False
