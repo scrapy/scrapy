@@ -1,5 +1,6 @@
 import asyncio
 import gc
+import platform
 import warnings
 from typing import Any
 
@@ -13,6 +14,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
 from scrapy.utils.asyncio import call_later, sleep
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.python import garbage_collect
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import coroutine_test
 
@@ -428,12 +430,14 @@ class TestRequestBackout:
         make progress, without waiting for the engine heartbeat."""
         collections = 0
 
-        def garbage_collect():
+        def counting_garbage_collect():
             nonlocal collections
             collections += 1
-            gc.collect()
+            garbage_collect()
 
-        monkeypatch.setattr("scrapy.core.downloader.garbage_collect", garbage_collect)
+        monkeypatch.setattr(
+            "scrapy.core.downloader.garbage_collect", counting_garbage_collect
+        )
         # Keep the heartbeat from masking a stall.
         monkeypatch.setattr(ExecutionEngine, "_SLOT_HEARTBEAT_INTERVAL", 60)
 
@@ -447,7 +451,12 @@ class TestRequestBackout:
 
         crawler = get_crawler(TestSpider)
         # Leave the forced collection as the only one that can free responses.
-        gc.disable()
+        # On PyPy, gc.disable() would also disable the finalizers that discount
+        # freed responses, and nothing but a collection frees cycles there
+        # anyway.
+        disable_gc = platform.python_implementation() == "CPython"
+        if disable_gc:
+            gc.disable()
         try:
             crawl_deferred = crawler.crawl()
             # A stall would otherwise hang the test.
@@ -457,7 +466,8 @@ class TestRequestBackout:
             finally:
                 timeout.cancel()
         finally:
-            gc.enable()
+            if disable_gc:
+                gc.enable()
 
         assert crawler.stats
         assert crawler.stats.get_value("response_received_count") == 3
