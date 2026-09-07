@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 
 import attr
 from itemadapter import ItemAdapter
-from pydispatch import dispatcher
 from twisted.internet import defer
 
 from scrapy import signals
@@ -16,6 +15,7 @@ from scrapy.http import Headers, Request, Response
 from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
+from scrapy.utils import _signal_registry as dispatcher
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
