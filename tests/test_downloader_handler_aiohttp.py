@@ -27,8 +27,6 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.only_asyncio
 
-pytest.importorskip("aiohttp")
-
 
 class AiohttpDownloadHandlerMixin:
     @property
