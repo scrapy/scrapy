@@ -6,7 +6,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from logging import getLogger
-from time import monotonic
+from time import monotonic, perf_counter
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -250,7 +250,7 @@ class Downloader:
         last_reason, last_reason_start_time = self._last_backout
         if last_reason == reason:
             return
-        current_time = monotonic()
+        current_time = perf_counter()
         if last_reason is not None and self._stats is not None:
             assert last_reason_start_time is not None
             last_reason_seconds = current_time - last_reason_start_time
@@ -299,7 +299,7 @@ class Downloader:
         # when nothing is in flight that could free responses on its own, and
         # only if the tracked size changed since the last collection or a full
         # interval passed; or when the backout has lasted a full interval.
-        current_time = monotonic()
+        current_time = perf_counter()
         total_active_size = self.middleware._total_active_size
         stale = current_time - self._last_gc >= self._GC_INTERVAL
         if self._is_idle():
