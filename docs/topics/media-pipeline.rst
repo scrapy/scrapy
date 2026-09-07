@@ -209,6 +209,36 @@ the resulting path. A path that depends on the response can never match that
 check, and :setting:`FILES_EXPIRES` set to ``0`` disables it, at the cost of
 downloading every file on every run.
 
+.. _media-request-headers:
+
+Setting request headers
+-----------------------
+
+Media requests are built from the item, not from the response that yielded
+it, so features like :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware`
+do not apply to them. To send a header such as ``Referer``, store the value
+on the item in your spider, and read it back from the item in
+``get_media_requests`` of your custom media pipeline:
+
+.. code-block:: python
+
+    from scrapy import Request, Spider
+    from scrapy.pipelines.files import FilesPipeline
+
+
+    class MySpider(Spider):
+        def parse(self, response):
+            yield {
+                "file_urls": response.css("a.file::attr(href)").getall(),
+                "referrer": response.url,
+            }
+
+
+    class MyFilesPipeline(FilesPipeline):
+        def get_media_requests(self, item, info):
+            for file_url in item["file_urls"]:
+                yield Request(file_url, headers={"Referer": item["referrer"]})
+
 .. _topics-supported-storage:
 
 Supported Storage
@@ -595,6 +625,8 @@ See here the methods that you can override in your custom Files Pipeline:
              for file_url in adapter["file_urls"]:
                  yield scrapy.Request(file_url)
 
+      You can also use it to set request headers, see :ref:`media-request-headers`.
+
       Those requests will be processed by the pipeline and, when they have finished
       downloading, the results will be sent to the
       :meth:`~item_completed` method, as a list of 2-element tuples.
@@ -766,6 +798,49 @@ See here the methods that you can override in your custom Images Pipeline:
       but using a different field names for storing image downloading results.
 
       By default, the :meth:`item_completed` method returns the item.
+
+
+.. _media-pipeline-failed-downloads:
+
+Accessing the response of a failed download
+===========================================
+
+When a download fails, :meth:`~item_completed` receives it as a
+:exc:`~twisted.python.failure.Failure` whose ``value`` is the exception
+raised from :meth:`~media_downloaded`. For a non-2xx response, that
+exception is a :exc:`~scrapy.pipelines.media.FileException` built from just
+a message, without a reference to the response. To access the response, for
+example to record its ``status`` on the item, override
+:meth:`~media_downloaded` to attach it to a custom exception:
+
+.. code-block:: python
+
+    from scrapy.pipelines.files import FilesPipeline
+    from scrapy.pipelines.media import FileException
+
+
+    class ResponseFileException(FileException):
+        def __init__(self, response):
+            super().__init__(f"download-error ({response.status})")
+            self.response = response
+
+
+    class MyFilesPipeline(FilesPipeline):
+        async def media_downloaded(self, response, request, info, *, item=None):
+            try:
+                return await super().media_downloaded(response, request, info, item=item)
+            except FileException:
+                raise ResponseFileException(response)
+
+        def item_completed(self, results, item, info):
+            errors = [
+                value.value.response.status
+                for ok, value in results
+                if not ok and value.check(ResponseFileException)
+            ]
+            if errors:
+                item["download_errors"] = errors
+            return super().item_completed(results, item, info)
 
 
 .. _media-pipeline-example:

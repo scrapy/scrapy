@@ -145,7 +145,7 @@ class TestFTPBase(ABC):
         meta.update(self.req_meta)
         request = Request(url=server_url + filename, meta=meta)
         r = await dh.download_request(request)
-        assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
+        assert type(r) is response_class
 
 
 class TestFTP(TestFTPBase):

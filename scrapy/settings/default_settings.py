@@ -68,6 +68,7 @@ __all__ = [
     "DOWNLOADER_STATS",
     "DOWNLOAD_BIND_ADDRESS",
     "DOWNLOAD_DELAY",
+    "DOWNLOAD_DELAY_JITTER",
     "DOWNLOAD_FAIL_ON_DATALOSS",
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
@@ -137,6 +138,7 @@ __all__ = [
     "ITEM_PROCESSOR",
     "JOBDIR",
     "LOGSTATS_INTERVAL",
+    "LOG_COLOR",
     "LOG_DATEFORMAT",
     "LOG_ENABLED",
     "LOG_ENCODING",
@@ -288,6 +290,7 @@ DNS_TIMEOUT = 60
 DOWNLOAD_BIND_ADDRESS = None
 
 DOWNLOAD_DELAY = 0
+DOWNLOAD_DELAY_JITTER = 0.5
 
 DOWNLOAD_FAIL_ON_DATALOSS = True
 
@@ -450,6 +453,7 @@ ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
 
+LOG_COLOR = True
 LOG_ENABLED = True
 LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_ENCODING = "utf-8"
@@ -563,6 +567,10 @@ SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.UrlContract": 1,
     "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
     "scrapy.contracts.default.MetadataContract": 1,
+    "scrapy.contracts.default.MethodContract": 1,
+    "scrapy.contracts.default.BodyContract": 1,
+    "scrapy.contracts.default.HeaderContract": 1,
+    "scrapy.contracts.default.CookieContract": 1,
     "scrapy.contracts.default.ReturnsContract": 2,
     "scrapy.contracts.default.ScrapesContract": 3,
 }

@@ -29,7 +29,7 @@ def test_stderr_log_handler() -> None:
     (without ``install_root_handler=False``). It can be removed with
     ``_uninstall_scrapy_root_handler()`` if installing it was really needed.
     """
-    c = sum(1 for h in logging.root.handlers if type(h) is logging.StreamHandler)  # pylint: disable=unidiomatic-typecheck
+    c = sum(1 for h in logging.root.handlers if type(h) is logging.StreamHandler)
     assert c == 0
 
 
