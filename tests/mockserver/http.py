@@ -13,6 +13,7 @@ from .http_resources import (
     ArbitraryLengthPayloadResource,
     BadHeader,
     BaseResource,
+    Books,
     BrokenChunkedResource,
     BrokenDownloadResource,
     ChunkedResource,
@@ -55,6 +56,7 @@ class Root(BaseResource):
         super().__init__()
         put_child(self, b"status", Status())
         put_child(self, b"follow", Follow())
+        put_child(self, b"books", Books())
         put_child(self, b"delay", Delay())
         put_child(self, b"partial", Partial())
         put_child(self, b"drop", Drop())

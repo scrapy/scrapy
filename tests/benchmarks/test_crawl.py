@@ -8,7 +8,10 @@ from urllib.parse import urlencode
 import pytest
 
 from scrapy import Field, Item, Request, Spider
+from scrapy.http import HtmlResponse, TextResponse
 from scrapy.linkextractors import LinkExtractor
+from scrapy.loader import ItemLoader
+from tests import get_testdata
 from tests.benchmarks import NullDownloadHandler, crawl
 
 if TYPE_CHECKING:
@@ -41,6 +44,11 @@ DELAY = 0.005
 # page costs it several items.
 ITEM_REQUESTS = 20
 ITEMS_PER_RESPONSE = 100
+
+# Listing pages per crawl of the parse-heavy benchmarks, and book pages that
+# each listing page links to.
+LISTINGS = 5
+BOOKS_PER_LISTING = 20
 
 # Item concurrency limits of the benchmarks that measure item processing. The
 # high limit is above the number of items that a response yields in any of
@@ -103,6 +111,73 @@ class _TreeSpider(Spider):
             yield _Page(url=response.url)
 
 
+class _Book(Item):
+    title = Field()
+    price = Field()
+    rating = Field()
+    image = Field()
+    stock = Field()
+    description = Field()
+    upc = Field()
+    categories = Field()
+
+
+class _BookSpider(Spider):
+    """Crawl *listings* copies of a saved book listing page, and the book pages
+    that each of them links to.
+
+    Listing URLs are built by appending a number to *url*, and every listing
+    page links to book pages relative to its own URL, so that each copy is
+    reached under URLs of its own.
+    """
+
+    name = "benchmark-books"
+    url: str
+    listings: int = 1
+    link_extractor = LinkExtractor(restrict_css="article.product_pod")
+
+    async def start(self) -> AsyncIterator[Any]:
+        for listing in range(self.listings):
+            yield Request(f"{self.url}/{listing}/")
+
+    def parse(self, response: Response) -> Any:
+        for link in self.link_extractor.extract_links(response):  # type: ignore[arg-type]
+            yield Request(link.url, callback=self.parse_book)
+
+    def parse_book(self, response: Response) -> Any:
+        assert isinstance(response, TextResponse)
+        loader = ItemLoader(_Book(), response=response)
+        loader.add_css("title", "div.product_main h1::text")
+        loader.add_css("price", "div.product_main p.price_color::text")
+        loader.add_css("rating", "div.product_main p.star-rating::attr(class)")
+        loader.add_css("image", "div#product_gallery img::attr(src)")
+        loader.add_xpath(
+            "stock", "//p[@class='instock availability']/text()[normalize-space()]"
+        )
+        loader.add_xpath(
+            "description",
+            "//div[@id='product_description']/following-sibling::p/text()",
+        )
+        loader.add_xpath("upc", "//th[text()='UPC']/following-sibling::td/text()")
+        loader.add_xpath("categories", "//ul[@class='breadcrumb']/li/a/text()")
+        item = loader.load_item()
+        # A selector that stops matching the snapshot would otherwise silently
+        # leave the benchmark with less parsing to do.
+        assert len(item) == len(_Book.fields)
+        yield item
+
+
+class _BooksDownloadHandler(NullDownloadHandler):
+    """Serve the snapshot that the mockserver books resource serves, without I/O."""
+
+    listing = get_testdata("books", "listing.html")
+    book = get_testdata("books", "book.html")
+
+    def response(self, request: Request) -> Response:
+        body = self.book if "/catalogue/" in request.url else self.listing
+        return HtmlResponse(request.url, body=body, encoding="utf-8", request=request)
+
+
 class _Pipeline:
     def process_item(self, item: Any) -> Any:
         return item
@@ -149,6 +224,34 @@ def _crawl_tree(
     assert crawler.stats.get_value("downloader/response_count") == domains * pages
     assert crawler.stats.get_value("item_scraped_count", 0) == domains * pages * items
     return crawler
+
+
+def _crawl_books(settings: dict[str, Any], url: str) -> None:
+    crawler = crawl(_BookSpider, settings, url=url, listings=LISTINGS)
+    responses = LISTINGS * (BOOKS_PER_LISTING + 1)
+    assert crawler.stats.get_value("downloader/response_count") == responses
+    assert crawler.stats.get_value("item_scraped_count") == LISTINGS * BOOKS_PER_LISTING
+
+
+def test_parse_http(benchmark: BenchmarkFixture, mockserver: MockServer) -> None:
+    """Cost of a crawl that extracts links and fields from real markup, over HTTP.
+
+    Unlike the other HTTP benchmark, the pages here are a saved snapshot of a
+    real website, so that most of the cost is parsing: building a selector for
+    a 50 KB listing page, extracting links from it, and then running several
+    CSS and XPath queries on each of the book pages it links to.
+    """
+    settings = {"LOG_ENABLED": False}
+    benchmark(lambda: _crawl_books(settings, mockserver.url("/books")))
+
+
+def test_parse_engine(benchmark: BenchmarkFixture) -> None:
+    """Cost of a crawl that extracts links and fields from real markup, without I/O."""
+    settings = {
+        **NULL_SETTINGS,
+        "DOWNLOAD_HANDLERS": {"http": _BooksDownloadHandler},
+    }
+    benchmark(lambda: _crawl_books(settings, "http://books.example.com/books"))
 
 
 def test_overhead_http(benchmark: BenchmarkFixture, mockserver: MockServer) -> None:

@@ -194,6 +194,37 @@ class Response(object_ref):
             cls = self.__class__
         return cls(*args, **kwargs)
 
+    def to_dict(self) -> dict[str, Any]:
+        """Return a dictionary containing the Response's data.
+
+        .. versionadded:: VERSION
+
+        Use :func:`~scrapy.utils.response.response_from_dict` to convert back
+        into a :class:`~scrapy.http.Response` object.
+
+        :attr:`request` and :attr:`certificate` are left out, as they are tied
+        to a single crawl. Everything else in :attr:`attributes` is included,
+        so subclasses only need to override this method, and :meth:`from_dict`,
+        if some of their attributes cannot be stored as is.
+        """
+        d: dict[str, Any] = {"headers": dict(self.headers)}
+        for attr in self.attributes:
+            if attr in {"request", "certificate"}:
+                continue
+            d.setdefault(attr, getattr(self, attr))
+        if type(self) is not Response:  # pylint: disable=unidiomatic-typecheck
+            d["_class"] = self.__module__ + "." + self.__class__.__name__
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Self:
+        """Return a response built from the *d* dict, as returned by
+        :meth:`to_dict`.
+
+        .. versionadded:: VERSION
+        """
+        return cls(**{key: value for key, value in d.items() if key != "_class"})
+
     def urljoin(self, url: str) -> str:
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""
