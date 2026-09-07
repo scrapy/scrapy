@@ -360,14 +360,8 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_timeout_download_from_spider_nodata_rcvd(
-        self, mockserver: MockServer, reactor_pytest: str
+        self, mockserver: MockServer
     ) -> None:
-        if reactor_pytest == "asyncio" and sys.platform == "win32":
-            # https://twistedmatrix.com/trac/ticket/10279
-            pytest.skip(
-                "This test produces DirtyReactorAggregateError on Windows with asyncio"
-            )
-
         # client connects but no data is received
         meta = {"download_timeout": 0.5}
         request = Request(mockserver.url("/wait", is_secure=self.is_secure), meta=meta)
@@ -378,13 +372,8 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_timeout_download_from_spider_server_hangs(
-        self, mockserver: MockServer, reactor_pytest: str
+        self, mockserver: MockServer
     ) -> None:
-        if reactor_pytest == "asyncio" and sys.platform == "win32":
-            # https://twistedmatrix.com/trac/ticket/10279
-            pytest.skip(
-                "This test produces DirtyReactorAggregateError on Windows with asyncio"
-            )
         # client connects, server send headers and some body bytes but hangs
         meta = {"download_timeout": 0.5}
         request = Request(

@@ -86,7 +86,7 @@ class TextResponse(Response):
     def json(self) -> Any:
         """Deserialize a JSON document to a Python object.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.18.0
            Bodies that cannot be decoded as UTF-8, UTF-16 or UTF-32, as the
            JSON specification requires, are now decoded using
            :attr:`TextResponse.encoding` instead of raising

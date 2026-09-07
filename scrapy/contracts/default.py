@@ -69,6 +69,84 @@ class MetadataContract(Contract):
         return args
 
 
+class MethodContract(Contract):
+    """Sets (``@method``) the :attr:`method <scrapy.Request.method>` of the
+    sample request.
+
+    .. versionadded:: VERSION
+
+    .. code-block:: none
+
+        @method POST
+    """
+
+    name = "method"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["method"] = self.args[0]
+        return args
+
+
+class BodyContract(Contract):
+    """Sets (``@body``) the :attr:`body <scrapy.Request.body>` of the sample
+    request.
+
+    .. versionadded:: VERSION
+
+    .. code-block:: none
+
+        @body field1=value1&field2=value2
+    """
+
+    name = "body"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["body"] = " ".join(self.args)
+        return args
+
+
+class HeaderContract(Contract):
+    """Sets (``@header``) a header of the sample request. Use one line per
+    header.
+
+    .. versionadded:: VERSION
+
+    .. code-block:: none
+
+        @header name value
+    """
+
+    name = "header"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["headers"] = {
+            **(args.get("headers") or {}),
+            self.args[0]: " ".join(self.args[1:]),
+        }
+        return args
+
+
+class CookieContract(Contract):
+    """Sets (``@cookie``) a cookie of the sample request. Use one line per
+    cookie.
+
+    .. versionadded:: VERSION
+
+    .. code-block:: none
+
+        @cookie name value
+    """
+
+    name = "cookie"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["cookies"] = {
+            **(args.get("cookies") or {}),
+            self.args[0]: " ".join(self.args[1:]),
+        }
+        return args
+
+
 class ReturnsContract(Contract):
     """Sets (``@returns``) lower and upper bounds for the items and requests
     returned by a callback.

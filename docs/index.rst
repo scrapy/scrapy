@@ -69,6 +69,7 @@ Basic concepts
    :caption: Basic concepts
    :hidden:
 
+   topics/concepts
    topics/commands
    topics/spiders
    topics/selectors
@@ -82,6 +83,9 @@ Basic concepts
    topics/link-extractors
    topics/settings
    topics/exceptions
+
+:doc:`topics/concepts`
+    Get a quick map of Scrapy's main concepts and when to use each.
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.

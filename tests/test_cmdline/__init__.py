@@ -8,18 +8,19 @@ import tempfile
 from io import StringIO
 from pathlib import Path
 from subprocess import PIPE, Popen
+from typing import Any
 
 from scrapy.utils.test import get_testenv
 
 
-def _execute(*new_args, **kwargs):
+def _execute(*new_args: str, **kwargs: Any) -> str:
     env = get_testenv()
     tests_path = Path(__file__).parent.parent
     env["PYTHONPATH"] += os.pathsep + str(tests_path.parent)
     env["SCRAPY_SETTINGS_MODULE"] = "tests.test_cmdline.settings"
     encoding = sys.stdout.encoding or "utf-8"
     args = (sys.executable, "-m", "scrapy.cmdline", *new_args)
-    proc = Popen(args, stdout=PIPE, stderr=PIPE, env=env, **kwargs)
+    proc: Popen[bytes] = Popen(args, stdout=PIPE, stderr=PIPE, env=env, **kwargs)
     comm = proc.communicate()[0].strip()
     return comm.decode(encoding)
 
@@ -42,9 +43,9 @@ def test_profiling():
         stats = pstats.Stats(str(filename), stream=out)
         stats.print_stats()
         out.seek(0)
-        stats = out.read()
-        assert str(Path("scrapy", "commands", "version.py")) in stats
-        assert "tottime" in stats
+        stats_text = out.read()
+        assert str(Path("scrapy", "commands", "version.py")) in stats_text
+        assert "tottime" in stats_text
     finally:
         shutil.rmtree(path)
 

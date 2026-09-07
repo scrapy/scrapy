@@ -88,7 +88,7 @@ class Selector(_ParselSelector, object_ref):
 
         # Any other response, e.g. a plain-text one, keeps type unset, so that
         # parsel determines it from the body.
-        if type is None:
+        if type is None and root is _NOT_SET:
             if isinstance(response, XmlResponse):
                 type = "xml"  # noqa: A001
             elif isinstance(response, JsonResponse):

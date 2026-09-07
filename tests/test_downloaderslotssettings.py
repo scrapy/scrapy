@@ -18,15 +18,15 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
     custom_settings = {
         "DOWNLOAD_DELAY": 1,
-        "RANDOMIZE_DOWNLOAD_DELAY": False,
+        "DOWNLOAD_DELAY_JITTER": 0,
         "DOWNLOAD_SLOTS": {
             "quotes.toscrape.com": {
                 "concurrency": 1,
                 "delay": 2,
-                "randomize_delay": False,
+                "jitter": 0,
                 "throttle": False,
             },
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+            "books.toscrape.com": {"delay": 3, "jitter": 0},
         },
     }
 
@@ -37,6 +37,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times: dict[str, list[float]] = {}
 
     async def start(self):
+        assert self.mockserver
         slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
@@ -44,6 +45,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
             yield Request(url, callback=self.parse, meta={"download_slot": slot})
 
     def parse(self, response):
+        assert self.mockserver
         slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
@@ -52,6 +54,17 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
     def not_parse(self, response):
         slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
+
+
+class NoDelayDownloaderSlotsSpider(DownloaderSlotsSettingsTestSpider):
+    custom_settings = {
+        "DOWNLOAD_SLOTS": {
+            slot: {}
+            for slot in DownloaderSlotsSettingsTestSpider.custom_settings[
+                "DOWNLOAD_SLOTS"
+            ]
+        },
+    }
 
 
 @inline_callbacks_test
@@ -73,10 +86,10 @@ def test_delay(mockserver: MockServer):
 
 @coroutine_test
 async def test_params():
-    params = {
+    params: dict[str, Any] = {
         "concurrency": 1,
         "delay": 2,
-        "randomize_delay": False,
+        "jitter": 0,
     }
     settings = {
         "DOWNLOAD_SLOTS": {
@@ -94,6 +107,22 @@ async def test_params():
         assert getattr(expected, param) == getattr(actual, param), (
             f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
         )
+
+
+@pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+@coroutine_test
+async def test_deprecated_randomize_delay_param(value: bool, expected: float):
+    settings = {"DOWNLOAD_SLOTS": {"example.com": {"randomize_delay": value}}}
+    crawler = get_crawler(DefaultSpider, settings_dict=settings)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The randomize_delay key of the DOWNLOAD_SLOTS setting is deprecated",
+    ):
+        _, slot = downloader._get_slot(Request("https://example.com"))
+    downloader.close()
+    assert slot.jitter == expected
 
 
 @coroutine_test
@@ -128,11 +157,11 @@ async def test_none_slot_with_priority_queue(
 ) -> None:
     """Test specific cases for None slot handling with different priority queues."""
     crawler = get_crawler(
-        DownloaderSlotsSettingsTestSpider,
+        NoDelayDownloaderSlotsSpider,
         settings_dict={"SCHEDULER_PRIORITY_QUEUE": priority_queue_class},
     )
     await crawler.crawl_async(mockserver=mockserver)
-    assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
+    assert isinstance(crawler.spider, NoDelayDownloaderSlotsSpider)
 
     assert hasattr(crawler.spider, "times")
     assert None not in crawler.spider.times
