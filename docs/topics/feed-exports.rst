@@ -500,7 +500,9 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``format``: the :ref:`serialization format <topics-feed-format>`.
 
-    This setting is mandatory, there is no fallback value.
+    If not set, it is inferred from the file extension of the feed URI, e.g.
+    ``json`` for a URI ending in :file:`.json`. It is mandatory if it cannot
+    be inferred this way.
 
 -   ``batch_item_count``: falls back to
     :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
