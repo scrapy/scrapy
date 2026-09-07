@@ -229,6 +229,8 @@ For a list of the components enabled by default (and their orders) see the
 DepthMiddleware
 ---------------
 
+.. reqmeta:: depth
+
 .. autoclass:: scrapy.spidermiddlewares.depth.DepthMiddleware
 
 HttpErrorMiddleware
