@@ -401,6 +401,7 @@ value per spider when :ref:`running multiple spiders in the same process
 
 These settings are:
 
+-   :setting:`LOG_COLOR`
 -   :setting:`LOG_DATEFORMAT`
 -   :setting:`LOG_ENABLED`
 -   :setting:`LOG_ENCODING`
@@ -962,8 +963,8 @@ every 10 seconds:
 
     DOWNLOAD_DELAY = 2.5
 
-This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting, which is enabled by default.
+This setting is also affected by the :setting:`DOWNLOAD_DELAY_JITTER` setting,
+which randomizes delays by ±50% by default.
 
 Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
 concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
@@ -975,6 +976,25 @@ and only increase :setting:`DOWNLOAD_DELAY` once
 desired.
 
 .. _spider-download_delay-attribute:
+
+It is possible to change this setting per domain by using
+:setting:`DOWNLOAD_SLOTS`.
+
+.. setting:: DOWNLOAD_DELAY_JITTER
+
+DOWNLOAD_DELAY_JITTER
+---------------------
+
+.. versionadded:: VERSION
+
+Default: ``0.5``
+
+Magnitude of the random variation applied to :setting:`DOWNLOAD_DELAY`, e.g.
+``0.2`` spreads delays between 80% and 120% of :setting:`DOWNLOAD_DELAY`. ``0``
+disables randomization.
+
+Randomizing delays makes the time between requests less uniform, resulting in a
+more natural crawling pattern.
 
 It is possible to change this setting per domain by using
 :setting:`DOWNLOAD_SLOTS`.
@@ -1085,6 +1105,7 @@ handler (without replacement), place this in your ``settings.py``:
     :ref:`security-local-resources`
 
 
+.. reqmeta:: download_slot
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS
@@ -1097,8 +1118,8 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     .. code-block:: python
 
         DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "jitter": 0},
+            "books.toscrape.com": {"delay": 3, "jitter": 0.2},
         }
 
 .. note::
@@ -1107,7 +1128,15 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
 
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
-    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+    -   :setting:`DOWNLOAD_DELAY_JITTER`: ``jitter``
+
+Requests are assigned to a slot based on their URL domain. To assign a request
+to a specific slot instead, set the name of the slot as the ``download_slot``
+:attr:`Request.meta <scrapy.Request.meta>` key. Once a request is assigned to a
+slot, that key holds the name of the slot.
+
+Since that key is kept on redirects, a redirected request stays in the slot of
+the request it comes from, even when it points to a different domain.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1438,6 +1467,7 @@ non-default value in :ref:`per-spider settings <spider-settings>`.
 
 .. note:: This is a :ref:`pre-crawler setting <pre-crawler-settings>`.
 
+.. reqmeta:: ftp_passive
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -1445,7 +1475,8 @@ FTP_PASSIVE_MODE
 
 Default: ``True``
 
-Whether or not to use passive mode when initiating FTP transfers.
+Whether or not to use passive mode when initiating FTP transfers, unless there
+is an ``"ftp_passive"`` key in ``Request`` meta.
 
 .. note::
 
@@ -1581,6 +1612,22 @@ Default: ``None``
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
+
+.. setting:: LOG_COLOR
+
+LOG_COLOR
+---------
+
+Default: ``True``
+
+Whether to colorize log output by log level when logging to a terminal.
+Requires the ``color`` extra:
+
+.. code-block:: bash
+
+    pip install scrapy[color]
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_ENABLED
 
@@ -1821,29 +1868,6 @@ Example:
 
     NEWSPIDER_MODULE = "mybot.spiders_dev"
 
-.. setting:: RANDOMIZE_DOWNLOAD_DELAY
-
-RANDOMIZE_DOWNLOAD_DELAY
-------------------------
-
-Default: ``True``
-
-If enabled, Scrapy will wait a random amount of time (between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
-website.
-
-This randomization decreases the chance of the crawler being detected (and
-subsequently blocked) by sites which analyze requests looking for statistically
-significant similarities in the time between their requests.
-
-The randomization policy is the same used by `wget`_ ``--random-wait`` option.
-
-If :setting:`DOWNLOAD_DELAY` is zero this option has no effect.
-
-It is possible to change this setting per domain by using
-:setting:`DOWNLOAD_SLOTS`.
-
-.. _wget: https://www.gnu.org/software/wget/manual/wget.html
-
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 
 REACTOR_THREADPOOL_MAXSIZE
@@ -1947,10 +1971,21 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
+.. versionadded:: VERSION
+   The ``SQLite`` queue types.
+
 Type of disk queue that will be used by the scheduler. Other available types
 are ``scrapy.squeues.PickleFifoDiskQueue``,
 ``scrapy.squeues.MarshalFifoDiskQueue``,
-``scrapy.squeues.MarshalLifoDiskQueue``.
+``scrapy.squeues.MarshalLifoDiskQueue``,
+``scrapy.squeues.PickleFifoSQLiteQueue``,
+``scrapy.squeues.PickleLifoSQLiteQueue``,
+``scrapy.squeues.MarshalFifoSQLiteQueue`` and
+``scrapy.squeues.MarshalLifoSQLiteQueue``.
+
+The ``SQLite`` types store requests in an SQLite database, which makes writes
+slower but keeps the queue usable after an unclean shutdown. See
+:ref:`security-job-state`.
 
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
@@ -2412,13 +2447,15 @@ modifying generator function source code during runtime, skip AST parsing of
 callback functions, or improve performance in auto-reloading development
 environments.
 
-Settings documented elsewhere:
-------------------------------
+.. only:: html
 
-The following settings are documented elsewhere, please check each specific
-case to see how to enable and use them.
+    Settings documented elsewhere:
+    ------------------------------
 
-.. settingslist::
+    The following settings are documented elsewhere, please check each specific
+    case to see how to enable and use them.
+
+    .. settingslist::
 
 .. _Amazon web services: https://aws.amazon.com/
 .. _Google Cloud Storage: https://cloud.google.com/storage/

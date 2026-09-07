@@ -168,6 +168,7 @@ These settings can be used to configure the logging:
 
 * :setting:`LOG_FILE`
 * :setting:`LOG_FILE_APPEND`
+* :setting:`LOG_COLOR`
 * :setting:`LOG_ENABLED`
 * :setting:`LOG_ENCODING`
 * :setting:`LOG_LEVEL`
@@ -198,6 +199,9 @@ respectively.
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
+
+When logging to a terminal, :setting:`LOG_COLOR` colorizes messages by log
+level.
 
 Rotating log files
 ------------------

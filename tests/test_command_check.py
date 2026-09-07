@@ -112,6 +112,42 @@ class CheckSpider(scrapy.Spider):
         """
         self._test_contract(proj_path, contracts, parse_def)
 
+    def test_check_request_contracts(self, proj_path: Path) -> None:
+        contracts = """
+        @method POST
+        @body field1=value1
+        @header X-Header header value
+        @cookie name value
+        """
+        parse_def = """
+        request = response.request
+        if (
+            request.method != 'POST'
+            or request.body != b'field1=value1'
+            or request.headers['X-Header'] != b'header value'
+            or request.cookies != {'name': 'value'}
+        ):
+            raise Exception("Request arguments not set")
+        """
+        self._test_contract(proj_path, contracts, parse_def)
+
+    def test_check_spider_argument(self, proj_path: Path) -> None:
+        parse_def = """
+        if self.key != 'val':
+            raise Exception("Spider argument not set")
+        """
+        self._write_contract(proj_path, "", parse_def)
+        ret, out, err = proc("check", "-a", "key=val", cwd=proj_path)
+        assert "F" not in out
+        assert "OK" in err
+        assert ret == 0
+
+    def test_check_invalid_spider_argument(self, proj_path: Path) -> None:
+        self._write_contract(proj_path, "", "pass")
+        ret, _, err = proc("check", "-a", "FOO", cwd=proj_path)
+        assert ret == 2
+        assert "Invalid -a value, use -a NAME=VALUE" in err
+
     def test_check_scrapes_contract(self, proj_path: Path) -> None:
         contracts = """
         @scrapes key1 key2
