@@ -1080,8 +1080,8 @@ Default:
     {
         "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
         "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": None,
     }

@@ -908,8 +908,9 @@ Set the :reqmeta:`bindaddress` request meta key to override it for a
 specific request.
 
 This meta key is not supported by
-:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
-:setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
+:class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
+the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
 
 .. reqmeta:: download_timeout
 
