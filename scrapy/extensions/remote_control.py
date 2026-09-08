@@ -94,6 +94,9 @@ class RemoteControl:
           truncated (omitted if ``false``).
         - ``traceback_truncated`` (boolean, optional): whether ``traceback``
           was truncated (omitted if ``false``).
+
+    This extension can be used with any HTTP client, but it is intended to be
+    used by the Scrapy MCP server (see :ref:`using-mcp-server`).
     """
 
     def __init__(self, crawler: Crawler):

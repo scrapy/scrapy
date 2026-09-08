@@ -44,6 +44,9 @@ what every part of the engine is doing at a given moment:
     engine.scraper.slot.active_size                 : 0
     engine.scraper.slot.needs_backout()             : False
 
+A coding agent using the :ref:`Scrapy MCP server <using-mcp-server>` can also
+retrieve these values directly.
+
 Take a few readings at different points of the crawl:
 
 -   ``len(engine.downloader.active)`` stays at :setting:`CONCURRENT_REQUESTS`:

@@ -29,7 +29,7 @@ disable it if you want. For more information about the extension itself see
 .. note::
     This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
-.. seealso:: :ref:`security-telnet`
+.. seealso:: :ref:`security-telnet`, :ref:`using-mcp-server`
 
 .. highlight:: none
 

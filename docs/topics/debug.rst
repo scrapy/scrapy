@@ -126,6 +126,14 @@ Fortunately, the :command:`shell` is your bread and butter in this case (see
 See also: :ref:`topics-shell-inspect-response`.
 
 
+Scrapy MCP server
+=================
+
+You can use the :ref:`Scrapy MCP server <using-mcp-server>` to connect a coding
+agent to a running crawl, so that it can check the progress of the crawl and
+investigate or even modify its runtime state.
+
+
 Open in browser
 ===============
 

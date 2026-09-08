@@ -242,6 +242,10 @@ often, more useful than plain old ``pdb.set_trace()``.
 
 For more info see :ref:`topics-shell-inspect-response`.
 
+You can also :ref:`connect to live crawls <connect-live-crawl>`, which is the
+best way to debug running spiders without adding breakpoints to their code in
+advance.
+
 Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 -------------------------------------------------------------------
 
