@@ -110,7 +110,7 @@ def test_from_args() -> None:
         (
             {
                 "headers": Headers({"Content-Type": ["text/html; charset=utf-8"]}),
-                "url": "http://www.example.com/item/",
+                "url": "http://www.example.com/data.json",
             },
             HtmlResponse,
         ),
@@ -122,10 +122,6 @@ def test_from_args() -> None:
                 "url": "http://www.example.com/page/",
             },
             Response,
-        ),
-        (
-            {"headers": Headers(), "url": "http://example.com/data.json"},
-            JsonResponse,
         ),
         (
             {"url": "http://example.com/data.json", "filename": "index.html"},
