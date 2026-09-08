@@ -523,7 +523,7 @@ REMOTE_CONTROL_JOBS_DIR
 Default: ``None``
 
 The directory for storing :class:`RemoteControl` job files. When this is set to
-``None``, a ``scrapy/jobfiles`` subdirectory in
+``None``, a ``scrapy/job_files`` subdirectory in
 :func:`platformdirs.user_state_dir` is used.
 
 As job files contain authentication tokens necessary to connect to Scrapy
