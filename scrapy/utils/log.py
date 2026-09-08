@@ -16,6 +16,7 @@ from twisted.python.failure import Failure
 import scrapy
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
+from scrapy.utils.display import _tty_supports_color
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
@@ -81,6 +82,9 @@ DEFAULT_LOGGING = {
         "httpx": {
             "level": "WARNING",
         },
+        "parso": {
+            "level": "ERROR",
+        },
         "scrapy": {
             "level": "DEBUG",
         },
@@ -93,7 +97,7 @@ DEFAULT_LOGGING = {
 
 def configure_logging(
     settings: Settings | dict[str, Any] | None = None,
-    install_root_handler: bool = True,
+    install_root_handler: bool | None = None,
 ) -> None:
     """
     Initialize logging defaults for Scrapy.
@@ -103,7 +107,7 @@ def configure_logging(
     :type settings: dict, :class:`~scrapy.settings.Settings` object or ``None``
 
     :param install_root_handler: whether to install root logging handler
-        (default: True)
+        (default: the :setting:`LOG_INSTALL_ROOT_HANDLER` setting)
     :type install_root_handler: bool
 
     This function does:
@@ -112,12 +116,25 @@ def configure_logging(
     - Assign DEBUG and ERROR level to Scrapy and Twisted loggers respectively
     - Route stdout to log if LOG_STDOUT setting is True
 
-    When ``install_root_handler`` is True (default), this function also
-    creates a handler for the root logger according to given settings
-    (see :ref:`topics-logging-settings`). You can override default options
-    using ``settings`` argument. When ``settings`` is empty or None, defaults
-    are used.
+    When installing a root logging handler, this function also creates a
+    handler for the root logger according to given settings (see
+    :ref:`topics-logging-settings`). You can override default options using
+    ``settings`` argument. When ``settings`` is empty or None, defaults are
+    used.
     """
+    if isinstance(settings, dict) or settings is None:
+        settings = Settings(settings)
+
+    if install_root_handler is None:
+        install_root_handler = settings.getbool("LOG_INSTALL_ROOT_HANDLER")
+    else:
+        warnings.warn(
+            "The install_root_handler parameter is deprecated. Set the "
+            "LOG_INSTALL_ROOT_HANDLER setting instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
     if not sys.warnoptions:
         # Route warnings through python logging
         logging.captureWarnings(True)
@@ -126,9 +143,6 @@ def configure_logging(
     observer.start()
 
     dictConfig(DEFAULT_LOGGING)
-
-    if isinstance(settings, dict) or settings is None:
-        settings = Settings(settings)
 
     if settings.getbool("LOG_STDOUT"):
         sys.stdout = StreamLogger(logging.getLogger("stdout"))
@@ -165,6 +179,25 @@ def get_scrapy_root_handler() -> logging.Handler | None:
     return _scrapy_root_handler
 
 
+def _get_formatter(handler: logging.Handler, settings: Settings) -> logging.Formatter:
+    fmt = settings.get("LOG_FORMAT")
+    datefmt = settings.get("LOG_DATEFORMAT")
+    if (
+        isinstance(handler, logging.StreamHandler)
+        and not isinstance(handler, logging.FileHandler)
+        and settings.getbool("LOG_COLOR")
+        and handler.stream.isatty()
+        and _tty_supports_color()
+    ):
+        try:
+            from colorlog import ColoredFormatter  # noqa: PLC0415
+        except ImportError:
+            pass
+        else:
+            return ColoredFormatter(fmt=f"%(log_color)s{fmt}", datefmt=datefmt)
+    return logging.Formatter(fmt=fmt, datefmt=datefmt)
+
+
 def _get_handler(settings: Settings) -> logging.Handler:
     """Return a log handler object according to settings"""
     filename = settings.get("LOG_FILE")
@@ -178,10 +211,7 @@ def _get_handler(settings: Settings) -> logging.Handler:
     else:
         handler = logging.NullHandler()
 
-    formatter = logging.Formatter(
-        fmt=settings.get("LOG_FORMAT"), datefmt=settings.get("LOG_DATEFORMAT")
-    )
-    handler.setFormatter(formatter)
+    handler.setFormatter(_get_formatter(handler, settings))
     handler.setLevel(settings.get("LOG_LEVEL"))
     if settings.getbool("LOG_SHORT_NAMES"):
         handler.addFilter(TopLevelFormatter(["scrapy"]))

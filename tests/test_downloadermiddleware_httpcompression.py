@@ -447,7 +447,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert gunzip(newresponse.body) == plainbody
         self.assertStatsEqual("httpcompression/response_count", 1)
-        self.assertStatsEqual("httpcompression/response_bytes", 230)
+        self.assertStatsEqual("httpcompression/response_bytes", len(f.getvalue()))
 
     def test_process_response_head_request_no_decode_required(self):
         response = self._getresponse("gzip")

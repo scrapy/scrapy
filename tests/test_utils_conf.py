@@ -176,3 +176,24 @@ class TestFeedExportConfig:
             "batch_item_count": 2,
             "item_export_kwargs": {},
         }
+
+    def test_feed_complete_default_values_from_settings_format_from_uri(self):
+        feed: dict[str, Any] = {}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "output.json"
+        )
+        assert new_feed["format"] == "json"
+
+    def test_feed_complete_default_values_from_settings_format_kept(self):
+        feed = {"format": "csv"}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "output.json"
+        )
+        assert new_feed["format"] == "csv"
+
+    def test_feed_complete_default_values_from_settings_format_not_inferable(self):
+        feed: dict[str, Any] = {}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "stdout:"
+        )
+        assert new_feed["format"] == ""

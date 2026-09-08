@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
-ConnectionKeyT = tuple[bytes, bytes, int]
+ConnectionKeyT = tuple[bytes, bytes, int, tuple[str, int] | None]
 
 
 class H2ConnectionPool:
@@ -132,7 +132,7 @@ class H2Agent:
         Arguments:
             uri - URI obtained directly from request URL
         """
-        return uri.scheme, uri.host, uri.port
+        return uri.scheme, uri.host, uri.port, self.endpoint_factory._bindAddress
 
     def request(self, request: Request, spider: Spider) -> Deferred[Response]:
         uri = URI.fromBytes(bytes(request.url, encoding="utf-8"))

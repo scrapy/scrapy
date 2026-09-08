@@ -351,10 +351,10 @@ class MaxItemsAndRequestsSpider(FollowAllSpider):
         super().__init__(*args, **kwargs)
         self.max_items = max_items
         self.max_requests = max_requests
-
-    def parse(self, response: Response) -> Iterator[Any]:
         self.items_scraped = 0
         self.pages_crawled = 1  # account for the start url
+
+    def parse(self, response: Response) -> Iterator[Any]:
         for request in super().parse(response):
             if self.pages_crawled < self.max_requests:
                 yield request

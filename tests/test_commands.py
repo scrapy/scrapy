@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
+import pdb  # noqa: T100
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -97,6 +99,18 @@ class TestCommandSettings:
         assert isinstance(self.command.settings["FEEDS"], scrapy.settings.BaseSettings)
         assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
 
+    def test_pdb_uses_ipdb_if_installed(self, monkeypatch):
+        fake_ipdb: Any = argparse.Namespace(post_mortem=lambda tb: None)
+        monkeypatch.setitem(sys.modules, "pdb", pdb)
+        monkeypatch.setitem(sys.modules, "ipdb", fake_ipdb)
+        opts, args = self.parser.parse_known_args(args=["--pdb", "spider.py"])
+        handlers = logging.root.handlers[:]
+        try:
+            self.command.process_options(args, opts)
+            assert sys.modules["pdb"] is fake_ipdb
+        finally:
+            logging.root.handlers[:] = handlers
+
     def test_help_formatter(self):
         formatter = ScrapyHelpFormatter(prog="scrapy")
         part_strings = [
@@ -173,9 +187,75 @@ class MySpider(scrapy.Spider):
         assert pidfile.read_text(encoding="utf-8").strip().isdigit()
 
     def test_pdb(self, spider_path: Path) -> None:
-        returncode, _, err = proc("runspider", str(spider_path), "--pdb")
+        returncode, out, err = proc("runspider", str(spider_path), "--pdb", input="")
         assert returncode == 0, err
         assert "It works!" in err
+        assert "(Pdb)" not in out
+
+    def test_pdb_on_logged_error(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+
+    async def start(self):
+        raise ValueError("boom")
+        yield
+""",
+            encoding="utf-8",
+        )
+        _, out, err = proc("runspider", str(path), "--pdb", input="")
+        assert "(Pdb)" in out, err
+
+    def test_pdb_on_logged_error_without_exception(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import logging
+import scrapy
+
+logger = logging.getLogger(__name__)
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+
+    async def start(self):
+        logger.error("boom")
+        return
+        yield
+""",
+            encoding="utf-8",
+        )
+        returncode, out, err = proc("runspider", str(path), "--pdb", input="")
+        assert returncode == 0, err
+        assert "(Pdb)" not in out
+
+    def test_pdb_on_handled_failure(self, tmp_path: Path) -> None:
+        path = tmp_path / "myspider.py"
+        path.write_text(
+            """
+import scrapy
+from scrapy.exceptions import IgnoreRequest
+
+class IgnoreEverything:
+    def process_request(self, request, spider):
+        raise IgnoreRequest
+
+class MySpider(scrapy.Spider):
+    name = "myspider"
+    custom_settings = {"DOWNLOADER_MIDDLEWARES": {IgnoreEverything: 500}}
+
+    async def start(self):
+        yield scrapy.Request("https://example.com")
+""",
+            encoding="utf-8",
+        )
+        returncode, out, err = proc("runspider", str(path), "--pdb", input="")
+        assert returncode == 0, err
+        assert "(Pdb)" not in out
 
 
 class TestSettingsCommand:
@@ -420,6 +500,48 @@ class MySpider(scrapy.Spider):
 
         self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
         self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
+
+
+class TestLogInstallRootHandler(TestProjectBase):
+    """LOG_INSTALL_ROOT_HANDLER=False must let a user-configured root handler
+    be the only one in effect, instead of Scrapy adding its own alongside it."""
+
+    @pytest.fixture(autouse=True)
+    def create_files(self, proj_path: Path) -> None:
+        proj_mod_path = proj_path / self.project_name
+        (proj_mod_path / "spiders" / "sp.py").write_text("""
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'sp'
+
+    async def start(self):
+        self.logger.info('It works!')
+        return
+        yield
+""")
+        self._append_settings(
+            proj_mod_path,
+            "\nimport logging\n"
+            "logging.basicConfig(level=logging.INFO, format='CUSTOM: %(message)s')\n",
+        )
+
+    def test_default(self, proj_path: Path) -> None:
+        """Scrapy installs its own root handler in addition to the
+        user-configured one, so the message is logged twice, once in each
+        format."""
+        _, _, err = proc("crawl", "sp", cwd=proj_path)
+        assert "CUSTOM: It works!" in err
+        assert "[sp] INFO: It works!" in err
+
+    def test_disabled(self, proj_path: Path) -> None:
+        """Scrapy leaves the user-configured root handler alone, so the
+        message is only logged once, in the user's format."""
+        _, _, err = proc(
+            "crawl", "sp", "-s", "LOG_INSTALL_ROOT_HANDLER=False", cwd=proj_path
+        )
+        assert "CUSTOM: It works!" in err
+        assert "[sp] INFO: It works!" not in err
 
 
 class TestMiscCommands(TestProjectBase):

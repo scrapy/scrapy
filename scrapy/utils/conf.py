@@ -92,7 +92,9 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
     be able to locate the project module.
     """
     cfg = get_config()
-    if cfg.has_option("settings", project):
+    if "SCRAPY_SETTINGS_MODULE" not in os.environ and cfg.has_option(
+        "settings", project
+    ):
         os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
     closest = closest_scrapy_cfg()
     if closest:
@@ -125,9 +127,11 @@ def get_sources(use_closest: bool = True) -> list[str]:
 
 
 def feed_complete_default_values_from_settings(
-    feed: dict[str, Any], settings: BaseSettings
+    feed: dict[str, Any], settings: BaseSettings, uri: str | None = None
 ) -> dict[str, Any]:
     out = feed.copy()
+    if uri is not None:
+        out.setdefault("format", Path(uri).suffix.removeprefix("."))
     out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
     out.setdefault("fields", settings.getdictorlist("FEED_EXPORT_FIELDS") or None)

@@ -14,15 +14,17 @@ from scrapy.contracts.default import (
     ScrapesContract,
     UrlContract,
 )
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
     from unittest import TestResult
 
     from scrapy.http.request import CallbackT
@@ -95,7 +97,7 @@ class DemoSpider(Spider):
         """
         return Request("http://scrapy.org", callback=self.returns_item)
 
-    async def returns_request_async(self, response):
+    async def returns_request_async(self, response: Response) -> Request:
         """async method which returns request
         @url http://scrapy.org
         @returns requests 1
@@ -170,12 +172,33 @@ class DemoSpider(Spider):
         yield DemoItem(name="test", url=response.url)
         yield Request("http://scrapy.org", callback=self.returns_item)
 
-    async def returns_async_gen(self, response):
+    async def returns_async_gen(self, response: Response) -> AsyncIterator[DemoItem]:
         """async generator callback
         @url http://scrapy.org
         @returns items 1 1
         """
         yield DemoItem(url=response.url)
+
+    def returns_coroutine(self, response):
+        """method which returns a coroutine without being defined with async def
+        @url http://scrapy.org
+        @returns requests 1
+        """
+        return self.returns_request_async(response)
+
+    def returns_async_gen_sync(self, response):
+        """method which returns an async generator without being defined with async def
+        @url http://scrapy.org
+        @returns items 1 1
+        """
+        return self.returns_async_gen(response)
+
+    async def raises_async(self, response):
+        """async method which raises an exception
+        @url http://scrapy.org
+        @returns items 1 1
+        """
+        raise ValueError("async callback error")
 
     def returns_dict_fail(self, response):
         """method which returns item
@@ -473,12 +496,47 @@ class TestContractsManager:
         _call(request, response)
         self.should_fail()
 
-    def test_returns_async(self):
+    @coroutine_test
+    async def test_returns_async(self):
         spider = DemoSpider()
         response = ResponseMock()
 
         request = _request(self.conman, spider.returns_request_async, self.results)
+        await _call(request, response)
+        self.should_succeed()
+
+    @coroutine_test
+    async def test_returns_async_gen(self):
+        spider = DemoSpider()
+        response = ResponseMock()
+
+        request = _request(self.conman, spider.returns_async_gen, self.results)
+        await _call(request, response)
+        self.should_succeed()
+
+    def test_returns_coroutine(self):
+        spider = DemoSpider()
+        response = ResponseMock()
+
+        request = _request(self.conman, spider.returns_coroutine, self.results)
         _call(request, response)
+        self.should_error()
+
+    def test_returns_async_gen_sync(self):
+        spider = DemoSpider()
+        response = ResponseMock()
+
+        request = _request(self.conman, spider.returns_async_gen_sync, self.results)
+        _call(request, response)
+        self.should_error()
+
+    @coroutine_test
+    async def test_raises_async(self):
+        spider = DemoSpider()
+        response = ResponseMock()
+
+        request = _request(self.conman, spider.raises_async, self.results)
+        await _call(request, response)
         self.should_error()
 
     def test_returns_invalid_argument_count(self):
@@ -623,6 +681,37 @@ class TestContractsManager:
         assert isinstance(crawler.spider, TestSameUrlSpider)
         assert crawler.spider.visited == 2
 
+    @inline_callbacks_test
+    def test_async_callbacks(self):
+        class AsyncCallbackSpider(Spider):
+            name = "async_callbacks"
+
+            async def start(self_):  # pylint: disable=no-self-argument
+                for item_or_request in self.conman.from_spider(self_, self.results):
+                    yield item_or_request
+
+            async def parse_coroutine(self, response):
+                return DemoItem(name="coroutine", url=response.url)
+
+            async def parse_async_gen(self, response):
+                yield DemoItem(name="async gen", url=response.url)
+
+        with MockServer() as mockserver:
+            contract_doc = (
+                f"@url {mockserver.url('/status?n=200')}\n"
+                "@returns items 1 1\n"
+                "@scrapes name url"
+            )
+
+            AsyncCallbackSpider.parse_coroutine.__doc__ = contract_doc
+            AsyncCallbackSpider.parse_async_gen.__doc__ = contract_doc
+
+            crawler = get_crawler(AsyncCallbackSpider)
+            yield crawler.crawl()
+
+        self.should_succeed()
+        assert self.results.testsRun == 4
+
     def test_custom_tagged_request_contract(self):
         spider = DemoSpider()
         request = _request(self.conman, spider.custom_tagged_request, self.results)
@@ -761,35 +850,47 @@ class TestCustomContractPrePostProcess:
 
         assert self.results.errors
 
-    def test_pre_hook_async_callback(self):
+    @coroutine_test
+    async def test_pre_hook_async_callback(self):
         spider = DemoSpider()
         response = ResponseMock()
         contract = PreProcessSuccessContract(spider.returns_request_async)
         request = Request("http://scrapy.org", callback=spider.returns_request_async)
         contract.add_pre_hook(request, self.results)
 
-        with pytest.raises(TypeError, match="async callbacks"):
-            _call(request, response)
+        output = await _call(request, response)
 
-    def test_pre_hook_async_generator(self):
+        assert len(output) == 1
+        assert not self.results.failures
+        assert not self.results.errors
+
+    @coroutine_test
+    async def test_pre_hook_async_generator(self):
         spider = DemoSpider()
         response = ResponseMock()
         contract = PreProcessSuccessContract(spider.returns_async_gen)
         request = Request("http://scrapy.org", callback=spider.returns_async_gen)
         contract.add_pre_hook(request, self.results)
 
-        with pytest.raises(TypeError, match="async callbacks"):
-            _call(request, response)
+        output = await _call(request, response)
 
-    def test_post_hook_async_generator(self):
+        assert len(output) == 1
+        assert not self.results.failures
+        assert not self.results.errors
+
+    @coroutine_test
+    async def test_post_hook_async_generator(self):
         spider = DemoSpider()
         response = ResponseMock()
         contract = PostProcessSuccessContract(spider.returns_async_gen)
         request = Request("http://scrapy.org", callback=spider.returns_async_gen)
         contract.add_post_hook(request, self.results)
 
-        with pytest.raises(TypeError, match="async callbacks"):
-            _call(request, response)
+        output = await _call(request, response)
+
+        assert len(output) == 1
+        assert not self.results.failures
+        assert not self.results.errors
 
     def test_post_hook_error(self):
         spider = DemoSpider()
@@ -802,3 +903,20 @@ class TestCustomContractPrePostProcess:
         _call(request, response)
 
         assert self.results.errors
+
+
+class LegacyHookContract(Contract):
+    name = "legacy_hook"
+
+    def add_pre_hook(self, request, results):
+        return request
+
+
+def test_hook_override_deprecation():
+    with pytest.warns(ScrapyDeprecationWarning, match="add_pre_hook"):
+        ContractsManager([LegacyHookContract])
+
+
+def test_no_hook_override_deprecation(recwarn):
+    ContractsManager([UrlContract, ReturnsContract])
+    assert not [w for w in recwarn if w.category is ScrapyDeprecationWarning]
