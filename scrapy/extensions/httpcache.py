@@ -269,9 +269,11 @@ class DbmCacheStorage:
         self.db.close()
 
     def retrieve_response(self, spider: Spider, request: Request) -> Response | None:
-        data = self._read_data(spider, request)
-        if data is None:
+        result = self._read_data(spider, request)
+        if result is None:
             return None  # not cached
+        data, ts = result
+        request.meta["cache_timestamp"] = ts
         return response_from_dict(data)
 
     def store_response(
@@ -281,18 +283,21 @@ class DbmCacheStorage:
         self.db[f"{key}_data"] = pickle.dumps(response.to_dict(), protocol=4)
         self.db[f"{key}_time"] = str(time())
 
-    def _read_data(self, spider: Spider, request: Request) -> dict[str, Any] | None:
+    def _read_data(
+        self, spider: Spider, request: Request
+    ) -> tuple[dict[str, Any], float] | None:
         key = self._fingerprinter.fingerprint(request).hex()
         db = self.db
         tkey = f"{key}_time"
         if tkey not in db:
             return None  # not found
 
-        ts = db[tkey]
-        if 0 < self.expiration_secs < time() - float(ts):
+        ts = float(db[tkey])
+        if 0 < self.expiration_secs < time() - ts:
             return None  # expired
 
-        return cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
+        data = cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
+        return data, ts
 
 
 class FilesystemCacheStorage:
@@ -339,6 +344,7 @@ class FilesystemCacheStorage:
         if datapath.exists():
             with self._open(datapath, "rb") as f:
                 data.update(pickle.load(f))  # noqa: S301
+        request.meta["cache_timestamp"] = metadata["timestamp"]
         return response_from_dict(data)
 
     def store_response(

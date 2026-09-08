@@ -145,6 +145,7 @@ class HttpCacheMiddleware:
             return cachedresponse
 
         self.stats.inc_value("httpcache/invalidate")
+        request.meta.pop("cache_timestamp", None)
         self._cache_response(response, request)
         return response
 
