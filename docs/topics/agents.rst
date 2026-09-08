@@ -1,4 +1,4 @@
-.. _topics-agents:
+.. _agents:
 
 ===============================
 Using Scrapy with coding agents

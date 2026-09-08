@@ -137,7 +137,7 @@ scraping easy and efficient, such as:
 * Several ways to :ref:`execute code inside a Scrapy process
   <connect-live-crawl>`, to introspect and debug it.
 
-* An official :ref:`plugin for coding agents <topics-agents>`.
+* An official :ref:`plugin for coding agents <agents>`.
 
 * Plus other goodies like reusable spiders to crawl sites from `Sitemaps`_ and
   XML/CSV feeds, a media pipeline for :ref:`automatically downloading images

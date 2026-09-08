@@ -837,6 +837,6 @@ command-line tool, spiders, selectors and other things the tutorial hasn't cover
 modeling the scraped data. If you'd prefer to play with an example project, check
 the :ref:`intro-examples` section.
 
-If you are using a coding agent, see :ref:`topics-agents`.
+If you are using a coding agent, see :ref:`agents`.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON
