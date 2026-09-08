@@ -322,7 +322,7 @@ For broad crawls, consider these adjustments:
 
 -   .. _broad-crawls-bfo:
 
-    If memory is a bottleneck, see if :ref:`crawling in BFO order <bfo>` lowers
+    If memory is a bottleneck, see if :ref:`crawling in BFO order <broad-crawls-bfo>` lowers
     memory usage.
 
 -   Improve DNS resolution speed:

@@ -4,7 +4,7 @@
 Coroutines
 ==========
 
-Scrapy :ref:`supports <coroutine-support>` the :ref:`coroutine syntax <async>`
+Scrapy :ref:`supports <coroutine-support>` the :ref:`coroutine syntax <coroutine-support>`
 (i.e. ``async def``).
 
 

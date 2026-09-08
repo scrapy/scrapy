@@ -220,7 +220,7 @@ Solving specific problems
     Learn how to pause and resume crawls for large spiders.
 
 :doc:`topics/coroutines`
-    Use the :ref:`coroutine syntax <async>`.
+    Use the :ref:`coroutine syntax <coroutine-support>`.
 
 :doc:`topics/asyncio`
     Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
