@@ -6,10 +6,9 @@ See documentation in docs/topics/telnetconsole.rst
 
 from __future__ import annotations
 
-import binascii
 import logging
-import os
 import pprint
+from secrets import token_hex
 from typing import TYPE_CHECKING, Any
 
 from twisted.conch import telnet
@@ -61,7 +60,7 @@ class TelnetConsole(protocol.ServerFactory):
         self.password: str = crawler.settings["TELNETCONSOLE_PASSWORD"]
 
         if not self.password:
-            self.password = binascii.hexlify(os.urandom(8)).decode("utf8")
+            self.password = token_hex(8)
             logger.info("Telnet Password: %s", self.password)
 
         self.crawler.signals.connect(self.start_listening, signals.engine_started)

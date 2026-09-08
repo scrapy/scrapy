@@ -2,9 +2,9 @@
 Scrapy - a web crawling and web scraping framework written for Python
 """
 
-import pkgutil
 import sys
 import warnings
+from importlib.resources import files
 
 # Declare top-level shortcuts
 from scrapy.http import FormRequest, Request
@@ -25,7 +25,7 @@ __all__ = [
 
 
 # Scrapy and Twisted versions
-__version__ = (pkgutil.get_data(__package__, "VERSION") or b"").decode("ascii").strip()
+__version__ = files("scrapy").joinpath("VERSION").read_text(encoding="ascii").strip()
 version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."))
 
 
@@ -33,6 +33,6 @@ version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="twisted")
 
 
-del pkgutil
+del files
 del sys
 del warnings

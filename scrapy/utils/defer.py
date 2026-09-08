@@ -223,7 +223,7 @@ class _AsyncCooperatorAdapter(Iterator[Deferred[Any]], Generic[_T]):
         *callable_args: _P.args,
         **callable_kwargs: _P.kwargs,
     ):
-        self.aiterator: AsyncIterator[_T] = aiterable.__aiter__()
+        self.aiterator: AsyncIterator[_T] = aiter(aiterable)
         self.callable: Callable[Concatenate[_T, _P], Deferred[Any] | None] = callable_
         self.callable_args: tuple[Any, ...] = callable_args
         self.callable_kwargs: dict[str, Any] = callable_kwargs

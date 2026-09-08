@@ -36,6 +36,7 @@ class SpiderState:
         if self.jobdir:
             with Path(self.statefn).open("wb") as f:
                 assert hasattr(spider, "state")  # set in spider_opened
+                # Set the protocol explicitly as Python defaults change.
                 pickle.dump(spider.state, f, protocol=4)
 
     def spider_opened(self, spider: Spider) -> None:

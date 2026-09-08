@@ -4,13 +4,13 @@ import asyncio
 import code
 from collections.abc import Callable
 from functools import partial, wraps
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-EmbedFuncT = Callable[..., None]
-KnownShellsT = dict[str, Callable[..., EmbedFuncT]]
+EmbedFuncT: TypeAlias = Callable[..., None]
+KnownShellsT: TypeAlias = dict[str, Callable[..., EmbedFuncT]]
 
 
 def _embed_ipython_shell(

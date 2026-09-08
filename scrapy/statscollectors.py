@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import pprint
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from scrapy.utils.decorators import _warn_spider_arg
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-StatsT = dict[str, Any]
+StatsT: TypeAlias = dict[str, Any]
 
 
 class StatsCollector:

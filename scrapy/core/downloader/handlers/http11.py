@@ -797,8 +797,7 @@ class _LenientHTTPClientParser(HTTPClientParser):
         # a colon.
 
         # Handle the normal CR LF case.
-        if line[-1:] == b"\r":
-            line = line[:-1]
+        line = line.removesuffix(b"\r")
 
         if self.state == STATUS:
             self.statusReceived(line)  # type: ignore[no-untyped-call]

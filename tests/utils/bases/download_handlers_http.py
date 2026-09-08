@@ -1752,7 +1752,7 @@ class TestRealWebsiteBase(ABC):
         self, settings_dict: dict[str, Any] | None = None
     ) -> AsyncGenerator[DownloadHandlerProtocol]:
         crawler = get_crawler(
-            DefaultSpider, {**REAL_WEBSITE_SETTINGS, **(settings_dict or {})}
+            DefaultSpider, REAL_WEBSITE_SETTINGS | (settings_dict or {})
         )
         crawler.spider = crawler._create_spider()
         dh = build_from_crawler(self.download_handler_cls, crawler)
@@ -1772,7 +1772,7 @@ class TestRealWebsiteBase(ABC):
     @coroutine_test
     async def test_download_with_spider(self) -> None:
         crawler = get_crawler(
-            SingleRequestSpider, {**REAL_WEBSITE_SETTINGS, **(self.settings_dict or {})}
+            SingleRequestSpider, REAL_WEBSITE_SETTINGS | (self.settings_dict or {})
         )
         await maybe_deferred_to_future(
             crawler.crawl(seed=Request("https://books.toscrape.com/"))
