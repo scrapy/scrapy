@@ -110,7 +110,7 @@ See :ref:`topics-request-response-ref-request-userlogin`.
 Does Scrapy crawl in breadth-first or depth-first order?
 --------------------------------------------------------
 
-:ref:`DFO by default, but other orders are possible <request-order>`.
+:ref:`DFO by default, but other orders are possible <faq-bfo-dfo>`.
 
 
 My Scrapy crawler has memory leaks. What can I do?

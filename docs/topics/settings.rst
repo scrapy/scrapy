@@ -2046,6 +2046,8 @@ For available choices, see :setting:`SCHEDULER_DISK_QUEUE`.
 Use ``None`` or ``""`` to disable these separate queues entirely, and instead
 have start requests share the same queues as other requests.
 
+.. _start-request-order:
+
 .. note::
 
     Disabling separate start request queues makes :ref:`start request order
