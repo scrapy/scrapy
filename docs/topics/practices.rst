@@ -580,6 +580,20 @@ Static analysis
 Consider using :doc:`scrapy-lint <scrapy-lint:index>`, a linter for Scrapy
 projects that detects common mistakes and anti-patterns.
 
+.. _connect-live-crawl:
+
+Connecting to live crawls
+=========================
+
+It's useful to be able to connect to live long-running crawls, either to check
+their progress in detail or to investigate problems with them. Scrapy provides
+the following tools for this:
+
+- :ref:`Telnet console <topics-telnetconsole>`: connect to a crawl process with
+  a telnet client and execute Python code inside it.
+- :ref:`Scrapy MCP server <using-mcp-server>`: point a coding agent to a crawl
+  process so that it can execute Python code inside it.
+
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: https://www.scrapy.org/companies
 .. _ProxyMesh: https://proxymesh.com/

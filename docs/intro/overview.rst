@@ -134,9 +134,10 @@ scraping easy and efficient, such as:
   - crawl depth restriction
   - and more
 
-* A :ref:`Telnet console <topics-telnetconsole>` for hooking into a Python
-  console running inside your Scrapy process, to introspect and debug your
-  crawler
+* Several ways to :ref:`execute code inside a Scrapy process
+  <connect-live-crawl>`, to introspect and debug it.
+
+* An official :ref:`plugin for coding agents <topics-agents>`.
 
 * Plus other goodies like reusable spiders to crawl sites from `Sitemaps`_ and
   XML/CSV feeds, a media pipeline for :ref:`automatically downloading images

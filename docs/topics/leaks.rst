@@ -19,8 +19,8 @@ To help debugging memory leaks, Scrapy provides a built-in mechanism for
 tracking objects references called :ref:`trackref <topics-leaks-trackrefs>`,
 and you can also use a third-party library called :ref:`muppy
 <topics-leaks-muppy>` for more advanced memory debugging (see below for more
-info). Both mechanisms must be used from the :ref:`Telnet Console
-<topics-telnetconsole>`.
+info). Both mechanisms must be used after :ref:`connecting to a live crawl
+<connect-live-crawl>`.
 
 Common causes of memory leaks
 =============================
