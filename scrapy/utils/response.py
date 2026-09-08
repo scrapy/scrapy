@@ -60,7 +60,7 @@ def response_from_dict(d: dict[str, Any]) -> Response:
     """Return a response built from the *d* dict, as returned by
     :meth:`Response.to_dict() <scrapy.http.Response.to_dict>`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.19.0
 
     If *d* does not indicate a response class, e.g. because it comes from a
     plain :class:`~scrapy.http.Response` object or predates :meth:`~scrapy.http.Response.to_dict`,

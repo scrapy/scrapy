@@ -19,7 +19,7 @@ to connect to Scrapy crawls.
 Using the MCP server
 ====================
 
-.. versionadded:: VERSION
+.. versionadded:: 2.19.0
 
 The `Scrapy MCP server`_ can connect to running local crawls that have the
 :class:`~.RemoteControl` extension enabled. Here are some tasks that are
