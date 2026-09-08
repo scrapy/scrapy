@@ -222,7 +222,7 @@ Scrapy writes the session keys of its HTTPS connections to the file that the
 ``SSLKEYLOGFILE`` environment variable points to, using the `NSS key log
 format`_ that traffic analysis tools such as Wireshark understand.
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 .. code-block:: shell
 

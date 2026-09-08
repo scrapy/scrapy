@@ -1541,7 +1541,7 @@ The Project ID that will be used when storing data on `Google Cloud Storage`_.
 HTTP2_MAX_FRAME_SIZE
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``16384``
 
