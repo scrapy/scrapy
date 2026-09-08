@@ -420,6 +420,10 @@ def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:
 
 
 def rfc1123_to_epoch(date_str: str | bytes | None) -> int | None:
+    # The HTTP time format (which is how we use this function) is actually in
+    # RFC 7231 §7.1.1.1, it refers to RFC 5322 and also requires support for
+    # two obsolete formats (RFC 850 and asctime()). email.utils evidently
+    # supports all three.
     if date_str is None:
         return None
     try:
