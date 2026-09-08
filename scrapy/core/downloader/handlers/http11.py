@@ -293,7 +293,38 @@ def _tunnel_request_data(
     return tunnel_req
 
 
-class _TunnelingAgent(Agent):
+class _BindAddressAgent(Agent):
+    """An Agent that adds the configured local bind address to the
+    connection pool key, so pooled connections are not shared between
+    requests bound to different addresses."""
+
+    def __init__(
+        self,
+        reactor: ReactorBase,
+        contextFactory: IPolicyForHTTPS,
+        connectTimeout: float | None = None,
+        bindAddress: tuple[str, int] | None = None,
+        pool: HTTPConnectionPool | None = None,
+    ):
+        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
+
+    def _requestWithEndpoint(
+        self,
+        key: tuple[Any, ...],
+        endpoint: TCP4ClientEndpoint,
+        method: bytes,
+        parsedURI: URI,
+        headers: TxHeaders | None,
+        bodyProducer: IBodyProducer | None,
+        requestPath: bytes,
+    ) -> Deferred[IResponse]:
+        key += (self._endpointFactory._bindAddress,)
+        return super()._requestWithEndpoint(
+            key, endpoint, method, parsedURI, headers, bodyProducer, requestPath
+        )
+
+
+class _TunnelingAgent(_BindAddressAgent):
     """An agent that uses a ``_TunnelingTCP4ClientEndpoint`` to make HTTPS
     downloads. It may look strange that we have chosen to subclass Agent and not
     ProxyAgent but consider that after the tunnel is opened the proxy is
@@ -311,7 +342,7 @@ class _TunnelingAgent(Agent):
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)  # type: ignore[no-untyped-call]
+        super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
@@ -351,7 +382,7 @@ class _TunnelingAgent(Agent):
         )
 
 
-class _ScrapyProxyAgent(Agent):
+class _ScrapyProxyAgent(_BindAddressAgent):
     def __init__(
         self,
         reactor: ReactorBase,
@@ -361,7 +392,7 @@ class _ScrapyProxyAgent(Agent):
         bindAddress: tuple[str, int] | None = None,
         pool: HTTPConnectionPool | None = None,
     ):
-        super().__init__(  # type: ignore[no-untyped-call]
+        super().__init__(
             reactor=reactor,
             contextFactory=contextFactory,
             connectTimeout=connectTimeout,
@@ -456,7 +487,7 @@ class _ScrapyAgent:
                 pool=self._pool,
             )
 
-        return Agent(
+        return _BindAddressAgent(
             reactor=reactor,
             contextFactory=self._contextFactory,
             connectTimeout=timeout,
