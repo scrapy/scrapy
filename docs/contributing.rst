@@ -6,7 +6,7 @@ Contributing to Scrapy
 
 .. important::
 
-    Double check that you are reading the most recent version of this document
+    Double-check that you are reading the most recent version of this document
     at https://docs.scrapy.org/en/master/contributing.html
 
     By participating in this project you agree to abide by the terms of our
@@ -216,14 +216,13 @@ has been validated and proven useful. Alternatively, you can start a
 conversation in the `Scrapy subreddit`_ to discuss your idea first.
 
 Sometimes there is an existing pull request for the problem you'd like to
-solve, which is stalled for some reason. Often the pull request is in a
-right direction, but changes are requested by Scrapy maintainers, and the
-original pull request author hasn't had time to address them.
-In this case consider picking up this pull request: open
-a new pull request with all commits from the original pull request, as well as
-additional changes to address the raised issues. Doing so helps a lot; it is
-not considered rude as long as the original author is acknowledged by keeping
-his/her commits.
+solve, which is stalled for some reason. Often the pull request is in the right
+direction, but changes are requested by Scrapy maintainers, and the original
+pull request author hasn't had time to address them. In this case consider
+picking up this pull request: open a new pull request with all commits from the
+original pull request, as well as additional changes to address the raised
+issues. Doing so helps a lot; it is not considered rude as long as the original
+author is acknowledged by keeping their commits.
 
 You can pull an existing pull request to a local branch
 by running ``git fetch upstream pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE``
@@ -233,9 +232,9 @@ with a name of the branch you want to create locally).
 See also: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally.
 
 When writing GitHub pull requests, try to keep titles short but descriptive.
-E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
-prefer "Fix hanging when exception occurs in start_requests (#411)"
-instead of "Fix for #411". Complete titles make it easy to skim through
+For example, for bug #411: "Scrapy hangs if an exception raises in
+start_requests" prefer "Fix hanging when exception occurs in start_requests
+(#411)" instead of "Fix for #411". Complete titles make it easy to skim through
 the issue tracker.
 
 Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
@@ -271,7 +270,7 @@ commit.
 
 .. _pre-commit: https://pre-commit.com/
 
-After your create a local clone of your fork of the Scrapy repository:
+After you create a local clone of your fork of the Scrapy repository:
 
 #.  `Install pre-commit <https://pre-commit.com/#installation>`_.
 

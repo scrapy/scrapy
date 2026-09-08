@@ -7,8 +7,8 @@ Requests and Responses
 .. module:: scrapy.http
    :synopsis: Request and Response classes
 
-Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling web
-sites.
+Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling
+websites.
 
 Typically, :class:`~scrapy.Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request

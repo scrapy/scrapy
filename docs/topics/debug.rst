@@ -5,7 +5,7 @@ Debugging Spiders
 =================
 
 This document explains the most common techniques for debugging spiders.
-Consider the following Scrapy spider below:
+Consider the following Scrapy spider:
 
 .. skip: next
 .. code-block:: python
@@ -40,19 +40,19 @@ Consider the following Scrapy spider below:
             # populate more `item` fields
             return item
 
-Basically this is a simple spider which parses two pages of items (the
-start_urls). Items also have a details page with additional information, so we
-use the ``cb_kwargs`` functionality of :class:`~scrapy.Request` to pass a
-partially populated item.
+Basically, this is a simple spider that parses two pages of items (the start
+URLs). Items also have a details page with additional information, so we use
+the ``cb_kwargs`` functionality of :class:`~scrapy.Request` to pass a partially
+populated item.
 
 
 Parse Command
 =============
 
 The most basic way of checking the output of your spider is to use the
-:command:`parse` command. It allows to check the behaviour of different parts
-of the spider at the method level. It has the advantage of being flexible and
-simple to use, but does not allow debugging code inside a method.
+:command:`parse` command. It allows you to check the behaviour of different
+parts of the spider at the method level. It has the advantage of being flexible
+and simple to use, but it does not allow debugging code inside a method.
 
 .. highlight:: none
 
@@ -90,7 +90,7 @@ Using the ``--verbose`` or ``-v`` option we can see the status at each depth lev
     # Requests  -----------------------------------------------------------------
     []
 
-Checking items scraped from a single start_url, can also be easily achieved
+Checking items scraped from a single start URL can also be easily achieved
 using::
 
     $ scrapy parse --spider=myspider -d 3 'http://example.com/page1'
@@ -101,10 +101,10 @@ using::
 Scrapy Shell
 ============
 
-While the :command:`parse` command is very useful for checking behaviour of a
-spider, it is of little help to check what happens inside a callback, besides
-showing the response received and the output. How to debug the situation when
-``parse_details`` sometimes receives no item?
+While the :command:`parse` command is very useful for checking the behaviour of
+a spider, it is of little help when checking what happens inside a callback
+besides showing the response received and the output. How do you debug the
+situation when ``parse_details`` sometimes receives no item?
 
 .. highlight:: python
 
@@ -129,7 +129,7 @@ See also: :ref:`topics-shell-inspect-response`.
 Open in browser
 ===============
 
-Sometimes you just want to see how a certain response looks in a browser, you
+Sometimes you just want to see how a certain response looks in a browser; you
 can use the :func:`~scrapy.utils.response.open_in_browser` function for that:
 
 .. autofunction:: scrapy.utils.response.open_in_browser
@@ -140,7 +140,7 @@ Logging
 
 Logging is another useful option for getting information about your spider run.
 Although not as convenient, it comes with the advantage that the logs will be
-available in all future runs should they be necessary again:
+available in all future runs should you need them again:
 
 .. code-block:: python
 
