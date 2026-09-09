@@ -324,7 +324,6 @@ class TestLocalCache:
         assert "b" not in cache
         assert "c" not in cache
 
-
     def test_cache_update_existing_key_does_not_evict(self):
         # Updating an existing key must not evict another entry or drop the
         # cache below its limit (regression: it used to evict the oldest key).
