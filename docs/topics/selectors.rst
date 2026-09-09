@@ -308,7 +308,7 @@ Examples:
 
 * ``*::text`` selects all descendant text nodes of the current selector context:
 
-..skip: next
+.. skip: next
 .. code-block:: pycon
 
     >>> response.css("#images *::text").getall()
@@ -634,8 +634,7 @@ Example:
 .. code-block:: pycon
 
     >>> from scrapy import Selector
-    >>> sel = Selector(
-    ...     text="""
+    >>> sel = Selector(text="""
     ...     <ul class="list">
     ...         <li>1</li>
     ...         <li>2</li>
@@ -645,8 +644,8 @@ Example:
     ...         <li>4</li>
     ...         <li>5</li>
     ...         <li>6</li>
-    ...     </ul>"""
-    ... )
+    ...     </ul>""")
+    ...
     >>> xp = lambda x: sel.xpath(x).getall()
 
 This gets all first ``<li>``  elements under whatever it is its parent:
@@ -948,11 +947,9 @@ with groups of itemscopes and corresponding itemprops:
     >>> sel = Selector(text=doc, type="html")
     >>> for scope in sel.xpath("//div[@itemscope]"):
     ...     print("current scope:", scope.xpath("@itemtype").getall())
-    ...     props = scope.xpath(
-    ...         """
+    ...     props = scope.xpath("""
     ...                 set:difference(./descendant::*/@itemprop,
-    ...                                .//*[@itemscope]/*/@itemprop)"""
-    ...     )
+    ...                                .//*[@itemscope]/*/@itemprop)""")
     ...     print(f"    properties: {props.getall()}")
     ...     print("")
     ...

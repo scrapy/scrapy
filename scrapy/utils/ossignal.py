@@ -10,12 +10,7 @@ SignalHandlerT: TypeAlias = (
     Callable[[int, FrameType | None], Any] | int | signal.Handlers | None
 )
 
-signal_names: dict[int, str] = {}
-for signame in dir(signal):
-    if signame.startswith("SIG") and not signame.startswith("SIG_"):
-        signum = getattr(signal, signame)
-        if isinstance(signum, int):
-            signal_names[signum] = signame
+signal_names: dict[int, str] = {member.value: member.name for member in signal.Signals}
 
 
 def install_shutdown_handlers(

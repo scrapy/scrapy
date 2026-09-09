@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -49,7 +50,16 @@ class S3DownloadHandler(BaseDownloadHandler):
 
     async def download_request(self, request: Request) -> Response:
         p = urlparse_cached(request)
-        scheme = "https" if request.meta.get("is_secure") else "http"
+        if request.meta.get("is_secure") is False:
+            warnings.warn(
+                "Passing is_secure=False for s3:// requests is deprecated."
+                " In future Scrapy releases this flag will be ignored.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            scheme = "http"
+        else:
+            scheme = "https"
         bucket = p.hostname
         path = p.path + "?" + p.query if p.query else p.path
         url = f"{scheme}://{bucket}.s3.amazonaws.com{path}"

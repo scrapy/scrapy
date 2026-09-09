@@ -102,7 +102,6 @@ class CloseSpider:
             self._close_spider("closespider_pagecount_no_item")
 
     def spider_opened(self, spider: Spider) -> None:
-        assert self.crawler.engine
         self.task = call_later(
             self.close_on["timeout"], self._close_spider, "closespider_timeout"
         )
@@ -119,7 +118,7 @@ class CloseSpider:
             self.task = None
 
         if self.task_no_item:
-            if self.task_no_item.running:
+            if self.task_no_item.running:  # pragma: no branch
                 self.task_no_item.stop()
             self.task_no_item = None
 
@@ -146,5 +145,4 @@ class CloseSpider:
             self._close_spider("closespider_timeout_no_item")
 
     def _close_spider(self, reason: str) -> None:
-        assert self.crawler.engine
         _schedule_coro(self.crawler.engine.close_spider_async(reason=reason))

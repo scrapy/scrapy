@@ -3,12 +3,13 @@ from __future__ import annotations
 import argparse
 import re
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import pytest
 
 from scrapy.commands import parse
 from scrapy.settings import Settings
-from tests.test_commands import TestProjectBase
+from tests.utils.bases.commands import TestProjectBase
 from tests.utils.cmdline import call, proc
 
 if TYPE_CHECKING:
@@ -126,6 +127,32 @@ class MySpider(scrapy.Spider):
         else:
             self.logger.debug('It Does Not Work :(')
 
+class RetryRequestSpider(BaseSpider):
+    name = 'retry_request'
+
+    def parse(self, response):
+        if response.meta.get('retried'):
+            yield {{'retried': True}}
+            return
+        response.meta['retried'] = True
+        yield response.request.replace(dont_filter=True)
+
+class CustomCallbackRetryRequestSpider(BaseSpider):
+    name = 'retry_request_custom_callback'
+
+    def parse(self, response):
+        yield response.request.replace(
+            callback=self.parse_retry,
+            dont_filter=True,
+        )
+
+    def parse_retry(self, response):
+        if response.meta.get('retried'):
+            yield {{'retried_with_custom_callback': True}}
+            return
+        response.meta['retried'] = True
+        yield response.request.replace(dont_filter=True)
+
 class MyGoodCrawlSpider(CrawlSpider):
     name = 'goodcrawl{self.spider_name}'
 
@@ -183,6 +210,19 @@ class MyPipeline:
 ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
 """
             )
+
+    def test_bootstrap_failure(self, proj_path: Path, mockserver: MockServer) -> None:
+        self._break_bootstrap(proj_path / self.project_name)
+        returncode, _, _ = proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-c",
+            "parse",
+            mockserver.url("/html"),
+            cwd=proj_path,
+        )
+        assert returncode == 1
 
     def test_spider_arguments(self, proj_path: Path, mockserver: MockServer) -> None:
         _, _, stderr = proc(
@@ -381,6 +421,36 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         )
         assert "[{}, {'foo': 'bar'}]" in out
 
+    def test_retry_response_request(
+        self, proj_path: Path, mockserver: MockServer
+    ) -> None:
+        _, out, stderr = proc(
+            "parse",
+            "--spider",
+            "retry_request",
+            "-d",
+            "2",
+            mockserver.url("/html"),
+            cwd=proj_path,
+        )
+        assert "RecursionError" not in stderr
+        assert "{'retried': True}" in out
+
+    def test_retry_response_request_with_custom_callback(
+        self, proj_path: Path, mockserver: MockServer
+    ) -> None:
+        _, out, stderr = proc(
+            "parse",
+            "--spider",
+            "retry_request_custom_callback",
+            "-d",
+            "3",
+            mockserver.url("/html"),
+            cwd=proj_path,
+        )
+        assert "RecursionError" not in stderr
+        assert "{'retried_with_custom_callback': True}" in out
+
     def test_wrong_callback_passed(
         self, proj_path: Path, mockserver: MockServer
     ) -> None:
@@ -495,6 +565,130 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
 
         content = '[\n{},\n{"foo": "bar"}\n]'
         assert file_path.read_text(encoding="utf-8") == content
+
+    @pytest.mark.parametrize("args", [(), ("not-a-url",), ("a:b", "c:d")])
+    def test_bad_arguments(self, args: tuple[str, ...], proj_path: Path) -> None:
+        returncode, out, _ = proc("parse", *args, cwd=proj_path)
+        assert returncode == 2
+        assert "Usage" in out
+
+    @pytest.mark.parametrize(
+        ("option", "message"),
+        [
+            ("--meta", "Invalid -m/--meta value"),
+            ("-m", "Invalid -m/--meta value"),
+            ("--cbkwargs", "Invalid --cbkwargs value"),
+        ],
+    )
+    def test_invalid_json(
+        self, option: str, message: str, proj_path: Path, mockserver: MockServer
+    ) -> None:
+        returncode, _, err = proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            option,
+            "{invalid",
+            mockserver.url("/html"),
+            cwd=proj_path,
+        )
+        assert returncode == 2
+        assert message in err
+
+    def test_unknown_spider(self, proj_path: Path, mockserver: MockServer) -> None:
+        returncode, _, err = proc(
+            "parse",
+            "--spider",
+            "nonexistent",
+            mockserver.url("/html"),
+            cwd=proj_path,
+        )
+        assert returncode == 0, err
+        assert "Unable to find spider: nonexistent" in err
+
+    def test_spider_found_by_url(self, proj_path: Path, mockserver: MockServer) -> None:
+        """Without --spider, the spider is chosen based on the URL."""
+        url = mockserver.url("/html")
+        # The spider name doubles as a domain of the spider, and it is matched
+        # against the netloc of the URL, hence the port.
+        (proj_path / self.project_name / "spiders" / "urlspider.py").write_text(
+            f"""
+import scrapy
+
+class UrlSpider(scrapy.Spider):
+    name = "{urlparse(url).netloc}"
+
+    def parse(self, response):
+        return [{{"found_by_url": True}}]
+""",
+            encoding="utf-8",
+        )
+        returncode, out, err = proc("parse", url, cwd=proj_path)
+        assert returncode == 0, err
+        assert "Unable to find spider for" not in err
+        assert "{'found_by_url': True}" in out
+
+    def test_legacy_item_processor(
+        self, proj_path: Path, mockserver: MockServer
+    ) -> None:
+        """--pipelines supports an ITEM_PROCESSOR without process_item_async()."""
+        (proj_path / self.project_name / "legacy.py").write_text(
+            """
+import logging
+
+from twisted.internet.defer import succeed
+
+
+class LegacyItemProcessor:
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls()
+
+    def open_spider(self, spider):
+        return succeed(None)
+
+    def close_spider(self, spider):
+        return succeed(None)
+
+    def process_item(self, item, spider):
+        logging.info("Legacy item processor!")
+        return succeed(item)
+""",
+            encoding="utf-8",
+        )
+        _, _, stderr = proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "--pipelines",
+            "-c",
+            "parse",
+            "-s",
+            f"ITEM_PROCESSOR={self.project_name}.legacy.LegacyItemProcessor",
+            mockserver.url("/html"),
+            cwd=proj_path,
+        )
+        assert "INFO: Legacy item processor!" in stderr
+
+    @pytest.mark.parametrize("verbose", [True, False])
+    def test_no_items_no_links(
+        self, verbose: bool, proj_path: Path, mockserver: MockServer
+    ) -> None:
+        args = ["--verbose"] if verbose else []
+        _, out, err = proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-c",
+            "parse",
+            "--noitems",
+            "--nolinks",
+            *args,
+            mockserver.url("/html"),
+            cwd=proj_path,
+        )
+        assert "# Scraped Items" not in out, err
+        assert "# Requests" not in out
 
     def test_parse_add_options(self):
         command = parse.Command()

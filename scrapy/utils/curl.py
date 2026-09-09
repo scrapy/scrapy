@@ -23,6 +23,11 @@ class DataAction(argparse.Action):
     ) -> None:
         value = str(values)
         value = value.removeprefix("$")
+        # curl merges repeated -d/--data/--data-raw options into a single body
+        # joined with "&"; mirror that instead of keeping only the last one.
+        previous = getattr(namespace, self.dest, None)
+        if previous is not None:
+            value = f"{previous}&{value}"
         setattr(namespace, self.dest, value)
 
 

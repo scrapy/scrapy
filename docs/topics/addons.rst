@@ -21,10 +21,14 @@ The ``ADDONS`` setting is a dict in which every key is an add-on class or its
 import path and the value is its priority.
 
 This is an example where two add-ons are enabled in a project's
-``settings.py``::
+``settings.py``:
+
+.. skip: next
+
+.. code-block:: python
 
     ADDONS = {
-        'path.to.someaddon': 0,
+        "path.to.someaddon": 0,
         SomeAddonClass: 1,
     }
 
@@ -56,7 +60,9 @@ the following methods:
     :type settings: :class:`~scrapy.settings.BaseSettings`
 
 The settings set by the add-on should use the ``addon`` priority (see
-:ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`)::
+:ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`):
+
+.. code-block:: python
 
     class MyAddon:
         def update_settings(self, settings):
@@ -167,7 +173,6 @@ Use a fallback component:
 .. code-block:: python
 
     from scrapy.utils.misc import build_from_crawler, load_object
-
 
     FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
 

@@ -3,20 +3,27 @@ from __future__ import annotations
 import dataclasses
 import io
 import random
+import sys
 from abc import ABC, abstractmethod
+from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
+from types import SimpleNamespace
 from typing import Any
 
 import attr
 import pytest
 from itemadapter import ItemAdapter
 
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.files import GCSFilesStore, S3FilesStore
+from scrapy.pipelines.files import GCSFilesStore, S3FilesStore, _md5sum
 from scrapy.pipelines.images import ImageException, ImagesPipeline
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
+from tests.utils.media_pipelines import DUMMY_SPIDER_INFO
 
 try:
     from PIL import Image
@@ -34,11 +41,16 @@ else:
 class TestImagesPipeline:
     def setup_method(self):
         self.tempdir = mkdtemp()
-        crawler = get_crawler()
-        self.pipeline = ImagesPipeline(self.tempdir, crawler=crawler)
+        crawler = get_crawler(None, {"IMAGES_STORE": self.tempdir})
+        self.pipeline = build_from_crawler(ImagesPipeline, crawler)
 
     def teardown_method(self):
         rmtree(self.tempdir)
+
+    def test_missing_pillow(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setitem(sys.modules, "PIL", None)
+        with pytest.raises(NotConfigured, match="requires installing Pillow"):
+            ImagesPipeline(self.tempdir, crawler=get_crawler())
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
@@ -80,7 +92,7 @@ class TestImagesPipeline:
             file_path(
                 Request("http://www.dorma.co.uk/images/product_details/2532"),
                 response=Response("http://www.dorma.co.uk/images/product_details/2532"),
-                info=object(),
+                info=DUMMY_SPIDER_INFO,
             )
             == "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg"
         )
@@ -109,7 +121,7 @@ class TestImagesPipeline:
                 Request("file:///tmp/some.name/foo"),
                 name,
                 response=Response("file:///tmp/some.name/foo"),
-                info=object(),
+                info=DUMMY_SPIDER_INFO,
             )
             == "thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg"
         )
@@ -122,11 +134,11 @@ class TestImagesPipeline:
         class CustomImagesPipeline(ImagesPipeline):
             def thumb_path(
                 self, request, thumb_id, response=None, info=None, item=None
-            ):
+            ) -> str:
                 return f"thumb/{thumb_id}/{item.get('path')}"
 
-        thumb_path = CustomImagesPipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+        thumb_path = build_from_crawler(
+            CustomImagesPipeline, get_crawler(None, {"IMAGES_STORE": self.tempdir})
         ).thumb_path
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
@@ -148,11 +160,23 @@ class TestImagesPipeline:
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
         with pytest.raises(ImageException):
-            next(self.pipeline.get_images(response=resp1, request=req, info=object()))
+            next(
+                self.pipeline.get_images(
+                    response=resp1, request=req, info=DUMMY_SPIDER_INFO
+                )
+            )
         with pytest.raises(ImageException):
-            next(self.pipeline.get_images(response=resp2, request=req, info=object()))
+            next(
+                self.pipeline.get_images(
+                    response=resp2, request=req, info=DUMMY_SPIDER_INFO
+                )
+            )
         with pytest.raises(ImageException):
-            next(self.pipeline.get_images(response=resp3, request=req, info=object()))
+            next(
+                self.pipeline.get_images(
+                    response=resp3, request=req, info=DUMMY_SPIDER_INFO
+                )
+            )
 
     def test_get_images(self):
         self.pipeline.min_width = 0
@@ -165,7 +189,7 @@ class TestImagesPipeline:
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
         get_images_gen = self.pipeline.get_images(
-            response=resp, request=req, info=object()
+            response=resp, request=req, info=DUMMY_SPIDER_INFO
         )
 
         path, new_im, new_buf = next(get_images_gen)
@@ -190,17 +214,36 @@ class TestImagesPipeline:
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
         get_images_gen = self.pipeline.get_images(
-            response=resp, request=req, info=object()
+            response=resp, request=req, info=DUMMY_SPIDER_INFO
         )
 
         path, new_im, _ = next(get_images_gen)
         assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert new_im.getpixel((0, 0)) == (255, 0, 0)
 
+    @coroutine_test
+    async def test_image_downloaded(self) -> None:
+        """The image and its thumbnails are stored, and the checksum of the
+        full-size image is returned."""
+        self.pipeline.thumbs = {"small": (20, 20)}
+        _, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
+        url = "https://dev.mydeco.com/mydeco.gif"
+        response = Response(url=url, body=buf.getvalue())
+
+        checksum = await self.pipeline.image_downloaded(
+            response, Request(url=url), DUMMY_SPIDER_INFO
+        )
+
+        buf.seek(0)
+        assert checksum == _md5sum(buf)
+        name = "3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        assert Path(self.tempdir, "full", name).read_bytes() == buf.getvalue()
+        assert Path(self.tempdir, "thumbs", "small", name).exists()
+
     def test_convert_image(self):
         SIZE = (100, 100)
         # straight forward case: RGB and JPEG
-        COLOUR = (0, 127, 255)
+        COLOUR: tuple[int, ...] = (0, 127, 255)
         im, buf = _create_image("JPEG", "RGB", SIZE, COLOUR)
         converted, converted_buf = self.pipeline.convert_image(im, response_body=buf)
         assert converted.mode == "RGB"
@@ -230,6 +273,24 @@ class TestImagesPipeline:
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (205, 230, 255))]
 
+    def test_convert_image_legacy_resampling_filter(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Pillow older than 9.1.0 has Image.ANTIALIAS instead of
+        Image.Resampling.LANCZOS."""
+        # Image.LANCZOS is the only spelling that exists in every supported
+        # Pillow version, but Pillow defines it dynamically, hence the ignore.
+        monkeypatch.setattr(
+            self.pipeline,
+            "_Image",
+            SimpleNamespace(ANTIALIAS=Image.LANCZOS),  # type: ignore[attr-defined]
+        )
+        im, buf = _create_image("JPEG", "RGB", (100, 100), (0, 127, 255))
+
+        thumbnail, _ = self.pipeline.convert_image(im, size=(10, 25), response_body=buf)
+
+        assert thumbnail.size == (10, 10)
+
     @pytest.mark.parametrize(
         "bad_type",
         [
@@ -241,14 +302,14 @@ class TestImagesPipeline:
         ],
     )
     def test_rejects_non_list_image_urls(self, tmp_path, bad_type):
-        pipeline = ImagesPipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
+        pipeline = build_from_crawler(
+            ImagesPipeline, get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
         )
         item = ImagesPipelineTestItem()
         item["image_urls"] = bad_type
 
         with pytest.raises(TypeError, match="image_urls must be a list of URLs"):
-            list(pipeline.get_media_requests(item, None))
+            list(pipeline.get_media_requests(item, DUMMY_SPIDER_INFO))
 
 
 class TestImagesPipelineFieldsMixin(ABC):
@@ -260,13 +321,13 @@ class TestImagesPipelineFieldsMixin(ABC):
     def test_item_fields_default(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", image_urls=[url])
-        pipeline = ImagesPipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": "s3://example/images/"})
+        pipeline = build_from_crawler(
+            ImagesPipeline, get_crawler(None, {"IMAGES_STORE": "s3://example/images/"})
         )
-        requests = list(pipeline.get_media_requests(item, None))
+        requests = list(pipeline.get_media_requests(item, DUMMY_SPIDER_INFO))
         assert requests[0].url == url
-        results = [(True, {"url": url})]
-        item = pipeline.item_completed(results, item, None)
+        results: Any = [(True, {"url": url})]
+        item = pipeline.item_completed(results, item, DUMMY_SPIDER_INFO)
         images = ItemAdapter(item).get("images")
         assert images == [results[0][1]]
         assert isinstance(item, self.item_class)
@@ -274,7 +335,8 @@ class TestImagesPipelineFieldsMixin(ABC):
     def test_item_fields_override_settings(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", custom_image_urls=[url])
-        pipeline = ImagesPipeline.from_crawler(
+        pipeline = build_from_crawler(
+            ImagesPipeline,
             get_crawler(
                 None,
                 {
@@ -282,12 +344,12 @@ class TestImagesPipelineFieldsMixin(ABC):
                     "IMAGES_URLS_FIELD": "custom_image_urls",
                     "IMAGES_RESULT_FIELD": "custom_images",
                 },
-            )
+            ),
         )
-        requests = list(pipeline.get_media_requests(item, None))
+        requests = list(pipeline.get_media_requests(item, DUMMY_SPIDER_INFO))
         assert requests[0].url == url
-        results = [(True, {"url": url})]
-        item = pipeline.item_completed(results, item, None)
+        results: Any = [(True, {"url": url})]
+        item = pipeline.item_completed(results, item, DUMMY_SPIDER_INFO)
         custom_images = ItemAdapter(item).get("custom_images")
         assert custom_images == [results[0][1]]
         assert isinstance(item, self.item_class)
@@ -362,13 +424,15 @@ class TestImagesPipelineCustomSettings:
         "IMAGES_RESULT_FIELD": "images",
     }
 
-    def _generate_fake_settings(self, tmp_path, prefix=None):
+    def _generate_fake_settings(
+        self, tmp_path: Path, prefix: str | None = None
+    ) -> dict[str, Any]:
         """
         :param prefix: string for setting keys
         :return: dictionary of image pipeline settings
         """
 
-        def random_string():
+        def random_string() -> str:
             return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
         settings = {
@@ -391,7 +455,7 @@ class TestImagesPipelineCustomSettings:
             for k, v in settings.items()
         }
 
-    def _generate_fake_pipeline_subclass(self):
+    def _generate_fake_pipeline_subclass(self) -> type[ImagesPipeline]:
         """
         :return: ImagePipeline class will all uppercase attributes set.
         """
@@ -416,8 +480,12 @@ class TestImagesPipelineCustomSettings:
         have different settings.
         """
         custom_settings = self._generate_fake_settings(tmp_path)
-        default_sts_pipe = ImagesPipeline(tmp_path, crawler=get_crawler(None))
-        user_sts_pipe = ImagesPipeline.from_crawler(get_crawler(None, custom_settings))
+        default_sts_pipe = build_from_crawler(
+            ImagesPipeline, get_crawler(None, {"IMAGES_STORE": tmp_path})
+        )
+        user_sts_pipe = build_from_crawler(
+            ImagesPipeline, get_crawler(None, custom_settings)
+        )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_default_value = self.default_pipeline_settings.get(pipe_attr)
             custom_value = custom_settings.get(settings_attr)
@@ -433,8 +501,8 @@ class TestImagesPipelineCustomSettings:
         from class attributes.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
-        pipeline = pipeline_cls.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": tmp_path})
+        pipeline = build_from_crawler(
+            pipeline_cls, get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         for pipe_attr, _ in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
@@ -449,7 +517,7 @@ class TestImagesPipelineCustomSettings:
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         settings = self._generate_fake_settings(tmp_path)
-        pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
+        pipeline = build_from_crawler(pipeline_cls, get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to
             # value defined in settings.
@@ -467,8 +535,8 @@ class TestImagesPipelineCustomSettings:
         class UserDefinedImagePipeline(ImagesPipeline):
             pass
 
-        user_pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": tmp_path})
+        user_pipeline = build_from_crawler(
+            UserDefinedImagePipeline, get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         for pipe_attr, _ in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -486,8 +554,8 @@ class TestImagesPipelineCustomSettings:
 
         prefix = UserDefinedImagePipeline.__name__.upper()
         settings = self._generate_fake_settings(tmp_path, prefix=prefix)
-        user_pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, settings)
+        user_pipeline = build_from_crawler(
+            UserDefinedImagePipeline, get_crawler(None, settings)
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -503,7 +571,7 @@ class TestImagesPipelineCustomSettings:
         pipeline_cls = self._generate_fake_pipeline_subclass()
         prefix = pipeline_cls.__name__.upper()
         settings = self._generate_fake_settings(tmp_path, prefix=prefix)
-        user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
+        user_pipeline = build_from_crawler(pipeline_cls, get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             custom_value = settings.get(prefix + "_" + settings_attr)
             assert custom_value != self.default_pipeline_settings[pipe_attr]
@@ -514,8 +582,8 @@ class TestImagesPipelineCustomSettings:
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
 
-        pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": tmp_path})
+        pipeline = build_from_crawler(
+            UserDefinedImagePipeline, get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         assert (
             pipeline.images_result_field
@@ -536,7 +604,7 @@ class TestImagesPipelineCustomSettings:
         class UserPipe(ImagesPipeline):
             pass
 
-        pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
+        pipeline_cls = build_from_crawler(UserPipe, get_crawler(None, settings))
 
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)
@@ -555,7 +623,7 @@ class TestImagesPipelineCustomSettings:
                 },
             )
 
-            ImagesPipeline.from_crawler(crawler)
+            build_from_crawler(ImagesPipeline, crawler)
 
             assert S3FilesStore.POLICY == "public-read"
         finally:
@@ -574,14 +642,14 @@ class TestImagesPipelineCustomSettings:
                 },
             )
 
-            ImagesPipeline.from_crawler(crawler)
+            build_from_crawler(ImagesPipeline, crawler)
 
             assert GCSFilesStore.POLICY == "authenticatedRead"
         finally:
             GCSFilesStore.POLICY = old_policy
 
 
-def _create_image(format_, *a, **kw):
+def _create_image(format_: str, *a: Any, **kw: Any) -> tuple[Image.Image, io.BytesIO]:
     buf = io.BytesIO()
     Image.new(*a, **kw).save(buf, format_)
     buf.seek(0)

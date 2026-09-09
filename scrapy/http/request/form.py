@@ -7,7 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 from warnings import warn
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 FormdataVType: TypeAlias = str | Iterable[str]
 FormdataKVType: TypeAlias = tuple[str, FormdataVType]
-FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
+FormdataType: TypeAlias = Mapping[str, FormdataVType] | Iterable[FormdataKVType] | None
 
 
 class FormRequest(Request):
@@ -100,7 +100,7 @@ class FormRequest(Request):
         super().__init__(*args, **kwargs)
 
         if formdata:
-            items = formdata.items() if isinstance(formdata, dict) else formdata
+            items = formdata.items() if isinstance(formdata, Mapping) else formdata
             form_query_str = _urlencode(items, self.encoding)
             if self.method == "POST":
                 self.headers.setdefault(
@@ -248,7 +248,7 @@ def _get_inputs(
         if clickable and clickable[0] not in formdata and clickable[0] is not None:
             values.append(clickable)
 
-    formdata_items = formdata.items() if isinstance(formdata, dict) else formdata
+    formdata_items = formdata.items() if isinstance(formdata, Mapping) else formdata
     values.extend((k, v) for k, v in formdata_items if v is not None)
     return values
 

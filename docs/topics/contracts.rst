@@ -8,6 +8,10 @@ Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
 
+.. versionchanged:: VERSION
+   Added support for callbacks defined with ``async def``, including
+   :term:`asynchronous generators <asynchronous generator>`.
+
 This allows you to test each callback of your spider by hardcoding a sample url
 and check various constraints for how the callback processes the response. Each
 contract is prefixed with an ``@`` and included in the docstring. See the
@@ -30,45 +34,31 @@ You can use the following contracts:
 
 .. module:: scrapy.contracts.default
 
-.. class:: UrlContract
+.. autoclass:: UrlContract
 
-    This contract (``@url``) sets the sample URL used when checking other
-    contract conditions for this spider. This contract is mandatory. All
-    callbacks lacking this contract are ignored when running the checks::
+.. autoclass:: CallbackKeywordArgumentsContract
 
-    @url url
+.. autoclass:: MetadataContract
 
-.. class:: CallbackKeywordArgumentsContract
+.. autoclass:: MethodContract
 
-    This contract (``@cb_kwargs``) sets the :attr:`cb_kwargs <scrapy.Request.cb_kwargs>`
-    attribute for the sample request. It must be a valid JSON dictionary.
-    ::
+.. autoclass:: BodyContract
 
-    @cb_kwargs {"arg1": "value1", "arg2": "value2", ...}
+.. autoclass:: HeaderContract
 
-.. class:: MetadataContract
+.. autoclass:: CookieContract
 
-    This contract (``@meta``) sets the :attr:`meta <scrapy.Request.meta>`
-    attribute for the sample request. It must be a valid JSON dictionary.
-    ::
+.. autoclass:: ReturnsContract
 
-    @meta {"arg1": "value1", "arg2": "value2", ...}
+.. autoclass:: ScrapesContract
 
-.. class:: ReturnsContract
+Use the :command:`check` command to run the contract checks. It ignores
+:setting:`ITEM_PIPELINES` and :setting:`FEEDS`, since contracts check the
+output of callbacks instead of sending it to item processing; use the ``-s``
+command-line option to set them back for a check run.
 
-    This contract (``@returns``) sets lower and upper bounds for the items and
-    requests returned by the spider. The upper bound is optional::
-
-    @returns item(s)|request(s) [min [max]]
-
-.. class:: ScrapesContract
-
-    This contract (``@scrapes``) checks that all the items returned by the
-    callback have the specified fields::
-
-    @scrapes field_1 field_2 ...
-
-Use the :command:`check` command to run the contract checks.
+.. versionchanged:: VERSION
+   :setting:`ITEM_PIPELINES` and :setting:`FEEDS` are now ignored.
 
 Custom Contracts
 ================
@@ -89,30 +79,16 @@ override three methods:
 
 .. module:: scrapy.contracts
 
-.. class:: Contract(method, *args)
+.. autoclass:: Contract
 
-    :param method: callback function to which the contract is associated
-    :type method: collections.abc.Callable
+    .. automethod:: adjust_request_args
 
-    :param args: list of arguments passed into the docstring (whitespace
-        separated)
-    :type args: list
-
-    .. method:: Contract.adjust_request_args(args)
-
-        This receives a ``dict`` as an argument containing default arguments
-        for request object. :class:`~scrapy.Request` is used by default,
-        but this can be changed with the ``request_cls`` attribute.
-        If multiple contracts in chain have this attribute defined, the last one is used.
-
-        Must return the same or a modified version of it.
-
-    .. method:: Contract.pre_process(response)
+    .. method:: pre_process(response)
 
         This allows hooking in various checks on the response received from the
         sample request, before it's being passed to the callback.
 
-    .. method:: Contract.post_process(output)
+    .. method:: post_process(output)
 
         This allows processing the output of the callback. Iterators are
         converted to lists before being passed to this hook.

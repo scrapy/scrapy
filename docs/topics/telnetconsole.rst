@@ -29,16 +29,16 @@ disable it if you want. For more information about the extension itself see
 .. note::
     This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
-.. seealso:: :ref:`security-telnet`
+.. seealso:: :ref:`security-telnet`, :ref:`using-mcp-server`
 
 .. highlight:: none
 
 How to access the telnet console
 ================================
 
-The telnet console listens in the TCP port defined in the
-:setting:`TELNETCONSOLE_PORT` setting, which defaults to ``6023``. To access
-the console you need to type::
+The telnet console listens on the first available TCP port from the range
+defined in the :setting:`TELNETCONSOLE_PORT` setting, which defaults to
+``[6023, 6073]``. To access the console you need to type::
 
     telnet localhost 6023
     Trying localhost...
@@ -107,8 +107,8 @@ Here are some example tasks you can do with the telnet console:
 View engine status
 ------------------
 
-You can use the ``est()`` method of the Scrapy engine to quickly show its state
-using the telnet console::
+You can use the ``est()`` method provided by the console to quickly show the
+engine status::
 
     telnet localhost 6023
     >>> est()
@@ -121,8 +121,8 @@ using the telnet console::
     engine.spider_is_idle()                         : False
     engine._slot.closing                            : False
     len(engine._slot.inprogress)                    : 16
-    len(engine._slot.scheduler.dqs or [])           : 0
-    len(engine._slot.scheduler.mqs)                 : 92
+    len(engine.scheduler.dqs or [])                 : 0
+    len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.queue)                  : 0
     len(engine.scraper.slot.active)                 : 0
     engine.scraper.slot.active_size                 : 0

@@ -133,7 +133,7 @@ data from it depends on the type of response:
 
     .. code-block:: python
 
-        selector = Selector(data["html"])
+        selector = Selector(text=data["html"])
 
 -   If the response is JavaScript, or HTML with a ``<script/>`` element
     containing the desired data, see :ref:`topics-parsing-javascript`.

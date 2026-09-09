@@ -51,8 +51,8 @@ def get_reactor_settings() -> dict[str, Any]:
         settings["TWISTED_REACTOR_ENABLED"] = False
         settings["DOWNLOAD_HANDLERS"] = {
             "ftp": None,
-            "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-            "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+            "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+            "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         }
     return settings
 
@@ -69,6 +69,7 @@ def get_crawler(
     # When needed, useful settings can be added here, e.g. ones that prevent
     # deprecation warnings.
     settings: dict[str, Any] = {
+        "REMOTE_CONTROL_ENABLED": False,
         "TELNETCONSOLE_ENABLED": False,
         **get_reactor_settings(),
         **(settings_dict or {}),

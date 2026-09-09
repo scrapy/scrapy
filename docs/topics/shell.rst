@@ -17,30 +17,35 @@ spider, without having to run the spider to test every change.
 Once you get familiarized with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
 
+.. _shell-config:
+
 Configuring the shell
 =====================
 
-If you have `IPython`_ installed, the Scrapy shell will use it (instead of the
-standard Python console). The `IPython`_ console is much more powerful and
-provides smart auto-completion and colorized output, among other things.
+With the :ref:`ptpython <extras>` extra, the Scrapy shell will use ptpython_
+instead of the :term:`REPL`. ptpython provides syntax highlighting, smart
+auto-completion, and more.
 
-We highly recommend you install `IPython`_, especially if you're working on
-Unix systems (where `IPython`_ excels). See the `IPython installation guide`_
-for more info.
+Failing that, with the :ref:`ipython <extras>` extra, the Scrapy shell will
+use IPython_ instead. IPython provides smart auto-completion, colorized
+output, and more.
 
-Scrapy also has support for `bpython`_, and will try to use it where `IPython`_
-is unavailable.
+Scrapy also has support for `bpython`_ via the :ref:`bpython <extras>` extra,
+and will try to use it where neither ptpython nor IPython is available.
 
 Through Scrapy's settings you can configure it to use any one of
-``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
-are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
-variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
+``ptpython``, ``ipython``, ``bpython`` or the standard ``python`` shell,
+regardless of which are installed. This is done by setting the
+``SCRAPY_PYTHON_SHELL`` environment variable; or by defining it in your
+:ref:`scrapy.cfg <topics-config-settings>`:
+
+.. code-block:: ini
 
     [settings]
     shell = bpython
 
+.. _ptpython: https://github.com/prompt-toolkit/ptpython
 .. _IPython: https://ipython.org/
-.. _IPython installation guide: https://ipython.org/install/
 .. _bpython: https://bpython-interpreter.org/
 
 Launch the shell
@@ -138,6 +143,32 @@ Those objects are:
     fetched page
 
 -   ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
+
+.. _shell-update-vars:
+
+Adding your own objects
+-----------------------
+
+To define additional objects, or to run code every time a response is fetched,
+write a :ref:`custom project command <topics-commands>` in a module called
+``shell``, which overrides the :command:`shell` command, and override its
+``update_vars`` method. It is called on start and after every ``fetch``, and it
+receives the mapping of variable names to objects:
+
+.. code-block:: python
+
+    from scrapy.commands.shell import Command as ShellCommand
+
+
+    class Command(ShellCommand):
+        def update_vars(self, vars):
+            from myproject.utils import parse_product
+
+            vars["parse_product"] = parse_product
+            if vars["response"] is not None:
+                vars["product"] = parse_product(vars["response"])
+
+``response`` is ``None`` when the shell is started without a URL.
 
 Example of shell session
 ========================

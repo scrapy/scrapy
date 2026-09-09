@@ -13,7 +13,6 @@ from twisted.internet.ssl import (
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface.declarations import implementer
-from zope.interface.verify import verifyObject
 
 from scrapy.core.downloader.tls import (
     _TWISTED_VERSION_MAP,
@@ -25,7 +24,12 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils._deps_compat import TWISTED_TLS_NEW_IMPL
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.ssl import _get_cert_options_version_kwargs, _get_tls_version_limits
+from scrapy.utils.ssl import (
+    _get_cert_options_version_kwargs,
+    _get_keylog_filename,
+    _get_tls_version_limits,
+    _set_keylog_callback,
+)
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
@@ -155,10 +159,22 @@ class _ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 self._get_context(),  # type: ignore[arg-type]
             )
         # Otherwise use the normal Twisted function.
-        return optionsForClientTLS(  # type: ignore[no-any-return]
+        creator = optionsForClientTLS(
             hostname=hostname.decode("ascii"),
             extraCertificateOptions=self._get_cert_options_kwargs(),
         )
+        if _get_keylog_filename():
+            # This creator builds its own certificate options, so its context
+            # doesn't come from _ScrapyCertificateOptions.
+            _set_keylog_callback(_get_creator_context(creator))
+        return cast("ClientTLSOptions", creator)
+
+
+def _get_creator_context(creator: Any) -> SSL.Context:
+    """Return the context that *creator* uses for its connections."""
+    if TWISTED_TLS_NEW_IMPL:
+        return cast("SSL.Context", creator._createConnection.__self__.getContext())
+    return cast("SSL.Context", creator._ctx)
 
 
 ScrapyClientContextFactory = create_deprecated_class(
@@ -232,7 +248,6 @@ class _AcceptableProtocolsContextFactory:
     # all of this with _ScrapyClientContextFactory.acceptableProtocols.
 
     def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
-        verifyObject(IPolicyForHTTPS, context_factory)
         self._wrapped_context_factory: Any = context_factory
         self._acceptable_protocols: list[bytes] = acceptable_protocols
 
@@ -266,6 +281,7 @@ class _ScrapyCertificateOptions(CertificateOptions):
         else:
             ctx = super()._makeContext()
         ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
+        _set_keylog_callback(ctx)
         return ctx
 
 

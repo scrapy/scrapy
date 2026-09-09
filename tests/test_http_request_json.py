@@ -8,10 +8,10 @@ import pytest
 
 from scrapy.http import JsonRequest
 from scrapy.utils.python import to_bytes
-from tests.test_http_request import TestRequest
+from tests.utils.bases.http_request import TestRequestBase
 
 
-class TestJsonRequest(TestRequest):
+class TestJsonRequest(TestRequestBase):
     request_class = JsonRequest
     default_method = "GET"
     default_headers = {

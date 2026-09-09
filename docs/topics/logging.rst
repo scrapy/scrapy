@@ -4,11 +4,6 @@
 Logging
 =======
 
-.. note::
-    :mod:`scrapy.log` has been deprecated alongside its functions in favor of
-    explicit calls to the Python standard logging. Keep reading to learn more
-    about the new logging system.
-
 Scrapy uses :mod:`logging` for event logging. We'll
 provide some simple examples to get you started, but for more advanced
 use-cases it's strongly suggested to read thoroughly its documentation.
@@ -163,6 +158,7 @@ These settings can be used to configure the logging:
 
 * :setting:`LOG_FILE`
 * :setting:`LOG_FILE_APPEND`
+* :setting:`LOG_COLOR`
 * :setting:`LOG_ENABLED`
 * :setting:`LOG_ENCODING`
 * :setting:`LOG_LEVEL`
@@ -170,6 +166,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
 * :setting:`LOG_SHORT_NAMES`
+* :setting:`LOG_INSTALL_ROOT_HANDLER`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -179,6 +176,10 @@ messages will be displayed on the standard error. If :setting:`LOG_FILE` is set
 and :setting:`LOG_FILE_APPEND` is ``False``, the file will be overwritten
 (discarding the output from previous runs, if any). Lastly, if
 :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output.
+
+Set :setting:`LOG_INSTALL_ROOT_HANDLER` to ``False`` to prevent Scrapy from
+installing a root logging handler altogether, e.g. to configure the root
+logger yourself.
 
 :setting:`LOG_LEVEL` determines the minimum level of severity to display, those
 messages with lower severity will be filtered out. It ranges through the
@@ -193,6 +194,9 @@ respectively.
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
+
+When logging to a terminal, :setting:`LOG_COLOR` colorizes messages by log
+level.
 
 Rotating log files
 ------------------
@@ -216,7 +220,8 @@ For example, to rotate the log file every day:
     from myproject.spiders.myspider import MySpider
 
     settings = get_project_settings()
-    process = CrawlerProcess(settings, install_root_handler=False)
+    settings.set("LOG_INSTALL_ROOT_HANDLER", False)
+    process = CrawlerProcess(settings)
 
     handler = TimedRotatingFileHandler(
         "scrapy.log",
