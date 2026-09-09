@@ -138,7 +138,6 @@ def _scrapy_non_serialization_queue(
 
 def _pickle_serialize(obj: Any) -> bytes:
     try:
-        # Set the protocol explicitly as Python defaults change.
         return pickle.dumps(obj, protocol=4)
     # Both pickle.PicklingError and AttributeError can be raised by pickle.dump(s)
     # TypeError is raised from parsel.Selector

@@ -281,7 +281,6 @@ class DbmCacheStorage:
         self, spider: Spider, request: Request, response: Response
     ) -> None:
         key = self._fingerprinter.fingerprint(request).hex()
-        # Set the protocol explicitly as Python defaults change.
         self.db[f"{key}_data"] = pickle.dumps(response.to_dict(), protocol=4)
         self.db[f"{key}_time"] = str(time())
 
