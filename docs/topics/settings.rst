@@ -2092,7 +2092,9 @@ from a response into the follow-up requests yielded by its callback, handled by
 
 Metadata keys already set on a follow-up request are not overwritten.
 
-For example, the following spider::
+For example, the following spider:
+
+.. code-block:: python
 
     class MySpider(Spider):
         name = "myspider"
@@ -2112,7 +2114,9 @@ For example, the following spider::
                 "start_url": response.meta["start_url"],
             }
 
-can be rewritten as follows using the :setting:`STICKY_META_KEYS` setting::
+can be rewritten as follows using the :setting:`STICKY_META_KEYS` setting:
+
+.. code-block:: python
 
     class MySpider(Spider):
         name = "myspider"
