@@ -700,6 +700,8 @@ In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
 ``True`` (at the project level or via the command line) so that Scrapy uses
 :class:`~scrapy.crawler.CrawlerProcess` which supports all reactors.
 
+.. _custom-commands:
+
 Custom project commands
 =======================
 
