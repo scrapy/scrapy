@@ -15,7 +15,7 @@ import pytest
 
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
-from scrapy.extensions.httpcache import DummyPolicy
+from scrapy.extensions.httpcache import DummyPolicy, rfc1123_to_epoch
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
@@ -853,3 +853,18 @@ class TestFilesystemStorageGzipWithDummyPolicy(TestFilesystemStorageWithDummyPol
         # A spider killed while writing a gzip file leaves it truncated.
         body_path = Path(storage._get_request_path(spider, request), "response_body")
         body_path.write_bytes(body_path.read_bytes()[:-5])
+
+
+@pytest.mark.parametrize(
+    ("string", "expected"),
+    [
+        # RFC examples
+        ("Sun, 06 Nov 1994 08:49:37 GMT", 784111777),
+        ("Sunday, 06-Nov-94 08:49:37 GMT", 784111777),
+        ("Sun Nov  6 08:49:37 1994", 784111777),
+        (None, None),
+        ("foo", None),
+    ],
+)
+def test_rfc1123_to_epoch(string: str | None, expected: int | None) -> None:
+    assert rfc1123_to_epoch(string) == expected

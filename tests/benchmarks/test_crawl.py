@@ -216,7 +216,7 @@ def _crawl_tree(
 ) -> Crawler:
     crawler = crawl(
         _TreeSpider,
-        {**NULL_SETTINGS, **settings},
+        NULL_SETTINGS | settings,
         domains=domains,
         pages=pages,
         items=items,

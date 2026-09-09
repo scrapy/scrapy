@@ -3,7 +3,8 @@ from __future__ import annotations
 import gzip
 import logging
 import pickle
-from email.utils import mktime_tz, parsedate_tz
+from datetime import timezone
+from email.utils import parsedate_to_datetime
 from importlib import import_module
 from pathlib import Path
 from time import time
@@ -418,8 +419,17 @@ def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:
 
 
 def rfc1123_to_epoch(date_str: str | bytes | None) -> int | None:
+    # The HTTP time format (which is how we use this function) is actually in
+    # RFC 7231 §7.1.1.1, it refers to RFC 5322 and also requires support for
+    # two obsolete formats (RFC 850 and asctime()). email.utils evidently
+    # supports all three.
+    if date_str is None:
+        return None
     try:
-        date_str = to_unicode(date_str, encoding="ascii")  # type: ignore[arg-type]
-        return mktime_tz(parsedate_tz(date_str))  # type: ignore[arg-type]
+        date_str = to_unicode(date_str, encoding="ascii")
+        date = parsedate_to_datetime(date_str)
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=timezone.utc)
+        return int(date.timestamp())
     except Exception:
         return None

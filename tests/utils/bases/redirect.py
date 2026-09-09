@@ -122,7 +122,7 @@ class TestRedirectBase(ABC):
 
         original_request = Request(
             "https://example.com",
-            headers={**safe_headers, **cookie_header, **authorization_header},
+            headers=safe_headers | cookie_header | authorization_header,
         )
 
         # Redirects to the same origin (same scheme, same domain, same port)
@@ -138,7 +138,7 @@ class TestRedirectBase(ABC):
         # keep all headers also when the scheme is http.
         http_request = Request(
             "http://example.com",
-            headers={**safe_headers, **cookie_header, **authorization_header},
+            headers=safe_headers | cookie_header | authorization_header,
         )
         http_response = self.get_response(http_request, "http://example.com/a")
         http_redirect_request = self.mw.process_response(http_request, http_response)
