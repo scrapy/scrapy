@@ -20,5 +20,5 @@ async def main() -> None:
     await runner.crawl(NoRequestsSpider)
 
 
-install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+install_reactor()
 asyncio.run(main())

@@ -959,7 +959,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             if loop_path:
                 verify_installed_asyncio_event_loop(loop_path)
         else:
-            install_reactor(_asyncio_reactor_path, loop_path)
+            install_reactor(event_loop_path=loop_path)
         self._initialized_reactor = True
         self._reactorless_main_task: asyncio.Future[None] | None = None
 

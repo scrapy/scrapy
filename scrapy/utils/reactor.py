@@ -111,10 +111,17 @@ def set_asyncio_event_loop_policy() -> None:
             asyncio.set_event_loop_policy(policy)
 
 
-def install_reactor(reactor_path: str, event_loop_path: str | None = None) -> None:
+def install_reactor(
+    reactor_path: str | None = None, event_loop_path: str | None = None
+) -> None:
     """Installs the :mod:`~twisted.internet.reactor` with the specified
     import path. Also installs the asyncio event loop with the specified import
-    path if the asyncio reactor is enabled"""
+    path if the asyncio reactor is enabled.
+
+    If `reactor_path` is `None`, the asyncio reactor will be installed.
+    """
+    if reactor_path is None:
+        reactor_path = _asyncio_reactor_path
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         set_asyncio_event_loop_policy()

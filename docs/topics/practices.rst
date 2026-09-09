@@ -132,7 +132,7 @@ with simple reactor management code:
         await runner.crawl(MySpider)  # completes when the spider finishes
 
 
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
     react(deferred_f_from_coro_f(crawl))
 
 Same example but using :class:`~scrapy.crawler.CrawlerRunner` and a
@@ -422,7 +422,7 @@ Same example using :class:`~scrapy.crawler.AsyncCrawlerRunner`:
         await runner.join()  # completes when both spiders finish
 
 
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
     react(deferred_f_from_coro_f(crawl))
 
 
@@ -456,7 +456,7 @@ finishes before starting the next one:
         await runner.crawl(MySpider2)
 
 
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
     react(deferred_f_from_coro_f(crawl))
 
 .. note:: When running multiple spiders in the same process, :ref:`logging
