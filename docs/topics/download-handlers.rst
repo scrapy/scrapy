@@ -130,18 +130,40 @@ using different handlers.
 Here is a comparison of some features of the built-in HTTP handlers, see the
 individual handler docs for more differences:
 
-=================== ====================== ================= ===================== ====================
-Feature             AiohttpDownloadHandler H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
-=================== ====================== ================= ===================== ====================
-Requires asyncio    Yes                    No                No                    Yes
-Requires a reactor  No                     Yes               Yes                   No
-HTTP/1.1            Yes                    No                Yes                   Yes
-HTTP/2              No                     Yes               No                    Yes
-TLS implementation  Stdlib ``ssl``         ``cryptography``  ``cryptography``      Stdlib ``ssl``
-HTTP proxies        Yes                    No                Yes                   Yes
-SOCKS proxies       No                     No                No                    Yes
-Bad header handling Fail                   Not applicable    Skip bad              Fail
-=================== ====================== ================= ===================== ====================
+.. list-table::
+   :header-rows: 1
+   :stub-columns: 1
+
+   * - Handler
+     - Requirements
+     - HTTP
+     - Proxies
+     - Bad headers
+     - TLS
+   * - :class:`Aiohttp <scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler>`
+     - asyncio
+     - 1.1
+     - HTTP
+     - Fail
+     - Stdlib ``ssl``
+   * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
+     - Reactor, :ref:`twisted-http2 <extras>` extra
+     - 2
+     - None
+     - Not applicable
+     - ``cryptography``
+   * - :class:`HTTP11 <scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler>`
+     - Reactor
+     - 1.1
+     - HTTP
+     - Skip bad
+     - ``cryptography``
+   * - :class:`Httpx <scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler>`
+     - asyncio, :ref:`httpx <extras>` extra
+     - 1.1, 2
+     - HTTP, SOCKS
+     - Fail
+     - Stdlib ``ssl``
 
 Bad header handling is what a handler does when a response has a bad header
 line, e.g. one with no colon in it, which some servers send. Handlers that skip
