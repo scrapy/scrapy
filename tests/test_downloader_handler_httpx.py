@@ -63,6 +63,8 @@ else:
 
 
 class HttpxDownloadHandlerMixin:
+    handler_supports_partial_response_on_timeout = True
+
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HttpxDownloadHandler
