@@ -2240,12 +2240,15 @@ For example, the following spider:
 
 .. code-block:: python
 
-    class MySpider(Spider):
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
         name = "myspider"
 
         async def start(self):
             start_url = "https://toscrape.com/"
-            yield Request(start_url, meta={"start_url": start_url})
+            yield scrapy.Request(start_url, meta={"start_url": start_url})
 
         def parse(self, response):
             for a in response.css("a"):
@@ -2262,7 +2265,10 @@ can be rewritten as follows using the :setting:`STICKY_META_KEYS` setting:
 
 .. code-block:: python
 
-    class MySpider(Spider):
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
         name = "myspider"
         custom_settings = {
             "STICKY_META_KEYS": ["start_url"],
@@ -2270,7 +2276,7 @@ can be rewritten as follows using the :setting:`STICKY_META_KEYS` setting:
 
         async def start(self):
             start_url = "https://toscrape.com/"
-            yield Request(start_url, meta={"start_url": start_url})
+            yield scrapy.Request(start_url, meta={"start_url": start_url})
 
         def parse(self, response):
             for a in response.css("a"):
