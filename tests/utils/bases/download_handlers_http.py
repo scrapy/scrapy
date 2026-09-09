@@ -1498,13 +1498,16 @@ class TestHttpWithCrawlerBase(ABC):
 class TestHttpProxyBase(ABC):
     is_secure = False
     expected_http_proxy_request_body = b"http://example.com"
-    # whether the handler supports HTTPS proxies with HTTPS destinations
-    handler_supports_tls_in_tls: bool = True
 
     @property
     @abstractmethod
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         raise NotImplementedError
+
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    @property
+    def handler_supports_tls_in_tls(self) -> bool:
+        return True
 
     @pytest.fixture(scope="session")
     def proxy_mockserver(self) -> Generator[ProxyEchoMockServer]:
@@ -1579,14 +1582,17 @@ PROXY_KINDS = ["http", "https", "socks5"]
 
 
 class TestMitmProxyBase(ABC):
-    # whether the handler supports HTTPS proxies with HTTPS destinations
-    handler_supports_tls_in_tls: bool = True
     handler_supports_socks: bool = False
 
     @property
     @abstractmethod
     def settings_dict(self) -> dict[str, Any] | None:
         raise NotImplementedError
+
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    @property
+    def handler_supports_tls_in_tls(self) -> bool:
+        return True
 
     def _maybe_skip(self, proxy_kind: str, https_dest: bool) -> None:
         if proxy_kind == "socks5" and not self.handler_supports_socks:

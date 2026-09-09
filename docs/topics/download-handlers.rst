@@ -130,18 +130,40 @@ using different handlers.
 Here is a comparison of some features of the built-in HTTP handlers, see the
 individual handler docs for more differences:
 
-=================== ================= ===================== ====================
-Feature             H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
-=================== ================= ===================== ====================
-Requires asyncio    No                No                    Yes
-Requires a reactor  Yes               Yes                   No
-HTTP/1.1            No                Yes                   Yes
-HTTP/2              Yes               No                    Yes
-TLS implementation  ``cryptography``  ``cryptography``      Stdlib ``ssl``
-HTTP proxies        No                Yes                   Yes
-SOCKS proxies       No                No                    Yes
-Bad header handling Not applicable    Skip bad              Fail
-=================== ================= ===================== ====================
+.. list-table::
+   :header-rows: 1
+   :stub-columns: 1
+
+   * - Handler
+     - Requirements
+     - HTTP
+     - Proxies
+     - Bad headers
+     - TLS
+   * - :class:`Aiohttp <scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler>`
+     - asyncio
+     - 1.1
+     - HTTP
+     - Fail
+     - Stdlib ``ssl``
+   * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
+     - Reactor, :ref:`twisted-http2 <extras>` extra
+     - 2
+     - None
+     - Not applicable
+     - ``cryptography``
+   * - :class:`HTTP11 <scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler>`
+     - Reactor
+     - 1.1
+     - HTTP
+     - Skip bad
+     - ``cryptography``
+   * - :class:`Httpx <scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler>`
+     - asyncio, :ref:`httpx <extras>` extra
+     - 1.1, 2
+     - HTTP, SOCKS
+     - Fail
+     - Stdlib ``ssl``
 
 Bad header handling is what a handler does when a response has a bad header
 line, e.g. one with no colon in it, which some servers send. Handlers that skip
@@ -155,6 +177,60 @@ later Scrapy version but can already be used. Please refer to the documentation
 of this package for more information.
 
 .. _scrapy-download-handlers-incubator: https://github.com/scrapy-plugins/scrapy-download-handlers-incubator
+
+.. _aiohttp-handler:
+
+AiohttpDownloadHandler
+----------------------
+
+.. versionadded:: VERSION
+
+.. autoclass:: scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler
+
+| Supported schemes: ``http``, ``https``.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: yes.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports ``http://host/path`` and ``https://host/path`` URLs and
+uses the HTTP/1.1 protocol for them.
+
+It's implemented using the aiohttp_ library.
+
+.. _aiohttp: https://docs.aiohttp.org/
+
+If you want to use this handler you need to replace the default ones for the
+``http`` and ``https`` schemes:
+
+.. code-block:: python
+
+    DOWNLOAD_HANDLERS = {
+        "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+    }
+
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This handler is experimental, and not yet recommended for production
+    environments. Future Scrapy versions may introduce related changes without
+    a deprecation period or warning or even remove it altogether.
+
+=========================== =======================================
+HTTP proxies                Yes
+SOCKS proxies               No (not supported by the library)
+HTTP/2                      No (not supported by the library)
+Bad header handling         Fail (not supported by the library)
+``response.certificate``    DER bytes
+Per-request ``bindaddress`` No (not supported by the library)
+TLS implementation          Standard library ``ssl``
+=========================== =======================================
+
+Other limitations:
+
+-   HTTPS proxies for HTTPS destinations are not supported on Python < 3.11.
 
 .. _twisted-http2-handler:
 

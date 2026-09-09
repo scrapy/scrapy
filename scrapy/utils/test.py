@@ -51,8 +51,8 @@ def get_reactor_settings() -> dict[str, Any]:
         settings["TWISTED_REACTOR_ENABLED"] = False
         settings["DOWNLOAD_HANDLERS"] = {
             "ftp": None,
-            "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-            "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+            "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+            "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         }
     return settings
 
