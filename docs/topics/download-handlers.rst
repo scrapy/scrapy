@@ -141,12 +141,16 @@ TLS implementation  ``cryptography``  ``cryptography``      Stdlib ``ssl``
 HTTP proxies        No                Yes                   Yes
 SOCKS proxies       No                No                    Yes
 Bad header handling Not applicable    Skip bad              Fail
+Header name case    Lowercase         Capitalized           As written
 =================== ================= ===================== ====================
 
 Bad header handling is what a handler does when a response has a bad header
 line, e.g. one with no colon in it, which some servers send. Handlers that skip
 bad header lines, like web browsers do, still parse the header lines that follow
 them; other handlers also lose those, or cannot download such responses at all.
+
+Because HTTP/2 requires lowercase header names, handlers only keep the case of
+your header names over HTTP/1.1.
 
 You can find additional HTTP download handlers in the
 scrapy-download-handlers-incubator_ package. This package is made by the Scrapy

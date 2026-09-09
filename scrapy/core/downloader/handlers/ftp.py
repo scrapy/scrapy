@@ -124,7 +124,7 @@ class FTPDownloadHandler(BaseDownloadHandler):
             protocol.close()
             assert client.transport
             client.transport.loseConnection()
-        headers = {"local filename": protocol.filename or b"", "size": protocol.size}
+        headers = {"Local Filename": protocol.filename or b"", "Size": protocol.size}
         body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
         return respcls(url=request.url, status=200, body=body, headers=headers)

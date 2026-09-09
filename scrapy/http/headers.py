@@ -65,13 +65,26 @@ class Headers(dict):  # type: ignore[type-arg]
     ) -> None:
         seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq: dict[bytes, list[bytes]] = {}
+        # normkey() only sees keys already stored, so keys from seq that differ
+        # only in case are mapped to a single spelling here.
+        spellings: dict[bytes, bytes] = {}
         for k, v in seq:
-            iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
+            key = self.normkey(k)
+            key = spellings.setdefault(key.lower(), key)
+            iseq.setdefault(key, []).extend(self.normvalue(v))
         dict.update(self, iseq)
 
     def normkey(self, key: str | bytes) -> bytes:
-        """Normalize key to bytes"""
-        return self._tobytes(key.title())
+        """Normalize key to bytes, matching the case of an existing key if any"""
+        key = self._tobytes(key)
+        if dict.__contains__(self, key):
+            return key
+        lower_key = key.lower()
+        existing_key: bytes
+        for existing_key in dict.keys(self):
+            if existing_key.lower() == lower_key:
+                return existing_key
+        return key
 
     def normvalue(self, value: _RawValue | Iterable[_RawValue]) -> list[bytes]:
         """Normalize values to bytes"""
