@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import sys
 import warnings
 from functools import wraps
 from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, cast, overload
@@ -11,6 +12,11 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncio import run_in_thread
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.python import _signature
+
+if sys.version_info >= (3, 13):
+    from warnings import deprecated as _deprecated
+else:
+    from typing_extensions import deprecated as _deprecated
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine
@@ -30,12 +36,15 @@ def deprecated(
 ) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]: ...
 
 
+@_deprecated(
+    "scrapy.utils.decorators.deprecated() is deprecated, use warnings.deprecated()"
+    " instead.",
+    category=ScrapyDeprecationWarning,
+)
 def deprecated(
     use_instead: Callable[_P, _T] | str | None = None,
 ) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emitted
-    when the function is used."""
+    """Mark a function as deprecated, so that calling it warns."""
 
     def deco(func: Callable[_P, _T]) -> Callable[_P, _T]:
         @wraps(func)

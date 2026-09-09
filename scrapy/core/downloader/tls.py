@@ -4,6 +4,7 @@ import logging
 import warnings
 from typing import TYPE_CHECKING, Any
 
+from formerly import deprecated_class
 from OpenSSL import SSL
 from service_identity import VerificationError
 from service_identity.exceptions import CertificateError
@@ -22,7 +23,6 @@ from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import AcceptableCiphers, TLSVersion
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.deprecate import create_deprecated_class
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -109,11 +109,12 @@ class _ScrapyClientTLSOptions(ClientTLSOptions):
             super()._identityVerifyingInfoCallback(connection, where, ret)  # type: ignore[misc]
 
 
-ScrapyClientTLSOptions = create_deprecated_class(
+ScrapyClientTLSOptions = deprecated_class(
     "ScrapyClientTLSOptions",
     _ScrapyClientTLSOptions,
-    subclass_warn_message="{old} is deprecated.",
-    instance_warn_message="{cls} is deprecated.",
+    category=ScrapyDeprecationWarning,
+    subclass_message="{old} is deprecated.",
+    instance_message="{cls} is deprecated.",
 )
 
 
