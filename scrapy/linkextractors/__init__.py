@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
     from re import Pattern
 
-# common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
     # archives
     "7z",
@@ -114,14 +113,26 @@ IGNORED_EXTENSIONS = [
     "msp",
     "py",
 ]
+"""File extensions of files that are usually not worth following, and hence the
+default value of the ``deny_extensions`` parameter of :class:`LinkExtractor
+<scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`."""
+
+
+SUPPORTED_SCHEMES = [
+    "data",
+    "file",
+    "ftp",
+    "http",
+    "https",
+    "s3",
+]
+"""URL schemes that Scrapy can download out of the box, and hence the default
+value of the ``schemes`` parameter of :class:`LinkExtractor
+<scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`."""
 
 
 def _matches(url: str, regexs: Iterable[Pattern[str]]) -> bool:
     return any(r.search(url) for r in regexs)
-
-
-def _is_valid_url(url: str) -> bool:
-    return url.split("://", 1)[0] in {"http", "https", "file", "ftp"}
 
 
 # Top-level imports
@@ -129,5 +140,6 @@ from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor as LinkExtractor
 
 __all__ = [
     "IGNORED_EXTENSIONS",
+    "SUPPORTED_SCHEMES",
     "LinkExtractor",
 ]
