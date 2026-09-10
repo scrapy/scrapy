@@ -228,9 +228,7 @@ BaseItemExporter
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
 
-   .. method:: export_item(item)
-
-      Exports the given item. This method must be implemented in subclasses.
+   .. automethod:: BaseItemExporter.export_item
 
    .. automethod:: BaseItemExporter.get_serialized_fields
 
@@ -255,19 +253,9 @@ BaseItemExporter
 
       :param value: the value being serialized
 
-   .. method:: start_exporting()
+   .. automethod:: BaseItemExporter.start_exporting
 
-      Signal the beginning of the exporting process. Some exporters may use
-      this to generate some required header (for example, the
-      :class:`XmlItemExporter`). You must call this method before exporting any
-      items.
-
-   .. method:: finish_exporting()
-
-      Signal the end of the exporting process. Some exporters may use this to
-      generate some required footer (for example, the
-      :class:`XmlItemExporter`). You must always call this method after you
-      have no more items to export.
+   .. automethod:: BaseItemExporter.finish_exporting
 
    .. attribute:: fields_to_export
 

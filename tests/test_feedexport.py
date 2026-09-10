@@ -103,13 +103,13 @@ class InstrumentedFeedSlot(FeedSlot):
 
     update_listener: Callable[[str], None]
 
-    def start_exporting(self):
+    async def start_exporting(self):
         self.update_listener("start")
-        super().start_exporting()
+        await super().start_exporting()
 
-    def finish_exporting(self):
+    async def finish_exporting(self):
         self.update_listener("finish")
-        super().finish_exporting()
+        await super().finish_exporting()
 
     @classmethod
     def subscribe__listener(cls, listener: IsExportingListener) -> None:
@@ -1271,7 +1271,7 @@ class TestFeedExporterSignals:
         )
         feed_exporter.open_spider(spider)
         for item in self.items:
-            feed_exporter.item_scraped(item, spider)
+            await feed_exporter.item_scraped(item, spider)
         await feed_exporter.close_spider(spider)
 
     @coroutine_test
