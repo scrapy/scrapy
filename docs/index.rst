@@ -12,28 +12,15 @@ testing.
 .. _web crawling: https://en.wikipedia.org/wiki/Web_crawler
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 
-.. _getting-help:
-
 Getting help
 ============
 
-Having trouble? We'd like to help!
+Having trouble? Read the :doc:`FAQ <faq>`, ask a question in `GitHub
+Discussions`_ or report a bug on our `issue tracker`_. See
+:doc:`intro/getting-help` for more options.
 
-* Try the :doc:`FAQ <faq>` -- it's got answers to some common questions.
-* Looking for specific information? Try the :ref:`genindex` or :ref:`modindex`.
-* Ask or search questions in `StackOverflow using the scrapy tag`_.
-* Ask or search questions in the `Scrapy subreddit`_.
-* Search for questions on the archives of the `scrapy-users mailing list`_.
-* Ask a question in the `#scrapy IRC channel`_.
-* Report bugs with Scrapy in our `issue tracker`_.
-* Join the Discord community `Scrapy Discord`_.
-
-.. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
-.. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
-.. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
-.. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
+.. _GitHub Discussions: https://github.com/scrapy/scrapy/discussions
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
-.. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
 
 
 First steps
@@ -47,6 +34,7 @@ First steps
    intro/install
    intro/tutorial
    intro/examples
+   intro/getting-help
 
 :doc:`intro/overview`
     Understand what Scrapy is and how it can help you.
@@ -59,6 +47,9 @@ First steps
 
 :doc:`intro/examples`
     Learn more by playing with a pre-made Scrapy project.
+
+:doc:`intro/getting-help`
+    Find support beyond this documentation.
 
 .. _section-basics:
 
