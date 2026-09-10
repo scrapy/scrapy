@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
+    from scrapy.utils.defer import FailureWithRequest
 
 
 _T = TypeVar("_T")
@@ -163,7 +164,8 @@ class CrawlSpider(Spider):
         )
 
     def _errback(self, failure: Failure) -> Iterable[Any]:
-        rule = self._rules[cast("int", failure.request.meta["rule"])]  # type: ignore[attr-defined]
+        request = cast("FailureWithRequest", failure).request
+        rule = self._rules[cast("int", request.meta["rule"])]
         return self._handle_failure(
             failure, cast("Callable[[Failure], Any]", rule.errback)
         )
