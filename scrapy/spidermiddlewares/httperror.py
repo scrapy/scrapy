@@ -9,7 +9,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from scrapy import signals
 from scrapy.exceptions import IgnoreRequest
+from scrapy.utils._httpstatus import StatusHandling
 from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
@@ -28,27 +30,35 @@ logger = logging.getLogger(__name__)
 
 
 class HttpError(IgnoreRequest):
-    """A non-2xx response was filtered"""
+    """Raised by :class:`HttpErrorMiddleware` for a response whose status code
+    is not successful and that the spider does not handle itself. See
+    :setting:`HANDLE_HTTP_CODES`."""
 
     def __init__(self, response: Response, *args: Any, **kwargs: Any):
-        self.response = response
+        #: The response that was filtered out.
+        self.response: Response = response
         super().__init__(*args, **kwargs)
 
 
 class HttpErrorMiddleware:
+    """Filter out unsuccessful (erroneous) HTTP responses so that spiders don't
+    have to deal with them, which (most of the time) imposes an overhead,
+    consumes more resources, and makes the spider logic more complex."""
+
     crawler: Crawler
 
     def __init__(self, settings: BaseSettings):
-        self.handle_httpstatus_all: bool = settings.getbool("HTTPERROR_ALLOW_ALL")
-        self.handle_httpstatus_list: list[int] = settings.getlist(
-            "HTTPERROR_ALLOWED_CODES"
-        )
+        self._status_handling = StatusHandling(settings, legacy_settings=True)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         o = cls(crawler.settings)
         o.crawler = crawler
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
+
+    def spider_opened(self, spider: Spider) -> None:
+        self._status_handling.spider_opened(spider)
 
     @_warn_spider_arg
     def process_spider_input(
@@ -56,20 +66,7 @@ class HttpErrorMiddleware:
     ) -> None:
         if 200 <= response.status < 300:  # common case
             return
-        meta = response.meta
-        if meta.get("handle_httpstatus_all", False):
-            return
-        if "handle_httpstatus_list" in meta:
-            allowed_statuses = meta["handle_httpstatus_list"]
-        elif self.handle_httpstatus_all:
-            return
-        else:
-            allowed_statuses = getattr(
-                self.crawler.spider,
-                "handle_httpstatus_list",
-                self.handle_httpstatus_list,
-            )
-        if response.status in allowed_statuses:
+        if self._status_handling.handles(response.status, response.meta):
             return
         raise HttpError(response, "Ignoring non-200 response")
 

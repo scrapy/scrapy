@@ -218,12 +218,10 @@ class Shell:
         else:
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True, **kwargs)
-            if redirect:
-                request.meta["handle_httpstatus_list"] = SequenceExclude(
-                    range(300, 400)
-                )
-            else:
-                request.meta["handle_httpstatus_all"] = True
+            # Redirects are either followed by the framework or handled here.
+            request.meta["handle_http_codes"] = (
+                SequenceExclude(range(300, 400)) if redirect else True
+            )
         response: Response | None = None
         if self._use_reactor:
             from twisted.internet import reactor
