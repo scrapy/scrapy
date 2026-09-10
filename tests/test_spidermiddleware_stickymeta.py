@@ -71,6 +71,17 @@ async def test_sticky_param_does_not_override_manually_configured_param() -> Non
 
 
 @coroutine_test
+async def test_sticky_key_missing_from_response_meta() -> None:
+    """Configured keys absent from the response meta are silently skipped."""
+    mw = _make_mw(["param", "missing"])
+    request = Request(TEST_URL, meta={"param": "Stickied!"})
+    response = Response(TEST_URL, request=request)
+    spider_output = [Request(TEST_URL)]
+    for processed in await _run_all_paths(mw, response, spider_output):
+        assert processed[0].meta == {"param": "Stickied!"}
+
+
+@coroutine_test
 async def test_start_requests_have_no_response() -> None:
     """Start seeds are processed with ``response=None`` and are left untouched."""
     mw = _make_mw(["param"])
