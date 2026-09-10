@@ -2765,7 +2765,7 @@ New features
     (:gh:`4463`, :gh:`6804`)
 
 -   Added :func:`scrapy.utils.asyncio.is_asyncio_available` as an alternative
-    to :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` with a
+    to ``scrapy.utils.reactor.is_asyncio_reactor_installed`` with a
     future-proof name and semantics.
     (:gh:`6827`)
 
@@ -3012,7 +3012,7 @@ Scrapy 2.13.2 (2025-06-09)
     (:gh:`6861`, :gh:`6863`)
 
 -   Added a note about the behavior change of
-    :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` to its docs and
+    ``scrapy.utils.reactor.is_asyncio_reactor_installed`` to its docs and
     to the "Backward-incompatible changes" section of :ref:`the Scrapy 2.13.0
     release notes <release-2.13.0>`.
     (:gh:`6866`)
@@ -3178,7 +3178,7 @@ Backward-incompatible changes
     also enforced for start requests.
     (:gh:`6777`)
 
--   Calling :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` without
+-   Calling ``scrapy.utils.reactor.is_asyncio_reactor_installed`` without
     an installed reactor now raises an exception instead of installing a
     reactor. This shouldn't affect normal Scrapy use cases, but it may affect
     3rd-party test suites that use Scrapy internals such as
@@ -3488,7 +3488,7 @@ Bug fixes
 
     .. _scrapy-poet: https://github.com/scrapinghub/scrapy-poet
 
--   Calling :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` without
+-   Calling ``scrapy.utils.reactor.is_asyncio_reactor_installed`` without
     an installed reactor now raises an exception instead of installing a
     reactor.
     (:gh:`6732`, :gh:`6735`)

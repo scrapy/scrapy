@@ -32,8 +32,8 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
     _asyncio_reactor_path,
+    _is_asyncio_reactor_installed,
     install_reactor,
-    is_asyncio_reactor_installed,
     is_reactor_installed,
     set_asyncio_event_loop,
     verify_installed_asyncio_event_loop,
@@ -204,7 +204,7 @@ class Crawler:
             if reactor_class:
                 # We need to check that the correct reactor is installed.
                 verify_installed_reactor(reactor_class)
-                if is_asyncio_reactor_installed() and event_loop:
+                if _is_asyncio_reactor_installed() and event_loop:
                     verify_installed_asyncio_event_loop(event_loop)
 
             if self._init_reactor or reactor_class:
@@ -666,7 +666,7 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
                 raise RuntimeError(
                     "We expected a Twisted reactor to be installed but it isn't."
                 )
-            if not is_asyncio_reactor_installed():
+            if not _is_asyncio_reactor_installed():
                 raise RuntimeError(
                     f"When TWISTED_REACTOR_ENABLED is True, {type(self).__name__} "
                     f"requires that the installed Twisted reactor is "

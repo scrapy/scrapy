@@ -15,7 +15,7 @@ from twisted.web.client import Agent
 
 from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner, CrawlerRunnerBase
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
+from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ def get_reactor_settings() -> dict[str, Any]:
     """
     settings: dict[str, Any] = {}
     if is_reactor_installed():
-        if not is_asyncio_reactor_installed():
+        if not _is_asyncio_reactor_installed():
             settings["TWISTED_REACTOR"] = None
     else:
         # We are either running Scrapy tests for the reactorless mode, or

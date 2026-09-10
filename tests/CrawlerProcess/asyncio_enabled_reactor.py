@@ -2,22 +2,22 @@ import scrapy
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.reactor import (
+    _is_asyncio_reactor_installed,
     install_reactor,
-    is_asyncio_reactor_installed,
     is_reactor_installed,
 )
 
 if is_reactor_installed():
     raise RuntimeError(
-        "Reactor already installed before is_asyncio_reactor_installed()."
+        "Reactor already installed before _is_asyncio_reactor_installed()."
     )
 
 try:
-    is_asyncio_reactor_installed()
+    _is_asyncio_reactor_installed()
 except RuntimeError:
     pass
 else:
-    raise RuntimeError("is_asyncio_reactor_installed() did not raise RuntimeError.")
+    raise RuntimeError("_is_asyncio_reactor_installed() did not raise RuntimeError.")
 
 try:
     is_asyncio_available()
@@ -28,18 +28,18 @@ else:
 
 if is_reactor_installed():
     raise RuntimeError(
-        "Reactor already installed after is_asyncio_reactor_installed()."
+        "Reactor already installed after _is_asyncio_reactor_installed()."
     )
 
 install_reactor()
 
-if not is_asyncio_reactor_installed():
+if not _is_asyncio_reactor_installed():
     raise RuntimeError("Wrong reactor installed after install_reactor().")
 
 
 class ReactorCheckExtension:
     def __init__(self):
-        if not is_asyncio_reactor_installed():
+        if not _is_asyncio_reactor_installed():
             raise RuntimeError("ReactorCheckExtension requires the asyncio reactor.")
         if not is_asyncio_available():
             raise RuntimeError("ReactorCheckExtension requires asyncio support.")

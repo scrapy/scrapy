@@ -137,7 +137,6 @@ example:
                 )
 
 .. autofunction:: scrapy.utils.asyncio.is_asyncio_available
-.. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
 
 
 .. _asyncio-without-reactor:
@@ -259,9 +258,6 @@ Here are some examples of APIs and patterns that need a replacement:
   :class:`~scrapy.crawler.CrawlerRunner`. You should use
   :class:`~scrapy.crawler.AsyncCrawlerProcess` or
   :class:`~scrapy.crawler.AsyncCrawlerRunner` respectively instead.
-* Checking whether ``asyncio`` support is available with
-  :func:`scrapy.utils.reactor.is_asyncio_reactor_installed`. You should use
-  :func:`scrapy.utils.asyncio.is_asyncio_available` instead.
 
 Scrapy provides unified helpers for some of these examples:
 

@@ -10,6 +10,7 @@ from warnings import catch_warnings, filterwarnings
 from twisted.internet import asyncioreactor, error
 from twisted.internet.defer import Deferred
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 
@@ -224,27 +225,34 @@ def is_reactor_installed() -> bool:
     return "twisted.internet.reactor" in sys.modules
 
 
-def is_asyncio_reactor_installed() -> bool:
+def _is_asyncio_reactor_installed() -> bool:
     """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
     Raise a :exc:`RuntimeError` if no reactor is installed.
-
-    In a future Scrapy version, when Scrapy supports running without a Twisted
-    reactor, this function won't be useful for checking if it's possible to use
-    asyncio features, so the code that that doesn't directly require a Twisted
-    reactor should use :func:`scrapy.utils.asyncio.is_asyncio_available`
-    instead of this function.
-
-    .. versionchanged:: 2.13
-       In earlier Scrapy versions this function silently installed the default
-       reactor if there was no reactor installed. Now it raises an exception to
-       prevent silent problems in this case.
     """
     if not is_reactor_installed():
         raise RuntimeError(
-            "is_asyncio_reactor_installed() called without an installed reactor."
+            "_is_asyncio_reactor_installed() called without an installed reactor."
         )
 
     from twisted.internet import reactor
 
     return isinstance(reactor, asyncioreactor.AsyncioSelectorReactor)
+
+
+def is_asyncio_reactor_installed() -> bool:
+    """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+
+    Raise a :exc:`RuntimeError` if no reactor is installed.
+    """
+    warnings.warn(
+        "is_asyncio_reactor_installed() is deprecated."
+        " If you need to check for asyncio support, use is_asyncio_available()."
+        " If you need to check whether a reactor is installed or not,"
+        " use is_reactor_installed() or is_reactorless()."
+        " If you need to check that specifically the asyncio reactor (or the non-asyncio one)"
+        " is installed, use is_reactor_installed() and is_asyncio_available().",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _is_asyncio_reactor_installed()
