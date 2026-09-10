@@ -184,7 +184,7 @@ def _get_method(obj: Any, name: Any) -> Any:
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError(f"Method {name!r} not found in: {obj}") from None
+        raise ValueError(f"Method {name!r} not found in: {obj!r}") from None
 
 
 def _to_verbose_cookies(cookies: CookiesT) -> list[VerboseCookie]:

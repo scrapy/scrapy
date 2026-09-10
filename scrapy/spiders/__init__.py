@@ -181,6 +181,9 @@ class Spider(object_ref):
     def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
 
+    def __str__(self) -> str:
+        return self.name
+
 
 # Top-level imports
 from scrapy.spiders.crawl import CrawlSpider, Rule
