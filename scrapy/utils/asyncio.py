@@ -31,6 +31,20 @@ _P = ParamSpec("_P")
 logger = logging.getLogger(__name__)
 
 
+def _has_running_loop() -> bool:
+    """Check if there is a running asyncio event loop in the current thread.
+
+    Can't easily check for an installed but not running one, and if we
+    checked that there could be false positives due to some 3rd-party code
+    installing it as a side effect (e.g. by calling get_event_loop()).
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    return True
+
+
 def is_asyncio_available() -> bool:
     """Check if it's possible to call asyncio code that relies on the asyncio event loop.
 
@@ -70,15 +84,7 @@ def is_asyncio_available() -> bool:
         loop, even if no Twisted reactor is installed.
     """
 
-    # Check if there is a running asyncio loop.
-    # Can't easily check for an installed but not running one, and if we
-    # checked that there could be false positives due to some 3rd-party code
-    # installing it as a side effect (e.g. by calling get_event_loop()).
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        pass
-    else:
+    if _has_running_loop():
         return True
 
     # Check if there is an installed asyncio reactor (it doesn't need to be
