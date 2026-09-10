@@ -238,6 +238,32 @@ class TestFilesPipeline:
         assert result["files"][0]["status"] == "downloaded"
 
     @coroutine_test
+    async def test_file_never_expires(self):
+        pipeline = self._create_pipeline(FilesPipeline, {"FILES_EXPIRES": -1})
+        item_url = "http://example.com/file5.pdf"
+        item = _create_item_with_files(item_url)
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={
+                    "checksum": "abc",
+                    "last_modified": time.time()
+                    - (self.pipeline.expires * 60 * 60 * 24 * 2),
+                },
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[_prepare_request_object(item_url)],
+            ),
+        ):
+            result = await pipeline.process_item(item)
+        assert result["files"][0]["checksum"] == "abc"
+        assert result["files"][0]["status"] == "uptodate"
+
+    @coroutine_test
     async def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
