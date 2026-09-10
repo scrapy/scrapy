@@ -115,6 +115,19 @@ class TestParallelAsyncio:
             assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
+    @coroutine_test
+    async def test_count_higher_than_work(self):
+        results: list[int] = []
+        task_counts: list[int] = []
+
+        async def callable_(o: int) -> None:
+            task_counts.append(len(asyncio.all_tasks()))
+            results.append(o)
+
+        await _parallel_asyncio(range(3), 1_000_000, callable_)
+        assert results == [0, 1, 2]
+        assert max(task_counts) < 100
+
 
 @pytest.mark.only_asyncio
 class TestAsyncioLoopingCall:
