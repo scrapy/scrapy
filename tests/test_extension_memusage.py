@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
@@ -62,6 +63,34 @@ def test_memusage_disabled() -> None:
     }
     with pytest.raises(NotConfigured):
         build_from_crawler(MemoryUsage, get_crawler(settings_dict=settings))
+
+
+def test_memusage_missing_resource_and_psutil(monkeypatch: pytest.MonkeyPatch) -> None:
+    def raise_import_error(name: str) -> None:
+        raise ImportError(name)
+
+    monkeypatch.setattr(memusage_mod, "import_module", raise_import_error)
+    monkeypatch.setitem(sys.modules, "psutil", None)
+    with pytest.raises(NotConfigured, match=r"resource.*psutil"):
+        build_from_crawler(
+            MemoryUsage, get_crawler(settings_dict={"MEMUSAGE_ENABLED": True})
+        )
+
+
+@pytest.mark.requires_psutil
+def test_memusage_falls_back_to_psutil(monkeypatch: pytest.MonkeyPatch) -> None:
+    def raise_import_error(name: str) -> None:
+        raise ImportError(name)
+
+    monkeypatch.setattr(memusage_mod, "import_module", raise_import_error)
+    ext = build_from_crawler(
+        MemoryUsage, get_crawler(settings_dict={"MEMUSAGE_ENABLED": True})
+    )
+    assert ext.resource is None
+    monkeypatch.setattr(
+        ext._process, "memory_info", lambda: SimpleNamespace(peak_wset=456)
+    )
+    assert ext.get_virtual_size() == 456
 
 
 def test_memusage_limit_stops_crawler_without_spider(mockserver: MockServer) -> None:
