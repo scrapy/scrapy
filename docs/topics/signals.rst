@@ -120,6 +120,28 @@ Here's the list of Scrapy built-in signals and their meaning.
 Engine signals
 --------------
 
+Engine signals describe the lifetime of the
+:class:`~scrapy.core.engine.ExecutionEngine`, while :ref:`spider signals
+<topics-signals-ref-spider>` describe the lifetime of a spider within that
+engine. When all four lifecycle signals are sent in a regular crawl, they are
+sent in this order:
+
+#. :signal:`spider_opened`
+#. :signal:`engine_started`
+#. :signal:`spider_closed`
+#. :signal:`engine_stopped`
+
+The :ref:`Scrapy shell <topics-shell>` is different: its engine starts before a
+spider is opened, and a spider is only opened when the first request is
+fetched. Therefore, do not rely on a fixed order between
+:signal:`engine_started` and :signal:`spider_opened`. When both closing signals
+are sent, however, :signal:`spider_closed` and all its asynchronous handlers
+finish before :signal:`engine_stopped` is sent.
+
+Use the spider signals for work that requires a spider, such as allocating and
+releasing per-spider resources. Use the engine signals for work tied to the
+engine itself and independent of whether a spider has been opened.
+
 engine_started
 ~~~~~~~~~~~~~~
 
@@ -253,6 +275,8 @@ item_error
     :param failure: the exception raised
     :type failure: twisted.python.failure.Failure
 
+
+.. _topics-signals-ref-spider:
 
 Spider signals
 --------------
