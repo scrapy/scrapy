@@ -21,6 +21,10 @@ from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
+from scrapy.core.downloader.handlers.websocket import (
+    _HAS_WEBSOCKETS,
+    WebSocketDownloadHandler,
+)
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
@@ -356,6 +360,13 @@ def test_s3_no_botocore() -> None:
     crawler = get_crawler()
     with pytest.raises(NotConfigured, match="missing botocore library"):
         build_from_crawler(S3DownloadHandler, crawler)
+
+
+@pytest.mark.skipif(_HAS_WEBSOCKETS, reason="Requires not having websockets")
+def test_websocket_no_library() -> None:
+    crawler = get_crawler()
+    with pytest.raises(NotConfigured, match="websockets extra"):
+        build_from_crawler(WebSocketDownloadHandler, crawler)
 
 
 class TestDataURI:
