@@ -11,7 +11,8 @@ Scrapy 2.19.0 (unreleased)
 Highlights:
 
 -   New ``RemoteControl`` extension which allows inspecting and controlling a
-    running crawl over HTTP, used by the Scrapy MCP server
+    running crawl over HTTP, used by the :ref:`Scrapy MCP server
+    <using-mcp-server>`
 
 -   Experimental ``aiohttp``-based download handler (now the default when
     running without a reactor)
@@ -247,6 +248,10 @@ Bug fixes
     environment variable is set, so that the settings module that the variable
     points to can be imported.
     (:gh:`4780`, :gh:`8042`)
+
+-   :class:`scrapy.utils.datatypes.LocalCache` no longer evicts the oldest item
+    when updating an existing one.
+    (:gh:`8113`)
 
 Documentation
 ~~~~~~~~~~~~~
