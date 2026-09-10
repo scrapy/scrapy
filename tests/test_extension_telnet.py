@@ -3,13 +3,18 @@ from __future__ import annotations
 import socket
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
+from unittest import mock
 
 import pytest
 from twisted.conch.telnet import ITelnetProtocol
 from twisted.cred import credentials
 
 from scrapy import Spider
-from scrapy.extensions.telnet import TelnetConsole, update_telnet_vars
+from scrapy.extensions.telnet import (
+    TelnetConsole,
+    _get_manhole_class,
+    update_telnet_vars,
+)
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
@@ -84,6 +89,16 @@ async def test_custom_credentials() -> None:
         creds = credentials.UsernamePassword(b"user", b"pass")
         d = portal.login(creds, None, ITelnetProtocol)
         await maybe_deferred_to_future(d)
+
+
+def test_manhole_exit_closes_connection() -> None:
+    """exit()/quit() in the console must not raise SystemExit into the
+    reactor, where it would be logged as an unhandled error."""
+    manhole = _get_manhole_class()({})
+    manhole.terminal = mock.MagicMock()
+    manhole.connectionMade()
+    manhole.lineReceived(b"exit()")
+    manhole.terminal.loseConnection.assert_called_once()
 
 
 def test_invalid_reversed_portrange() -> None:
