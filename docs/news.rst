@@ -6615,9 +6615,9 @@ New features
 *   A new ``DNS_RESOLVER`` setting allows enabling IPv6 support
     (:gh:`1031`, :gh:`4227`)
 
-*   A new :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE` setting allows configuring
-    the existing soft limit that pauses request downloads when the total
-    response data being processed is too high (:gh:`1410`, :gh:`3551`)
+*   A new ``SCRAPER_SLOT_MAX_ACTIVE_SIZE`` setting allows configuring the
+    existing soft limit that pauses request downloads when the total response
+    data being processed is too high (:gh:`1410`, :gh:`3551`)
 
 *   A new :setting:`TWISTED_REACTOR` setting allows customizing the
     :mod:`~twisted.internet.reactor` that Scrapy uses, allowing to
