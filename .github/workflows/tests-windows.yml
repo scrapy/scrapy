@@ -20,7 +20,7 @@ jobs:
     if: github.event.action != 'closed'
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     env:
       PYTEST_ADDOPTS: ${{ matrix.coverage && '-n logical' || '-n logical --no-cov' }}
       # Make uv use the interpreter that actions/setup-python installed instead
