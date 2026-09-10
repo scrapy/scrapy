@@ -466,6 +466,14 @@ Use ``""`` to override the policy for responses with `no referrer policy
 <https://www.w3.org/TR/referrer-policy/#referrer-policy-empty-string>`__.
 
 
+SessionsSpiderMiddleware
+------------------------
+
+.. module:: scrapy.spidermiddlewares.sessions
+
+.. autoclass:: SessionsSpiderMiddleware
+
+
 StartSpiderMiddleware
 ---------------------
 

@@ -37,6 +37,7 @@ extensions = [
 
 redirects = {
     "topics/broad-crawls": "optimize.html#broad-crawls",
+    "topics/cookies": "sessions.html",
 }
 
 templates_path = ["_templates"]
