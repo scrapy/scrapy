@@ -69,6 +69,7 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
+clipboard = ["pyperclip>=1.8.0"]
 color = ["colorlog>=6.6.0"]
 gcs = ["google-cloud-storage>=1.29.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
@@ -146,6 +147,7 @@ module = [
     "ipdb",
     "pydispatch.*",
     "pyftpdlib.*",
+    "pyperclip",
     "pytest_twisted",
     "robotexclusionrulesparser",
     "zope.interface.*",
