@@ -98,6 +98,19 @@ class BaseRobotParserTest:
         rp = self._parse(robotstxt_body)
         assert rp.crawl_delay("*") is None
 
+    def test_sitemaps(self):
+        robotstxt_body = (
+            b"User-agent: *\nDisallow: /private\n"
+            b"Sitemap: https://site.local/sitemap.xml\n"
+        )
+        rp = self._parse(robotstxt_body)
+        assert list(rp.sitemaps()) == ["https://site.local/sitemap.xml"]
+
+    def test_sitemaps_unset(self):
+        robotstxt_body = b"User-agent: *\nDisallow: /private\n"
+        rp = self._parse(robotstxt_body)
+        assert list(rp.sitemaps()) == []
+
     def test_unicode_url_and_useragent(self):
         robotstxt_robotstxt_body = """
         User-Agent: *
@@ -134,6 +147,22 @@ class TestRobotParser:
             AllowAllRobotParser, NO_CRAWLER, b"User-agent: *\nCrawl-delay: 10\n"
         )
         assert rp.crawl_delay("*") is None
+
+    def test_sitemaps_unsupported(self):
+        class AllowAllRobotParser(RobotParser):
+            @classmethod
+            def from_crawler(cls, crawler: Crawler, robotstxt_body: bytes) -> Self:
+                return cls()
+
+            def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
+                return True
+
+        rp = build_from_crawler(
+            AllowAllRobotParser,
+            NO_CRAWLER,
+            b"User-agent: *\nSitemap: https://site.local/sitemap.xml\n",
+        )
+        assert list(rp.sitemaps()) == []
 
 
 class TestDecodeRobotsTxt:
@@ -185,6 +214,9 @@ class TestPythonRobotParser(BaseRobotParserTest):
     )
     def test_allowed_wildcards(self) -> None:
         super().test_allowed_wildcards()
+
+    def test_sitemaps(self) -> None:
+        pytest.skip("RobotFileParser does not support the Sitemap directive.")
 
 
 @pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")
