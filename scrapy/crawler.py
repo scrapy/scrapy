@@ -445,12 +445,19 @@ class CrawlerRunnerBase(ABC):
         self.spider_loader: SpiderLoaderProtocol = get_spider_loader(settings)
         self._crawlers: set[Crawler] = set()
         self.bootstrap_failed = False
+        """``True`` if any crawl started by :meth:`crawl` was interrupted by an
+        exception, including a failure to create the spider object."""
 
     @property
     def crawlers(self) -> set[Crawler]:
         """Set of :class:`crawlers <scrapy.crawler.Crawler>` started by
         :meth:`crawl` and managed by this class."""
         return self._crawlers
+
+    def _handle_crawl_error(self, crawler: Crawler, exc: BaseException) -> bool:
+        # Returns whether exc has been reported and can be dropped instead of
+        # being propagated to the caller of crawl().
+        return False
 
     def create_crawler(
         self, crawler_or_spidercls: type[Spider] | str | Crawler
@@ -562,9 +569,10 @@ class CrawlerRunner(CrawlerRunnerBase):
         failed = False
         try:
             yield d
-        except Exception:
+        except Exception as exc:
             failed = True
-            raise
+            if not self._handle_crawl_error(crawler, exc):
+                raise
         finally:
             self.crawlers.discard(crawler)
             self._active.discard(d)
@@ -673,9 +681,10 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
     ) -> None:
         try:
             await crawler.crawl_async(*args, **kwargs)
-        except Exception:
+        except Exception as exc:
             self.bootstrap_failed = True
-            raise  # re-raise so asyncio still logs it to stderr naturally
+            if not self._handle_crawl_error(crawler, exc):
+                raise
 
     def _done(self, task: asyncio.Task[None], crawler: Crawler) -> None:
         self._active.discard(task)
@@ -729,6 +738,13 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
     ) -> None:
         raise NotImplementedError
+
+    def _handle_crawl_error(self, crawler: Crawler, exc: BaseException) -> bool:
+        # These classes run the reactor or the event loop themselves, so the
+        # caller of crawl() is not expected to handle crawl exceptions.
+        name = getattr(crawler.spidercls, "name", None) or crawler.spidercls.__name__
+        logger.critical(f"Error running spider {name}", exc_info=exc)
+        return True
 
     def _signal_shutdown(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
