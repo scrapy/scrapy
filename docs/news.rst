@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.19.0:
 
-Scrapy 2.19.0 (unreleased)
+Scrapy 2.19.0 (2026-09-10)
 --------------------------
 
 Highlights:
