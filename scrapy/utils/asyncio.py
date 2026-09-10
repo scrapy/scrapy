@@ -13,7 +13,7 @@ from twisted.internet.task import LoopingCall, deferLater
 from twisted.internet.threads import deferToThread
 
 from scrapy.utils.asyncgen import as_async_generator
-from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
+from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_installed
 
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
@@ -59,8 +59,8 @@ def is_asyncio_available() -> bool:
 
     Code that doesn't directly require a Twisted reactor should use this
     function while code that requires
-    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` should use
-    :func:`~scrapy.utils.reactor.is_asyncio_reactor_installed`.
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` should
+    also use :func:`~scrapy.utils.reactor.is_reactor_installed`.
 
     When this returns ``True``, an asyncio loop is installed and used by
     Scrapy. It's possible to call functions that require it, such as
@@ -95,7 +95,7 @@ def is_asyncio_available() -> bool:
             " or running asyncio loop."
         )
 
-    return is_asyncio_reactor_installed()
+    return _is_asyncio_reactor_installed()
 
 
 class _QueueEnd:

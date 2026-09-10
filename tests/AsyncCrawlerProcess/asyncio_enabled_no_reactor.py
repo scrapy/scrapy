@@ -1,11 +1,11 @@
 import scrapy
 from scrapy.crawler import AsyncCrawlerProcess
-from scrapy.utils.reactor import is_asyncio_reactor_installed
+from scrapy.utils.reactor import _is_asyncio_reactor_installed
 
 
 class ReactorCheckExtension:
     def __init__(self):
-        if not is_asyncio_reactor_installed():
+        if not _is_asyncio_reactor_installed():
             raise RuntimeError("ReactorCheckExtension requires the asyncio reactor.")
 
 
