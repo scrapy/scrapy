@@ -20,7 +20,7 @@ configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s", "LOG_LEVEL": "DEB
 
 from scrapy.utils.reactor import install_reactor  # noqa: E402
 
-install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+install_reactor()
 
 runner = CrawlerRunner()
 

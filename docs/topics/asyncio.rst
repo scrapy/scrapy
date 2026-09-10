@@ -35,7 +35,7 @@ reactor manually. You can do that using
 .. skip: next
 .. code-block:: python
 
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
 
 
 .. _asyncio-preinstalled-reactor:

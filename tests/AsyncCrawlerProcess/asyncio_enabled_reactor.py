@@ -23,7 +23,7 @@ if is_reactor_installed():
         "Reactor already installed after is_asyncio_reactor_installed()."
     )
 
-install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+install_reactor()
 
 if not is_asyncio_reactor_installed():
     raise RuntimeError("Wrong reactor installed after install_reactor().")

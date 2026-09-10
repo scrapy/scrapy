@@ -35,7 +35,7 @@ class TestAsyncio:
     @pytest.mark.only_asyncio
     @coroutine_test
     async def test_set_asyncio_event_loop(self):
-        install_reactor(_asyncio_reactor_path)
+        install_reactor()
         assert set_asyncio_event_loop(None) is asyncio.get_running_loop()
 
 
