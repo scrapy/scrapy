@@ -802,6 +802,16 @@ Quality assurance
     :gh:`8001`,
     :gh:`8002`)
 
+Bug fixes
+~~~~~~~~~
+
+-   Disabling a component whose import path cannot be imported, e.g. a
+    component removed from a later Scrapy version, no longer raises
+    :exc:`ModuleNotFoundError` while resolving :ref:`component priority
+    dictionaries <component-priority-dictionaries>`. This bug was introduced in
+    Scrapy 2.15.0.
+    (:issue:`7820`)
+
 .. _release-2.17.0:
 
 Scrapy 2.17.0 (2026-07-07)
