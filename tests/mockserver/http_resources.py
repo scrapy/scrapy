@@ -436,11 +436,13 @@ class UriResource(BaseResource):
 
 
 class ResponseHeadersResource(BaseResource):
-    """Return a response with headers set from the JSON request body"""
+    """Return a response with headers set from the JSON request body, and the
+    status code set from the *n* URL parameter, 200 by default."""
 
     def render(self, request: Request) -> bytes:
         assert request.content
         body = json.loads(request.content.read().decode())
+        request.setResponseCode(getarg(request, b"n", 200, type_=int))
         for header_name, header_value in body.items():
             request.responseHeaders.setRawHeaders(header_name, [header_value])
         return json.dumps(body).encode("utf-8")
