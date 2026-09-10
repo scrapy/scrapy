@@ -166,7 +166,7 @@ class ExecutionEngine:
     def scheduler(self) -> BaseScheduler | None:
         """The scheduler in use, or ``None`` before the spider has started.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.19.0
         """
         return self._slot.scheduler if self._slot is not None else None
 

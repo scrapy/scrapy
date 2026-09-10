@@ -8,7 +8,7 @@ Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.19.0
    Added support for callbacks defined with ``async def``, including
    :term:`asynchronous generators <asynchronous generator>`.
 
@@ -57,7 +57,7 @@ Use the :command:`check` command to run the contract checks. It ignores
 output of callbacks instead of sending it to item processing; use the ``-s``
 command-line option to set them back for a check run.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.18.0
    :setting:`ITEM_PIPELINES` and :setting:`FEEDS` are now ignored.
 
 Custom Contracts

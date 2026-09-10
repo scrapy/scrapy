@@ -986,7 +986,7 @@ It is possible to change this setting per domain by using
 DOWNLOAD_DELAY_JITTER
 ---------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.19.0
 
 Default: ``0.5``
 
@@ -1541,7 +1541,7 @@ The Project ID that will be used when storing data on `Google Cloud Storage`_.
 HTTP2_MAX_FRAME_SIZE
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``16384``
 
@@ -1618,6 +1618,8 @@ A string indicating the directory for storing the state of a crawl when
 
 LOG_COLOR
 ---------
+
+.. versionadded:: 2.19.0
 
 Default: ``True``
 
@@ -1714,7 +1716,9 @@ The class to use for :ref:`formatting log messages <custom-log-formats>` for dif
 .. setting:: LOG_INSTALL_ROOT_HANDLER
 
 LOG_INSTALL_ROOT_HANDLER
--------------------------
+------------------------
+
+.. versionadded:: 2.19.0
 
 Default: ``True``
 
@@ -1984,7 +1988,7 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.19.0
    The ``SQLite`` queue types.
 
 Type of disk queue that will be used by the scheduler. Other available types

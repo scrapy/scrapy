@@ -383,7 +383,7 @@ HttpCacheMiddleware
 
     .. reqmeta:: cache_timestamp
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.19.0
 
     When a response comes from the cache, its :attr:`~scrapy.http.Response.meta`
     exposes the :reqmeta:`cache_timestamp` key: the Unix timestamp of when the

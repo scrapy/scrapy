@@ -26,7 +26,7 @@ def find_projects(
     """Yield the root directory of every Scrapy project found in *path* or,
     recursively, in any of its subdirectories.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.19.0
 
     Once a project is found, its subdirectories are not searched.
 

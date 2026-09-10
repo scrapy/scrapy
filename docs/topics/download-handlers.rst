@@ -183,7 +183,7 @@ of this package for more information.
 AiohttpDownloadHandler
 ----------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.19.0
 
 .. autoclass:: scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler
 
