@@ -56,7 +56,7 @@ directory where you'd like to store your code and run::
 This will create a ``tutorial`` directory with the following contents::
 
     tutorial/
-        scrapy.cfg            # deploy configuration file
+        pyproject.toml        # project configuration file
 
         tutorial/             # project's Python module, you'll import your code from here
             __init__.py

@@ -20,7 +20,7 @@ class TestStartprojectCommand:
 
     @staticmethod
     def _assert_files_exist(project_dir: Path, project_name: str) -> None:
-        assert (project_dir / "scrapy.cfg").exists()
+        assert (project_dir / "pyproject.toml").exists()
         assert (project_dir / project_name).exists()
         assert (project_dir / project_name / "__init__.py").exists()
         assert (project_dir / project_name / "items.py").exists()
@@ -76,6 +76,34 @@ class TestStartprojectCommand:
 
         assert call("startproject", project_name, cwd=tmp_path) == 0
         self._assert_files_exist(project_path, project_name)
+
+    def test_existing_pyproject_toml(self, tmp_path: Path) -> None:
+        pyproject_path = tmp_path / "pyproject.toml"
+        pyproject_path.write_text('[project]\nname = "existing"\n', encoding="utf-8")
+
+        assert call("startproject", self.project_name, ".", cwd=tmp_path) == 0
+        self._assert_files_exist(tmp_path, self.project_name)
+        content = pyproject_path.read_text(encoding="utf-8")
+        assert '[project]\nname = "existing"\n' in content
+        assert f'default = "{self.project_name}.settings"' in content
+
+    def test_existing_scrapy_table(self, tmp_path: Path) -> None:
+        (tmp_path / "pyproject.toml").write_text(
+            '[tool.scrapy.deploy]\nproject = "existing"\n', encoding="utf-8"
+        )
+
+        returncode, out, _ = proc("startproject", self.project_name, ".", cwd=tmp_path)
+        assert returncode == 1
+        assert "already has a [tool.scrapy] table" in out
+
+    def test_existing_scrapy_cfg(self, tmp_path: Path) -> None:
+        (tmp_path / "scrapy.cfg").write_text(
+            "[deploy]\nproject = existing\n", encoding="utf-8"
+        )
+
+        returncode, out, _ = proc("startproject", self.project_name, ".", cwd=tmp_path)
+        assert returncode == 1
+        assert "scrapy.cfg already exists" in out
 
 
 def get_permissions_dict(

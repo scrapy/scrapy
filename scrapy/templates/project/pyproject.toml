@@ -1,0 +1,2 @@
+[tool.scrapy.settings]
+default = "${project_name}.settings"

@@ -46,7 +46,7 @@ tool.
 Please refer to the `Zyte Scrapy Cloud documentation`_ for more information.
 
 Zyte Scrapy Cloud is compatible with Scrapyd and one can switch between
-them as needed - the configuration is read from the ``scrapy.cfg`` file
+them as needed - the configuration is read from the :file:`pyproject.toml` file
 just like ``scrapyd-deploy``.
 
 .. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html

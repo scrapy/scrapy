@@ -3,6 +3,25 @@
 Release notes
 =============
 
+Scrapy VERSION (unreleased)
+---------------------------
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   New projects created with the :command:`startproject` command define their
+    configuration in a :file:`pyproject.toml` file, instead of the now
+    deprecated :file:`scrapy.cfg` file.
+
+    To deploy such a project you need ``scrapyd`` TODO or higher,
+    ``scrapyd-client`` TODO or higher, or ``shub`` TODO or higher. Earlier
+    versions of those tools only read :file:`scrapy.cfg` files.
+    (:issue:`7030`)
+
+..  TODO: Fill in the ``scrapyd``, ``scrapyd-client`` and ``shub`` versions
+    above. Those releases, with support for the ``[tool.scrapy]`` table of
+    :file:`pyproject.toml`, must happen before this Scrapy release.
+
 Scrapy 2.18.0 (2026-08-20)
 --------------------------
 

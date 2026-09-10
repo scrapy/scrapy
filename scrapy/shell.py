@@ -162,13 +162,12 @@ class Shell:
         if self.code:
             print(eval(self.code, globals(), self.vars))  # noqa: S307
         else:
-            # Detect interactive shell setting in scrapy.cfg
-            # e.g.: ~/.config/scrapy.cfg or ~/.scrapy.cfg
-            # [settings]
+            # Detect interactive shell setting in pyproject.toml
+            # [tool.scrapy.settings]
             # # shell can be one of ipython, bpython or python;
             # # to be used as the interactive python console, if available.
             # # (default is ipython, fallbacks in the order listed above)
-            # shell = python
+            # shell = "python"
             cfg = get_config()
             section, option = "settings", "shell"
             env = os.environ.get("SCRAPY_PYTHON_SHELL")
