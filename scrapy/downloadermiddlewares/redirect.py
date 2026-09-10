@@ -107,6 +107,18 @@ class BaseRedirectMiddleware:
             ]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
+            # The downloader writes the resolved slot key into the request
+            # meta, and get_slot_key() gives it precedence over the target
+            # hostname, so inheriting it on a cross-domain redirect would keep
+            # the request in the slot of the original domain.  Drop it when
+            # the host changes; the value cannot be told apart from a
+            # user-set one, and the issue #2141 consensus is to drop it
+            # either way.
+            if (
+                urlparse_cached(request).hostname
+                != urlparse_cached(redirected).hostname
+            ):
+                redirected.meta.pop("download_slot", None)
             logger.debug(
                 "Redirecting (%(reason)s) to %(redirected)s from %(request)s",
                 {"reason": reason, "redirected": redirected, "request": request},

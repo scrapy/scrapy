@@ -3,9 +3,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
+from scrapy.core.downloader import Downloader
+from scrapy.downloadermiddlewares.redirect import (
+    MetaRefreshMiddleware,
+    RedirectMiddleware,
+)
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Request, Response
+from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spidermiddlewares.referer import (
     POLICY_NO_REFERRER,
     POLICY_ORIGIN,
@@ -347,6 +351,93 @@ class TestRedirectMiddleware(TestRedirectBase):
         request = Request("https://example.com")
         response = Response(request.url, status=302)
         assert self.mw.process_response(request, response) is response
+
+    def test_same_domain_redirect_keeps_download_slot(self):
+        # The downloader writes the resolved slot key into the request meta
+        # (Downloader._enqueue_request); a same-domain redirect must keep it.
+        req = Request(
+            "http://www.example.com/a", meta={"download_slot": "www.example.com"}
+        )
+        rsp = self.get_response(req, "http://www.example.com/b")
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.meta["download_slot"] == "www.example.com"
+
+    def test_cross_domain_redirect_drops_download_slot(self):
+        # A slot key inherited from the original domain would make the new
+        # request use the per-domain concurrency and delay settings of the
+        # original domain (issue #2141), so it must be dropped.
+        req = Request(
+            "http://www.example.com/a", meta={"download_slot": "www.example.com"}
+        )
+        rsp = self.get_response(req, "http://www.example.org/b")
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert "download_slot" not in req2.meta
+
+    def test_cross_domain_redirect_gets_slot_of_target_domain(self):
+        # Simulate the downloader flow: the slot key resolved for a request
+        # is written back into its meta, the response redirects to another
+        # domain, and the downloader must then resolve the slot key of the
+        # target domain instead of reusing the stale one.
+        crawler = get_crawler(DefaultSpider)
+        downloader = Downloader(crawler)
+        req = Request("http://www.example.com/a")
+        # as done by Downloader._enqueue_request()
+        req.meta[Downloader.DOWNLOAD_SLOT] = downloader.get_slot_key(req)
+        assert req.meta["download_slot"] == "www.example.com"
+        rsp = self.get_response(req, "http://www.example.org/b")
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert downloader.get_slot_key(req2) == "www.example.org"
+
+    def test_user_set_download_slot_dropped_on_cross_domain_redirect(self):
+        # A user-set slot key cannot be told apart from a downloader-written
+        # one, and per issue #2141 it is also dropped on cross-domain
+        # redirects, while same-domain redirects preserve it.
+        req = Request("http://www.example.com/a", meta={"download_slot": "my-slot"})
+        same_domain_rsp = self.get_response(req, "http://www.example.com/b")
+        req2 = self.mw.process_response(req, same_domain_rsp)
+        assert isinstance(req2, Request)
+        assert req2.meta["download_slot"] == "my-slot"
+
+        cross_domain_rsp = self.get_response(req, "http://www.example.org/b")
+        req3 = self.mw.process_response(req, cross_domain_rsp)
+        assert isinstance(req3, Request)
+        assert "download_slot" not in req3.meta
+
+    def test_download_slot_comparison_ignores_port_and_case(self):
+        # Slot keys are hostnames (Downloader.get_slot_key), so changing the
+        # port or the URL case is not a slot change and keeps the key.
+        req = Request(
+            "http://www.example.com:8080/a",
+            meta={"download_slot": "www.example.com"},
+        )
+        rsp = self.get_response(req, "http://WWW.EXAMPLE.COM:9090/b")
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.meta["download_slot"] == "www.example.com"
+
+    def test_meta_refresh_cross_domain_drops_download_slot(self):
+        # MetaRefreshMiddleware shares _redirect() with
+        # RedirectMiddleware, so meta-refresh redirects get the same fix.
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        mw = build_from_crawler(MetaRefreshMiddleware, crawler)
+        req = Request(
+            "http://www.example.com/a", meta={"download_slot": "www.example.com"}
+        )
+        rsp = HtmlResponse(
+            req.url,
+            body=(
+                b"<html><head><meta http-equiv='refresh' "
+                b"content='0; url=http://www.example.org/b'></head></html>"
+            ),
+        )
+        req2 = mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == "http://www.example.org/b"
+        assert "download_slot" not in req2.meta
 
 
 @pytest.mark.parametrize(SCHEME_PARAMS, REDIRECT_SCHEME_CASES)
