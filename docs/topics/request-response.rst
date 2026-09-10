@@ -5,7 +5,6 @@ Requests and Responses
 ======================
 
 .. module:: scrapy.http
-   :synopsis: Request and Response classes
 
 Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling web
 sites.

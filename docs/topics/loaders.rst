@@ -5,7 +5,6 @@ Item Loaders
 ============
 
 .. module:: scrapy.loader
-   :synopsis: Item Loader class
 
 Item Loaders provide a convenient mechanism for populating scraped :ref:`items
 <topics-items>`. Even though items can be populated directly, Item Loaders provide a

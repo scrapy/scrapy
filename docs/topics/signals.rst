@@ -112,7 +112,6 @@ Built-in signals reference
 ==========================
 
 .. module:: scrapy.signals
-   :synopsis: Signals definitions
 
 Here's the list of Scrapy built-in signals and their meaning.
 

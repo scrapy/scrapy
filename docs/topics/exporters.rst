@@ -5,7 +5,6 @@ Item Exporters
 ==============
 
 .. module:: scrapy.exporters
-   :synopsis: Item Exporters
 
 Once you have scraped your items, you often want to persist or export those
 items, to use the data in some other application. That is, after all, the whole

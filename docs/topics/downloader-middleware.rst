@@ -1,3 +1,5 @@
+.. module:: scrapy.downloadermiddlewares
+
 .. _topics-downloader-middleware:
 
 =====================
@@ -30,11 +32,11 @@ The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant
 to be overridden) and then sorted by order to get the final sorted list of
 enabled middlewares: the first middleware is the one closer to the engine and
-the last is the one closer to the downloader. In other words,
-the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
-method of each middleware will be invoked in increasing
-middleware order (100, 200, 300, ...) and the :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response` method
-of each middleware will be invoked in decreasing order.
+the last is the one closer to the downloader. In other words, the
+:meth:`~DownloaderMiddleware.process_request` method of each middleware will be
+invoked in increasing middleware order (100, 200, 300, ...) and the
+:meth:`~DownloaderMiddleware.process_response` method of each middleware will
+be invoked in decreasing order.
 
 To decide which order to assign to your middleware see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting and pick a value according to
@@ -64,8 +66,6 @@ Writing your own downloader middleware
 
 Each downloader middleware is a :ref:`component <topics-components>` that
 defines one or more of these methods:
-
-.. module:: scrapy.downloadermiddlewares
 
 .. class:: DownloaderMiddleware
 
@@ -157,6 +157,8 @@ defines one or more of these methods:
       :param exception: the raised exception
       :type exception: an ``Exception`` object
 
+.. currentmodule:: None
+
 .. _mw-download:
 
 Downloading a request from a downloader middleware
@@ -234,10 +236,7 @@ See :ref:`cookies`.
 DefaultHeadersMiddleware
 ------------------------
 
-.. module:: scrapy.downloadermiddlewares.defaultheaders
-   :synopsis: Default Headers Downloader Middleware
-
-.. class:: DefaultHeadersMiddleware
+.. class:: scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware
 
     This middleware sets all default requests headers specified in the
     :setting:`DEFAULT_REQUEST_HEADERS` setting.
@@ -245,10 +244,7 @@ DefaultHeadersMiddleware
 DownloadTimeoutMiddleware
 -------------------------
 
-.. module:: scrapy.downloadermiddlewares.downloadtimeout
-   :synopsis: Download timeout middleware
-
-.. class:: DownloadTimeoutMiddleware
+.. class:: scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware
 
     This middleware sets the download timeout for requests specified in the
     :setting:`DOWNLOAD_TIMEOUT` setting.
@@ -262,10 +258,7 @@ DownloadTimeoutMiddleware
 HttpAuthMiddleware
 ------------------
 
-.. module:: scrapy.downloadermiddlewares.httpauth
-   :synopsis: HTTP Auth downloader middleware
-
-.. class:: HttpAuthMiddleware
+.. class:: scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware
 
     This middleware authenticates requests using `Basic access authentication`_
     (aka. HTTP auth).
@@ -353,10 +346,7 @@ or :setting:`HTTPAUTH_PASS` is set.
 HttpCacheMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.httpcache
-   :synopsis: HTTP Cache downloader middleware
-
-.. class:: HttpCacheMiddleware
+.. class:: scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware
 
     This middleware provides low-level cache to all HTTP requests and responses.
     It has to be combined with a cache storage backend as well as a cache policy.
@@ -391,7 +381,6 @@ HttpCacheMiddleware
     the page was downloaded rather than to the current time.
 
 .. module:: scrapy.extensions.httpcache
-   :noindex:
 
 .. _httpcache-policy-dummy:
 
@@ -516,8 +505,6 @@ To store a response, use :meth:`Response.to_dict()
 <scrapy.http.Response.to_dict>`, and to read it back, use
 :func:`~scrapy.utils.response.response_from_dict`. That way responses of any
 class, including those of third-party plugins, are cached and restored intact.
-
-.. module:: scrapy.extensions.httpcache
 
 .. class:: CacheStorage
 
@@ -712,15 +699,14 @@ We assume that the spider will not issue Cache-Control directives
 in requests unless it actually needs them, so directives in requests are
 not filtered.
 
+.. currentmodule:: None
+
 .. _http-compression:
 
 HttpCompressionMiddleware
 -------------------------
 
-.. module:: scrapy.downloadermiddlewares.httpcompression
-   :synopsis: Http Compression Middleware
-
-.. class:: HttpCompressionMiddleware
+.. class:: scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware
 
    This middleware allows compressed (gzip, deflate, `brotli`_, `zstd`_)
    traffic to be sent/received from web sites.
@@ -745,10 +731,9 @@ Whether the Compression middleware will be enabled.
 HttpProxyMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.httpproxy
-   :synopsis: Http Proxy Middleware
-
 .. reqmeta:: proxy
+
+.. module:: scrapy.downloadermiddlewares.httpproxy
 
 .. class:: HttpProxyMiddleware
 
@@ -815,10 +800,7 @@ The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
 OffsiteMiddleware
 -----------------
 
-.. module:: scrapy.downloadermiddlewares.offsite
-   :synopsis: Offsite Middleware
-
-.. autoclass:: OffsiteMiddleware
+.. autoclass:: scrapy.downloadermiddlewares.offsite.OffsiteMiddleware
 
    .. automethod:: should_follow
 
@@ -826,7 +808,6 @@ RedirectMiddleware
 ------------------
 
 .. module:: scrapy.downloadermiddlewares.redirect
-   :synopsis: Redirection Middleware
 
 .. class:: RedirectMiddleware
 
@@ -1006,7 +987,6 @@ RetryMiddleware
 ---------------
 
 .. module:: scrapy.downloadermiddlewares.retry
-   :synopsis: Retry Middleware
 
 .. class:: RetryMiddleware
 
@@ -1137,15 +1117,14 @@ Adjust retry request priority relative to original request:
 See also: :reqmeta:`priority_adjust`.
 
 
+.. currentmodule:: None
+
 .. _topics-dlmw-robots:
 
 RobotsTxtMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.robotstxt
-   :synopsis: robots.txt middleware
-
-.. class:: RobotsTxtMiddleware
+.. class:: scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
 
     This middleware filters out requests forbidden by the robots.txt exclusion
     standard.
@@ -1265,10 +1244,7 @@ You can implement support for a new robots.txt_ parser by subclassing
 the abstract base class :class:`~scrapy.robotstxt.RobotParser` and
 implementing the methods described below.
 
-.. module:: scrapy.robotstxt
-   :synopsis: robots.txt parser interface and implementations
-
-.. autoclass:: RobotParser
+.. autoclass:: scrapy.robotstxt.RobotParser
    :members:
 
 .. _robots.txt: https://www.robotstxt.org/
@@ -1276,10 +1252,7 @@ implementing the methods described below.
 DownloaderStats
 ---------------
 
-.. module:: scrapy.downloadermiddlewares.stats
-   :synopsis: Downloader Stats Middleware
-
-.. class:: DownloaderStats
+.. class:: scrapy.downloadermiddlewares.stats.DownloaderStats
 
    Middleware that stores stats of all requests, responses and exceptions that
    pass through it.
@@ -1290,10 +1263,7 @@ DownloaderStats
 UserAgentMiddleware
 -------------------
 
-.. module:: scrapy.downloadermiddlewares.useragent
-   :synopsis: User Agent Middleware
-
-.. class:: UserAgentMiddleware
+.. class:: scrapy.downloadermiddlewares.useragent.UserAgentMiddleware
 
    Middleware that sets the ``User-Agent`` header.
 

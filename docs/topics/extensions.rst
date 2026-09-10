@@ -119,20 +119,14 @@ General purpose extensions
 Log Stats extension
 ~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.logstats
-   :synopsis: Basic stats logging
-
-.. class:: LogStats
+.. class:: scrapy.extensions.logstats.LogStats
 
 Log basic stats like crawled pages and scraped items.
 
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.corestats
-   :synopsis: Core stats collection
-
-.. class:: CoreStats
+.. class:: scrapy.extensions.corestats.CoreStats
 
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
@@ -145,20 +139,14 @@ The following stats are collected: :stat:`elapsed_time_seconds`,
 Log Count extension
 ~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.logcount
-   :synopsis: Basic stats logging
-
-.. autoclass:: LogCount
+.. autoclass:: scrapy.extensions.logcount.LogCount
 
 .. _topics-extensions-ref-memusage:
 
 Memory usage extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.memusage
-   :synopsis: Memory usage extension
-
-.. class:: MemoryUsage
+.. class:: scrapy.extensions.memusage.MemoryUsage
 
 .. note:: This extension does not work in Windows.
 
@@ -179,10 +167,7 @@ can be configured with the following settings:
 Memory debugger extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.memdebug
-   :synopsis: Memory debugger extension
-
-.. class:: MemoryDebugger
+.. class:: scrapy.extensions.memdebug.MemoryDebugger
 
 An extension for debugging memory usage. It collects information about:
 
@@ -198,10 +183,7 @@ info will be stored in the :stat:`memdebug/gc_garbage_count` and
 Spider state extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.spiderstate
-   :synopsis: Spider state extension
-
-.. class:: SpiderState
+.. class:: scrapy.extensions.spiderstate.SpiderState
 
 Manages spider state data by loading it before a crawl and saving it after.
 
@@ -222,10 +204,7 @@ For an example, see :ref:`topics-keeping-persistent-state-between-batches`.
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.closespider
-   :synopsis: Close spider extension
-
-.. class:: CloseSpider
+.. class:: scrapy.extensions.closespider.CloseSpider
 
 Closes a spider automatically when some conditions are met, using a specific
 closing reason for each condition.
@@ -318,13 +297,10 @@ closing the spider. If the spider generates more than that number of errors,
 it will be closed with the reason ``closespider_errorcount``. If zero (or non
 set), spiders won't be closed by number of errors.
 
-.. module:: scrapy.extensions.periodic_log
-   :synopsis: Periodic stats logging
-
 Periodic log extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: PeriodicLog
+.. class:: scrapy.extensions.periodic_log.PeriodicLog
 
 This extension periodically logs rich stat data as a JSON object::
 
@@ -437,11 +413,10 @@ Default: ``False``
 Debugging extensions
 --------------------
 
-.. module:: scrapy.extensions.debug
-   :synopsis: Extensions for debugging Scrapy
-
 Stack trace dump extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.debug
 
 .. class:: StackTraceDump
 
@@ -480,15 +455,14 @@ running normally.
 
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
+.. currentmodule:: None
+
 .. _topics-extensions-ref-telnetconsole:
 
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.extensions.telnet
-   :synopsis: Telnet console
-
-.. class:: TelnetConsole
+.. class:: scrapy.extensions.telnet.TelnetConsole
 
 Provides a telnet console for getting into a Python interpreter inside the
 currently running Scrapy process, which can be very useful for debugging.
