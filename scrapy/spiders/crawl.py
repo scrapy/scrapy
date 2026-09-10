@@ -70,6 +70,8 @@ class Rule:
         process_links: ProcessLinksT | str | None = None,
         process_request: ProcessRequestT | str | None = None,
         errback: Callable[[Failure], Any] | str | None = None,
+        name: str | None = None,
+        from_rules: Iterable[str] | str | None = None,
     ):
         self.link_extractor: LinkExtractor = link_extractor or _default_link_extractor
         self.callback: CallbackT | str | None = callback
@@ -80,6 +82,12 @@ class Rule:
             process_request or _identity_process_request
         )
         self.follow: bool = follow if follow is not None else not callback
+        self.name: str | None = name
+        if isinstance(from_rules, str):
+            from_rules = (from_rules,)
+        self.from_rules: frozenset[str] | None = (
+            frozenset(from_rules) if from_rules is not None else None
+        )
 
     def _compile(self, spider: Spider) -> None:
         # this replaces method names with methods and we can't express this in type hints
@@ -135,14 +143,26 @@ class CrawlSpider(Spider):
             url=link.url,
             callback=self._callback,
             errback=self._errback,
-            meta={"rule": rule_index, "link_text": link.text},
+            meta={
+                "rule": rule_index,
+                "link_text": link.text,
+                "rule_name": self._rules[rule_index].name,
+            },
         )
 
     def _requests_to_follow(self, response: Response) -> Iterable[Request | None]:
         if not isinstance(response, HtmlResponse):
             return
         seen: set[Link] = set()
+        response_rule_name = (
+            response.request.meta.get("rule_name") if response.request else None
+        )
         for rule_index, rule in enumerate(self._rules):
+            if (
+                rule.from_rules is not None
+                and response_rule_name not in rule.from_rules
+            ):
+                continue
             links: list[Link] = [
                 lnk
                 for lnk in rule.link_extractor.extract_links(response)
