@@ -17,6 +17,7 @@ from scrapy.utils.template import render_templatefile, string_camelcase
 if TYPE_CHECKING:
     import argparse
     import os
+    from collections.abc import Iterable
 
 
 def sanitize_module_name(module_name: str) -> str:
@@ -52,6 +53,11 @@ class Command(ScrapyCommand):
 
     def short_desc(self) -> str:
         return "Generate new spider using pre-defined templates"
+
+    def complete_option(self, dest: str) -> Iterable[str]:
+        if dest in {"dump", "template"}:
+            return self._template_names()
+        return super().complete_option(dest)
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         super().add_options(parser)
@@ -181,14 +187,17 @@ class Command(ScrapyCommand):
         )
         return None
 
+    def _template_names(self) -> list[str]:
+        return [
+            file.stem
+            for file in sorted(Path(self.templates_dir).iterdir())
+            if file.suffix == ".tmpl"
+        ]
+
     def _list_templates(self) -> None:
         print(
             "Available templates:\n",
-            "\n".join(
-                f"  {file.stem}"
-                for file in sorted(Path(self.templates_dir).iterdir())
-                if file.suffix == ".tmpl"
-            ),
+            "\n".join(f"  {name}" for name in self._template_names()),
         )
 
     def _spider_exists(self, name: str) -> bool:
