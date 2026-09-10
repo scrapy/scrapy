@@ -61,6 +61,8 @@ class HTTP11DownloadHandlerMixin:
             }
         }
 
+    handler_supports_custom_content_length = False
+
 
 def test_not_configured_without_reactor() -> None:
     crawler = Crawler(Spider, {"TWISTED_REACTOR_ENABLED": False})
