@@ -35,8 +35,8 @@ from zope.interface import implementer
 from scrapy.core._http2.stream import Stream, StreamCloseReason
 from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Request, Response
+from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
-from scrapy.utils.ssl import _log_ssl_conn_debug_info
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address

@@ -10,8 +10,8 @@ from OpenSSL import SSL
 from twisted.internet.ssl import CertificateOptions, ContextFactory
 
 from scrapy.core.downloader.tls import _TWISTED_VERSION_MAP
+from scrapy.utils._ssl import _get_cert_options_version_kwargs
 from scrapy.utils.python import to_bytes
-from scrapy.utils.ssl import _get_cert_options_version_kwargs
 
 if TYPE_CHECKING:
     from twisted.internet.interfaces import IOpenSSLContextFactory
