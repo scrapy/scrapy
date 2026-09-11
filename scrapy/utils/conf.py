@@ -198,3 +198,12 @@ def feed_process_params_from_cli(
     result.update(settings.getdict("FEEDS"))
 
     return result
+
+
+def _job_dir(settings: BaseSettings) -> str | None:
+    path: str | None = settings["JOBDIR"]
+    if not path:
+        return None
+    if not Path(path).exists():
+        Path(path).mkdir(parents=True)
+    return path
