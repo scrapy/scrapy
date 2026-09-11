@@ -2,6 +2,7 @@ scrapy/core/downloader/handlers/http.py
 scrapy/extensions/statsmailer.py
 scrapy/interfaces.py
 scrapy/mail.py
+scrapy/utils/benchserver.py
 scrapy/utils/console.py
 scrapy/utils/gz.py
 scrapy/utils/job.py
