@@ -41,6 +41,34 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    def test_get_basic_auth_without_password(self):
+        curl_command = 'curl "https://api.test.com/" -u "some_username"'
+        expected_result = {
+            "method": "GET",
+            "url": "https://api.test.com/",
+            "headers": [
+                ("Authorization", basic_auth_header("some_username", ""))
+            ],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_header_with_empty_value(self):
+        curl_command = 'curl "http://example.org/" -H "X-Flag;"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Flag", "")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize(
+        "header", ["X-Flag", "X-Flag;extra", "X-Flag ; ", ";"]
+    )
+    def test_get_header_without_value_is_skipped(self, header):
+        curl_command = f'curl "http://example.org/" -H "{header}"'
+        expected_result = {"method": "GET", "url": "http://example.org/"}
+        self._test_command(curl_command, expected_result)
+
     def test_get_cookie_option(self):
         curl_command = 'curl "http://example.org/" -b "a=1; b=2"'
         expected_result = {
@@ -285,3 +313,9 @@ class TestCurlToRequestKwargs:
     def test_must_start_with_curl_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("carl -X POST http://example.org")
+
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs("")
+
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs("   ")

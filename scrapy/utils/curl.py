@@ -65,9 +65,16 @@ def _parse_headers_and_cookies(
     headers: list[tuple[str, bytes]] = []
     cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
-        name, val = header.split(":", 1)
+        if ":" in header:
+            name, val = header.split(":", 1)
+        elif header.endswith(";"):
+            name, val = header[:-1], ""
+        else:
+            continue
         name = name.strip()
         val = val.strip()
+        if not name:
+            continue
         if name.title() == "Cookie":
             for name, morsel in SimpleCookie(val).items():
                 cookies[name] = morsel.value
@@ -83,7 +90,9 @@ def _parse_headers_and_cookies(
             cookies[name] = morsel.value
 
     if parsed_args.auth:
-        user, password = parsed_args.auth.split(":", 1)
+        user, separator, password = parsed_args.auth.partition(":")
+        if not separator:
+            password = ""
         headers.append(("Authorization", basic_auth_header(user, password)))
 
     return headers, cookies
@@ -103,7 +112,7 @@ def curl_to_request_kwargs(
 
     curl_args = split(curl_command)
 
-    if curl_args[0] != "curl":
+    if not curl_args or curl_args[0] != "curl":
         raise ValueError('A curl command must start with "curl"')
 
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])
