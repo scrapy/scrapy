@@ -285,3 +285,60 @@ class TestCurlToRequestKwargs:
     def test_must_start_with_curl_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("carl -X POST http://example.org")
+
+    def test_header_with_empty_value(self):
+        # curl sends a header with an empty value when the name is terminated
+        # with a semicolon: `-H "X-Flag;"` puts `X-Flag:` on the wire.
+        curl_command = 'curl "http://example.org/" -H "X-Flag;"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Flag", "")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize(
+        "header",
+        [
+            "X-Flag",  # neither a colon nor a trailing semicolon
+            "X-Flag;extra",  # the semicolon is not the last character
+            ";",  # no name
+        ],
+    )
+    def test_header_curl_would_not_send_is_dropped(self, header):
+        # curl puts none of these on the wire, so neither does Scrapy. Before,
+        # each raised "not enough values to unpack (expected 2, got 1)".
+        curl_command = f'curl "http://example.org/" -H "{header}"'
+        expected_result = {"method": "GET", "url": "http://example.org/"}
+        self._test_command(curl_command, expected_result)
+
+    def test_header_without_colon_does_not_hide_the_others(self):
+        curl_command = 'curl "http://example.org/" -H "X-Flag" -H "X-Other: 2"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Other", "2")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_basic_auth_without_password(self):
+        # curl prompts for the password when -u has no colon, so the option is
+        # valid input. The request it builds once an empty password is given is
+        # the one `-u "user:"` builds, and that is what Scrapy produces.
+        expected_result = {
+            "method": "GET",
+            "url": "https://api.test.com/",
+            "headers": [("Authorization", basic_auth_header("some_username", ""))],
+        }
+        self._test_command(
+            'curl "https://api.test.com/" -u "some_username"', expected_result
+        )
+        self._test_command(
+            'curl "https://api.test.com/" -u "some_username:"', expected_result
+        )
+
+    @pytest.mark.parametrize("curl_command", ["", "   "])
+    def test_empty_command_error(self, curl_command):
+        # Previously "IndexError: list index out of range".
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs(curl_command)
