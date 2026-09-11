@@ -1618,7 +1618,7 @@ Deprecation removals
 
 -   ``scrapy.utils.versions.scrapy_components_versions()``, deprecated in
     Scrapy 2.13.0, is removed, you can use
-    :func:`scrapy.utils.versions.get_versions` instead.
+    ``scrapy.utils.versions.get_versions()`` instead.
     (:gh:`7487`)
 
 -   ``scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware`` and
@@ -3330,7 +3330,7 @@ Deprecations
     (:gh:`6708`, :gh:`6714`)
 
 -   ``scrapy.utils.versions.scrapy_components_versions()`` is deprecated, use
-    :func:`scrapy.utils.versions.get_versions` instead.
+    ``scrapy.utils.versions.get_versions()`` instead.
     (:gh:`6582`)
 
 -   ``BaseDupeFilter.log()`` is deprecated. It does nothing and shouldn't be
