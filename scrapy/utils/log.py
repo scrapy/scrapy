@@ -142,7 +142,8 @@ def configure_logging(
     observer = twisted_log.PythonLoggingObserver("twisted")
     observer.start()
 
-    dictConfig(DEFAULT_LOGGING)
+    dictConfig(settings.get('LOG_DICT_CONFIG', DEFAULT_LOGGING))
+
 
     if settings.getbool("LOG_STDOUT"):
         sys.stdout = StreamLogger(logging.getLogger("stdout"))
