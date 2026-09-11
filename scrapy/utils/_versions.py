@@ -5,11 +5,18 @@ import sys
 from importlib.metadata import version
 
 import lxml.etree
+import OpenSSL.SSL
+import OpenSSL.version
 
 from scrapy.settings.default_settings import LOG_VERSIONS
-from scrapy.utils.ssl import get_openssl_version
 
 _DEFAULT_SOFTWARE: list[str] = ["Scrapy", *LOG_VERSIONS]
+
+
+def _get_openssl_version() -> str:
+    system_openssl_bytes = OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION)
+    system_openssl = system_openssl_bytes.decode("ascii", errors="replace")
+    return f"{OpenSSL.version.__version__} ({system_openssl})"
 
 
 def _version(item: str) -> str:
@@ -19,7 +26,7 @@ def _version(item: str) -> str:
     if lowercase_item == "platform":
         return platform.platform()
     if lowercase_item == "pyopenssl":
-        return get_openssl_version()
+        return _get_openssl_version()
     if lowercase_item == "python":
         return sys.version.replace("\n", "- ")
     return version(item)

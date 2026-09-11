@@ -7580,7 +7580,7 @@ Bug fixes
     are now properly decoded (:gh:`3941`)
 
 *   A memory-handling and error-handling issue in
-    :func:`scrapy.utils.ssl.get_temp_key_info` has been fixed (:gh:`3920`)
+    ``scrapy.utils.ssl.get_temp_key_info()`` has been fixed (:gh:`3920`)
 
 
 Documentation
