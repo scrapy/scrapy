@@ -3,3 +3,4 @@ scrapy/extensions/statsmailer.py
 scrapy/interfaces.py
 scrapy/mail.py
 scrapy/utils/console.py
+scrapy/utils/gz.py
