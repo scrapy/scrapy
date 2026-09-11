@@ -59,15 +59,48 @@ for argument in safe_to_ignore_arguments:
     curl_parser.add_argument(*argument, action="store_true")
 
 
+def _parse_header(header: str) -> tuple[str, str] | None:
+    """Parse a single ``-H``/``--header`` value the same way real curl does.
+
+    curl's header syntax:
+
+    * ``Name: value``  — send the header with the given value.
+    * ``Name:``        — send the header with an **empty** value (colon, no
+                          value).
+    * ``Name;``        — also sends the header with an empty value; the
+                          semicolon is curl's way of specifying an empty value
+                          when the colon form would be ambiguous.
+    * ``Name``         — **remove** the header (tell curl not to send it);
+                          Scrapy skips these entirely.
+    * ``Name;extra``   — also removes/suppresses the header; Scrapy skips.
+    * ``;``            — bare semicolon; Scrapy skips.
+
+    Returns ``(name, value)`` or ``None`` if the header should be skipped.
+    """
+    if ":" in header:
+        name, val = header.split(":", 1)
+        return name.strip(), val.strip()
+
+    # Semicolon syntax: "Name;" sends the header with an empty value.
+    # Any other form (no ":" and no trailing ";", or text after the ";")
+    # tells curl to suppress the header — we skip those.
+    if header.endswith(";"):
+        name = header[:-1].strip()
+        if name:
+            return name, ""
+    return None
+
+
 def _parse_headers_and_cookies(
     parsed_args: argparse.Namespace,
 ) -> tuple[list[tuple[str, bytes]], dict[str, str]]:
     headers: list[tuple[str, bytes]] = []
     cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
-        name, val = header.split(":", 1)
-        name = name.strip()
-        val = val.strip()
+        parsed = _parse_header(header)
+        if parsed is None:
+            continue
+        name, val = parsed
         if name.title() == "Cookie":
             for name, morsel in SimpleCookie(val).items():
                 cookies[name] = morsel.value
@@ -83,6 +116,11 @@ def _parse_headers_and_cookies(
             cookies[name] = morsel.value
 
     if parsed_args.auth:
+        if ":" not in parsed_args.auth:
+            raise ValueError(
+                f"Invalid -u/--user value {parsed_args.auth!r}: "
+                "a password is required (use 'user:password' format)."
+            )
         user, password = parsed_args.auth.split(":", 1)
         headers.append(("Authorization", basic_auth_header(user, password)))
 
@@ -102,6 +140,9 @@ def curl_to_request_kwargs(
     """
 
     curl_args = split(curl_command)
+
+    if not curl_args:
+        raise ValueError('A curl command must start with "curl"')
 
     if curl_args[0] != "curl":
         raise ValueError('A curl command must start with "curl"')

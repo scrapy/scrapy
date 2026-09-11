@@ -285,3 +285,49 @@ class TestCurlToRequestKwargs:
     def test_must_start_with_curl_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("carl -X POST http://example.org")
+
+    # --- Tests for issue #8131 ---
+
+    def test_empty_command_raises_clear_error(self):
+        """An empty string used to raise IndexError; now raises a clear ValueError."""
+        with pytest.raises(ValueError, match='A curl command must start with "curl"'):
+            curl_to_request_kwargs("")
+
+    # -H header semicolon syntax (curl's way of sending a header with an empty value)
+
+    def test_header_semicolon_empty_value(self):
+        """``-H "X-Flag;"`` sends the header with an empty value, matching curl behaviour."""
+        result = curl_to_request_kwargs('curl "http://example.org/" -H "X-Flag;"')
+        assert result["headers"] == [("X-Flag", "")]
+
+    def test_header_no_colon_no_semicolon_is_skipped(self):
+        """``-H "X-Flag"`` tells curl to remove the header; Scrapy skips it silently."""
+        result = curl_to_request_kwargs('curl "http://example.org/" -H "X-Flag"')
+        assert "headers" not in result
+
+    def test_header_semicolon_with_text_after_is_skipped(self):
+        """``-H "X-Flag;extra"`` removes the header in curl; Scrapy skips it silently."""
+        result = curl_to_request_kwargs('curl "http://example.org/" -H "X-Flag;extra"')
+        assert "headers" not in result
+
+    def test_header_bare_semicolon_is_skipped(self):
+        """``-H ";"`` is a bare semicolon with no name; Scrapy skips it."""
+        result = curl_to_request_kwargs('curl "http://example.org/" -H ";"')
+        assert "headers" not in result
+
+    def test_header_colon_only_sends_empty_value(self):
+        """``-H "X-Flag:"`` (colon, no value) is already handled; value is empty string."""
+        result = curl_to_request_kwargs('curl "http://example.org/" -H "X-Flag:"')
+        assert result["headers"] == [("X-Flag", "")]
+
+    # -u / --user without a colon (no password supplied)
+
+    def test_user_without_password_raises_clear_error(self):
+        """-u "alice" (no colon) used to raise ValueError with an unhelpful message."""
+        with pytest.raises(ValueError, match=r"Invalid -u/--user value.*password is required"):
+            curl_to_request_kwargs('curl "http://example.org/" -u "alice"')
+
+    def test_user_with_empty_password_is_accepted(self):
+        """-u "alice:" (colon, empty password) is valid and should not raise."""
+        result = curl_to_request_kwargs('curl "http://example.org/" -u "alice:"')
+        assert result["headers"] == [("Authorization", basic_auth_header("alice", ""))]
