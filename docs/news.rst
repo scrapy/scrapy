@@ -3,6 +3,33 @@
 Release notes
 =============
 
+.. _release-2.20.0:
+
+Scrapy 2.20.0
+-------------
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   Setting the :ref:`overwrite feed option <feed-options>` to ``False`` for
+    S3 feeds now appends using the Amazon S3 Express One Zone /
+    directory-bucket native append API instead of logging that S3 does not
+    support appending and still replacing the object. General-purpose S3
+    buckets do not support that API, so store will fail there if
+    ``overwrite`` is ``False``. The S3 default for ``overwrite`` remains
+    ``True``.
+    (:gh:`7822`)
+
+New features
+~~~~~~~~~~~~
+
+-   :class:`~scrapy.extensions.feedexport.S3FeedStorage` now supports appending
+    when the :ref:`overwrite feed option <feed-options>` is ``False``, using
+    the Amazon S3 Express One Zone / directory-bucket native append API
+    (``PutObject`` with ``WriteOffsetBytes``). The S3 default for
+    ``overwrite`` remains ``True``.
+    (:gh:`7822`)
+
 .. _release-2.19.0:
 
 Scrapy 2.19.0 (2026-09-10)

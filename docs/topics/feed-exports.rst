@@ -256,6 +256,13 @@ pool size for exported feeds using these settings:
 The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
+When ``overwrite`` is ``False``, Scrapy appends to the existing object using
+the native append API of `Amazon S3 Express One Zone`_ directory buckets
+(``PutObject`` with the ``x-amz-write-offset-bytes`` header, exposed by boto3
+as ``WriteOffsetBytes``). If the object does not exist, it is created at write
+offset ``0``. Native append is not supported on general-purpose S3 buckets;
+storing with ``overwrite`` set to ``False`` will fail there.
+
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
      previous version of your data.
 
@@ -534,7 +541,11 @@ as a fallback value if that key is not provided for a specific feed definition:
         .. note:: Some FTP servers may not support appending to files (the
                   ``APPE`` FTP command).
 
-    -   :ref:`topics-feed-storage-s3`: ``True`` (appending is not supported)
+    -   :ref:`topics-feed-storage-s3`: ``True``
+
+        Native append (``overwrite: False``) uses the Amazon S3 Express One
+        Zone / directory-bucket append API. It is not supported on
+        general-purpose S3 buckets.
 
     -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
 
@@ -820,5 +831,6 @@ source spider in the feed URI:
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
+.. _Amazon S3 Express One Zone: https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-buckets-objects-append.html
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/

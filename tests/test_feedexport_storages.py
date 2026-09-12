@@ -499,20 +499,167 @@ class TestS3FeedStorage:
         assert acl == "custom-acl"
 
     def test_overwrite_default(self, caplog: pytest.LogCaptureFixture) -> None:
-        S3FeedStorage(
+        storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
         )
+        assert storage.overwrite is True
         assert "S3 does not support appending to files" not in caplog.text
 
     def test_overwrite_false(self, caplog: pytest.LogCaptureFixture) -> None:
-        S3FeedStorage(
+        storage = S3FeedStorage(
             "s3://mybucket/export.csv",
             "access_key",
             "secret_key",
             "custom-acl",
             feed_options={"overwrite": False},
         )
-        assert "S3 does not support appending to files" in caplog.text
+        assert storage.overwrite is False
+        assert "S3 does not support appending to files" not in caplog.text
+
+    @coroutine_test
+    async def test_store_overwrite_true(self):
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            feed_options={"overwrite": True},
+        )
+        storage.s3_client = mock.MagicMock()
+        body = BytesIO(b"feed-bytes")
+        await maybe_deferred_to_future(storage.store(body))
+        assert storage.s3_client.upload_fileobj.call_args == mock.call(
+            Bucket="mybucket", Key="export.csv", Fileobj=body
+        )
+        storage.s3_client.head_object.assert_not_called()
+        storage.s3_client.put_object.assert_not_called()
+
+    @staticmethod
+    def _capture_put_object(client: mock.MagicMock) -> dict[str, Any]:
+        recorded: dict[str, Any] = {}
+
+        def put_object(**kwargs: Any) -> None:
+            recorded.update(kwargs)
+            recorded["body_bytes"] = kwargs["Body"].read()
+
+        client.put_object.side_effect = put_object
+        return recorded
+
+    @coroutine_test
+    async def test_store_append_existing(self):
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            "custom-acl",
+            feed_options={"overwrite": False},
+        )
+        storage.s3_client = mock.MagicMock()
+        storage.s3_client.head_object.return_value = {"ContentLength": 42}
+        recorded = self._capture_put_object(storage.s3_client)
+        await maybe_deferred_to_future(storage.store(BytesIO(b"feed-bytes")))
+        storage.s3_client.head_object.assert_called_once_with(
+            Bucket="mybucket", Key="export.csv"
+        )
+        assert recorded["Bucket"] == "mybucket"
+        assert recorded["Key"] == "export.csv"
+        assert recorded["WriteOffsetBytes"] == 42
+        assert recorded["body_bytes"] == b"feed-bytes"
+        assert "ACL" not in recorded
+        storage.s3_client.upload_fileobj.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "error_response",
+        [
+            {
+                "Error": {"Code": "404", "Message": "Not Found"},
+                "ResponseMetadata": {"HTTPStatusCode": 404},
+            },
+            {
+                "Error": {"Code": "NoSuchKey", "Message": "The specified key does not exist."},
+                "ResponseMetadata": {"HTTPStatusCode": 404},
+            },
+            {
+                "Error": {"Code": "NotFound", "Message": "Not Found"},
+                "ResponseMetadata": {"HTTPStatusCode": 404},
+            },
+            {
+                "Error": {},
+                "ResponseMetadata": {"HTTPStatusCode": 404},
+            },
+        ],
+        ids=["404", "NoSuchKey", "NotFound", "http-404-no-code"],
+    )
+    @coroutine_test
+    async def test_store_append_missing(self, error_response: dict[str, Any]):
+        from botocore.exceptions import ClientError  # noqa: PLC0415
+
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            feed_options={"overwrite": False},
+        )
+        storage.s3_client = mock.MagicMock()
+        storage.s3_client.head_object.side_effect = ClientError(
+            error_response,
+            "HeadObject",
+        )
+        recorded = self._capture_put_object(storage.s3_client)
+        await maybe_deferred_to_future(storage.store(BytesIO(b"feed-bytes")))
+        storage.s3_client.head_object.assert_called_once_with(
+            Bucket="mybucket", Key="export.csv"
+        )
+        assert recorded["Bucket"] == "mybucket"
+        assert recorded["Key"] == "export.csv"
+        assert recorded["WriteOffsetBytes"] == 0
+        assert recorded["body_bytes"] == b"feed-bytes"
+        storage.s3_client.upload_fileobj.assert_not_called()
+
+    @coroutine_test
+    async def test_store_append_head_error(self):
+        from botocore.exceptions import ClientError  # noqa: PLC0415
+
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            feed_options={"overwrite": False},
+        )
+        storage.s3_client = mock.MagicMock()
+        storage.s3_client.head_object.side_effect = ClientError(
+            {
+                "Error": {"Code": "403", "Message": "Forbidden"},
+                "ResponseMetadata": {"HTTPStatusCode": 403},
+            },
+            "HeadObject",
+        )
+        with pytest.raises(ClientError):
+            await maybe_deferred_to_future(storage.store(BytesIO(b"feed-bytes")))
+        storage.s3_client.put_object.assert_not_called()
+        storage.s3_client.upload_fileobj.assert_not_called()
+
+    @coroutine_test
+    async def test_store_append_missing_bucket(self):
+        from botocore.exceptions import ClientError  # noqa: PLC0415
+
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            feed_options={"overwrite": False},
+        )
+        storage.s3_client = mock.MagicMock()
+        storage.s3_client.head_object.side_effect = ClientError(
+            {
+                "Error": {"Code": "NoSuchBucket", "Message": "The specified bucket does not exist"},
+                "ResponseMetadata": {"HTTPStatusCode": 404},
+            },
+            "HeadObject",
+        )
+        with pytest.raises(ClientError):
+            await maybe_deferred_to_future(storage.store(BytesIO(b"feed-bytes")))
+        storage.s3_client.put_object.assert_not_called()
+        storage.s3_client.upload_fileobj.assert_not_called()
 
 
 class TestGCSFeedStorage:

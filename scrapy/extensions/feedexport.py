@@ -233,6 +233,7 @@ class S3FeedStorage(BlockingFeedStorage):
         self.endpoint_url: str | None = endpoint_url
         self.region_name: str | None = region_name
         self.max_pool_connections: int | None = max_pool_connections
+        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
         boto3_session = boto3.session.Session()
         self.s3_client = boto3_session.client(
@@ -248,13 +249,6 @@ class S3FeedStorage(BlockingFeedStorage):
                 else None
             ),
         )
-
-        if feed_options and feed_options.get("overwrite", True) is False:
-            logger.warning(
-                "S3 does not support appending to files. To "
-                "suppress this warning, remove the overwrite "
-                "option from your FEEDS setting or set it to True."
-            )
 
     @classmethod
     def from_crawler(
@@ -276,10 +270,36 @@ class S3FeedStorage(BlockingFeedStorage):
             feed_options=feed_options,
         )
 
+    def _object_size(self) -> int:
+        from botocore.exceptions import ClientError  # noqa: PLC0415
+
+        try:
+            response = self.s3_client.head_object(
+                Bucket=self.bucketname, Key=self.keyname
+            )
+        except ClientError as exc:
+            error_code = str((exc.response.get("Error") or {}).get("Code") or "")
+            if error_code in {"404", "NoSuchKey", "NotFound"}:
+                return 0
+            http_status = (exc.response.get("ResponseMetadata") or {}).get(
+                "HTTPStatusCode"
+            )
+            if not error_code and http_status == 404:
+                return 0
+            raise
+        return int(response["ContentLength"])
+
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
         try:
-            if self.acl:
+            if not self.overwrite:
+                self.s3_client.put_object(
+                    Bucket=self.bucketname,
+                    Key=self.keyname,
+                    Body=file,
+                    WriteOffsetBytes=self._object_size(),
+                )
+            elif self.acl:
                 self.s3_client.upload_fileobj(
                     Bucket=self.bucketname,
                     Key=self.keyname,
