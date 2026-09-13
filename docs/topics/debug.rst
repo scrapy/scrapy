@@ -50,7 +50,7 @@ Parse Command
 =============
 
 The most basic way of checking the output of your spider is to use the
-:command:`parse` command. It allows to check the behaviour of different parts
+:command:`parse` command. It allows you to check the behaviour of different parts
 of the spider at the method level. It has the advantage of being flexible and
 simple to use, but does not allow debugging code inside a method.
 
