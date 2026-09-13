@@ -133,7 +133,7 @@ def curl_to_request_kwargs(
         result["headers"] = headers
     if cookies:
         result["cookies"] = cookies
-    if parsed_args.data:
+    if parsed_args.data is not None:
         result["body"] = parsed_args.data
         if not parsed_args.method:
             # if the "data" is specified but the "method" is not specified,

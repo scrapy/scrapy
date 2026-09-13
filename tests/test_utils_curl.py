@@ -218,6 +218,29 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    @pytest.mark.parametrize(
+        ("data_options", "method", "body"),
+        [
+            ("-d ''", "POST", ""),
+            ("-X GET -d ''", "GET", ""),
+            ("-d '' -d 'a=1'", "POST", "&a=1"),
+            ("-d 'a=1' -d ''", "POST", "a=1&"),
+            ("-d '' -d ''", "POST", "&"),
+        ],
+    )
+    def test_empty_data(self, data_options: str, method: str, body: str):
+        curl_command = f"curl 'https://www.example.org/' {data_options}"
+        expected_result = {
+            "method": method,
+            "url": "https://www.example.org/",
+            "body": body,
+        }
+        self._test_command(curl_command, expected_result)
+
+        request = Request.from_curl(curl_command)
+        assert request.method == method
+        assert request.body == body.encode()
+
     def test_explicit_get_with_data(self):
         curl_command = "curl httpbin.org/anything -X GET --data asdf"
         expected_result = {
