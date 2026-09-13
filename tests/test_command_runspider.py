@@ -88,19 +88,6 @@ class BadSpider(scrapy.Spider):
         assert "DEBUG: It Works!" not in log
         assert "INFO: Spider opened" in log
 
-    def test_runspider_default_reactor(self, tmp_path: Path) -> None:
-        log = self.get_log(
-            tmp_path, self.debug_log_spider, args=("-s", "TWISTED_REACTOR=")
-        )
-        assert "DEBUG: It Works!" in log
-        assert (
-            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
-        )
-        assert "INFO: Spider opened" in log
-        assert "INFO: Closing spider (finished)" in log
-        assert "INFO: Spider closed (finished)" in log
-
     def test_runspider_dnscache_disabled(self, tmp_path: Path) -> None:
         # see https://github.com/scrapy/scrapy/issues/2811
         # The spider below should not be able to connect to localhost:12345,

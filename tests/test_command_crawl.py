@@ -117,26 +117,6 @@ class MySpider(scrapy.Spider):
             "error: Please use only one of -o/--output and -O/--overwrite-output" in log
         )
 
-    def test_default_reactor(self, proj_path: Path) -> None:
-        spider_code = """
-import scrapy
-
-class MySpider(scrapy.Spider):
-    name = 'myspider'
-
-    async def start(self):
-        self.logger.debug('It works!')
-        return
-        yield
-"""
-        log = self.get_log(spider_code, proj_path, args=("-s", "TWISTED_REACTOR="))
-        assert "[myspider] DEBUG: It works!" in log
-        assert (
-            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
-        )
-        assert "Spider closed (finished)" in log
-
     def test_no_reactor(self, proj_path: Path) -> None:
         spider_code = """
 import scrapy

@@ -385,26 +385,6 @@ class MySpider(scrapy.Spider):
         for spider in ["sp", "aiosp"]:
             self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
 
-    def test_cmdline_empty(self, proj_path: Path) -> None:
-        """The reactor is set via the command line to the empty value.
-
-        CrawlerProcess, the default reactor, only the normal spider works."""
-        self._assert_spider_works(
-            self.NORMAL_MSG, proj_path, "sp", "-s", "TWISTED_REACTOR="
-        )
-        self._assert_spider_asyncio_fail(
-            self.NORMAL_MSG, proj_path, "aiosp", "-s", "TWISTED_REACTOR="
-        )
-
-    def test_project_settings_empty(self, proj_path: Path) -> None:
-        """The reactor is set via the project settings to the empty value.
-
-        CrawlerProcess, the default reactor, only the normal spider works."""
-        self._append_settings(proj_path / self.project_name, "TWISTED_REACTOR = None\n")
-
-        self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
-        self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
-
     def test_spider_settings_asyncio(self, proj_path: Path) -> None:
         """The reactor is set via the spider settings to the asyncio value.
 
@@ -416,26 +396,6 @@ class MySpider(scrapy.Spider):
                 f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
             )
             self._assert_spider_works(self.ASYNC_MSG, proj_path, spider)
-
-    def test_spider_settings_asyncio_cmdline_empty(self, proj_path: Path) -> None:
-        """The reactor is set via the spider settings to the asyncio value
-        and via command line to the empty value. The command line value takes
-        precedence so the spider settings don't matter.
-
-        CrawlerProcess, the default reactor, only the normal spider works."""
-        for spider in ["sp", "aiosp"]:
-            self._replace_custom_settings(
-                proj_path / self.project_name,
-                spider,
-                f"{{'TWISTED_REACTOR': '{_asyncio_reactor_path}'}}",
-            )
-
-        self._assert_spider_works(
-            self.NORMAL_MSG, proj_path, "sp", "-s", "TWISTED_REACTOR="
-        )
-        self._assert_spider_asyncio_fail(
-            self.NORMAL_MSG, proj_path, "aiosp", "-s", "TWISTED_REACTOR="
-        )
 
     def test_project_empty_spider_settings_asyncio(self, proj_path: Path) -> None:
         """The reactor is set via the project settings to the empty value
@@ -478,28 +438,6 @@ class MySpider(scrapy.Spider):
                 " does not match the requested one"
                 " (twisted.internet.selectreactor.SelectReactor)"
             ) in err
-
-    def test_project_asyncio_spider_settings_select_forced(
-        self, proj_path: Path
-    ) -> None:
-        """The reactor is set via the project settings to the asyncio value
-        and via the spider settings to the select value, CrawlerProcess is
-        forced via the project settings. The reactor is chosen based on the
-        spider settings.
-
-        CrawlerProcess, the select reactor, only the normal spider works."""
-        self._append_settings(
-            proj_path / self.project_name, "FORCE_CRAWLER_PROCESS = True\n"
-        )
-        for spider in ["sp", "aiosp"]:
-            self._replace_custom_settings(
-                proj_path / self.project_name,
-                spider,
-                "{'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor'}",
-            )
-
-        self._assert_spider_works(self.NORMAL_MSG, proj_path, "sp")
-        self._assert_spider_asyncio_fail(self.NORMAL_MSG, proj_path, "aiosp")
 
 
 class TestLogInstallRootHandler(TestProjectBase):

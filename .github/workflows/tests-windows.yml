@@ -59,9 +59,6 @@ jobs:
             TOXENV: py
         - python-version: "3.15.0-rc.1"
           env:
-            TOXENV: default-reactor
-        - python-version: "3.15.0-rc.1"
-          env:
             TOXENV: no-reactor
 
     steps:

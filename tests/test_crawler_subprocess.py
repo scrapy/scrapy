@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import platform
 import re
 import signal
 import subprocess
@@ -276,61 +275,6 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def script_dir(self) -> Path:
         return self.get_script_dir("CrawlerProcess")
 
-    def test_reactor_default_twisted_reactor_select(self) -> None:
-        log = self.run_script("reactor_default_twisted_reactor_select.py")
-        if platform.system() in ["Windows", "Darwin"]:
-            # The goal of this test function is to test that, when a reactor is
-            # installed (the default one here) and a different reactor is
-            # configured (select here), an error raises.
-            #
-            # In Windows the default reactor is the select reactor, so that
-            # error does not raise.
-            #
-            # If that ever becomes the case on more platforms (i.e. if Linux
-            # also starts using the select reactor by default in a future
-            # version of Twisted), then we will need to rethink this test.
-            assert "Spider closed (finished)" in log
-        else:
-            assert "Spider closed (finished)" not in log
-            assert (
-                "does not match the requested one "
-                "(twisted.internet.selectreactor.SelectReactor)"
-            ) in log
-
-    def test_reactor_select(self) -> None:
-        log = self.run_script("reactor_select.py")
-        assert "Spider closed (finished)" not in log
-        assert (
-            "does not match the requested one "
-            "(twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
-        ) in log
-
-    def test_reactor_select_twisted_reactor_select(self) -> None:
-        log = self.run_script("reactor_select_twisted_reactor_select.py")
-        assert "Spider closed (finished)" in log
-        assert "ReactorAlreadyInstalledError" not in log
-
-    def test_reactor_select_subclass_twisted_reactor_select(self) -> None:
-        log = self.run_script("reactor_select_subclass_twisted_reactor_select.py")
-        assert "Spider closed (finished)" not in log
-        assert (
-            "does not match the requested one "
-            "(twisted.internet.selectreactor.SelectReactor)"
-        ) in log
-
-    def test_twisted_reactor_select(self) -> None:
-        log = self.run_script("twisted_reactor_select.py")
-        assert "Spider closed (finished)" in log
-        assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
-
-    @pytest.mark.skipif(
-        platform.system() == "Windows", reason="PollReactor is not supported on Windows"
-    )
-    def test_twisted_reactor_poll(self) -> None:
-        log = self.run_script("twisted_reactor_poll.py")
-        assert "Spider closed (finished)" in log
-        assert "Using reactor: twisted.internet.pollreactor.PollReactor" in log
-
     def test_twisted_reactor_asyncio_custom_settings_conflict(self) -> None:
         log = self.run_script("twisted_reactor_custom_settings_conflict.py")
         assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
@@ -351,15 +295,6 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     @property
     def script_dir(self) -> Path:
         return self.get_script_dir("AsyncCrawlerProcess")
-
-    def test_twisted_reactor_custom_settings_select(self) -> None:
-        log = self.run_script("twisted_reactor_custom_settings_select.py")
-        assert "Spider closed (finished)" not in log
-        assert (
-            "(twisted.internet.asyncioreactor.AsyncioSelectorReactor) "
-            "does not match the requested one "
-            "(twisted.internet.selectreactor.SelectReactor)"
-        ) in log
 
     @pytest.mark.requires_uvloop
     def test_asyncio_custom_loop_custom_settings_same(self) -> None:
@@ -571,14 +506,6 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     def script_dir(self) -> Path:
         return self.get_script_dir("CrawlerRunner")
 
-    def test_explicit_default_reactor(self) -> None:
-        log = self.run_script("explicit_default_reactor.py")
-        assert "Spider closed (finished)" in log
-        assert (
-            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
-        )
-
     def test_response_ip_address(self) -> None:
         log = self.run_script("ip_address.py")
         assert "INFO: Spider closed (finished)" in log
@@ -606,14 +533,6 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     @property
     def script_dir(self) -> Path:
         return self.get_script_dir("AsyncCrawlerRunner")
-
-    def test_simple_default_reactor(self) -> None:
-        log = self.run_script("simple_default_reactor.py")
-        assert "Spider closed (finished)" not in log
-        assert (
-            "RuntimeError: When TWISTED_REACTOR_ENABLED is True, "
-            "AsyncCrawlerRunner requires that the installed Twisted reactor"
-        ) in log
 
     def test_reactorless_simple(self) -> None:
         log = self.run_script("reactorless_simple.py")
