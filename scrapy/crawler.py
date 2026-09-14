@@ -730,6 +730,14 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         self._active.discard(task)
         self.crawlers.discard(crawler)
         self.bootstrap_failed |= not getattr(crawler, "spider", None)
+        if task.cancelled():
+            return
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            self.bootstrap_failed = True
 
     def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
         # At this point the asyncio loop has been installed either by the user
