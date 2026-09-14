@@ -10,10 +10,11 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from unittest.mock import MagicMock
 
 import pytest
+from twisted.internet.defer import Deferred, succeed
 
 import scrapy
 from scrapy import Spider
-from scrapy.crawler import AsyncCrawlerProcess, Crawler, CrawlerProcess
+from scrapy.crawler import AsyncCrawlerProcess, Crawler, CrawlerProcess, CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
@@ -603,6 +604,215 @@ class TestCrawlerLogging:
         assert crawler.stats.get_value("log_count/WARNING") == 1
         assert info_count == 1
         assert crawler.stats.get_value("log_count/DEBUG", 0) == 0
+
+    @pytest.mark.only_asyncio
+    @pytest.mark.requires_reactor
+    @coroutine_test
+    async def test_log_counter_scope_isolated_between_crawlers(self) -> None:
+        barrier: Deferred[None] = Deferred()
+        counts: dict[str, int] = {}
+        opened = 0
+        root_level = logging.root.level
+
+        class BaseSpider(scrapy.Spider):
+            custom_settings = {
+                "LOG_LEVEL": "INFO",
+                "EXTENSIONS": {
+                    "scrapy.extensions.logstats.LogStats": None,
+                    "scrapy.extensions.remote_control.RemoteControl": None,
+                    "scrapy.extensions.telnet.TelnetConsole": None,
+                },
+            }
+            start_urls = ["data:,test"]
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                crawler.signals.connect(
+                    spider.spider_opened, signal=scrapy.signals.spider_opened
+                )
+                return spider
+
+            def spider_opened(self, spider) -> None:
+                nonlocal opened
+                opened += 1
+                if opened == 2 and not barrier.called:
+                    barrier.callback(None)
+
+            async def parse(self, response):
+                await maybe_deferred_to_future(barrier)
+                info_count_start = self.crawler.stats.get_value("log_count/INFO", 0)
+                logging.info("info message")  # noqa: LOG015
+                counts[self.name] = (
+                    self.crawler.stats.get_value("log_count/INFO") - info_count_start
+                )
+                return []
+
+        class Spider1(BaseSpider):
+            name = "spider1"
+
+        class Spider2(BaseSpider):
+            name = "spider2"
+
+        try:
+            logging.root.setLevel(logging.INFO)
+            runner = CrawlerRunner()
+            crawler1 = runner.create_crawler(Spider1)
+            crawler2 = runner.create_crawler(Spider2)
+            crawl1 = runner.crawl(crawler1)
+            crawl2 = runner.crawl(crawler2)
+            await maybe_deferred_to_future(crawl1)
+            await maybe_deferred_to_future(crawl2)
+        finally:
+            logging.root.setLevel(root_level)
+
+        assert counts == {"spider1": 1, "spider2": 1}
+
+    @pytest.mark.only_asyncio
+    @pytest.mark.requires_reactor
+    @coroutine_test
+    async def test_log_counter_scope_isolated_between_crawlers_in_start(self) -> None:
+        barrier: Deferred[None] = Deferred()
+        counts: dict[str, int] = {}
+        opened = 0
+        root_level = logging.root.level
+
+        class BaseSpider(scrapy.Spider):
+            custom_settings = {
+                "LOG_LEVEL": "INFO",
+                "EXTENSIONS": {
+                    "scrapy.extensions.logstats.LogStats": None,
+                    "scrapy.extensions.remote_control.RemoteControl": None,
+                    "scrapy.extensions.telnet.TelnetConsole": None,
+                },
+            }
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                crawler.signals.connect(
+                    spider.spider_opened, signal=scrapy.signals.spider_opened
+                )
+                return spider
+
+            def spider_opened(self, spider) -> None:
+                nonlocal opened
+                opened += 1
+                if opened == 2 and not barrier.called:
+                    barrier.callback(None)
+
+            async def start(self):
+                await maybe_deferred_to_future(barrier)
+                info_count_start = self.crawler.stats.get_value("log_count/INFO", 0)
+                logging.info("info message")  # noqa: LOG015
+                counts[self.name] = (
+                    self.crawler.stats.get_value("log_count/INFO") - info_count_start
+                )
+                return
+                yield
+
+        class Spider1(BaseSpider):
+            name = "spider1"
+
+        class Spider2(BaseSpider):
+            name = "spider2"
+
+        try:
+            logging.root.setLevel(logging.INFO)
+            runner = CrawlerRunner()
+            crawler1 = runner.create_crawler(Spider1)
+            crawler2 = runner.create_crawler(Spider2)
+            crawl1 = runner.crawl(crawler1)
+            crawl2 = runner.crawl(crawler2)
+            await maybe_deferred_to_future(crawl1)
+            await maybe_deferred_to_future(crawl2)
+        finally:
+            logging.root.setLevel(root_level)
+
+        assert counts == {"spider1": 1, "spider2": 1}
+
+    @pytest.mark.only_asyncio
+    @pytest.mark.requires_reactor
+    @coroutine_test
+    async def test_log_counter_scope_isolated_between_crawlers_in_item_processor(
+        self,
+    ) -> None:
+        barrier: Deferred[None] = Deferred()
+        counts: dict[str, int] = {}
+        opened = 0
+        root_level = logging.root.level
+
+        class LoggingItemProcessor:
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls()
+
+            async def open_spider_async(self) -> None:
+                return None
+
+            async def close_spider_async(self) -> None:
+                return None
+
+            def process_item(self, item, spider):
+                info_count_start = spider.crawler.stats.get_value("log_count/INFO", 0)
+                logging.info("info message")  # noqa: LOG015
+                counts[spider.name] = (
+                    spider.crawler.stats.get_value("log_count/INFO") - info_count_start
+                )
+                return succeed(item)
+
+        class BaseSpider(scrapy.Spider):
+            custom_settings = {
+                "LOG_LEVEL": "INFO",
+                "ITEM_PROCESSOR": LoggingItemProcessor,
+                "EXTENSIONS": {
+                    "scrapy.extensions.logstats.LogStats": None,
+                    "scrapy.extensions.remote_control.RemoteControl": None,
+                    "scrapy.extensions.telnet.TelnetConsole": None,
+                },
+            }
+            start_urls = ["data:,test"]
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                crawler.signals.connect(
+                    spider.spider_opened, signal=scrapy.signals.spider_opened
+                )
+                return spider
+
+            def spider_opened(self, spider) -> None:
+                nonlocal opened
+                opened += 1
+                if opened == 2 and not barrier.called:
+                    barrier.callback(None)
+
+            async def parse(self, response):
+                await maybe_deferred_to_future(barrier)
+                return [{"name": self.name}]
+
+        class Spider1(BaseSpider):
+            name = "spider1"
+
+        class Spider2(BaseSpider):
+            name = "spider2"
+
+        try:
+            logging.root.setLevel(logging.INFO)
+            runner = CrawlerRunner()
+            crawler1 = runner.create_crawler(Spider1)
+            crawler2 = runner.create_crawler(Spider2)
+            with pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"doesn't define a process_item_async\(\) method",
+            ):
+                crawl1, crawl2 = runner.crawl(crawler1), runner.crawl(crawler2)
+            await maybe_deferred_to_future(crawl1)
+            await maybe_deferred_to_future(crawl2)
+        finally:
+            logging.root.setLevel(root_level)
+
+        assert counts == {"spider1": 1, "spider2": 1}
 
     def test_spider_custom_settings_log_append(self, tmp_path: Path) -> None:
         log_file = Path(tmp_path, "log.txt")

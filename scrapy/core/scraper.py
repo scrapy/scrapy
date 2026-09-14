@@ -35,7 +35,12 @@ from scrapy.utils.defer import (
     parallel_async,
 )
 from scrapy.utils.deprecate import method_is_overridden
-from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
+from scrapy.utils.log import (
+    failure_to_exc_info,
+    log_crawler,
+    log_crawler_awaitable,
+    logformatter_adapter,
+)
 from scrapy.utils.misc import (
     build_from_crawler,
     load_object,
@@ -320,7 +325,8 @@ class Scraper:
             assert result.request
             callback = result.request.callback or self.crawler.spider._parse
             warn_on_generator_with_return_value(self.crawler.spider, callback)
-            output = callback(result, **result.request.cb_kwargs)
+            with log_crawler(self.crawler):
+                output = callback(result, **result.request.cb_kwargs)
             if isinstance(output, Deferred):
                 warnings.warn(
                     f"{callback} returned a Deferred."
@@ -334,7 +340,8 @@ class Scraper:
             if not request.errback:
                 result.raiseException()
             warn_on_generator_with_return_value(self.crawler.spider, request.errback)
-            output = request.errback(result)
+            with log_crawler(self.crawler):
+                output = request.errback(result)
             if isinstance(output, Failure):
                 output.raiseException()
             # else the errback returned actual output (like a callback),
@@ -346,7 +353,9 @@ class Scraper:
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
-        return await ensure_awaitable(iterate_spider_output(output))
+        return await log_crawler_awaitable(
+            self.crawler, ensure_awaitable(iterate_spider_output(output))
+        )
 
     def handle_spider_error(
         self,
@@ -508,10 +517,14 @@ class Scraper:
         self.slot.itemproc_size += 1
         try:
             if self._itemproc_has_async["process_item"]:
-                output = await self.itemproc.process_item_async(item)
+                output = await log_crawler_awaitable(
+                    self.crawler, self.itemproc.process_item_async(item)
+                )
             else:
-                output = await maybe_deferred_to_future(
-                    self.itemproc.process_item(item, self.crawler.spider)
+                with log_crawler(self.crawler):
+                    output = self.itemproc.process_item(item, self.crawler.spider)
+                output = await log_crawler_awaitable(
+                    self.crawler, maybe_deferred_to_future(output)
                 )
         except DropItem as ex:
             logkws = self.logformatter.dropped(item, ex, response, self.crawler.spider)
