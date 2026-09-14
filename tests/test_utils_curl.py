@@ -41,6 +41,40 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    def test_get_basic_auth_without_password(self):
+        # curl reads -u "user" (no colon) as an empty password, like -u "user:".
+        curl_command = 'curl "https://api.test.com/" -u "some_username"'
+        expected_result = {
+            "method": "GET",
+            "url": "https://api.test.com/",
+            "headers": [("Authorization", basic_auth_header("some_username", ""))],
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_header_empty_value_syntax(self):
+        # curl's "name;" syntax puts an empty-valued header on the wire.
+        curl_command = 'curl "http://example.org/" -H "X-Custom-Header;"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Custom-Header", "")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize(
+        "header",
+        [
+            "X-Flag",
+            "X-Flag;extra",
+            ";",
+        ],
+    )
+    def test_header_dropped_like_curl(self, header):
+        # curl drops each of these, so from_curl() skips them rather than raising.
+        curl_command = f'curl "http://example.org/" -H "{header}"'
+        expected_result = {"method": "GET", "url": "http://example.org/"}
+        self._test_command(curl_command, expected_result)
+
     def test_get_cookie_option(self):
         curl_command = 'curl "http://example.org/" -b "a=1; b=2"'
         expected_result = {
@@ -285,3 +319,9 @@ class TestCurlToRequestKwargs:
     def test_must_start_with_curl_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("carl -X POST http://example.org")
+
+    @pytest.mark.parametrize("curl_command", ["", "   "])
+    def test_empty_command_error(self, curl_command):
+        # an empty command must reach the "must start with curl" message, not IndexError.
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs(curl_command)
