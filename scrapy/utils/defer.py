@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import sys
 import warnings
 from asyncio import Future
 from collections import deque
@@ -95,6 +96,30 @@ async def _process_pending_io() -> None:
     """
     await sleep(0)
     await sleep(0)
+
+
+async def _process_pending_io_before_callback() -> None:
+    """Same as :func:`_process_pending_io`, for use right before a spider
+    callback, where a real delay is needed on Windows.
+
+    Console control events, which is what Ctrl-C and Ctrl-Break send, are
+    delivered on a separate thread there, and their Python-level handler only
+    runs once the main thread reaches a bytecode boundary, which it cannot do
+    while parked in the blocking wait of the reactor or the event loop, as
+    nothing interrupts that wait. So a signal sent during a slow callback is
+    only handled at the next wake-up, e.g. the engine heartbeat 5 seconds
+    later, which is late enough to miss a shutdown entirely. Yielding for a
+    moment keeps a timed call pending, which bounds that wait, and by the time
+    it elapses a shutdown is under way and keeps the loop busy on its own.
+
+    A signal wake-up socket on Windows would remove the need for this:
+    https://github.com/python/cpython/issues/67246
+    https://github.com/python/cpython/issues/86849
+    """
+    if sys.platform == "win32":
+        await sleep(_DEFER_DELAY)
+        return
+    await _process_pending_io()
 
 
 def defer_result(result: Any) -> Deferred[Any]:  # pragma: no cover

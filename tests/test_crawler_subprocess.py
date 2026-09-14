@@ -257,10 +257,15 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
-        # sending the second signal too fast often causes problems
-        await sleep(0.01)
+        # Sending a new signal too fast often causes problems, e.g. on
+        # Windows, where signal delivery is slower and more variable than on
+        # POSIX.
+        await sleep(0.1)
         p.kill(sig)
-        p.expect_exact("forcing unclean shutdown")
+        p.expect_exact("dropping downloader requests")
+        await sleep(0.1)
+        p.kill(sig)
+        p.expect_exact("forcing unclean shutdown", timeout=20)
         stop_spawn(p)
 
     @coroutine_test
@@ -269,6 +274,26 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
 
     def test_shutdown_graceful_no_stop(self) -> None:
         self._test_shutdown_graceful("sleeping.py", "--no-stop")
+
+    async def _test_shutdown_fast(
+        self, script: str = "sleeping.py", *extra_args: str
+    ) -> None:
+        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK  # type: ignore[attr-defined]
+        args = self.get_script_args(script, "3", *extra_args)
+        p = PopenSpawn(args, timeout=SCRIPT_TIMEOUT, env=get_script_run_env())
+        p.expect_exact("Spider opened")
+        p.expect_exact("Crawled (200)")
+        p.kill(sig)
+        p.expect_exact("shutting down gracefully")
+        await sleep(0.1)
+        p.kill(sig)
+        p.expect_exact("dropping downloader requests")
+        p.expect_exact("Spider closed (shutdown)")
+        stop_spawn(p)
+
+    @coroutine_test
+    async def test_shutdown_fast_no_stop(self) -> None:
+        await self._test_shutdown_fast("sleeping.py", "--no-stop")
 
 
 class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
@@ -481,6 +506,9 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
 
     def test_reactorless_shutdown_graceful(self) -> None:
         self._test_shutdown_graceful("reactorless_sleeping.py")
+
+    def test_shutdown_graceful_stop_after_crawl_false(self) -> None:
+        self._test_shutdown_graceful("reactorless_sleeping_no_stop_after_crawl.py")
 
     @coroutine_test
     async def test_reactorless_shutdown_forced(self) -> None:
