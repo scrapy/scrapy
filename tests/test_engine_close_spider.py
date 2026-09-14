@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -175,6 +175,30 @@ async def test_fast_close_stops_downloader_and_records_dropped_requests(
     assert calls == 1
     assert crawler.stats
     assert crawler.stats.get_value("downloader/request_dropped_count") == 3
+
+
+@coroutine_test
+async def test_fast_close_tolerates_downloader_without_stop(
+    crawler: Crawler, caplog: pytest.LogCaptureFixture
+) -> None:
+    engine = ExecutionEngine(crawler, lambda _: None)
+    crawler.engine = engine
+    await engine.open_spider_async()
+
+    downloader = engine.downloader
+
+    class NoStopDownloader:
+        def __getattr__(self, name: str) -> Any:
+            if name == "stop":
+                raise AttributeError(name)
+            return getattr(downloader, name)
+
+    engine.downloader = NoStopDownloader()  # type: ignore[assignment]
+    await engine.close_spider_async(mode="fast")
+
+    assert "does not implement stop()" in caplog.text
+    assert crawler.stats
+    assert crawler.stats.get_value("downloader/request_dropped_count") is None
 
 
 @coroutine_test

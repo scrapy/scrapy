@@ -661,6 +661,14 @@ class ExecutionEngine:
             return
 
         self._downloader_fast_stopped = True
+        if not hasattr(self.downloader, "stop"):
+            logger.warning(
+                f"{type(self.downloader).__qualname__} does not implement "
+                f"stop(), so pending downloads cannot be dropped and will be "
+                f"finished before the spider closes",
+                extra={"spider": self.spider},
+            )
+            return
         dropped_count = await self.downloader.stop()
 
         assert self.crawler.stats
