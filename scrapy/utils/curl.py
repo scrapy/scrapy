@@ -5,7 +5,6 @@ import warnings
 from http.cookies import SimpleCookie
 from shlex import split
 from typing import TYPE_CHECKING, Any, NoReturn
-from urllib.parse import urlparse
 
 from w3lib.http import basic_auth_header
 
@@ -118,9 +117,9 @@ def curl_to_request_kwargs(
     url = parsed_args.url
 
     # curl automatically prepends 'http' if the scheme is missing, but Request
-    # needs the scheme to work
-    parsed_url = urlparse(url)
-    if not parsed_url.scheme:
+    # needs the scheme to work. Detect the scheme the same way Request does:
+    # urlparse() reads the host of "example.com:8080/path" as its scheme.
+    if "://" not in url and not url.startswith(("about:", "data:")):
         url = "http://" + url
 
     method = parsed_args.method or "GET"

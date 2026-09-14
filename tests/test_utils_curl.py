@@ -30,6 +30,13 @@ class TestCurlToRequestKwargs:
         expected_result = {"method": "GET", "url": "http://www.example.org"}
         self._test_command(curl_command, expected_result)
 
+    def test_get_without_scheme_with_port(self):
+        # urlparse() parses "localhost" as the scheme of "localhost:8000", so a
+        # missing scheme cannot be detected from the parsed scheme alone.
+        curl_command = "curl localhost:8000/api"
+        expected_result = {"method": "GET", "url": "http://localhost:8000/api"}
+        self._test_command(curl_command, expected_result)
+
     def test_get_basic_auth(self):
         curl_command = 'curl "https://api.test.com/" -u "some_username:some_password"'
         expected_result = {
