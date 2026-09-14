@@ -159,10 +159,10 @@ class TestJitterSetting:
         assert jitter == pytest.approx(0.2)
 
 
-class TestDownloaderStopAsync:
+class TestDownloaderStop:
     @coroutine_test
     async def test_waits_for_cancelled_downloads_to_settle(self) -> None:
-        """stop_async() cancels in-flight downloads before returning.
+        """stop() cancels in-flight downloads before returning.
 
         The engine relies on their cleanup (removal from ``_download_tasks``)
         having already happened by the time it returns, or it may consider the
@@ -177,7 +177,7 @@ class TestDownloaderStopAsync:
             download_dfd.addBoth(downloader._download_task_done, request)
             downloader._download_tasks[request] = download_dfd
 
-        await downloader.stop_async()
+        await downloader.stop()
 
         assert not downloader._download_tasks
 
@@ -604,7 +604,7 @@ async def test_fetch_deprecated_spider_arg():
 
 
 @coroutine_test
-async def test_stop_async_drops_queued_requests() -> None:
+async def test_stop_drops_queued_requests() -> None:
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
@@ -617,19 +617,19 @@ async def test_stop_async_drops_queued_requests() -> None:
     queue_dfd.addErrback(failures.append)
     slot.queue.append((request, queue_dfd))
 
-    dropped = await downloader.stop_async()
+    dropped = await downloader.stop()
     assert dropped == 1
     assert len(failures) == 1
     assert failures[0].check(DownloadCancelledError)
 
 
 @coroutine_test
-async def test_stop_async_rejects_new_requests() -> None:
+async def test_stop_rejects_new_requests() -> None:
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
 
-    await downloader.stop_async()
+    await downloader.stop()
 
     with pytest.raises(
         DownloadCancelledError,
@@ -679,7 +679,7 @@ async def test_wait_for_download_keeps_called_queue_deferred_on_error() -> None:
 
 
 @coroutine_test
-async def test_stop_async_skips_called_queued_deferred() -> None:
+async def test_stop_skips_called_queued_deferred() -> None:
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
@@ -690,12 +690,12 @@ async def test_stop_async_skips_called_queued_deferred() -> None:
     queue_dfd.callback(None)
     slot.queue.append((Request("https://example.com"), queue_dfd))
 
-    dropped = await downloader.stop_async()
+    dropped = await downloader.stop()
     assert dropped == 1
 
 
 @coroutine_test
-async def test_stop_async_cancels_pending_download_tasks() -> None:
+async def test_stop_cancels_pending_download_tasks() -> None:
     crawler = get_crawler(DefaultSpider)
     downloader = Downloader(crawler)
 
@@ -709,7 +709,7 @@ async def test_stop_async_cancels_pending_download_tasks() -> None:
     downloader._download_tasks[Request("https://done.example")] = done_dfd
     downloader._download_tasks[Request("https://pending.example")] = pending_dfd
 
-    dropped = await downloader.stop_async()
+    dropped = await downloader.stop()
 
     assert dropped == 1
     assert len(failures) == 1

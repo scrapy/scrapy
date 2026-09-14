@@ -661,7 +661,7 @@ class ExecutionEngine:
             return
 
         self._downloader_fast_stopped = True
-        dropped_count = await self.downloader.stop_async()
+        dropped_count = await self.downloader.stop()
 
         assert self.crawler.stats
         if dropped_count:

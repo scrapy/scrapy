@@ -366,7 +366,7 @@ class Downloader:
         else:
             queue_dfd.callback(response)  # awaited in _enqueue_request()
 
-    async def stop_async(self) -> int:
+    async def stop(self) -> int:
         self._accepting_requests = False
 
         dropped_count = 0

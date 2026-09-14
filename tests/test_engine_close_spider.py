@@ -169,7 +169,7 @@ async def test_fast_close_stops_downloader_and_records_dropped_requests(
         calls += 1
         return 3
 
-    with patch.object(engine.downloader, "stop_async", fast_stop_downloader):
+    with patch.object(engine.downloader, "stop", fast_stop_downloader):
         await engine.close_spider_async(mode="fast")
 
     assert calls == 1
@@ -190,7 +190,7 @@ async def test_fast_stop_downloader_is_idempotent(crawler: Crawler) -> None:
         calls += 1
         return 1
 
-    with patch.object(engine.downloader, "stop_async", fast_stop_downloader):
+    with patch.object(engine.downloader, "stop", fast_stop_downloader):
         await engine._fast_stop_downloader()
         await engine._fast_stop_downloader()
 
