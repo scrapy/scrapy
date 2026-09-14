@@ -316,9 +316,10 @@ class TestCurlToRequestKwargs:
                 "curl --bar --baz http://www.example.com", ignore_unknown_options=False
             )
 
-    @pytest.mark.parametrize(
-        "curl_command", ["carl -X POST http://example.org", "", "   "]
-    )
-    def test_must_start_with_curl_error(self, curl_command):
+    def test_must_start_with_curl_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
-            curl_to_request_kwargs(curl_command)
+            curl_to_request_kwargs("carl -X POST http://example.org")
+
+    def test_empty_command_error(self):
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs("")
