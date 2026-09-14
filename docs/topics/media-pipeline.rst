@@ -567,7 +567,6 @@ Extending the Media Pipelines
 =============================
 
 .. module:: scrapy.pipelines.files
-   :synopsis: Files Pipeline
 
 See here the methods that you can override in your custom Files Pipeline:
 
@@ -716,7 +715,6 @@ See here the methods that you can override in your custom Files Pipeline:
 
 
 .. module:: scrapy.pipelines.images
-   :synopsis: Images Pipeline
 
 See here the methods that you can override in your custom Images Pipeline:
 

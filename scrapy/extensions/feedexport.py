@@ -506,7 +506,7 @@ class FeedExporter:
             uri = str(uri.absolute()) if isinstance(uri, Path) else str(uri)
             feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
-                feed_options, self.settings
+                feed_options, self.settings, uri
             )
             self.filters[uri] = self._load_filter(feed_options)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
@@ -520,7 +520,7 @@ class FeedExporter:
                 else str(settings_uri)
             )
             self.feeds[uri] = feed_complete_default_values_from_settings(
-                feed_options, self.settings
+                feed_options, self.settings, uri
             )
             self.filters[uri] = self._load_filter(feed_options)
 
@@ -712,7 +712,13 @@ class FeedExporter:
     def _exporter_supported(self, format_: str) -> bool:
         if format_ in self.exporters:
             return True
-        logger.error("Unknown feed format: %(format)s", {"format": format_})
+        if format_:
+            logger.error("Unknown feed format: %(format)s", {"format": format_})
+        else:
+            logger.error(
+                "Feed format not set and it could not be inferred from the "
+                "feed URI; set it explicitly with the 'format' key"
+            )
         return False
 
     def _settings_are_valid(self) -> bool:

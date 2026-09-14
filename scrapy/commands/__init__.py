@@ -276,13 +276,15 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         Underline and title case command line help message headers.
         """
         if part_strings and part_strings[0].startswith("usage: "):
-            part_strings[0] = "Usage\n=====\n  " + part_strings[0][len("usage: ") :]
+            part_strings[0] = "Usage\n=====\n  " + part_strings[0].removeprefix(
+                "usage: "
+            )
         headings = [
             i for i in range(len(part_strings)) if part_strings[i].endswith(":\n")
         ]
         for index in reversed(headings):
             char = "-" if "Global Options" in part_strings[index] else "="
-            part_strings[index] = part_strings[index][:-2].title()
+            part_strings[index] = part_strings[index].removesuffix(":\n").title()
             underline = "".join(["\n", (char * len(part_strings[index])), "\n"])
             part_strings.insert(index + 1, underline)
         return part_strings

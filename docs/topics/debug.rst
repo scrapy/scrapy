@@ -126,6 +126,14 @@ Fortunately, the :command:`shell` is your bread and butter in this case (see
 See also: :ref:`topics-shell-inspect-response`.
 
 
+Scrapy MCP server
+=================
+
+You can use the :ref:`Scrapy MCP server <using-mcp-server>` to connect a coding
+agent to a running crawl, so that it can check the progress of the crawl and
+investigate or even modify its runtime state.
+
+
 Open in browser
 ===============
 
@@ -214,7 +222,7 @@ Scrapy writes the session keys of its HTTPS connections to the file that the
 ``SSLKEYLOGFILE`` environment variable points to, using the `NSS key log
 format`_ that traffic analysis tools such as Wireshark understand.
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 .. code-block:: shell
 
