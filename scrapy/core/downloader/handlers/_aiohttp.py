@@ -18,7 +18,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers
-from scrapy.utils.ssl import _log_sslobj_debug_info, _make_ssl_context
+from scrapy.utils._ssl import _log_sslobj_debug_info, _make_ssl_context
 
 from ._base_streaming import BaseStreamingDownloadHandler, _BaseResponseArgs
 

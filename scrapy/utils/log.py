@@ -16,8 +16,8 @@ from twisted.python.failure import Failure
 import scrapy
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
+from scrapy.utils._versions import get_versions
 from scrapy.utils.display import _tty_supports_color
-from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
     from types import TracebackType

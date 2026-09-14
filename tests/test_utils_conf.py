@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
+    _job_dir,
     arglist_to_dict,
     build_component_list,
     closest_scrapy_cfg,
@@ -14,6 +15,9 @@ from scrapy.utils.conf import (
     feed_process_params_from_cli,
     get_sources,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestBuildComponentList:
@@ -197,3 +201,18 @@ class TestFeedExportConfig:
             feed, Settings(), "stdout:"
         )
         assert new_feed["format"] == ""
+
+
+def test_no_jobdir() -> None:
+    assert _job_dir(Settings()) is None
+    assert _job_dir(Settings({"JOBDIR": ""})) is None
+
+
+def test_existing_jobdir(tmp_path: Path) -> None:
+    assert _job_dir(Settings({"JOBDIR": str(tmp_path)})) == str(tmp_path)
+
+
+def test_missing_jobdir(tmp_path: Path) -> None:
+    jobdir = tmp_path / "missing" / "jobdir"
+    assert _job_dir(Settings({"JOBDIR": str(jobdir)})) == str(jobdir)
+    assert jobdir.is_dir()

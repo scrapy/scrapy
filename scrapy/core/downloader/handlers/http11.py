@@ -57,11 +57,11 @@ from scrapy.utils._download_handlers import (
     normalize_bind_address,
     wrap_twisted_exceptions,
 )
+from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.ssl import _log_ssl_conn_debug_info
 from scrapy.utils.url import add_http_if_no_scheme
 
 from ._base_http import BaseHttpDownloadHandler
