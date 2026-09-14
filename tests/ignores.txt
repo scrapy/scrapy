@@ -10,4 +10,5 @@ scrapy/utils/gz.py
 scrapy/utils/job.py
 scrapy/utils/ossignal.py
 scrapy/utils/ssl.py
+scrapy/utils/template.py
 scrapy/utils/versions.py
