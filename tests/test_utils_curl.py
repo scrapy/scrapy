@@ -285,3 +285,43 @@ class TestCurlToRequestKwargs:
     def test_must_start_with_curl_error(self):
         with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("carl -X POST http://example.org")
+
+    def test_empty_command_error(self):
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs("")
+
+    def test_header_empty_value_semicolon(self):
+        # curl's documented syntax for a header with no value.
+        curl_command = 'curl "http://example.org/" -H "X-Flag;"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "headers": [("X-Flag", "")],
+        }
+        self._test_command(curl_command, expected_result)
+
+    @pytest.mark.parametrize(
+        "header",
+        [
+            "X-Flag",  # no colon, no trailing semicolon
+            "X-Flag;extra",  # semicolon isn't the final character
+            "X-Flag ; ",  # trailing content after the semicolon
+            ";",  # empty name
+        ],
+    )
+    def test_header_dropped_without_colon_or_trailing_semicolon(self, header):
+        # curl silently drops headers it can't make sense of; Scrapy matches.
+        curl_command = f'curl "http://example.org/" -H "{header}"'
+        expected_result = {"method": "GET", "url": "http://example.org/"}
+        self._test_command(curl_command, expected_result)
+
+    def test_get_basic_auth_without_password(self):
+        # curl prompts for a password; Scrapy has no prompt and uses an
+        # empty one, same as "-u user:".
+        curl_command = 'curl "https://api.test.com/" -u "some_username"'
+        expected_result = {
+            "method": "GET",
+            "url": "https://api.test.com/",
+            "headers": [("Authorization", basic_auth_header("some_username", ""))],
+        }
+        self._test_command(curl_command, expected_result)
