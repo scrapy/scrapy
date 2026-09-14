@@ -8,5 +8,6 @@ scrapy/utils/display.py
 scrapy/utils/ftp.py
 scrapy/utils/gz.py
 scrapy/utils/job.py
+scrapy/utils/ossignal.py
 scrapy/utils/ssl.py
 scrapy/utils/versions.py
