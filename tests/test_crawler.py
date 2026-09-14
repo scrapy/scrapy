@@ -992,7 +992,7 @@ async def test_crawler_stop_async_reraises_other_runtime_errors() -> None:
 @pytest.mark.requires_reactor
 @coroutine_test
 async def test_crawler_process_force_stop_via_public_crawler_api() -> None:
-    crawler_process = CrawlerProcess(install_root_handler=False)
+    crawler_process = CrawlerProcess({"LOG_INSTALL_ROOT_HANDLER": False})
     called = False
 
     def stop_reactor(_: Any = None) -> None:
@@ -1014,8 +1014,7 @@ async def test_async_crawler_process_force_stop_reactor_enabled_via_public_crawl
     None
 ):
     crawler_process = AsyncCrawlerProcess(
-        {"TWISTED_REACTOR_ENABLED": True},
-        install_root_handler=False,
+        {"TWISTED_REACTOR_ENABLED": True, "LOG_INSTALL_ROOT_HANDLER": False},
     )
     called = False
 
@@ -1040,8 +1039,7 @@ async def test_async_crawler_process_force_stop_reactorless_without_main_task(
         pytest.skip("This test is only for --reactor=none")
 
     crawler_process = AsyncCrawlerProcess(
-        {"TWISTED_REACTOR_ENABLED": False},
-        install_root_handler=False,
+        {"TWISTED_REACTOR_ENABLED": False, "LOG_INSTALL_ROOT_HANDLER": False},
     )
     assert crawler_process._reactorless_loop is not None
     assert crawler_process._reactorless_main_task is None
@@ -1059,8 +1057,7 @@ async def test_async_crawler_process_force_stop_reactorless_without_loop(
         pytest.skip("This test is only for --reactor=none")
 
     crawler_process = AsyncCrawlerProcess(
-        {"TWISTED_REACTOR_ENABLED": False},
-        install_root_handler=False,
+        {"TWISTED_REACTOR_ENABLED": False, "LOG_INSTALL_ROOT_HANDLER": False},
     )
     crawler_process._reactorless_loop = None
     crawler_process._reactorless_main_task = None
@@ -1078,8 +1075,7 @@ async def test_async_crawler_process_force_stop_reactorless_with_task(
         pytest.skip("This test is only for --reactor=none")
 
     crawler_process = AsyncCrawlerProcess(
-        {"TWISTED_REACTOR_ENABLED": False},
-        install_root_handler=False,
+        {"TWISTED_REACTOR_ENABLED": False, "LOG_INSTALL_ROOT_HANDLER": False},
     )
 
     class DummyLoop:
