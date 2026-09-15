@@ -712,20 +712,7 @@ class TestCrawlSpider:
     @pytest.mark.filterwarnings(
         r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
     )
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "/echo?body=test",
-            pytest.param(
-                "/status?n=200",
-                marks=pytest.mark.xfail(
-                    'config.getoption("--reactor") != "none"',
-                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no certificate",
-                    strict=True,
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("url", ["/echo?body=test", "/status?n=200"])
     @coroutine_test
     async def test_response_ssl_certificate(
         self, mockserver: MockServer, url: str
@@ -744,20 +731,7 @@ class TestCrawlSpider:
             assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
             assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "/echo?body=test",
-            pytest.param(
-                "/status?n=200",
-                marks=pytest.mark.xfail(
-                    'config.getoption("--reactor") != "none"',
-                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no ip_address",
-                    strict=True,
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("url", ["/echo?body=test", "/status?n=200"])
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer, url: str) -> None:
         crawler = get_crawler(SingleRequestSpider)

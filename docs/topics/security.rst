@@ -231,7 +231,8 @@ Remote control server
 Scrapy enables the remote control HTTP server
 (:class:`scrapy.extensions.remote_control.RemoteControl`) by default
 (:setting:`REMOTE_CONTROL_ENABLED`). Its purpose is to run arbitrary code
-inside the Scrapy process, so anyone who can connect to it can do that.
+inside the Scrapy process, so anyone who can connect to it can do that, e.g.
+via the :ref:`Scrapy MCP server <using-mcp-server>`.
 
 The server listens on a random localhost port and requires a token for
 authentication. This token is stored in a job file (see

@@ -191,6 +191,4 @@ header)::
 CookiesMiddleware
 =================
 
-.. module:: scrapy.downloadermiddlewares.cookies
-
-.. autoclass:: CookiesMiddleware
+.. autoclass:: scrapy.downloadermiddlewares.cookies.CookiesMiddleware

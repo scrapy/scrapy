@@ -363,7 +363,7 @@ class MutableAsyncChain(AsyncIterator[_T]):
         return self
 
     async def __anext__(self) -> _T:
-        return await self.data.__anext__()
+        return await anext(self.data)
 
 
 def _looks_like_import_path(value: str) -> bool:

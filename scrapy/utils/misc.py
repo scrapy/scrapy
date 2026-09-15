@@ -100,13 +100,13 @@ def walk_modules_iter(path: str) -> Iterable[ModuleType]:
     exception is thrown back.
 
     For example:
-    >>> list(walk_modules_iter('scrapy.utils'))
-    [<module 'scrapy.utils' from '...'>, ...]
-    >>> gen = walk_modules_iter('scrapy.utils.nonexistent') # error not raised until the generator is consumed
+    >>> list(walk_modules_iter('scrapy.commands'))
+    [<module 'scrapy.commands' from '...'>, ...]
+    >>> gen = walk_modules_iter('scrapy.commands.nonexistent') # error not raised until the generator is consumed
     >>> list(gen)
     Traceback (most recent call last):
         ...
-    ModuleNotFoundError: No module named 'scrapy.utils.nonexistent'...
+    ModuleNotFoundError: No module named 'scrapy.commands.nonexistent'...
     """
 
     mod = import_module(path)
