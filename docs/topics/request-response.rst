@@ -5,7 +5,6 @@ Requests and Responses
 ======================
 
 .. module:: scrapy.http
-   :synopsis: Request and Response classes
 
 Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling
 websites.
@@ -831,6 +830,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
 * :reqmeta:`depth`
 * :reqmeta:`dont_cache`
@@ -908,8 +908,9 @@ Set the :reqmeta:`bindaddress` request meta key to override it for a
 specific request.
 
 This meta key is not supported by
-:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
-:setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
+:class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
+the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
 
 .. reqmeta:: download_timeout
 

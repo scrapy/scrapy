@@ -1040,7 +1040,6 @@ Built-in Selectors reference
 ============================
 
 .. module:: scrapy.selector
-   :synopsis: Selector class
 
 Selector objects
 ----------------
