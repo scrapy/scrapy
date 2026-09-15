@@ -56,11 +56,4 @@ class Command(BaseRunSpiderCommand):
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
             raise UsageError(f"No spider found in file: {filename}\n")
-        spidercls = spclasses.pop()
-
-        assert self.crawler_process
-        self.crawler_process.crawl(self._create_crawler(spidercls), **opts.spargs)
-        self.crawler_process.start()
-
-        if self.crawler_process.bootstrap_failed:
-            self.exitcode = 1
+        self._run_crawler(spclasses.pop(), opts)
