@@ -7,9 +7,10 @@ See documentation in docs/topics/spiders.rst
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any
 
-from scrapy.exceptions import NotSupported
+from scrapy.exceptions import NotSupported, ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.spiders import Spider, ignore_spider
@@ -63,7 +64,13 @@ class XMLFeedSpider(Spider):
 
         This method must be overridden with your custom spider functionality.
         """
-        if hasattr(self, "parse_item"):  # backward compatibility
+        if hasattr(self, "parse_item"):
+            warnings.warn(
+                "Defining parse_item() on XMLFeedSpider subclasses is deprecated,"
+                " define parse_node() instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             return self.parse_item(response, selector)
         raise NotImplementedError
 
