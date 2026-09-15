@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from scrapy.utils.ossignal import install_shutdown_handlers
+from scrapy.utils._ossignals import install_shutdown_handlers
 
 if TYPE_CHECKING:
     from collections.abc import Generator

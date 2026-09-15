@@ -874,3 +874,8 @@ class TestCookiesMiddleware:
             cookies2=False,
             cookies3=True,
         )
+
+    def test_hostless_url(self):
+        request = Request("data:,", cookies={"a": "b"})
+        assert self.mw.process_request(request) is None
+        assert "Cookie" not in request.headers

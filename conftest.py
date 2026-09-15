@@ -87,22 +87,32 @@ def mockserver() -> Generator[MockServer]:
         yield mockserver
 
 
+@pytest.fixture(scope="session")
+def _mitm_proxies() -> Generator[dict[str, tuple[MitmProxy, str]]]:
+    proxies: dict[str, tuple[MitmProxy, str]] = {}
+    try:
+        yield proxies
+    finally:
+        for proxy, _url in proxies.values():
+            proxy.stop()
+
+
 @pytest.fixture  # function scope because it modifies os.environ
 def proxy_server(
-    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
-) -> Generator[str]:
-    kind = request.param
-    proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
-    url = proxy.start()
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+    _mitm_proxies: dict[str, tuple[MitmProxy, str]],
+) -> str:
+    kind: str = request.param
+    if kind not in _mitm_proxies:
+        proxy = MitmProxy(mode="socks5" if kind == "socks5" else None)
+        _mitm_proxies[kind] = (proxy, proxy.start())
+    _, url = _mitm_proxies[kind]
     if kind == "https":
         url = url.replace("http://", "https://")
     monkeypatch.setenv("http_proxy", url)
     monkeypatch.setenv("https_proxy", url)
-
-    try:
-        yield kind
-    finally:
-        proxy.stop()
+    return kind
 
 
 @pytest.fixture(scope="session")
@@ -120,7 +130,56 @@ def pytest_configure(config):
         install_reactor_import_hook()
 
 
+# Test modules made up mostly of tests that spawn a subprocess per test (see
+# tests/utils/cmdline.py). Collected in file order, they form one contiguous
+# block. pytest-xdist's initial scheduling (LoadScheduling.schedule() in
+# xdist/scheduler/load.py) hands each worker one contiguous slice of the
+# collection, so whichever worker's slice overlaps the block ends up running
+# most of it while workers with lighter slices drain them and sit idle for
+# the rest of the run. Spreading these tests evenly through the whole
+# collection instead means every slice gets a proportional share.
+_SUBPROCESS_HEAVY_SUFFIXES = (
+    "tests/test_cmdline/__init__.py",
+    "tests/test_cmdline_crawl_with_pipeline/__init__.py",
+    "tests/test_command_check.py",
+    "tests/test_command_crawl.py",
+    "tests/test_command_fetch.py",
+    "tests/test_command_genspider.py",
+    "tests/test_command_parse.py",
+    "tests/test_command_runspider.py",
+    "tests/test_command_shell.py",
+    "tests/test_command_startproject.py",
+    "tests/test_command_version.py",
+    "tests/test_commands.py",
+    "tests/test_crawler_subprocess.py",
+)
+
+
+def _is_subprocess_heavy(item):
+    return item.path.as_posix().endswith(_SUBPROCESS_HEAVY_SUFFIXES)
+
+
+def _interleave_evenly(items, is_heavy):
+    """Merge *light* and *heavy* items so heavy ones land at roughly even
+    intervals throughout the result, instead of clustered together."""
+    light = [item for item in items if not is_heavy(item)]
+    heavy = [item for item in items if is_heavy(item)]
+    result = []
+    light_i = heavy_i = 0
+    while light_i < len(light) or heavy_i < len(heavy):
+        heavy_progress = heavy_i / len(heavy) if heavy else 1.0
+        light_progress = light_i / len(light) if light else 1.0
+        if heavy_i < len(heavy) and heavy_progress <= light_progress:
+            result.append(heavy[heavy_i])
+            heavy_i += 1
+        else:
+            result.append(light[light_i])
+            light_i += 1
+    return result
+
+
 def pytest_collection_modifyitems(items):
+    items[:] = _interleave_evenly(items, _is_subprocess_heavy)
     for item in items:
         if item.get_closest_marker("requires_internet"):
             # Requests to real websites fail every now and then in CI for

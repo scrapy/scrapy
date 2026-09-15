@@ -1,4 +1,4 @@
-.. currentmodule:: scrapy.extensions.telnet
+.. module:: scrapy.extensions.telnet
 
 .. _topics-telnetconsole:
 
@@ -29,7 +29,7 @@ disable it if you want. For more information about the extension itself see
 .. note::
     This feature is not supported when :setting:`TWISTED_REACTOR_ENABLED` is ``False``.
 
-.. seealso:: :ref:`security-telnet`
+.. seealso:: :ref:`security-telnet`, :ref:`using-mcp-server`
 
 .. highlight:: none
 
@@ -121,8 +121,8 @@ engine status::
     engine.spider_is_idle()                         : False
     engine._slot.closing                            : False
     len(engine._slot.inprogress)                    : 16
-    len(engine._slot.scheduler.dqs or [])           : 0
-    len(engine._slot.scheduler.mqs)                 : 92
+    len(engine.scheduler.dqs or [])                 : 0
+    len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.queue)                  : 0
     len(engine.scraper.slot.active)                 : 0
     engine.scraper.slot.active_size                 : 0

@@ -14,10 +14,10 @@ from scrapy.utils._compression import (
     _inflate,
     _unbrotli,
     _unzstd,
+    gunzip,
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
-from scrapy.utils.gz import gunzip
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
