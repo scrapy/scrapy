@@ -80,6 +80,16 @@ but is just an identifier, and the capitalized project-name prefix of class
 names in :file:`middlewares.py` and :file:`pipelines.py` is only a naming
 convention; neither needs to match the module name.
 
+.. _find-projects:
+
+Finding projects
+----------------
+
+To find the Scrapy projects in a directory tree, e.g. from an editor extension,
+use :func:`~scrapy.utils.project.find_projects`:
+
+.. autofunction:: scrapy.utils.project.find_projects
+
 .. _topics-project-envvar:
 
 Sharing the root directory between projects
@@ -340,6 +350,9 @@ check
 * Requires project: *yes*
 
 Run contract checks.
+
+.. versionadded:: 2.19.0
+   The ``-a`` option, to pass spider arguments, as in :command:`crawl`.
 
 .. skip: start
 
@@ -686,6 +699,8 @@ project-level setting is set to :ref:`the asyncio reactor <install-asyncio>`
 In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
 ``True`` (at the project level or via the command line) so that Scrapy uses
 :class:`~scrapy.crawler.CrawlerProcess` which supports all reactors.
+
+.. _custom-commands:
 
 Custom project commands
 =======================

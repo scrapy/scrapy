@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import random
+import warnings
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from time import monotonic
 from typing import TYPE_CHECKING, Any
 
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
+from scrapy.settings import SETTINGS_PRIORITIES
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     CallLaterResult,
@@ -23,7 +26,6 @@ from scrapy.utils.asyncio import (
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _process_pending_io,
-    _schedule_coro,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
@@ -47,7 +49,7 @@ class Slot:
 
     concurrency: int
     delay: float
-    randomize_delay: bool
+    jitter: float
 
     active: set[Request] = field(default_factory=set, init=False, repr=False)
     queue: deque[tuple[Request, Deferred[Response]]] = field(
@@ -57,13 +59,63 @@ class Slot:
     lastseen: float = field(default=0, init=False, repr=False)
     latercall: CallLaterResult | None = field(default=None, init=False, repr=False)
 
+    # Hand-written to accept the deprecated randomize_delay parameter, which
+    # means it also has to initialize the fields above.
+    def __init__(
+        self,
+        concurrency: int,
+        delay: float,
+        jitter: float | None = None,
+        randomize_delay: bool | None = None,
+    ) -> None:
+        if isinstance(jitter, bool):
+            # randomize_delay used to be the third positional parameter, and a
+            # boolean would otherwise pass for a magnitude, True meaning ±100%.
+            jitter, randomize_delay = None, jitter
+        if randomize_delay is not None:
+            warnings.warn(
+                "The randomize_delay parameter of Slot is deprecated, use "
+                "jitter instead: it takes the magnitude of the random variation "
+                "as a number, e.g. 0.5 for the ±50% that randomize_delay "
+                "enables, or 0 to disable it.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        self.concurrency = concurrency
+        self.delay = delay
+        self.jitter = jitter if jitter is not None else 0.5 * bool(randomize_delay)
+        self.active = set()
+        self.queue = deque()
+        self.transferring = set()
+        self.lastseen = 0
+        self.latercall = None
+
+    @property
+    def randomize_delay(self) -> bool:
+        warnings.warn(
+            "Slot.randomize_delay is deprecated, use Slot.jitter instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return bool(self.jitter)
+
+    @randomize_delay.setter
+    def randomize_delay(self, value: bool) -> None:
+        warnings.warn(
+            "Slot.randomize_delay is deprecated, use Slot.jitter instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        self.jitter = 0.5 if value else 0.0
+
     def free_transfer_slots(self) -> int:
         return self.concurrency - len(self.transferring)
 
     def download_delay(self) -> float:
-        if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # noqa: S311
-        return self.delay
+        if not self.jitter:
+            return self.delay
+        # A jitter above 1 would reach into negative delays, floored at 0.
+        return max(0.0, self.delay * (1 + random.uniform(-self.jitter, self.jitter)))  # noqa: S311
 
     def close(self) -> None:
         if self.latercall:
@@ -73,11 +125,56 @@ class Slot:
     def __str__(self) -> str:
         return (
             f"<downloader.Slot concurrency={self.concurrency!r} "
-            f"delay={self.delay:.2f} randomize_delay={self.randomize_delay!r} "
+            f"delay={self.delay:.2f} jitter={self.jitter!r} "
             f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
             f"len(transferring)={len(self.transferring)} "
             f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
         )
+
+
+def _default_jitter(settings: BaseSettings) -> float:
+    """Return the magnitude of the random variation to apply to the delay of
+    slots that do not set their own ``jitter``: :setting:`DOWNLOAD_DELAY_JITTER`,
+    or the deprecated ``RANDOMIZE_DOWNLOAD_DELAY`` when set at a higher
+    :ref:`priority <populating-settings>`, mapped to the historical ±50% or
+    none.
+
+    Warns when ``RANDOMIZE_DOWNLOAD_DELAY`` is set, so it is called once per
+    crawl, from :meth:`Downloader.__init__`. Both defaults mean the same ±50%,
+    so a crawl that sets neither needs no warning.
+    """
+    randomize_priority = settings.getpriority("RANDOMIZE_DOWNLOAD_DELAY") or 0
+    if randomize_priority <= SETTINGS_PRIORITIES["default"]:
+        return settings.getfloat("DOWNLOAD_DELAY_JITTER")
+    warnings.warn(
+        "The RANDOMIZE_DOWNLOAD_DELAY setting is deprecated, use "
+        "DOWNLOAD_DELAY_JITTER instead: it takes the magnitude of the random "
+        "variation as a number, e.g. 0.5 for the ±50% that "
+        "RANDOMIZE_DOWNLOAD_DELAY enables, or 0 to disable it.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=3,
+    )
+    if randomize_priority > (settings.getpriority("DOWNLOAD_DELAY_JITTER") or 0):
+        return 0.5 if settings.getbool("RANDOMIZE_DOWNLOAD_DELAY") else 0.0
+    return settings.getfloat("DOWNLOAD_DELAY_JITTER")
+
+
+def _slot_jitter(slot_settings: dict[str, Any], default: float) -> float:
+    """Return the jitter of a :setting:`DOWNLOAD_SLOTS` entry, from its
+    ``jitter`` key, its deprecated ``randomize_delay`` key, or *default*."""
+    if "jitter" in slot_settings:
+        return float(slot_settings["jitter"])
+    if "randomize_delay" in slot_settings:
+        warnings.warn(
+            "The randomize_delay key of the DOWNLOAD_SLOTS setting is "
+            "deprecated, use jitter instead: it takes the magnitude of the "
+            "random variation as a number, e.g. 0.5 for the ±50% that "
+            "randomize_delay enables, or 0 to disable it.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=3,
+        )
+        return 0.5 if slot_settings["randomize_delay"] else 0.0
+    return default
 
 
 class Downloader:
@@ -99,14 +196,26 @@ class Downloader:
         # Default delay of new slots. AutoThrottle overrides it to apply
         # AUTOTHROTTLE_START_DELAY.
         self._delay: float = self.settings.getfloat("DOWNLOAD_DELAY")
-        self.randomize_delay: bool = self.settings.getbool("RANDOMIZE_DOWNLOAD_DELAY")
+        self._jitter: float = _default_jitter(self.settings)
         self.middleware: DownloaderMiddlewareManager = build_from_crawler(
             DownloaderMiddlewareManager, crawler
         )
         self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
+        self._accepting_requests: bool = True
+        self._download_tasks: dict[Request, Deferred[None]] = {}
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
+
+    @property
+    def randomize_delay(self) -> bool:
+        warnings.warn(
+            "Downloader.randomize_delay is deprecated, use the "
+            "DOWNLOAD_DELAY_JITTER setting instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return bool(self._jitter)
 
     @inlineCallbacks
     @_warn_spider_arg
@@ -139,8 +248,7 @@ class Downloader:
                 "concurrency", self.ip_concurrency or self.domain_concurrency
             )
             delay = slot_settings.get("delay", self._delay)
-            randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
-            new_slot = Slot(conc, delay, randomize_delay)
+            new_slot = Slot(conc, delay, _slot_jitter(slot_settings, self._jitter))
             self.slots[key] = new_slot
             self._start_slot_gc()
 
@@ -159,6 +267,10 @@ class Downloader:
 
     # passed as download_func into self.middleware.download() in self.fetch()
     async def _enqueue_request(self, request: Request) -> Response:
+        if not self._accepting_requests:
+            raise DownloadCancelledError(
+                "The downloader is shutting down and not accepting new requests"
+            )
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
@@ -193,11 +305,20 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, queue_dfd = slot.queue.popleft()
-            _schedule_coro(self._wait_for_download(slot, request, queue_dfd))
+            download_dfd = deferred_from_coro(
+                self._wait_for_download(slot, request, queue_dfd)
+            )
+            assert isinstance(download_dfd, Deferred)
+            self._download_tasks[request] = download_dfd
+            download_dfd.addBoth(self._download_task_done, request)
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(slot)
                 break
+
+    def _download_task_done(self, result: Any, request: Request) -> Any:
+        self._download_tasks.pop(request, None)
+        return result
 
     def _latercall(self, slot: Slot) -> None:
         slot.latercall = None
@@ -240,11 +361,55 @@ class Downloader:
         try:
             response = await self._download(slot, request)
         except Exception:
-            queue_dfd.errback(Failure())
+            if not queue_dfd.called:
+                queue_dfd.errback(Failure())
         else:
             queue_dfd.callback(response)  # awaited in _enqueue_request()
 
+    async def stop(self) -> int:
+        self._accepting_requests = False
+
+        dropped_count = 0
+
+        for slot in self.slots.values():
+            slot.close()
+            while slot.queue:
+                request, queue_dfd = slot.queue.popleft()
+                dropped_count += 1
+                if not queue_dfd.called:
+                    queue_dfd.errback(
+                        Failure(
+                            DownloadCancelledError(
+                                "Request dropped due to fast downloader shutdown"
+                            )
+                        )
+                    )
+                self.signals.send_catch_log(
+                    signal=signals.request_left_downloader,
+                    request=request,
+                    spider=self.crawler.spider,
+                )
+
+        cancelled_dfds: list[Deferred[None]] = []
+        for download_dfd in list(self._download_tasks.values()):
+            if download_dfd.called:
+                continue
+            dropped_count += 1
+            download_dfd.cancel()
+            cancelled_dfds.append(download_dfd)
+
+        if cancelled_dfds:
+            # Wait for the cancellations themselves to settle, e.g. the
+            # _download_tasks entries to be popped by _download_task_done(),
+            # instead of guessing how many event loop iterations that takes.
+            await maybe_deferred_to_future(
+                DeferredList(cancelled_dfds, consumeErrors=True)
+            )
+
+        return dropped_count
+
     def close(self) -> None:
+        self._accepting_requests = False
         self._stop_slot_gc()
         for slot in self.slots.values():
             slot.close()
@@ -252,7 +417,7 @@ class Downloader:
     def _slot_gc(self, age: float = 60) -> None:
         mintime = monotonic() - age
         for key, slot in list(self.slots.items()):
-            if not slot.active and slot.lastseen + slot.delay < mintime:
+            if not slot.active and slot.lastseen + slot.delay <= mintime:
                 self.slots.pop(key).close()
 
     def _start_slot_gc(self) -> None:
