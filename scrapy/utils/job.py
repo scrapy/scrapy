@@ -1,16 +1,15 @@
-from __future__ import annotations
+# pragma: no file cover
+import warnings
 
-from pathlib import Path
-from typing import TYPE_CHECKING
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.conf import _job_dir as job_dir
 
-if TYPE_CHECKING:
-    from scrapy.settings import BaseSettings
+warnings.warn(
+    "The scrapy.utils.job module is deprecated.",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
-
-def job_dir(settings: BaseSettings) -> str | None:
-    path: str | None = settings["JOBDIR"]
-    if not path:
-        return None
-    if not Path(path).exists():
-        Path(path).mkdir(parents=True)
-    return path
+__all__ = [
+    "job_dir",
+]

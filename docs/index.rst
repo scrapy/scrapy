@@ -156,6 +156,7 @@ Solving specific problems
    :hidden:
 
    faq
+   topics/agents
    topics/debug
    topics/contracts
    topics/practices
@@ -174,6 +175,9 @@ Solving specific problems
 
 :doc:`faq`
     Get answers to most frequently asked questions.
+
+:doc:`topics/agents`
+    Learn how to use Scrapy with coding agents efficiently.
 
 :doc:`topics/debug`
     Learn how to debug common problems of your Scrapy spider.

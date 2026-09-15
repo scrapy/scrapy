@@ -8,6 +8,8 @@ dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
     "Twisted>=21.7.0",
+    "aiohttp>=3.13.3",
+    "charset-normalizer>=3.4.0",
     "cryptography>=41.0.5",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -16,6 +18,7 @@ dependencies = [
     "lxml>=4.6.4",
     "packaging",
     "parsel>=1.5.0",
+    "platformdirs>=2.0.0",
     "protego>=0.1.15",
     "pyOpenSSL>=24.3.0",
     "queuelib>=1.6.1",
@@ -43,6 +46,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Internet :: WWW/HTTP",
@@ -65,6 +69,7 @@ Tracker = "https://github.com/scrapy/scrapy/issues"
 
 [project.optional-dependencies]
 bpython = ["bpython>=0.7.1"]
+color = ["colorlog>=6.6.0"]
 gcs = ["google-cloud-storage>=1.29.0"]
 httpx = ["httpx2[http2,socks]>=2.0.0"]
 images = ["Pillow>=8.3.2"]
@@ -113,26 +118,6 @@ module = "tests.*"
 allow_untyped_defs = true
 allow_incomplete_defs = true # 59 errors
 
-# TODO
-[[tool.mypy.overrides]]
-module = [
-    "tests.test_cmdline",
-    "tests.test_downloaderslotssettings",
-    "tests.test_dupefilters",
-    "tests.test_extension_statsmailer",
-    "tests.test_extension_throttle",
-    "tests.test_linkextractors",
-    "tests.test_logformatter",
-    "tests.test_mail",
-    "tests.test_pqueues",
-    "tests.test_scheduler_base",
-    "tests.test_settings",
-    "tests.test_squeues",
-    "tests.test_squeues_request",
-    "tests.test_stats",
-]
-check_untyped_defs = false
-
 # Interface classes are hard to support
 [[tool.mypy.overrides]]
 module = "twisted.internet.interfaces"
@@ -151,11 +136,6 @@ follow_imports = "skip"
 module = "twisted"
 implicit_reexport = true
 
-# TODO
-[[tool.mypy.overrides]]
-module = "scrapy.settings.default_settings"
-ignore_errors = true
-
 # usually no type hints
 [[tool.mypy.overrides]]
 module = [
@@ -163,6 +143,7 @@ module = [
     "brotli",
     "brotlicffi",
     "google.*",
+    "ipdb",
     "pydispatch.*",
     "pyftpdlib.*",
     "pytest_twisted",
@@ -172,7 +153,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.bumpversion]
-current_version = "2.18.0"
+current_version = "2.19.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -292,7 +273,7 @@ disable = [
 # requires `pylint_per_file_ignores` plugin
 per-file-ignores = [
     # Extended list of ones that we may want to address, only for tests
-    "./tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unnecessary-dunder-call,used-before-assignment",
+    "./tests/*:abstract-method,arguments-renamed,dangerous-default-value,pointless-statement,raise-missing-from,unidiomatic-typecheck,unnecessary-dunder-call,used-before-assignment",
 ]
 
 [tool.pytest.ini_options]
@@ -310,6 +291,7 @@ markers = [
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_mitmproxy: marks tests that need a mitmdump executable",
     "requires_internet: marks tests that need real Internet access",
+    "walltime: marks benchmarks that need CodSpeed's walltime mode to be meaningful",
 ]
 filterwarnings = [
     # Envs with pinned old dependencies opt out of this, see tox.ini.
@@ -318,21 +300,33 @@ filterwarnings = [
     # Twisted leaves the listening socket open after a failed bind
     # (CannotListenError): https://github.com/twisted/twisted/issues/6108
     # The asyncio reactor likewise leaves client sockets and transports open on
-    # teardown. These surface as unraisable exceptions during finalization; the
-    # message wording varies across Python implementations and versions
-    # (PyPy leaves the prefix empty), so match on the object repr.
+    # teardown. These surface as unraisable exceptions during finalization when
+    # collected outside any warnings-catching block, or as a plain
+    # ResourceWarning, re-emitted by pytest.warns() with the outer filters
+    # applied, when GC instead runs while a pytest.warns() block for an
+    # unrelated warning is active, failing that unrelated test. The message
+    # wording varies across Python implementations and versions (PyPy leaves
+    # the prefix empty), so match on the object repr.
     "ignore:.*<socket\\.socket fd=:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed <socket\\.socket fd=:ResourceWarning",
     "ignore:.*<function (_SelectorTransport|_ProactorBasePipeTransport|_ProactorSocketTransport|BaseEventLoop)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed transport <:ResourceWarning",
+    # These are triggered by garbage collecting an unclosed AiohttpDownloadHandler.
+    "ignore:.*<function (ClientSession|BaseConnector)\\.__del__:pytest.PytestUnraisableExceptionWarning",
+    "ignore:Unclosed (client session|connector) <aiohttp\\.:ResourceWarning",
     # PyDispatcher iterates its connection registry while a weakref callback
     # may mutate it, which raises RuntimeError on PyPy, where several weakrefs
     # can die within a single collection.
     "ignore:.*<function connect\\.<locals>\\.remove:pytest.PytestUnraisableExceptionWarning",
     # queuelib's test helpers (reused by tests/test_squeues.py) leave queue
-    # files open; the resulting warning surfaces at an arbitrary GC point, as an
-    # unraisable exception or as a plain ResourceWarning, which pytest.warns()
-    # re-emits when it does not match, failing an unrelated test.
+    # files and SQLite connections open; see the comment above about the two
+    # forms this can surface as. sqlite3's warning message has no path to
+    # match on, so it cannot be scoped to queuelib's temporary directories the
+    # way the file one is.
     "ignore:.*<_io\\.\\w+ name=.*queuelib-tests-:pytest.PytestUnraisableExceptionWarning",
     "ignore:unclosed file <_io\\.\\w+ name=.*queuelib-tests-:ResourceWarning",
+    "ignore:.*<sqlite3\\.Connection object at:pytest.PytestUnraisableExceptionWarning",
+    "ignore:unclosed database in <sqlite3\\.Connection object at:ResourceWarning",
     # itemadapter imports pydantic.v1, which warns on Python 3.14 and higher.
     "ignore:Core Pydantic V1 functionality isn't compatible:UserWarning",
     # pyftpdlib imports asynchat, removed in Python 3.12, on lower versions.

@@ -18,15 +18,15 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
     custom_settings = {
         "DOWNLOAD_DELAY": 1,
-        "RANDOMIZE_DOWNLOAD_DELAY": False,
+        "DOWNLOAD_DELAY_JITTER": 0,
         "DOWNLOAD_SLOTS": {
             "quotes.toscrape.com": {
                 "concurrency": 1,
                 "delay": 2,
-                "randomize_delay": False,
+                "jitter": 0,
                 "throttle": False,
             },
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+            "books.toscrape.com": {"delay": 3, "jitter": 0},
         },
     }
 
@@ -37,6 +37,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times: dict[str, list[float]] = {}
 
     async def start(self):
+        assert self.mockserver
         slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
@@ -44,6 +45,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
             yield Request(url, callback=self.parse, meta={"download_slot": slot})
 
     def parse(self, response):
+        assert self.mockserver
         slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
@@ -84,10 +86,10 @@ def test_delay(mockserver: MockServer):
 
 @coroutine_test
 async def test_params():
-    params = {
+    params: dict[str, Any] = {
         "concurrency": 1,
         "delay": 2,
-        "randomize_delay": False,
+        "jitter": 0,
     }
     settings = {
         "DOWNLOAD_SLOTS": {
@@ -100,11 +102,29 @@ async def test_params():
     request = Request("https://example.com")
     _, actual = downloader._get_slot(request)
     downloader.close()
+    await downloader.handlers._close()
     expected = Slot(**params)
     for param in params:
         assert getattr(expected, param) == getattr(actual, param), (
             f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
         )
+
+
+@pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+@coroutine_test
+async def test_deprecated_randomize_delay_param(value: bool, expected: float):
+    settings = {"DOWNLOAD_SLOTS": {"example.com": {"randomize_delay": value}}}
+    crawler = get_crawler(DefaultSpider, settings_dict=settings)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match="The randomize_delay key of the DOWNLOAD_SLOTS setting is deprecated",
+    ):
+        _, slot = downloader._get_slot(Request("https://example.com"))
+    downloader.close()
+    await downloader.handlers._close()
+    assert slot.jitter == expected
 
 
 @coroutine_test
@@ -121,6 +141,7 @@ async def test_get_slot_deprecated_spider_arg():
         key1, slot1 = downloader._get_slot(request, spider=crawler.spider)
     key2, slot2 = downloader._get_slot(request)
     downloader.close()
+    await downloader.handlers._close()
 
     assert key1 == key2
     assert slot1 == slot2
