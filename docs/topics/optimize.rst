@@ -39,10 +39,13 @@ what every part of the engine is doing at a given moment:
 .. code-block:: text
 
     len(engine.downloader.active)                   : 16
-    len(engine._slot.scheduler.mqs)                 : 92
+    len(engine.scheduler.mqs)                       : 92
     len(engine.scraper.slot.active)                 : 0
     engine.scraper.slot.active_size                 : 0
     engine.scraper.slot.needs_backout()             : False
+
+A coding agent using the :ref:`Scrapy MCP server <using-mcp-server>` can also
+retrieve these values directly.
 
 Take a few readings at different points of the crawl:
 
@@ -66,9 +69,9 @@ Take a few readings at different points of the crawl:
     callbacks and :ref:`item pipelines <topics-item-pipeline>` handle them. The
     bottleneck is your own code.
 
--   ``len(engine._slot.scheduler.mqs)`` grows without settling: the crawl
-    discovers requests faster than it downloads them. This is what makes long
-    crawls run out of memory.
+-   ``len(engine.scheduler.mqs)`` grows without settling: the crawl discovers
+    requests faster than it downloads them. This is what makes long crawls run
+    out of memory.
 
 
 Reading resource usage
@@ -92,9 +95,9 @@ Memory
     far above :stat:`memusage/startup` is expected; what matters is whether it
     keeps growing for as long as the crawl runs.
 
-    Growth that tracks ``len(engine._slot.scheduler.mqs)`` is a scheduling
-    problem, covered in :ref:`optimize-memory`. Growth that does not is a
-    :ref:`memory leak <topics-leaks>`.
+    Growth that tracks ``len(engine.scheduler.mqs)`` is a scheduling problem,
+    covered in :ref:`optimize-memory`. Growth that does not is a :ref:`memory
+    leak <topics-leaks>`.
 
 Network
     Compare :stat:`downloader/response_bytes` over the crawl time against your
@@ -260,14 +263,6 @@ Lowering memory usage
 
 Lowering network usage
 ----------------------
-
--   Install brotli_ and zstandard_ to support brotli-compressed_ and
-    zstd-compressed_ responses.
-
-    .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-    .. _brotli: https://pypi.org/project/Brotli/
-    .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
-    .. _zstandard: https://pypi.org/project/zstandard/
 
 -   Enable :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`
     while developing your spider, so that re-runs do not download the same

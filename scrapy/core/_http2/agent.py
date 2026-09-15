@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
-ConnectionKeyT = tuple[bytes, bytes, int]
+ConnectionKey: TypeAlias = tuple[bytes, bytes, int, tuple[str, int] | None]
 
 
 class H2ConnectionPool:
@@ -31,11 +31,11 @@ class H2ConnectionPool:
 
         # Store a dictionary which is used to get the respective
         # H2ClientProtocolInstance using the  key as Tuple(scheme, hostname, port)
-        self._connections: dict[ConnectionKeyT, H2ClientProtocol] = {}
+        self._connections: dict[ConnectionKey, H2ClientProtocol] = {}
 
         # Save all requests that arrive before the connection is established
         self._pending_requests: dict[
-            ConnectionKeyT, deque[Deferred[H2ClientProtocol]]
+            ConnectionKey, deque[Deferred[H2ClientProtocol]]
         ] = {}
 
         self._tls_verbose_logging: bool = crawler.settings.getbool(
@@ -43,7 +43,7 @@ class H2ConnectionPool:
         )
 
     def get_connection(
-        self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
+        self, key: ConnectionKey, uri: URI, endpoint: HostnameEndpoint
     ) -> Deferred[H2ClientProtocol]:
         if key in self._pending_requests:
             # Received a request while connecting to remote
@@ -63,7 +63,7 @@ class H2ConnectionPool:
         return self._new_connection(key, uri, endpoint)
 
     def _new_connection(
-        self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
+        self, key: ConnectionKey, uri: URI, endpoint: HostnameEndpoint
     ) -> Deferred[H2ClientProtocol]:
         self._enforce_limit()
         self._pending_requests[key] = deque()
@@ -86,7 +86,7 @@ class H2ConnectionPool:
         )
         return d
 
-    def _pending_request(self, key: ConnectionKeyT) -> Deferred[H2ClientProtocol]:
+    def _pending_request(self, key: ConnectionKey) -> Deferred[H2ClientProtocol]:
         """Return a deferred that fires with the connection being established
         for *key*.
 
@@ -122,7 +122,7 @@ class H2ConnectionPool:
     def put_connection(
         self,
         conn: H2ClientProtocol,
-        key: ConnectionKeyT,
+        key: ConnectionKey,
         conn_lost_deferred: Deferred[None],
     ) -> H2ClientProtocol:
         self._connections[key] = conn
@@ -137,7 +137,7 @@ class H2ConnectionPool:
 
         return conn
 
-    def _connection_failed(self, failure: Failure, key: ConnectionKeyT) -> None:
+    def _connection_failed(self, failure: Failure, key: ConnectionKey) -> None:
         """Fail the requests waiting for a connection that could not be
         established, and let a later request try to connect again."""
         pending_requests = self._pending_requests.pop(key)
@@ -146,7 +146,7 @@ class H2ConnectionPool:
             d.errback(failure)
 
     def _remove_connection(
-        self, _: None, key: ConnectionKeyT, conn: H2ClientProtocol
+        self, _: None, key: ConnectionKey, conn: H2ClientProtocol
     ) -> None:
         # a newer connection may have taken over the key already
         if self._connections.get(key) is conn:
@@ -180,12 +180,12 @@ class H2Agent:
     def get_endpoint(self, uri: URI) -> HostnameEndpoint:
         return self.endpoint_factory.endpointForURI(uri)  # type: ignore[no-any-return]
 
-    def get_key(self, uri: URI) -> ConnectionKeyT:
+    def get_key(self, uri: URI) -> ConnectionKey:
         """
         Arguments:
             uri - URI obtained directly from request URL
         """
-        return uri.scheme, uri.host, uri.port
+        return uri.scheme, uri.host, uri.port, self.endpoint_factory._bindAddress
 
     def request(self, request: Request, spider: Spider) -> Deferred[Response]:
         uri = URI.fromBytes(bytes(request.url, encoding="utf-8"))

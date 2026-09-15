@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import pickle
 import re
+from typing import Any
 
-from scrapy.http import HtmlResponse, XmlResponse
+from w3lib.url import canonicalize_url
+
+from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.link import Link
 from scrapy.linkextractors import lxmlhtml
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor, LxmlParserLinkExtractor
@@ -499,7 +502,7 @@ class TestLxmlLinkExtractor:
         """
         response = HtmlResponse("http://example.com/index.html", body=html)
 
-        def urls(**kwargs):
+        def urls(**kwargs: Any) -> list[str]:
             lx = LxmlLinkExtractor(**kwargs)
             return [link.url for link in lx.extract_links(response)]
 
@@ -570,7 +573,9 @@ class TestLxmlLinkExtractor:
 </html>
         """
 
-        response = HtmlResponse("http://example.com/index.xhtml", body=xhtml)
+        response: TextResponse = HtmlResponse(
+            "http://example.com/index.xhtml", body=xhtml
+        )
 
         lx = LxmlLinkExtractor()
         assert lx.extract_links(response) == [
@@ -782,7 +787,6 @@ class TestLxmlLinkExtractor:
         ]
 
     def test_canonicalize_once_per_link(self, monkeypatch):
-        canonicalize_url = lxmlhtml.canonicalize_url
         calls = []
 
         def counting_canonicalize_url(url, *args, **kwargs):

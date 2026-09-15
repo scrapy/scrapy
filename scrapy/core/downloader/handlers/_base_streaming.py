@@ -85,12 +85,6 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
         )
         self._proxy_auth_encoding: str = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
 
-    @staticmethod
-    @abstractmethod
-    def _check_deps_installed() -> None:
-        """Raise NotConfigured if the required deps are not installed."""
-        raise NotImplementedError
-
     @abstractmethod
     def _make_request(
         self, request: Request, timeout: float
@@ -127,6 +121,10 @@ class BaseStreamingDownloadHandler(BaseHttpDownloadHandler, ABC, Generic[_Respon
     def _is_dataloss_exception(exc: Exception) -> bool:
         """Return True if ``exc`` represents dataloss."""
         raise NotImplementedError
+
+    @staticmethod
+    def _check_deps_installed() -> None:
+        """Raise NotConfigured if the required deps are not installed."""
 
     def _log_tls_info(self, response: _ResponseT, request: Request) -> None:
         """Log TLS connection details, if possible."""
