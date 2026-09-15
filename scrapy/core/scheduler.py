@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 from twisted.internet.defer import Deferred  # noqa: TC002
 
 from scrapy.spiders import Spider  # noqa: TC001
-from scrapy.utils.job import job_dir
+from scrapy.utils.conf import _job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
@@ -255,7 +255,7 @@ class Scheduler(BaseScheduler):
         dupefilter_cls = load_object(crawler.settings["DUPEFILTER_CLASS"])
         return cls(
             dupefilter=build_from_crawler(dupefilter_cls, crawler),
-            jobdir=job_dir(crawler.settings),
+            jobdir=_job_dir(crawler.settings),
             dqclass=load_object(crawler.settings["SCHEDULER_DISK_QUEUE"]),
             mqclass=load_object(crawler.settings["SCHEDULER_MEMORY_QUEUE"]),
             logunser=crawler.settings.getbool("SCHEDULER_DEBUG"),
