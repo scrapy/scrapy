@@ -130,29 +130,56 @@ using different handlers.
 Here is a comparison of some features of the built-in HTTP handlers, see the
 individual handler docs for more differences:
 
-=================== ================= ===================== ===========================
-Feature             H2DownloadHandler HTTP11DownloadHandler HttpxDownloadHandler
-=================== ================= ===================== ===========================
-Requires asyncio    No                No                    Yes
-Requires a reactor  Yes               Yes                   No
-HTTP/1.1            No                Yes                   Yes
-HTTP/2              Yes               No                    Yes
-TLS implementation  ``cryptography``  ``cryptography``      Stdlib ``ssl``
-HTTP proxies        No                Yes                   Yes
-SOCKS proxies       No                No                    Yes
-IPv6 addresses      Needs a setting   Needs a setting       Yes, except through a proxy
-Bad header handling Not applicable    Skip bad              Fail
-=================== ================= ===================== ===========================
+.. list-table::
+   :header-rows: 1
+   :stub-columns: 1
 
-About the IPv6 row: the Twisted-based handlers reach every host, including hosts
-given as an IPv6 address literal such as ``https://[::1]/``, through the
-resolver configured with :setting:`TWISTED_DNS_RESOLVER`. Its default value only
-returns IPv4 addresses, so IPv6 requires setting it to
-``scrapy.resolver.CachingHostnameResolver``. That applies to proxy hosts as well
-as to target hosts.
+   * - Handler
+     - Requirements
+     - HTTP
+     - Proxies
+     - Bad headers
+     - TLS
+     - IPv6
+   * - :class:`Aiohttp <scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler>`
+     - asyncio
+     - 1.1
+     - HTTP
+     - Fail
+     - Stdlib ``ssl``
+     - Yes
+   * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
+     - Reactor, :ref:`twisted-http2 <extras>` extra
+     - 2
+     - None
+     - Not applicable
+     - ``cryptography``
+     - Needs a setting
+   * - :class:`HTTP11 <scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler>`
+     - Reactor
+     - 1.1
+     - HTTP
+     - Skip bad
+     - ``cryptography``
+     - Needs a setting
+   * - :class:`Httpx <scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler>`
+     - asyncio, :ref:`httpx <extras>` extra
+     - 1.1, 2
+     - HTTP, SOCKS
+     - Fail
+     - Stdlib ``ssl``
+     - Yes, except through a proxy
 
-:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` does not
-use the Twisted resolver, so it needs no setting for IPv6. However, IPv6
+About the IPv6 column: the Twisted-based handlers reach every host, including
+hosts given as an IPv6 address literal such as ``https://[::1]/``, through the
+resolver configured with :setting:`TWISTED_DNS_RESOLVER`. Its default value
+only returns IPv4 addresses, so IPv6 requires setting it to
+``scrapy.resolver.CachingHostnameResolver``. That applies to proxy hosts as
+well as to target hosts.
+
+The asyncio-based handlers do not use the Twisted resolver, so they need no
+setting for IPv6. However, with
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, IPv6
 address literals `do not work through a proxy
 <https://github.com/pydantic/httpx2/pull/1091>`__.
 
@@ -168,6 +195,60 @@ later Scrapy version but can already be used. Please refer to the documentation
 of this package for more information.
 
 .. _scrapy-download-handlers-incubator: https://github.com/scrapy-plugins/scrapy-download-handlers-incubator
+
+.. _aiohttp-handler:
+
+AiohttpDownloadHandler
+----------------------
+
+.. versionadded:: 2.19.0
+
+.. autoclass:: scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler
+
+| Supported schemes: ``http``, ``https``.
+| :ref:`Lazy <lazy-download-handlers>`: no.
+| :ref:`Requires asyncio support <using-asyncio>`: yes.
+| :ref:`Requires a Twisted reactor <asyncio-without-reactor>`: no.
+
+This handler supports ``http://host/path`` and ``https://host/path`` URLs and
+uses the HTTP/1.1 protocol for them.
+
+It's implemented using the aiohttp_ library.
+
+.. _aiohttp: https://docs.aiohttp.org/
+
+If you want to use this handler you need to replace the default ones for the
+``http`` and ``https`` schemes:
+
+.. code-block:: python
+
+    DOWNLOAD_HANDLERS = {
+        "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+    }
+
+Features and limitations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This handler is experimental, and not yet recommended for production
+    environments. Future Scrapy versions may introduce related changes without
+    a deprecation period or warning or even remove it altogether.
+
+=========================== =======================================
+HTTP proxies                Yes
+SOCKS proxies               No (not supported by the library)
+HTTP/2                      No (not supported by the library)
+Bad header handling         Fail (not supported by the library)
+``response.certificate``    DER bytes
+Per-request ``bindaddress`` No (not supported by the library)
+TLS implementation          Standard library ``ssl``
+=========================== =======================================
+
+Other limitations:
+
+-   HTTPS proxies for HTTPS destinations are not supported on Python < 3.11.
 
 .. _twisted-http2-handler:
 

@@ -5,7 +5,6 @@ Requests and Responses
 ======================
 
 .. module:: scrapy.http
-   :synopsis: Request and Response classes
 
 Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling web
 sites.
@@ -713,10 +712,14 @@ Errbacks
 ========
 
 The errback of a request is a function that will be called when an exception
-is raise while processing it.
+is raised while processing it.
 
 It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
 be used to track connection establishment timeouts, DNS errors etc.
+
+Scrapy sets the ``request`` attribute of that
+:exc:`~twisted.python.failure.Failure` object to the :class:`~scrapy.Request`
+object being processed.
 
 If an errback raises an exception, Scrapy logs it and sends the
 :signal:`spider_error` signal, unless the exception is the one that the errback
@@ -827,6 +830,7 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
 * :reqmeta:`depth`
 * :reqmeta:`dont_cache`
@@ -904,8 +908,9 @@ Set the :reqmeta:`bindaddress` request meta key to override it for a
 specific request.
 
 This meta key is not supported by
-:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
-:setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
+:class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
+the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
 
 .. reqmeta:: download_timeout
 

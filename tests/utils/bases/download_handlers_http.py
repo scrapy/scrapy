@@ -975,6 +975,32 @@ class TestHttpBase(ABC):
                 "The 'bindaddress' request meta key is not supported by" in caplog.text
             )
 
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="127.0.0.2 is not available on macOS by default",
+    )
+    @coroutine_test
+    async def test_download_bind_address_meta_pool_reuse(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # A pooled connection opened for one bindaddress must not be reused
+        # for a request with a different bindaddress.
+        url = mockserver.url("/client-ip", is_secure=self.is_secure)
+        async with self.get_dh() as download_handler:
+            response1 = await download_handler.download_request(
+                Request(url, meta={"bindaddress": "127.0.0.1"})
+            )
+            response2 = await download_handler.download_request(
+                Request(url, meta={"bindaddress": "127.0.0.2"})
+            )
+        if self.handler_supports_bindaddress_meta:
+            assert response1.body == b"127.0.0.1"
+            assert response2.body == b"127.0.0.2"
+        else:
+            assert (
+                "The 'bindaddress' request meta key is not supported by" in caplog.text
+            )
+
     @coroutine_test
     async def test_verbatim_url(self, mockserver: MockServer) -> None:
         # Square brackets are encoded by safe_url_string (w3lib).
@@ -1374,11 +1400,43 @@ class TestHttpWithCrawlerBase(ABC):
             assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
             assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
+    @coroutine_test
+    async def test_response_ssl_certificate_empty_body(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self.is_secure:
+            pytest.skip("Only applies to HTTPS")
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/status?n=200", is_secure=self.is_secure)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        cert = crawler.spider.meta["responses"][0].certificate
+        assert cert is not None
+        if isinstance(cert, Certificate):  # Twisted
+            assert cert.getSubject().commonName == b"localhost"
+        elif isinstance(cert, bytes):  # DER bytes
+            cert_x509 = load_der_x509_certificate(cert)
+            assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
+
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer) -> None:
         # copy of TestCrawl.test_response_ip_address()
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
+        expected_netloc, _ = urlparse(url).netloc.split(":")
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        ip_address = crawler.spider.meta["responses"][0].ip_address
+        assert isinstance(ip_address, IPv4Address)
+        assert str(ip_address) == socket.gethostbyname(expected_netloc)
+
+    @coroutine_test
+    async def test_response_ip_address_empty_body(self, mockserver: MockServer) -> None:
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/status?n=200", is_secure=self.is_secure)
         expected_netloc, _ = urlparse(url).netloc.split(":")
         await crawler.crawl_async(seed=url, mockserver=mockserver)
         assert isinstance(crawler.spider, SingleRequestSpider)
@@ -1458,13 +1516,16 @@ class TestHttpWithCrawlerBase(ABC):
 class TestHttpProxyBase(ABC):
     is_secure = False
     expected_http_proxy_request_body = b"http://example.com"
-    # whether the handler supports HTTPS proxies with HTTPS destinations
-    handler_supports_tls_in_tls: bool = True
 
     @property
     @abstractmethod
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         raise NotImplementedError
+
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    @property
+    def handler_supports_tls_in_tls(self) -> bool:
+        return True
 
     @pytest.fixture(scope="session")
     def proxy_mockserver(self) -> Generator[ProxyEchoMockServer]:
@@ -1539,8 +1600,6 @@ PROXY_KINDS = ["http", "https", "socks5"]
 
 
 class TestMitmProxyBase(ABC):
-    # whether the handler supports HTTPS proxies with HTTPS destinations
-    handler_supports_tls_in_tls: bool = True
     handler_supports_socks: bool = False
     # whether the handler supports proxying to an IPv6 literal destination
     handler_supports_ipv6_destination: bool = True
@@ -1551,6 +1610,11 @@ class TestMitmProxyBase(ABC):
     @abstractmethod
     def settings_dict(self) -> dict[str, Any] | None:
         raise NotImplementedError
+
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    @property
+    def handler_supports_tls_in_tls(self) -> bool:
+        return True
 
     def _maybe_skip(self, proxy_kind: str, https_dest: bool) -> None:
         if proxy_kind == "socks5" and not self.handler_supports_socks:
@@ -1751,7 +1815,7 @@ class TestRealWebsiteBase(ABC):
         self, settings_dict: dict[str, Any] | None = None
     ) -> AsyncGenerator[DownloadHandlerProtocol]:
         crawler = get_crawler(
-            DefaultSpider, {**REAL_WEBSITE_SETTINGS, **(settings_dict or {})}
+            DefaultSpider, REAL_WEBSITE_SETTINGS | (settings_dict or {})
         )
         crawler.spider = crawler._create_spider()
         dh = build_from_crawler(self.download_handler_cls, crawler)
@@ -1771,7 +1835,7 @@ class TestRealWebsiteBase(ABC):
     @coroutine_test
     async def test_download_with_spider(self) -> None:
         crawler = get_crawler(
-            SingleRequestSpider, {**REAL_WEBSITE_SETTINGS, **(self.settings_dict or {})}
+            SingleRequestSpider, REAL_WEBSITE_SETTINGS | (self.settings_dict or {})
         )
         await maybe_deferred_to_future(
             crawler.crawl(seed=Request("https://books.toscrape.com/"))
