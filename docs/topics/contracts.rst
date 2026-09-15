@@ -8,6 +8,10 @@ Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
 
+.. versionchanged:: 2.19.0
+   Added support for callbacks defined with ``async def``, including
+   :term:`asynchronous generators <asynchronous generator>`.
+
 This allows you to test each callback of your spider by hardcoding a sample url
 and check various constraints for how the callback processes the response. Each
 contract is prefixed with an ``@`` and included in the docstring. See the
@@ -36,6 +40,14 @@ You can use the following contracts:
 
 .. autoclass:: MetadataContract
 
+.. autoclass:: MethodContract
+
+.. autoclass:: BodyContract
+
+.. autoclass:: HeaderContract
+
+.. autoclass:: CookieContract
+
 .. autoclass:: ReturnsContract
 
 .. autoclass:: ScrapesContract
@@ -45,7 +57,7 @@ Use the :command:`check` command to run the contract checks. It ignores
 output of callbacks instead of sending it to item processing; use the ``-s``
 command-line option to set them back for a check run.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.18.0
    :setting:`ITEM_PIPELINES` and :setting:`FEEDS` are now ignored.
 
 Custom Contracts
@@ -65,9 +77,7 @@ create and load your own contracts in the project by using the
 Each contract must inherit from :class:`~scrapy.contracts.Contract` and can
 override three methods:
 
-.. module:: scrapy.contracts
-
-.. autoclass:: Contract
+.. autoclass:: scrapy.contracts.Contract
 
     .. automethod:: adjust_request_args
 
