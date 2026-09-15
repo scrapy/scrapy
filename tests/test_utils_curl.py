@@ -41,6 +41,26 @@ class TestCurlToRequestKwargs:
         }
         self._test_command(curl_command, expected_result)
 
+    def test_get_cookie_option(self):
+        curl_command = 'curl "http://example.org/" -b "a=1; b=2"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "cookies": {"a": "1", "b": "2"},
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_get_cookie_file_option(self):
+        # curl reads cookies from a file when the value is not a key-value
+        # pair; Scrapy ignores it.
+        curl_command = 'curl "http://example.org/" -b cookies.txt -b "a=1"'
+        expected_result = {
+            "method": "GET",
+            "url": "http://example.org/",
+            "cookies": {"a": "1"},
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_get_complex(self):
         curl_command = (
             "curl 'http://httpbin.org/get' -H 'Accept-Encoding: gzip, deflate'"

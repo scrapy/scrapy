@@ -15,6 +15,7 @@ from pytest_twisted import async_yield_fixture
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
+from twisted.internet.task import deferLater
 from twisted.web.client import URI, ResponseFailed
 from twisted.web.http import H2_ENABLED
 from twisted.web.http import Request as TxRequest
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine, Generator
 
     from scrapy.core._http2.protocol import H2ClientProtocol
+    from scrapy.crawler import Crawler
 
 
 pytestmark = [
@@ -75,7 +77,7 @@ class Data:
     STR_LARGE = generate_random_string(LARGE_SIZE)
 
     EXTRA_SMALL = generate_random_string(1024 * 15)
-    EXTRA_LARGE = generate_random_string((1024**2) * 15)
+    EXTRA_LARGE = generate_random_string(LARGE_SIZE)
 
     HTML_SMALL = make_html_body(STR_SMALL)
     HTML_LARGE = make_html_body(STR_LARGE)
@@ -236,9 +238,16 @@ class TestHttps2ClientProtocol:
         ) + self.certificate_file.read_text(encoding="utf-8")
         return PrivateCertificate.loadPEM(pem)  # type: ignore[no-any-return]
 
+    @pytest.fixture
+    def crawler(self, request: pytest.FixtureRequest) -> Crawler:
+        return get_crawler(settings_dict=getattr(request, "param", None))
+
     @async_yield_fixture  # type: ignore[untyped-decorator]
     async def client(
-        self, server_port: int, client_certificate: PrivateCertificate
+        self,
+        server_port: int,
+        client_certificate: PrivateCertificate,
+        crawler: Crawler,
     ) -> AsyncGenerator[H2ClientProtocol]:
         from twisted.internet import reactor
 
@@ -250,7 +259,7 @@ class TestHttps2ClientProtocol:
             acceptableProtocols=[b"h2"],
         )
         uri = URI.fromBytes(bytes(self.get_url(server_port, "/"), "utf-8"))
-        h2_client_factory = H2ClientFactory(uri, get_crawler(), Deferred())
+        h2_client_factory = H2ClientFactory(uri, crawler, Deferred())
         client_endpoint = SSL4ClientEndpoint(
             reactor, self.host, server_port, client_options
         )
@@ -258,7 +267,7 @@ class TestHttps2ClientProtocol:
 
         yield client
 
-        if client.connected:
+        if not client.transport.disconnecting:
             client.transport.loseConnection()
             client.transport.abortConnection()
 
@@ -311,6 +320,17 @@ class TestHttps2ClientProtocol:
     ) -> None:
         request = Request(self.get_url(server_port, "/get-data-html-large"))
         await self._check_GET(client, request, Data.HTML_LARGE, 200)
+
+    @pytest.mark.parametrize(
+        "crawler", [{"HTTP2_MAX_FRAME_SIZE": 1024**2}], indirect=True
+    )
+    @deferred_f_from_coro_f
+    async def test_GET_large_frames(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        request = Request(self.get_url(server_port, "/get-data-html-large"))
+        await self._check_GET(client, request, Data.HTML_LARGE, 200)
+        assert client.conn.local_settings.max_frame_size == 1024**2
 
     async def _check_GET_x10(
         self,
@@ -747,6 +767,17 @@ class TestHttps2ClientProtocol:
                 break
         else:
             pytest.fail("No TimeoutError raised.")
+
+    @deferred_f_from_coro_f
+    async def test_connection_timeout_no_streams(
+        self, client: H2ClientProtocol
+    ) -> None:
+        """A connection with no streams is closed when it times out."""
+        from twisted.internet import reactor
+
+        client.setTimeout(0.1)  # type: ignore[no-untyped-call]
+        await maybe_deferred_to_future(deferLater(reactor, 0.5))
+        assert client.transport.disconnecting
 
     @deferred_f_from_coro_f
     async def test_request_headers_received(
