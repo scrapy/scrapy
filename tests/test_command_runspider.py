@@ -160,6 +160,22 @@ class MySpider(scrapy.Spider):
         assert "start" in log
         assert "badspider.py" in log, log
 
+    def test_errorcount_exit_code(self, tmp_path: Path) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    custom_settings = {'CLOSESPIDER_ERRORCOUNT': 1}
+
+    async def start(self):
+        raise Exception('Expected exception')
+        yield
+"""
+        returncode, _, err = self.runspider(tmp_path, spider_code)
+        assert "Spider closed (closespider_errorcount)" in err
+        assert returncode != 0
+
     def test_asyncio_enabled_true(self, tmp_path: Path) -> None:
         log = self.get_log(
             tmp_path,

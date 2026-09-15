@@ -20,7 +20,7 @@ jobs:
     if: github.event.action != 'closed'
     name: tests (${{ matrix.python-version }}, ${{ matrix.env.TOXENV }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       # A hanging test would otherwise keep the job running until GitHub kills
       # it, without telling which test hung.

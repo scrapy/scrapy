@@ -197,7 +197,7 @@ class Response(object_ref):
     def to_dict(self) -> dict[str, Any]:
         """Return a dictionary containing the Response's data.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.19.0
 
         Use :func:`~scrapy.utils.response.response_from_dict` to convert back
         into a :class:`~scrapy.http.Response` object.
@@ -221,7 +221,7 @@ class Response(object_ref):
         """Return a response built from the *d* dict, as returned by
         :meth:`to_dict`.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.19.0
         """
         return cls(**{key: value for key, value in d.items() if key != "_class"})
 

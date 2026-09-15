@@ -1,9 +1,11 @@
-name: Flag PRs for triage
-# Labels pull requests whose author's public activity suggests that an LLM is
-# writing them without supervision, and records the evidence in the workflow
-# run summary so that triaging one does not require reading a user profile.
+name: Close spam PRs
+# Closes as spam pull requests whose author's public activity suggests that an
+# LLM is writing them without supervision, and records the evidence in the
+# workflow run summary so that reviewing the decision does not require reading
+# a user profile. Reopening and removing the label is all it takes to overrule
+# it.
 #
-# Four independent signals, any of which is enough to label. Each one abstains
+# Four independent signals, any of which is enough to close. Each one abstains
 # when the data it needs is unavailable, so a missing signal never counts
 # against an author:
 #
@@ -31,9 +33,6 @@ name: Flag PRs for triage
 # against hand-labelled pull requests and either failed to separate or, in the
 # case of the merge ratio, inverted on held-out data.
 #
-# The label is advisory, and it says the author's history is worth a look
-# before reviewing in depth; it does not say the pull request is bad.
-#
 # The workflow only reads pull request and public activity metadata through the
 # API, it never checks out or runs pull request code, so pull_request_target is
 # safe here.
@@ -44,16 +43,16 @@ permissions:
   contents: read
   pull-requests: write
 jobs:
-  flag-pr-for-triage:
-    name: Label PR if the author's activity suggests unsupervised LLM use
+  close-spam-pr:
+    name: Close PR if the author's activity suggests unsupervised LLM use
     runs-on: ubuntu-latest
     steps:
-      - name: Score the author and label the PR
+      - name: Score the author and close the PR
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const LABEL = 'needs triage';
+            const LABEL = 'spam';
             const RETRIES = 5;
             const RETRY_WAIT_MS = 60000;
             const REJECTION_WINDOW_DAYS = 30;
@@ -240,16 +239,19 @@ jobs:
                   ? 'repositories per week: unmeasurable, no public events found'
                   : `repositories per week, at most: ${breadth}`,
                 `branch: ${pr.head?.ref ?? 'unknown'}`,
-                `verdict: ${reasons.length ? `labelled "${LABEL}"` : 'not labelled'}`,
+                `verdict: ${reasons.length ? `closed as ${LABEL}` : 'left open'}`,
               ])
               .addRaw(reasons.length ? `\n${reasons.map(reason => `- ${reason}`).join('\n')}\n` : '')
               .write();
 
             if (!reasons.length) {
-              core.info(`Not labelling PR #${pr.number}.`);
+              core.info(`Leaving PR #${pr.number} open.`);
               return;
             }
             await withRetries('Adding the label', () =>
               github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [LABEL] }),
             );
-            core.info(`Labelled PR #${pr.number}: ${reasons.join(' | ')}`);
+            await withRetries('Closing the PR', () =>
+              github.rest.pulls.update({ owner, repo, pull_number: pr.number, state: 'closed' }),
+            );
+            core.info(`Closed PR #${pr.number} as ${LABEL}: ${reasons.join(' | ')}`);
