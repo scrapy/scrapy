@@ -31,8 +31,6 @@ variable in your spider, and use it from your spider callbacks:
 Link extractor reference
 ========================
 
-.. module:: scrapy.linkextractors
-
 The link extractor class is
 :class:`scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor`. For convenience it
 can also be imported as ``scrapy.linkextractors.LinkExtractor``:
@@ -41,25 +39,18 @@ can also be imported as ``scrapy.linkextractors.LinkExtractor``:
 
     from scrapy.linkextractors import LinkExtractor
 
-.. autodata:: IGNORED_EXTENSIONS
+.. autodata:: scrapy.linkextractors.IGNORED_EXTENSIONS
 
-.. autodata:: SUPPORTED_SCHEMES
+.. autodata:: scrapy.linkextractors.SUPPORTED_SCHEMES
 
 LxmlLinkExtractor
 -----------------
 
-.. module:: scrapy.linkextractors.lxmlhtml
-   :synopsis: lxml's HTMLParser-based link extractors
-
-
-.. autoclass:: LxmlLinkExtractor
+.. autoclass:: scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor
 
     .. automethod:: extract_links
 
 Link
 ----
 
-.. module:: scrapy.link
-   :synopsis: Link from link extractors
-
-.. autoclass:: Link
+.. autoclass:: scrapy.link.Link

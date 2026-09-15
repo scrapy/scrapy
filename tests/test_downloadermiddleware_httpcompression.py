@@ -17,8 +17,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWar
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
-from scrapy.utils._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
-from scrapy.utils.gz import gunzip
+from scrapy.utils._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded, gunzip
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
@@ -447,7 +446,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert gunzip(newresponse.body) == plainbody
         self.assertStatsEqual("httpcompression/response_count", 1)
-        self.assertStatsEqual("httpcompression/response_bytes", 230)
+        self.assertStatsEqual("httpcompression/response_bytes", len(f.getvalue()))
 
     def test_process_response_head_request_no_decode_required(self):
         response = self._getresponse("gzip")

@@ -11,6 +11,7 @@ import pytest
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
 from scrapy.crawler import Crawler
+from scrapy.dupefilters import BaseDupeFilter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
@@ -328,3 +329,31 @@ class TestIncompatibility:
                 ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
             ):
                 self._incompatible()
+
+
+def test_scheduler_without_crawler() -> None:
+    """The crawler argument of Scheduler is optional."""
+    scheduler = Scheduler(BaseDupeFilter())
+    assert scheduler.crawler is None
+
+
+@coroutine_test
+async def test_unserializable_requests(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Requests that cannot be serialized fall back to the memory queue."""
+
+    class UnserializableSpider(Spider):
+        name = "unserializable"
+
+        async def start(self):
+            for index in range(2):
+                yield Request(f"data:,{index}", meta={"callable": lambda: None})
+
+    crawler = get_crawler(
+        UnserializableSpider, {"JOBDIR": str(tmp_path), "SCHEDULER_DEBUG": True}
+    )
+    await crawler.crawl_async()
+    assert crawler.stats.get_value("scheduler/unserializable") == 2
+    assert crawler.stats.get_value("scheduler/enqueued/memory") == 2
+    assert caplog.text.count("Unable to serialize request") == 1

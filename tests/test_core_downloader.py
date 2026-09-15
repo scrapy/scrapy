@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
+from unittest.mock import patch
 
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
+from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.endpoints import HostnameEndpoint
 from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol as TxProtocol
@@ -33,7 +35,8 @@ from scrapy.core.downloader.contextfactory import (
     _ScrapyClientContextFactory,
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import DownloadCancelledError, ScrapyDeprecationWarning
+from scrapy.resolver import dnscache
 from scrapy.utils._deps_compat import PYOPENSSL_SET_CIPHER_LIST_TMP_CONN
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
@@ -49,8 +52,8 @@ from tests.utils.decorators import coroutine_test
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from twisted.internet.defer import Deferred
-    from twisted.internet.interfaces import IListeningPort
+    from twisted.internet.interfaces import IConsumer, IListeningPort
+    from twisted.python.failure import Failure
     from twisted.web.iweb import IBodyProducer
 
     from scrapy.http import Response
@@ -66,8 +69,117 @@ def _twisted_idna_fallbacks() -> None:
 
 class TestSlot:
     def test_repr(self):
-        slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        assert repr(slot) == "Slot(concurrency=8, delay=0.1, randomize_delay=True)"
+        slot = Slot(concurrency=8, delay=0.1, jitter=0.5)
+        assert repr(slot) == "Slot(concurrency=8, delay=0.1, jitter=0.5)"
+
+    def test_download_delay_without_jitter(self):
+        slot = Slot(concurrency=8, delay=2.0, jitter=0)
+        assert slot.download_delay() == 2.0
+
+    def test_download_delay_with_jitter(self):
+        slot = Slot(concurrency=8, delay=2.0, jitter=0.25)
+        assert all(1.5 <= slot.download_delay() <= 2.5 for _ in range(100))
+
+    def test_download_delay_with_jitter_above_one(self):
+        slot = Slot(concurrency=8, delay=2.0, jitter=3.0)
+        assert all(slot.download_delay() >= 0 for _ in range(100))
+
+    @pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+    @pytest.mark.parametrize("positional", [False, True])
+    def test_deprecated_randomize_delay_param(
+        self, positional: bool, value: bool, expected: float
+    ):
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="The randomize_delay parameter of Slot is deprecated",
+        ):
+            slot = (
+                Slot(8, 2.0, value)
+                if positional
+                else Slot(concurrency=8, delay=2.0, randomize_delay=value)
+            )
+        assert slot.jitter == expected
+
+    @pytest.mark.parametrize(("jitter", "expected"), [(0, False), (0.2, True)])
+    def test_deprecated_randomize_delay(self, jitter: float, expected: bool):
+        slot = Slot(concurrency=8, delay=2.0, jitter=jitter)
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="Slot.randomize_delay is deprecated"
+        ):
+            assert slot.randomize_delay is expected
+
+    @pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+    def test_deprecated_randomize_delay_setter(self, value: bool, expected: float):
+        slot = Slot(concurrency=8, delay=2.0, jitter=0.2)
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="Slot.randomize_delay is deprecated"
+        ):
+            slot.randomize_delay = value
+        assert slot.jitter == expected
+
+
+class TestJitterSetting:
+    @staticmethod
+    def _jitter(**settings: Any) -> float:
+        crawler = get_crawler(settings_dict=settings)
+        downloader = Downloader(crawler)
+        downloader.close()
+        return downloader._jitter
+
+    def test_default(self):
+        assert self._jitter() == 0.5
+
+    @pytest.mark.parametrize(("value", "expected"), [(0, 0.0), ("0.2", 0.2), (1, 1.0)])
+    def test_value(self, value: Any, expected: float):
+        assert self._jitter(DOWNLOAD_DELAY_JITTER=value) == pytest.approx(expected)
+
+    @pytest.mark.parametrize(("value", "expected"), [(True, 0.5), (False, 0.0)])
+    def test_deprecated_setting(self, value: bool, expected: float):
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="The RANDOMIZE_DOWNLOAD_DELAY setting is deprecated",
+        ):
+            assert self._jitter(RANDOMIZE_DOWNLOAD_DELAY=value) == expected
+
+    @pytest.mark.parametrize(("jitter", "expected"), [(0, False), (0.2, True)])
+    def test_deprecated_downloader_attribute(self, jitter: float, expected: bool):
+        crawler = get_crawler(settings_dict={"DOWNLOAD_DELAY_JITTER": jitter})
+        downloader = Downloader(crawler)
+        downloader.close()
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="Downloader.randomize_delay is deprecated"
+        ):
+            assert downloader.randomize_delay is expected
+
+    def test_deprecated_setting_loses_on_tie(self):
+        with pytest.warns(ScrapyDeprecationWarning):
+            jitter = self._jitter(
+                RANDOMIZE_DOWNLOAD_DELAY=False, DOWNLOAD_DELAY_JITTER=0.2
+            )
+        assert jitter == pytest.approx(0.2)
+
+
+class TestDownloaderStop:
+    @coroutine_test
+    async def test_waits_for_cancelled_downloads_to_settle(self) -> None:
+        """stop() cancels in-flight downloads before returning.
+
+        The engine relies on their cleanup (removal from ``_download_tasks``)
+        having already happened by the time it returns, or it may consider the
+        crawl finished while a download is still being torn down.
+        """
+        crawler = get_crawler(DefaultSpider)
+        downloader = Downloader(crawler)
+
+        requests = [Request(f"data:,{i}") for i in range(5)]
+        for request in requests:
+            download_dfd: Deferred[None] = Deferred()
+            download_dfd.addBoth(downloader._download_task_done, request)
+            downloader._download_tasks[request] = download_dfd
+
+        await downloader.stop()
+
+        assert not downloader._download_tasks
 
 
 @pytest.mark.requires_reactor  # this test is related to the Twisted HTTP code
@@ -491,6 +603,119 @@ async def test_fetch_deprecated_spider_arg():
         await crawler.crawl_async()
 
 
+@coroutine_test
+async def test_stop_drops_queued_requests() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    slot = Slot(concurrency=1, delay=0, jitter=0)
+    downloader.slots["example.com"] = slot
+
+    request = Request("https://example.com")
+    queue_dfd: Deferred[Any] = Deferred()
+    failures: list[Failure] = []
+    queue_dfd.addErrback(failures.append)
+    slot.queue.append((request, queue_dfd))
+
+    dropped = await downloader.stop()
+    assert dropped == 1
+    assert len(failures) == 1
+    assert failures[0].check(DownloadCancelledError)
+
+
+@coroutine_test
+async def test_stop_rejects_new_requests() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+
+    await downloader.stop()
+
+    with pytest.raises(
+        DownloadCancelledError,
+        match="not accepting new requests",
+    ):
+        await downloader._enqueue_request(Request("https://example.com"))
+
+
+@coroutine_test
+async def test_wait_for_download_errbacks_queue_deferred_on_error() -> None:
+    crawler = get_crawler(DefaultSpider)
+    downloader = Downloader(crawler)
+    slot = Slot(concurrency=1, delay=0, jitter=0)
+
+    queue_dfd: Deferred[Any] = Deferred()
+    failures: list[Failure] = []
+    queue_dfd.addErrback(failures.append)
+
+    with patch.object(downloader, "_download", side_effect=RuntimeError("boom")):
+        await downloader._wait_for_download(
+            slot,
+            Request("https://example.com"),
+            queue_dfd,
+        )
+
+    assert len(failures) == 1
+    assert failures[0].check(RuntimeError)
+
+
+@coroutine_test
+async def test_wait_for_download_keeps_called_queue_deferred_on_error() -> None:
+    crawler = get_crawler(DefaultSpider)
+    downloader = Downloader(crawler)
+    slot = Slot(concurrency=1, delay=0, jitter=0)
+
+    queue_dfd: Deferred[Any] = Deferred()
+    queue_dfd.callback(None)
+
+    with patch.object(downloader, "_download", side_effect=RuntimeError("boom")):
+        await downloader._wait_for_download(
+            slot,
+            Request("https://example.com"),
+            queue_dfd,
+        )
+
+    assert queue_dfd.called
+
+
+@coroutine_test
+async def test_stop_skips_called_queued_deferred() -> None:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    slot = Slot(concurrency=1, delay=0, jitter=0)
+    downloader.slots["example.com"] = slot
+
+    queue_dfd: Deferred[Any] = Deferred()
+    queue_dfd.callback(None)
+    slot.queue.append((Request("https://example.com"), queue_dfd))
+
+    dropped = await downloader.stop()
+    assert dropped == 1
+
+
+@coroutine_test
+async def test_stop_cancels_pending_download_tasks() -> None:
+    crawler = get_crawler(DefaultSpider)
+    downloader = Downloader(crawler)
+
+    done_dfd: Deferred[None] = Deferred()
+    done_dfd.callback(None)
+
+    pending_dfd: Deferred[None] = Deferred()
+    failures: list[Failure] = []
+    pending_dfd.addErrback(failures.append)
+
+    downloader._download_tasks[Request("https://done.example")] = done_dfd
+    downloader._download_tasks[Request("https://pending.example")] = pending_dfd
+
+    dropped = await downloader.stop()
+
+    assert dropped == 1
+    assert len(failures) == 1
+    assert failures[0].check(CancelledError)
+
+
 def test_deprecated_tls_module_names() -> None:
     with pytest.warns(
         ScrapyDeprecationWarning,
@@ -509,3 +734,65 @@ def test_deprecated_tls_module_names() -> None:
         assert tls.DEFAULT_CIPHERS._ciphers == (
             AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")._ciphers
         )
+
+
+def test_slot_str() -> None:
+    slot = Slot(concurrency=2, delay=0.5, jitter=0)
+    assert str(slot).startswith(
+        "<downloader.Slot concurrency=2 delay=0.50 jitter=0"
+        " len(active)=0 len(queue)=0 len(transferring)=0 lastseen="
+    )
+
+
+def test_get_slot_key_by_ip() -> None:
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=ScrapyDeprecationWarning,
+            message="The CONCURRENT_REQUESTS_PER_IP setting is deprecated",
+        )
+        crawler = get_crawler(settings_dict={"CONCURRENT_REQUESTS_PER_IP": 1})
+        downloader = Downloader(crawler)
+    dnscache["example.com"] = "127.0.0.1"
+    try:
+        assert downloader.get_slot_key(Request("http://example.com")) == "127.0.0.1"
+    finally:
+        del dnscache["example.com"]
+        downloader.close()
+
+
+@coroutine_test
+async def test_slot_gc() -> None:
+    """Slots that have been idle for long enough are discarded."""
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    try:
+        await maybe_deferred_to_future(downloader.fetch(Request("data:,")))
+        assert set(downloader.slots) == {""}
+        downloader._slot_gc()
+        assert set(downloader.slots) == {""}
+        downloader._slot_gc(age=0)
+        assert not downloader.slots
+    finally:
+        downloader.close()
+        await downloader.handlers._close()
+
+
+@coroutine_test
+async def test_request_body_producer() -> None:
+    class Consumer:
+        def __init__(self) -> None:
+            self.written: list[bytes] = []
+
+        def write(self, data: bytes) -> None:
+            self.written.append(data)
+
+    producer = _RequestBodyProducer(b"body")
+    assert producer.length == 4
+    consumer = Consumer()
+    await maybe_deferred_to_future(producer.startProducing(cast("IConsumer", consumer)))
+    assert consumer.written == [b"body"]
+    # The body is written in a single call, so there is nothing to pause or stop.
+    producer.pauseProducing()
+    producer.stopProducing()

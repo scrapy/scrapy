@@ -4,13 +4,59 @@ import os
 import warnings
 from importlib import import_module
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
 from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
 ENVVAR = "SCRAPY_SETTINGS_MODULE"
 DATADIR_CFG_SECTION = "datadir"
+
+
+def find_projects(
+    path: str | os.PathLike[str] = ".",
+    *,
+    max_depth: int | None = None,
+    ignored_dirs: Iterable[str] = (),
+) -> Iterator[Path]:
+    """Yield the root directory of every Scrapy project found in *path* or,
+    recursively, in any of its subdirectories.
+
+    .. versionadded:: 2.19.0
+
+    Once a project is found, its subdirectories are not searched.
+
+    Hidden directories and any directory named in *ignored_dirs* are not
+    searched either, and neither are virtual environments, identified by a
+    :file:`pyvenv.cfg` file, regardless of their directory name.
+
+    *max_depth* limits how deep to search: 0 only checks *path* itself, 1 also
+    checks its direct subdirectories, and so on. By default, the whole
+    directory tree is searched.
+    """
+    root = Path(path)
+    ignored = frozenset(ignored_dirs)
+    for dirpath, dirnames, filenames in os.walk(root):
+        current = Path(dirpath)
+        if "scrapy.cfg" in filenames:
+            dirnames.clear()
+            yield current
+            continue
+        if "pyvenv.cfg" in filenames:
+            dirnames.clear()
+            continue
+        if max_depth is not None and len(current.relative_to(root).parts) >= max_depth:
+            dirnames.clear()
+            continue
+        dirnames[:] = sorted(
+            dirname
+            for dirname in dirnames
+            if not dirname.startswith(".") and dirname not in ignored
+        )
 
 
 def inside_project() -> bool:
@@ -64,9 +110,13 @@ def data_path(path: str | os.PathLike[str], createdir: bool = False) -> str:
 
 
 def get_project_settings() -> Settings:
-    if ENVVAR not in os.environ:
-        project = os.environ.get("SCRAPY_PROJECT", "default")
-        init_env(project)
+    """Return a :class:`~scrapy.settings.Settings` object with the
+    :ref:`project settings <project-settings>` of the current project.
+
+    Settings from sources with a higher precedence, such as :ref:`spider
+    settings <spider-settings>`, are applied when a crawl starts.
+    """
+    init_env(os.environ.get("SCRAPY_PROJECT", "default"))
 
     settings = Settings()
     settings_module_path = os.environ.get(ENVVAR)
