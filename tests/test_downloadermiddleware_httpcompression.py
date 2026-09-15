@@ -123,6 +123,8 @@ class TestHttpCompression:
         )
         newresponse = mw.process_response(request, response)
         assert newresponse.body == b"hello"
+        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.flags == ["decoded"]
 
     def test_process_request(self):
         request = Request("http://scrapytest.org")
@@ -140,8 +142,36 @@ class TestHttpCompression:
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
         assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.flags == ["decoded"]
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
+
+    def test_process_response_gzip_keep_encoding_header(self):
+        crawler = get_crawler(
+            Spider, settings_dict={"COMPRESSION_KEEP_ENCODING_HEADER": True}
+        )
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
+        crawler.stats.open_spider()
+        response = self._getresponse("gzip")
+        response.headers["Content-Encoding"] = [b"GZip"]
+        response.flags.append("existing")
+        assert response.request
+        request = response.request
+
+        newresponse = mw.process_response(request, response)
+
+        assert newresponse is not response
+        assert isinstance(newresponse, HtmlResponse)
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert newresponse.headers.getlist("Content-Encoding") == [b"GZip"]
+        assert newresponse.flags == ["existing", "decoded"]
+        assert crawler.stats.get_value("httpcompression/response_count") == 1
+
+        repeated_response = mw.process_response(request, newresponse)
+
+        assert repeated_response is newresponse
+        assert repeated_response.flags == ["existing", "decoded"]
+        assert crawler.stats.get_value("httpcompression/response_count") == 1
 
     def test_process_response_br(self):
         response = self._getresponse("br")
@@ -207,6 +237,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is response
         assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "decoded" not in newresponse.flags
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
 
@@ -218,6 +249,27 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
         assert newresponse.headers.getlist("Content-Encoding") == [b"uuencode"]
+        assert newresponse.flags == ["decoded"]
+
+    def test_multipleencodings_keep_encoding_header(self):
+        crawler = get_crawler(
+            Spider, settings_dict={"COMPRESSION_KEEP_ENCODING_HEADER": True}
+        )
+        mw = build_from_crawler(HttpCompressionMiddleware, crawler)
+        response = self._getresponse("gzip")
+        original_content_encoding = [b"UUEncode", b" GZip "]
+        response.headers["Content-Encoding"] = original_content_encoding
+        assert response.request
+        request = response.request
+
+        newresponse = mw.process_response(request, response)
+
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert (
+            newresponse.headers.getlist("Content-Encoding") == original_content_encoding
+        )
+        assert newresponse.flags == ["decoded"]
 
     def test_multi_compression_single_header(self):
         response = self._getresponse("gzip-deflate")
@@ -360,6 +412,7 @@ class TestHttpCompression:
         assert isinstance(newresponse, HtmlResponse)
         assert newresponse.body == plainbody
         assert newresponse.encoding == resolve_encoding("gb2312")
+        assert "decoded" not in newresponse.flags
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
@@ -458,6 +511,7 @@ class TestHttpCompression:
         newresponse = self.mw.process_response(request, response)
         assert newresponse is response
         assert response.body == b""
+        assert "decoded" not in newresponse.flags
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
 
