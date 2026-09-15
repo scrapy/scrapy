@@ -5,12 +5,12 @@ import json
 import logging
 import os
 import re
+import socket
 import sys
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from ipaddress import IPv4Address
-from socket import gethostbyname
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from urllib.parse import urlparse
 
@@ -35,9 +35,10 @@ from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.utils._deps_compat import TWISTED_TLS_LIMITS_OFFBY1
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.reactor import is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests import NON_EXISTING_RESOLVABLE
+from tests import IDNA_REJECTED_HOSTNAMES, NON_EXISTING_RESOLVABLE
 from tests.mockserver.mitm_proxy import wrong_credentials
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.simple_https import SimpleMockServer
@@ -74,6 +75,9 @@ class TestHttpBase(ABC):
     # h2.connection.H2Connection.receive_data()), thus closing all streams that
     # were using it, and we handle this as a normal exception.
     handler_supports_http2_dataloss: bool = True
+    # whether the handler can request hostnames that the idna package rejects
+    # (see IDNA_REJECTED_HOSTNAMES)
+    handler_supports_idna_rejected_hostnames: bool = True
     # What the handler does with a bad response header line, e.g. one with no
     # colon in it:
     # "skip-bad": the bad line is skipped and the header lines that follow it
@@ -356,14 +360,8 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_timeout_download_from_spider_nodata_rcvd(
-        self, mockserver: MockServer, reactor_pytest: str
+        self, mockserver: MockServer
     ) -> None:
-        if reactor_pytest == "asyncio" and sys.platform == "win32":
-            # https://twistedmatrix.com/trac/ticket/10279
-            pytest.skip(
-                "This test produces DirtyReactorAggregateError on Windows with asyncio"
-            )
-
         # client connects but no data is received
         meta = {"download_timeout": 0.5}
         request = Request(mockserver.url("/wait", is_secure=self.is_secure), meta=meta)
@@ -374,13 +372,8 @@ class TestHttpBase(ABC):
 
     @coroutine_test
     async def test_timeout_download_from_spider_server_hangs(
-        self, mockserver: MockServer, reactor_pytest: str
+        self, mockserver: MockServer
     ) -> None:
-        if reactor_pytest == "asyncio" and sys.platform == "win32":
-            # https://twistedmatrix.com/trac/ticket/10279
-            pytest.skip(
-                "This test produces DirtyReactorAggregateError on Windows with asyncio"
-            )
         # client connects, server send headers and some body bytes but hangs
         meta = {"download_timeout": 0.5}
         request = Request(
@@ -406,6 +399,49 @@ class TestHttpBase(ABC):
             assert request.headers.get("Host") == host_port.encode()
         else:
             assert not request.headers
+
+    @pytest.fixture
+    def resolve_to_loopback(self, monkeypatch: pytest.MonkeyPatch) -> Generator[None]:
+        """Resolve every hostname to 127.0.0.1 for the duration of a test."""
+        real_getaddrinfo = socket.getaddrinfo
+
+        def getaddrinfo(host, port, *args, **kwargs):
+            return real_getaddrinfo("127.0.0.1", port, *args, **kwargs)
+
+        # httpx goes through anyio and asyncio, which look socket.getaddrinfo
+        # up when resolving.
+        monkeypatch.setattr(socket, "getaddrinfo", getaddrinfo)
+        previous = None
+        if is_reactor_installed():
+            # Twisted resolves through a GAIResolver that bound
+            # socket.getaddrinfo at import time, so it needs its own instance.
+            from twisted.internet import reactor
+            from twisted.internet._resolver import GAIResolver  # noqa: PLC0415
+
+            previous = reactor.installNameResolver(
+                GAIResolver(reactor, getaddrinfo=getaddrinfo)
+            )
+        try:
+            yield
+        finally:
+            if previous is not None:
+                reactor.installNameResolver(previous)
+
+    @pytest.mark.parametrize("hostname", IDNA_REJECTED_HOSTNAMES)
+    @coroutine_test
+    async def test_idna_rejected_hostname(
+        self, hostname: str, mockserver: MockServer, resolve_to_loopback: None
+    ) -> None:
+        """Hostnames that the idna package rejects, such as punycode emoji
+        domains or domains with underscores, should still be downloadable."""
+        if not self.handler_supports_idna_rejected_hostnames:
+            pytest.skip("This handler cannot request IDNA-rejected hostnames")
+        scheme = "https" if self.is_secure else "http"
+        port = mockserver.port(is_secure=self.is_secure)
+        request = Request(f"{scheme}://{hostname}:{port}/text")
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
 
     @coroutine_test
     async def test_content_length_zero_bodyless_post_request_headers(
@@ -921,6 +957,32 @@ class TestHttpBase(ABC):
                 "The 'bindaddress' request meta key is not supported by" in caplog.text
             )
 
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="127.0.0.2 is not available on macOS by default",
+    )
+    @coroutine_test
+    async def test_download_bind_address_meta_pool_reuse(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # A pooled connection opened for one bindaddress must not be reused
+        # for a request with a different bindaddress.
+        url = mockserver.url("/client-ip", is_secure=self.is_secure)
+        async with self.get_dh() as download_handler:
+            response1 = await download_handler.download_request(
+                Request(url, meta={"bindaddress": "127.0.0.1"})
+            )
+            response2 = await download_handler.download_request(
+                Request(url, meta={"bindaddress": "127.0.0.2"})
+            )
+        if self.handler_supports_bindaddress_meta:
+            assert response1.body == b"127.0.0.1"
+            assert response2.body == b"127.0.0.2"
+        else:
+            assert (
+                "The 'bindaddress' request meta key is not supported by" in caplog.text
+            )
+
     @coroutine_test
     async def test_verbatim_url(self, mockserver: MockServer) -> None:
         # Square brackets are encoded by safe_url_string (w3lib).
@@ -1320,6 +1382,27 @@ class TestHttpWithCrawlerBase(ABC):
             assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
             assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
+    @pytest.mark.filterwarnings(
+        r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
+    )
+    @coroutine_test
+    async def test_response_ssl_certificate_empty_body(
+        self, mockserver: MockServer
+    ) -> None:
+        if not self.is_secure:
+            pytest.skip("Only applies to HTTPS")
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/status?n=200", is_secure=self.is_secure)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        cert = crawler.spider.meta["responses"][0].certificate
+        assert cert is not None
+        if isinstance(cert, Certificate):  # Twisted
+            assert cert.getSubject().commonName == b"localhost"
+        elif isinstance(cert, bytes):  # DER bytes
+            cert_x509 = load_der_x509_certificate(cert)
+            assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
+
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer) -> None:
         # copy of TestCrawl.test_response_ip_address()
@@ -1330,7 +1413,18 @@ class TestHttpWithCrawlerBase(ABC):
         assert isinstance(crawler.spider, SingleRequestSpider)
         ip_address = crawler.spider.meta["responses"][0].ip_address
         assert isinstance(ip_address, IPv4Address)
-        assert str(ip_address) == gethostbyname(expected_netloc)
+        assert str(ip_address) == socket.gethostbyname(expected_netloc)
+
+    @coroutine_test
+    async def test_response_ip_address_empty_body(self, mockserver: MockServer) -> None:
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/status?n=200", is_secure=self.is_secure)
+        expected_netloc, _ = urlparse(url).netloc.split(":")
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        ip_address = crawler.spider.meta["responses"][0].ip_address
+        assert isinstance(ip_address, IPv4Address)
+        assert str(ip_address) == socket.gethostbyname(expected_netloc)
 
     @coroutine_test
     async def test_bytes_received_stop_download_callback(
@@ -1404,13 +1498,16 @@ class TestHttpWithCrawlerBase(ABC):
 class TestHttpProxyBase(ABC):
     is_secure = False
     expected_http_proxy_request_body = b"http://example.com"
-    # whether the handler supports HTTPS proxies with HTTPS destinations
-    handler_supports_tls_in_tls: bool = True
 
     @property
     @abstractmethod
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         raise NotImplementedError
+
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    @property
+    def handler_supports_tls_in_tls(self) -> bool:
+        return True
 
     @pytest.fixture(scope="session")
     def proxy_mockserver(self) -> Generator[ProxyEchoMockServer]:
@@ -1485,14 +1582,17 @@ PROXY_KINDS = ["http", "https", "socks5"]
 
 
 class TestMitmProxyBase(ABC):
-    # whether the handler supports HTTPS proxies with HTTPS destinations
-    handler_supports_tls_in_tls: bool = True
     handler_supports_socks: bool = False
 
     @property
     @abstractmethod
     def settings_dict(self) -> dict[str, Any] | None:
         raise NotImplementedError
+
+    # whether the handler supports HTTPS proxies with HTTPS destinations
+    @property
+    def handler_supports_tls_in_tls(self) -> bool:
+        return True
 
     def _maybe_skip(self, proxy_kind: str, https_dest: bool) -> None:
         if proxy_kind == "socks5" and not self.handler_supports_socks:
@@ -1658,7 +1758,7 @@ class TestRealWebsiteBase(ABC):
         self, settings_dict: dict[str, Any] | None = None
     ) -> AsyncGenerator[DownloadHandlerProtocol]:
         crawler = get_crawler(
-            DefaultSpider, {**REAL_WEBSITE_SETTINGS, **(settings_dict or {})}
+            DefaultSpider, REAL_WEBSITE_SETTINGS | (settings_dict or {})
         )
         crawler.spider = crawler._create_spider()
         dh = build_from_crawler(self.download_handler_cls, crawler)
@@ -1678,7 +1778,7 @@ class TestRealWebsiteBase(ABC):
     @coroutine_test
     async def test_download_with_spider(self) -> None:
         crawler = get_crawler(
-            SingleRequestSpider, {**REAL_WEBSITE_SETTINGS, **(self.settings_dict or {})}
+            SingleRequestSpider, REAL_WEBSITE_SETTINGS | (self.settings_dict or {})
         )
         await maybe_deferred_to_future(
             crawler.crawl(seed=Request("https://books.toscrape.com/"))

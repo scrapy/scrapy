@@ -132,7 +132,7 @@ with simple reactor management code:
         await runner.crawl(MySpider)  # completes when the spider finishes
 
 
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
     react(deferred_f_from_coro_f(crawl))
 
 Same example but using :class:`~scrapy.crawler.CrawlerRunner` and a
@@ -361,6 +361,12 @@ By default, Scrapy runs a single spider per process when you run ``scrapy
 crawl``. However, Scrapy supports running multiple spiders per process using
 the :ref:`internal API <topics-api>`.
 
+Each call to ``crawl()`` creates its own :class:`~scrapy.crawler.Crawler`,
+with its own instances of the downloader and spider middlewares and its own
+resolved :ref:`settings <topics-settings>`, including :ref:`spider settings
+<spider-settings>`. Nothing from one of these is shared with the other
+spiders running in the same process.
+
 Here is an example that runs multiple spiders simultaneously:
 
 .. code-block:: python
@@ -416,7 +422,7 @@ Same example using :class:`~scrapy.crawler.AsyncCrawlerRunner`:
         await runner.join()  # completes when both spiders finish
 
 
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
     react(deferred_f_from_coro_f(crawl))
 
 
@@ -450,7 +456,7 @@ finishes before starting the next one:
         await runner.crawl(MySpider2)
 
 
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    install_reactor()
     react(deferred_f_from_coro_f(crawl))
 
 .. note:: When running multiple spiders in the same process, :ref:`logging
@@ -573,6 +579,20 @@ Static analysis
 
 Consider using :doc:`scrapy-lint <scrapy-lint:index>`, a linter for Scrapy
 projects that detects common mistakes and anti-patterns.
+
+.. _connect-live-crawl:
+
+Connecting to live crawls
+=========================
+
+It's useful to be able to connect to live long-running crawls, either to check
+their progress in detail or to investigate problems with them. Scrapy provides
+the following tools for this:
+
+- :ref:`Telnet console <topics-telnetconsole>`: connect to a crawl process with
+  a telnet client and execute Python code inside it.
+- :ref:`Scrapy MCP server <using-mcp-server>`: point a coding agent to a crawl
+  process so that it can execute Python code inside it.
 
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: https://www.scrapy.org/companies
