@@ -9,6 +9,7 @@ import pytest
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
+    _job_dir,
     arglist_to_dict,
     build_component_list,
     closest_config,
@@ -392,3 +393,39 @@ class TestFeedExportConfig:
             "batch_item_count": 2,
             "item_export_kwargs": {},
         }
+
+    def test_feed_complete_default_values_from_settings_format_from_uri(self):
+        feed: dict[str, Any] = {}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "output.json"
+        )
+        assert new_feed["format"] == "json"
+
+    def test_feed_complete_default_values_from_settings_format_kept(self):
+        feed = {"format": "csv"}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "output.json"
+        )
+        assert new_feed["format"] == "csv"
+
+    def test_feed_complete_default_values_from_settings_format_not_inferable(self):
+        feed: dict[str, Any] = {}
+        new_feed = feed_complete_default_values_from_settings(
+            feed, Settings(), "stdout:"
+        )
+        assert new_feed["format"] == ""
+
+
+def test_no_jobdir() -> None:
+    assert _job_dir(Settings()) is None
+    assert _job_dir(Settings({"JOBDIR": ""})) is None
+
+
+def test_existing_jobdir(tmp_path: Path) -> None:
+    assert _job_dir(Settings({"JOBDIR": str(tmp_path)})) == str(tmp_path)
+
+
+def test_missing_jobdir(tmp_path: Path) -> None:
+    jobdir = tmp_path / "missing" / "jobdir"
+    assert _job_dir(Settings({"JOBDIR": str(jobdir)})) == str(jobdir)
+    assert jobdir.is_dir()

@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
+from scrapy.utils._template import render_templatefile, string_camelcase
 from scrapy.utils.conf import _scrapy_table
-from scrapy.utils.template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
     import argparse

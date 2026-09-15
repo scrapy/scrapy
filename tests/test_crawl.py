@@ -76,11 +76,11 @@ class TestCrawl:
 
     @coroutine_test
     async def test_fixed_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.2)
+        await self._test_delay(mockserver, total=10, delay=0.2)
 
     @coroutine_test
     async def test_randomized_delay(self, mockserver: MockServer) -> None:
-        await self._test_delay(mockserver, total=3, delay=0.1, randomize=True)
+        await self._test_delay(mockserver, total=10, delay=0.1, randomize=True)
 
     @staticmethod
     async def _test_delay(
@@ -93,7 +93,10 @@ class TestCrawl:
         }
         tolerance = 1 - (0.6 if randomize else 0.2)
 
-        settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
+        settings = {
+            "DOWNLOAD_DELAY": delay,
+            "DOWNLOAD_DELAY_JITTER": 0.5 if randomize else 0,
+        }
         crawler = get_crawler(FollowAllSpider, settings)
         await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
@@ -709,20 +712,7 @@ class TestCrawlSpider:
     @pytest.mark.filterwarnings(
         r"ignore:.*You should use cryptography's X\.509 APIs:DeprecationWarning"
     )
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "/echo?body=test",
-            pytest.param(
-                "/status?n=200",
-                marks=pytest.mark.xfail(
-                    'config.getoption("--reactor") != "none"',
-                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no certificate",
-                    strict=True,
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("url", ["/echo?body=test", "/status?n=200"])
     @coroutine_test
     async def test_response_ssl_certificate(
         self, mockserver: MockServer, url: str
@@ -741,20 +731,7 @@ class TestCrawlSpider:
             assert cert_x509.subject.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
             assert cert_x509.issuer.rfc4514_string() == "CN=localhost,O=Scrapy,C=IE"
 
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "/echo?body=test",
-            pytest.param(
-                "/status?n=200",
-                marks=pytest.mark.xfail(
-                    'config.getoption("--reactor") != "none"',
-                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no ip_address",
-                    strict=True,
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("url", ["/echo?body=test", "/status?n=200"])
     @coroutine_test
     async def test_response_ip_address(self, mockserver: MockServer, url: str) -> None:
         crawler = get_crawler(SingleRequestSpider)

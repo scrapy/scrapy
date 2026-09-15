@@ -8,12 +8,11 @@ import argparse
 import builtins
 import logging
 import os
+import sys
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
-
-from twisted.python import failure
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
@@ -31,6 +30,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+class _PdbHandler(logging.Handler):
+    """Start a post-mortem debugging session on every logged record that comes
+    with an exception traceback."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.exc_info and record.exc_info[2]:
+            import pdb  # noqa: T100,PLC0415
+
+            pdb.post_mortem(record.exc_info[2])
 
 
 class ScrapyCommand(ABC):
@@ -122,7 +132,11 @@ class ScrapyCommand(ABC):
             metavar="NAME=VALUE",
             help="set/override setting (may be repeated)",
         )
-        group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
+        group.add_argument(
+            "--pdb",
+            action="store_true",
+            help="enable pdb on failure (uses ipdb if installed)",
+        )
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         """Set settings based on the command line options."""
@@ -151,7 +165,13 @@ class ScrapyCommand(ABC):
             )
 
         if opts.pdb:
-            failure.startDebugMode()
+            try:
+                import ipdb  # noqa: T100,PLC0415
+            except ImportError:
+                pass
+            else:
+                sys.modules["pdb"] = ipdb
+            logging.root.addHandler(_PdbHandler(level=logging.ERROR))
 
     @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
@@ -216,6 +236,19 @@ class BaseRunSpiderCommand(ScrapyCommand):
         )
         return crawler
 
+    def _run_crawler(
+        self, spidercls: type[Spider] | str, opts: argparse.Namespace
+    ) -> None:
+        assert self.crawler_process is not None
+        crawler = self._create_crawler(spidercls)
+        self.crawler_process.crawl(crawler, **opts.spargs)
+        self.crawler_process.start()
+        if (
+            self.crawler_process.bootstrap_failed
+            or crawler.stats.get_value("finish_reason") == "closespider_errorcount"
+        ):
+            self.exitcode = 1
+
     def _warn_if_feeds_unused(self, sender: Crawler, **kwargs: Any) -> None:
         if (
             sender.settings.getdict("FEEDS")
@@ -256,13 +289,15 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         Underline and title case command line help message headers.
         """
         if part_strings and part_strings[0].startswith("usage: "):
-            part_strings[0] = "Usage\n=====\n  " + part_strings[0][len("usage: ") :]
+            part_strings[0] = "Usage\n=====\n  " + part_strings[0].removeprefix(
+                "usage: "
+            )
         headings = [
             i for i in range(len(part_strings)) if part_strings[i].endswith(":\n")
         ]
         for index in reversed(headings):
             char = "-" if "Global Options" in part_strings[index] else "="
-            part_strings[index] = part_strings[index][:-2].title()
+            part_strings[index] = part_strings[index].removesuffix(":\n").title()
             underline = "".join(["\n", (char * len(part_strings[index])), "\n"])
             part_strings.insert(index + 1, underline)
         return part_strings
