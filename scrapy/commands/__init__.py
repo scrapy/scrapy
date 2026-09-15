@@ -236,6 +236,19 @@ class BaseRunSpiderCommand(ScrapyCommand):
         )
         return crawler
 
+    def _run_crawler(
+        self, spidercls: type[Spider] | str, opts: argparse.Namespace
+    ) -> None:
+        assert self.crawler_process is not None
+        crawler = self._create_crawler(spidercls)
+        self.crawler_process.crawl(crawler, **opts.spargs)
+        self.crawler_process.start()
+        if (
+            self.crawler_process.bootstrap_failed
+            or crawler.stats.get_value("finish_reason") == "closespider_errorcount"
+        ):
+            self.exitcode = 1
+
     def _warn_if_feeds_unused(self, sender: Crawler, **kwargs: Any) -> None:
         if (
             sender.settings.getdict("FEEDS")
