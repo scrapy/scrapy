@@ -16,8 +16,8 @@ from twisted.python.failure import Failure
 import scrapy
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
+from scrapy.utils._colorize import tty_supports_color
 from scrapy.utils._versions import get_versions
-from scrapy.utils.display import _tty_supports_color
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -187,7 +187,7 @@ def _get_formatter(handler: logging.Handler, settings: Settings) -> logging.Form
         and not isinstance(handler, logging.FileHandler)
         and settings.getbool("LOG_COLOR")
         and handler.stream.isatty()
-        and _tty_supports_color()
+        and tty_supports_color()
     ):
         try:
             from colorlog import ColoredFormatter  # noqa: PLC0415

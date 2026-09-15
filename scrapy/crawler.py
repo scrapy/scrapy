@@ -20,6 +20,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import SETTINGS_PRIORITIES, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
+from scrapy.utils._ossignals import install_shutdown_handlers, signal_names
 from scrapy.utils._stopmode import _normalize_stop_mode, _StopMode
 from scrapy.utils.defer import _DEFER_DELAY, deferred_from_coro, ensure_awaitable
 from scrapy.utils.log import (
@@ -30,7 +31,6 @@ from scrapy.utils.log import (
     log_scrapy_info,
 )
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
     _asyncio_reactor_path,
     _is_asyncio_reactor_installed,

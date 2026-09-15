@@ -163,7 +163,7 @@ class TestGetFormatter:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         pytest.importorskip("colorlog")
-        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        monkeypatch.setattr("scrapy.utils.log.tty_supports_color", lambda: True)
         stream = _TTYStringIO()
         handler = logging.StreamHandler(stream)
         handler.setFormatter(_get_formatter(handler, self._settings()))
@@ -186,7 +186,7 @@ class TestGetFormatter:
     def test_plain_when_log_color_disabled(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        monkeypatch.setattr("scrapy.utils.log.tty_supports_color", lambda: True)
         handler = logging.StreamHandler(_TTYStringIO())
         formatter = _get_formatter(handler, self._settings(LOG_COLOR=False))
         assert type(formatter) is logging.Formatter
@@ -202,7 +202,7 @@ class TestGetFormatter:
     def test_plain_when_colorlog_not_installed(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr("scrapy.utils.log._tty_supports_color", lambda: True)
+        monkeypatch.setattr("scrapy.utils.log.tty_supports_color", lambda: True)
         monkeypatch.setitem(sys.modules, "colorlog", None)
         handler = logging.StreamHandler(_TTYStringIO())
         formatter = _get_formatter(handler, self._settings())
