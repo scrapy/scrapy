@@ -9,7 +9,6 @@ from w3lib.encoding import resolve_encoding
 from scrapy.exceptions import NotSupported
 from scrapy.http import Headers, Request, Response, TextResponse
 from scrapy.link import Link
-from scrapy.utils._deps_compat import W3LIB_STRIPS_URLS
 from tests import get_testdata
 
 if TYPE_CHECKING:
@@ -267,19 +266,9 @@ class TestResponseBase(ABC):
         with pytest.raises(ValueError, match="encoding can't be None"):
             r.follow("foo", encoding=None)
 
-    @pytest.mark.xfail(
-        not W3LIB_STRIPS_URLS,
-        reason="https://github.com/scrapy/w3lib/pull/207",
-        strict=True,
-    )
     def test_follow_whitespace_url(self):
         self._assert_followed_url("foo ", "http://example.com/foo")
 
-    @pytest.mark.xfail(
-        not W3LIB_STRIPS_URLS,
-        reason="https://github.com/scrapy/w3lib/pull/207",
-        strict=True,
-    )
     def test_follow_whitespace_link(self):
         self._assert_followed_url(
             Link("http://example.com/foo "), "http://example.com/foo"
@@ -344,11 +333,6 @@ class TestResponseBase(ABC):
             with pytest.raises(ValueError, match="url can't be None"):
                 list(r.follow_all(urls=[None]))  # type: ignore[list-item]
 
-    @pytest.mark.xfail(
-        not W3LIB_STRIPS_URLS,
-        reason="https://github.com/scrapy/w3lib/pull/207",
-        strict=True,
-    )
     def test_follow_all_whitespace(self):
         relative = ["foo ", "bar ", "foo/bar ", "bar/foo "]
         absolute = [
@@ -359,11 +343,6 @@ class TestResponseBase(ABC):
         ]
         self._assert_followed_all_urls(relative, absolute)
 
-    @pytest.mark.xfail(
-        not W3LIB_STRIPS_URLS,
-        reason="https://github.com/scrapy/w3lib/pull/207",
-        strict=True,
-    )
     def test_follow_all_whitespace_links(self):
         absolute = [
             "http://example.com/foo ",

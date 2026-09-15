@@ -25,8 +25,8 @@ from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
+from scrapy.utils._shell import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.conf import get_config
-from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import load_object

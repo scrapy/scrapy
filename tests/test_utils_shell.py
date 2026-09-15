@@ -4,12 +4,13 @@ import subprocess
 import sys
 from importlib.util import find_spec
 from io import BytesIO
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 import pytest
 from pexpect import EOF
 
-from scrapy.utils.console import get_shell_embed_func, start_python_console
+from scrapy.utils._shell import get_shell_embed_func, start_python_console
 from scrapy.utils.test import get_testenv
 
 if TYPE_CHECKING:
@@ -44,6 +45,15 @@ def test_get_shell_embed_func():
     assert shell.__name__ == "_embed_standard_shell"
 
 
+def test_get_shell_embed_func_known_shells():
+    def embed(namespace: dict[str, object] | None = None, banner: str = "") -> None:
+        pass
+
+    known_shells = {"custom": lambda: embed}
+    assert get_shell_embed_func(["custom"], known_shells) is embed
+    assert get_shell_embed_func(["python"], known_shells) is None
+
+
 def test_get_shell_embed_func_python():
     # the standard shell is always available
     shell = get_shell_embed_func(["python"])
@@ -56,6 +66,25 @@ def test_get_shell_embed_func_bpython():
     shell = get_shell_embed_func(["bpython"])
     assert callable(shell)
     assert shell.__name__ == "_embed_bpython_shell"
+
+
+def test_embed_bpython_shell(monkeypatch: pytest.MonkeyPatch) -> None:
+    # bpython is never the default shell, so a stand-in module takes the place
+    # of the interactive session the IPython tests below use.
+    calls: list[tuple[dict[str, object], str]] = []
+    bpython = ModuleType("bpython")
+    monkeypatch.setattr(
+        bpython,
+        "embed",
+        lambda locals_, banner: calls.append((locals_, banner)),
+        raising=False,
+    )
+    monkeypatch.setitem(sys.modules, "bpython", bpython)
+
+    shell = get_shell_embed_func(["bpython"])
+    assert shell is not None
+    shell({"a": 1}, "SHELL-READY")
+    assert calls == [({"a": 1}, "SHELL-READY")]
 
 
 def test_get_shell_embed_func_ipython():
@@ -169,13 +198,11 @@ def test_start_python_console_exit(monkeypatch: pytest.MonkeyPatch) -> None:
         raise SystemExit
 
     monkeypatch.setattr(
-        "scrapy.utils.console.get_shell_embed_func", lambda shells: embed
+        "scrapy.utils._shell.get_shell_embed_func", lambda shells: embed
     )
     start_python_console()
 
 
 def test_start_python_console_no_shell(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "scrapy.utils.console.get_shell_embed_func", lambda shells: None
-    )
+    monkeypatch.setattr("scrapy.utils._shell.get_shell_embed_func", lambda shells: None)
     start_python_console()
