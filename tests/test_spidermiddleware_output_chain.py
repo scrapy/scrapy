@@ -306,7 +306,7 @@ class LogOutputMiddleware(_BaseSpiderMiddleware):
         return []
 
 
-class DownloadErrorSpider(Spider):
+class DownloadErrorSpider(MockServerSpider):
     name = "DownloadErrorSpider"
     custom_settings = {
         "SPIDER_MIDDLEWARES": {
@@ -315,10 +315,12 @@ class DownloadErrorSpider(Spider):
     }
 
     async def start(self):
+        assert self.mockserver
         yield Request(self.mockserver.url("/drop?abort=1"), errback=self.errback)
 
     def errback(self, failure):
         yield {"from": "errback"}
+        assert self.mockserver
         yield Request(self.mockserver.url("/status?n=200"), callback=self.parse)
 
     def parse(self, response):
