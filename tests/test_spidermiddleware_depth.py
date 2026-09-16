@@ -26,7 +26,6 @@ def crawler() -> Crawler:
 
 @pytest.fixture
 def stats(crawler: Crawler) -> Generator[StatsCollector]:
-    assert crawler.stats is not None
     crawler.stats.open_spider()
 
     yield crawler.stats
@@ -120,7 +119,6 @@ def test_priority_and_non_verbose_stats() -> None:
         Spider,
         {"DEPTH_LIMIT": 0, "DEPTH_STATS_VERBOSE": False, "DEPTH_PRIORITY": 10},
     )
-    assert crawler.stats is not None
     crawler.stats.open_spider()
     try:
         mw = build_from_crawler(DepthMiddleware, crawler)
