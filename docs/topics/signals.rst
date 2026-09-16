@@ -122,7 +122,7 @@ Engine signals
 
 Engine signals describe the lifetime of the
 :class:`~scrapy.core.engine.ExecutionEngine`, while :ref:`spider signals
-<topics-signals-ref-spider>` describe the lifetime of a spider within that
+<spider-signals>` describe the lifetime of a spider within that
 engine. When all four lifecycle signals are sent in a regular crawl, they are
 sent in this order:
 
@@ -276,7 +276,7 @@ item_error
     :type failure: twisted.python.failure.Failure
 
 
-.. _topics-signals-ref-spider:
+.. _spider-signals:
 
 Spider signals
 --------------
