@@ -1541,26 +1541,6 @@ Default: ``None``
 
 The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
-.. setting:: GCS_UPLOAD_TIMEOUT
-
-GCS_UPLOAD_TIMEOUT
-------------------
-
-.. versionadded:: VERSION
-
-Default: ``None``
-
-Number of seconds that uploads to `Google Cloud Storage`_, such as those of the
-:ref:`GCS feed storage backend <topics-feed-storage-gcs>` and of the :ref:`GCS
-media pipeline storage backend <media-pipeline-gcs>`, wait for a response
-before giving up.
-
-If ``None``, the `default timeout of the google-cloud-storage library
-<https://docs.cloud.google.com/python/docs/reference/storage/latest/retry_timeout#configuring-timeouts>`_
-is used.
-
-Raise it if large uploads fail over a slow connection.
-
 .. setting:: HTTP2_MAX_FRAME_SIZE
 
 HTTP2_MAX_FRAME_SIZE
@@ -2432,6 +2412,27 @@ current platform.
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
 .. note:: This is a :ref:`reactor setting <reactor-settings>`.
+
+.. setting:: UPLOAD_TIMEOUT
+
+UPLOAD_TIMEOUT
+--------------
+
+.. versionadded:: VERSION
+
+Default: ``None``
+
+Number of seconds that uploads to a remote :ref:`feed storage backend
+<topics-feed-storage-backends>` or :ref:`media pipeline storage backend
+<topics-media-pipeline>` wait for a response before giving up.
+
+Raise it if large uploads fail over a slow connection.
+
+If ``None``, each backend keeps the default of the library it uses:
+`botocore <https://docs.aws.amazon.com/botocore/latest/reference/config.html>`_
+for Amazon S3, `google-cloud-storage
+<https://docs.cloud.google.com/python/docs/reference/storage/latest/retry_timeout#configuring-timeouts>`_
+for Google Cloud Storage, and :mod:`ftplib` for FTP, which waits indefinitely.
 
 .. setting:: URLLENGTH_LIMIT
 

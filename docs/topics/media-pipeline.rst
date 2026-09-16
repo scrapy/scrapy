@@ -244,6 +244,9 @@ on the item in your spider, and read it back from the item in
 Supported Storage
 =================
 
+Use :setting:`UPLOAD_TIMEOUT` to limit how long uploads to a remote storage
+backend may take.
+
 File system storage
 -------------------
 
@@ -373,9 +376,6 @@ policy:
     IMAGES_STORE_GCS_ACL = "publicRead"
 
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
-
-Use :setting:`GCS_UPLOAD_TIMEOUT` to change how long an upload may take before
-it is given up on.
 
 .. _Predefined ACLs: https://docs.cloud.google.com/storage/docs/access-control/lists#predefined-acl
 

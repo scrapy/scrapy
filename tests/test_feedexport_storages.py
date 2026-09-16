@@ -173,6 +173,18 @@ class TestFTPFeedStorage:
             self._assert_stored(ftp_server.path / filename, b"bar")
 
     @coroutine_test
+    async def test_upload_timeout(self):
+        crawler = get_crawler(settings_dict={"UPLOAD_TIMEOUT": 300})
+        with MockFTPServer() as ftp_server:
+            url = ftp_server.url("file")
+            storage = build_from_crawler(FTPFeedStorage, crawler, url)
+            assert storage.timeout == 300
+            file = storage.open(get_test_spider())
+            file.write(b"foo")
+            await maybe_deferred_to_future(storage.store(file))
+            self._assert_stored(ftp_server.path / "file", b"foo")
+
+    @coroutine_test
     async def test_missing_parent_directories(self):
         with MockFTPServer() as ftp_server:
             path = "missing/parent/dirs/file"
@@ -464,6 +476,20 @@ class TestS3FeedStorage:
         config: Any = storage.s3_client.meta.config
         assert config.max_pool_connections == expected
 
+    def test_upload_timeout(self) -> None:
+        crawler = get_crawler(settings_dict={"UPLOAD_TIMEOUT": 300})
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
+        assert storage.upload_timeout == 300
+        config: Any = storage.s3_client.meta.config
+        assert config.read_timeout == 300
+
+    def test_default_upload_timeout(self) -> None:
+        crawler = get_crawler()
+        storage = build_from_crawler(S3FeedStorage, crawler, "s3://mybucket/export.csv")
+        assert storage.upload_timeout is None
+        config: Any = storage.s3_client.meta.config
+        assert config.read_timeout == 60
+
     @coroutine_test
     async def test_store_without_acl(self):
         storage = S3FeedStorage(
@@ -533,7 +559,7 @@ class TestGCSFeedStorage:
     def test_parse_timeout(self):
         pytest.importorskip("google.cloud.storage")
 
-        crawler = get_crawler(settings_dict={"GCS_UPLOAD_TIMEOUT": 300})
+        crawler = get_crawler(settings_dict={"UPLOAD_TIMEOUT": 300})
         storage = build_from_crawler(
             GCSFeedStorage, crawler, "gs://mybucket/export.csv"
         )

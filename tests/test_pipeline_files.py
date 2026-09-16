@@ -961,6 +961,25 @@ class TestS3FilesStore:
     @pytest.mark.parametrize(
         ("settings", "expected"),
         [
+            ({}, 60),
+            ({"UPLOAD_TIMEOUT": 300}, 300),
+        ],
+    )
+    def test_upload_timeout(
+        self, monkeypatch: pytest.MonkeyPatch, settings: dict[str, Any], expected: float
+    ) -> None:
+        monkeypatch.setattr(S3FilesStore, "UPLOAD_TIMEOUT", None)
+        crawler = get_crawler(
+            settings_dict={"FILES_STORE": "s3://mybucket/prefix/", **settings}
+        )
+        store = build_from_crawler(FilesPipeline, crawler).store
+        assert isinstance(store, S3FilesStore)
+        config: Any = store.s3_client.meta.config
+        assert config.read_timeout == expected
+
+    @pytest.mark.parametrize(
+        ("settings", "expected"),
+        [
             ({}, 10),
             ({"REACTOR_THREADPOOL_MAXSIZE": 20}, 20),
             ({"AWS_MAX_POOL_CONNECTIONS": 30}, 30),
@@ -1027,19 +1046,19 @@ class TestGCSFilesStore:
     def test_update_stores(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(GCSFilesStore, "GCS_PROJECT_ID", None)
         monkeypatch.setattr(GCSFilesStore, "POLICY", None)
-        monkeypatch.setattr(GCSFilesStore, "GCS_UPLOAD_TIMEOUT", None)
+        monkeypatch.setattr(GCSFilesStore, "UPLOAD_TIMEOUT", None)
 
         settings = Settings(
             {
                 "GCS_PROJECT_ID": "my-project",
                 "FILES_STORE_GCS_ACL": "publicRead",
-                "GCS_UPLOAD_TIMEOUT": 300,
+                "UPLOAD_TIMEOUT": 300,
             }
         )
         FilesPipeline._update_stores(settings)
         assert GCSFilesStore.GCS_PROJECT_ID == "my-project"
         assert GCSFilesStore.POLICY == "publicRead"
-        assert GCSFilesStore.GCS_UPLOAD_TIMEOUT == 300
+        assert GCSFilesStore.UPLOAD_TIMEOUT == 300
 
         # An empty FILES_STORE_GCS_ACL is normalised to None.
         settings = Settings({"GCS_PROJECT_ID": "my-project", "FILES_STORE_GCS_ACL": ""})
@@ -1086,7 +1105,7 @@ class TestGCSFilesStore:
 
     @coroutine_test
     async def test_persist_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(GCSFilesStore, "GCS_UPLOAD_TIMEOUT", 300)
+        monkeypatch.setattr(GCSFilesStore, "UPLOAD_TIMEOUT", 300)
         store, _, blob = self.build_gcs_files_store()
         await maybe_deferred_to_future(
             store.persist_file(
