@@ -151,6 +151,33 @@ To stop::
     >>> engine.stop()
     Connection closed by foreign host.
 
+
+.. _telnet-concurrency:
+
+Change concurrency and delays
+-----------------------------
+
+The downloader checks its concurrency and delay attributes for every request
+it sends, so you can speed a crawl up or slow it down while it runs::
+
+    telnet localhost 6023
+    >>> downloader = engine.downloader
+    >>> downloader.total_concurrency = 32
+    >>> for slot in downloader.slots.values():
+    ...     slot.concurrency = 4
+    ...     slot.delay = 0.5
+    ...
+    >>>
+
+``total_concurrency`` is :setting:`CONCURRENT_REQUESTS`, and ``slots`` maps the
+name of every :setting:`download slot <DOWNLOAD_SLOTS>` in use to an object
+whose ``concurrency`` and ``delay`` come from
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (or
+:setting:`CONCURRENT_REQUESTS_PER_IP`) and :setting:`DOWNLOAD_DELAY`. A slot
+created later, e.g. for a domain not visited yet, starts from those settings
+again, and :ref:`AutoThrottle <topics-autothrottle>` recalculates ``delay``
+after every response.
+
 .. skip: end
 
 Telnet Console signals

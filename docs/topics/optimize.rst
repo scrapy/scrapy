@@ -158,7 +158,8 @@ crawl slower than a lower concurrency would have been. To find that limit:
 -   Crawl when the website is idle, in its own timezone, so that the capacity
     you take is capacity nobody else wanted.
 
--   Raise concurrency gradually and watch the website respond.
+-   Raise concurrency gradually and watch the website respond, changing it on
+    the running crawl from the :ref:`telnet console <telnet-concurrency>`.
     :stat:`downloader/response_status_count/{status_code}` counts for 429, 503
     or the ban page of the website, growing :stat:`retry/count`, or a
     :ref:`download latency <download-latency>` that climbs as you push harder,
