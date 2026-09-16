@@ -4,10 +4,8 @@
 asyncio
 =======
 
-Scrapy supports :mod:`asyncio` natively. New projects created with
-:command:`startproject` have asyncio enabled by default, and you can use
-:mod:`asyncio` and :mod:`asyncio`-powered libraries in any :doc:`coroutine
-<coroutines>`.
+Scrapy supports :mod:`asyncio` natively. You can use :mod:`asyncio` and
+:mod:`asyncio`-powered libraries in any :doc:`coroutine <coroutines>`.
 
 The rest of this page covers advanced topics. If you are starting a new project,
 no additional setup is needed.
@@ -15,22 +13,15 @@ no additional setup is needed.
 
 .. _install-asyncio:
 
-Configuring the asyncio reactor
-===============================
+Installing the asyncio reactor
+==============================
 
-New projects generated with :command:`startproject` have the asyncio
-reactor configured by default. No manual setup is needed.
-
-The :setting:`TWISTED_REACTOR` setting controls which Twisted reactor Scrapy
-uses. Its default value is
-``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``, which enables
-:mod:`asyncio` support.
-
-If you are using :class:`~scrapy.crawler.AsyncCrawlerRunner` or
-:class:`~scrapy.crawler.CrawlerRunner`, you also need to
-install the :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
-reactor manually. You can do that using
-:func:`~scrapy.utils.reactor.install_reactor`:
+When Scrapy installs a reactor, it will install the correct one automatically.
+If you are managing the reactor yourself, when using
+:class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerRunner`, you need to install the
+:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` reactor
+manually. You can do that using :func:`~scrapy.utils.reactor.install_reactor`:
 
 .. skip: next
 .. code-block:: python
@@ -47,8 +38,7 @@ Handling a pre-installed reactor
 Twisted reactor as a side effect. Once a Twisted reactor is installed, it is
 not possible to switch to a different reactor at run time.
 
-If you :ref:`configure the asyncio Twisted reactor <install-asyncio>` and, at
-run time, Scrapy complains that a different reactor is already installed,
+If at run time Scrapy complains that a different reactor is already installed,
 chances are you have some such imports in your code.
 
 You can usually fix the issue by moving those offending module-level Twisted
@@ -89,10 +79,11 @@ Coroutine functions can await on Deferreds by wrapping them into
 .. autofunction:: scrapy.utils.defer.deferred_to_future
 .. autofunction:: scrapy.utils.defer.maybe_deferred_to_future
 
-.. tip:: If you don't need to support reactors other than the default
-         :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`, you
-         can use :func:`~scrapy.utils.defer.deferred_to_future`, otherwise you
-         should use :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
+.. tip:: You only need :func:`~scrapy.utils.defer.maybe_deferred_to_future` if
+         you need to support older Scrapy versions and reactors other than
+         :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`,
+         otherwise you should use
+         :func:`~scrapy.utils.defer.deferred_to_future`.
 
 .. tip:: If you need to use these functions in code that aims to be compatible
          with lower versions of Scrapy that do not provide these functions,
@@ -117,9 +108,9 @@ Enforcing asyncio as a requirement
 ==================================
 
 If you are writing a :ref:`component <topics-components>` that requires asyncio
-to work, use :func:`scrapy.utils.asyncio.is_asyncio_available` to
-:ref:`enforce it as a requirement <enforce-component-requirements>`. For
-example:
+to work and needs to support older Scrapy versions that don't enforce it, use
+:func:`scrapy.utils.asyncio.is_asyncio_available` to :ref:`enforce it as a
+requirement <enforce-component-requirements>`. For example:
 
 .. code-block:: python
 
@@ -341,21 +332,6 @@ automatically when installing the asyncio reactor.
 Using custom asyncio loops
 ==========================
 
-You can also use custom asyncio event loops with the asyncio reactor. Set the
-:setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event
-loop class to use it instead of the default asyncio event loop.
-
-
-.. _disable-asyncio:
-
-Switching to a non-asyncio reactor
-==================================
-
-If for some reason your code doesn't work with the asyncio reactor, you can use
-a different reactor by setting the :setting:`TWISTED_REACTOR` setting to its
-import path (e.g. ``'twisted.internet.epollreactor.EPollReactor'``) or to
-``None``, which will use the default reactor for your platform. If you are
-using :class:`~scrapy.crawler.AsyncCrawlerRunner` or
-:class:`~scrapy.crawler.AsyncCrawlerProcess` you also need to switch to their
-Deferred-based counterparts: :class:`~scrapy.crawler.CrawlerRunner` or
-:class:`~scrapy.crawler.CrawlerProcess` respectively.
+You can use custom asyncio event loops. Set the :setting:`ASYNCIO_EVENT_LOOP`
+setting to the import path of the desired event loop class to use it instead of
+the default asyncio event loop.
