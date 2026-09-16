@@ -147,8 +147,7 @@ individual handler docs for more differences:
      - asyncio
      - 1.1
      - HTTP
-     - | 8 KiB per line
-       | 128 lines
+     - :setting:`DOWNLOAD_HEADERS_MAXSIZE`
      - Fail
      - Stdlib ``ssl``
    * - :class:`H2 <scrapy.core.downloader.handlers.http2.H2DownloadHandler>`
@@ -240,6 +239,9 @@ TLS implementation          Standard library ``ssl``
 Other limitations:
 
 -   HTTPS proxies for HTTPS destinations are not supported on Python < 3.11.
+
+-   Responses with more than 128 header lines are rejected, regardless of
+    :setting:`DOWNLOAD_HEADERS_MAXSIZE`.
 
 .. _twisted-http2-handler:
 
