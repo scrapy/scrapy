@@ -89,6 +89,7 @@ class HttpCompressionMiddleware:
             return response
         content_encoding = response.headers.getlist("Content-Encoding")
         if content_encoding:
+            original_encoding = b", ".join(content_encoding)
             max_size = request.meta.get("download_maxsize", self._max_size)
             warn_size = request.meta.get("download_warnsize", self._warn_size)
             try:
@@ -129,7 +130,9 @@ class HttpCompressionMiddleware:
                 kwargs["encoding"] = None
             response = response.replace(cls=respcls, **kwargs)
             if not content_encoding:
-                del response.headers["Content-Encoding"]
+                # All encodings were decoded — preserve the original so the
+                # spider can still see that the body was compressed.
+                response.headers["Content-Encoding"] = original_encoding
         return response
 
     def _handle_encoding(
