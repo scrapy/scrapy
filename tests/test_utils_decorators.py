@@ -103,6 +103,26 @@ class TestWarnSpiderArg:
         ):
             assert parse("response", spider="spider") == "response"
 
+    def test_sync_warns_with_positional_spider_arg(self):
+        @_warn_spider_arg
+        def parse(response: str, spider: str | None = None) -> str:
+            return response
+
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"Passing a 'spider' argument"
+        ):
+            assert parse("response", "spider") == "response"
+
+    def test_sync_warns_with_keyword_only_spider_arg(self):
+        @_warn_spider_arg
+        def parse(response: str, *, spider: str | None = None) -> str:
+            return response
+
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"Passing a 'spider' argument"
+        ):
+            assert parse("response", spider="spider") == "response"
+
     def test_sync_no_warning_without_spider_arg(self):
         @_warn_spider_arg
         def parse(response: str, spider: str | None = None) -> str:

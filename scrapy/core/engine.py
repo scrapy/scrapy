@@ -25,10 +25,12 @@ from scrapy.core.scraper import Scraper
 from scrapy.exceptions import (
     CloseSpider,
     DontCloseSpider,
+    DownloadCancelledError,
     IgnoreRequest,
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
+from scrapy.utils._stopmode import _max_stop_mode, _normalize_stop_mode, _StopMode
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
     create_looping_call,
@@ -92,10 +94,9 @@ class _Slot:
 
     def _maybe_fire_closing(self) -> None:
         if self.closing is not None and not self.inprogress:
-            if self.nextcall:
-                self.nextcall.cancel()
-                if self.heartbeat.running:
-                    self.heartbeat.stop()
+            self.nextcall.cancel()
+            if self.heartbeat.running:
+                self.heartbeat.stop()
             self.closing.callback(None)
 
 
@@ -127,6 +128,8 @@ class ExecutionEngine:
         self.running: bool = False
         self._starting: bool = False
         self._stopping: bool = False
+        self._stop_mode: _StopMode = "graceful"
+        self._downloader_fast_stopped: bool = False
         self.paused: bool = False
         self._spider_closed_callback: Callable[
             [Spider], Coroutine[Any, Any, None] | Deferred[None] | None
@@ -172,6 +175,14 @@ class ExecutionEngine:
             )
         return scheduler_cls
 
+    @property
+    def scheduler(self) -> BaseScheduler | None:
+        """The scheduler in use, or ``None`` before the spider has started.
+
+        .. versionadded:: 2.19.0
+        """
+        return self._slot.scheduler if self._slot is not None else None
+
     def start(
         self, _start_request_processing: bool = True
     ) -> Deferred[None]:  # pragma: no cover
@@ -213,22 +224,35 @@ class ExecutionEngine:
         with contextlib.suppress(asyncio.exceptions.CancelledError):
             await maybe_deferred_to_future(self._closewait)
 
-    def stop(self) -> Deferred[None]:  # pragma: no cover
+    def stop(
+        self, *, mode: _StopMode = "graceful"
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.stop() is deprecated, use stop_async() instead",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return deferred_from_coro(self.stop_async())
+        return deferred_from_coro(self.stop_async(mode=mode))
 
-    async def stop_async(self) -> None:
+    async def stop_async(self, *, mode: _StopMode = "graceful") -> None:
         """Gracefully stop the execution engine.
 
         .. versionadded:: 2.14
         """
 
-        if not self._starting:
+        mode = _normalize_stop_mode(mode, allow_force=False)
+
+        if not self._starting and not self._stopping:
             raise RuntimeError("Engine not running")
+
+        self._stop_mode = _max_stop_mode(self._stop_mode, mode)
+
+        if self._stopping:
+            if self.spider is not None and self._stop_mode == "fast":
+                await self.close_spider_async(reason="shutdown", mode="fast")
+            if self._closewait:
+                await maybe_deferred_to_future(self._closewait)
+            return
 
         self.running = self._starting = False
         self._stopping = True
@@ -244,7 +268,7 @@ class ExecutionEngine:
                 self._start_request_processing_awaitable.cancel()
             self._start_request_processing_awaitable = None
         if self.spider is not None:
-            await self.close_spider_async(reason="shutdown")
+            await self.close_spider_async(reason="shutdown", mode=self._stop_mode)
         await self.signals.send_catch_log_async(signal=signals.engine_stopped)
         if self._closewait:
             self._closewait.callback(None)
@@ -266,7 +290,7 @@ class ExecutionEngine:
             await self.stop_async()  # will also close spider and downloader
         elif self.spider is not None:
             await self.close_spider_async(reason=reason)  # will also close downloader
-        elif hasattr(self, "downloader"):
+        else:
             self.downloader.close()
 
     def pause(self) -> None:
@@ -316,9 +340,7 @@ class ExecutionEngine:
                 self.crawl(item_or_request)
             else:
                 assert self._slot is not None
-                _schedule_coro(
-                    self.scraper.start_itemproc_async(item_or_request, response=None)
-                )
+                self.scraper._start_itemproc_nowait(item_or_request)
                 self._slot.nextcall.schedule()
 
     async def _start_request_processing(self) -> None:
@@ -424,10 +446,16 @@ class ExecutionEngine:
     def _handle_downloader_output(
         self, result: Request | Response | Failure, request: Request
     ) -> Generator[Deferred[Any], Any, None]:
-        if not isinstance(result, (Request, Response, Failure)):
-            raise TypeError(
-                f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}"
+        if (
+            isinstance(result, Failure)
+            and self._stop_mode == "fast"
+            and result.check(
+                DownloadCancelledError,
+                CancelledError,
+                asyncio.exceptions.CancelledError,
             )
+        ):
+            return
 
         # downloader middleware can return requests (for example, redirects)
         if isinstance(result, Request):
@@ -625,16 +653,52 @@ class ExecutionEngine:
             _schedule_coro(self.close_spider_async(reason=ex.reason))
 
     def close_spider(
-        self, spider: Spider, reason: str = "cancelled"
+        self,
+        spider: Spider,
+        reason: str = "cancelled",
+        mode: _StopMode = "graceful",
     ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.close_spider() is deprecated, use close_spider_async() instead",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return deferred_from_coro(self.close_spider_async(reason=reason))
+        return deferred_from_coro(self.close_spider_async(reason=reason, mode=mode))
 
-    async def close_spider_async(self, *, reason: str = "cancelled") -> None:  # noqa: PLR0912
+    async def _fast_stop_downloader(self) -> None:
+        if self._downloader_fast_stopped:
+            return
+
+        self._downloader_fast_stopped = True
+        if not hasattr(self.downloader, "stop"):
+            logger.warning(
+                f"{type(self.downloader).__qualname__} does not implement "
+                f"stop(), so pending downloads cannot be dropped and will be "
+                f"finished before the spider closes",
+                extra={"spider": self.spider},
+            )
+            return
+        dropped_count = await self.downloader.stop()
+
+        assert self.crawler.stats
+        if dropped_count:
+            self.crawler.stats.inc_value(
+                "downloader/request_dropped_count", dropped_count
+            )
+
+        logger.info(
+            "Fast shutdown dropped %(count)d downloader requests",
+            {"count": dropped_count},
+            extra={"spider": self.spider},
+        )
+
+    # pylint: disable=too-many-statements
+    async def close_spider_async(  # noqa: PLR0912, PLR0915
+        self,
+        *,
+        reason: str = "cancelled",
+        mode: _StopMode = "graceful",
+    ) -> None:
         """Stop the crawl with the specified *reason* and clear all its
         outstanding requests.
 
@@ -643,6 +707,9 @@ class ExecutionEngine:
         *reason* is an arbitrary string; see :stat:`finish_reason` for the
         reasons that built-in components use.
         """
+        mode = _normalize_stop_mode(mode, allow_force=False)
+        self._stop_mode = _max_stop_mode(self._stop_mode, mode)
+
         if self.spider is None:
             raise RuntimeError("Spider not opened")
 
@@ -650,6 +717,8 @@ class ExecutionEngine:
             raise RuntimeError("Engine slot not assigned")
 
         if self._slot.closing is not None:
+            if self._stop_mode == "fast":
+                await self._fast_stop_downloader()
             await maybe_deferred_to_future(self._slot.closing)
             return
 
@@ -658,6 +727,9 @@ class ExecutionEngine:
         logger.info(
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
         )
+
+        if self._stop_mode == "fast":
+            await self._fast_stop_downloader()
 
         try:
             await self._slot.close()
