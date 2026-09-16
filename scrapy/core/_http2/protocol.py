@@ -36,8 +36,8 @@ from scrapy.core._http2.stream import Stream, StreamCloseReason
 from scrapy.exceptions import DownloadTimeoutError, ResponseHeadersTooLargeError
 from scrapy.http import Request, Response
 from scrapy.utils._download_handlers import get_headers_maxsize_msg
+from scrapy.utils._ssl import _log_ssl_conn_debug_info
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
-from scrapy.utils.ssl import _log_ssl_conn_debug_info
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
@@ -58,10 +58,10 @@ PROTOCOL_NAME = b"h2"
 
 class InvalidNegotiatedProtocol(H2Error):
     def __init__(self, negotiated_protocol: bytes) -> None:
+        super().__init__(
+            f"Expected {PROTOCOL_NAME!r}, received {negotiated_protocol!r}"
+        )
         self.negotiated_protocol = negotiated_protocol
-
-    def __str__(self) -> str:
-        return f"Expected {PROTOCOL_NAME!r}, received {self.negotiated_protocol!r}"
 
 
 class RemoteTerminatedConnection(H2Error):
@@ -70,19 +70,17 @@ class RemoteTerminatedConnection(H2Error):
         remote_ip_address: IPv4Address | IPv6Address | None,
         event: ConnectionTerminated,
     ) -> None:
+        super().__init__(f"Received GOAWAY frame from {remote_ip_address!r}")
         self.remote_ip_address = remote_ip_address
         self.terminate_event = event
-
-    def __str__(self) -> str:
-        return f"Received GOAWAY frame from {self.remote_ip_address!r}"
 
 
 class MethodNotAllowed405(H2Error):
     def __init__(self, remote_ip_address: IPv4Address | IPv6Address | None) -> None:
+        super().__init__(
+            f"Received 'HTTP/2.0 405 Method Not Allowed' from {remote_ip_address!r}"
+        )
         self.remote_ip_address = remote_ip_address
-
-    def __str__(self) -> str:
-        return f"Received 'HTTP/2.0 405 Method Not Allowed' from {self.remote_ip_address!r}"
 
 
 @implementer(IHandshakeListener)
@@ -93,7 +91,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self,
         uri: URI,
         crawler: Crawler,
-        conn_lost_deferred: Deferred[list[BaseException]],
+        conn_lost_deferred: Deferred[None],
         *,
         tls_verbose_logging: bool = False,
     ) -> None:
@@ -103,12 +101,12 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
                 uri is used to verify that incoming client requests have correct
                 base URL.
             crawler -- The crawler the requests belong to
-            conn_lost_deferred -- Deferred that fires with the list of underlying exceptions to notify
-                that connection was lost
+            conn_lost_deferred -- Deferred that fires to notify that the
+                connection was lost
             tls_verbose_logging -- Whether to log TLS details
         """
         self._crawler: Crawler = crawler
-        self._conn_lost_deferred: Deferred[list[BaseException]] = conn_lost_deferred
+        self._conn_lost_deferred: Deferred[None] = conn_lost_deferred
         self._tls_verbose_logging: bool = tls_verbose_logging
 
         config = H2Configuration(client_side=True, header_encoding="utf-8")
@@ -397,12 +395,11 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         # Cancel the timeout if not done yet
         self.setTimeout(None)  # type: ignore[no-untyped-call]
 
+        self._conn_lost_errors.append(reason)
+
         # Notify the connection pool instance such that no new requests are
         # sent over current connection
-        if not reason.check(connectionDone):
-            self._conn_lost_errors.append(reason)
-
-        self._conn_lost_deferred.callback(self._conn_lost_errors)
+        self._conn_lost_deferred.callback(None)
 
         for stream in self.streams.values():
             if stream.metadata["request_sent"]:
@@ -505,7 +502,7 @@ class H2ClientFactory(Factory):
         self,
         uri: URI,
         crawler: Crawler,
-        conn_lost_deferred: Deferred[list[BaseException]],
+        conn_lost_deferred: Deferred[None],
         *,
         tls_verbose_logging: bool = False,
     ) -> None:
