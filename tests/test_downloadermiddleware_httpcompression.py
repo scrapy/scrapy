@@ -138,6 +138,7 @@ class TestHttpCompression:
     def test_process_response_gzip(self):
         response = self._getresponse("gzip")
         assert response.request
+        assert response.request
         request = response.request
 
         assert response.headers["Content-Encoding"] == b"gzip"
@@ -150,6 +151,7 @@ class TestHttpCompression:
 
     def test_process_response_br(self):
         response = self._getresponse("br")
+        assert response.request
         assert response.request
         request = response.request
         assert response.headers["Content-Encoding"] == b"br"
@@ -167,6 +169,7 @@ class TestHttpCompression:
                 continue
             response = self._getresponse(check_key)
             assert response.request
+            assert response.request
             request = response.request
             assert response.headers["Content-Encoding"] == b"zstd"
             newresponse = self.mw.process_response(request, response)
@@ -181,6 +184,7 @@ class TestHttpCompression:
     def test_process_response_rawdeflate(self):
         response = self._getresponse("rawdeflate")
         assert response.request
+        assert response.request
         request = response.request
 
         assert response.headers["Content-Encoding"] == b"deflate"
@@ -193,6 +197,7 @@ class TestHttpCompression:
 
     def test_process_response_zlibdelate(self):
         response = self._getresponse("zlibdeflate")
+        assert response.request
         assert response.request
         request = response.request
 
@@ -219,6 +224,7 @@ class TestHttpCompression:
         response = self._getresponse("gzip")
         response.headers["Content-Encoding"] = ["uuencode", "gzip"]
         assert response.request
+        assert response.request
         request = response.request
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
@@ -226,6 +232,7 @@ class TestHttpCompression:
 
     def test_multi_compression_single_header(self):
         response = self._getresponse("gzip-deflate")
+        assert response.request
         assert response.request
         request = response.request
         newresponse = self.mw.process_response(request, response)
@@ -238,6 +245,7 @@ class TestHttpCompression:
     ) -> None:
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = [b"gzip, foo, deflate"]
+        assert response.request
         assert response.request
         request = response.request
         caplog.clear()
@@ -262,6 +270,7 @@ class TestHttpCompression:
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = ["gzip", "deflate"]
         assert response.request
+        assert response.request
         request = response.request
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
@@ -272,6 +281,7 @@ class TestHttpCompression:
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = ["gzip", "foo", "deflate"]
         assert response.request
+        assert response.request
         request = response.request
         newresponse = self.mw.process_response(request, response)
         assert newresponse is not response
@@ -280,6 +290,7 @@ class TestHttpCompression:
     def test_multi_compression_single_and_multiple_header(self):
         response = self._getresponse("gzip-deflate-gzip")
         response.headers["Content-Encoding"] = ["gzip", "deflate, gzip"]
+        assert response.request
         assert response.request
         request = response.request
         newresponse = self.mw.process_response(request, response)
@@ -290,6 +301,7 @@ class TestHttpCompression:
     def test_multi_compression_single_and_multiple_header_invalid_compression(self):
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = ["gzip", "foo,deflate"]
+        assert response.request
         assert response.request
         request = response.request
         newresponse = self.mw.process_response(request, response)
@@ -372,6 +384,7 @@ class TestHttpCompression:
         response = self._getresponse("gzip")
         response.headers["Content-Type"] = "application/gzip"
         assert response.request
+        assert response.request
         request = response.request
 
         newresponse = self.mw.process_response(request, response)
@@ -385,6 +398,7 @@ class TestHttpCompression:
         response = self._getresponse("gzip")
         response.headers["Content-Type"] = "application/octet-stream"
         assert response.request
+        assert response.request
         request = response.request
 
         newresponse = self.mw.process_response(request, response)
@@ -397,6 +411,7 @@ class TestHttpCompression:
     def test_process_response_gzip_binary_octetstream_contenttype(self):
         response = self._getresponse("x-gzip")
         response.headers["Content-Type"] = "binary/octet-stream"
+        assert response.request
         assert response.request
         request = response.request
 
@@ -456,6 +471,7 @@ class TestHttpCompression:
     def test_process_response_head_request_no_decode_required(self):
         response = self._getresponse("gzip")
         response.headers["Content-Type"] = "application/gzip"
+        assert response.request
         assert response.request
         request = response.request
         request.method = "HEAD"
@@ -822,6 +838,7 @@ class TestHttpCompression:
         mw = HttpCompressionMiddleware.from_crawler(crawler)
         crawler.stats.open_spider()
         response = self._getresponse("gzip")
+        assert response.request
         request = response.request
 
         assert response.headers["Content-Encoding"] == b"gzip"
@@ -840,6 +857,7 @@ class TestHttpCompression:
         crawler.stats.open_spider()
         response = self._getresponse("gzip")
         response.headers["Content-Encoding"] = ["uuencode", "gzip"]
+        assert response.request
         request = response.request
 
         newresponse = mw.process_response(request, response)
@@ -860,6 +878,7 @@ class TestHttpCompression:
             mw = HttpCompressionMiddleware.from_crawler(crawler)
         crawler.stats.open_spider()
         response = self._getresponse("gzip")
+        assert response.request
         request = response.request
 
         assert response.headers["Content-Encoding"] == b"gzip"
@@ -872,6 +891,7 @@ class TestHttpCompression:
     def test_process_response_already_decoded(self):
         response = self._getresponse("gzip")
         response.flags.append("decoded")
+        assert response.request
         request = response.request
 
         newresponse = self.mw.process_response(request, response)

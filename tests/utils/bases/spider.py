@@ -89,6 +89,7 @@ class TestSpiderBase(ABC):
         project_settings = {
             "TEST1": "project",
             "TEST3": "project",
+            "COMPRESSION_KEEP_ENCODING_HEADER": True,
             **get_reactor_settings(),
         }
 
