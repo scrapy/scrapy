@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 from warnings import warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.conf import _job_dir
 from scrapy.utils.deprecate import method_is_overridden
-from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
     RequestFingerprinter,
     RequestFingerprinterProtocol,
@@ -133,10 +133,9 @@ class RFPDupeFilter(BaseDupeFilter):
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        assert crawler.request_fingerprinter
         debug = crawler.settings.getbool("DUPEFILTER_DEBUG")
         return cls(
-            job_dir(crawler.settings),
+            _job_dir(crawler.settings),
             debug,
             fingerprinter=crawler.request_fingerprinter,
         )
@@ -177,7 +176,6 @@ class RFPDupeFilter(BaseDupeFilter):
             self.logger.debug(msg, {"request": request}, extra={"spider": spider})
             self.logdupes = False
 
-        assert spider.crawler.stats
         spider.crawler.stats.inc_value("dupefilter/filtered")
 
 

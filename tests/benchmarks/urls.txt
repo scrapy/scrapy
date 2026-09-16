@@ -1,0 +1,130 @@
+# Link targets for the URL benchmarks, as they would appear in the href
+# attribute of a page at https://www.example.com/catalogue/page-1.html.
+#
+# Cost per URL varies by shape: the number of query parameters drives the
+# parsing and re-encoding of the query string, non-ASCII characters and
+# unescaped characters drive percent-encoding, and non-default ports, dot
+# segments and uppercase host names drive normalization. A corpus of uniform
+# URLs would therefore measure one shape and miss the others, so this one
+# covers each of them, in roughly the proportion of a real listing page.
+#
+# Blank lines and lines starting with "#" are ignored.
+
+# Site navigation. These also appear in a second copy of the navigation at the
+# end of the page, so that deduplication has duplicates to collapse.
+/
+/index.html
+/about-us
+/contact
+/catalogue/
+/catalogue/page-2.html
+/catalogue/page-3.html
+/help/faq
+/help/shipping-and-returns
+/legal/terms
+/legal/privacy
+
+# Relative paths of increasing depth.
+detail.html
+./detail.html
+../catalogue/page-4.html
+../../index.html
+/catalogue/category/books/fiction/index.html
+/catalogue/category/books/travel/mystery/historical/index.html
+/a/b/c/d/e/f/g/h/i/j/k/index.html
+
+# One query parameter.
+/catalogue/search?q=book
+/catalogue/page-1.html?page=2
+/catalogue/detail?id=1042
+
+# Several query parameters, in an order that canonicalization changes.
+/catalogue/search?q=book&sort=price
+/catalogue/search?sort=price&q=book
+/catalogue/search?q=book&sort=price&page=3&per_page=20&in_stock=1
+/catalogue/search?zone=eu&q=book&min=10&max=90&sort=rating&page=2&view=grid&lang=en&currency=EUR&ref=nav
+
+# Repeated keys, blank values and a bare key.
+/catalogue/search?tag=fiction&tag=travel&tag=history
+/catalogue/search?q=&sort=
+/catalogue/search?featured
+
+# Characters that need percent-encoding.
+/catalogue/search?q=cheap books
+/catalogue/detail/a book about books.html
+/catalogue/search?q=100%+cotton
+/catalogue/search?price=%3E10&title=A%20%26%20B
+
+# Percent-escapes that are already valid, in both cases.
+/catalogue/detail/%C3%A9dition-limit%C3%A9e.html
+/catalogue/detail/%c3%a9dition-limit%c3%a9e.html
+/catalogue/detail/%7Especial.html
+
+# Non-ASCII in the path and in the query.
+/catalogue/detail/édition-limitée.html
+/catalogue/search?q=édition
+/catalogue/búsqueda?q=libro&categoría=ficción
+/カタログ/詳細.html
+
+# Internationalized host names, encoded and decoded.
+https://例え.テスト/catalogue/page-1.html
+https://xn--r8jz45g.xn--zckzah/catalogue/page-2.html
+
+# Absolute URLs on the same host, on other hosts, and protocol-relative.
+https://www.example.com/catalogue/page-5.html
+https://www.example.com/catalogue/detail?id=1043
+http://www.example.com/catalogue/page-6.html
+https://shop.example.com/catalogue/page-1.html
+https://www.example.org/reviews/1042
+https://books.toscrape.com/catalogue/page-1.html
+//cdn.example.com/catalogue/page-7.html
+//www.example.com/catalogue/page-8.html
+
+# Ports, including the default one for the scheme.
+https://www.example.com:443/catalogue/page-9.html
+http://www.example.com:80/catalogue/page-10.html
+https://staging.example.com:8443/catalogue/page-1.html
+
+# Host name case, which normalization lowercases.
+https://WWW.EXAMPLE.COM/catalogue/Page-11.html
+HTTPS://www.example.com/catalogue/page-12.html
+
+# Dot segments, empty segments and trailing slashes, which WHATWG
+# normalization resolves and the standard library keeps.
+/catalogue/../catalogue/page-13.html
+/catalogue/./page-14.html
+/catalogue//page-15.html
+/catalogue/category/
+/catalogue/category
+
+# Fragments, which canonicalization drops and the deduplication key keeps.
+/catalogue/page-16.html#reviews
+/catalogue/page-16.html#description
+/catalogue/page-17.html#
+#top
+
+# Path parameters, where the semicolon is not the last segment.
+/catalogue;sessionid=abc123/page-18.html
+/catalogue/page-19.html;sessionid=abc123
+
+# User information in the authority.
+https://user:password@files.example.com/catalogue/page-1.html
+
+# A long URL, of the length that tracking parameters reach.
+/catalogue/search?q=book&utm_source=newsletter&utm_medium=email&utm_campaign=spring-sale-2026&utm_term=fiction%20paperback&utm_content=hero-banner-variant-b&session=6f1c9a2e4b7d8f0a1c3e5d7b9f2a4c6e&ref=https%3A%2F%2Fwww.example.org%2Freviews%2F1042&page=2&sort=relevance
+
+# Extensions that the default deny_extensions rejects, and one compound
+# extension, which only matches as a whole.
+/media/cover-1042.jpg
+/media/cover-1042.PNG
+/media/catalogue.pdf
+/static/style.css
+/static/app.js
+/downloads/catalogue.tar.gz
+/downloads/catalogue.zip
+
+# Schemes that are not crawlable, which are rejected before any parsing.
+mailto:orders@example.com
+javascript:void(0)
+tel:+441234567890
+data:text/plain,hello

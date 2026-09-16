@@ -1,15 +1,24 @@
-import contextlib
+from __future__ import annotations
+
+import struct
+import sys
 import zlib
+from gzip import GzipFile
 from io import BytesIO
+from typing import TYPE_CHECKING
 
-with contextlib.suppress(ImportError):
-    try:
-        import brotli
-    except ImportError:
-        import brotlicffi as brotli
+try:
+    import brotli
+except ImportError:
+    import brotlicffi as brotli
 
-with contextlib.suppress(ImportError):
-    import zstandard
+if sys.version_info >= (3, 14):
+    from compression import zstd
+else:
+    from backports import zstd
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
 
 
 _CHUNK_SIZE = 65536  # 64 KiB
@@ -33,6 +42,35 @@ def _check_max_size(decompressed_size: int, max_size: int) -> None:
         raise _DecompressionMaxSizeExceeded(decompressed_size, max_size)
 
 
+def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
+    """Gunzip the given data and return as much data as possible.
+
+    This is resilient to CRC checksum errors.
+    """
+    f = GzipFile(fileobj=BytesIO(data))
+    output_stream = BytesIO()
+    chunk = b"."
+    decompressed_size = 0
+    while chunk:
+        try:
+            chunk = f.read1(_CHUNK_SIZE)
+        except (OSError, EOFError, struct.error):
+            # complete only if there is some data, otherwise re-raise
+            # see issue 87 about catching struct.error
+            # some pages are quite small so output_stream is empty
+            if output_stream.getbuffer().nbytes > 0:
+                break
+            raise
+        decompressed_size += len(chunk)
+        _check_max_size(decompressed_size, max_size)
+        output_stream.write(chunk)
+    return output_stream.getvalue()
+
+
+def gzip_magic_number(response: Response) -> bool:
+    return response.body[:3] == b"\x1f\x8b\x08"
+
+
 def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
     decompressor = zlib.decompressobj()
     try:
@@ -45,17 +83,15 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
     _check_max_size(decompressed_size, max_size)
     output_stream = BytesIO()
     output_stream.write(first_chunk)
-    while decompressor.unconsumed_tail:
+    # Anything left in unconsumed_tail once the stream has ended is not part of
+    # it, and feeding it back would neither consume it nor produce output.
+    while decompressor.unconsumed_tail and not decompressor.eof:
         output_chunk = decompressor.decompress(
             decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
         )
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
-    if tail := decompressor.flush():
-        decompressed_size += len(tail)
-        _check_max_size(decompressed_size, max_size)
-        output_stream.write(tail)
     return output_stream.getvalue()
 
 
@@ -77,13 +113,16 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
 
 
 def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
-    decompressor = zstandard.ZstdDecompressor()
-    stream_reader = decompressor.stream_reader(BytesIO(data))
+    stream_reader = zstd.ZstdFile(BytesIO(data))
     output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
     while output_chunk:
-        output_chunk = stream_reader.read(_CHUNK_SIZE)
+        try:
+            output_chunk = stream_reader.read(_CHUNK_SIZE)
+        except EOFError:
+            # Return as much data as possible out of a truncated response.
+            break
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)

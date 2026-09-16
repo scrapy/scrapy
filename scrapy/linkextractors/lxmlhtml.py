@@ -282,6 +282,12 @@ class LxmlLinkExtractor:
                 if m:
                     return m.group(1)
 
+        ``process_value`` is called before the filtering parameters, such as
+        ``allow`` and ``deny``, which match the value that it returns. To drop
+        links based on their final URL, use the ``process_links`` parameter of
+        :class:`~scrapy.spiders.Rule`, which only receives links that those
+        parameters kept.
+
     :type process_value: collections.abc.Callable
 
     :param strip: whether to strip whitespaces from extracted attributes.
@@ -303,8 +309,8 @@ class LxmlLinkExtractor:
         allow_domains: str | Iterable[str] = (),
         deny_domains: str | Iterable[str] = (),
         restrict_xpaths: str | Iterable[str] = (),
-        tags: str | Iterable[str] = ("a", "area"),
-        attrs: str | Iterable[str] = ("href",),
+        tags: str | Iterable[str] | None = ("a", "area"),
+        attrs: str | Iterable[str] | None = ("href",),
         canonicalize: bool = False,
         unique: bool = True,
         process_value: Callable[[Any], Any] | None = None,
@@ -326,7 +332,7 @@ class LxmlLinkExtractor:
             unique=unique,
             process=process_value,
             strip=strip,
-            canonicalized=not canonicalize,
+            canonicalized=True,
         )
         self.allow_res: list[re.Pattern[str]] = self._compile_regexes(allow)
         self.deny_res: list[re.Pattern[str]] = self._compile_regexes(deny)

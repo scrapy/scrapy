@@ -74,7 +74,13 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
 
         return content
 
-    def get_gzip_compressed(self, data, compresslevel=9, mtime=0, filename=""):
+    def get_gzip_compressed(
+        self,
+        data: bytes,
+        compresslevel: int = 9,
+        mtime: int = 0,
+        filename: str = "",
+    ) -> bytes:
         data_stream = BytesIO()
         gzipf = gzip.GzipFile(
             fileobj=data_stream,
@@ -539,11 +545,13 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
 
         data = await self.exported_data(self.items, settings)
 
-        for filename, result in data.items():
+        for filename, data_bytes in data.items():
+            expected: Any
+            result: Any
             if "pickle" in filename:
-                expected, result = self.items[0], pickle.loads(result)
+                expected, result = self.items[0], pickle.loads(data_bytes)
             elif "marshal" in filename:
-                expected, result = self.items[0], marshal.loads(result)
+                expected, result = self.items[0], marshal.loads(data_bytes)
             else:
-                expected = filename_to_expected[filename]
+                expected, result = filename_to_expected[filename], data_bytes
             assert result == expected

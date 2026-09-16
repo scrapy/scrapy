@@ -5,7 +5,7 @@ import logging
 import shutil
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -13,6 +13,7 @@ from scrapy.core.scheduler import Scheduler
 from scrapy.dupefilters import BaseDupeFilter, DiskDupeFilter, RFPDupeFilter
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
@@ -29,7 +30,7 @@ def _get_dupefilter(
 ) -> BaseDupeFilter:
     if crawler is None:
         crawler = get_crawler(settings_dict=settings)
-    scheduler = Scheduler.from_crawler(crawler)
+    scheduler = build_from_crawler(Scheduler, crawler)
     dupefilter = scheduler.df
     if open_:
         dupefilter.open()
@@ -37,6 +38,8 @@ def _get_dupefilter(
 
 
 class FromCrawlerRFPDupeFilter(RFPDupeFilter):
+    method: str
+
     @classmethod
     def from_crawler(cls, crawler):
         df = super().from_crawler(crawler)
@@ -116,17 +119,18 @@ class TestRFPDupeFilter(DupeFilterTestMixin):
             "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
         }
         crawler = get_crawler(settings_dict=settings)
-        scheduler = Scheduler.from_crawler(crawler)
-        assert scheduler.df.debug
-        assert scheduler.df.method == "from_crawler"
+        scheduler = build_from_crawler(Scheduler, crawler)
+        dupefilter = cast("FromCrawlerRFPDupeFilter", scheduler.df)
+        assert dupefilter.debug
+        assert dupefilter.method == "from_crawler"
 
     def test_df_direct_scheduler(self):
         settings = {
             "DUPEFILTER_CLASS": DirectDupeFilter,
         }
         crawler = get_crawler(settings_dict=settings)
-        scheduler = Scheduler.from_crawler(crawler)
-        assert scheduler.df.method == "n/a"
+        scheduler = build_from_crawler(Scheduler, crawler)
+        assert cast("DirectDupeFilter", scheduler.df).method == "n/a"
 
     def test_seenreq_truncated(self):
         r1 = Request("http://scrapytest.org/1")
@@ -171,7 +175,6 @@ class TestRFPDupeFilter(DupeFilterTestMixin):
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-        assert crawler.stats
         assert crawler.stats.get_value("dupefilter/filtered") == 2
         assert (
             "scrapy.dupefilters",
@@ -205,7 +208,6 @@ class TestRFPDupeFilter(DupeFilterTestMixin):
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-        assert crawler.stats
         assert crawler.stats.get_value("dupefilter/filtered") == 2
         assert (
             "scrapy.dupefilters",
@@ -222,7 +224,7 @@ class TestRFPDupeFilter(DupeFilterTestMixin):
         dupefilter.close("finished")
 
     def test_fingerprints_deprecation(self):
-        dupefilter = _get_dupefilter()
+        dupefilter = cast("RFPDupeFilter", _get_dupefilter())
         request = Request("http://scrapytest.org/index.html")
         dupefilter.request_seen(request)
         with pytest.warns(
@@ -274,4 +276,4 @@ class TestBaseDupeFilter:
             ScrapyDeprecationWarning,
             match=r"Calling BaseDupeFilter\.log\(\) is deprecated.",
         ):
-            dupefilter.log(None, None)
+            dupefilter.log(None, None)  # type: ignore[arg-type]
