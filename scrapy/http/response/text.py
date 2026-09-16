@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
 
 import parsel
+from charset_normalizer import from_bytes
 from w3lib.encoding import (
     html_body_declared_encoding,
     html_to_unicode,
@@ -86,7 +87,7 @@ class TextResponse(Response):
     def json(self) -> Any:
         """Deserialize a JSON document to a Python object.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.18.0
            Bodies that cannot be decoded as UTF-8, UTF-16 or UTF-32, as the
            JSON specification requires, are now decoded using
            :attr:`TextResponse.encoding` instead of raising
@@ -139,13 +140,14 @@ class TextResponse(Response):
         return self._cached_benc
 
     def _auto_detect_fun(self, text: bytes) -> str | None:
-        for enc in (self._DEFAULT_ENCODING, "utf-8", "cp1252"):
+        for enc in (self._DEFAULT_ENCODING, "utf-8"):
             try:
                 text.decode(enc)
             except UnicodeError:
                 continue
             return resolve_encoding(enc)
-        return None
+        match = from_bytes(text).best()
+        return resolve_encoding(match.encoding) if match else None
 
     @memoizemethod_noargs
     def _body_declared_encoding(self) -> str | None:
