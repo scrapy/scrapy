@@ -141,7 +141,7 @@ middleware with a :ref:`custom downloader middleware
 
 -   If you can meet the installation requirements, use pyre2_ instead of
     Python’s re_ to compile your URL-filtering regular expression. See
-    :issue:`1908`.
+    :gh:`1908`.
 
 See also `other suggestions at StackOverflow
 <https://stackoverflow.com/q/36440681>`__.
@@ -241,6 +241,10 @@ Yes, but you can also use the Scrapy shell which allows you to quickly analyze
 often, more useful than plain old ``pdb.set_trace()``.
 
 For more info see :ref:`topics-shell-inspect-response`.
+
+You can also :ref:`connect to live crawls <connect-live-crawl>`, which is the
+best way to debug running spiders without adding breakpoints to their code in
+advance.
 
 Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 -------------------------------------------------------------------
@@ -419,7 +423,7 @@ Running ``runspider`` I get ``error: No spider found in file: <filename>``
 This may happen if your Scrapy project has a spider module with a name that
 conflicts with the name of one of the `Python standard library modules`_, such
 as ``csv.py`` or ``os.py``, or any `Python package`_ that you have installed.
-See :issue:`2680`.
+See :gh:`2680`.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905

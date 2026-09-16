@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -12,6 +12,7 @@ from scrapy.robotstxt import (
     decode_robotstxt,
 )
 from scrapy.utils._deps_compat import STDLIB_IMPROVED_ROBOTFILEPARSER
+from scrapy.utils.misc import build_from_crawler
 from tests.utils.robotstxt import rerp_available
 
 if TYPE_CHECKING:
@@ -19,6 +20,9 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+
+# The parser backends only use the crawler to get the spider to log with.
+NO_CRAWLER = cast("Crawler", None)
 
 
 class BaseRobotParserTest:
@@ -28,8 +32,7 @@ class BaseRobotParserTest:
         self.parser_cls = parser_cls
 
     def _parse(self, robotstxt_body: bytes) -> RobotParser:
-        # The parser backends only use the crawler to get the spider to log with.
-        return self.parser_cls.from_crawler(None, robotstxt_body)  # type: ignore[arg-type]
+        return build_from_crawler(self.parser_cls, NO_CRAWLER, robotstxt_body)
 
     def test_allowed(self):
         robotstxt_robotstxt_body = (
@@ -127,7 +130,9 @@ class TestRobotParser:
             def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
                 return True
 
-        rp = AllowAllRobotParser()
+        rp = build_from_crawler(
+            AllowAllRobotParser, NO_CRAWLER, b"User-agent: *\nCrawl-delay: 10\n"
+        )
         assert rp.crawl_delay("*") is None
 
 
