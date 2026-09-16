@@ -19,7 +19,7 @@ from scrapy.utils.reactor import _asyncio_reactor_path
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 from tests.utils.bases.commands import TestProjectBase
-from tests.utils.cmdline import proc
+from tests.utils.cmdline import proc, stop_spawn
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -191,6 +191,11 @@ class MySpider(scrapy.Spider):
 
 
 class TestInteractiveShell:
+    # Starting an interactive shell involves an interpreter start-up, Scrapy
+    # imports and shell imports, which on PyPy with coverage enabled can take
+    # well over 10 seconds.
+    TIMEOUT = 60
+
     def test_fetch(self, mockserver: MockServer) -> None:
         args = (
             sys.executable,
@@ -201,18 +206,13 @@ class TestInteractiveShell:
         env = os.environ.copy()
         env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=60)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         p.sendline(f"fetch('{mockserver.url('/')}')")
         p.sendline("type(response)")
         p.expect_exact("HtmlResponse")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
-        if p.proc.stdin:
-            p.proc.stdin.close()
-        if p.proc.stdout:
-            p.proc.stdout.close()
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -235,11 +235,10 @@ class TestInteractiveShell:
     def _run_interactive_shell(self, env: dict[str, str]) -> str:
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=60)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
+        stop_spawn(p)
         logfile.seek(0)
         return logfile.read().decode()
 
@@ -256,7 +255,7 @@ class TestInteractiveShell:
         self._isolate_config(env, config_home)
         args = (sys.executable, "-m", "scrapy.cmdline", "shell")
         logfile = BytesIO()
-        p = PopenSpawn(args, env=env, timeout=60)
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         # The standard Python shell never imports IPython, whereas the IPython
@@ -264,8 +263,7 @@ class TestInteractiveShell:
         # shell=python was honored, regardless of platform-specific prompts.
         p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
         p.expect_exact("IPYMODULE False")
-        p.sendeof()
-        p.wait()  # type: ignore[no-untyped-call]
+        stop_spawn(p)
         logfile.seek(0)
         assert "Traceback" not in logfile.read().decode()
 
@@ -275,6 +273,28 @@ class TestInteractiveShell:
         env = os.environ.copy()
         self._isolate_config(env, config_home)
         assert "Traceback" not in self._run_interactive_shell(env)
+
+    @pytest.mark.skipif(
+        importlib.util.find_spec("IPython") is None, reason="IPython is not installed"
+    )
+    def test_shell_ipython(self, tmp_path: Path) -> None:
+        # Reaching the embedded IPython shell requires selecting it explicitly,
+        # since ptpython takes precedence when both are installed.
+        config_home = tmp_path / "config"
+        config_home.mkdir()
+        env = os.environ.copy()
+        self._isolate_config(env, config_home)
+        env["SCRAPY_PYTHON_SHELL"] = "ipython"
+        args = (sys.executable, "-m", "scrapy.cmdline", "shell")
+        logfile = BytesIO()
+        p = PopenSpawn(args, env=env, timeout=self.TIMEOUT)
+        p.logfile_read = logfile
+        p.expect_exact("Available Scrapy objects")
+        p.sendline("import sys; print('IPYMODULE', 'IPython' in sys.modules)")
+        p.expect_exact("IPYMODULE True")
+        stop_spawn(p)
+        logfile.seek(0)
+        assert "Traceback" not in logfile.read().decode()
 
 
 @pytest.fixture

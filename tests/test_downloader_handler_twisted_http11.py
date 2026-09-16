@@ -10,20 +10,20 @@ import pytest
 from twisted.internet.error import ConnectionClosed
 from twisted.internet.protocol import Factory, Protocol
 
-from scrapy import Spider
+from scrapy import Request, Spider
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler, TunnelError
 from scrapy.crawler import Crawler
 from scrapy.exceptions import (
+    CannotResolveHostError,
     DownloadConnectionRefusedError,
     DownloadFailedError,
     NotConfigured,
 )
-from scrapy.http import Request
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.mockserver.utils import _free_port
+from tests import NON_EXISTING_RESOLVABLE
 from tests.utils.bases.download_handlers_http import (
     TestHttpBase,
     TestHttpProxyBase,
@@ -42,8 +42,6 @@ from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
-
-    from twisted.internet.interfaces import IAddress
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
@@ -134,116 +132,116 @@ class TestRealWebsite(HTTP11DownloadHandlerMixin, TestRealWebsiteBase):
         return sys.platform != "win32"
 
 
-class _FaultyProxyProtocol(Protocol):
-    """A CONNECT proxy that misbehaves once it receives the CONNECT request, to
-    exercise the error paths of the tunneling code."""
+class _CannedConnectProxy(Protocol):
+    """Answers any request with a canned response, or drops the connection when
+    the response is ``None``."""
 
-    def __init__(self, behavior: str) -> None:
-        self._behavior = behavior
-        self._buffer = b""
-        self._reacted = False
+    factory: _CannedConnectProxyFactory
 
     def dataReceived(self, data: bytes) -> None:
-        if self._reacted:
-            return
-        self._buffer += data
-        if b"\r\n\r\n" not in self._buffer:
-            return
-        self._reacted = True
-        assert self.transport is not None
-        if self._behavior == "close":
-            # Drop the connection instead of answering the CONNECT request.
-            self.transport.loseConnection()
-        elif self._behavior == "garbage":
-            # Answer with something that is not a valid HTTP status line.
-            self.transport.write(b"NOT-A-PROXY-RESPONSE\r\n\r\n")
-        elif self._behavior == "trailing":
-            # Answer success but append extra bytes right after the headers, so
-            # that they are handed over to the tunneled protocol.
-            self.transport.write(
-                b"HTTP/1.1 200 Connection established\r\n\r\ntrailing-bytes"
-            )
-
-
-class _FaultyProxyFactory(Factory):
-    def __init__(self, behavior: str) -> None:
-        self._behavior = behavior
-
-    def buildProtocol(self, addr: IAddress) -> _FaultyProxyProtocol:
-        return _FaultyProxyProtocol(self._behavior)
-
-
-class TestHttpsProxyTunnelErrors(HTTP11DownloadHandlerMixin):
-    """Error paths of the HTTP CONNECT tunnel used for HTTPS-over-proxy."""
-
-    @asynccontextmanager
-    async def _download_handler(self) -> AsyncGenerator[DownloadHandlerProtocol]:
-        crawler = get_crawler(DefaultSpider)
-        crawler.spider = crawler._create_spider()
-        dh = build_from_crawler(self.download_handler_cls, crawler)
-        try:
-            yield dh
-        finally:
-            await dh.close()
-
-    @asynccontextmanager
-    async def _faulty_proxy(self, behavior: str) -> AsyncGenerator[str]:
         from twisted.internet import reactor
 
-        port = reactor.listenTCP(
-            0, _FaultyProxyFactory(behavior), interface="127.0.0.1"
-        )
-        try:
-            yield f"http://127.0.0.1:{port.getHost().port}"
-        finally:
-            await maybe_deferred_to_future(port.stopListening())
+        assert self.transport
+        response = self.factory.response
+        if response is None:
+            self.transport.loseConnection()
+            return
+        if not self.factory.split_at:
+            self.transport.write(response)
+            return
+        self.transport.write(response[: self.factory.split_at])
+        reactor.callLater(0.1, self.transport.write, response[self.factory.split_at :])
+
+
+class _CannedConnectProxyFactory(Factory):
+    protocol = _CannedConnectProxy  # type: ignore[assignment]
+
+    def __init__(self, response: bytes | None, split_at: int = 0):
+        self.response = response
+        self.split_at = split_at
+
+
+@asynccontextmanager
+async def _canned_proxy(
+    response: bytes | None, split_at: int = 0
+) -> AsyncGenerator[str]:
+    from twisted.internet import reactor
+
+    port = reactor.listenTCP(
+        0, _CannedConnectProxyFactory(response, split_at), interface="127.0.0.1"
+    )
+    try:
+        yield f"http://127.0.0.1:{port.getHost().port}"
+    finally:
+        await maybe_deferred_to_future(port.stopListening())
+
+
+@asynccontextmanager
+async def _get_dh() -> AsyncGenerator[HTTP11DownloadHandler]:
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    dh = build_from_crawler(HTTP11DownloadHandler, crawler)
+    try:
+        yield dh
+    finally:
+        await dh.close()
+
+
+class TestTunnelingErrors:
+    @coroutine_test
+    async def test_response_in_two_packets(self) -> None:
+        """A CONNECT response split across packets is buffered until complete."""
+        response = b"HTTP/1.1 407 Proxy Authentication Required\r\n\r\n"
+        async with _canned_proxy(response, split_at=len(response) - 2) as proxy:
+            request = Request("https://example.com", meta={"proxy": proxy})
+            async with _get_dh() as dh:
+                with pytest.raises(TunnelError, match="407"):
+                    await dh.download_request(request)
 
     @coroutine_test
-    async def test_proxy_connection_refused(self) -> None:
-        """Connecting to the proxy itself fails."""
-        # Nothing is listening on this port.
-        proxy = f"http://127.0.0.1:{_free_port()}"
-        request = Request(
-            "https://example.com/", meta={"proxy": proxy, "download_timeout": 20}
-        )
-        async with self._download_handler() as dh:
-            with pytest.raises(DownloadConnectionRefusedError):
-                await dh.download_request(request)
+    async def test_unparsable_response(self) -> None:
+        async with _canned_proxy(b"not an HTTP response\r\n\r\n") as proxy:
+            request = Request("https://example.com", meta={"proxy": proxy})
+            async with _get_dh() as dh:
+                with pytest.raises(TunnelError, match="not an HTTP response"):
+                    await dh.download_request(request)
 
     @coroutine_test
     async def test_proxy_closes_connection(self) -> None:
         """The proxy drops the connection instead of answering CONNECT."""
-        async with self._faulty_proxy("close") as proxy:
-            request = Request(
-                "https://example.com/", meta={"proxy": proxy, "download_timeout": 20}
-            )
-            async with self._download_handler() as dh:
-                # The tunnel is never established, so the connection-lost reason
-                # surfaces directly.
+        async with _canned_proxy(None) as proxy:
+            request = Request("https://example.com", meta={"proxy": proxy})
+            async with _get_dh() as dh:
                 with pytest.raises(ConnectionClosed):
                     await dh.download_request(request)
 
     @coroutine_test
-    async def test_proxy_invalid_response(self) -> None:
-        """The proxy answers CONNECT with something that is not a status line."""
-        async with self._faulty_proxy("garbage") as proxy:
-            request = Request(
-                "https://example.com/", meta={"proxy": proxy, "download_timeout": 20}
-            )
-            async with self._download_handler() as dh:
-                with pytest.raises(TunnelError):
+    async def test_trailing_bytes(self) -> None:
+        """Bytes right after a successful CONNECT response belong to the
+        tunneled protocol, whose TLS handshake they corrupt."""
+        response = b"HTTP/1.1 200 Connection established\r\n\r\ntrailing-bytes"
+        async with _canned_proxy(response) as proxy:
+            request = Request("https://example.com", meta={"proxy": proxy})
+            async with _get_dh() as dh:
+                with pytest.raises(DownloadFailedError):
                     await dh.download_request(request)
 
     @coroutine_test
-    async def test_proxy_trailing_bytes(self) -> None:
-        """The proxy appends bytes right after a successful CONNECT response, so
-        they must be handed over to the tunneled protocol."""
-        async with self._faulty_proxy("trailing") as proxy:
-            request = Request(
-                "https://example.com/", meta={"proxy": proxy, "download_timeout": 20}
-            )
-            async with self._download_handler() as dh:
-                # The trailing bytes corrupt the destination TLS handshake, so
-                # the download fails; what matters is that they were forwarded.
-                with pytest.raises(DownloadFailedError):
-                    await dh.download_request(request)
+    async def test_proxy_connection_refused(self) -> None:
+        request = Request(
+            "https://example.com", meta={"proxy": "http://127.0.0.1:65432"}
+        )
+        async with _get_dh() as dh:
+            with pytest.raises(DownloadConnectionRefusedError):
+                await dh.download_request(request)
+
+    @coroutine_test
+    async def test_proxy_without_port(self) -> None:
+        if NON_EXISTING_RESOLVABLE:
+            pytest.skip("Non-existing hosts are resolvable")
+        request = Request(
+            "https://example.com", meta={"proxy": "http://no-such-domain.nosuch"}
+        )
+        async with _get_dh() as dh:
+            with pytest.raises(CannotResolveHostError):
+                await dh.download_request(request)

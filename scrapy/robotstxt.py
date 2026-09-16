@@ -72,7 +72,7 @@ class RobotParser(metaclass=ABCMeta):
         of seconds, or ``None`` if it is not set or the backend does not support
         it.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.18.0
         """
         return None
 
