@@ -3,6 +3,7 @@ from __future__ import annotations
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
@@ -11,7 +12,7 @@ def get_spider_and_mw(
 ) -> tuple[Spider, UserAgentMiddleware]:
     crawler = get_crawler(Spider, {"USER_AGENT": default_useragent})
     spider = crawler._create_spider("foo")
-    return spider, UserAgentMiddleware.from_crawler(crawler)
+    return spider, build_from_crawler(UserAgentMiddleware, crawler)
 
 
 def test_default_agent():

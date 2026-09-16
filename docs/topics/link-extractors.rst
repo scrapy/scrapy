@@ -16,9 +16,10 @@ list of matching :class:`~scrapy.link.Link` objects from a
 Link extractors are used in :class:`~scrapy.spiders.CrawlSpider` spiders
 through a set of :class:`~scrapy.spiders.Rule` objects.
 
-You can also use link extractors in regular spiders. For example, you can instantiate
-:class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` into a class
-variable in your spider, and use it from your spider callbacks:
+You can also use link extractors in regular spiders. For example, you can
+instantiate :class:`LinkExtractor
+<scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` as a class variable in your
+spider and use it from your spider callbacks:
 
 .. code-block:: python
 
@@ -31,9 +32,6 @@ variable in your spider, and use it from your spider callbacks:
 Link extractor reference
 ========================
 
-.. module:: scrapy.linkextractors
-   :synopsis: Link extractors classes
-
 The link extractor class is
 :class:`scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor`. For convenience it
 can also be imported as ``scrapy.linkextractors.LinkExtractor``:
@@ -45,18 +43,11 @@ can also be imported as ``scrapy.linkextractors.LinkExtractor``:
 LxmlLinkExtractor
 -----------------
 
-.. module:: scrapy.linkextractors.lxmlhtml
-   :synopsis: lxml's HTMLParser-based link extractors
-
-
-.. autoclass:: LxmlLinkExtractor
+.. autoclass:: scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor
 
     .. automethod:: extract_links
 
 Link
 ----
 
-.. module:: scrapy.link
-   :synopsis: Link from link extractors
-
-.. autoclass:: Link
+.. autoclass:: scrapy.link.Link

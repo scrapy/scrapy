@@ -35,7 +35,6 @@ below.
 scrapy.Spider
 =============
 
-.. class:: scrapy.spiders.Spider
 .. autoclass:: scrapy.Spider
 
    .. attribute:: name
@@ -59,8 +58,15 @@ scrapy.Spider
        :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
        enabled.
 
-       Let's say your target url is ``https://www.example.com/1.html``,
+       .. versionchanged:: 2.18.0
+          Changes to this attribute during a crawl are now taken into account.
+
+       Let's say your target URL is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
+
+       You may modify this attribute while the spider runs, e.g. to allow
+       domains that you only learn about from an earlier response. The change
+       affects requests scheduled after it.
 
    .. autoattribute:: start_urls
 
@@ -80,8 +86,8 @@ scrapy.Spider
       :class:`~scrapy.crawler.Crawler` object to which this spider instance is
       bound.
 
-      Crawlers encapsulate a lot of components in the project for their single
-      entry access (such as extensions, middlewares, signals managers, etc).
+      Crawlers encapsulate a lot of components in the project for single-entry
+      access (such as extensions, middlewares, signal managers, etc).
       See :ref:`topics-api-crawler` to know more about them.
 
    .. attribute:: settings
@@ -285,9 +291,8 @@ Spiders can access arguments in their `__init__` methods:
             self.start_urls = [f"http://www.example.com/categories/{category}"]
             # ...
 
-The default `__init__` method will take any spider arguments
-and copy them to the spider as attributes.
-The above example can also be written as follows:
+The default ``__init__`` method will take any spider arguments and copy them to
+the spider as attributes. The above example can also be written as follows:
 
 .. code-block:: python
 
@@ -311,15 +316,13 @@ specify spider arguments when calling
     process = CrawlerProcess()
     process.crawl(MySpider, category="electronics")
 
-Keep in mind that spider arguments are only strings.
-The spider will not do any parsing on its own.
-If you were to set the ``start_urls`` attribute from the command line,
-you would have to parse it on your own into a list
-using something like :func:`ast.literal_eval` or :func:`json.loads`
-and then set it as an attribute.
-Otherwise, you would cause iteration over a ``start_urls`` string
-(a very common python pitfall)
-resulting in each character being seen as a separate url.
+Keep in mind that spider arguments are only strings. The spider will not do any
+parsing on its own. If you were to set the ``start_urls`` attribute from the
+command line, you would have to parse it on your own into a list using
+something like :func:`ast.literal_eval` or :func:`json.loads` and then set it
+as an attribute. Otherwise, you would cause iteration over a ``start_urls``
+string (a very common Python pitfall) resulting in each character being seen as
+a separate url.
 
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
@@ -389,8 +392,12 @@ Start requests
 Delaying start request iteration
 --------------------------------
 
-You can override the :meth:`~scrapy.Spider.start` method as follows to pause
-its iteration whenever there are scheduled requests:
+Scrapy iterates :meth:`~scrapy.Spider.start` as fast as it yields, so all start
+requests reach the scheduler early in the crawl, however many they are. To
+minimize the number of requests in the scheduler at any given time, and with it
+resource usage (memory, or disk when using :setting:`JOBDIR`), override
+:meth:`~scrapy.Spider.start` to pause its iteration whenever there are
+scheduled requests:
 
 .. code-block:: python
 
@@ -400,9 +407,37 @@ its iteration whenever there are scheduled requests:
                 await self.crawler.signals.wait_for(signals.scheduler_empty)
             yield item_or_request
 
-This can help minimize the number of requests in the scheduler at any given
-time, to minimize resource usage (memory or disk, depending on
-:setting:`JOBDIR`).
+.. _start-error:
+
+Handling start errors
+---------------------
+
+An exception raised by :meth:`~scrapy.Spider.start` ends its iteration, so any
+remaining start items and requests are never sent. Scrapy logs the exception,
+sends the :signal:`spider_error` signal, and, once the already scheduled
+requests are done, closes the spider with the ``start_error``
+:stat:`finish_reason`.
+
+.. versionchanged:: 2.18.0
+   The close reason used to be ``finished``, and neither the
+   :signal:`spider_error` signal nor the :stat:`spider_exceptions/count` stat
+   reported the exception.
+
+To keep the iteration going, catch the exception yourself:
+
+.. code-block:: python
+
+    async def start(self):
+        for url in self.start_urls:
+            try:
+                request = Request(url)
+            except ValueError:
+                self.logger.exception(f"Skipping start URL {url}")
+            else:
+                yield request
+
+To stop the crawl instead, and choose your own :stat:`finish_reason`, raise
+:exc:`~scrapy.exceptions.CloseSpider`.
 
 .. _builtin-spiders:
 
@@ -452,6 +487,15 @@ CrawlSpider
        described below. If multiple rules match the same link, the first one
        will be used, according to the order they're defined in this attribute.
 
+   .. reqmeta:: rule
+
+   Requests generated from :attr:`rules` carry the index of the matching rule
+   within :attr:`rules` in their ``rule``
+   :attr:`Request.meta <scrapy.Request.meta>` key. :class:`CrawlSpider` needs
+   that key to dispatch the response to the right rule, so copying it into a
+   request generated by a different rule sends the response to the wrong
+   callback.
+
    This spider also exposes an overridable method:
 
    .. method:: parse_start_url(response, **kwargs)
@@ -464,6 +508,8 @@ CrawlSpider
 
 Crawling rules
 ~~~~~~~~~~~~~~
+
+.. reqmeta:: link_text
 
 .. autoclass:: Rule
 
@@ -501,6 +547,10 @@ Crawling rules
    take said request as first argument and the :class:`~scrapy.http.Response`
    from which the request originated as second argument. It must return a
    ``Request`` object or ``None`` (to filter out the request).
+
+   Use ``process_request`` to set the :attr:`~scrapy.Request.priority` of
+   requests generated by a rule, e.g. ``process_request=lambda request,
+   response: request.replace(priority=10)``.
 
    ``errback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called if any exception is
@@ -585,7 +635,11 @@ XMLFeedSpider
 
            - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory
-             which could be a problem for big feeds
+             which could be a problem for big feeds. It also parses the feed
+             with an HTML parser, which can silently mangle tags that HTML
+             treats as void elements, such as ``<link>``, dropping their
+             content and closing tag. Use ``xml`` or ``iternodes`` instead
+             for feeds affected by this.
 
            - ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory

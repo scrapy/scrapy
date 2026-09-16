@@ -1,16 +1,20 @@
 .. _topics-contracts:
 
-=================
-Spiders Contracts
-=================
+================
+Spider Contracts
+================
 
-Testing spiders can get particularly annoying and while nothing prevents you
-from writing unit tests the task gets cumbersome quickly. Scrapy offers an
+Testing spiders can get particularly annoying, and while nothing prevents you
+from writing unit tests, the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
 
-This allows you to test each callback of your spider by hardcoding a sample url
-and check various constraints for how the callback processes the response. Each
-contract is prefixed with an ``@`` and included in the docstring. See the
+.. versionchanged:: 2.19.0
+   Added support for callbacks defined with ``async def``, including
+   :term:`asynchronous generators <asynchronous generator>`.
+
+This allows you to test each callback of your spider by hardcoding a sample URL
+and checking various constraints for how the callback processes the response.
+Each contract is prefixed with an ``@`` and included in the docstring. See the
 following example:
 
 .. code-block:: python
@@ -36,16 +40,30 @@ You can use the following contracts:
 
 .. autoclass:: MetadataContract
 
+.. autoclass:: MethodContract
+
+.. autoclass:: BodyContract
+
+.. autoclass:: HeaderContract
+
+.. autoclass:: CookieContract
+
 .. autoclass:: ReturnsContract
 
 .. autoclass:: ScrapesContract
 
-Use the :command:`check` command to run the contract checks.
+Use the :command:`check` command to run the contract checks. It ignores
+:setting:`ITEM_PIPELINES` and :setting:`FEEDS`, since contracts check the
+output of callbacks instead of sending it to item processing; use the ``-s``
+command-line option to set them back for a check run.
+
+.. versionchanged:: 2.18.0
+   :setting:`ITEM_PIPELINES` and :setting:`FEEDS` are now ignored.
 
 Custom Contracts
 ================
 
-If you find you need more power than the built-in Scrapy contracts you can
+If you find you need more power than the built-in Scrapy contracts, you can
 create and load your own contracts in the project by using the
 :setting:`SPIDER_CONTRACTS` setting:
 
@@ -59,16 +77,14 @@ create and load your own contracts in the project by using the
 Each contract must inherit from :class:`~scrapy.contracts.Contract` and can
 override three methods:
 
-.. module:: scrapy.contracts
-
-.. autoclass:: Contract
+.. autoclass:: scrapy.contracts.Contract
 
     .. automethod:: adjust_request_args
 
     .. method:: pre_process(response)
 
         This allows hooking in various checks on the response received from the
-        sample request, before it's being passed to the callback.
+        sample request, before it is passed to the callback.
 
     .. method:: post_process(output)
 
@@ -92,10 +108,8 @@ response received:
 
 
     class HasHeaderContract(Contract):
-        """
-        Demo contract which checks the presence of a custom header
-        @has_header X-CustomHeader
-        """
+        """Demo contract that checks the presence of a custom header:
+        @has_header X-CustomHeader"""
 
         name = "has_header"
 
@@ -110,8 +124,8 @@ Detecting check runs
 ====================
 
 When ``scrapy check`` is running, the ``SCRAPY_CHECK`` environment variable is
-set to the ``true`` string. You can use :data:`os.environ` to perform any change to
-your spiders or your settings when ``scrapy check`` is used:
+set to the ``true`` string. You can use :data:`os.environ` to make any changes
+to your spiders or your settings when ``scrapy check`` is used:
 
 .. code-block:: python
 

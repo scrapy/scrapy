@@ -1,4 +1,5 @@
 import xmlrpc.client
+from typing import Any
 
 import pytest
 
@@ -17,7 +18,7 @@ class TestXmlRpcRequest(TestRequestBase):
     default_method = "POST"
     default_headers = {b"Content-Type": [b"text/xml"]}
 
-    def _test_request(self, **kwargs):
+    def _test_request(self, **kwargs: Any) -> None:
         r = self.request_class("http://scrapytest.org/rpc2", **kwargs)
         assert r.headers[b"Content-Type"] == b"text/xml"
         assert r.body == to_bytes(

@@ -5,10 +5,9 @@ Requests and Responses
 ======================
 
 .. module:: scrapy.http
-   :synopsis: Request and Response classes
 
-Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling web
-sites.
+Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling
+websites.
 
 Typically, :class:`~scrapy.Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request
@@ -53,65 +52,13 @@ Request objects
        ``None`` is passed as value, the HTTP header will not be sent at all.
 
        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-           :ref:`cookies-mw`. If you need to set cookies for a request, use the
-           ``cookies`` argument. This is a known current limitation that is being
-           worked on.
+           :ref:`cookie middleware <cookies>`. If you need to set cookies for a
+           request, use the ``cookies`` argument.
 
     :type headers: dict
 
-    :param cookies: the request cookies. These can be sent in two forms.
-
-        .. invisible-code-block: python
-
-            from scrapy import Request
-
-        1. Using a dict:
-
-        .. code-block:: python
-
-            request_with_cookies = Request(
-                url="http://www.example.com",
-                cookies={"currency": "USD", "country": "UY"},
-            )
-
-        2. Using a list of dicts:
-
-        .. code-block:: python
-
-            request_with_cookies = Request(
-                url="https://www.example.com",
-                cookies=[
-                    {
-                        "name": "currency",
-                        "value": "USD",
-                        "domain": "example.com",
-                        "path": "/currency",
-                        "secure": True,
-                    },
-                ],
-            )
-
-        The latter form allows for customizing the ``domain`` and ``path``
-        attributes of the cookie. This is only useful if the cookies are saved
-        for later requests.
-
-        .. reqmeta:: dont_merge_cookies
-
-        When some site returns cookies (in a response) those are stored in the
-        cookies for that domain and will be sent again in future requests.
-        That's the typical behaviour of any regular web browser.
-
-        Note that setting the :reqmeta:`dont_merge_cookies` key to ``True`` in
-        :attr:`request.meta <scrapy.Request.meta>` causes custom cookies to be
-        ignored.
-
-        For more info see :ref:`cookies-mw`.
-
-        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-            :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`scrapy.Request.cookies <scrapy.Request>` parameter. This is a known
-            current limitation that is being worked on.
-
+    :param cookies: the request cookies, as a dict of cookie names and values
+        or as a list of dicts with a cookie each. See :ref:`cookies`.
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
@@ -209,11 +156,12 @@ Request objects
         :attr:`cb_kwargs` instead, see :ref:`callback-data`. However, request
         metadata may be the right choice in certain scenarios, such as to
         maintain some debugging data across all follow-up requests (e.g. the
-        source URL).
+        source URL). To copy some metadata keys automatically into follow-up
+        requests, consider using the :setting:`STICKY_META_KEYS` setting.
 
         A common use of request metadata is to define request-specific
         parameters for Scrapy components (extensions, middlewares, etc.). For
-        example, if you set ``dont_retry`` to ``True``,
+        example, if you set :reqmeta:`dont_retry` to ``True``,
         :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` will never
         retry that request, even if it fails. See :ref:`topics-request-meta`.
 
@@ -221,15 +169,15 @@ Request objects
         example, to keep request state information relevant to your component.
         For example,
         :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` uses the
-        ``retry_times`` metadata key to keep track of how many times a request
-        has been retried so far.
+        :reqmeta:`retry_times` metadata key to keep track of how many times a
+        request has been retried so far.
 
         Copying all the metadata of a previous request into a new, follow-up
         request in a spider callback is a bad practice, because request
         metadata may include metadata set by Scrapy components that is not
         meant to be copied into other requests. For example, copying the
-        ``retry_times`` metadata key into follow-up requests can lower the
-        amount of retries allowed for those follow-up requests.
+        :reqmeta:`retry_times` metadata key into follow-up requests can lower
+        the amount of retries allowed for those follow-up requests.
 
         You should only copy all request metadata from one request to another
         if the new request is meant to replace the old request, as is often the
@@ -765,10 +713,18 @@ Errbacks
 ========
 
 The errback of a request is a function that will be called when an exception
-is raise while processing it.
+is raised while processing it.
 
 It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
 be used to track connection establishment timeouts, DNS errors etc.
+
+Scrapy sets the ``request`` attribute of that
+:exc:`~twisted.python.failure.Failure` object to the :class:`~scrapy.Request`
+object being processed.
+
+If an errback raises an exception, Scrapy logs it and sends the
+:signal:`spider_error` signal, unless the exception is the one that the errback
+received, which Scrapy logs as a download error instead.
 
 Here's an example spider logging all errors and catching some specific
 errors if needed:
@@ -875,7 +831,9 @@ Those are:
 * :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
+* :reqmeta:`cache_timestamp`
 * :reqmeta:`cookiejar`
+* :reqmeta:`depth`
 * :reqmeta:`dont_cache`
 * :reqmeta:`dont_merge_cookies`
 * :reqmeta:`dont_obey_robotstxt`
@@ -885,10 +843,12 @@ Those are:
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_slot`
-* :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`download_warnsize`
+* :reqmeta:`ftp_local_filename`
+* :reqmeta:`ftp_passive`
+* :reqmeta:`ftp_password`
+* :reqmeta:`ftp_user`
 * :reqmeta:`give_up_log_level`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
@@ -896,12 +856,21 @@ Those are:
 * :reqmeta:`http_pass`
 * :reqmeta:`http_user`
 * :reqmeta:`is_start_request`
+* :reqmeta:`link_text`
 * :reqmeta:`max_retry_times`
+* :reqmeta:`priority_adjust`
 * :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
+* :reqmeta:`redirect_times`
+* :reqmeta:`redirect_ttl`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`retry_times`
+* :reqmeta:`rule`
 * :reqmeta:`verbatim_url`
+
+Scrapy components also use meta keys whose name starts with an underscore, such
+as ``_auth_proxy``. Those are internal, and may change or disappear at any time.
 
 .. reqmeta:: bindaddress
 
@@ -940,8 +909,9 @@ Set the :reqmeta:`bindaddress` request meta key to override it for a
 specific request.
 
 This meta key is not supported by
-:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler`, but the
-:setting:`DOWNLOAD_BIND_ADDRESS` is supported by it.
+:class:`~scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler` and
+:class:`~scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler`, but
+the :setting:`DOWNLOAD_BIND_ADDRESS` setting is supported by them.
 
 .. reqmeta:: download_timeout
 
@@ -957,9 +927,11 @@ download_latency
 ----------------
 
 The amount of time spent to fetch the response, since the request has been
-started, i.e. HTTP message sent over the network. This meta key only becomes
-available when the response has been downloaded. While most other meta keys are
-used to control Scrapy behavior, this one is supposed to be read-only.
+started, i.e. HTTP message sent over the network. It covers the time until
+Scrapy reads the response, which your own code can delay, see
+:ref:`optimize-blocking`. This meta key only becomes available when the
+response has been downloaded. While most other meta keys are used to control
+Scrapy behavior, this one is supposed to be read-only.
 
 .. reqmeta:: download_fail_on_dataloss
 
@@ -968,6 +940,15 @@ download_fail_on_dataloss
 
 Whether or not to fail on broken responses. See:
 :setting:`DOWNLOAD_FAIL_ON_DATALOSS`.
+
+.. reqmeta:: ftp_local_filename
+
+ftp_local_filename
+------------------
+
+Path, as :class:`bytes`, of the file where to write the response body of an
+``ftp://`` request. If set, :attr:`Response.body <scrapy.http.Response.body>`
+holds this path instead of the file contents.
 
 .. reqmeta:: give_up_log_level
 
@@ -1315,6 +1296,10 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. automethod:: Response.to_dict
+
+    .. automethod:: Response.from_dict
+
 
 .. _topics-request-response-ref-response-subclasses:
 
@@ -1373,16 +1358,51 @@ TextResponse objects
 
        1. the encoding passed in the ``__init__()`` method ``encoding`` argument
 
-       2. the encoding declared in the Content-Type HTTP header. If this
+       2. the encoding of the `byte order mark`_ at the start of the response
+          body
+
+       3. the encoding declared in the Content-Type HTTP header. If this
           encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
-       3. the encoding declared in the response body. The TextResponse class
+       4. the encoding declared in the response body. The TextResponse class
           doesn't provide any special functionality for this. However, the
           :class:`HtmlResponse` and :class:`XmlResponse` classes do.
 
-       4. the encoding inferred by looking at the response body. This is the more
+       5. the encoding inferred by looking at the response body. This is the more
           fragile method but also the last one tried.
+
+       This order matches the `encoding sniffing algorithm`_ of the HTML
+       standard, which web browsers follow.
+
+       To resolve the encoding differently, determine it yourself and pass it
+       through :meth:`Response.replace` from a :ref:`downloader middleware
+       <topics-downloader-middleware>`. Give that middleware an order between
+       those of
+       :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware`
+       (580) and
+       :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+       (590), so that it gets a decompressed body and no other component reads
+       the response text before it.
+
+       For example, to give a declaration in the response body precedence over
+       the Content-Type header:
+
+       .. code-block:: python
+
+           from w3lib.encoding import html_body_declared_encoding, read_bom
+
+           from scrapy.http import TextResponse
+
+
+           class BodyEncodingMiddleware:
+               def process_response(self, request, response, spider):
+                   if not isinstance(response, TextResponse):
+                       return response
+                   if read_bom(response.body)[0]:
+                       return response
+                   encoding = html_body_declared_encoding(response.body)
+                   return response.replace(encoding=encoding) if encoding else response
 
     .. attribute:: TextResponse.selector
 
@@ -1428,9 +1448,6 @@ TextResponse objects
 
     .. automethod:: TextResponse.json()
 
-        Returns a Python object from deserialized JSON document.
-        The result is cached after the first call.
-
     .. method:: TextResponse.urljoin(url)
 
         Constructs an absolute url by combining the Response's base url with
@@ -1438,6 +1455,8 @@ TextResponse objects
         ``<base>`` tag, or just :attr:`Response.url` if there is no such
         tag.
 
+.. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
+.. _encoding sniffing algorithm: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
 
 HtmlResponse objects
@@ -1471,3 +1490,9 @@ JsonResponse objects
     that is used when the response has a `JSON MIME type
     <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type`
     header.
+
+
+Other functions related to responses
+====================================
+
+.. autofunction:: scrapy.utils.response.response_from_dict

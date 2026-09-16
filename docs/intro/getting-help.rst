@@ -20,7 +20,7 @@ Search for existing answers
 
 Whatever your question or issue, there is a chance someone else has been in
 your shoes before. Search for similar topics in `GitHub Discussions`_ and in
-the `issue tracker`_. StackOverflow_ also holds years of answered Scrapy
+the `issue tracker`_. `Stack Overflow`_ also holds years of answered Scrapy
 questions.
 
 
@@ -47,4 +47,4 @@ If you cannot find an answer or a solution for your problem:
 .. _good question: https://stackoverflow.com/help/how-to-ask
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _reddit: https://www.reddit.com/r/scrapy/
-.. _StackOverflow: https://stackoverflow.com/tags/scrapy
+.. _Stack Overflow: https://stackoverflow.com/tags/scrapy
