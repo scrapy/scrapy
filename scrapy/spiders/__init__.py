@@ -91,8 +91,8 @@ class Spider(object_ref):
     #: :class:`~scrapy.crawler.Crawler` object to which this spider instance is
     #: bound.
     #:
-    #: Crawlers encapsulate a lot of components in the project for their single
-    #: entry access (such as extensions, middlewares, signals managers, etc).
+    #: Crawlers encapsulate a lot of components in the project for single-entry
+    #: access (such as extensions, middlewares, signal managers, etc).
     #: See :ref:`topics-api-crawler` for details.
     crawler: Crawler
 

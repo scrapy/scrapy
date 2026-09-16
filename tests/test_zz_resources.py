@@ -8,7 +8,7 @@ import logging
 import pytest
 
 from scrapy.utils.log import LogCounterHandler
-from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
+from scrapy.utils.reactor import _is_asyncio_reactor_installed, is_reactor_installed
 from tests.utils.decorators import coroutine_test
 
 
@@ -26,8 +26,9 @@ def test_stderr_log_handler() -> None:
     """Test that the Scrapy root handler is always properly removed.
 
     It's added in ``configure_logging()``, called by ``{Async,}CrawlerProcess``
-    (without ``install_root_handler=False``). It can be removed with
-    ``_uninstall_scrapy_root_handler()`` if installing it was really needed.
+    (unless the ``LOG_INSTALL_ROOT_HANDLER`` setting is ``False``). It can be
+    removed with ``_uninstall_scrapy_root_handler()`` if installing it was
+    really needed.
     """
     c = sum(1 for h in logging.root.handlers if type(h) is logging.StreamHandler)
     assert c == 0
@@ -53,8 +54,8 @@ def test_installed_reactor(reactor_pytest: str) -> None:
     """Test that the correct reactor is installed."""
     match reactor_pytest:
         case "asyncio":
-            assert is_asyncio_reactor_installed()
+            assert _is_asyncio_reactor_installed()
         case "default":
-            assert not is_asyncio_reactor_installed()
+            assert not _is_asyncio_reactor_installed()
         case "none":
             assert not is_reactor_installed()

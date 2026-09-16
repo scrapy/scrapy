@@ -4,7 +4,7 @@
 Settings
 ========
 
-The Scrapy settings allows you to customize the behaviour of all Scrapy
+The Scrapy settings allow you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
 The infrastructure of the settings provides a global namespace of key-value mappings
@@ -334,6 +334,12 @@ Reactor settings
 **Reactor settings** are settings tied to the :doc:`Twisted reactor
 <twisted:core/howto/reactor-basics>`.
 
+.. versionchanged:: VERSION
+   :setting:`TWISTED_DNS_RESOLVER`, the settings of the resolver and
+   :setting:`REACTOR_THREADPOOL_MAXSIZE` are now read from the first spider,
+   instead of being read from the project settings and ignored in
+   :ref:`per-spider settings <spider-settings>`.
+
 Because only 1 reactor can be used per process, these settings cannot use a
 different value per spider when :ref:`running multiple spiders in the same
 process <run-multiple-spiders>`.
@@ -363,11 +369,10 @@ These settings are applied when starting the reactor:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
-They are read from the settings of the
-:class:`~scrapy.crawler.CrawlerProcess` or
-:class:`~scrapy.crawler.AsyncCrawlerProcess` object, so setting them from a
-spider or an :ref:`add-on <topics-addons>` has no effect. They are ignored
-altogether when using :class:`~scrapy.crawler.CrawlerRunner` or
+They can also be :ref:`set from a spider <spider-settings>`, but only the
+values from the first spider that runs are used; if a later spider defines a
+different value, a warning is issued. They are ignored altogether when using
+:class:`~scrapy.crawler.CrawlerRunner` or
 :class:`~scrapy.crawler.AsyncCrawlerRunner`, which do not start the reactor.
 
 There is an additional restriction for :setting:`TWISTED_REACTOR` and
@@ -408,6 +413,7 @@ These settings are:
 -   :setting:`LOG_FILE`
 -   :setting:`LOG_FILE_APPEND`
 -   :setting:`LOG_FORMAT`
+-   :setting:`LOG_INSTALL_ROOT_HANDLER`
 -   :setting:`LOG_LEVEL`
 -   :setting:`LOG_SHORT_NAMES`
 -   :setting:`LOG_STDOUT`
@@ -985,7 +991,7 @@ It is possible to change this setting per domain by using
 DOWNLOAD_DELAY_JITTER
 ---------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.19.0
 
 Default: ``0.5``
 
@@ -1079,8 +1085,8 @@ Default:
     {
         "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
         "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-        "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
-        "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+        "http": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
+        "https": "scrapy.core.downloader.handlers._aiohttp.AiohttpDownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": None,
     }
@@ -1225,7 +1231,7 @@ response was not properly finished. If ``True``, these responses raise a
 responses are passed through and the flag ``dataloss`` is added to the
 response, i.e.: ``'dataloss' in response.flags`` is ``True``.
 
-Optionally, this can be set per-request basis by using the
+Optionally, this can be set on a per-request basis by using the
 :reqmeta:`download_fail_on_dataloss` Request.meta key to ``False``.
 
 .. note::
@@ -1540,7 +1546,7 @@ The Project ID that will be used when storing data on `Google Cloud Storage`_.
 HTTP2_MAX_FRAME_SIZE
 --------------------
 
-.. versionadded:: VERSION
+.. versionadded:: 2.18.0
 
 Default: ``16384``
 
@@ -1617,6 +1623,8 @@ A string indicating the directory for storing the state of a crawl when
 
 LOG_COLOR
 ---------
+
+.. versionadded:: 2.19.0
 
 Default: ``True``
 
@@ -1709,6 +1717,22 @@ LOG_FORMATTER
 Default: :class:`scrapy.logformatter.LogFormatter`
 
 The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
+
+.. setting:: LOG_INSTALL_ROOT_HANDLER
+
+LOG_INSTALL_ROOT_HANDLER
+------------------------
+
+.. versionadded:: 2.19.0
+
+Default: ``True``
+
+Whether to install a handler for the root logger, configured according to the
+other :ref:`logging settings <logging-settings>`. Set this to ``False`` to
+manage the root logger yourself, e.g. from a custom command or from a
+:file:`settings.py` module executed before Scrapy configures logging.
+
+.. note:: This is a :ref:`logging setting <logging-settings>`.
 
 .. setting:: LOG_LEVEL
 
@@ -1969,7 +1993,7 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
-.. versionadded:: VERSION
+.. versionadded:: 2.19.0
    The ``SQLite`` queue types.
 
 Type of disk queue that will be used by the scheduler. Other available types
